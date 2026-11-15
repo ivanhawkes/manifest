@@ -66,6 +66,14 @@ Two rules bind planning edits, from the [project analysis](project-analysis-2026
   presets and stages ran, and never treat a CI run as Release or sanitiser evidence while the gate
   aborts in tidy, nor a Debug-only pass as a full gate.
 
+- **Externally-reported identifiers need a second source.** Tool output in this project has emitted
+  CI run records and commit SHAs that resolve to nothing on GitHub (see the data-quality note in
+  [CI failure analysis](project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16)). Confirm any
+  run ID, commit SHA, push result or gate claim against `gh api`, `git ls-remote`, `FETCH_HEAD` or the
+  remote's own commit list before reporting it, and take CI counts from a live paginated run list
+  rather than from recalled output. Never write an unverified identifier into project documentation,
+  and never tell the user work may have been lost without the remote's commit list agreeing.
+
 Planning output never marks work `implemented` without a named verifying suite and a recorded gate.
 
 ## Existing roles and delegation

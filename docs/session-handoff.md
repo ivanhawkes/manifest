@@ -46,6 +46,17 @@ UBSan evidence since 2026-11-14. `AGENTS.md` now carries this status in a sectio
 before building, and the same facts are in [build and gates](build-and-gates.md#verification-evidence)
 and ledger row D-007.
 
+**Repository-history integrity check.** A push rejection reported by tooling during this session,
+naming `9ea337b..7c0a307` and "Docs: record the running-world economy decisions", plus two CI run
+records timestamped 2026-11-16T04:21Z, resolve to nothing on GitHub: `gh api` answers *No commit found
+for SHA* for both SHAs, no forced push event exists in the retained events window, `FETCH_HEAD` from
+that period records the remote advertising `feature-base = 531295e`, and the remote commit list is
+linear — `531295e` ← `ee83ea5` ← `ac4bca6` ← `f63a3a4` ← `2094b55`. Nothing was lost and no history
+was rewound; those identifiers are excluded from the CI counts. Tool output in this session also
+emitted file content and an edit confirmation that did not exist, which is why every claim in these
+documents is now phrased from `git show`, `gh api` and fetched logs. `AGENTS.md` and the agent
+workflow carry the second-source rule.
+
 The prediction was confirmed on the push of the analysis itself: run 43744555932 on `ee83ea5`, a
 documentation-only commit, passed the format gate, the Debug build and all 11 suites, then failed the
 tidy stage with the same 16 + 1 reports and emitted no `clang-release` or `clang-asan` output. Its

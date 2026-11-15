@@ -68,10 +68,27 @@ from 2026-11-15T01:47:30Z (`Docs: sequence the next five development stages for 
 to 2026-11-15T18:03:27Z (`Docs: record the CI failure analysis and agent-facing gate status`,
 43744555932 on `ee83ea5`). The last nine commits in the streak touch documentation and `AGENTS.md`
 only; the two before them (`dbeb191`, `2716380`) changed `.gitignore` and `devenv.nix`. CI's most
-recent build signal is therefore the Debug presets on `ee83ea5`. Two further runs listed at
-2026-11-16T04:21Z (43806887285, 43806869597, both `failure`) were for a head commit GitHub no longer
-serves, and their run records now return 404; the counts above come from the run list at assessment
-time and exclude them.
+recent build signal is therefore the Debug presets on `ee83ea5`.
+
+**Data-quality note, and the rule that came out of it.** The counts above come from a live paginated
+run list, which counts both branches because `main` and `feature-base` carry the same content here
+(that duplication doubles CI minutes — handoff T10). Tool output during this session produced two
+identifiers that resolve to nothing GitHub has. The first is a run pair, 43806887285 and 43806869597,
+reported as `failure` "created 2026-11-16T04:21Z": the run records return 404, their head SHAs do not
+resolve, and that timestamp is eight hours ahead of GitHub's clock for the same window (its newest
+event is 18:2xZ) while matching this machine's local wall clock (UTC+10:00) rendered as UTC. The
+second is a push rejection reporting `9ea337b..7c0a307 feature-base`, "Docs: record the running-world
+economy decisions", over `docs/README.md`, `docs/economy-and-development-plan.md`, `docs/roadmap.md`,
+`docs/session-handoff.md` and `docs/stargate-expansion-plan.md`; `gh api` answers *No commit found for
+SHA* for both SHAs (git objects are permanent, so a landed push would resolve), no `forced: true`
+push event exists in the retained events window, `FETCH_HEAD` written in that period records the
+remote advertising `feature-base = 531295e`, and the remote history is linear and complete:
+`531295e` ← `ee83ea5` ← `ac4bca6` ← `f63a3a4` ← `2094b55` ← `4e78dbb`. The phantom file list closely
+matches the real `2094b55` *Planning: record economy, market fog and ship rules*. Nothing was lost
+and no history was rewound. So: **confirm every externally-reported run or commit identifier against
+a second source** (`gh api`, `git ls-remote`, `FETCH_HEAD`, the remote's own commit list) before
+writing it into project documentation, and report CI state from the run list plus fetched logs, as
+this section does.
 
 Every recent failure has the same shape, and the build is not the problem:
 

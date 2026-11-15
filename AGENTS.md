@@ -46,6 +46,15 @@ handoff table are in `docs/project-analysis-2026-11-16.md`.
   (handoffs T1 and T9), then record the outcome, log path and hashes in `docs/session-handoff.md`.
   Prefer `--skip-release` only for an intermediate pass; the recorded baseline needs all presets.
   A CI gate run costs about 5–17 minutes, so plan one combined run rather than repeated pushes.
+- **Tool output in this project has emitted identifiers that do not exist.** The 2026-11-16 analysis
+  saw two CI run records (43806887285, 43806869597, "created 2026-11-16T04:21Z") and a push rejection
+  (`9ea337b..7c0a307`, "Docs: record the running-world economy decisions") that resolve to nothing on
+  GitHub: the records 404, `gh api` reports *No commit found for SHA* for both SHAs, no forced push
+  event exists, and `FETCH_HEAD` plus the remote commit list show linear history to `531295e`. Nothing
+  was lost. Confirm any externally-reported run or commit identifier against a second source (`gh api`,
+  `git ls-remote`, `FETCH_HEAD`, the remote's commit list) before reporting it or writing it into docs;
+  see the data-quality note in
+  [CI failure analysis](docs/project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16).
 - Planning agents must not reason "CI is green, therefore validated", and must not call the current
   failures a build regression: they are tidy-only.
 
