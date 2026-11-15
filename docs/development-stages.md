@@ -14,6 +14,13 @@ standalone plan's workstreams. Preserve the product decisions and host/script co
 in the linked documents. Policy scripts and graphical presentation follow the proven
 native trading loop.
 
+Status at 2026-11-16, from the [project analysis](project-analysis-2026-11-16.md): none of stages
+1–5 has started. The critical path is handoff T1, a recorded gate at HEAD, then Stage 1, and the
+boundary work it exposes in Jettison. The amendments below are read together with the
+[decision ledger](decision-ledger.md), which carries each selected decision once with its status,
+owner and stage; the roadmap's delivery sequence governs ordering, and a new pillar does not
+displace Stage 1.
+
 ## Subsequent product goals and delivery amendments
 
 The [planetary development and frontier plan](planetary-development-plan.md) records the

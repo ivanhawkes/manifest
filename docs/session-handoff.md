@@ -1,5 +1,59 @@
 # Session handoff
 
+## Project analysis and planning consolidation — 2026-11-16
+
+Baseline: Manifest `feature-base` at `f63a3a4`, clean tree, equal to `origin/feature-base` and to
+`main`. Engine sibling `../jettison` on `feature-base` at `0564f19`; Manifest pins `f850920`.
+
+This session was a read-only analysis of the repository plus the documentation edits that record it.
+No implementation code, tests, fixtures, assets, `data/` YAML, `CMake`, `scripts/`, `devenv.*` or
+`.vscode` files were changed, and no build, CTest, clang-format gate or clang-tidy run was
+performed, consistent with the planning-only policy in `AGENTS.md`. The documentation changes are
+uncommitted: new `docs/project-analysis-2026-11-16.md` and `docs/decision-ledger.md`, plus
+references and corrections in `docs/README.md`, `docs/roadmap.md`, `docs/development-stages.md`,
+`docs/build-and-gates.md`, `docs/agent-workflow.md`, `docs/coding-standards.md` and `README.md`.
+
+Findings, evidence and the T1–T8 handoffs are in the
+[project analysis](project-analysis-2026-11-16.md). In short: the model layer (17,398 lines, 8
+modules, 11 suites, 111 cases, 89 items and 85 skills) is real and deterministically tested, while
+Jettison integration is not (four engine touchpoints, none of them a world host, VFS loader,
+script, network or save path), Stage 1 has not started, and documentation is now 8,719 lines
+against that code with selected decisions repeated across up to eight files and balance values
+living only in prose.
+
+Verification state matters for the next session. The newest recorded full gate is at `5d7f54e`
+(formatting plus all 11 suites in Debug, Release and ASan/UBSan; generation `10355632731109243635`,
+100-tick `12410383246888723003`, raw price `15444164946577136117`). Since then nothing outside
+`docs/`, `README.md`, `AGENTS.md` and `.gitignore` changed, except `devenv.nix` adding `lazygit`,
+which alters the locked shell; the merge `2716380` is titled "Not sure of build status". No preset
+build tree exists locally and the top-level `build/` is the ignored pre-rename `CivSimLibrary`
+tree. Treat the gate as unverified at HEAD until handoff T1 records it, and use the CI `ci.log`
+artifact as the current authoritative evidence.
+
+The [decision ledger](decision-ledger.md) now indexes 36 selected decisions by ID with a single
+canonical section, status, owner and stage, and the
+[agent workflow](agent-workflow.md#planning-discipline-after-the-2026-11-16-analysis) rules require
+future planning edits to link IDs instead of restating rules, and to add a stage/SDK-API/gap
+triplet before a mechanic is scheduled. Two stale heading anchors in `docs/coding-standards.md`
+that pointed at engine headings inside this repository's own documents were repointed at
+`../../jettison/docs/…`; that is the only pre-existing content corrected. The duplicated prose in
+`scope.md`, `roadmap.md`, `architecture.md`, `development-stages.md` and this file was **not**
+reduced: deduplication is handoff T2, an implementer task, so those documents still restate the
+same rules and numeric values and remain the drift risk the ledger is meant to remove.
+
+Next step, in order: T1 run and record the gate at HEAD; T5 reconcile `devenv.nix` with the pin and
+add the parity check; T7 repair the tracked `.vscode/*.example` targets; then begin Stage 1 of the
+[development stages](development-stages.md#stage-1-public-engine-host-and-standalone-bootstrap),
+starting from its exit criterion (Manifest starts, mounts its package and shuts down through public
+APIs, the Jettison sample still works, a clean checkout builds without the sibling repository) and
+the D-003/D-005 boundary work in Jettison. Use two compile jobs, keep local clang-tidy opt-in, and
+record the gate result here.
+
+Context recommendation: a **fresh session** for T1/Stage 1. The analysis conclusions are captured in
+the analysis document and this handoff, the next task needs only `AGENTS.md`, the ledger and the
+stage plan, and this session's investigation output is now historical. Compaction would keep
+investigation detail that the documents already preserve.
+
 ## Regional population and government correction — 2026-11-16
 
 This section supersedes the planet-scoped population/government assumptions in earlier

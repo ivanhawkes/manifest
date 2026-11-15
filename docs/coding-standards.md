@@ -110,7 +110,7 @@ across Debug and Release builds. `math` follows the same rules, because those mo
 its `Random` and `Noise` output is part of the save format, and so does `script`, because a script
 answers a decision's inputs inside the step: its input calls are on a fresh instance each, counted in
 fuel rather than timed, and WAMR's interpreter is compiled with `-ffp-contract=off` too
-([architecture](architecture.md#scripts)). Its watchdog's wall clock stops a script and never decides
+([architecture](../../jettison/docs/architecture.md#scripts)). Its watchdog's wall clock stops a script and never decides
 what a call returns:
 
 - Fixed timestep only. Never read the wall clock; use `SimClock`.
@@ -133,7 +133,7 @@ or commit, fetched with `FetchContent`, declared `SYSTEM` so its warnings are no
 given a comment saying why it was chosen over the alternative. A new dependency is judged on
 the project's criteria: elegance, efficiency, modern C++ usage, interoperability and
 maintenance. It is added to `dependency_probe` with at least one real call into it, and it
-follows the integration rules in [build and gates](build-and-gates.md#integration-rules-the-set-follows):
+follows the integration rules in [build and gates](../../jettison/docs/build-and-gates.md#integration-rules-the-set-follows):
 static, one copy of each library, options scoped in a `block()`, and the project's language
 features.
 

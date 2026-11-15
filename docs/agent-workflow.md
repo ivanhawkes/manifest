@@ -46,6 +46,22 @@ criteria, required checks and unresolved questions. The implementer applies chan
 integration and runs the relevant checks and final gate. Local builds remain limited to two
 compile jobs; local clang-tidy remains opt-in as described in [build and gates](build-and-gates.md).
 
+### Planning discipline after the 2026-11-16 analysis
+
+Two rules bind planning edits, from the [project analysis](project-analysis-2026-11-16.md):
+
+- **Decisions are recorded once.** Selecting, changing or superseding a decision updates the
+  [decision ledger](decision-ledger.md) with its ID, single canonical section, status, owner and
+  stage in the same change. The roadmap, `scope.md`, `architecture.md`, `development-stages.md` and
+  `session-handoff.md` link the ID rather than restating the rule, and numeric balance values are
+  not written into prose; they are authored data (handoff T4) referenced from the ledger.
+- **Scope enters through a funnel.** A new mechanic is scheduled only with its stage, the public
+  SDK API it consumes, and the demonstrated gap when one exists. Product pillars beyond the current
+  sequence are recorded as deferred with a re-entry condition, not as next work. The first playable
+  loop needs stages 1–4: a new pillar may not displace Stage 1.
+
+Planning output never marks work `implemented` without a named verifying suite and a recorded gate.
+
 ## Existing roles and delegation
 
 The definitions under `.codex/agents/` and defaults in `.codex/config.toml` are existing

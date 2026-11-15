@@ -6,8 +6,11 @@ markets and civilisations that trade them.
 
 Manifest follows Jettison's `feature-base` SDK, pinned to commit
 `f85092027eda49c29001f7589608df1f0b8827fb` (engine 0.1.0). `main` is not the SDK reference.
-`devenv.nix`, `devenv.yaml` and `devenv.lock` match that checkout. Shared libraries such as EnTT,
-yaml-cpp and doctest come from the engine's targets, including their compile definitions.
+`devenv.yaml` and `devenv.lock` match that checkout exactly. `devenv.nix` matches it apart from one
+development-only package (`lazygit`), an open deviation from the identity rule in `AGENTS.md` that
+handoff T5 in the [project analysis](docs/project-analysis-2026-11-16.md) reconciles. Shared
+libraries such as EnTT, yaml-cpp and doctest come from the engine's targets, including their
+compile definitions.
 
 ## Build
 

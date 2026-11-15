@@ -48,3 +48,35 @@ smoke tests remain Jettison's gate. Do not configure Jettison's unsupported inst
 
 Clang-tidy is opt-in locally (`./scripts/ci.sh --tidy`), since it is expensive on the
 development laptop. CI enables it. Local builds default to two compile and test jobs.
+
+## Verification evidence
+
+A gate is recorded, not implied. After running it, add a short entry to
+[session handoff](session-handoff.md) with the commit, the presets and suites that passed, the
+three state hashes (generation, 100-tick, raw price) and the log path. Gate logs are ignored build
+artifacts under `build/`, never committed fixtures. "Configure succeeded", mounted content
+equality and documentation edits are not verification.
+
+The newest recorded full gate is at `5d7f54e`: formatting and all 11 suites in Debug, Release and
+ASan/UBSan, with generation `10355632731109243635`, 100-tick `12410383246888723003` and raw price
+`15444164946577136117`. Nothing outside `docs/` and `README.md` changed after it except `AGENTS.md`,
+a `.gitignore` comment and `devenv.nix` (`+lazygit`), so the C++ build is expected intact, but the
+locked shell changed and no gate has been recorded at `f63a3a4` (handoff T1 in the
+[project analysis](project-analysis-2026-11-16.md)). `../.github/workflows/ci.yml` runs the full
+gate with `--tidy` on every push and uploads `build/ci.log`; it is the authoritative current
+evidence, and CI is where clang-tidy runs.
+
+Preset builds live in `build/clang-debug/`, `build/clang-release/` and `build/clang-asan/`. A
+top-level `build/` containing `CivSim*` artifacts is the ignored pre-rename configure tree; remove
+it rather than reading it as a current build. `.vscode/` is ignored, so the tracked
+`.vscode/*.example` files are the reference for a fresh clone; they are currently stale and are
+repaired by handoff T7.
+
+Proposed checks, not present (handoff T8): local Markdown link and heading-anchor integrity across
+`docs/`, `README.md` and `AGENTS.md` — an ad-hoc scan at the 2026-11-16 assessment covered 31
+documents and roughly 300 local targets, found two stale heading anchors in `docs/coding-standards.md`
+pointing at Jettison headings, and those links now use `../../jettison/docs/…`; the
+checker lives in the analysis appendix until an implementer commits it to `scripts/` and CI. Also
+proposed: a `devenv.nix`, `devenv.yaml` and `devenv.lock` parity check against the pinned engine
+revision, and the CMake dependency-closure
+boundary checks in the [boundary assessment](engine-game-boundary-assessment.md#enforcement-to-implement-later).
