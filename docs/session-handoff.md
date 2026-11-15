@@ -1,5 +1,82 @@
 # Session handoff
 
+## Contract, frontier, first-tech and stargate follow-up — 2026-11-15
+
+Resumed from Manifest `feature-base` at `066b5cc`, with a clean working tree. This follow-up
+updates supplier security, construction-site, exclusivity, first-tech and stargate decisions in the product-planning
+handoff below; its other constraints and decisions remain in force. Current changes are
+planning documentation only in this handoff, the contract, planetary-development and
+economy/development plans, the development-stage index, roadmap, architecture, gameplay/server
+plan and docs index, plus the new stargate-expansion plan.
+No implementation, SDK/environment change or build/gate execution occurred.
+Documentation checks: `git diff --check` and local Markdown link/heading-target checks passed.
+
+The user accepted a supplier-funded performance bond, initially 10% of the winning offer
+subject to balance testing. Publish its requirement with the tender; lock it from unreserved
+company funds at award, considering the next qualified bidder if funding fails. Hold it until
+contract close while continuing immediate payment for accepted partial deliveries. Complete
+delivery returns it all. Abandonment or missed deadline forfeits the undelivered proportion
+to the public treasury and returns the rest; accepted goods and payments remain settled.
+NPCs and the governor's company use the same rules; disconnecting changes none of them.
+See [performance security](procurement-and-station-contracts-plan.md#performance-security-selected).
+
+Whole-credit bond rounding/minimums and issuer/service-failure handling remain design work;
+the bond is not a guarantee of replacement-supplier affordability. No economic validation
+has occurred.
+
+The user also accepted the [construction-site reservation rules](planetary-development-plan.md#company-built-stations-and-control-of-shipping):
+the first eligible company starting a funded project secures the site, paying meaningful
+non-refundable mobilisation and reserving construction funds. A fixed completion deadline
+cannot be renewed indefinitely through token deliveries. Abandonment/expiry reopens the site;
+unspent funds and unused goods remain company property. Completed-work salvage, exact amounts,
+funding scope, mobilisation beneficiary, deadline clock/duration and intervening control changes
+remain unresolved. The reservation grants construction priority only; resource exclusivity and
+government control need separate grants. No anti-squatting or recovery result has been tested.
+
+The user accepted the [exclusivity trigger and provisional term](economy-and-development-plan.md#real-time-exclusive-exploitation):
+start when the first eligible frontier spaceport becomes operational and its exploitation
+concession activates. Publish the duration before construction; use 72 hours of actual
+server-running time as the initial balance-testing value. Shutdown pauses it; idle facilities
+and disconnected owners do not. Ownership transfers, rebuilding and government changes cannot
+restart or extend it. At expiry rivals may exploit and build their own ports; incumbents keep
+their infrastructure and may refuse new bookings at their own port. Protected homes keep
+separate rules, and the concession does not transfer government control. Construction costs,
+extraction capacity and pacing must validate the term; no such validation has occurred.
+
+The user accepted [Bronze metallurgy](economy-and-development-plan.md#first-tech-example-bronze-metallurgy-selected)
+as the first material/facility tech example. Require basic smelting knowledge and an operational
+local metalworking workshop, seeded explicitly for the separate governance fixture. Deliver
+90 kg copper and 10 kg tin into public project inventory, with local copper and competitively
+procured/physically imported tin from an explicit external supplier. Consume the project inputs
+once, then advance fixed-step work; workshop interruption pauses progress. Completion unlocks
+local production, with each fresh batch consuming 9 kg copper plus 1 kg tin into 10 kg bronze.
+Knowledge survives workshop loss; production needs an operational workshop. Reuse existing
+`SkillSmelting`, `ItemCopper`, `ItemTin` and `ItemBronze` IDs, preserving authored data and the
+separate eight-good trading fixture. Work duration, throughput, profitability and detailed
+facility/batch terms remain unresolved; the quantities are initial test values. No content,
+fixture, code or tests changed, and no gameplay validation ran.
+
+All four initial follow-up decisions are recorded. The user subsequently required government
+or corporate funding of physical stargate delivery before opening a new system to trade and
+development. Flights are fully automated/unmanned at a multiple of lightspeed, with meaningful
+server-running wall time. The user chose distance-based duration, tuned through configurable
+FTL speed/pacing to hours or days, and owner control of operational gate access/fees, including
+refusing rivals. See the new [stargate handoff](stargate-expansion-plan.md).
+
+Gate delivery/activation does not grant government control or start planetary resource
+exclusivity. SDK inspection at the existing pin confirms that `PlotRoute`/`EnterLane` require
+an existing lane, while `OnLane` uses simulation-step arrival; they do not establish the
+required bootstrap expedition or server-running timing contract. Gate toll refusal/charge
+callbacks exist; per-owner policy integration and atomic topology/recovery remain to prove.
+Jettison stays unchanged at `0564f19`; the SDK pin and environment are unchanged. Only read-only
+source investigation and documentation checks occurred, with no builds or gameplay validation.
+
+Next stargate choices: endpoint pairing/deployment, launch cost/equipment, exact speed/pacing,
+gate commitments/exit rights and rival access alternatives when a gate owner refuses service.
+Target generation/reveal triggers, detailed construction/colonial/transfer contracts and
+long-running demand/public-income circulation remain open. Continue this session while the
+physical economy and access constraints are fresh; no context reset is needed yet.
+
 ## Current product-planning handoff — 2026-11-15
 
 This section supersedes the earlier planning/repository state below. The planning baseline was
@@ -55,8 +132,9 @@ Confirmed direction to preserve:
 - Frontier resource rights are initially exclusive for elapsed real server-running time,
   pausing during shutdown. Afterwards rivals may exploit and build their own spaceports even
   under the incumbent's puppet government. Starting homes remain protected. This supersedes
-  the permanent no-second-port rule on reopened concessions. The exact grant trigger/duration
-  and initial construction-site reservation are still open.
+  the permanent no-second-port rule on reopened concessions. The operational-port/concession
+  trigger, provisional 72-hour term and construction-site reservation are selected in the
+  follow-up above.
 - Corporations may build a very expensive orbital spaceport at any planet without one that
   is not owned/controlled by another player. This enables resource exploitation and colonies
   with company-controlled puppet governments, supporting long-term corporate returns.
@@ -91,9 +169,10 @@ state/journal batches and record expiry events for deterministic replay. Do not 
 absolute UTC deadline that deducts offline time or read a clock from deterministic systems.
 Specify checkpoint loss after a crash rather than promising exact crashed-process uptime.
 
-Next planning cycle: settle supplier performance security (undecided), then
-construction-site reservation, exclusivity grant trigger/duration and the first material/
-facility tech recipe. Station booking protection, partial payment and post-exclusivity rival
+Next planning cycle, updated by the follow-up above: supplier security and construction-site
+reservation rules, exclusivity trigger/provisional term and first material/facility example
+are selected; continue with long-running demand/public-income circulation. Station booking
+protection, partial payment and post-exclusivity rival
 ports are approved; detailed settlement, service windows, corruption scoring, colonial powers
 and long-running demand/public-income circulation remain design work. Initial starter
 protection/viability still needs explicit allocation policy; unassigned AI planets with no

@@ -36,6 +36,7 @@ lifespan and pacing; it does not establish a victory timer or automatic reset.
 | Brokers and fees | Brokers buy/sell their own finite stock/funds, earning through spreads; warehouses charge separately at both ends. | Quote real liquidity, charge each provided service once, and include all costs in auto-trade decisions. |
 | Development and geography | Tech needs exploited/imported resources and actual facilities; inner worlds start higher-tech and depleted, outer worlds richer and less developed. | Validate cross-facility/import dependencies and seeded spatial economic generation. |
 | Frontier rights | Initial exclusive exploitation lasts for elapsed real server-running time, pausing in shutdown; afterwards rivals can exploit and build ports despite a puppet government. | Keep starting homes protected; amend no-second-port rules for reopened concessions and persist host time/events for replay. |
+| New-system access | A government or corporation funds physical stargate delivery on an automated unmanned FTL flight. Distance and configurable speed/pacing set hours/days of server-running duration. Operational owners control access/fees and may refuse rivals. | Persist flight progress, pause in shutdown, reuse recorded host timing and activate topology once; gate ownership is separate from planetary/resource rights. See the [stargate plan](stargate-expansion-plan.md). |
 
 The first integration fixture runs without a renderer, using commands and automated tests.
 A small real network/TUI slice should follow the minimal command/ownership foundation rather

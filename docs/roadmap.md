@@ -100,9 +100,22 @@ elapsed server-running time; shutdown time does not count. Afterwards rivals may
 the planet and build competing spaceports, even under the incumbent's puppet government.
 Starting home planets stay protected. This amends the earlier no-second-port rule for reopened
 frontier worlds. Incumbents retain infrastructure/capital advantages and may try to exhaust
-resources before rivals arrive. Duration and the precise first-grant trigger remain undecided.
+resources before rivals arrive. The selected grant starts when the first eligible frontier
+spaceport becomes operational and its exploitation concession activates. Publish its duration
+before construction; use 72 server-running hours as the initial balance-testing term. Idle
+facilities and disconnected owners do not pause it; ownership transfers, rebuilding and
+government changes cannot restart or extend it. The concession does not transfer government
+control. Validate the term against construction costs, extraction capacity and server pacing.
 
 ## Physical economy and material-gated development
+
+The selected first [tech example](economy-and-development-plan.md#first-tech-example-bronze-metallurgy-selected)
+is Bronze metallurgy: basic smelting knowledge, an operational seeded workshop, local copper
+and physically imported tin. Consume 90 kg copper plus 10 kg tin once for the timed public
+project; completion unlocks repeat batches of 9 kg copper plus 1 kg tin into 10 kg bronze.
+Facility interruption pauses project work, and completed knowledge survives facility loss;
+production requires an operational workshop. These are initial test quantities for the
+separate governance scenario; duration, throughput and profitability still need balancing.
 
 Credits transfer instantly between authorised entity accounts. Commodities follow the full
 chain: extraction/industry, local haul, station warehouse, ship, destination warehouse and
@@ -145,8 +158,12 @@ permissions remain distinct; visitors' private assets retain their existing owne
 
 If needed, add systems at the outer reaches of the existing map without moving or regenerating
 established systems. Frontier planets are typically less developed and resource-rich, with
-some uninhabited and suitable for terraforming and settlement. Expansion, acquisition and colony rules require
-separate milestones; they are not currently implemented engine or game capabilities.
+some uninhabited and suitable for terraforming and settlement. Opening trade/development needs
+a [government/corporate stargate expedition](stargate-expansion-plan.md): fund and ship the gate
+on an automated unmanned FTL flight, timed by distance and configurable speed/pacing over
+hours/days of server-running wall time. Shutdown pauses flight. Operational gate owners set
+access/fees and may refuse rivals. Gate delivery, live topology activation, acquisition and
+colonisation remain separate milestones; these capabilities are not implemented or validated.
 
 See [planetary development and frontier planning](planetary-development-plan.md) for impacts,
 the capability map, unresolved choices and acceptance criteria. Its staged direction is:

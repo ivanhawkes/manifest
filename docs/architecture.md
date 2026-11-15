@@ -162,6 +162,10 @@ restart nor government control can renew a frontier grant or convert it to home 
 
 Later frontier expansion must preserve stable physical identities and current journeys and
 recover generated topology before restoring world entities. Generated world data is distinct
-from frozen authored rules. The inspected engine registration APIs do not yet demonstrate
+from frozen authored rules. The [stargate plan](stargate-expansion-plan.md) requires funded
+automated unmanned FTL delivery before new-system access, with distance-based server-running
+flight duration and owner-controlled gate access/fees. The delivery needs no pre-existing
+destination lane; regular SDK lane travel alone does not establish that bootstrap capability.
+The inspected engine registration APIs do not yet demonstrate
 atomic topology publication or durable generated-system recovery. Protocol/transport, hosting,
 deployment tooling and days/months of server pacing remain design choices.

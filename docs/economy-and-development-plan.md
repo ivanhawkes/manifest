@@ -3,8 +3,9 @@
 Product planning, 2026-11-15. Extends the [roadmap](roadmap.md),
 [planetary/corporate goals](planetary-development-plan.md) and
 [supply/booking contract handoff](procurement-and-station-contracts-plan.md).
-The decisions below are requirements, not implemented capabilities. Schemas, exact recipes,
-rates, fees and prices remain implementation/design work. No code, content, SDK pin or
+The decisions below are requirements, not implemented capabilities. The first tech/production
+recipe is selected below; schemas, other recipes, rates, fees and prices remain design work.
+No code, content, SDK pin or
 development environment was changed by this assessment; no builds or game simulations ran.
 
 ## Confirmed rules
@@ -22,6 +23,10 @@ development environment was changed by this assessment; no builds or game simula
   selected; existing numeric validation/authored price policy is preserved.
 - Planetary tech advancement requires exploited resources, purchased/imported resources the
   planet cannot gather, and dependencies on actual production facilities.
+  The first selected example is Bronze metallurgy: an operational local workshop and basic
+  smelting knowledge, 90 kg copper plus 10 kg tin for the project, followed by repeatable
+  production batches of 9 kg copper plus 1 kg tin into 10 kg bronze. Quantities are initial
+  test values; work duration, throughput and profitability remain to be balanced.
 - The inner map starts with higher civilisation technology and fewer remaining natural
   resources due to historical exploitation. Outer worlds are generally less developed and
   resource-rich, encouraging a gold rush for control of remaining deposits and access.
@@ -31,7 +36,12 @@ development environment was changed by this assessment; no builds or game simula
   Rival spaceports become permissible after the period; the one-port restriction is an
   initial protection rather than a permanent cap on such worlds. Frontier concessions reopen
   even under an incumbent's puppet government; starting home planets remain protected.
-  Duration and exact grant trigger still need choices.
+  Start the grant when the first eligible frontier spaceport becomes operational and its
+  exploitation concession activates. Publish the duration before construction starts; use
+  72 hours of actual server-running time as the initial balance-testing term. Idle facilities
+  and disconnected owners do not pause it. Ownership transfers, rebuilding and government
+  changes cannot restart or extend it. The concession does not itself transfer government
+  control; extraction capacity, construction costs and server pacing still need validation.
 
 Proposed details below are distinguished from these rules. Interpret inner/outer relative
 to the established region of the server map, not orbital distance from a star. Exact map
@@ -175,11 +185,12 @@ own location/reservation records; company ownership of a port or control of gove
 not make every stored commodity public or free. Immediate payment cannot substitute for
 uncompleted delivery. Public project fees/booking terms follow the linked contract plan.
 
-Separate knowledge prerequisites from installed capacity. A proposed first rule checks
-required operational facilities before work starts and pauses work if they become unavailable.
+Separate knowledge prerequisites from installed capacity. The selected first project checks
+its required operational facility before work starts and pauses work if it becomes unavailable.
 Persist material reservation/consumption and progress so resuming cannot spend inputs twice.
-Completed knowledge can remain unlocked while a facility's absence prevents production;
-exact maintenance, operational/idle and loss-of-facility semantics still need a decision.
+Its completed knowledge remains unlocked after facility loss, while production requires an
+operational workshop. Exact maintenance, operational-state criteria and rules for other
+projects still need design.
 
 Completion enables the defined new capabilities or capacity. Recompute affected production,
 consumption and future quote inputs without regenerating existing population, stored goods,
@@ -194,6 +205,46 @@ planet must not need a material produced only by its own locked future technolog
 an accessible external supplier can provide it. Seed appropriate AI industry/stock/access
 for bootstrap as explicit initial conditions. Preserve existing authored IDs/YAML keys and
 use Jettison schema/layering mechanisms for any planned definition extensions.
+
+### First tech example: Bronze metallurgy (selected)
+
+The user selected a per-planet Bronze metallurgy project for the separate governance scenario.
+Require basic smelting knowledge (existing `SkillSmelting`) and an operational local
+metalworking workshop. Seed the initial workshop explicitly so access to it does not require
+the technology being researched; its construction recipe remains later work. Workshop/project
+state is planned Manifest gameplay, not an already implemented facility or SDK capability.
+
+The project requires 90 kg of `ItemCopper` and 10 kg of `ItemTin`, physically delivered into
+public project inventory. The demonstration planet supplies copper locally and imports tin
+through competitive procurement and shipping. Provide an explicit reachable external tin
+supplier/bootstrap state; the project must not require locally unlocking the result before
+it can import its input. Existing item IDs, age metadata, unit types and authored prices remain
+stable; the hosted eligibility contract must support that prerequisite import.
+
+After all inputs are secured and the workshop is operational, consume the project materials
+once and advance a fixed-step work counter. Workshop interruption pauses progress; resuming
+does not consume another set of materials. These project inputs are consumed by development,
+not simultaneously credited as a saleable bronze batch. Completion unlocks the local
+production capability once, without advancing every planet or regenerating the target world.
+
+Each subsequent production batch consumes 9 kg of copper and 1 kg of tin to produce 10 kg of
+`ItemBronze`. These authored commodities are metal ingots, not raw ore. Every batch needs fresh
+physical inputs and an operational workshop. Knowledge survives workshop loss; production
+cannot continue without the required operational facility. Specify input/output ownership,
+facility access and batch timing/interruption semantics before implementation.
+
+The project and batch quantities are starting test values. Work duration, production
+throughput, workshop construction/operating costs and profitability remain balance/design
+work; the recipe is not evidence of a profitable conversion at existing prices and fees.
+Use the separate governance fixture, retaining the small eight-good trading fixture and
+existing full/simple modes rather than silently inserting bronze into them.
+
+Required implementer evidence includes local copper plus physically imported tin, partial
+procurement without premature work, rejection of missing/reserved inputs, facility interruption
+before/after input consumption, retained knowledge after facility loss, and independently
+accounted repeat production. Replay/recovery at consumption, progress and completion must
+preserve inputs/outputs and apply the unlock once. No fixture, content or test was changed or
+executed for this planning decision.
 
 ## Established core and resource frontier
 
@@ -214,9 +265,16 @@ are not immediately sellable stock: companies need funded exploitation, a port, 
 transport and buyers. Existing rules permit an expensive orbital port only where there is
 none and another player does not own/control the planet. The initial resource right is
 time-limited exclusivity, followed by rival entry rather than a permanent monopoly. The
-proposed grant trigger is first operational spaceport and its exploitation concession,
-rather than a cheap indefinite construction claim; this trigger is not yet confirmed.
-Construction-site races need a clear saved commitment boundary.
+selected grant trigger is the first eligible frontier spaceport becoming operational together
+with activation of its exploitation concession. Publish its duration before construction
+starts; the initial balance-testing term is 72 real server-running hours. A construction
+reservation alone does not start the resource grant or confer government control.
+The selected [construction-site rules](planetary-development-plan.md#company-built-stations-and-control-of-shipping)
+give the first eligible funded project a reservation, requiring non-refundable mobilisation
+and reserved construction funds. A fixed completion deadline cannot be renewed indefinitely
+by token deliveries; abandonment/expiry reopens the site while preserving ownership of unspent
+funds and unused goods. Salvage of completed work, exact amounts and the deadline clock/duration
+remain unresolved. Construction priority does not itself grant resource or government rights.
 
 Late joiners and AI retain the previously planned capacity considerations. Unassigned starter
 planets with no ports are eligible for corporate construction under the confirmed rule;
@@ -229,7 +287,22 @@ It must append compatible generated world data without moving/regenerating the c
 preserve routes, identities, in-flight goods and rights after restart. Static-map supply
 chains and tech progression should be proven before live topology expansion.
 
+The selected [stargate access project](stargate-expansion-plan.md) requires government or
+corporate funding and physical automated/unmanned delivery at FTL speed before opening a new
+system to trade/development. Distance, configurable FTL speed and pacing determine a quoted
+hours/days duration in server-running wall time. Shutdown pauses flight; disconnected clients
+do not. Operational gate owners control access and fees, including refusing rivals. Generation,
+delivery, gate activation, port construction and resource concessions retain distinct state;
+the gate does not itself grant the 72-hour planetary exploitation term or government control.
+
 ## Real-time exclusive exploitation
+
+The user selected the operational-port/concession trigger and provisional 72-hour term above.
+The duration must be disclosed before construction starts. Shutdown pauses the entitlement;
+idle facilities and owner disconnection do not. Ownership transfers, rebuilding and government
+changes cannot restart or extend it. These rules do not establish the remaining colonial
+powers or the handling of pre-existing AI governments. The term is a balance-testing value,
+not evidence that construction investment pays back or that server pacing supports it.
 
 The exclusivity term is measured in real-world hours/days or other chosen wall-clock units.
 Simulation step count is not the entitlement timer. The corporation can try to extract as
@@ -276,8 +349,9 @@ must retain the expiry transition that made them valid. This requires recovery e
 not just displaying a countdown in the client.
 
 Expiry is idempotent and irreversible for that grant revision. A restart, booking, company
-rename, station transfer or reissued RPC cannot restart the exclusion period. Scope exact
-ownership-transfer behaviour before exposing it. Order due events before dependent commands
+rename, station transfer or reissued RPC cannot restart the exclusion period. Rebuilding and
+government changes cannot extend it either. Scope the remaining ownership-transfer terms,
+including who receives the existing right, before exposing them. Order due events before dependent commands
 at the chosen boundary, recheck rights at execution and journal the transition before durable
 results. Delayed/duplicate timer observations must not grant a second lockout or strand an
 already-open right. Authoritative time comes from the server, never a client's clock.
@@ -356,5 +430,7 @@ Implementer checks include existing suites, long-run finite-funds/inventory scen
 directory/pack equivalence, cross-build replay and crash/retry boundaries, using presets and
 required gates with two local compile jobs and no local clang-tidy for cross-repository work.
 Only source inspection and documentation checks have occurred; no economic/scale result is
-claimed. Next refine resource rights, construction-site commitment and the first concrete
-facility/material recipe, then long-running demand/public-income circulation.
+claimed. The first material/facility example is selected. Next design long-running
+demand/public-income circulation and refine the remaining construction funding, deadline and
+salvage terms. Validate the selected recipe and provisional 72-hour grant against actual
+construction costs, extraction capacity, production throughput, prices and server pacing.

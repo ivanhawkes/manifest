@@ -60,6 +60,11 @@ and the selected SDK's game-integration guidance before implementation.
 - Size the initial world for the group expected to join over the server's life, with additional
   AI planets. If necessary, expand at the map's outer reaches with generally less developed
   systems and potentially uninhabited worlds for terraforming and settlement.
+- Opening a new system requires a government/corporation-funded stargate expedition: automated,
+  unmanned FTL delivery, timed by distance and configurable speed/pacing over hours or days of
+  server-running wall time. Operational gate owners control access and fees, including rival
+  refusal. See the [stargate handoff](stargate-expansion-plan.md); gate ownership does not itself
+  grant planetary control or resource exclusivity.
 - Days versus months, server lifespan/reset policy, exact development permissions, acquisition
   pricing, influence mechanics and expansion triggers remain undecided. Server downtime still
   pauses the simulation initially; disconnected-player progress is not downtime catch-up.
@@ -167,8 +172,8 @@ an unresolved server policy, not a consequence of disconnecting.
 
 The [supply-contract and station-booking handoff](procurement-and-station-contracts-plan.md)
 now details a proposed first tender, payment/default rules and booking acceptance boundary.
-It records the selected partial-payment and existing-booking protections; other defaults
-remain proposals, including the numeric settlement and performance-security choices.
+It records the selected partial-payment and existing-booking protections and supplier-funded
+performance bond. Other defaults remain proposals, including detailed numeric settlement.
 
 Competitive bidding is a confirmed rule. Controlling a public development budget lets a
 player choose projects and funding, not directly award the contract to their company. Their
@@ -179,10 +184,11 @@ construction is not a public procurement award merely because it occurs near an 
 First implement a clean tender lifecycle: specification and reserved public budget, opening,
 eligible bids, a fixed-step closing boundary, one award, physical fulfilment/milestones,
 payment and defined cancellation/default. The specification states required delivery,
-service/capacity, price rules and deadline. Decide whether full resource reservations or a
-bounded bond are needed for bidders; do not accidentally reserve the same shipment or
-capacity for multiple winning contracts. An award cannot pay a supplier twice or leave
-both spent and refundable public funds available.
+service/capacity, price rules and deadline. The selected bond starts at 10% of the winning
+offer, funded at award and held until close; complete delivery returns it, while default
+forfeits the undelivered share to the public treasury. Accepted goods remain payable immediately.
+Do not accidentally reserve the same shipment or capacity for multiple winning contracts.
+An award cannot pay a supplier twice or leave both spent and refundable public funds available.
 
 A proposed initial auction has sealed bids and deterministic evaluation of qualified bids
 using authored price and delivery/capability criteria. Eligibility and closing deadlines are
@@ -262,20 +268,51 @@ spaceport and is not owned/controlled by another player. Its own planets, AI pla
 unclaimed/uninhabited worlds can qualify. No discretionary government permit is an additional
 agreed eligibility requirement. A company funds and physically supplies a very expensive
 construction project; completion creates an owned, operational spaceport with defined services
-and capacity. Costs, stages, construction funding and the treatment of an occupied construction
-slot remain to be designed. Save work/cargo/reservations and create the port once even when
+and capacity. The selected reservation rules below establish the initial funding commitment;
+exact costs, stages and construction funding amounts remain to be designed.
+Save work/cargo/reservations and create the port once even when
 completion is replayed or a request retried.
 Purchasing planetary control is not a prerequisite for a port at an otherwise eligible AI
 planet; acquisition and port-led exploitation are alternative corporate growth paths.
 
 For this slice, use station/spaceport to describe that orbital shipping facility. Other station
 types may be designed later. Initially there is one first-port opportunity; reopened frontier
-concessions permit competing ports as specified in the economy/development plan. Competing
-construction attempts need an atomic site reservation and explicit
-construction/abandonment rules. A cheap, indefinitely renewable reservation would let an
-incumbent claim the entire expansion pool without paying the intended construction cost.
+concessions permit competing ports as specified in the economy/development plan. The user
+selected these rules for the initial first-port construction race:
+
+- The first eligible company to start a funded construction project secures the site.
+- Starting requires a meaningful, non-refundable mobilisation cost and reserved construction
+  funds. A request without that commitment does not hold the site.
+- The reservation has a fixed completion deadline; token deliveries cannot renew it indefinitely.
+- Abandonment or expiry reopens the site. Unspent funds and unused company-owned goods remain
+  company property; completed work needs separate salvage rules.
+- The reservation grants construction priority. Resource exclusivity and government control
+  require their own grant rules.
+
+For eligible frontier worlds, the selected resource grant starts when the first spaceport
+becomes operational and its exploitation concession activates. Publish the duration before
+construction starts; use 72 hours of actual server-running time as the initial balance-testing
+term. Shutdown pauses it; idle facilities and disconnected owners do not. Ownership transfers,
+rebuilding and government changes cannot restart or extend the term. At expiry rivals may
+exploit and build ports; the incumbent retains its infrastructure and may refuse new bookings
+at its own port. Protected homes retain separate rules. This concession does not transfer
+government control. See the [running-time contract](economy-and-development-plan.md#real-time-exclusive-exploitation).
+
+These selected rules prevent an indefinitely renewable claim without the intended construction
+commitment. They do not establish a measured anti-squatting result or a limit on funded projects.
+The mobilisation amount, payment beneficiary, scope of reserved funds, construction recipe,
+deadline duration/clock basis, and treatment of completed work still need design. Retaining
+ownership of unused goods does not define their collection, relocation or storage terms.
 Specify what happens if a planet's control changes while its port is being built; neither
 completion nor an AI-planet sale may silently violate the other player's control protection.
+
+Implementation handoff: accept eligibility, mobilisation payment, fund reservation and site
+claim atomically in authoritative order, rejecting competing starts without charging them.
+Persist the site/project identity, company, frozen deadline, funds, cargo and work state.
+Completion, abandonment and expiry must settle once across retries/recovery. Required evidence
+includes racing companies, insufficient funds, token deliveries, deadline boundaries,
+abandonment, unused-property accounting and restart/retry at each transition. The exact clock
+and salvage/control-change contracts must be specified before claiming those cases are covered.
 
 Owners may set fees, service/shipping priority and deny rivals access. Represent those as
 authoritative station policy, editable only by authorised company actors, with effective
@@ -417,8 +454,13 @@ First prove a sufficiently large static world. Dynamic expansion is a separate l
 milestone requiring physical inter-system access and persistent topology. New systems should
 extend the reachable frontier without moving existing systems, changing their IDs, or
 regenerating their populations and economies. New stars require usable links to the
-existing graph, not just map markers. The trigger may be population of the server,
-available land, exploration or operator action; it is not chosen yet.
+existing graph, not just map markers. Trade/development access requires the selected
+[stargate expedition](stargate-expansion-plan.md): government or corporate funding, physical
+automated/unmanned FTL delivery and operational connection. Distance-based delivery uses
+configurable speed/pacing over hours or days of server-running wall time, pausing in shutdown.
+The owner controls gate access and fees, including rival refusal. When to generate/reveal
+targets based on population, available land, exploration or operator action remains undecided;
+it cannot replace the required access project.
 
 Frontier development should usually be lower than the established region, with exceptions
 left possible. An uninhabited world has no civilisation rank, population demand or functioning
@@ -460,6 +502,7 @@ Prefer append-only additions initially; removals and topology rewrites are outsi
 | Resource exploitation and puppet colonies | Manifest production, stockpiles, body effects and authored habitat skills; no complete colonial government or extraction loop was demonstrated | Manifest site eligibility, resource/project/colony schemas, company-control links and public procurement; reuse/provision public spatial/docking facilities | Eligible AI/unclaimed planet gains one supplied port, extraction chain and company-controlled colony; other-player planets and duplicate construction are rejected. |
 | Remote TUI/GUI play | Jettison capture/shown-component snapshots and controller primitives | Jettison reusable transport/session/encoding provision; Manifest authentication policy, commands, filtering and frontend views | Connect/disconnect, private-view filtering, stale revision and retry tests without FTXUI/rendering. |
 | More physical systems | Jettison `Galaxy`/`StarSystem` resolved YAML data, `PhysicsWorld::DefineStarSystem`, `LaneTravel::DefineStarSystem`/`SetGalaxy`, `PlotRoute` | Manifest frontier generation/policy; demonstrate whether existing composition suffices, then provision minimal reusable topology publication/identity gaps in Jettison | Independent two-to-three-system consumer plus Manifest expansion without broken transit. |
+| Stargate delivery and controlled access | Galaxy positions, lane-based routing/transit, `Gates::SetTollRule`, commands/services/archives | Manifest funded unmanned FTL expeditions, running-time arrival and gate-owner policy; Jettison reusable ungated-transit, policy-context or topology provision where existing APIs do not suffice; see the stargate capability map | An initially unconnected destination opens only after delivered/operational gate, with zero-client progress, shutdown/recovery correctness and owner-controlled access/fees. |
 | Persistent expanded world | Jettison `SimWorld::Save/Load/StateHash`, game save sections and reflected `OnLane` | Physics system definitions are not saved/hashed; Manifest must persist generated world data through SDK archives and bind its identity into recovery; generic missing archive/topology facilities belong in Jettison | Restart outside the source tree reproduces expanded topology, state hash and active journeys. |
 
 Source inventory: Manifest [Simulation.h](../source/game/sim/include/manifest/sim/Simulation.h),
@@ -532,8 +575,16 @@ The [contract/booking handoff](procurement-and-station-contracts-plan.md) propos
 clean tender lifecycle and station commitment boundary. The [economy/development plan](economy-and-development-plan.md)
 records instant credits, physical commodities, brokers/handling, material/facility-gated tech
 and core/frontier generation. Partial payment, booked terms and temporary running-time
-concessions followed by rival ports are confirmed. Performance security, detailed settlement,
-site reservation, grant trigger/duration and the first facility/material recipe remain design work.
+concessions followed by rival ports are confirmed. Supplier-funded performance security is
+selected with a starting 10% bond and proportional forfeiture. Funded construction-site
+reservation, non-refundable mobilisation, a fixed completion deadline and reopening on
+abandonment/expiry are also selected. Frontier exclusivity starts at operational port plus
+concession activation, with a disclosed provisional 72-hour server-running term. The first
+[material/facility tech example](economy-and-development-plan.md#first-tech-example-bronze-metallurgy-selected)
+is Bronze metallurgy, using local copper, imported tin and an operational workshop. Detailed
+settlement, construction amounts/deadline/salvage and long-running demand/public-income
+circulation remain design work; selected quantities, throughput and the exclusivity term
+still need economic/pacing validation.
 Keep no-win open-ended play, company identity, player-planet acquisition protection and late-join
 capacity as constraints. Server pacing, detailed influence rights, acquisition pricing and
 expansion triggers remain open choices.

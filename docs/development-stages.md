@@ -43,6 +43,16 @@ A corporation may build a very expensive orbital spaceport at a planet with no e
 that is not owned/controlled by another player. It opens resource exploitation and colonies
 with company-controlled puppet governments. Prove this on a static map before requiring live
 frontier generation; construction rights and planet-wide control are distinct contracts.
+Later new-system access requires the [stargate expedition](stargate-expansion-plan.md): a
+government/corporation funds an automated unmanned FTL delivery, with distance-based duration
+tuned through speed/pacing to hours/days of server-running wall time. An operational gate opens
+the connection; its owner controls access and fees, including refusing rivals. This is separate
+from planetary ports, control and exploitation grants and does not delay the first static-map loop.
+The selected [site reservation rules](planetary-development-plan.md#company-built-stations-and-control-of-shipping)
+give the first eligible funded project construction priority, with non-refundable mobilisation,
+reserved construction funds and a fixed completion deadline. Abandonment/expiry reopens the
+site; unspent funds and unused goods retain company ownership. Exact amounts, deadline timing
+and completed-work salvage remain unresolved; resource/government grants are separate.
 
 Further refinements: [physical economy/development](economy-and-development-plan.md) requires
 instant credit settlement, full commodity transport through warehouses, finite principal
@@ -53,11 +63,27 @@ exclusivity lasts real elapsed server-running time, pausing during shutdown; riv
 exploitation become permissible afterwards even under puppet governments. Starting homes stay
 protected. These refinements supersede the permanent no-second-port interpretation on frontier
 concessions. The host records timing inputs/expiry for replay; deterministic systems read no clock.
+The selected exclusivity grant starts when the first eligible frontier port becomes operational
+and its exploitation concession activates. Disclose its duration before construction; the
+initial balance-testing term is 72 server-running hours. Idle facilities and disconnected
+owners do not pause it; ownership transfers, rebuilding and government changes cannot renew
+or extend it. The concession does not itself transfer government control.
+
+The first selected [tech example](economy-and-development-plan.md#first-tech-example-bronze-metallurgy-selected)
+is Bronze metallurgy in the separate governance fixture. Basic smelting knowledge, a seeded
+operational local workshop and delivered public project inputs of 90 kg copper plus 10 kg tin
+gate timed work. Use local copper and physically imported tin. Consume project inputs once;
+workshop interruption pauses work. Completion unlocks local production batches of 9 kg copper
+plus 1 kg tin into 10 kg bronze. Knowledge survives workshop loss; production still needs an
+operational workshop. Quantities are starting test values; work duration, throughput and
+profitability remain unvalidated. Preserve the separate eight-good trading fixture.
 
 The [contract/booking handoff](procurement-and-station-contracts-plan.md) proposes the first
 supply tender and accepted-booking lifecycle. Partial delivery payments and grandfathered
-booking terms are selected; performance security, detailed settlement and failure defaults
-remain proposals. No code or validation evidence is supplied by these additional plans.
+booking terms are selected, as is a supplier-funded bond initially set at 10% of the winning
+offer, held until close with proportional forfeiture for undelivered goods. Detailed numeric
+settlement and other failure defaults remain proposals. No code or gameplay-validation
+evidence is supplied by these additional plans.
 
 Keep the five stage numbers below as foundational work packages. Before committing state
 schemas in stages 2–3, account for distinct planet, company, control and public-budget records.

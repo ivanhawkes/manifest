@@ -10,7 +10,11 @@ at `0564f19`, with Manifest SDK pin `f85092027eda49c29001f7589608df1f0b8827fb`.
 
 Confirmed: public procurement requires corporate bids, including the governor's own company;
 public and company accounts are separate; suppliers are paid for accepted partial deliveries
-as they arrive. Add simple corruption and abstract bribery after clean tendering works.
+as they arrive. The user subsequently selected a supplier-funded performance bond: initially
+10% of the winning offer, locked at award until contract close, returned on complete delivery
+and proportionally forfeited for undelivered goods on abandonment or missed deadline. The
+starting rate remains subject to balance testing. Add simple corruption and abstract bribery
+after clean tendering works.
 Station owners can set fees/priorities and refuse rivals, but must honour accepted bookings;
 policy changes apply to future requests. Standing policies continue without connected clients.
 
@@ -20,9 +24,10 @@ terms name which handling/transport legs the supplier pays and where acceptance 
 Frontier exclusivity uses real elapsed server-running time; tender deadlines below remain
 proposed simulation-step deadlines rather than automatically using that different clock.
 
-The particular tender format, lifecycle, numeric settlement, expiry/default and booking terms
-below are proposed defaults for the first slice. They are not additional approved mechanics
-or evidence of implementation. They preserve the [authoritative command contract](stage-3-authority-plan.md),
+Except for the confirmed rules above and the performance-security section below, the particular
+tender format, lifecycle, numeric settlement, expiry/default and booking terms below are proposed
+defaults for the first slice. They are not additional approved mechanics or evidence of
+implementation. They preserve the [authoritative command contract](stage-3-authority-plan.md),
 [physical trading schedule](stage-4-trading-plan.md) and [recovery requirements](stage-5-recovery-plan.md).
 
 ## First public project and tender
@@ -70,6 +75,12 @@ company commitments; reserve real stock/capacity only through its actual native 
 These limits are proposed scenario constraints, not a permanent company-size cap. Recheck
 qualification/commitments at award in stable tender order so simultaneous awards cannot
 assign one exclusive delivery job twice.
+
+At award, also require the candidate to fund the published performance bond from unreserved
+company funds. Lock that bond atomically with the award and public contract reservation. If
+the candidate cannot fund it, consider the next qualified bidder; do not create an unsecured
+award or debit a negative company balance. Earlier awards consume available funds before later
+tenders are evaluated. Bid submission alone does not lock a bond.
 
 At the closing boundary, award once to the best currently qualified bid. Move `T` of public
 reservation into the contract and release `B - T` to the same public treasury. With no
@@ -134,11 +145,45 @@ The following simple failure rules are proposed for the pilot:
 | Issuer wants to cancel after award | Unsupported in the pilot; a future termination/compensation rule must precede that command. |
 
 Do not silently retry a failed project by publishing unbounded tenders or minting new funds.
-A public policy can tender the remaining requirement within its remaining budget. Performance
-security is awaiting a choice: the unsecured pilot is a proposal, while a winning-supplier
-bond released with fulfilment and forfeited for undelivered work is the recommended alternative.
-Neither is an approved penalty rule yet. No advance, additional fine or negative company
-balance is required. Report project pauses/defaults to absent-player activity summaries.
+A public policy can tender the remaining requirement within its remaining budget. The selected
+performance bond adds the separate settlement below. No advance, additional fine or negative
+company balance is required. Report project pauses/defaults to absent-player activity summaries.
+
+## Performance security (selected)
+
+Publish the bond requirement with the tender; use 10% of the winning total offer as the initial
+rate, subject to later balance testing. Freeze the requirement with the other tender terms.
+The supplier funds it at award from its company account, separately from the public payment
+reservation. It is not a withholding from payments for accepted goods, and it remains locked
+until the contract closes rather than being released after each partial delivery.
+
+On complete delivery, return the entire bond to the supplier. On supplier abandonment or a
+missed delivery deadline, forfeit the proportion corresponding to undelivered goods to the
+issuing public treasury and return the rest to the supplier. Retain accepted public goods
+and settled partial-delivery payments. Use accepted quantity against the original required
+quantity to determine the undelivered share, not the number of shipments or payments.
+
+Example: a 10,000-credit offer requires a 1,000-credit bond. At 70% accepted delivery before
+default, the supplier has earned 7,000 credits for goods, recovers 700 credits of its bond
+and forfeits 300 to the public treasury. Zero delivery forfeits the entire bond; complete
+delivery forfeits none. The bond does not guarantee that a replacement supplier is affordable.
+
+NPCs and the governor's company follow the same funding, release and forfeiture rules.
+Disconnecting does not release security, stop deadlines or cancel obligations. Public and
+company accounts remain distinct even when one player controls both.
+
+The percentage and proportional disposition are selected game rules. Whole-credit rounding,
+minimum representable bond and checked quantity-to-credit arithmetic still need a precise
+numeric contract; these are not permission to change marketplace settlement or quantity types.
+Termination caused by issuer breach or unavailable contracted station service also remains
+design work; the selected rule does not establish a fault-adjudication or compensation system.
+
+Persist the original bond amount, supplier and treasury identities, locked balance and terminal
+release/forfeiture receipt with the contract. Award, fulfilment and default must transfer or
+release the money once, including across retries and recovery. Required implementer evidence
+includes insufficient-funds fallback, simultaneous awards competing for funds, zero/partial/full
+delivery, quantity fragmentation, rounding bounds, NPC/own-company parity and crash/retry around
+bond lock and final disposition. Refund plus forfeiture must equal the original locked amount.
 
 ## Fixed-step and idle execution
 
@@ -235,8 +280,9 @@ forcing the original owner to accept new rivals at its own facility.
 
 Persist tender/contract identities, terms/revisions, public reservation, final bids/sequences,
 award/scoring version, accepted quantities, cumulative paid amount, private/project inventory,
-assigned jobs and retry outcomes. Persist station policy revisions, quotes needed for accepted
-operations, booking terms, funds, priority/window state, technical operation identity and
+bond terms/balance/disposition, assigned jobs and retry outcomes. Persist station policy
+revisions, quotes needed for accepted operations, booking terms, funds, priority/window state,
+technical operation identity and
 receipts. Bind accepted visits to existing engine docking state; replays must not enqueue a
 second pad request. Bounded retention cannot make an old paid request executable again.
 
@@ -265,6 +311,14 @@ blocked travel and recovery with no clients. Test against both directory/pack co
 cross-build replay hashes. Use repository presets/gates with two local compile jobs and no
 local clang-tidy for cross-repository implementation. None ran for this planning document.
 
-The next design questions are station construction-site races and the exploitation/colonial
-rights earned by a completed port, including inhabited AI worlds and later-join starter
-capacity. Continue planning from these contract/booking boundaries.
+The [construction-site rules](planetary-development-plan.md#company-built-stations-and-control-of-shipping)
+now select funded reservation, non-refundable mobilisation, a fixed completion deadline and
+reopening on abandonment/expiry. Exact funding, deadline and salvage terms remain unresolved.
+The selected [exploitation grant](economy-and-development-plan.md#real-time-exclusive-exploitation)
+starts at the first eligible operational frontier port plus concession activation, with a
+disclosed provisional 72-hour server-running term. The selected first
+[tech project](economy-and-development-plan.md#first-tech-example-bronze-metallurgy-selected)
+uses 90 kg local copper and 10 kg imported tin with an operational workshop; competitive
+procurement and physical delivery apply to its public inputs. Next design long-running
+demand/public-income circulation; construction details, colonial rights, inhabited AI
+governments and later-join starter capacity still need design. Continue from these boundaries.
