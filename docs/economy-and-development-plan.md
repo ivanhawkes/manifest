@@ -21,6 +21,24 @@ development environment was changed by this assessment; no builds or game simula
 - Production/extraction capacity bounds new supply; only real available stock can trade.
   Scarcity and demand drive pricing. Production-based minimum/maximum price bands were not
   selected; existing numeric validation/authored price policy is preserved.
+- Consumer demand uses one aggregate household pool per inhabited planet. Employers pay
+  wages from available funds; the pool buys physically delivered consumer goods within its
+  budget, prioritising essentials. Initial household/business funds are explicit generation
+  state. GDP measures activity rather than automatically generating spendable credits.
+  Batch wage payments and purchases on an economic schedule; do not simulate individual
+  citizens or families. Exact cadence, wage/demand rules and performance limits remain open.
+- Withhold 10% of wages actually paid for the local planetary treasury, as an initial
+  balance-testing rate. Split the employer's gross payment between households and the
+  treasury at payroll settlement: 100 credits pays 90 to households and 10 to government.
+  Whole-credit rounding and later rate-setting powers remain unresolved.
+- The first economy scenario uses declared starting credit balances without periodic currency
+  creation or automatic account replenishment. Wages, taxes, purchases and fees transfer
+  existing credits. Expose cash shortages and measure circulation before choosing any
+  continuing currency source for later scenarios.
+- Each production batch declares a gross wage cost. Reserve that payroll alongside required
+  inputs before starting; insufficient funds block new batches while existing stock remains
+  sellable. Reserved payroll cannot fund another project or purchase. Wage amounts and
+  payment timing remain to be selected.
 - Planetary tech advancement requires exploited resources, purchased/imported resources the
   planet cannot gather, and dependencies on actual production facilities.
   The first selected example is Bronze metallurgy: an operational local workshop and basic
@@ -376,15 +394,128 @@ Large merchant cuts can drain producers, public budgets or traders of working ca
 every actual purchase a funded buyer and every charge one beneficiary. Long-running tests
 must distinguish intended wealth concentration from an accounting leak, unsupported infinite
 demand or a world that stops trading because no economic actor can finance the next step.
-The fiscal/wage/consumer-income and currency-source rules needed for sustained circulation
-remain to be designed; this plan does not silently add automatic subsidies, unlimited credit,
-household simulation or money creation. A public budget may pause when exhausted.
+The aggregate household/wage foundation, initial wage-tax rule and first-scenario monetary
+rule below are selected. Detailed wage and demand policy and further public-income rules
+remain to be designed. A public budget may pause when exhausted. The first scenario has no
+periodic issuance or automatic replenishment; any later continuing currency source needs a
+separate decision informed by circulation evidence.
 
 There is no win condition or automatic victory reset. Before promising days/months of viable
 idle play, measure turnover, concentration, depleted reserves, stranded inventory, broker
 liquidity, project bottlenecks and availability of alternate suppliers. Adjust authored
 scenario/balance intentionally; do not hide missing demand with teleport trades or minted
 broker accounts.
+
+### Aggregate households, wages and consumer demand (selected)
+
+Use exactly one pooled household account per inhabited planet, independent of population
+size. Track aggregate population, available credits, demand by commodity and needs fulfilment.
+Individual citizens and families have no separate simulated accounts, agents or shopping
+jobs. A population increase changes aggregate quantities, not the household entity count.
+The public treasury, employers, brokers and household pool retain separate accounts.
+
+Employers pay aggregate wages from their own available funds into the local household pool.
+The pool purchases physically delivered consumer goods within its available budget,
+prioritising essentials. Actual sales replenish the relevant sellers through the existing
+ownership, broker and transport chain; a broker sale is not a second payment to its supplier.
+Consume goods once at their actual location and record unmet needs when goods or funds are
+insufficient. Need alone cannot create stock, a funded order or sale proceeds.
+
+Declare initial household and business balances as world-generation funds with explicit
+provenance. GDP is a measure of economic activity, rather than an automatic award of credits
+or development currency. Public development spends actual treasury funds; the selected first
+revenue source is wage-tax withholding below. This supersedes the GDP-to-spendable-currency
+suggestion in `idea.md`; GDP measurement details remain open. The initial monetary rule below
+defers any later continuing currency source until circulation has been measured.
+
+Performance is a design requirement. Batch wage transfers and consumer purchases on a
+declared economic update schedule within the authoritative fixed-step world. Household work
+must not iterate over individual inhabitants or expand purchases into per-person orders.
+Expected work depends on planets, participating employers/facilities, commodity entries and
+actual transactions, rather than the numeric population represented by a pool. Preserve
+native stock/fund checks, deterministic ordering and recovery across batched settlements.
+This is an intended workload shape, not a measured complexity or throughput guarantee.
+
+Payroll funding follows the selected pre-funded batch rule below. Exact update frequency,
+wage amounts, employment, payment timing and interruption/cancellation terms, consumer
+baskets/priorities, savings policy, GDP accounting, whole-credit rounding and transaction
+bounds remain design work. Pooling does not establish individual
+wealth distribution. No economic or performance result is claimed: finite wage-paying funds
+and consumer spending alone do not demonstrate sustainable circulation under accumulation.
+
+Implementer evidence must cover separate accounts, insufficient payroll/consumer funds,
+essential-first purchases with scarce stock, physical delivery before consumption and
+exactly-once wages, purchases and consumption through retries/recovery. Compare different
+population magnitudes at fixed planet/employer/commodity and transaction counts, then scale
+those counts separately; report timings, allocations and economic update work. Prove no
+per-citizen entity/order expansion and preserve zero-client progress, shutdown pause and
+replay. These checks belong to the implementer and have not run.
+
+### Production-batch payroll funding (selected)
+
+Each production batch declares its gross wage cost. Before it starts, the employer reserves
+that amount from available funds alongside the required inputs. Insufficient funds block
+new batches. Existing stock remains sellable so actual sales can restore working capital.
+The same reserved payroll cannot fund another batch, project or purchase.
+
+This is aggregate batch accounting, with no individual worker entities or payroll
+transactions. The reserved amount is gross payroll, including the eventual split into
+household receipts and the selected wage-tax withholding. Reservation alone is not payment
+and generates neither household income nor tax receipts.
+
+Wage amounts, when wages are earned/paid, and treatment of interruptions, cancellation and
+unused payroll reservations still need decisions. Do not infer payment at batch start or
+completion from the funding rule. Required implementer evidence includes rejecting a batch
+with insufficient/unavailable funds, preventing double commitment, retaining sellable old
+stock, and preserving the payroll/input reservation through retries/recovery. Settlement and
+release checks must follow the eventual payment/cancellation rules. No such checks have run.
+
+### Wage-tax withholding and public revenue (selected)
+
+Withhold 10% of wages actually paid and credit the local planetary treasury at payroll
+settlement. This is an initial balance-testing rate. The employer pays the gross wage amount;
+split that payment between the household pool and treasury rather than adding tax to the
+employer's gross cost. A 100-credit payment debits the employer by 100, credits households by
+90 and credits the treasury by 10. Unpaid or merely scheduled wages generate no tax receipts.
+
+Keep gross wages, household net receipts and treasury withholding in the same authoritative
+settlement. A retry or restart cannot withhold twice or credit one recipient without the
+matching employer debit. Whole-credit rounding and any carried remainder still need an
+explicit rule; the household and tax shares must sum to the actual gross payment. Batch
+withholding with existing payroll work, adding a treasury credit per payroll batch without
+per-citizen accounts or transactions.
+
+This is the first selected public-revenue rule. The local treasury can spend received credits
+through its authorised public budgets and procurement. Taxation transfers existing funds;
+it does not create currency or establish sustainable wage funding or development income.
+Player rate-setting powers and other tax bases remain open; the initial monetary rule is below.
+
+Implementer evidence includes the 100/90/10 split, no tax on unpaid payroll, insufficient or
+reserved employer funds, small whole-credit payments under the eventual rounding rule,
+correct planet/treasury routing and exactly-once settlement through retries/recovery. Measure
+the extra work within batched payroll. No implementation or accounting/performance check ran.
+
+### Initial monetary rule and circulation evidence (selected)
+
+The first economy scenario uses only declared starting credit balances. There is no periodic
+currency creation, automatic bailout or hidden refill of household, employer, broker or public
+accounts. Wages, taxes, purchases and fees transfer existing credits between the appropriate
+accounts. GDP, need, quoted demand and elapsed time do not automatically award spendable money.
+
+Cash shortages remain visible and constrain actual spending. Measure whether accumulation
+drains household, employer or government spending capacity before selecting any continuing
+currency source. This is an initial scenario rule, not evidence that a fixed money supply
+supports the intended long-running game. Future currency issuance or any funding supplied
+when players join or systems are added requires an explicit source/rule; this decision does
+not define those later lifecycle events.
+
+Implementer evidence must reconcile declared starting credits against all current balances,
+counting reserved/escrowed credits exactly once. Verify matching debits and credits for wages,
+taxes, purchases and fees, with correct handling when accounts share an owner. Track cash
+distribution, payroll shortfalls, unfunded consumer needs, broker liquidity, public-budget
+pauses and trade turnover over extended zero-client runs. Replay/recovery and retries must
+preserve balances without refills. Use those results to assess circulation and any proposed
+later currency source. No such simulation or monetary-policy result has been produced.
 
 ## Capability map, delivery and evidence
 
@@ -430,7 +561,9 @@ Implementer checks include existing suites, long-run finite-funds/inventory scen
 directory/pack equivalence, cross-build replay and crash/retry boundaries, using presets and
 required gates with two local compile jobs and no local clang-tidy for cross-repository work.
 Only source inspection and documentation checks have occurred; no economic/scale result is
-claimed. The first material/facility example is selected. Next design long-running
-demand/public-income circulation and refine the remaining construction funding, deadline and
+claimed. The first material/facility example, aggregate household foundation, pre-funded
+production payroll, initial wage-tax withholding and first-scenario monetary rule are
+selected. Next choose payroll amounts, payment timing, interruption/cancellation and rounding
+rules, then refine consumer policy and the remaining construction funding, deadline and
 salvage terms. Validate the selected recipe and provisional 72-hour grant against actual
 construction costs, extraction capacity, production throughput, prices and server pacing.

@@ -1,5 +1,79 @@
 # Session handoff
 
+## Session close: household circulation and payroll funding — 2026-11-15
+
+Branch: `feature-base`. Base commit: `08b819d` (`Planning: record stargate lifecycle and
+competing access`), in sync with origin when this follow-up began. This session's changes
+are this handoff and the [economy plan](economy-and-development-plan.md), to be committed
+together as `Planning: record household circulation and payroll funding` and pushed at the
+user's request. Resolve the resulting commit hash from Git history when resuming and check
+the working tree. Earlier sections' references to uncommitted gate work are historical;
+the gate decisions are already committed in `08b819d`.
+
+OpenAI agents remain planning-only under `AGENTS.md` and `docs/agent-workflow.md`.
+Implementation and build/gate execution belong to the user or their selected non-OpenAI
+implementer. All changes in this follow-up are planning documentation.
+
+The user accepted the household/wage foundation and explicitly confirmed its performance
+model: exactly one aggregate household pool per inhabited planet, independent of population.
+Track pooled credits, population, commodity demand and needs fulfilment. Employers pay wages
+from available funds; households buy physically delivered consumer goods within budget,
+prioritising essentials. Consumption removes goods once; missing money/stock leaves unmet
+needs. Sales replenish the actual sellers through existing broker/producer accounting.
+Household, public and business funds remain separate, with explicit generated starting funds.
+GDP measures activity rather than automatically awarding spendable development credits.
+
+The user accepted 10% income-tax withholding on wages actually paid, as an initial
+balance-testing rate. Split gross payroll between the household pool and local planetary
+treasury at settlement: an employer pays 100 credits, households receive 90 and the treasury
+receives 10. Unpaid wages generate no tax. Record this in the same authoritative payroll
+settlement, with one treasury credit per payroll batch and no per-citizen work. Whole-credit
+rounding/remainder treatment and later rate-setting powers remain unresolved. This transfers
+existing credits and does not establish sustainable public revenue or create new currency.
+
+The user accepted no periodic currency creation in the first economy scenario: declare all
+starting balances; wages, taxes, purchases and fees transfer existing credits. Expose cash
+shortages rather than automatically replenishing accounts. The implementer must measure
+whether accumulation drains household, employer or government spending capacity before a
+continuing currency source is chosen. This does not promise sustainable fixed-money play
+or select later join/new-system funding. The economy plan records balance reconciliation,
+liquidity/turnover measurements and recovery evidence required from the implementer.
+
+The user accepted pre-funded production payroll. Each batch declares a gross wage cost;
+reserve that payroll alongside required inputs before starting. Insufficient funds block
+new batches while existing stock remains sellable. Reserved payroll cannot fund another
+project or purchase. Reservation does not pay wages or generate tax. Wage amounts, payment
+timing, interruptions/cancellation and release of unused payroll remain unresolved; neither
+payment at start nor payment at completion has been selected.
+
+Batch payroll and purchases on an economic schedule within the authoritative fixed-step
+world. There are no individual citizen/family agents or accounts and no per-person orders;
+population changes quantities, not household entity count. Work is intended to scale with
+planets, facilities/employers, commodities and transactions. Cadence, wage/employment policy,
+consumer baskets/savings, GDP accounting, rounding, transaction bounds and actual performance
+limits remain unresolved. No throughput or sustainable-circulation result is established.
+
+The economy plan records required implementer accounting/recovery checks and separate
+population-magnitude and planet/employer/commodity scale measurements. No implementation,
+SDK/environment change, build or gameplay/performance check occurred. The first public-revenue,
+initial monetary and batch payroll-funding rules are selected. Consumer policy and long-running
+circulation still need further design and implementer evidence; later currency issuance remains
+unselected.
+Documentation validation passed: `git diff --check` and 21 local Markdown targets across the
+two changed documents. These are the only files in this session's commit scope.
+
+Next session: read this handoff and the selected household/payroll/tax/monetary sections of
+the economy plan. First choose payroll payment timing and interruption/cancellation terms,
+then wage amounts and whole-credit tax rounding. Continue with economic cadence, consumer
+baskets/savings and explicitly funded bootstrap balances before implementation validation.
+Do not treat any of these open choices as accepted. Existing stargate decisions remain in
+force; their unresolved recipes, repair/site/transfer rules and SDK integration proof are
+separate later work in the stargate plan below.
+
+The user ended this session at its context limit. Recommend a fresh session with `/clear`
+or `/new`, starting from `docs/session-handoff.md`: accepted decisions and remaining choices
+are preserved here, and the repeated investigation output is no longer needed.
+
 ## Stargate lifecycle and competing-access follow-up — 2026-11-15
 
 Resumed planning on `feature-base` at `df12cbf`, pushed to origin, with a clean working tree.
