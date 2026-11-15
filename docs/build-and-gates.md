@@ -62,7 +62,7 @@ The newest recorded full gate is at `5d7f54e`: formatting and all 11 suites in D
 ASan/UBSan, with generation `10355632731109243635`, 100-tick `12410383246888723003` and raw price
 `15444164946577136117`. Nothing outside `docs/` and `README.md` changed after it except `AGENTS.md`,
 a `.gitignore` comment and `devenv.nix` (`+lazygit`), so the C++ build is expected intact, but the
-locked shell changed and no gate has been recorded at `f63a3a4` (handoff T1 in the
+locked shell changed and no gate has been recorded at HEAD (`ee83ea5`; handoff T1 in the
 [project analysis](project-analysis-2026-11-16.md)).
 
 `../.github/workflows/ci.yml` runs the full gate with `--tidy` on every push and uploads
@@ -76,7 +76,9 @@ and `source/game/market/src/Marketplace.cpp:1688` (`performance-inefficient-stri
 clean. Because `scripts/ci.sh` runs tidy between the Debug and Release stages under
 `set -euo pipefail`, those runs never reach Release or ASan/UBSan: **CI has produced no non-Debug
 gate evidence since 2026-11-14** and is not evidence for those presets. Name the stages that ran
-when reporting a gate result. Handoff T9 applies the two one-line, behaviour-preserving fixes and
+when reporting a gate result. A CI gate run costs about 5–17 minutes depending on runner cache
+state, so prefer one combined local run over repeated pushes. Handoff T9 applies the two one-line,
+behaviour-preserving fixes and
 T10 reorders the stages so a tidy warning cannot mask sanitiser results; the evidence, timeline and
 run IDs are in [CI failure analysis](project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16).
 

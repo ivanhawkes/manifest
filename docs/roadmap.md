@@ -8,20 +8,22 @@ are planning proposals, and none of these capabilities is marked implemented yet
 
 ## Analysis follow-up — 2026-11-16
 
-The [project analysis](project-analysis-2026-11-16.md) assessed `feature-base` at `f63a3a4`. It
-confirms the roadmap's own statement that none of the amended capabilities is implemented: the
-model layer is tested, the engine integration is not, and Stage 1 has not started. It records
-handoffs T1–T8 for the implementer. The blocking ones are T1, a verified gate at HEAD (the newest
-recorded gate evidence is at `5d7f54e`; the only non-document changes since are `AGENTS.md`,
-`.gitignore` and `devenv.nix`), then Stage 1 itself. Planning continues only within the scope
-funnel: a new mechanic names its stage, the public SDK API it consumes and the demonstrated gap.
+The [project analysis](project-analysis-2026-11-16.md) assessed `feature-base` at `f63a3a4` and was
+extended by the [CI failure analysis](project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16)
+at `ee83ea5`. It confirms the roadmap's own statement that none of the amended capabilities is
+implemented: the model layer is tested, the engine integration is not, and Stage 1 has not started.
+It records handoffs T1–T10 for the implementer. The blocking ones are T9 and T1 taken together — the
+two one-line tidy fixes plus one verified gate run at HEAD, because the newest recorded gate
+is at `5d7f54e` and CI cannot substitute for it — and then Stage 1 itself. Planning continues only
+within the scope funnel: a new mechanic names its stage, the public SDK API it consumes and the
+demonstrated gap.
 
 Selected decisions now have stable IDs, a single canonical statement, status, owner and stage in
 the [decision ledger](decision-ledger.md). Roadmap and plan updates link ledger IDs instead of
 restating rules, and no numeric balance value is added to prose: those move to authored YAML under
 handoff T4.
 
-**CI is red, and it is tidy-only.** Twelve consecutive failures on the live branches, all with the
+**CI is red, and it is tidy-only.** Thirteen consecutive failures on the live branches, all with the
 format gate, Debug build and 11 suites passing before the CI-only clang-tidy stage aborts on two
 findings; the run then dies before Release and ASan/UBSan, so CI has no non-Debug evidence since
 2026-11-14. Evidence and the two one-line fixes are in

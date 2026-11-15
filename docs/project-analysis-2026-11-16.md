@@ -62,16 +62,16 @@ Investigated read-only with `gh run list` and `gh run view --log-failed` (`gh` 2
 authenticated). No clang-tidy was run locally, as `AGENTS.md` requires.
 
 **CI has been continuously red since 2026-11-14T17:05Z.** The newest green run is 2026-11-10T01:27Z
-(`Added Context7 integration for Pi`, 42735907592). Seventeen runs have failed since, with three
-cancellations from rapid pushes; twelve of the failures are on the two live branches, running from
-2026-11-15T01:47Z (`Docs: sequence the next five development stages for Claude`, 43664731273) to the
-last pair at 2026-11-15T16:00Z (43733028966 on `feature-base` and 43733049052 on `main`). The last
-eight commits in that streak touch documentation and `AGENTS.md` only; the two before them
-(`dbeb191`, `2716380`) changed `.gitignore` and `devenv.nix`. CI's most recent build signal is
-therefore the Debug presets on `f63a3a4`. Two further runs listed at 2026-11-16T04:21Z
-(43806887285, 43806869597, both `failure`) were for a head commit GitHub no longer serves, and their
-run records now return 404; the counts above come from the run list at assessment time and exclude
-them.
+(`Added Context7 integration for Pi`, 42735907592). Eighteen runs have failed since, with three
+cancellations from rapid pushes; thirteen are consecutive failures on the two live branches, running
+from 2026-11-15T01:47:30Z (`Docs: sequence the next five development stages for Claude`, 43664731273)
+to 2026-11-15T18:03:27Z (`Docs: record the CI failure analysis and agent-facing gate status`,
+43744555932 on `ee83ea5`). The last nine commits in the streak touch documentation and `AGENTS.md`
+only; the two before them (`dbeb191`, `2716380`) changed `.gitignore` and `devenv.nix`. CI's most
+recent build signal is therefore the Debug presets on `ee83ea5`. Two further runs listed at
+2026-11-16T04:21Z (43806887285, 43806869597, both `failure`) were for a head commit GitHub no longer
+serves, and their run records now return 404; the counts above come from the run list at assessment
+time and exclude them.
 
 Every recent failure has the same shape, and the build is not the problem:
 
@@ -83,6 +83,12 @@ Every recent failure has the same shape, and the build is not the problem:
 | clang-tidy (`--tidy`, CI only) | **fail**: `1 warning treated as error`, process exit 1 |
 | Release build and CTest | never reached |
 | ASan/UBSan build and CTest | never reached |
+
+Run 43744555932 reproduces that table on `ee83ea5`, a documentation-only push: `100% tests passed
+out of 11` in Debug, then 16 `Decimal.h:99` reports and one `Marketplace.cpp:1688` report, and no
+`clang-release` or `clang-asan` output anywhere in the log. Its wall clock was about 17 minutes, so
+plan for 5–17 minutes per gate depending on runner cache state. The run's `build/ci.log` artifact is
+the citable evidence, and it is not retained in this repository.
 
 Two clang-tidy findings account for the streak, identical in each log:
 
@@ -169,9 +175,9 @@ sources) from the acknowledged broken build, fixed by `81f72a6`.
    path is `../../jettison/docs/…`, which resolves against the sibling checkout `AGENTS.md`
    documents, and both links now use it. Nothing enforces link integrity in CI, so this class of
    drift is unchecked: handoff T8.
-9. **CI is red on clang-tidy alone, and that red hides a coverage hole.** Twelve consecutive
+9. **CI is red on clang-tidy alone, and that red hides a coverage hole.** Thirteen consecutive
    failures on the live branches, with the format gate, Debug build and all 11 suites passing in
-   every run.
+   every run, including the documentation-only push at `ee83ea5`.
    `Decimal.h:99` and `Marketplace.cpp:1688` fail the CI-only tidy stage, and `scripts/ci.sh`
    aborts before Release and before ASan/UBSan, so CI has reported no sanitiser evidence since
    2026-11-14. Tasks T9 and T10; full evidence, timeline and run IDs in

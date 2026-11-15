@@ -25,7 +25,7 @@ For current verification state, open handoffs and the CI failure analysis, read
 Read this before building, validating or reporting a gate result. Details, run IDs and the
 handoff table are in `docs/project-analysis-2026-11-16.md`.
 
-- **CI has failed on twelve consecutive runs of the live branches, and the build is not the cause.**
+- **CI has failed on thirteen consecutive runs of the live branches, and the build is not the cause.**
   Every run passes the format gate, the Debug build and all 11 CTest suites, then fails in the
   CI-only clang-tidy stage on exactly two findings: `source/game/types/include/manifest/types/Decimal.h:99`
   (`bugprone-implicit-widening-of-multiplication-result`, reported 16 times because
@@ -45,6 +45,7 @@ handoff table are in `docs/project-analysis-2026-11-16.md`.
   `./scripts/ci.sh --werror --asan --tidy --log build/gate-tidy.log`, with the two tidy fixes
   (handoffs T1 and T9), then record the outcome, log path and hashes in `docs/session-handoff.md`.
   Prefer `--skip-release` only for an intermediate pass; the recorded baseline needs all presets.
+  A CI gate run costs about 5–17 minutes, so plan one combined run rather than repeated pushes.
 - Planning agents must not reason "CI is green, therefore validated", and must not call the current
   failures a build regression: they are tidy-only.
 

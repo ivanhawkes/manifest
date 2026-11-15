@@ -9,12 +9,14 @@ This session was a read-only analysis of the repository plus the documentation e
 No implementation code, tests, fixtures, assets, `data/` YAML, `CMake`, `scripts/`, `devenv.*` or
 `.vscode` files were changed, and no build, CTest, clang-format gate or clang-tidy run was
 performed, consistent with the planning-only policy in `AGENTS.md`. The documentation changes are
-uncommitted: new `docs/project-analysis-2026-11-16.md` and `docs/decision-ledger.md`, plus
+committed and pushed on `feature-base`
+(`ac4bca6`, then `ee83ea5`; `origin/main` is two commits behind): new
+`docs/project-analysis-2026-11-16.md` and `docs/decision-ledger.md`, plus
 references and corrections in `AGENTS.md`, `docs/README.md`, `docs/roadmap.md`,
 `docs/development-stages.md`, `docs/build-and-gates.md`, `docs/agent-workflow.md`,
 `docs/coding-standards.md` and `README.md`.
 
-Findings, evidence and the T1–T8 handoffs are in the
+Findings, evidence and the T1–T10 handoffs are in the
 [project analysis](project-analysis-2026-11-16.md). In short: the model layer (17,398 lines, 8
 modules, 11 suites, 111 cases, 89 items and 85 skills) is real and deterministically tested, while
 Jettison integration is not (four engine touchpoints, none of them a world host, VFS loader,
@@ -32,7 +34,7 @@ tree. Treat the gate as unverified at HEAD until handoff T1 records it.
 
 **CI is not the substitute.** The CI failure analysis added in the same change shows the
 [project analysis](project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16): CI has failed on
-twelve consecutive runs of the live branches, the format gate, the Debug build and all 11 suites pass
+thirteen consecutive runs of the live branches, the format gate, the Debug build and all 11 suites pass
 in every one of them, and the runs abort in the CI-only clang-tidy stage on two findings —
 `source/game/types/include/manifest/types/Decimal.h:99`
 (`bugprone-implicit-widening-of-multiplication-result`, 16 reports because the header is scored per
@@ -43,6 +45,11 @@ between the Debug and Release stages under `set -euo pipefail`, CI has produced 
 UBSan evidence since 2026-11-14. `AGENTS.md` now carries this status in a section every agent reads
 before building, and the same facts are in [build and gates](build-and-gates.md#verification-evidence)
 and ledger row D-007.
+
+The prediction was confirmed on the push of the analysis itself: run 43744555932 on `ee83ea5`, a
+documentation-only commit, passed the format gate, the Debug build and all 11 suites, then failed the
+tidy stage with the same 16 + 1 reports and emitted no `clang-release` or `clang-asan` output. Its
+wall clock was about 17 minutes, so budget 5–17 minutes per gate.
 
 The [decision ledger](decision-ledger.md) now indexes 37 selected decisions by ID with a single
 canonical section, status, owner and stage, and the
