@@ -9,6 +9,7 @@
     git
     git-lfs
     github-cli
+    lazygit
 
     # Build tools
     llvmPackages_21.clang

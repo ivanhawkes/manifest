@@ -1,3 +1,6 @@
+# Never all the environment file into a repo.
+.env
+
 # CMake
 /build/
 /cmake-build-*/
