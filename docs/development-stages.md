@@ -78,6 +78,24 @@ plus 1 kg tin into 10 kg bronze. Knowledge survives workshop loss; production st
 operational workshop. Quantities are starting test values; work duration, throughput and
 profitability remain unvalidated. Preserve the separate eight-good trading fixture.
 
+Further [economy rules](economy-and-development-plan.md) select aggregate households,
+pre-funded recipe payroll, progress-based wages, tax/rounding, regular payroll/purchases
+every 60 simulation seconds and health/happiness losses that both reduce production.
+The [market-information plan](market-information-plan.md) requires station-specific live
+data from docked fleet members, dated remembered reports, and one-time spawn reports for
+every station market in directly connected systems. Apply that knowledge boundary to
+queries, auto-traders and scripts before offering/ranking options; fleet coverage supplies
+the intended information advantage. These remain planning requirements without runtime proof.
+
+The [small-ship plan](small-trader-and-docking-plan.md) adds a single-occupant long-journey
+class with a truck-like tiny cabin, 4 m³ (four IBC units) of cargo and a matching small berth.
+Its primary purpose remains unspecified and trade is secondary. The distinct lone-trader
+starter has a 20-IBC (20 m³) hold; onboarding must not confuse the two classes.
+Plan definitions in stage 2, ownership/capacity in stage 3, physical berth integration in
+stage 4 and recovery in stage 5. A smaller-berth capability is a demonstrated pinned-SDK
+gap; provision it in Jettison rather than copying docking code into Manifest. Dimensions,
+costs, endurance, starter upgrades and the starter's berth fit remain open.
+
 The [contract/booking handoff](procurement-and-station-contracts-plan.md) proposes the first
 supply tender and accepted-booking lifecycle. Partial delivery payments and grandfathered
 booking terms are selected, as is a supplier-funded bond initially set at 10% of the winning

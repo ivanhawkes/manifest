@@ -6,6 +6,14 @@ manual command fixture below, then prove saved standing policies and unattended 
 Single-planet development adds a separate public-budget project loop; manual TUI trading
 is a stretch goal, and the TUI is to become a remote gameplay client.
 
+Subsequent economy decisions in the [economy plan](economy-and-development-plan.md) select
+aggregate household payroll/purchases every 60 simulation seconds, progress-based batch
+wages and tracked health/happiness losses that both reduce production. Those decisions
+amend the original governed-economy proposals below; full production/system ordering remains
+design work. The [market-information plan](market-information-plan.md) also supersedes
+global real-time trader knowledge: fleet docking supplies station-specific live data;
+other estimates use dated observations, including one-time starting reports.
+
 Planning handoff for Claude, prepared 2026-11-15. Depends on the public host,
 [validated content](stage-2-content-plan.md) and
 [authoritative command model](stage-3-authority-plan.md). This refines stage 4 of
@@ -63,7 +71,12 @@ The proposed observable ordering is:
    at its configured venue; calculate prices and submit native civilisation orders.
 4. Advance movement/docking through the engine scheduler's required dependencies.
    Reconcile Manifest travel intents after the relevant engine systems have run.
-5. Publish refreshed quotes and actor-filtered snapshots after all authoritative updates.
+5. Refresh authoritative quotes, then update permitted fleet observations and publish
+   actor-filtered live/stale views at the completed step boundary. Newly docked observers
+   receive that step's report; the last departing ship retains the previous report. Follow
+   the selected [observation timing](market-information-plan.md#observation-timing-selected)
+   and simulation-time age rules; do not publish unseen current market rows in an actor's
+   snapshot.
 
 Declare dependencies explicitly; do not rely on registration accident. If movement's
 existing graph requires independent systems to interleave differently, preserve these
@@ -96,8 +109,25 @@ orders. Prices use the existing native price calculations and explicit Decimal r
 The policy is native for this milestone; Wasm policy integration remains later work.
 
 The policy may trade at a venue but cannot move inventory between venues. Cross-venue
-company transport is the only initial delivery path. `PlanTrade` may remain a read-only
-development estimate; no route estimate may settle goods or credits in the hosted loop.
+company transport is the only initial delivery path. `PlanTrade` may remain a privileged
+development estimate; its global current-world rankings are not a hosted player or NPC
+trader view. Build actor route estimates and policy options from permitted observations;
+stale prices/volumes are estimates, not guaranteed arrival terms. No route estimate may
+settle goods or credits in the hosted loop.
+Follow the market-information plan's selected auto-trader rules: stale reports do not expire
+automatically; show estimate freshness, recheck live information after docking and enforce
+configured limits at execution. Skip out-of-limit trades and reconsider permitted routes.
+Retain aboard cargo if no acceptable sale is found; selling below the minimum requires an
+authorised fallback policy. Unknown markets can be scouting targets without fabricated
+profit estimates. Standing policies continue while the player is disconnected.
+Default unattended trades require positive estimated profit after purchase/transport/handling
+costs, a purchase-price cap and a sale threshold recovering purchase and attributable trading
+costs; players may request higher profit. Do not relax limits automatically. Blocked jobs
+retain cargo, reconsider every 60 simulation seconds or on new permitted fleet observations,
+and report the first blockage and holding costs. Any authorised loss allowance applies to
+the entire cargo across partial sales, with zero allowance by default. Resolve cost allocation,
+rounding and shared allowance accounting before implementation; holding costs can still
+reduce profit. See the market-information plan for the selected policy and required checks.
 If native demand exhausts its finite treasury, it stops buying. Do not add a hidden mint
 to keep the scenario profitable; any future subsidy must be explicit authored policy.
 
@@ -147,6 +177,15 @@ orders remain fully funded before enabling it. Do not change fees underneath res
 orders and assume their original escrow still guarantees settlement.
 
 ## Cargo capacity and physical travel
+
+The subsequent [small-ship plan](small-trader-and-docking-plan.md) requires a compact
+single-occupant long-journey hull with four IBC units (4 m³) of usable cargo space and a
+matching small berth. Its primary role remains unspecified, with trade secondary. The
+separate lone-trader starter has a 20-IBC (20 m³) hold. Preserve distinct capacities in
+onboarding and load validation, and the compact class's limit across effects.
+The pinned SDK's fixed smallest pad does not provide the required smaller berth; provision
+the reusable engine capability before consuming it here. Dimensions, endurance, starter
+upgrades and each hull's berth fit remain open; neither class is implemented by this amendment.
 
 Implement one shared quantity-to-volume conversion using the distinctions in
 [model units](model.md). Proposed rules derived from that contract:
@@ -237,6 +276,13 @@ Also cover partial fills, cancellation, exact expiry boundary, same-price FIFO, 
 commands competing for funds, another company's order/ship, overflows, invalid quantities,
 full pads and refused cruise. For rejected actions compare business state; clocks and
 recorded command outcomes may legitimately change as described in stage 3.
+
+Add the market-information plan's observation checks: A live/B stale at bootstrap, every
+market in directly connected systems seeded once, frozen remote quotes/sales after changes,
+refresh on docking and freeze after the last observing ship leaves, different player views,
+and no hidden-current-state influence on trader/script options. Reconnect cannot reseed or
+refresh starting reports. Retain the small manual fixture and use separate cases for
+multi-station/multi-fleet coverage and remembered-state recovery.
 
 Track total goods across available venue inventory, cargo and escrow, adjusted only by
 explicit production/consumption. Track credits across available balances, buy escrow and

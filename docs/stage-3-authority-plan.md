@@ -194,8 +194,11 @@ existing development progression behaviour until its hosted equivalent is explic
 
 Provide value snapshots carrying completed step/revision, with stable ordering and
 actor-filtered company balances, venue inventory, ships/cargo and command results.
-Public market summaries may be shared; another company's private inventory and treasury
-are not. Return no mutable registry references or component pointers to clients.
+Market summaries obey the [fleet-observation contract](market-information-plan.md): exact
+current data only at stations with an observing fleet member docked, last-known reports
+elsewhere and one-time starting reports. Another company's private inventory and treasury
+remain private. Apply filtering before replication; return no mutable registry references
+or component pointers to clients.
 
 Split command/query services and their tests from terminal presentation. FTXUI remains
 optional. Preserve the development console's established workflows and tests; distinguish

@@ -128,6 +128,20 @@ must account for both broker prices, both warehouses and physical operating/acce
 Planetary tech advancement requires resource exploitation, imports of unavailable resources
 and actual production facilities, not just credits or knowledge prerequisites.
 
+Track aggregate population health and happiness in simulation; shortages lower those values
+and both reduce production. The [market-information plan](market-information-plan.md) selects
+live station data only with a fleet member docked there, dated remembered reports elsewhere,
+and spawn-time snapshots for every station market in directly connected systems. Fleet
+coverage must constrain UI queries, native trading decisions and script facts as well as
+provide the intended competitive advantage; global real-time trader knowledge is superseded.
+
+Add the [compact single-occupant ship and matching berth](small-trader-and-docking-plan.md):
+tiny truck-like living accommodation for long journeys and only four IBC units (4 m³) of
+cargo. Manifest owns the class and balance; the pinned engine needs a reusable smaller-pad
+capability. This ship's primary role is unspecified and trade is secondary. The separate
+lone-trader entry ship starts with a 20-IBC (20 m³) hold. Dimensions, endurance, costs,
+starter upgrades and each hull's berth fit remain design work.
+
 Inner map worlds start at higher civilisation technology with depleted natural reserves;
 outer worlds are generally resource-rich and less developed, creating a frontier gold rush.
 See the [economy/development plan](economy-and-development-plan.md) for custody, production,

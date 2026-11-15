@@ -168,6 +168,13 @@ private budgets, company plans and influence agreements. Losing a session neithe
 work nor transfers control to a new player. Abandonment/reassignment after long absence is
 an unresolved server policy, not a consequence of disconnecting.
 
+Market information also follows the [fleet-observation contract](market-information-plan.md):
+live data requires a fleet member docked at that station; other views use dated remembered
+reports, including one-time spawn reports for all markets in directly connected systems.
+The [economy plan](economy-and-development-plan.md) adds saved aggregate population health
+and happiness; shortages lower both and each contributes to lower production. Detailed
+condition response/recovery and production penalties remain design work.
+
 ## Public procurement, corruption and abstract bribery
 
 The [supply-contract and station-booking handoff](procurement-and-station-contracts-plan.md)

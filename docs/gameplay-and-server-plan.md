@@ -34,6 +34,9 @@ lifespan and pacing; it does not establish a victory timer or automatic reset.
 | Station commitments | Honour accepted bookings; owner fee/priority/access changes affect future requests. | Persist accepted terms and operation identity; distinguish quotes from committed visits. |
 | Credits and commodities | Credits transfer instantly between authorised accounts; goods follow the full extraction/industry, haul, warehouse, ship and destination chain. | Separate title, custody, location and reservations; no money-driven teleport of goods. |
 | Brokers and fees | Brokers buy/sell their own finite stock/funds, earning through spreads; warehouses charge separately at both ends. | Quote real liquidity, charge each provided service once, and include all costs in auto-trade decisions. |
+| Market intelligence | Exact current station trade data requires a fleet member docked there; retain dated last-known reports elsewhere. New players get spawn-time reports for every station market in directly connected systems. | Enforce the [market-information contract](market-information-plan.md) in server views, trader candidates/rankings and script facts; show stale-data age and preserve fleet coverage advantage. |
+| Starter and compact ships | The lone-trader entry ship has a 20-IBC cargo hold. A separate compact single-occupant ship has tiny truck-like living accommodation for long journeys, four IBC units of cargo and a matching small berth; its primary purpose is unspecified and trade is secondary. | The [ship plan](small-trader-and-docking-plan.md) distinguishes 20 m³ starter and 4 m³ compact capacities and the smaller-berth SDK gap; dimensions, endurance, costs and starter upgrades remain open. |
+| Population condition | Track aggregate health and happiness as simulation state; shortages lower them and both reduce production. | Manifest condition/production rules, saved/hashed with the world; scales, decline/recovery and combined penalty remain open in the [economy plan](economy-and-development-plan.md). |
 | Development and geography | Tech needs exploited/imported resources and actual facilities; inner worlds start higher-tech and depleted, outer worlds richer and less developed. | Validate cross-facility/import dependencies and seeded spatial economic generation. |
 | Frontier rights | Initial exclusive exploitation lasts for elapsed real server-running time, pausing in shutdown; afterwards rivals can exploit and build ports despite a puppet government. | Keep starting homes protected; amend no-second-port rules for reopened concessions and persist host time/events for replay. |
 | New-system access | A government or corporation funds physical stargate delivery on an automated unmanned FTL flight. Distance and configurable speed/pacing set hours/days of server-running duration. Operational owners control access/fees and may refuse rivals. | Persist flight progress, pause in shutdown, reuse recorded host timing and activate topology once; gate ownership is separate from planetary/resource rights. See the [stargate plan](stargate-expansion-plan.md). |
@@ -99,7 +102,11 @@ Queries return structured, access-filtered snapshots and reasons. Frontends own 
 visual formatting. Clients submit intentions and never advance an authoritative economy.
 Begin with full snapshots at a bounded frequency; introduce deltas only when measurements
 justify them. Transport, encoding and authentication mechanism remain design choices for
-the networking milestone, after the command contract works locally.
+the networking milestone, after the command contract works locally. Market snapshots must
+be actor-specific live/stale/unknown views; a full snapshot means the full permitted view,
+not all current markets. Fleet docking and remembered reports govern both frontends and
+server-side trading decisions. Do not send raw globally shown market components to clients
+and depend on presentation to hide them.
 
 Acceptance includes another player being unable to cancel an order, predictable stale
 request rejection, retry safety and replay of the exact accepted command ordering.
@@ -118,7 +125,8 @@ durability batching and retention are implementation decisions to measure and do
 they must preserve the acknowledgement contract.
 
 Persist all authoritative state, including outstanding reservations, orders, company and
-civilisation progression, inventory location, economic counters and ID allocation. Restart
+civilisation progression, inventory location, economic counters, population health/happiness,
+owned market observations/coverage, one-time starting reports and ID allocation. Restart
 must not reuse order identities. Save/load continuation and replay must match the world hash.
 
 Freeze content for a running world. Record engine/game versions, schema versions and a

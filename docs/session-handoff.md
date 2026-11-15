@@ -1,5 +1,227 @@
 # Session handoff
 
+## Household rules, population condition and market intelligence — 2026-11-15
+
+Resumed on `feature-base` at `4e78dbbf99b2951aa7da8de3591965802a65716d`
+(`Planning: record household circulation and payroll funding`), matching local
+`origin/feature-base`, with a clean working tree. The preceding household/payroll session
+is committed; its references below to planned commits, unresolved payment timing and tax
+remainders are historical. This follow-up selects payroll timing/cancellation, wage/tax
+rounding, recipe wage policy, the initial regular payroll/household cadence, household
+spending/shortage accounting, tracked health/happiness consequences and market information
+rules. Current changes are planning documentation in this handoff, the
+[economy plan](economy-and-development-plan.md), the new
+[market-information plan](market-information-plan.md) and aligned gameplay/server,
+development-stage, authority/trading, host/script, planetary, roadmap and docs-index guidance.
+The subsequent [small-ship/berth plan](small-trader-and-docking-plan.md) adds the user's
+compact one-occupant hull and matching dock requirements, also aligned with those plans.
+
+The user accepted wages earned in proportion to completed production work and paid in
+batches on economic updates from the full gross payroll reserved before starting. Apply
+the selected 10% withholding when paying. Facility interruptions pause work and wage
+accrual, preserving completed progress and remaining payroll. Resuming continues the same
+batch without paying twice. Cancellation pays earned but unpaid wages, then releases
+unearned payroll to the employer's available funds. Completion settles the remaining wages;
+previously paid wages and taxes stay settled.
+
+Example: cancelling a 100-credit payroll batch at 40% completion means 40 credits earned
+in total. With no interleaved payroll for that employer/planet, this splits into 36 to
+households and 4 to the local treasury, including earlier payments. Pay only what remains
+unpaid and release the unearned 60. Numeric wage amounts remain unresolved, as do material
+consumption, unfinished goods and salvage rules on production cancellation.
+
+The user accepted an authored gross wage bill per production recipe, shown before starting
+and fixed for that batch. Employers fund it from their available funds; market-price changes
+affect margins while the batch's quoted wage bill stays fixed. Select actual starting wages
+through balance work against input costs, handling/other fees and expected sale proceeds.
+The explanatory bronze example's 20-credit wage bill and its input/fee/revenue figures were
+illustrative, not selected balance values or evidence of profitability. Recipe wage policy
+is selected; numeric wage costs remain open.
+
+The user accepted whole-credit wage rounding: during production, round cumulative earned
+gross down and subtract earlier gross payments, retaining fractional work progress for later
+payments in the same batch. Completion pays the full declared payroll less earlier payments.
+Cancellation rounds cumulative earned gross up once, capped at the originally reserved total,
+then subtracts earlier payments before releasing the remaining reservation. Zero completed
+work earns zero wages. A 100-credit batch cancelled at 40.5% owes 41 gross in total; if 40
+was already paid, pay one more and release 59. Cancellation can cost less than one extra
+credit above exact proportional earnings, drawn from reserved funds. Withhold tax on the
+gross actually paid; spendable balances stay whole credits.
+
+The user also accepted carrying tax remainders across payments for each employer and planet.
+Every ten cumulative gross credits actually paid produces one treasury credit; smaller
+payments carry the remainder forward. Completion/cancellation does not reset it. Starting
+from zero, nine one-credit gross payments go to households; the tenth goes to the treasury.
+The remainder is separate accounting state, not fractional spendable money. Preserve it
+with the matching settlements across retries/restarts, independently for each employer/planet.
+This prevents splitting payroll across small payments or production batches from avoiding tax.
+
+The user accepted regular payroll and household purchases every 60 seconds of simulation
+time as an initial balance-testing setting. Production continues on fixed steps; completion
+and cancellation settle remaining wages when processed. Shutdown pauses simulation/cadence;
+disconnection does not stop eligible world progress. Preserve the schedule's position through
+recovery. The interval is simulation time, with real elapsed duration depending on pacing.
+The implementer must measure cash flow and workload before tuning it. The full production/
+market schedule remains open; no workload or circulation result is claimed.
+
+The user accepted an authored essentials basket scaled by population and elapsed simulation
+time. Settle scheduled payroll before household purchases. Buy essentials within available
+household funds and physically delivered local stock; optional purchases wait until that
+interval's essential needs are met. Carry unspent credits forward. Exact basket contents/
+quantities, allocation among essentials, optional demand, additional savings targets and
+detailed health/happiness consequences remain open. This is aggregate planet accounting, with no
+individual citizen/family shopping or accounts.
+
+The user accepted fresh consumption needs each interval. Record missed consumption as unmet
+needs; the next interval uses its new needs, without automatic catch-up purchases for earlier
+missed consumption. Missing food in one interval does not automatically double the next
+food target. Retain shortage measures for future consequence rules; fresh purchase targets
+do not erase past shortages or count missing stock as consumed. The user subsequently
+selected tracked health/happiness losses and their production effects below; detailed
+response/recovery rules remain open.
+
+The user required aggregate population health and happiness as authoritative simulation
+state per inhabited planet. Shortages lower these values; both reduce production output.
+Save/hash/replay them with world state and preserve them across needs intervals. No
+individual citizen entities are introduced. Value scales, starting values, which needs
+affect each, decline/recovery rates, combined penalty, bounds, work-rate versus yield
+mechanism and exact update ordering remain open. Preserve physical recipe accounting and
+the accepted payroll rules. Existing population/shortage and body-effect code does not
+implement these values; `MedicineCoverage` is service coverage, not population health.
+The economy plan records public SDK state/system/persistence provision and implementer
+checks, without claiming a new generic engine gap or any execution evidence.
+
+The user required market fog of war. Exact current bids, asks, sales data and related
+station trade information are available only where a member of the player's fleet is
+docked. Multiple fleet members provide simultaneous coverage; when the last leaves a
+station, freeze its last-known report. Retain remembered reports and their observation
+time, distinguishing live/stale/unknown and showing stale-data age in both TUI and GUI.
+The fleet's server-side docking state, not a client connection, determines coverage.
+
+At a new player's spawn, their starting station is live because their ship is docked.
+Also seed one-time spot reports for every station market in every directly connected
+system; the user explicitly chose every station market. Reports reflect spawn-time values
+but grant no ongoing feed. They are hints, not guaranteed arrival prices. Reconnect/retry
+cannot reseed them; later expansion does not repeat the starting grant. Beyond-neighbour
+markets remain unknown unless observed. Fleet coverage is an intended competitive advantage.
+
+The new market-information plan maps raw unfiltered quotes/global `PlanTrade`, public SDK
+docking, saved world state and globally shown snapshots to required Manifest observation
+and query work. Filter before frontend replication and before native/script option building,
+ranking and scoring; hidden current data must not leak through route suggestions or derived
+facts. NPC trading companies use their own fleets/observations. Normal authoritative market
+settlement still uses actual state. Keep privileged sandbox diagnostics distinct from
+ordinary player queries. Concrete scheduler dependencies, future company-level sharing,
+atomic transfer mechanics and topology discovery remain open.
+
+The user accepted simulation-time report age, shown with explicit simulation units.
+Disconnection does not pause age; server shutdown does. Starting reports remain stale
+even at zero age because they have no ongoing feed. Save/load preserves the report's
+original observation time. At each completed step's end, refresh markets with qualifying
+fleet members docked at that boundary using completed market state. Newly docked ships
+receive that step's report; when the last ship leaves, retain the previous report without
+revealing later changes from the departure step. Another docked ship maintains updates.
+Age runs from the last observation, not the departure notification. The market plan and
+stage 4 ordering record the selected boundary; concrete scheduler dependencies and
+atomic ownership-transfer mechanics still need implementer design and evidence.
+
+The user accepted per-good, per-station sales quantities over the previous 60 simulation
+minutes as an initial balance setting, counting completed trades once rather than both
+sides. Show the last sale price and sale time separately, including when it predates the
+window. Distinguish no sales from unknown data and show shorter coverage for markets less
+than an hour old. A stale report freezes its original volume, reporting window and last-sale
+facts until another permitted observation; it never silently becomes a current rolling-hour
+figure. Save/load must preserve those facts and the live aggregation history. The copper
+example is illustrative only. The existing cumulative volume field does not implement the
+selected window; aggregation/storage and exact window-endpoint conventions remain for
+implementer design and evidence.
+
+The user accepted auto-traders using stale reports without automatic expiry, showing
+estimated profit alongside report ages. On arrival, use docking's completed live report
+and check configured trading limits; execution still enforces limits against actual state.
+Skip out-of-limit transactions and reconsider routes only from available fleet reports.
+Retain aboard cargo while seeking an acceptable sale; selling below the configured minimum
+requires an authorised fallback policy. Unknown markets can be scouting destinations but
+provide no invented prices, volumes or profit estimates. Standing policies operate while
+disconnected. The market, stage 4 and host/script plans record these rules and distinguish
+trading fallback authority from the absent-script native fallback. Detailed scouting/scoring
+remains open. The copper arrival-price example is illustrative only.
+
+The user accepted preserve-capital default trading limits: start only on positive estimated
+profit after purchase/transport/handling costs, cap the purchase price before buying and
+require sale proceeds to recover purchase and attributable trading costs. Players can set
+a higher profit target. Waiting and inaccurate reports do not authorise relaxing limits.
+Blocked jobs retain cargo, reconsider every 60 simulation seconds and may reconsider on new
+permitted fleet observations; notify the first blockage and show waiting reasons/holding
+costs. Continued charges mean profit is not guaranteed. An explicitly authorised loss
+allowance applies to the entire cargo across partial sales; default allowance is zero.
+The 100-credit allowance example is illustrative. Preserve limits and shared allowance
+accounting across retries, replanning and recovery. Exact cost attribution, rounding,
+allowance accounting/reservations, policy edits and retry scheduling dependencies remain
+implementer design work. These defaults are recorded in the market and stage 4 plans.
+
+The user accepted player-owned market memory: ship transfers preserve the former owner's
+reports and do not transfer historical observations to the recipient. Coverage follows
+qualifying fleet ownership at the completed observation boundary. Losing the last docked
+ship freezes the former owner's report; a recipient acquiring a ship still docked there
+gains live coverage at the next completed step. Another qualifying ship preserves coverage.
+Initially allies do not automatically share intelligence. Future company-level sharing and
+information-sale mechanics need separate rules; atomic ship sale/transfer mechanics remain
+design work.
+
+The user requested a new small ship class with space for one occupant on a long journey,
+like a modern truck's tiny living cabin, and only four IBC units of cargo, plus a dock sized
+for that class. Existing units define this as 4 m³ usable cargo, separate from accommodation
+and equipment. Do not infer a four-tonne payload or integer-only commodity quantities.
+The new small-ship plan maps Manifest hull/stats/cargo work and a demonstrated Jettison gap:
+the pinned SDK's smallest S pad is fixed at 35 × 40 m, with no per-pad size field. Provision
+a reusable smaller-berth capability in Jettison before updating the SDK pin; game hull/cabin,
+cargo and station values belong in Manifest. Dimensions, endurance, price/operating costs,
+fitting details and the compact ship's primary role remain open. No engine/content implementation or
+validation ran. The existing long-haul hull and authored IDs remain unchanged.
+
+The user clarified that the lone-trader entry/starter ship has a 20-IBC (20 m³) cargo hold.
+The new four-IBC compact ship is separate: its primary purpose is currently unspecified,
+trade is secondary, but carrying some cargo must be possible. Do not label it a trader,
+scout or courier as a selected role. The compact cabin/long-journey and matching small-dock
+requirements remain. Starter upgrades, dimensions/endurance/costs for both hulls and berth
+compatibility for the 20-IBC starter remain open. The ship plan and aligned gameplay,
+stage 4, development-stage, roadmap and index guidance distinguish the two capacities.
+
+The economy plan records implementer checks for partial work, interruption/resumption,
+cancellation/completion after earlier payments, fractional progress and rounding boundaries,
+tax-remainder carry, the quoted recipe wage bill, cadence boundaries and schedule continuity,
+payroll before household purchases, essential-first optional eligibility, unspent-credit
+carry, fresh interval targets with retained shortage measures and no catch-up purchases,
+health/happiness production effects, and recovery around accrual, payment and release.
+The market-information plan adds distinct-player/fleet views, stale prices/volume,
+every-market starting reports, observation/AI/script filtering, simulation-time age,
+arrival/departure step boundaries, sales-window accounting/freezing, arrival limit checks,
+cargo retention/fallback authority, default profit/price limits, blocked-job retries,
+shared cargo loss allowances, unknown-market scouting, ship-transfer intelligence and
+recovery/scale checks. The small-ship plan adds four-IBC capacity, berth-fit/public SDK,
+content and recovery acceptance requirements for the implementer, plus separate 20-IBC
+starter onboarding/capacity checks.
+No implementation, SDK/environment change, build, gameplay or performance check
+occurred. OpenAI agents remain planning-only; execution belongs to the user or their selected
+non-OpenAI implementer. At the user's request, these 12 planning documents are included
+in the commit containing this handoff, titled `Planning: record economy, market fog and ship rules`.
+Resolve its resulting hash from Git history when resuming. No push was requested.
+Documentation validation passed: `git diff --check` and 134 local Markdown targets,
+including 12 heading anchors, across all 12 changed/new planning documents. No missing
+targets, trailing whitespace or missing final newlines were found.
+
+Next choose detailed consumer quantities/allocation, health/happiness decline/recovery and
+production penalties, numeric wage amounts, remaining system order and explicitly funded
+bootstrap balances. Market-information follow-up choices include atomic ship-transfer
+mechanics, detailed scouting/scoring and precise cost/loss-allowance accounting. Small-ship
+follow-up choices include dimensions/berth geometry, endurance, fittings, costs, starter
+upgrades and the compact ship's primary purpose. Starter capacity/identity is selected.
+These choices remain open. Recommend `/compact` before the next design choice: the accepted population-condition
+and market-information contracts are preserved in the focused plans, while earlier payroll
+discussion and repeated source excerpts are no longer needed in full.
+Earlier stargate and household/monetary decisions remain in force.
+
 ## Session close: household circulation and payroll funding — 2026-11-15
 
 Branch: `feature-base`. Base commit: `08b819d` (`Planning: record stargate lifecycle and

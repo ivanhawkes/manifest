@@ -21,24 +21,47 @@ development environment was changed by this assessment; no builds or game simula
 - Production/extraction capacity bounds new supply; only real available stock can trade.
   Scarcity and demand drive pricing. Production-based minimum/maximum price bands were not
   selected; existing numeric validation/authored price policy is preserved.
+- Live market data requires a fleet member docked at that specific station. Retain dated
+  last-known reports elsewhere. New players receive one-time spawn snapshots for every
+  station market in directly connected systems. Fleet observation constrains UI, trader
+  decisions and scripts; see the [market-information plan](market-information-plan.md).
 - Consumer demand uses one aggregate household pool per inhabited planet. Employers pay
   wages from available funds; the pool buys physically delivered consumer goods within its
   budget, prioritising essentials. Initial household/business funds are explicit generation
   state. GDP measures activity rather than automatically generating spendable credits.
-  Batch wage payments and purchases on an economic schedule; do not simulate individual
-  citizens or families. Exact cadence, wage/demand rules and performance limits remain open.
+  Batch regular wage payments and household purchases every 60 seconds of simulation time
+  as an initial balance-testing setting; do not simulate individual citizens or families.
+  Use an authored essentials basket scaled by population and elapsed simulation time.
+  Settle scheduled payroll before household purchases; optional purchases wait until that
+  interval's essential needs are met. Carry unspent household credits forward. Each interval
+  generates fresh consumption needs; record shortages without automatically adding missed
+  consumption to later purchase targets. Numeric wages, basket contents/quantities,
+  detailed unmet-needs consequences and performance limits remain open.
+- Track aggregate population health and happiness as authoritative simulation state per
+  inhabited planet. Shortages lower those values; both contribute to lower production
+  output. Scales, decline/recovery rules and the combined production penalty remain open.
 - Withhold 10% of wages actually paid for the local planetary treasury, as an initial
   balance-testing rate. Split the employer's gross payment between households and the
   treasury at payroll settlement: 100 credits pays 90 to households and 10 to government.
-  Whole-credit rounding and later rate-setting powers remain unresolved.
+  Carry the withholding remainder across payments for each employer and planet: every ten
+  cumulative gross credits paid produces one treasury credit. Batch completion/cancellation
+  does not reset the remainder. Wage rounding follows the production-batch rule below;
+  later rate-setting powers remain open.
 - The first economy scenario uses declared starting credit balances without periodic currency
   creation or automatic account replenishment. Wages, taxes, purchases and fees transfer
   existing credits. Expose cash shortages and measure circulation before choosing any
   continuing currency source for later scenarios.
 - Each production batch declares a gross wage cost. Reserve that payroll alongside required
   inputs before starting; insufficient funds block new batches while existing stock remains
-  sellable. Reserved payroll cannot fund another project or purchase. Wage amounts and
-  payment timing remain to be selected.
+  sellable. Reserved payroll cannot fund another project or purchase. Wages accrue in
+  proportion to completed work and are paid from the reservation on economic updates.
+  Interruptions pause work and accrual; cancellation pays earned but unpaid wages and releases
+  unearned payroll. During production, round cumulative earned gross down to whole credits,
+  retaining fractional work progress. Completion pays the full declared payroll; cancellation
+  rounds cumulative earned gross up once, capped at the reserved total, less earlier payments.
+  Each production recipe specifies an authored gross wage bill, shown before starting and
+  fixed for that batch. Numeric wage amounts remain to be selected; regular payments use
+  the selected 60-second simulation-time economic cadence.
 - Planetary tech advancement requires exploited resources, purchased/imported resources the
   planet cannot gather, and dependencies on actual production facilities.
   The first selected example is Bronze metallurgy: an operational local workshop and basic
@@ -141,7 +164,9 @@ Supply, stock cover, outstanding funded demand and expected consumption/producti
 inform quote policy. Broker prices remain Decimal per-unit values; quantity and dimensionless
 scarcity inputs remain doubles. Update decisions on declared economic cadence, retaining
 deterministic ordering. Existing authored prices and fee rules are not silently replaced by
-this plan. Precise broker algorithms, margins, work bounds and information scope remain open.
+this plan. Precise broker algorithms, margins and work bounds remain open. External views
+follow the selected [fleet-observation rules](market-information-plan.md); a broker's access
+to its own actual stock/book does not grant other traders global real-time information.
 
 Warehouse handling charges are separate income for the facility/operator actually providing
 the service. The proposed first trader charge points are origin load-out and destination
@@ -179,8 +204,12 @@ unit conversions, sources/sinks and production facility requirements.
 For an auto-trader, expected route proceeds are destination bid receipts minus origin ask
 cost, warehouse handling at both ends, docking/storage/transport and any other separately
 contracted costs. Origin ask and destination bid already incorporate broker spreads; do not
-subtract those spreads again. Estimate using affordable, physically available quantities and
-cargo volume, not nominal production or unlimited quote depth.
+subtract those spreads again. Build estimates from the actor's permitted live or last-known
+station observations, own available funds/cargo capacity and known local inventory. Unseen
+depth/price estimates retain their observation age; exact current destination availability
+is validated when an action executes. Neither nominal production nor remembered quote depth
+guarantees an executable quantity. Route ranking and candidate selection must not use hidden
+current market state; see the [market-information plan](market-information-plan.md).
 
 Keep working capital for destination charges. An expected future sale is not spendable cash
 or a guaranteed buyer. Quotes can expire or change while travelling unless a specific
@@ -415,11 +444,28 @@ jobs. A population increase changes aggregate quantities, not the household enti
 The public treasury, employers, brokers and household pool retain separate accounts.
 
 Employers pay aggregate wages from their own available funds into the local household pool.
-The pool purchases physically delivered consumer goods within its available budget,
-prioritising essentials. Actual sales replenish the relevant sellers through the existing
-ownership, broker and transport chain; a broker sale is not a second payment to its supplier.
-Consume goods once at their actual location and record unmet needs when goods or funds are
-insufficient. Need alone cannot create stock, a funded order or sale proceeds.
+Use an authored essentials basket whose aggregate quantities scale with the planet's
+population and elapsed simulation time represented by the economic update. Settle scheduled
+payroll before household purchases. The pool buys essentials within its available funds
+and physically delivered local stock. Optional purchases may proceed only after that
+interval's essential needs are met; an essential stock/funding shortage leaves optional
+purchases blocked. Carry unspent household credits forward to later updates.
+
+Actual sales replenish the relevant sellers through the existing ownership, broker and
+transport chain; a broker sale is not a second payment to its supplier. Consume goods once
+at their actual location and record unmet needs when goods or funds are insufficient.
+Need alone cannot create stock, a funded order or sale proceeds. Exact basket contents and
+quantities, allocation within the essentials basket, optional demand, additional savings
+targets and the detailed health/happiness consequences of unmet needs still need decisions.
+
+Each interval generates fresh consumption needs from its population and elapsed simulation
+time. Record missed consumption as unmet needs and retain shortage measures for future
+consequence rules. Missed consumption adds no automatic catch-up purchases to later
+intervals. For example, missing food during one interval does not automatically double the
+next interval's food target. Starting a fresh target must not erase the recorded shortage
+or count missing goods as consumed. Shortages lower tracked population health and happiness,
+and both lower production output under the selected requirement below. Detailed response
+and recovery rules remain unselected; fresh buying targets do not reset these values.
 
 Declare initial household and business balances as world-generation funds with explicit
 provenance. GDP is a measure of economic activity, rather than an automatic award of credits
@@ -428,28 +474,89 @@ revenue source is wage-tax withholding below. This supersedes the GDP-to-spendab
 suggestion in `idea.md`; GDP measurement details remain open. The initial monetary rule below
 defers any later continuing currency source until circulation has been measured.
 
-Performance is a design requirement. Batch wage transfers and consumer purchases on a
-declared economic update schedule within the authoritative fixed-step world. Household work
+Performance is a design requirement. Batch regular wage transfers and household purchases
+every 60 seconds of simulation time within the authoritative fixed-step world, as an initial
+balance-testing setting. Production continues on fixed steps. Batch completion and
+cancellation settle remaining wages when processed, independently of the regular payment
+schedule. Shutdown pauses simulation and the economic cadence; disconnected clients do not
+stop otherwise eligible world progress. Persist the schedule's position with authoritative
+state so recovery cannot duplicate updates or reset the wait for the next one. This is a
+simulation-time interval; its real elapsed duration depends on simulation pacing.
+
+Measure cash flow and workload before tuning the interval. Household work
 must not iterate over individual inhabitants or expand purchases into per-person orders.
 Expected work depends on planets, participating employers/facilities, commodity entries and
 actual transactions, rather than the numeric population represented by a pool. Preserve
 native stock/fund checks, deterministic ordering and recovery across batched settlements.
 This is an intended workload shape, not a measured complexity or throughput guarantee.
 
-Payroll funding follows the selected pre-funded batch rule below. Exact update frequency,
-wage amounts, employment, payment timing and interruption/cancellation terms, consumer
-baskets/priorities, savings policy, GDP accounting, whole-credit rounding and transaction
-bounds remain design work. Pooling does not establish individual
-wealth distribution. No economic or performance result is claimed: finite wage-paying funds
+Payroll funding, progress-based earnings, whole-credit rounding and interruption/cancellation
+settlement follow the selected batch rule below. Numeric wage amounts, employment, consumer
+basket contents/quantities, within-basket allocation, optional demand, additional savings
+targets, health/happiness response and production penalties, remaining system order, GDP
+accounting and transaction bounds remain design work. Scheduled payroll before household purchases is selected; the
+full production/market schedule remains to be specified. Pooling does not establish
+individual wealth distribution.
+No economic or performance result is claimed: finite wage-paying funds
 and consumer spending alone do not demonstrate sustainable circulation under accumulation.
 
 Implementer evidence must cover separate accounts, insufficient payroll/consumer funds,
 essential-first purchases with scarce stock, physical delivery before consumption and
-exactly-once wages, purchases and consumption through retries/recovery. Compare different
+exactly-once wages, purchases and consumption through retries/recovery. Verify that scheduled
+payroll can fund purchases in the same update, optional purchases stay blocked when essential
+needs are unmet despite optional stock/remaining money, and funded optional purchases become
+eligible after essentials are met. Preserve unspent credits across updates and recovery,
+and verify basket scaling with population and elapsed simulation time. Check that a missed
+or partially fulfilled interval records the actual shortage, later intervals use fresh
+needs without automatic catch-up demand, and shortage measures survive retries/recovery
+without duplicate entries. Returning supply/funds must enable purchases against current
+needs without erasing earlier shortages or consuming nonexistent goods. Compare different
 population magnitudes at fixed planet/employer/commodity and transaction counts, then scale
 those counts separately; report timings, allocations and economic update work. Prove no
 per-citizen entity/order expansion and preserve zero-client progress, shutdown pause and
-replay. These checks belong to the implementer and have not run.
+replay. Verify regular payments/purchases at the 60-second simulation-time boundaries under
+the declared fixed-step configuration, immediate settlement when completion/cancellation is
+processed, and schedule continuity through save/load and crash/retry boundaries. Measure cash
+flow and update workload before changing the initial interval. These checks belong to the
+implementer and have not run.
+
+### Population health, happiness and production (selected)
+
+Track two distinct aggregate values for each inhabited planet's population: health and
+happiness. Both are authoritative simulation state, updated by native Manifest systems,
+saved/hashed and restored with the world. They are not individual citizen agents or UI-only
+labels. Shortages lower those values, and reduced health and reduced happiness both
+contribute to lower production output. Starting a fresh needs interval preserves the
+population's condition and recorded shortages.
+
+This requirement selects a real gameplay consequence of unmet needs. The value scales,
+initial values, which needs affect each value, decline rates, recovery conditions/rates,
+combination formula, penalty bounds and precise update ordering still need decisions.
+The mechanism for reducing output, including production work rate versus batch yield, is
+not selected. Preserve physical recipe/input/output accounting and the accepted progress-based
+payroll contract when choosing that mechanism. Population-size changes remain separate.
+
+Existing evidence: `Population` in `source/game/ecs/include/manifest/ecs/Components.h` stores
+world units and a ceiling; `Civilisation` in `source/game/sim/include/manifest/sim/Simulation.h`
+records unmet demand and shortage ticks. Neither defines health or happiness. The body-effect
+stats in `source/game/types/include/manifest/types/EffectTypes.h` include `MedicineCoverage`,
+which is service coverage rather than population health. No implemented health/happiness
+state, shortage response or production penalty is claimed.
+
+Manifest owns these values, needs/condition rules and production effects. At SDK pin
+`f850920`, public `SimWorld::RegisterComponent`, `RegisterSystem`, `WorldService`, `Save`,
+`Load` and `StateHash` provide generic state/system/persistence facilities; use the existing
+Jettison definition/archive mechanisms for authored policy. No missing generic SDK capability
+for these values has been demonstrated. Provision any additional reusable gap only after
+demonstrating it; do not add population-health rules to the engine sample economy.
+
+Required implementer evidence: shortages change the correct planet's health/happiness;
+demonstrate each value's independent production effect and the combined rule at declared
+test points away from any penalty floor/cap. Retain values across fresh needs intervals,
+zero-client progress, save/load, replay and crash/retry boundaries without duplicate penalties. Check declared
+bounds, explicit starting values, physical material conservation, progress-based wages and
+long-running shortage/production feedback, including recovery when supply returns under
+the eventual recovery rule. No implementation or gameplay/performance checks have run.
 
 ### Production-batch payroll funding (selected)
 
@@ -458,17 +565,77 @@ that amount from available funds alongside the required inputs. Insufficient fun
 new batches. Existing stock remains sellable so actual sales can restore working capital.
 The same reserved payroll cannot fund another batch, project or purchase.
 
+Each production recipe specifies its gross payroll cost as authored balance data alongside
+its ingredients. Show the wage bill before starting and keep that quoted amount fixed for
+the batch. Market-price changes affect the employer's margin without changing the batch's
+wage bill. Balance adjustments apply to future batches. Preserve the quoted gross cost with
+the batch's reservation, progress and payment state through recovery.
+
+Choose initial wage values through balance work against input costs, handling and other
+fees, and expected sale proceeds. The explanatory 10 kg bronze example used 60 credits of
+inputs, 20 gross wages, 5 fees and 100 sale proceeds, leaving 15 for the employer; all credit
+figures were illustrative. No actual bronze wage, input cost, fee, selling price or
+profitability result was selected or demonstrated.
+
 This is aggregate batch accounting, with no individual worker entities or payroll
 transactions. The reserved amount is gross payroll, including the eventual split into
 household receipts and the selected wage-tax withholding. Reservation alone is not payment
 and generates neither household income nor tax receipts.
 
-Wage amounts, when wages are earned/paid, and treatment of interruptions, cancellation and
-unused payroll reservations still need decisions. Do not infer payment at batch start or
-completion from the funding rule. Required implementer evidence includes rejecting a batch
-with insufficient/unavailable funds, preventing double commitment, retaining sellable old
-stock, and preserving the payroll/input reservation through retries/recovery. Settlement and
-release checks must follow the eventual payment/cancellation rules. No such checks have run.
+Wages accrue in proportion to completed production work and are paid in batches on economic
+updates from the reserved gross payroll, applying the selected 10% withholding at payment.
+Facility interruptions pause both work and wage accrual. Preserve completed progress and
+the remaining payroll reservation; resuming continues the same batch without paying twice.
+Shutdown pauses progress under the existing world contract; disconnecting does not stop
+otherwise eligible work.
+
+Cancellation settles earned but unpaid wages before releasing the unearned payroll
+reservation into the employer's available funds. Completion settles the remaining wages.
+Previously paid wages and taxes stay settled. For a batch with 100 credits of gross payroll,
+cancellation at 40% completed work means 40 credits earned in total. With no interleaved
+payroll for that employer/planet, this splits into 36 to households and 4 to the local treasury,
+including amounts already paid. Settle only the unpaid part and release the unearned 60
+credits.
+
+During production, round the batch's cumulative earned gross wages down to whole credits
+and subtract gross wages already paid to determine the next payment. Retain fractional work
+progress for later payments in the same batch rather than rounding each update's increment
+independently. Completion pays the full declared gross payroll less earlier payments.
+Cancellation rounds cumulative earned gross upward to whole credits once, leaving exact
+whole-credit earnings unchanged and capping the result at the originally reserved gross
+payroll, then subtracts earlier payments. Release the remaining reservation only after this
+final settlement. Zero completed work earns zero wages. Apply tax withholding to gross
+credits actually paid under these rounding rules.
+
+For example, a 100-credit payroll batch cancelled at 40.5% completed work owes 41 gross
+credits in total. If 40 have already been paid, pay one more and release the remaining 59.
+The cancellation rule can cost the employer less than one additional credit above exact
+proportional earnings, funded from the existing reservation. Work progress and tax remainders
+are accounting state; spendable balances remain whole credits.
+
+Numeric wage amounts still need decisions. Regular payments use the selected 60-second
+simulation-time economic cadence; completion/cancellation settles when processed. Tax
+remainders follow the selected cumulative rule below.
+Material consumption, unfinished goods and salvage on cancellation require separate
+production rules; this payroll decision does not select them.
+
+Required implementer evidence includes rejecting a batch with insufficient/unavailable
+funds, preventing double commitment, retaining sellable old stock, and preserving payroll/
+input reservations and progress through retries/recovery. Verify that the displayed recipe
+wage bill matches the reserved gross amount and stays fixed through market-price changes,
+payments, interruption and recovery; later balance changes affect future batches.
+Check interrupted/resumed work,
+zero-progress and partial-progress cancellation, cancellation after earlier payments, and
+completion after earlier payments. Earned wages must be paid once, withholding must apply
+only to actual payments, and only unearned payroll may be released. Recovery around accrual,
+payment and release must preserve matching balances and prevent paying or releasing the same
+reserved credit twice. Small-payment and fractional-progress checks must follow the selected
+rules above: repeated sub-credit progress must accumulate, intermediate payments must not
+exceed rounded cumulative earnings, and final settlement must subtract earlier payments.
+Check zero progress, exact and fractional whole-credit boundaries, the 40.5% example,
+completion at the full declared payroll and cancellation near completion without exceeding
+the original reservation. Preserve progress, cumulative payments and terminal settlement
+through retries/recovery. No such checks have run.
 
 ### Wage-tax withholding and public revenue (selected)
 
@@ -480,10 +647,26 @@ employer's gross cost. A 100-credit payment debits the employer by 100, credits 
 
 Keep gross wages, household net receipts and treasury withholding in the same authoritative
 settlement. A retry or restart cannot withhold twice or credit one recipient without the
-matching employer debit. Whole-credit rounding and any carried remainder still need an
-explicit rule; the household and tax shares must sum to the actual gross payment. Batch
-withholding with existing payroll work, adding a treasury credit per payroll batch without
-per-citizen accounts or transactions.
+matching employer debit. The household and tax shares must sum to the actual gross payment.
+Batch withholding with existing payroll work, making one aggregate treasury transfer when
+withholding is nonzero, without per-citizen accounts or transactions.
+
+Carry the tax remainder across payments for each employer and planet, shared by that
+employer's production batches/facilities on that planet. Every ten cumulative gross credits
+actually paid produces one whole treasury credit. Start each new employer/planet remainder
+at zero. Add each gross payment to the carried remainder, withhold the number of complete
+groups of ten, and carry the remaining zero to nine toward later payments. Credit households
+with that payment's gross less its withholding. The remainder is accounting state, not a
+fractional-credit account balance or additional currency.
+
+For example, starting from zero, the first nine separate one-credit gross payments each
+credit households by one and the treasury by zero. The tenth credits the treasury by one
+and households by zero, giving nine household credits and one treasury credit in total.
+Batch completion or cancellation does not reset the employer/planet remainder. Splitting
+the same paid gross across batches must not reduce total tax. Keep each employer/planet's
+remainder separate; advance it in authoritative payment order and preserve it with the
+matching settlements through saves, retries and recovery. Whole-credit rounding of wages
+earned from fractional production progress follows the selected production-batch rule above.
 
 This is the first selected public-revenue rule. The local treasury can spend received credits
 through its authorised public budgets and procurement. Taxation transfers existing funds;
@@ -491,9 +674,11 @@ it does not create currency or establish sustainable wage funding or development
 Player rate-setting powers and other tax bases remain open; the initial monetary rule is below.
 
 Implementer evidence includes the 100/90/10 split, no tax on unpaid payroll, insufficient or
-reserved employer funds, small whole-credit payments under the eventual rounding rule,
-correct planet/treasury routing and exactly-once settlement through retries/recovery. Measure
-the extra work within batched payroll. No implementation or accounting/performance check ran.
+reserved employer funds, ten one-credit payments matching one ten-credit payment, and
+remainder persistence across batch completion, cancellation and restart. Check isolation
+between employers and planets, correct treasury routing, deterministic ordering and
+exactly-once balance/remainder updates through retries/recovery. Measure the extra work
+within batched payroll. No implementation or accounting/performance check ran.
 
 ### Initial monetary rule and circulation evidence (selected)
 
@@ -524,8 +709,10 @@ later currency source. No such simulation or monetary-policy result has been pro
 | Instant credit transfers | Manifest integer `Treasury`; existing market settlement/checks; Jettison fixed-step commands and saved world services | Manifest authorised general transfer and atomic ledgers/receipts with reservation/retry checks. |
 | Physical warehouse stock | `Stockpile` plus planned owner/venue inventory; Jettison spatial/docking state | Manifest custody/location/transport jobs, warehouse capacity and exactly-once handoffs; generic SDK seams only where demonstrated. |
 | Principal brokers | Decimal quotes, reservations, matching and fees in `MarketplaceService` | Manifest finite broker accounts/policy and location-aware adapter; existing owner fields are civilisation-based development APIs. |
+| Fleet-observed market intelligence | Raw `Quotes`/`QuoteFor` and global `PlanTrade` have no actor-observation gate; pinned docking and saved/hashed world state provide generic building blocks | Manifest observation ownership, live/stale reports, one-time neighbour-market seeding and filtered query/AI/script facts; see the market-information plan for evidence and checks. |
 | Handling income | Existing market fee accounting, but no demonstrated warehouse-service chain | Manifest service/beneficiary/charge definitions and receipts, integrated with bookings. |
 | Production/material-gated tech | Existing production/demand maps, progression graph and effect domains | Manifest facility/resource/recipe/project state and dependency validation using SDK definition/archive mechanisms. |
+| Population health/happiness and production loss | Manifest population/shortage state and body-effect domains have no health/happiness values; pinned `SimWorld` provides component/system registration and saved/hashed world services | Manifest aggregate planet condition, shortage/recovery policy and both production effects. Demonstrate independent health/happiness penalties, material/payroll correctness and replay/recovery; no additional generic SDK gap is demonstrated. |
 | Core/frontier geography | Manifest seeded development generation; Jettison explicit galaxy/system definitions | Manifest spatial economic generation and initial-depletion profiles; reusable incremental topology/persistence gaps stay Jettison work. |
 | Real-time concessions | Jettison ordered commands, world services/save/hash and journal contracts in the host plans | Manifest resource-right policy and host time-to-event bridge; provision reusable timer/operation seams only if a gap is demonstrated. No wall-clock reads inside deterministic systems. |
 
@@ -562,8 +749,16 @@ directory/pack equivalence, cross-build replay and crash/retry boundaries, using
 required gates with two local compile jobs and no local clang-tidy for cross-repository work.
 Only source inspection and documentation checks have occurred; no economic/scale result is
 claimed. The first material/facility example, aggregate household foundation, pre-funded
-production payroll, initial wage-tax withholding and first-scenario monetary rule are
-selected. Next choose payroll amounts, payment timing, interruption/cancellation and rounding
-rules, then refine consumer policy and the remaining construction funding, deadline and
-salvage terms. Validate the selected recipe and provisional 72-hour grant against actual
-construction costs, extraction capacity, production throughput, prices and server pacing.
+production payroll with authored recipe wage bills, progress-based earnings and
+interruption/cancellation settlement, whole-credit wage rounding, initial wage-tax withholding
+with employer/planet remainder carry, the 60-second simulation-time cadence for regular
+payroll/household purchasing, the essentials-first basket/optional-purchase gate, unspent
+household credit carry, scheduled payroll before household purchases, fresh interval needs
+with recorded shortages and no automatic catch-up purchases, tracked population health and
+happiness with both reducing production, and first-scenario monetary
+rule are selected. Next choose numeric payroll amounts, detailed consumer quantities/
+allocation, health/happiness decline/recovery and production penalty rules, remaining system
+order, and the remaining production
+material/cancellation, construction funding, deadline and salvage terms. Validate
+the selected recipe, initial cadence and provisional 72-hour grant against actual construction
+costs, extraction capacity, production throughput, prices and server pacing.

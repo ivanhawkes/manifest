@@ -87,18 +87,24 @@ counter in the world, never a terminal refresh or event handler. The sample game
 every 200 steps; item 4 must specify and test the final cadence and system ordering rather than
 equating today's development tick with an engine step. Native systems remain responsible for
 production, consumption, expiry and settlement even when no scripts are loaded.
+The subsequent [economy plan](economy-and-development-plan.md) selects 60 simulation seconds
+for regular payroll/household purchasing; the full production/market schedule remains open.
 
 ## First script surface: trade preference
 
 Use the existing `Ai::DecisionDefinition` and `ScriptHost::WithScripts` path. The first Manifest
-policy hook will be `manifest.trade.score`, a dimensionless score in [0, 1] for one feasible
+policy hook will be `manifest.trade.score`, a dimensionless score in [0, 1] for one candidate
 trade option. This is a planned name, not a registered input today. Keep the default preference
 in the host/data so a game without the optional script has a defined native policy.
 
-1. Native code enumerates feasible trades from the authoritative state in stable ID order. It
-   checks venue access, resources, quantities and cargo constraints; a policy score is no proof
-   of validity. Host calculations produce finite, bounded option facts such as margin, demand,
-   route cost and competing traders, normalised to documented [0, 1] ranges.
+1. Native code enumerates trade candidates in stable ID order from the actor's permitted
+   live or last-known market observations and its own known resources, following the
+   [fleet-observation contract](market-information-plan.md). Check known access, resource,
+   quantity and cargo constraints without pruning/ranking candidates from hidden current
+   destination information. Host calculations produce finite, bounded facts such as estimated
+   margin, observed demand, route cost and freshness, normalised to documented [0, 1] ranges.
+   Candidate presence and scores must not reveal hidden market state. A stale estimate or
+   policy score is no proof that an eventual transaction remains valid.
 2. Wrap the option's native input callback with `WithScripts`. A script answering
    `manifest.trade.score` may request only that option's named facts through `jettison.input`.
    The native callback accepts an explicit list of fact names and rejects any other name;
@@ -114,6 +120,16 @@ in the host/data so a game without the optional script has a defined native poli
    validation as other actors. A decision made inside the step is a deterministic consequence
    of world state; reuse the engine's `SimWorld::Apply` pattern rather than recording it as a
    new external command. AI selection does not bypass affordability or reservation checks.
+
+Native fallback policies and NPC trader companies use the same observation boundary with
+their own fleets. Current real prices, stock and orders remain authoritative for actual
+settlement; that internal access must not become an unrestricted script fact or player view.
+Auto-traders also follow the selected stale-report rules: check live information after
+docking and enforce configured trading limits at execution, skipping and replanning when
+terms are outside them. Retain aboard cargo until an acceptable sale or an authorised
+below-minimum fallback applies. A script preference cannot authorise that fallback, and
+the native fallback for an absent optional script cannot bypass trading limits. Unknown
+markets may be scouting targets without fabricated commercial estimates.
 
 The engine's scalar input ABI is `double`. Keep it for dimensionless decision values; it is not
 a currency/quantity ABI. Raw balances, order amounts, prices, effects and rounding stay in native
