@@ -96,8 +96,10 @@ remain integration work; see the roadmap.
 ## Dedicated server and administration (planned)
 
 The [gameplay and persistent server plan](gameplay-and-server-plan.md) defines the planned
-ownership and recovery contracts. Players control companies distinct from server-controlled
-civilisations. Goods reside at venues or aboard ships, with native loading, unloading and
+ownership and recovery contracts. Players control companies and initially one planet's
+development/public budget; AI governs other inhabited planets. Company assets, public funds,
+civilisation affiliation and planet control rights remain distinct. Goods reside at venues
+or aboard ships, with native loading, unloading and
 reservation checks. Worlds advance while the server runs and resume without downtime
 catch-up. These contracts must guide host integration; the existing development classes
 do not yet implement them.
@@ -113,19 +115,53 @@ a service manager or container platform, without a renderer or interactive termi
 uses configuration and command-line arguments; operation provides logs and clean shutdown.
 This is a future architecture, not an existing server implementation.
 
-An administration interface will expose authenticated commands and status to a scriptable CLI,
-an optional TUI, and potentially Jettison's graphical console. Administrative state changes
-must enter the simulation's controlled command path and take effect at the fixed-step boundary.
-Clients display server state and submit commands; they do not own a separate authoritative
-simulation. Connecting or closing an administration client must not control the server's lifetime.
+The existing TUI is to become a required remote gameplay client with `connect <endpoint>` and
+`disconnect`. Extract its authoritative state into the server, retain useful FTXUI/console
+presentation and share a client command/query layer with Manifest's GUI. Clients display
+filtered server snapshots and submit intentions. The GUI can use the selected public engine
+features for presentation; the server selects simulation capabilities without rendering,
+audio, input or a terminal. Administration has separate explicit permissions, and all state
+changes enter the controlled fixed-step command path.
 
-Keep the current TUI as a development harness during host integration. Its command workflows
-and tests are useful inputs to the administration interface, but `ManifestConsole` currently
-owns local development state and is not a remote administration client. Consider adapting the
-FTXUI presentation into a separate administration client when operator needs justify it.
-Preserve command coverage independently of terminal rendering and the FTXUI build option
-during that transition; today the console tests are still gated by `MANIFEST_BUILD_TUI`.
+The world, NPC AI, autopilot, enabled physical auto-trading and development advance with zero
+clients connected. Disconnecting cannot stop enabled jobs, relinquish a planet or govern the
+server lifetime. Persist standing policies and progress; reconnect returns current state,
+retry outcomes and a bounded activity summary. Manual spaceport trading in the TUI is a
+stretch goal; auto-trading is required. Do not use presentation event dispatch to schedule
+authoritative work. Preserve command/protocol coverage independently of FTXUI and rendering;
+today console tests are still gated by `MANIFEST_BUILD_TUI`.
 
-Networking and administration protocols, the hosting platform and deployment tooling remain
-design decisions. The server must be usable without a TUI; keeping or removing the optional
-frontend will depend on operator needs rather than the presence of Jettison's graphical client.
+The [planetary/corporate impact plan](planetary-development-plan.md) extends these contracts.
+Players may acquire eligible AI planets or settle frontier worlds while other players' planets
+remain protected from this acquisition mechanic. The open-ended aim is corporate control of
+trade, economies, government and media; there is no win condition. These game rules belong in
+Manifest. Jettison supplies reusable host, transport, archives, world services and optional
+spatial capabilities as their public gaps are provisioned. Networking is not implemented merely
+because in-memory command/snapshot facilities exist.
+
+Corporate spaceports are a further physical/control boundary: a company can fund an expensive
+orbital port at a planet without one, provided another player does not own/control that planet.
+Fees, priority and rival-access refusal are owner policies. Resource exploitation and colonies
+with company-controlled puppet governments connect the port to long-term revenue and influence.
+Manifest owns construction, control links, contracts, extraction and separate colonial/public
+accounts; Jettison needs reusable docking admission and queue-policy seams. Existing docking
+checks authorise the ship's controller, not admission to the station.
+
+The [physical economy/development plan](economy-and-development-plan.md) refines the rules:
+authorised credit settlement is instant, while goods retain title/custody/location through
+mines, haul, warehouses, ships and local delivery. Brokers trade finite stock/funds, earning
+spreads alongside separate warehouse handling charges. Production/facilities and physical
+resource imports gate new supply and tech; scarce stock and demand drive broker pricing.
+
+Initial frontier exploitation is exclusive for real elapsed server-running time, pausing
+during shutdown. Afterward rivals may exploit and build ports even under a puppet government;
+starting homes remain protected. This amends the initial no-second-port restriction on
+reopened concessions. The host persists running-time observations and expiry events through
+ordered world inputs; simulation systems/replay do not read the wall clock. Neither a
+restart nor government control can renew a frontier grant or convert it to home protection.
+
+Later frontier expansion must preserve stable physical identities and current journeys and
+recover generated topology before restoring world entities. Generated world data is distinct
+from frozen authored rules. The inspected engine registration APIs do not yet demonstrate
+atomic topology publication or durable generated-system recovery. Protocol/transport, hosting,
+deployment tooling and days/months of server pacing remain design choices.

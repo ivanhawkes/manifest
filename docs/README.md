@@ -10,5 +10,8 @@
 - [Next development stages](development-stages.md)
 - [Standalone mod implementation plan](standalone-mod-plan.md)
 - [Gameplay and persistent server plan](gameplay-and-server-plan.md)
+- [Planetary development, corporate power and frontier planning](planetary-development-plan.md)
+- [Public supply contracts and station bookings](procurement-and-station-contracts-plan.md)
+- [Physical economy, brokers and planetary development](economy-and-development-plan.md)
 - [Models and agent workflow](agent-workflow.md)
 - [Model reference](model.md)

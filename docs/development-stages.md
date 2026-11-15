@@ -3,7 +3,9 @@
 Approved by the user on 2026-11-15. Implementation belongs to Claude. These stages
 refine the [standalone mod plan](standalone-mod-plan.md) and
 [gameplay and persistent server plan](gameplay-and-server-plan.md) into the next delivery
-sequence: a local, persistent trading game before networking. They are planned work,
+sequence, originally a local persistent trading game before networking. The subsequent
+amendments below supersede that networking deferral and add planetary/corporate goals.
+They are planned work,
 not completed capabilities. Each stage should leave a working, testable result and be
 split into small commits.
 
@@ -11,6 +13,64 @@ This is the near-term execution order; stage numbers here are distinct from the 
 standalone plan's workstreams. Preserve the product decisions and host/script contract
 in the linked documents. Policy scripts and graphical presentation follow the proven
 native trading loop.
+
+## Subsequent product goals and delivery amendments
+
+The [planetary development and frontier plan](planetary-development-plan.md) records the
+current direction: a headless authoritative idle world; required remote TUI `connect` and
+`disconnect` gameplay; a GUI sharing the server interface; NPCs, autopilot and physical
+auto-trading operating without clients. Manual TUI spaceport trading remains a stretch goal.
+
+Players start with development/public-budget control of one planet alongside a separate
+trading company. AI governs others. Eligible AI planets may be purchased and frontier worlds
+settled; other players' planets are protected from this acquisition mechanic. The world must
+provide starter capacity for its intended group and later joiners, plus an AI economy.
+Optional later expansion adds less developed or uninhabited systems at the existing map edge.
+
+There is no win condition. Companies accumulate wealth and control, seeking power over trade,
+economies, governments and media. Server lifespan and pacing over days/months are undecided;
+no timed victory or automatic reset is established.
+
+First development decisions are projects, investment budgets and public procurement.
+Public contracts require competitive corporate bids. Plan a simple government corruption
+trait and abstract bribery after the clean tender/fulfilment lifecycle works; detailed
+official/political modelling is deferred. The governor's own company must bid too.
+Corporate leverage starts with infrastructure, essential supplies and access contracts.
+Company-built stations may set fees/shipping priorities and refuse rivals access. Their
+construction, ownership and policy are game rules; reusable docking admission/queue hooks
+must be provisioned in Jettison. Government financing and media influence follow later.
+A corporation may build a very expensive orbital spaceport at a planet with no existing port
+that is not owned/controlled by another player. It opens resource exploitation and colonies
+with company-controlled puppet governments. Prove this on a static map before requiring live
+frontier generation; construction rights and planet-wide control are distinct contracts.
+
+Further refinements: [physical economy/development](economy-and-development-plan.md) requires
+instant credit settlement, full commodity transport through warehouses, finite principal
+brokers, spreads plus separate handling charges, and production-capped supply/scarcity pricing.
+Planet tech requires local/imported materials and built production facilities. Generate
+higher-tech/depleted inner worlds and richer, less developed outer worlds. Frontier resource
+exclusivity lasts real elapsed server-running time, pausing during shutdown; rival ports and
+exploitation become permissible afterwards even under puppet governments. Starting homes stay
+protected. These refinements supersede the permanent no-second-port interpretation on frontier
+concessions. The host records timing inputs/expiry for replay; deterministic systems read no clock.
+
+The [contract/booking handoff](procurement-and-station-contracts-plan.md) proposes the first
+supply tender and accepted-booking lifecycle. Partial delivery payments and grandfathered
+booking terms are selected; performance security, detailed settlement and failure defaults
+remain proposals. No code or validation evidence is supplied by these additional plans.
+
+Keep the five stage numbers below as foundational work packages. Before committing state
+schemas in stages 2–3, account for distinct planet, company, control and public-budget records.
+The proposed extended order is host/content/minimal authority, a real network/TUI slice,
+idle physical trading and single-planet development, recovery, then multi-planet acquisition,
+corporate influence and frontier settlement. GUI work uses the proven shared interface.
+Full frontier generation or political simulation must not block the first governed idle loop.
+
+Stage 4 must include enabled physical auto-trader jobs and NPC operation, rather than only
+a manually driven demonstration. Stage 5 must cover saved policies, development jobs and
+control rights as those land. Keep the two-venue test as a small fixture; add a governance
+fixture with a home for each player and AI neighbours. Original stage-plan scope statements
+must be read with these amendments; none of this work has been implemented or validated.
 
 Detailed planning handoffs for Claude (implementation and validation remain pending):
 
@@ -143,10 +203,11 @@ Preserve the standalone plan's CMake consumer matrix, public-API boundaries, dir
 checks and relocation checks. Run save/replay and recovery tests as those facilities land.
 Do not mark a stage complete based only on configure success or mounted content equality.
 
-After stage 5, the next milestone is authenticated multiplayer: filtered snapshots,
-reconnect behaviour, bounded command queues and four-client testing. Policy scripts and
-graphical presentation can then build on the proven native loop. The larger benchmark
-targets remain provisional; no measured capacity is claimed.
+Networking is now a required boundary to prove after minimal authority, with filtered
+snapshots, reconnect behaviour, bounded command queues and an initial four-client test.
+Stage 5 still gates durable production operation. Larger benchmark targets, total planet
+capacity and days/months of operation remain unmeasured; client count does not determine
+the number of registered players or worlds advancing while they are absent.
 
 ## Handoff
 

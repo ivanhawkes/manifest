@@ -1,9 +1,10 @@
 # Roadmap
 
-The approved [next development stages](development-stages.md) give Claude the near-term
-execution order and exit criteria: public host bootstrap, validated scenario content,
-company ownership and commands, the local trading loop, then persistence and distribution.
-These stages refine the broader integration work below; none is marked implemented yet.
+The [next development stages](development-stages.md) retain the foundational host, content,
+ownership, trading and recovery plans. The subsequent networked idle-game and planetary
+development goals below extend that baseline. Networking is a required gameplay boundary;
+the old optional administration-only TUI direction is superseded. The delivery amendments
+are planning proposals, and none of these capabilities is marked implemented yet.
 
 ## SDK and build baseline
 
@@ -47,27 +48,117 @@ decisions to the adapters and save schemas below; they remain planned, not imple
 
 The existing model and content are recorded in [model reference](model.md).
 
-## Future dedicated server and administration
+## Networked idle game and remote clients
 
-**Approved direction:** provide a CLI-launched dedicated network server for deployment on a
-server platform. The server owns authoritative simulation state and networking, runs without
-a renderer or interactive terminal, and supports unattended operation, logs and clean shutdown.
-See the [planned architecture](architecture.md#dedicated-server-and-administration-planned).
+**Required direction:** provide a CLI-launched dedicated network server that advances one
+authoritative world with zero connected players. Economy, NPC AI, autopilot, enabled
+auto-trading and planetary development run independently of rendering or terminal refresh.
+Players can leave and return while their standing policies continue. Server downtime still
+pauses simulation initially; downtime catch-up is a separate deferred feature.
 
-Keep the current TUI as a development harness while integrating Manifest with Jettison. Preserve
-its command workflows and tests as inputs to future administration tooling. A shared,
-authenticated administration interface should serve a scriptable CLI, an optional separate TUI
-client and potentially Jettison's graphical console. Mutations follow the fixed-step command
-path; clients must not maintain a competing authoritative simulation or own the server lifetime.
+Morph the existing TUI into a remote gameplay client with `connect <endpoint>` and `disconnect`.
+It submits authenticated commands and displays filtered server snapshots. Closing or losing a
+client cannot pause the world, relinquish a planet or stop enabled automation. Share the client
+command/query layer with Manifest's GUI; the GUI can use all selected public engine features.
+Keep administrative permissions separate from ordinary gameplay. Manual spaceport trading in
+the TUI is a stretch goal; configuring and observing physical auto-trading is required.
 
-When the administration interface is designed, assess whether actual operator needs justify
-adapting the existing FTXUI presentation. Preserve automated command coverage independently of
-the frontend build option. This decision does not schedule immediate TUI removal or expansion;
-protocols, hosting platform and deployment tooling remain to be selected.
+Preserve console workflows where useful, but move authoritative state out of `ManifestConsole`.
+Host, protocol and command tests must run without FTXUI or a renderer. Reuse Jettison's public
+simulation, AI, transit and persistence facilities; provision demonstrated generic host/network
+gaps in Jettison. Current snapshots and render smoke tests do not establish network replication
+or a true CPU-only server build. Transport, hosting and measured capacity remain open.
 
-Follow the [future work sequence](gameplay-and-server-plan.md#sequencing-and-deferred-scope):
-first prove the local trading loop, then complete recovery and remote command semantics.
-Develop content validation and frontend-independent command coverage alongside integration.
-Before public hosting, demonstrate measured capacity, relocation and backup restoration.
-The initial target is four connected players; the larger workload is a provisional benchmark,
-not a supported-capacity claim.
+Proposed sequencing: host/content/command foundations, then a small real TUI connection slice,
+then physical idle trading and recovery, followed by graphical presentation. Preserve durable
+acknowledgement requirements before production hosting. The four-client scenario is an initial
+network test, not a limit on registered players or a demonstrated supported capacity.
+
+## Open-ended corporate power
+
+**End goal, 2026-11-15:** grow a trading company into an enormously powerful corporation
+with influence over government and media, drawing on the scale of Earth's largest
+corporations. Planetary development, logistics, acquisition and settlement support that
+corporate progression. There is no win condition: players accumulate wealth, power and control
+and use their leverage to establish a stranglehold on trade, economies and governments.
+Company wealth, development rights, civilisation rank and political or media influence are
+distinct concepts. Specific influence mechanics, rival responses and server lifespan remain
+planning decisions. A duration of days or months does not imply a timed victory or reset.
+The first leverage mechanics to design are infrastructure, essential supplies and access
+contracts. Government financing and media influence follow. A powerful company can build and
+control a space station, set fees and shipping priorities, and refuse rivals access to it.
+Initial corporate spaceports may be built at eligible planets with no existing port that are
+not owned/controlled by another player; the frontier reopening exception is defined below.
+They are very expensive and enable profits through resource exploitation and colonies with
+company-controlled puppet governments.
+Purchasing planetary control is not required before building at an otherwise eligible AI planet.
+The station must become a physical source of commercial leverage; ownership alone does not
+make it a mandatory gate for every ship in the system. See the [impact plan](planetary-development-plan.md).
+
+New resource concessions give an initial exclusive exploitation period measured in real
+elapsed server-running time; shutdown time does not count. Afterwards rivals may exploit
+the planet and build competing spaceports, even under the incumbent's puppet government.
+Starting home planets stay protected. This amends the earlier no-second-port rule for reopened
+frontier worlds. Incumbents retain infrastructure/capital advantages and may try to exhaust
+resources before rivals arrive. Duration and the precise first-grant trigger remain undecided.
+
+## Physical economy and material-gated development
+
+Credits transfer instantly between authorised entity accounts. Commodities follow the full
+chain: extraction/industry, local haul, station warehouse, ship, destination warehouse and
+local use. Brokers trade real stock using their own funds; their buy/sell spreads and separate
+warehouse handling charges at both ends provide the intended substantial merchant income.
+
+Production/extraction capacity caps new output; actual unreserved inventories cap trade.
+Scarcity and demand determine prices, rather than production-based price bands. Auto-trading
+must account for both broker prices, both warehouses and physical operating/access costs.
+Planetary tech advancement requires resource exploitation, imports of unavailable resources
+and actual production facilities, not just credits or knowledge prerequisites.
+
+Inner map worlds start at higher civilisation technology with depleted natural reserves;
+outer worlds are generally resource-rich and less developed, creating a frontier gold rush.
+See the [economy/development plan](economy-and-development-plan.md) for custody, production,
+brokers, tech dependencies, geography, real-time rights and the capability/validation map.
+
+## Planetary development, acquisition and frontier settlement
+
+**Added goal, 2026-11-15:** each player initially controls one planet's development and public
+budget alongside a separate trading company. AI governs other inhabited planets. A server
+starts with enough suitable planets for its intended group, later joiners and an AI economy.
+The intended play period may be days or months; campaign duration and pacing remain undecided.
+
+The first development controls are projects, investment budgets and public procurement.
+Corporations must bid competitively for public contracts, including the governor's company.
+After clean tendering works, add a simple government corruption trait and abstract bribery
+that can influence eligible bid rankings. Detailed political/official simulation is deferred.
+Detailed taxes, subsidies and wider economic regulation are later design work.
+
+Suppliers are paid for accepted partial deliveries as they arrive. Station owners honour
+accepted bookings; changed fees, priorities or exclusions apply to future requests. The
+[contract/booking plan](procurement-and-station-contracts-plan.md) proposes the clean tender,
+physical fulfilment/payment lifecycle and the precise commercial acceptance boundary.
+
+Players may later purchase control of eligible AI-controlled planets or settle frontier worlds.
+Other players' planets are protected from acquisition through this mechanic. One planet is a
+starting entitlement, not a permanent ownership cap. Public and company funds, inventory and
+permissions remain distinct; visitors' private assets retain their existing ownership.
+
+If needed, add systems at the outer reaches of the existing map without moving or regenerating
+established systems. Frontier planets are typically less developed and resource-rich, with
+some uninhabited and suitable for terraforming and settlement. Expansion, acquisition and colony rules require
+separate milestones; they are not currently implemented engine or game capabilities.
+
+See [planetary development and frontier planning](planetary-development-plan.md) for impacts,
+the capability map, unresolved choices and acceptance criteria. Its staged direction is:
+
+1. Account for governance and independent planet identities in the foundational state design.
+2. Prove one governed planet, AI neighbours and saved development queues in the idle server.
+3. Add atomic purchases of eligible AI planets, protected starter capacity and multi-planet policy.
+4. Add expensive corporate spaceport construction at eligible unserved planets, physical
+   resource exploitation and colonies with company-controlled puppet governments.
+5. Prove deterministic frontier expansion, physical access, terraforming and settlement.
+
+The original one-system/two-venue scenario remains a small integration fixture. A later
+governance scenario must include a home planet for each test player and additional AI planets.
+Do not interpret the old deferral of player-controlled civilisations as excluding this new
+planet-development goal. Whole-civilisation sovereignty remains outside the agreed scope.

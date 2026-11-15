@@ -1,10 +1,18 @@
 # Gameplay and persistent server plan
 
 Recorded on 2026-11-15 at the user's request after resolving the future-planning
-questions. These are the agreed planning baseline, not implemented capabilities.
+questions. The subsequent networked idle-game, corporate-power and planetary-development
+decisions below extend that baseline. These are planning requirements, not implemented capabilities.
 Implementation is assigned to Claude. This document extends the
 [standalone mod plan](standalone-mod-plan.md); it does not replace its SDK integration
 stages or the [host/script boundary](host-script-boundary.md).
+
+The [planetary development and frontier plan](planetary-development-plan.md) records the
+2026-11-15 additions and impact assessment. It supersedes the optional administration-only
+TUI direction and the assumption that all planetary development is permanently AI-controlled.
+There is no win condition: players grow trading companies and accumulate wealth, power and
+control over trade, economies, governments and media. Days versus months concerns server
+lifespan and pacing; it does not establish a victory timer or automatic reset.
 
 ## Product decisions
 
@@ -12,20 +20,45 @@ stages or the [host/script boundary](host-script-boundary.md).
 | --- | --- | --- |
 | First playable loop | Operate a trading company: buy at one venue, transport goods, sell elsewhere and reinvest. | Connect the economy to ships, docking, cargo and company progression. |
 | Persistence | Worlds persist between sessions and advance while the server runs. No catch-up for server downtime initially. | Resume the saved authoritative step; player disconnects do not stop the world. |
-| Player control | One company per player, initially with one ship, a treasury, cargo and orders. Civilisations are server-controlled. | Company ownership is distinct from civilisation identity and finances. |
-| Initial scope | One server, one star system, two civilisations, two venues, eight goods and up to four connected players. | Prove the complete loop before expanding the universe. |
+| Player control | One trading company per player, initially with one ship, plus control of one planet's development and public budget. AI governs other inhabited planets. | Company finances, planetary budgets, civilisation affiliation and control rights are distinct. |
+| Initial fixture | One server, one star system, two civilisations, two venues, eight goods and up to four connected clients for the original trading test. | Keep this tiny fixture; add a governance scenario with one home per participant and AI neighbours. It is not the complete server-world size. |
 | Capacity target | Benchmark 16 companies, 16 venues and 10,000 open orders before expanding public hosting. | These are provisional validation targets, not demonstrated capacity or release promises. |
+| Idle play | World systems, NPCs, enabled auto-trading and development continue with zero clients connected. | Authoritative schedules and standing policies cannot depend on presentation or connection count. |
+| Remote frontends | Morph the existing TUI into a gameplay client with `connect`/`disconnect`; Manifest's GUI uses the same server interface. | Shared authenticated commands and filtered snapshots; separate admin permissions. Manual TUI trading is a stretch goal, physical auto-trading is required. |
+| Corporate expansion | Purchase control of eligible AI planets or settle frontier worlds; other players' planets are protected from this acquisition mechanic. | Persist per-planet rights and budgets; initial one-planet control is not a permanent cap. |
+| First development controls | Projects, investment budgets and public procurement. | Keep public project finances and company delivery/payment distinct. |
+| Procurement awards | Corporations must bid, including a governor's own company; later add a simple government corruption trait and abstract bribery that influence outcomes. | Prove clean competitive tendering/fulfilment first; keep influence costs distinct from public budgets and test awards/retries/recovery. |
+| First corporate leverage | Infrastructure, essential supplies and access contracts; powerful companies can build/control stations with fees, priorities and rival-access refusal. | Physical services and contractual rights create dependence; government financing and media systems follow. |
+| Corporate spaceports and colonies | A corporation may build a very expensive orbital port at any planet with none, provided it is not owned/controlled by another player; exploit resources and establish colonies with company-controlled puppet governments. | Define site races, physical construction/supply, resource rights and colonial/public finances. Long-term profit comes from the resulting economy. |
+| Supply payment | Pay accepted partial deliveries as they arrive. | Atomic goods/entitlement/payment receipts; proposed contract-specific rounding is separate from marketplace settlement. |
+| Station commitments | Honour accepted bookings; owner fee/priority/access changes affect future requests. | Persist accepted terms and operation identity; distinguish quotes from committed visits. |
+| Credits and commodities | Credits transfer instantly between authorised accounts; goods follow the full extraction/industry, haul, warehouse, ship and destination chain. | Separate title, custody, location and reservations; no money-driven teleport of goods. |
+| Brokers and fees | Brokers buy/sell their own finite stock/funds, earning through spreads; warehouses charge separately at both ends. | Quote real liquidity, charge each provided service once, and include all costs in auto-trade decisions. |
+| Development and geography | Tech needs exploited/imported resources and actual facilities; inner worlds start higher-tech and depleted, outer worlds richer and less developed. | Validate cross-facility/import dependencies and seeded spatial economic generation. |
+| Frontier rights | Initial exclusive exploitation lasts for elapsed real server-running time, pausing in shutdown; afterwards rivals can exploit and build ports despite a puppet government. | Keep starting homes protected; amend no-second-port rules for reopened concessions and persist host time/events for replay. |
 
-The first integration scenario runs locally without a renderer, using commands and
-automated tests. The multiplayer milestone adds authenticated connections and snapshots.
-Graphical presentation uses the same command/query interface.
+The first integration fixture runs without a renderer, using commands and automated tests.
+A small real network/TUI slice should follow the minimal command/ownership foundation rather
+than waiting for graphical gameplay. This sequencing amendment is proposed, not implemented.
+Graphical presentation uses the same command/query interface and selected public SDK features.
+
+See the [supply-contract and station-booking handoff](procurement-and-station-contracts-plan.md)
+for the proposed first tender and commercial booking lifecycle. It separates confirmed
+payment/commitment decisions from proposed scoring, arithmetic, deadlines and failure rules.
+The [physical economy/development plan](economy-and-development-plan.md) records supply caps,
+scarcity pricing, commodity custody/handling, imported tech inputs, map gradients and timed
+concessions. Initial port eligibility is refined by reopening after exclusivity; controller
+changes cannot make a frontier concession permanently private.
 
 ## Ownership and physical trading
 
-Companies own ships, money, cargo, venue-local inventory and orders. Civilisations own
-their populations, production and institutions. Do not expose a civilisation treasury
-as a player's wallet. Preserve existing authored civilisation IDs and define separate
-company identities and ownership references.
+Companies own ships, money, cargo, venue-local inventory and orders. Planetary public budgets,
+population, development and institutions have separate ownership/control records. Civilisation
+affiliation is not a company identity. A player may direct public investment alongside their
+company without merging their wallets; procurement or other transfers need explicit rules.
+Preserve existing authored civilisation IDs and define separate company/planet identities
+and control references. Influence over government/media does not itself grant legal ownership
+of all assets or override another player's protected control rights.
 
 Purchasing goods transfers them into company-owned inventory at the selling venue.
 Loading requires a docked ship and available capacity. Unloading transfers cargo into
@@ -121,10 +154,17 @@ Extract host-facing command/query services from terminal presentation. Today
 the TUI option. Keep it as a development harness during migration, then adapt its command
 workflows to the host services as appropriate.
 
-Command coverage must run with `MANIFEST_BUILD_TUI=OFF`. A scriptable CLI is the initial
-administration frontend; a separate TUI client is optional. Disconnecting any client must
-not affect server lifetime or create a competing simulation. Do not expose the unrestricted
-development console directly as a remote administration protocol.
+Command coverage must run with `MANIFEST_BUILD_TUI=OFF`. The existing TUI is to become a
+required remote gameplay frontend, with a shared client layer for the GUI. Its local harness
+is transitional. A scriptable administration interface remains useful, but gameplay commands
+must not require administrator permissions. Disconnecting a client cannot affect server
+lifetime, relinquish a planet, stop enabled jobs or create a competing simulation. Do not
+expose the unrestricted development console directly as a remote protocol.
+
+On reconnect, return current state, retry outcomes and a bounded summary of unattended trading
+and development. Persist standing policies, job progress, reservations and control rights.
+Separate public/company views and budgets. AI governors and player-policy executors obey the
+same native spending, cargo, project and acquisition validation rules.
 
 ## Scale, stability and operations
 
@@ -166,20 +206,22 @@ results. A content-mount test alone does not satisfy the scenario.
 
 ## Sequencing and deferred scope
 
-The approved [next development stages](development-stages.md) expand this sequence into
-five bounded deliveries with dependencies and exit criteria. Use that document to schedule
-implementation while retaining the ownership and persistence contracts defined here.
+The [next development stages](development-stages.md) retain five foundational work packages.
+Their amendments and the [planetary plan](planetary-development-plan.md) add required remote
+idle play, governed development and later corporate/frontier growth. Retain the ownership and
+persistence contracts here when refining the extended schedule.
 
 | Milestone | Deliverable |
 | --- | --- |
-| Next | Public Jettison host integration and the local trading scenario. |
-| Then | Complete authoritative commands, ownership, saved state and recovery. Define their contracts during the preceding integration. |
+| Next | Public Jettison host, validated content and authoritative commands/ownership, accounting for separate planet and company control. |
+| Then | Small network/TUI slice, physical idle trading and governed development; complete recovery before durable production operation. |
 | Alongside integration | Content validator and frontend-independent command tests. |
-| Before multiplayer | Renderer-free server, identity/permissions, retry semantics and filtered snapshots. |
+| Network slice | Renderer-free server, identity/permissions, retry semantics and filtered snapshots; no durability claims before recovery evidence. |
 | Before public hosting | Measured capacity, operational diagnostics, compatible release packages and restore testing. |
 
-Defer interstellar travel, player-controlled civilisations, combat, piracy, insurance claims
-and offline catch-up from the initial playable scope. Existing definitions may remain without
+Interstellar expansion/settlement and government/media influence are roadmap goals after the
+first idle trading/development loop. Whole-civilisation sovereignty, combat, piracy, insurance
+claims and server-downtime catch-up remain deferred. Existing definitions may remain without
 making every associated mechanic a release requirement. This deferral does not remove
 existing fee/insurance calculations from the model or authorise rebalancing them silently.
 

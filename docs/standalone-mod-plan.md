@@ -216,9 +216,11 @@ configuration does not require Vulkan/windowing/presentation dependencies. An Xv
 smoke test is not evidence of a renderer-free server.
 
 Networking, authentication, replication, administration protocols and deployment platform
-remain separate design work. A scriptable administration CLI and optional TUI must submit
-commands to the server, not own another simulation or control its lifetime. This integration
-plan does not claim to deliver those undecided network features.
+remain separate design work. The subsequent [idle/planetary plan](planetary-development-plan.md)
+requires morphing the existing TUI into a remote gameplay client with `connect`/`disconnect`,
+sharing a command/query layer with the GUI. Clients submit commands without owning another
+simulation or controlling server lifetime; admin permissions remain separate. This integration
+plan does not claim to deliver the pending network capabilities.
 
 ## Delivery and validation
 

@@ -1,5 +1,11 @@
 # Stage 5: persistence, recovery and a relocatable release
 
+Subsequent requirements: [planetary/corporate planning](planetary-development-plan.md)
+adds control rights, separate public budgets, development reservations/queues and idle
+automation to authoritative recovery as they land. Later acquisition and generated frontier
+topology need the same guarantees. A remote TUI slice can precede this stage; durable
+production acknowledgements still require the recovery evidence below.
+
 Planning handoff for Claude, prepared 2026-11-15. Depends on the completed
 [local trading loop](stage-4-trading-plan.md) and retains the
 [gameplay/server persistence contract](gameplay-and-server-plan.md).
@@ -239,6 +245,7 @@ cannot duplicate actions after recovery, the full local loop resumes without dow
 catch-up, a backup restores successfully and the declared release distribution relocates.
 No checks in this document have yet been executed.
 
-The next milestone is authenticated multiplayer: transport, identity, filtered snapshots,
-reconnect, bounded queues and four-client testing. Begin that design from implementation
-evidence for stages 1–5, not from a claim that these plans are already working software.
+The remote-client milestone now begins after minimal authority, as described in the
+[development-stage amendments](development-stages.md). After this recovery stage, harden
+transport, identity, snapshots, reconnect, bounded queues and four-client operation for a
+persistent deployment. Use implementation evidence; these plans are not working software.

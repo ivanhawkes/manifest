@@ -1,5 +1,11 @@
 # Stage 3: companies, authoritative state and commands
 
+Subsequent requirements: read [planetary/corporate planning](planetary-development-plan.md)
+before freezing schemas. Players also direct one planet's development/public budget; keep
+planet identity, public funds, company assets and control rights separate. The original
+AI-only civilisation scenario below is a fixture, not a restriction on governed planets.
+Networking/TUI play is now required; its connection slice follows minimal authority.
+
 Planning handoff for Claude, prepared 2026-11-15. Depends on
 [stage 1](stage-1-host-plan.md) and [stage 2](stage-2-content-plan.md).
 This refines stage 3 of [development stages](development-stages.md), retaining the

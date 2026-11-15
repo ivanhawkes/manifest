@@ -1,6 +1,110 @@
 # Session handoff
 
-## Current planning handoff — 2026-11-15
+## Current product-planning handoff — 2026-11-15
+
+This section supersedes the earlier planning/repository state below. The planning baseline was
+`feature-base` at `8f02d54c2935dc929052a4e753c66bcf9f777a5c`; Jettison is on `feature-base`
+at `0564f19ed41bc7e0a278952153567d4a137a2f5b`. Both started clean. The SDK pin remains
+`f85092027eda49c29001f7589608df1f0b8827fb`; no SDK/environment changes were made.
+The user requested committing and pushing the Manifest documentation at session close;
+the resulting planning commit is the commit containing this handoff. Jettison is unchanged.
+
+Current work is Manifest planning documentation only: a new
+[planetary development/corporate-power assessment](planetary-development-plan.md),
+[supply/station contract handoff](procurement-and-station-contracts-plan.md),
+[physical economy/development plan](economy-and-development-plan.md) and aligned
+roadmap, gameplay/server, development-stage, architecture, scope, stage 3–5 and index/handoff
+guidance. No implementation, assets, fixtures or configuration changed. No builds, gates,
+benchmarks, economy simulations or recovery checks ran; build validity is not established.
+
+Confirmed direction to preserve:
+
+- Dedicated headless server; fixed-step world, NPCs, autopilot, enabled auto-trading and
+  development progress with zero clients. Server downtime still pauses simulation initially.
+- Existing TUI becomes a required remote gameplay client with `connect`/`disconnect`; GUI
+  shares the command/query layer and uses selected public engine features. Manual TUI
+  spaceport trading is a stretch goal. Administrative permissions remain separate.
+- Each player initially directs one planet's development and public budget alongside a
+  separate trading company. AI governs others; disconnecting does not relinquish control.
+- Acquire more control through eligible AI-planet purchases or frontier settlement; protect
+  other players' planets from that acquisition mechanic. Keep initial/late-join starter
+  capacity separate from the acquisition pool and an AI economy.
+- Endlessly accumulate corporate wealth, power and control, seeking a stranglehold over
+  trade, economies, governments and media. There is no win condition or automatic victory
+  reset. Days versus months is unresolved server lifespan/pacing, not a victory timer.
+- First development controls: projects, investment budgets and public procurement. First
+  corporate leverage: infrastructure, essential supplies and access contracts. Powerful
+  companies can build/own stations, set fees and shipping priorities, and refuse rivals
+  access. Government financing and media mechanics follow later.
+- Public procurement requires competitive bids, including the governor's own company.
+  Plan a simple government corruption trait and abstract bribery after clean tendering works;
+  detailed officials/political simulation is deferred. This supersedes the earlier open
+  question about directly awarding public contracts to one's own company.
+- Pay suppliers for accepted partial deliveries as they arrive. Honour accepted station
+  bookings under their agreed access/fee/priority terms; owner changes affect future requests.
+  The new [contract/booking handoff](procurement-and-station-contracts-plan.md) proposes sealed
+  bidding, a clean price-based award, cumulative total-contract payment and bounded visits.
+  Those mechanics are proposals, not implementation or changes to marketplace settlement.
+- Credits move instantly between authorised accounts; goods move physically from extraction/
+  industry through haul, station warehouse, ship, destination warehouse and local delivery.
+  Brokers trade their own finite funds/stock and earn spreads; warehouses charge handling
+  separately at both ends. Production limits new output, stock limits offers, scarcity/demand
+  determine prices; explicit production-based price bands were not selected.
+- Planet tech advancement needs exploited/imported materials and actual production facilities.
+  Generate higher-tech/resource-depleted inner worlds and richer, less developed outer worlds.
+- Frontier resource rights are initially exclusive for elapsed real server-running time,
+  pausing during shutdown. Afterwards rivals may exploit and build their own spaceports even
+  under the incumbent's puppet government. Starting homes remain protected. This supersedes
+  the permanent no-second-port rule on reopened concessions. The exact grant trigger/duration
+  and initial construction-site reservation are still open.
+- Corporations may build a very expensive orbital spaceport at any planet without one that
+  is not owned/controlled by another player. This enables resource exploitation and colonies
+  with company-controlled puppet governments, supporting long-term corporate returns.
+  Resource/colonial authority and control of a pre-existing AI government still need design.
+- Later frontier systems extend the existing map with generally less developed and some
+  uninhabited worlds. Terraforming, settlement, expansion triggers and capacity are unproven.
+- Keep player/company/planet/civilisation/control identities and public/company finances
+  explicit. Retain price-only Decimal, floating continuous quantities and whole-credit ledgers.
+- Preserve genre-neutral engine provision, public SDK boundaries, pinned dependency/environment
+  parity, existing YAML/archive/VFS/registry mechanisms and the OpenAI planning-only policy.
+
+Proposed delivery amendment: retain the five foundation plans as work packages, but prove a
+real TUI connection after minimal authority; then idle physical trading, governed development
+and recovery. Multi-planet acquisitions, specific government/media influence and frontier
+expansion follow. The tiny two-venue fixture remains useful; add a separate governance fixture.
+The old optional administration-only TUI and permanent AI-only development assumptions are
+superseded. The exact extended implementation schedule is still a planning proposal.
+
+Inspection found no implemented networking/session layer in Jettison. System registration,
+route plotting and saves exist, but do not establish atomic live topology expansion.
+Physics system definitions are not saved/hashed; generated topology must be restored through
+a versioned world-data contract before loading entities/transit. See the new capability map.
+Docking lacks generic admission/owner-priority hooks; normal ship authority checks are not
+station entry permission. Reusable policy seams belong in Jettison, corporate rules in Manifest.
+
+Documentation validation for this update: `git diff --check` passed, and a read-only check of
+14 changed Markdown documents found no missing targets among 114 local links and two heading
+anchors, no trailing whitespace and no missing final newlines. Jettison remains unchanged.
+
+The running-time host bridge must persist monotonic elapsed observations with authoritative
+state/journal batches and record expiry events for deterministic replay. Do not use an
+absolute UTC deadline that deducts offline time or read a clock from deterministic systems.
+Specify checkpoint loss after a crash rather than promising exact crashed-process uptime.
+
+Next planning cycle: settle supplier performance security (undecided), then
+construction-site reservation, exclusivity grant trigger/duration and the first material/
+facility tech recipe. Station booking protection, partial payment and post-exclusivity rival
+ports are approved; detailed settlement, service windows, corruption scoring, colonial powers
+and long-running demand/public-income circulation remain design work. Initial starter
+protection/viability still needs explicit allocation policy; unassigned AI planets with no
+ports are eligible for initial corporate construction under the rule.
+Acquisition pricing, influence rules, abandonment policy, frontier triggers and server pacing
+remain open. Implementation/build/gate work belongs to the selected implementer; no such work
+is authorised for OpenAI agents. The user ended this planning session. Start a fresh session
+next time using this handoff and the linked plans; decisions are preserved and earlier
+repository excerpts are no longer needed. No implementation or gameplay validation is complete.
+
+## Earlier foundation-planning handoff — superseded state
 
 This section supersedes the historical resume instructions below. Stages 1–5 have
 implementation plans, not completed implementations. OpenAI agents remain planning-only;

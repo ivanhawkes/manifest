@@ -1,5 +1,11 @@
 # Stage 4: complete the local trading loop
 
+Subsequent requirements: the [idle/planetary plan](planetary-development-plan.md) requires
+physical auto-trader jobs, autopilot and NPC operation with zero clients. Preserve the
+manual command fixture below, then prove saved standing policies and unattended jobs.
+Single-planet development adds a separate public-budget project loop; manual TUI trading
+is a stretch goal, and the TUI is to become a remote gameplay client.
+
 Planning handoff for Claude, prepared 2026-11-15. Depends on the public host,
 [validated content](stage-2-content-plan.md) and
 [authoritative command model](stage-3-authority-plan.md). This refines stage 4 of
