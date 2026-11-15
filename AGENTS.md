@@ -14,38 +14,32 @@ For current verification state, open handoffs and the CI failure analysis, read
 - Follow the engine's naming, formatting, warnings and simulation rules. Keep authored
   YAML keys and IDs stable when renaming C++ identifiers.
 - Build and test with the presets. `./scripts/ci.sh --werror --asan` is the local gate.
-- Avoid running clang-tidy locally: the development machine is an underpowered laptop.
-  It is opt-in with `--tidy`, enabled in CI. Default local builds to two compile jobs.
-  The open handoff T9 authorises one local `--tidy` gate run to clear the two findings below.
+- Avoid running clang-tidy routinely on the underpowered laptop.
+  It is opt-in with `--tidy`, enabled in CI. Build concurrency is machine-specific;
+  follow [D-051](docs/decision-ledger.md#d-051) and
+  [the concurrency policy](docs/build-and-gates.md#machine-specific-concurrency).
+  T9's authorised combined local `--tidy` gate has completed; see the verification record below.
 - A mounted content package is not yet playable gameplay. Document the host/script boundary
   and the remaining fixed-point/VFS integration accurately; see `docs/roadmap.md`.
 
 ## Current verification and CI status (2026-11-16)
 
-Read this before building, validating or reporting a gate result. Details, run IDs and the
-handoff table are in `docs/project-analysis-2026-11-16.md`.
+Read the current [T1/T9 verification record](docs/session-handoff.md#t1t9-local-verification--2026-11-16)
+before building, validating or reporting a gate result. The project analysis retains the
+historical CI diagnosis and the remaining handoffs.
 
-- **CI has failed on thirteen consecutive runs of the live branches, and the build is not the cause.**
-  Every run passes the format gate, the Debug build and all 11 CTest suites, then fails in the
-  CI-only clang-tidy stage on exactly two findings: `source/game/types/include/manifest/types/Decimal.h:99`
-  (`bugprone-implicit-widening-of-multiplication-result`, reported 16 times because
-  `HeaderFilterRegex: 'source/.*'` scores every TU that includes the header) and
-  `source/game/market/src/Marketplace.cpp:1688` (`performance-inefficient-string-concatenation`).
-  `scripts/tidy.py` passes `--warnings-as-errors=*`, stricter than `.clang-tidy`'s
-  `WarningsAsErrors: ''`. Both fixes are one-line and behaviour-preserving (handoff T9).
-- **CI has produced no Release, ASan or UBSan evidence since 2026-11-14.** `scripts/ci.sh` runs
-  tidy between the Debug and Release stages under `set -euo pipefail`, so each failing run aborts
-  before those stages. Never describe CI as passing or failing "the build": name the stage that
-  actually ran, and do not use a CI run as gate evidence for Release or the sanitiser presets.
-- **HEAD is unverified locally.** The last recorded full gate (Debug, Release, ASan/UBSan, 11
-  suites, state hashes) is at `5d7f54e`; the only non-document changes since are `AGENTS.md`,
-  `.gitignore` and `devenv.nix` (`+lazygit`). No preset build tree exists locally and the
-  top-level `build/` is the ignored pre-rename `CivSimLibrary` tree.
-- **Next implementer action:** one gate run covering the baseline and tidy together,
-  `./scripts/ci.sh --werror --asan --tidy --log build/gate-tidy.log`, with the two tidy fixes
-  (handoffs T1 and T9), then record the outcome, log path and hashes in `docs/session-handoff.md`.
-  Prefer `--skip-release` only for an intermediate pass; the recorded baseline needs all presets.
-  A CI gate run costs about 5–17 minutes, so plan one combined run rather than repeated pushes.
+- **The two tidy findings are fixed, and the combined local gate passed.** Presets, suite
+  results, SDK revision, replay hashes and the log path are recorded in the handoff. This
+  is model-library verification; Stage 1 engine-hosted gameplay is still unimplemented.
+- **Local gate results do not establish CI results.** Inspect the exact pushed commit's
+  Actions run and logs before reporting its CI status. The pre-fix failure streak in the
+  [analysis](docs/project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16) is historical.
+- **T10 remains open.** Tidy still runs before Release and ASan/UBSan, so a future tidy
+  failure can prevent those stages from running. Name the stages that actually ran;
+  do not describe a tidy-only failure as a build regression.
+- **Next implementer work:** the remaining T10, T5 and T7 handoffs, then Stage 1, following
+  the analysis priorities. SDK/environment parity remains unresolved under T5; the local
+  gate does not settle it. Avoid repeated gates without a new change or unresolved failure.
 - **Tool output in this project has emitted identifiers that do not exist.** The 2026-11-16 analysis
   saw two CI run records (43806887285, 43806869597, "created 2026-11-16T04:21Z") and a push rejection
   (`9ea337b..7c0a307`, "Docs: record the running-world economy decisions") that resolve to nothing on
@@ -89,8 +83,8 @@ supersedes earlier recommendations assigning implementation to OpenAI models.
 - Use at most two sub-agents concurrently. Sub-agents must not delegate further unless the
   primary explicitly assigns further delegation. Do not promise lower total tokens.
 - OpenAI planning agents describe the required checks in the handoff; implementation and
-  build/gate execution belong to the implementer. The two-job local compile limit and the
-  restriction on local clang-tidy still apply to implementation work.
+  build/gate execution belong to the implementer. The machine-specific concurrency policy
+  and the restriction on local clang-tidy still apply to implementation work.
 
 ## Session context after roadmap tasks
 

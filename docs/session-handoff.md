@@ -1,5 +1,54 @@
 # Session handoff
 
+## T1/T9 local verification — 2026-11-16
+
+Tested tree: `feature-base` at `ee67443` plus the two source changes in this commit.
+The user explicitly authorised execution of this bounded task as an exception to the
+planning-only workflow; the general policy remains. Decimal parsing now widens the
+fractional digit before multiplication, matching the integer branch. Marketplace load
+errors prepend their existing prefix in place. Numeric behavior and error text are preserved.
+No test expectations, authored data, SDK pin, environment files or gate scripts changed.
+
+Ran on Lythir inside the development shell:
+
+```sh
+devenv shell -- env CMAKE_BUILD_PARALLEL_LEVEL=2 CTEST_PARALLEL_LEVEL=2 MANIFEST_TIDY_JOBS=2 \
+  ./scripts/ci.sh --werror --asan --tidy --log build/gate-tidy.log
+```
+
+The combined command exited successfully. Formatting and clang-tidy passed; all 11 CTest
+suites passed separately in `clang-debug`, `clang-release` and `clang-asan`. Each preset's
+`Testing/Temporary/LastTest.log` confirms the suite results. The gate log contains neither
+of the two original tidy findings and no sanitizer errors. Cache inspection confirms
+warnings-as-errors and tests/TUI enabled in all presets, and address/undefined sanitizers
+with recovery disabled in `clang-asan`. The fetched SDK is the pinned `f850920`, with no
+local source override. New preset trees now exist; the old top-level pre-rename artifacts
+are still historical.
+
+The `sim` suite's generation/hundred-tick replay case passed in every preset, retaining:
+
+| State | Hash |
+| --- | --- |
+| Generation | `10355632731109243635` |
+| After 100 ticks | `12410383246888723003` |
+| Raw prices, both points | `15444164946577136117` |
+
+The current local gate establishes T1 and the local acceptance of T9. CI acceptance must
+be confirmed against the exact pushed commit and its fetched Actions log; local success
+does not establish it. T10's gate ordering and duplicate-run work, T5 environment parity
+and T7 editor examples remain open, followed by Stage 1 under the analysis priorities.
+The project analysis's pre-fix CI diagnosis is historical. This gate does not implement
+or validate engine-hosted gameplay.
+
+The user's machine-specific build policy is recorded in [D-051](decision-ledger.md#d-051).
+The running gate retained its original worker settings; future runs can use the existing
+overrides appropriate to their host. Changes are limited to the two source lines and
+workflow/status documentation. The gate log stays ignored under `build/`.
+`git diff --check` and the local Markdown target/heading-anchor check passed.
+
+Context recommendation: `/compact` after the push/CI follow-up; this section preserves
+the baseline evidence, and the lengthy build output is no longer needed for T10.
+
 ## Tank correction after review — 2026-11-16
 
 Read the newest files by modification time, including the project analysis, workflow and

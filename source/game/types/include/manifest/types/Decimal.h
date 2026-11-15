@@ -96,7 +96,7 @@ class Decimal
 				place /= 10;
 				if (place == 0 && digit != 0)
 					return std::nullopt;
-				raw += digit * place;
+				raw += static_cast<__int128_t>(digit) * place;
 			}
 			if (raw >
 			    static_cast<__int128_t>(std::numeric_limits<std::int64_t>::max()) + (negative ? 1 : 0))

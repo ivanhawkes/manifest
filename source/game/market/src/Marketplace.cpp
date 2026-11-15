@@ -1685,7 +1685,7 @@ bool MarketplaceService::LoadSimulation(
 		if (!AddPlanet(
 		        ecsWorld, world.id, world.name, world.systemName, world.id, world.ageId, errorMessage))
 		{
-			errorMessage = "MarketplaceService: " + errorMessage;
+			errorMessage.insert(0, "MarketplaceService: ");
 
 			return false;
 		}

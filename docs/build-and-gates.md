@@ -1,7 +1,8 @@
 # Build and gates
 
-Run inside `devenv shell` or the direnv-loaded shell. The development environment and Nix lock
-match Jettison. The SDK source pin is in `source/external/CMakeLists.txt`; to test a local engine,
+Run inside `devenv shell` or the direnv-loaded shell. Environment parity with the selected SDK
+remains tracked under T5; see the current handoff. The SDK source pin is in
+`source/external/CMakeLists.txt`; to test a local engine,
 configure with `-DJETTISON_SOURCE_DIR=/path/to/jettison` on `feature-base`.
 
 ```bash
@@ -47,7 +48,20 @@ Manifest compiles only the engine modules and dependencies it links, plus its pa
 smoke tests remain Jettison's gate. Do not configure Jettison's unsupported install/export path.
 
 Clang-tidy is opt-in locally (`./scripts/ci.sh --tidy`), since it is expensive on the
-development laptop. CI enables it. Local builds default to two compile and test jobs.
+development laptop. CI enables it.
+
+## Machine-specific concurrency
+
+[D-051](decision-ledger.md#d-051) distinguishes the laptop's resource limit from other
+machines. Limit compilation on the laptop to two workers. Lythir has 12 cores and 24
+threads and is not subject to that laptop limit; choose concurrency to suit its available
+resources and other running work.
+
+The gate's conservative default remains two compile and test workers, and the tidy runner
+also defaults to two. Override `CMAKE_BUILD_PARALLEL_LEVEL` for compilation,
+`CTEST_PARALLEL_LEVEL` for tests and `MANIFEST_TIDY_JOBS` for tidy on a suitable machine.
+These settings are independent; increasing compile workers does not require increasing
+test or tidy workers. CI has its own explicit limits in the workflow.
 
 ## Verification evidence
 
@@ -58,29 +72,18 @@ artifacts under `build/`, never committed fixtures. "Configure succeeded", mount
 equality and documentation edits are not verification. Record which stages actually ran: a partial
 run is not a gate.
 
-The newest recorded full gate is at `5d7f54e`: formatting and all 11 suites in Debug, Release and
-ASan/UBSan, with generation `10355632731109243635`, 100-tick `12410383246888723003` and raw price
-`15444164946577136117`. Nothing outside `docs/` and `README.md` changed after it except `AGENTS.md`,
-a `.gitignore` comment and `devenv.nix` (`+lazygit`), so the C++ build is expected intact, but the
-locked shell changed and no gate has been recorded at HEAD (`ee83ea5`; handoff T1 in the
-[project analysis](project-analysis-2026-11-16.md)).
+The newest local evidence is the
+[T1/T9 verification record](session-handoff.md#t1t9-local-verification--2026-11-16), including
+the tested tree, full command, presets, suites, replay hashes and log path. Both tidy findings
+identified in the [historical CI analysis](project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16)
+are fixed. This does not establish engine integration or gameplay acceptance.
 
-`../.github/workflows/ci.yml` runs the full gate with `--tidy` on every push and uploads
-`build/ci.log`. **CI has been red continuously since 2026-11-14T17:05Z, on clang-tidy alone.** The
-format gate, the Debug build and all 11 suites pass in every failing run; the run then aborts in
-tidy on `source/game/types/include/manifest/types/Decimal.h:99`
-(`bugprone-implicit-widening-of-multiplication-result`, 16 reports, one per TU including the header)
-and `source/game/market/src/Marketplace.cpp:1688` (`performance-inefficient-string-concatenation`).
-`scripts/tidy.py` passes `--warnings-as-errors=*`, stricter than `.clang-tidy`'s
-`WarningsAsErrors: ''`, and the documented local gate omits `--tidy`, so neither route has been
-clean. Because `scripts/ci.sh` runs tidy between the Debug and Release stages under
-`set -euo pipefail`, those runs never reach Release or ASan/UBSan: **CI has produced no non-Debug
-gate evidence since 2026-11-14** and is not evidence for those presets. Name the stages that ran
-when reporting a gate result. A CI gate run costs about 5–17 minutes depending on runner cache
-state, so prefer one combined local run over repeated pushes. Handoff T9 applies the two one-line,
-behaviour-preserving fixes and
-T10 reorders the stages so a tidy warning cannot mask sanitiser results; the evidence, timeline and
-run IDs are in [CI failure analysis](project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16).
+The CI [workflow](../.github/workflows/ci.yml) runs the full gate with `--tidy` on every push
+and uploads `build/ci.log`. Report CI from the exact commit's run and fetched logs, separately
+from local evidence. Tidy still runs between Debug and Release under `set -euo pipefail`,
+so a future tidy failure can suppress Release and ASan/UBSan evidence; T10 remains open.
+The same handoff also addresses duplicate gates on identical branches. Preserve named-stage
+reporting, and prefer a combined local gate over repeated pushes.
 
 Preset builds live in `build/clang-debug/`, `build/clang-release/` and `build/clang-asan/`. A
 top-level `build/` containing `CivSim*` artifacts is the ignored pre-rename configure tree; remove

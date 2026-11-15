@@ -43,8 +43,9 @@ The planning-only policy above applies to this cross-repository work too.
 
 A handoff should name the agreed design, affected files or modules, constraints, acceptance
 criteria, required checks and unresolved questions. The implementer applies changes, reviews
-integration and runs the relevant checks and final gate. Local builds remain limited to two
-compile jobs; local clang-tidy remains opt-in as described in [build and gates](build-and-gates.md).
+integration and runs the relevant checks and final gate. Build concurrency follows
+[D-051](decision-ledger.md#d-051); local clang-tidy remains opt-in as described in
+[build and gates](build-and-gates.md).
 
 ### Planning discipline after the 2026-11-16 analysis
 
