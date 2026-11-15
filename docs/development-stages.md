@@ -12,6 +12,21 @@ standalone plan's workstreams. Preserve the product decisions and host/script co
 in the linked documents. Policy scripts and graphical presentation follow the proven
 native trading loop.
 
+Detailed planning handoffs for Claude (implementation and validation remain pending):
+
+- [Stage 1: public host and bootstrap](stage-1-host-plan.md).
+- [Stage 2: Jettison definitions and content](stage-2-content-plan.md).
+- [Stage 3: ownership and authoritative commands](stage-3-authority-plan.md).
+- [Stage 4: local trading loop](stage-4-trading-plan.md).
+- [Stage 5: recovery and relocatable release](stage-5-recovery-plan.md).
+
+Apply the subsequent [engine/game boundary assessment](engine-game-boundary-assessment.md)
+across these stages. Jettison must support multiple game types without a required
+space-game model; Manifest owns production gameplay and content. Engine-local gameplay
+fixtures and optional samples remain permitted for automated testing. The assessment
+adds sample isolation, neutral consumer/build checks and module-boundary work to the
+original delivery sequence.
+
 ## Stage 1: Public engine host and standalone bootstrap
 
 Establish how Manifest starts and owns a game through Jettison.

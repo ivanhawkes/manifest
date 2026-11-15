@@ -11,10 +11,12 @@ when updating that pin.
 Manifest's authoritative systems run as C++ game code linked into a Jettison game executable
 through `Manifest::Game`. A content mod supplies definitions, policy scripts and presentation
 assets to that host. Jettison has no native C++ mod ABI: mounting `manifest.pack` cannot register
-or execute these C++ modules. The existing sample application needs an explicit Manifest
-composition change; there is currently no Manifest game executable or registration entry point.
-Keep that composition in compiled game code, using the sample application's startup as the
-reference. Do not introduce a shared-library loader or a second Wasm runtime.
+or execute these C++ modules. Manifest needs its own composition through a public neutral
+engine host; there is currently no Manifest game executable or registration entry point.
+The existing sample startup is inspection evidence, not a private API or a place to install
+Manifest production rules. Keep the small space-trading example separate from engine code
+as described in the [boundary assessment](engine-game-boundary-assessment.md). Do not
+introduce a shared-library loader or a second Wasm runtime.
 
 | Owner | Responsibilities | Extension surface |
 | --- | --- | --- |
@@ -41,7 +43,7 @@ They identify existing facilities, not Manifest bindings already implemented.
 | Authoritative state and scheduling | `source/engine/sim/include/jettison/sim/SimWorld.h`: `Registry`, `RegisterComponent`, `RegisterCommand`, `RegisterSystem`, `AddService`; `Stepper.h` | Port/adapt Manifest state and systems into one world and specify dependencies and turn cadence |
 | Persistence and replay | `SimWorld.h`: `Save`, `Load`, `StateHash`, recording/replay; `sim/SaveGame.h`; `serialise/Migration.h` | Register reflected state and migrations; persist Manifest counters, progression, reservations and pending work |
 | Content | `vfs/FileSystem.h`; `sim/DefinitionRegistry.h`; `serialise/Archive.h`: `YamlArchive::ReadLayered`; `source/engine/app/src/Mounts.cpp` | Define Manifest schemas, validation and migrations, then replace host-path loading with VFS and layered definitions |
-| Decisions and sequences | `ai/UtilityAi.h`: `DecisionDefinition`, `Option`, `Choose`; `ai/BehaviourTree.h`; `source/engine/app/src/Traders.cpp` | Offer valid Manifest options and bounded facts; reuse the trader tasks/trees where their semantics fit |
+| Decisions and sequences | `ai/UtilityAi.h`: `DecisionDefinition`, `Option`, `Choose`; `ai/BehaviourTree.h`; `source/engine/app/src/Traders.cpp` as sample evidence only | Offer valid Manifest options and bounded facts; implement game-owned trader tasks over public engine mechanisms |
 | Script execution | `script/ScriptHost.h`: `SendCommandsTo`, `LoadAll`, `WithScripts`, `Dispatch`, `Store`, `SetStore` | Register the chosen game surfaces and wire input calls and event dispatch into the host |
 | Script authoring | `script/Bindings.h`, `ScriptHost::WriteHeader`, `WriteRustModule`; `source/CMakeLists.txt`: `jettison_add_script` | Generate bindings after game reflection registration; compile and stage the selected scripts |
 
@@ -54,9 +56,9 @@ The engine's
 The sample's `Jettison::App` trading model is game code, not a general engine economy service.
 Its integer credits and crates do not specify Manifest's price precision or quantity types.
 Reuse its integration
-pattern, flight/docking infrastructure and suitable trader tasks. Manifest's order book replaces
-the sample market maker for Manifest venues; both must not settle the same goods. Sample fields
-and commands must be adapted to the chosen Manifest units before those consumers share state.
+pattern and reusable flight/docking capabilities through public APIs. Manifest owns its
+production trader tasks and order book; it must not link the sample market maker or share
+authoritative state with it. Sample integer crates remain test gameplay, not Manifest's units.
 
 ## One authoritative world
 

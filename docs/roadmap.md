@@ -7,6 +7,14 @@ These stages refine the broader integration work below; none is marked implement
 
 ## SDK and build baseline
 
+The [engine/game boundary assessment](engine-game-boundary-assessment.md) adds pending
+cross-repository work: separate Jettison's small space-trading example from engine code,
+provide a neutral host and consumer build, and isolate optional space mechanics. Check
+Manifest's requirements at each stage and provision reusable SDK gaps in Jettison before
+binding the game to them. The example remains useful automated-test coverage; Manifest
+owns production gameplay/content. These changes are not included in the completed
+historical baseline below.
+
 Completed: consume a pinned `feature-base` Jettison SDK, share dependency targets and development
 environment, fix the migrated source layout, apply engine naming and warning conventions, use
 doctest, build Debug/Release/sanitised presets, and stage and pack the YAML content as a mod.

@@ -18,6 +18,16 @@ Manifest is a Jettison mod project. Read `docs/coding-standards.md`,
 
 ## Models and delegation
 
+Before integration work, read `docs/engine-game-boundary-assessment.md`, the current
+development-stage/gameplay plans and the selected SDK's `docs/game-integration.md` when
+available. Manifest owns production rules and content; Jettison supplies genre-neutral
+capabilities. Map required mechanics to public SDK APIs and record demonstrated gaps.
+The implementer provisions reusable missing capabilities in Jettison, commits them and
+updates the SDK pin; game rules, balance and authored values remain in Manifest. Use
+Jettison YAML/archive/registry mechanisms rather than parallel custom loaders. Do not
+include private engine app headers or depend on its sample economy. Jettison may retain
+small gameplay examples for automated testing in separate sample/test targets and assets.
+
 **OpenAI models are for planning only. They must not implement project work.** This applies
 to the primary agent and all sub-agents, regardless of model, effort or role name, and
 supersedes earlier recommendations assigning implementation to OpenAI models.

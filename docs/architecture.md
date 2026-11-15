@@ -1,5 +1,27 @@
 # Architecture
 
+## Engine and game responsibility contract
+
+Manifest owns all of its production game rules and data. Jettison provides reusable
+capabilities for multiple game types, with space-specific mechanics selected explicitly
+rather than required by generic simulation, physics or scene APIs. Engine-local gameplay
+examples and fixtures are permitted for automated testing; they must be separate targets
+and content packages, not a production dependency of Manifest or the neutral engine host.
+
+For each integration task, read the current [development stages](development-stages.md),
+[gameplay requirements](gameplay-and-server-plan.md) and [boundary assessment](engine-game-boundary-assessment.md).
+Map the required mechanic to public SDK facilities. When a reusable capability is missing,
+specify its contract and tests for implementation in Jettison, then consume its committed
+SDK revision here. Manifest keeps policy, authorisation, balance, content and composition.
+Do not work around a missing SDK seam by copying engine infrastructure into the game.
+
+The boundary assessment records current violations and planned extraction. The existing
+engine app still includes sample trading, and several modules still assume star systems;
+this documentation does not claim those have been separated. The descriptions below
+record the current Manifest implementation unless explicitly marked planned.
+
+## Current module architecture
+
 Manifest is a Jettison consumer. `source/external/CMakeLists.txt` fetches the pinned engine first,
 with its tests, installation and dependency probe disabled. The engine owns all shared dependency
 versions and ABI definitions. Manifest reuses `EnTT::EnTT`, `yaml-cpp::yaml-cpp`, and

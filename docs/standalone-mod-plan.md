@@ -11,6 +11,12 @@ scope and acceptance scenario govern the gameplay delivered through the stages b
 
 ## Outcome and scope
 
+Apply the later [engine/game boundary assessment](engine-game-boundary-assessment.md)
+and the SDK's `docs/game-integration.md` when available. Jettison must check Manifest's
+current mechanics and provision missing reusable capabilities through public APIs, while
+remaining suitable for other game types. Its small trading example remains a separate
+sample/test project; it is not the base application into which Manifest rules are copied.
+
 Manifest remains a separate repository that consumes Jettison through CMake. It builds
 its own application, links its native gameplay against the engine and ships its own
 definitions, scripts and assets. A standalone distribution runs without a Jettison

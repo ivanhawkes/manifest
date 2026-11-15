@@ -23,6 +23,16 @@ to an OpenAI planning agent produces a plan and handoff under this policy, not a
 
 ## Roadmap planning
 
+Before planning an integration, consult [development stages](development-stages.md),
+[gameplay requirements](gameplay-and-server-plan.md) and the
+[engine/game boundary assessment](engine-game-boundary-assessment.md). Record a small
+capability map: required Manifest mechanic, existing public engine API, demonstrated gap,
+owner, and acceptance evidence. Jettison implementers must inspect Manifest's current
+requirements and provision reusable missing capabilities in engine code; Manifest
+implementers supply the game's rules, schemas and content. Consult the selected SDK's
+`docs/game-integration.md` when available. Keep proposed APIs distinct from implemented ones.
+The planning-only policy above applies to this cross-repository work too.
+
 | Work | Planning output |
 | --- | --- |
 | 1. Host boundary and script capabilities | State ownership, host/script contracts, capability limits and acceptance criteria |

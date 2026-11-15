@@ -1,5 +1,53 @@
 # Session handoff
 
+## Current planning handoff — 2026-11-15
+
+This section supersedes the historical resume instructions below. Stages 1–5 have
+implementation plans, not completed implementations. OpenAI agents remain planning-only;
+implementation and build/gate execution belong to Claude under the user's policy.
+
+- Manifest is on `feature-base` at `2716380` (`Merging in WIP. Not sure of build status.`).
+  The working tree was clean before this planning session; current build validity is unknown.
+- Jettison is on `feature-base` at `826c4bec125b6631a6ba8ee822c90463316c3511`, initially clean.
+  Manifest still pins `f85092027eda49c29001f7589608df1f0b8827fb`; the committed difference
+  from that pin is only `.gitignore`. Jettison now has the uncommitted documentation below.
+- Uncommitted Manifest work: five new `docs/stage-{1..5}-*-plan.md` files and
+  `docs/engine-game-boundary-assessment.md`; updates to `AGENTS.md`, architecture,
+  agent workflow, roadmap, development stages, standalone/host-script plans and this handoff.
+- Uncommitted Jettison work: new `docs/game-integration.md`; updates to `CLAUDE.md`
+  (`AGENTS.md` is its existing symlink), README/docs index, scope, architecture, roadmap,
+  sample-game, coding standards and build/gates docs. Both repositories now instruct
+  implementers to inspect Manifest requirements and provision reusable SDK gaps while
+  retaining a separate small example for testing. No code, configuration or assets changed;
+  no commits were made.
+- Read [development stages](development-stages.md) for the index and execution order.
+  Begin with [stage 1](stage-1-host-plan.md), including merged-baseline validation.
+- User correction: retain `lazygit` as a development-machine tool for terminal change
+  review. It is not a runtime requirement. Reconcile environment parity through the
+  shared SDK development shell; do not simply remove it from Manifest.
+- User direction: replace Manifest's custom YAML readers with Jettison's YAML archive,
+  migration and definition mechanisms. Stage 2 specifies this migration; no parallel
+  legacy runtime deserialiser is planned.
+- User direction: Jettison must provide genre-neutral capabilities; Manifest owns its
+  production gameplay and content. Engine-local gameplay for automated testing is allowed.
+  The [boundary assessment](engine-game-boundary-assessment.md) finds partial separation
+  and adds sample isolation, neutral consumer/build checks and optional space-module
+  extraction to the stage plans. Do not remove useful engine gameplay tests or assume
+  that moving files alone establishes separation.
+- Preserve price-only Decimal, floating continuous quantities and whole-credit balances.
+  Stages 3–4 specify company ownership, venue-local inventory and one authoritative world.
+  Stage 5 proposes durable step batches and recovery; none of its guarantees is validated yet.
+- Validation in this planning session: read-only source/API inspection, `git diff --check`
+  in both repositories, and 157 local Markdown link-target checks with no missing targets.
+  No builds, gates, benchmarks or crash/recovery tests ran. Detailed plans contain required
+  implementer checks and explicitly identify proposed choices and remaining decisions.
+
+Recommended next context: start a fresh implementation session with Claude using this
+handoff and stage 1. The plans retain the decisions; the exploratory source excerpts
+in the planning conversation are no longer needed for the first delivery slice.
+
+## Historical handoff — superseded repository state
+
 Prepared for `/clear` on 2026-11-15. Read `AGENTS.md`, `docs/coding-standards.md`,
 `docs/architecture.md`, `docs/build-and-gates.md` and `docs/agent-workflow.md` before editing.
 
