@@ -1,5 +1,94 @@
 # Session handoff
 
+## Stargate lifecycle and competing-access follow-up — 2026-11-15
+
+Resumed planning on `feature-base` at `df12cbf`, pushed to origin, with a clean working tree.
+The user selected a fixed pair of stargates per connection. Each endpoint serves its named
+connection; another destination needs another pair. This does not select a per-system gate
+cap or resolve later retargeting/transfer rules. The prior decisions below remain in force.
+
+Current uncommitted changes are planning documentation in this handoff and the
+[stargate plan](stargate-expansion-plan.md). The user also accepted manufacturing both
+endpoints at an accessible origin, installing one and sending the other with self-contained
+unmanned propulsion/power/deployment equipment. Activate only when both endpoints are
+commissioned/ready; disclose flight arrival separately from trade opening. Initial ownership
+is both endpoints held by the government/corporate sponsor, as public/company assets
+respectively. Equipment costs, operating supply quantities and repair terms remain unresolved; no destination
+workers or existing port are required for
+the selected autonomous deployment model.
+
+The user also accepted the launch equipment/funding model: authorise/reserve a capped project
+budget, paying for delivered equipment and completed services during preparation. Launch only
+after the origin gate is commissioned and the remote gate, carrier, FTL drive, power, controls,
+deployment equipment and consumables are physically ready. Fund remaining contracted flight/
+deployment services before departure; the launched mission needs no routine cash top-ups.
+Pause preparation overruns for an explicit budget increase. Pre-launch cancellation releases
+uncommitted funds while preserving equipment ownership, paid work and awarded supplier
+obligations. Exact quantities and credit costs remain balance work; post-launch recall/
+cancellation remains unresolved. Initial operating rules are selected below.
+
+The user accepted two server-running hours for remote deployment/commissioning as an initial
+balance-testing value quoted before launch. Work starts after arrival when equipment can
+operate; shutdown/equipment interruption pauses progress, disconnection does not. Preserve
+completed work through interruptions/restarts. An unavailable origin delays opening after
+remote commissioning; both endpoints must be ready. The carrier is a one-way deployment
+package whose useful power, controls and installation hardware become part of the remote
+gate, with its cost included in the expedition budget. Initial upkeep is selected below.
+
+The user accepted six server-running flight hours per light-year as the initial balance-testing
+rate, freezing each expedition's quoted rate/duration at launch; later tuning affects future
+launches. Examples: 2/4/8 light-years take 12/24/48 running hours in flight, plus two hours of
+uninterrupted commissioning when otherwise ready. Preparation and interruptions add time.
+Authored speed/pacing and unit conversions must realise the selected rate; no settings changed.
+
+The user also selected one protected return crossing for the same ship after entry through
+an operational gate, even if its owner later bans the company. This is ordinary gate traffic,
+not the one-way delivery carrier. The user accepted the detailed permit model: quote and reserve
+outward/return fees together before entry; charge each once at transit commitment. Honour
+accepted terms after later price increases/bans; new permits use current policy. Bind the
+return to the same ship/pair, without time expiry while it remains in the destination system.
+The first departure closes the visit. Return through that pair consumes the right without
+creating another; leaving by another route releases unused return funds. Ownership transfers,
+detailed repair/compensation and quote validation/fee amounts remain unresolved. The right
+does not grant unlimited re-entry or recursively create another return permit.
+
+The user accepted initial per-crossing energy/supply costs, deferring recurring idle upkeep.
+At admission the owner reserves actual physical supplies for the protected return until the
+visit closes; the ship's fee reservation does not substitute for that stock. Shortages stop
+new admissions while preserving return supplies. Genuine equipment outages visibly block
+service, preserving rights/funds until repair. Owners may close to new business immediately,
+but honour accepted passages and returns; dismantling waits for their discharge. With no
+return expiry, retirement can wait indefinitely for a visiting ship. No forced departure,
+random breakdown model or safe topology removal is established; detailed repair/compensation,
+resource quantities, maintenance and salvage remain design work.
+
+The user accepted independent rival gate pairs into already-connected systems, without
+incumbent gate-owner permission. Several independently owned pairs may serve a system,
+including parallel links between the same systems. A rival may deliver its endpoint by its
+own funded unmanned FTL expedition under the same travel/commissioning rules; an incumbent
+gate ban cannot block that flight. Each owner controls its own access/fees. Gate construction
+does not bypass protected planets or active resource concessions. Site eligibility/placement,
+capacity limits and possible delivery through existing gate networks remain unresolved.
+
+Additional pinned-SDK evidence: public `Gates::DefineStarSystem` rejects redefinition and
+`MakeGates` rejects repeat creation for a system. Further endpoints in an existing system
+therefore need a demonstrated public lifecycle or minimal reusable Jettison provision, not
+private app access or a duplicate loader. The capability map and required consumer/recovery
+checks are updated; no engine change or execution evidence is claimed.
+
+No implementation, SDK/environment changes, builds or gameplay validation occurred.
+The main stargate lifecycle/access decisions are recorded, with exact materials/prices,
+operating/repair recipes, site rules, transfer/recall, quote validation and SDK integration
+still pending. Documentation checks: `git diff --check` and 18 local Markdown link/heading
+targets across the two changed documents passed. Only this handoff and the stargate plan are
+uncommitted; `df12cbf` remains the pushed baseline.
+
+Recommended next planning topic: long-running demand/public-income circulation, including
+funded consumer demand, producer income and public-budget replenishment. Those rules remain
+unselected; no household model, tax or currency issuance is implied by the gate decisions.
+Recommend `/compact` before that topic: the decisions are preserved here, while earlier gate
+API excerpts and repeated documentation-check output are no longer needed for the next design.
+
 ## Contract, frontier, first-tech and stargate follow-up — 2026-11-15
 
 Resumed from Manifest `feature-base` at `066b5cc`, with a clean working tree. This follow-up
