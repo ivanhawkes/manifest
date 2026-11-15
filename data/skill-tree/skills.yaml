@@ -1,7 +1,7 @@
 ---
 skill-base:
-  - skill: &skillMining
-      uniqueId: Mining
+  - skill:
+      skillId: SkillMining
       displayName: Mining
       description: Extracts resources from the environment
       nodeType: Skill
@@ -13,8 +13,8 @@ skill-base:
       gridX: -10.0
       gridY: 0.0
 
-  - skill: &skillSmelting
-      uniqueId: Smelting
+  - skill:
+      skillId: SkillSmelting
       displayName: Smelting
       description: Processes ores into usable metals
       nodeType: Skill
@@ -26,8 +26,8 @@ skill-base:
       gridX: -9.0
       gridY: 0.0
 
-  - skill: &skillLumber
-      uniqueId: Lumber
+  - skill:
+      skillId: SkillLumber
       displayName: Lumber
       description: Gathers wood from the environment
       nodeType: Skill
@@ -39,8 +39,8 @@ skill-base:
       gridX: -8.0
       gridY: 0.0
 
-  - skill: &skillHerbalism
-      uniqueId: Herbalism
+  - skill:
+      skillId: SkillHerbalism
       displayName: Herbalism
       description: Gathers herbs from the environment
       nodeType: Skill
@@ -52,8 +52,8 @@ skill-base:
       gridX: -7.0
       gridY: 0.0
 
-  - skill: &skillAgriculture
-      uniqueId: Agriculture
+  - skill:
+      skillId: SkillAgriculture
       displayName: Agriculture
       description: Cultivates crops from the environment
       nodeType: Skill
@@ -65,8 +65,8 @@ skill-base:
       gridX: -6.0
       gridY: 0.0
 
-  - skill: &skillAnimalHusbandry
-      uniqueId: AnimalHusbandry
+  - skill:
+      skillId: SkillAnimalHusbandry
       displayName: Animal Husbandry
       description: Raises animals for food and animal products
       nodeType: Skill
@@ -78,8 +78,8 @@ skill-base:
       gridX: -5.0
       gridY: 0.0
 
-  - skill: &skillAnimalProcessing
-      uniqueId: AnimalProcessing
+  - skill:
+      skillId: SkillAnimalProcessing
       displayName: Animal Processing
       description: Processes animals into meat, hides, and furs
       nodeType: Skill
@@ -91,8 +91,8 @@ skill-base:
       gridX: -4.0
       gridY: 0.0
 
-  - skill: &skillFoodProcessing
-      uniqueId: FoodProcessing
+  - skill:
+      skillId: SkillFoodProcessing
       displayName: Food Processing
       description: Mills, bakes, brews, and ferments food
       nodeType: Skill
@@ -104,8 +104,8 @@ skill-base:
       gridX: -3.0
       gridY: 0.0
 
-  - skill: &skillKilnMaterials
-      uniqueId: KilnMaterials
+  - skill:
+      skillId: SkillKilnMaterials
       displayName: Kiln and Materials Production
       description: Fires clay and minerals into ceramics, glass, lime, and cement
       nodeType: Skill
@@ -117,8 +117,8 @@ skill-base:
       gridX: -2.0
       gridY: 0.0
 
-  - skill: &skillChemicalManufacturing
-      uniqueId: ChemicalManufacturing
+  - skill:
+      skillId: SkillChemicalManufacturing
       displayName: Chemical Manufacturing
       description: Processes raw materials into industrial and agricultural chemicals
       nodeType: Skill
@@ -130,8 +130,8 @@ skill-base:
       gridX: -1.0
       gridY: 0.0
 
-  - skill: &skillMetalworking
-      uniqueId: Metalworking
+  - skill:
+      skillId: SkillMetalworking
       displayName: Metalworking and Fabrication
       description: Alloys, casts, forges, and fabricates metal goods
       nodeType: Skill
@@ -143,8 +143,8 @@ skill-base:
       gridX: 0.0
       gridY: 0.0
 
-  - skill: &skillPublishing
-      uniqueId: Publishing
+  - skill:
+      skillId: SkillPublishing
       displayName: Papermaking and Publishing
       description: Produces writing materials, ink, books, and scrolls
       nodeType: Skill
@@ -156,8 +156,8 @@ skill-base:
       gridX: 1.0
       gridY: 0.0
 
-  - skill: &skillPharmaceuticals
-      uniqueId: Pharmaceuticals
+  - skill:
+      skillId: SkillPharmaceuticals
       displayName: Pharmaceutical Production
       description: Produces medicines through chemical and biological processes
       nodeType: Skill
@@ -169,8 +169,8 @@ skill-base:
       gridX: 2.0
       gridY: 0.0
 
-  - skill: &skillResearch
-      uniqueId: Research
+  - skill:
+      skillId: SkillResearch
       displayName: Research and Education
       description: Develops and teaches scientific and technical knowledge
       nodeType: Skill
@@ -182,8 +182,8 @@ skill-base:
       gridX: 3.0
       gridY: 0.0
 
-  - skill: &skillTextiles
-      uniqueId: Textiles
+  - skill:
+      skillId: SkillTextiles
       displayName: Textile Production
       description: Spins and weaves fibers into textiles
       nodeType: Skill
@@ -195,8 +195,8 @@ skill-base:
       gridX: 4.0
       gridY: 0.0
 
-  - skill: &skillPolymers
-      uniqueId: Polymers
+  - skill:
+      skillId: SkillPolymers
       displayName: Polymer Production
       description: Converts chemical feedstocks into polymer materials
       nodeType: Skill
@@ -208,8 +208,8 @@ skill-base:
       gridX: 5.0
       gridY: 0.0
 
-  - skill: &skillFuelRefining
-      uniqueId: FuelRefining
+  - skill:
+      skillId: SkillFuelRefining
       displayName: Fuel Refining
       description: Refines energy resources into usable fuels
       nodeType: Skill

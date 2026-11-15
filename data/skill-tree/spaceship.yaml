@@ -36,8 +36,8 @@
 skill-base:
 
   # Shield banks: the screens, by arc of fire.
-  - skill: &skillShipShieldsFront
-      uniqueId: ShipShieldsFront
+  - skill:
+      skillId: SkillShipShieldsFront
       displayName: Forward Shield Bank
       description: The screen that faces the pirate you are running down
       nodeType: Skill
@@ -49,13 +49,13 @@ skill-base:
       gridX: 0.0
       gridY: 1.0
 
-  - skill: &skillShipShieldsSide
-      uniqueId: ShipShieldsSide
+  - skill:
+      skillId: SkillShipShieldsSide
       displayName: Beam Shield Bank
       description: The screen that covers the flanks when a raider circles you
       nodeType: Skill
       requires:
-        - nodeId: ShipShieldsFront
+        - nodeId: SkillShipShieldsFront
           requiredTier: 1
       maxTiers: 3
       resourceCostPerTier: 2
@@ -64,13 +64,13 @@ skill-base:
       gridX: 1.0
       gridY: 1.0
 
-  - skill: &skillShipShieldsRear
-      uniqueId: ShipShieldsRear
+  - skill:
+      skillId: SkillShipShieldsRear
       displayName: Aft Shield Bank
       description: The screen that covers the drive and the cargo of a raider astern
       nodeType: Skill
       requires:
-        - nodeId: ShipShieldsFront
+        - nodeId: SkillShipShieldsFront
           requiredTier: 1
       maxTiers: 3
       resourceCostPerTier: 2
@@ -80,8 +80,8 @@ skill-base:
       gridY: 1.0
 
   # Gun batteries: solid rounds, by arc of fire.
-  - skill: &skillShipGunsFront
-      uniqueId: ShipGunsFront
+  - skill:
+      skillId: SkillShipGunsFront
       displayName: Forward Gun Battery
       description: The guns that fire along the chase line at the target ahead
       nodeType: Skill
@@ -93,13 +93,13 @@ skill-base:
       gridX: 4.0
       gridY: 1.0
 
-  - skill: &skillShipGunsRear
-      uniqueId: ShipGunsRear
+  - skill:
+      skillId: SkillShipGunsRear
       displayName: Aft Gun Battery
       description: The guns that fire over the drive at the raider astern
       nodeType: Skill
       requires:
-        - nodeId: ShipGunsFront
+        - nodeId: SkillShipGunsFront
           requiredTier: 1
       maxTiers: 3
       resourceCostPerTier: 2
@@ -109,13 +109,13 @@ skill-base:
       gridY: 1.0
 
   # Laser mounts: energy beams for the range the guns do not reach.
-  - skill: &skillShipLasersFront
-      uniqueId: ShipLasersFront
+  - skill:
+      skillId: SkillShipLasersFront
       displayName: Forward Laser Mount
       description: The beam that burns out a raider at range, ahead of the gun line
       nodeType: Skill
       requires:
-        - nodeId: ShipGunsFront
+        - nodeId: SkillShipGunsFront
           requiredTier: 1
       maxTiers: 3
       resourceCostPerTier: 3
@@ -124,13 +124,13 @@ skill-base:
       gridX: 6.0
       gridY: 1.0
 
-  - skill: &skillShipLasersRear
-      uniqueId: ShipLasersRear
+  - skill:
+      skillId: SkillShipLasersRear
       displayName: Aft Laser Mount
       description: The beam for the chaser you have no hope of out-running
       nodeType: Skill
       requires:
-        - nodeId: ShipLasersFront
+        - nodeId: SkillShipLasersFront
           requiredTier: 1
       maxTiers: 3
       resourceCostPerTier: 3
@@ -140,8 +140,8 @@ skill-base:
       gridY: 1.0
 
   # Computer systems: the long haul and the market.
-  - skill: &skillShipNavigationComputer
-      uniqueId: ShipNavigationComputer
+  - skill:
+      skillId: SkillShipNavigationComputer
       displayName: Navigation Computer
       description: Plots the jumps, the fuel and the windows that make a long haul pay
       nodeType: Skill
@@ -153,13 +153,13 @@ skill-base:
       gridX: 9.0
       gridY: 1.0
 
-  - skill: &skillShipTraderAI
-      uniqueId: ShipTraderAI
+  - skill:
+      skillId: SkillShipTraderAI
       displayName: Trading AI
       description: Reads every market in range and picks the cargo that pays the freight
       nodeType: Skill
       requires:
-        - nodeId: ShipNavigationComputer
+        - nodeId: SkillShipNavigationComputer
           requiredTier: 1
       maxTiers: 3
       resourceCostPerTier: 3
@@ -169,8 +169,8 @@ skill-base:
       gridY: 1.0
 
   # Propulsion: the drive that makes the running, and the thrusters that spend it.
-  - skill: &skillShipEngineThrust
-      uniqueId: ShipEngineThrust
+  - skill:
+      skillId: SkillShipEngineThrust
       displayName: Thrust Drive
       description: The main drive, for the jump windows, the orbit climbs and the running start
       nodeType: Skill
@@ -182,13 +182,13 @@ skill-base:
       gridX: 12.0
       gridY: 1.0
 
-  - skill: &skillShipManoeuvringJets
-      uniqueId: ShipManoeuvringJets
+  - skill:
+      skillId: SkillShipManoeuvringJets
       displayName: Manoeuvring Jets
       description: Vernier thrusters for station keeping, docking and the jink a missile cannot follow
       nodeType: Skill
       requires:
-        - nodeId: ShipEngineThrust
+        - nodeId: SkillShipEngineThrust
           requiredTier: 1
       maxTiers: 3
       resourceCostPerTier: 2
@@ -197,13 +197,13 @@ skill-base:
       gridX: 13.0
       gridY: 1.0
 
-  - skill: &skillShipAttitudeControl
-      uniqueId: ShipAttitudeControl
+  - skill:
+      skillId: SkillShipAttitudeControl
       displayName: Attitude Control
       description: The pointing that puts the guns on the target and the screens to the front
       nodeType: Skill
       requires:
-        - nodeId: ShipManoeuvringJets
+        - nodeId: SkillShipManoeuvringJets
           requiredTier: 1
       maxTiers: 3
       resourceCostPerTier: 2
@@ -213,8 +213,8 @@ skill-base:
       gridY: 1.0
 
   # Sensors: the mast that sees, and the arrays that read what it sees.
-  - skill: &skillShipSensorLongRange
-      uniqueId: ShipSensorLongRange
+  - skill:
+      skillId: SkillShipSensorLongRange
       displayName: Long Range Sensor Array
       description: The mast that sees the raider, the patrol and the drift before the raider sees you
       nodeType: Skill
@@ -226,13 +226,13 @@ skill-base:
       gridX: 16.0
       gridY: 1.0
 
-  - skill: &skillShipSensorFireControl
-      uniqueId: ShipSensorFireControl
+  - skill:
+      skillId: SkillShipSensorFireControl
       displayName: Fire Control Array
       description: The lock and the lead that puts a shot where the target will be
       nodeType: Skill
       requires:
-        - nodeId: ShipSensorLongRange
+        - nodeId: SkillShipSensorLongRange
           requiredTier: 1
       maxTiers: 3
       resourceCostPerTier: 2
@@ -241,13 +241,13 @@ skill-base:
       gridX: 17.0
       gridY: 1.0
 
-  - skill: &skillShipSensorCommercial
-      uniqueId: ShipSensorCommercial
+  - skill:
+      skillId: SkillShipSensorCommercial
       displayName: Commercial Sensor Array
       description: The markets of a world, the cargo in the belt and the wreck worth salvaging, read from orbit
       nodeType: Skill
       requires:
-        - nodeId: ShipSensorLongRange
+        - nodeId: SkillShipSensorLongRange
           requiredTier: 1
       maxTiers: 3
       resourceCostPerTier: 3
@@ -257,8 +257,8 @@ skill-base:
       gridY: 1.0
 
   # The haul: the cargo, the fuel that carries it and the air the crew breathe.
-  - skill: &skillShipCargoHolds
-      uniqueId: ShipCargoHolds
+  - skill:
+      skillId: SkillShipCargoHolds
       displayName: Cargo Holds
       description: The holds that carry the long haul, and the braces that keep it safe
       nodeType: Skill
@@ -270,13 +270,13 @@ skill-base:
       gridX: 20.0
       gridY: 1.0
 
-  - skill: &skillShipFuelBunkers
-      uniqueId: ShipFuelBunkers
+  - skill:
+      skillId: SkillShipFuelBunkers
       displayName: Fuel Bunkers
       description: The bunkerage that buys the range to carry a haul the long way
       nodeType: Skill
       requires:
-        - nodeId: ShipEngineThrust
+        - nodeId: SkillShipEngineThrust
           requiredTier: 1
       maxTiers: 3
       resourceCostPerTier: 2
@@ -285,13 +285,13 @@ skill-base:
       gridX: 21.0
       gridY: 1.0
 
-  - skill: &skillShipSalvageRig
-      uniqueId: ShipSalvageRig
+  - skill:
+      skillId: SkillShipSalvageRig
       displayName: Salvage Rig
       description: The gear to open a wreck and bring its cargo out of the drift
       nodeType: Skill
       requires:
-        - nodeId: ShipCargoHolds
+        - nodeId: SkillShipCargoHolds
           requiredTier: 1
       maxTiers: 3
       resourceCostPerTier: 2
@@ -300,13 +300,13 @@ skill-base:
       gridX: 22.0
       gridY: 1.0
 
-  - skill: &skillShipLifeSupport
-      uniqueId: ShipLifeSupport
+  - skill:
+      skillId: SkillShipLifeSupport
       displayName: Life Support
       description: The air, water and heat a crew needs on a haul measured in weeks
       nodeType: Skill
       requires:
-        - nodeId: ShipCrewTraining
+        - nodeId: SkillShipCrewTraining
           requiredTier: 1
       maxTiers: 3
       resourceCostPerTier: 2
@@ -316,8 +316,8 @@ skill-base:
       gridY: 1.0
 
   # Running quiet: the coating, the emissions and the answer to a lock.
-  - skill: &skillShipStealthCoating
-      uniqueId: ShipStealthCoating
+  - skill:
+      skillId: SkillShipStealthCoating
       displayName: Stealth Coating
       description: The skin that keeps the ship out of the return a raider reads
       nodeType: Skill
@@ -329,13 +329,13 @@ skill-base:
       gridX: 25.0
       gridY: 1.0
 
-  - skill: &skillShipEmissionsControl
-      uniqueId: ShipEmissionsControl
+  - skill:
+      skillId: SkillShipEmissionsControl
       displayName: Emissions Control
       description: Running with the drive cold, the heat shed and the signature managed
       nodeType: Skill
       requires:
-        - nodeId: ShipStealthCoating
+        - nodeId: SkillShipStealthCoating
           requiredTier: 1
       maxTiers: 3
       resourceCostPerTier: 2
@@ -344,13 +344,13 @@ skill-base:
       gridX: 26.0
       gridY: 1.0
 
-  - skill: &skillShipCountermeasures
-      uniqueId: ShipCountermeasures
+  - skill:
+      skillId: SkillShipCountermeasures
       displayName: Countermeasures
       description: Chaff, flares and decoys, thrown at the moment the mast calls the lock
       nodeType: Skill
       requires:
-        - nodeId: ShipSensorLongRange
+        - nodeId: SkillShipSensorLongRange
           requiredTier: 1
       maxTiers: 3
       resourceCostPerTier: 2
@@ -360,8 +360,8 @@ skill-base:
       gridY: 1.0
 
   # Crew: the training, the repair skill and the parts the repair needs.
-  - skill: &skillShipCrewTraining
-      uniqueId: ShipCrewTraining
+  - skill:
+      skillId: SkillShipCrewTraining
       displayName: Crew Training
       description: The watch standards that make a crew of traders hold a ship together
       nodeType: Skill
@@ -373,13 +373,13 @@ skill-base:
       gridX: 29.0
       gridY: 1.0
 
-  - skill: &skillShipDamageControl
-      uniqueId: ShipDamageControl
+  - skill:
+      skillId: SkillShipDamageControl
       displayName: Damage Control
       description: The repair parties that weld a ship closed while it is still shooting
       nodeType: Skill
       requires:
-        - nodeId: ShipCrewTraining
+        - nodeId: SkillShipCrewTraining
           requiredTier: 1
       maxTiers: 3
       resourceCostPerTier: 2
@@ -388,13 +388,13 @@ skill-base:
       gridX: 30.0
       gridY: 1.0
 
-  - skill: &skillShipSparesLockers
-      uniqueId: ShipSparesLockers
+  - skill:
+      skillId: SkillShipSparesLockers
       displayName: Spares Lockers
       description: The gaskets, boards and feeder spares a repair party reaches for
       nodeType: Skill
       requires:
-        - nodeId: ShipDamageControl
+        - nodeId: SkillShipDamageControl
           requiredTier: 1
       maxTiers: 3
       resourceCostPerTier: 1

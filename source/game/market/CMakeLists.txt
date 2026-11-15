@@ -1,0 +1,15 @@
+manifest_add_module(market
+	DEPENDS
+		effects
+		sim
+		ecs
+		progression
+	HEADERS
+		include/manifest/market/Marketplace.h
+	SOURCES
+		src/Marketplace.cpp
+	TESTS
+		tests/MarketplaceTests.cpp
+	PRIVATE_LIBRARIES
+		Jettison::Core
+)

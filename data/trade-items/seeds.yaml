@@ -20,12 +20,10 @@
 item-base:
 
   # Seeds
-  - item: &itemWheatSeeds
-      <<: *categorySeeds
-      <<: *copperAge
-      uniqueId: WheatSeeds
-      categoryId: Seeds
-      ageId: CopperAge
+  - item:
+      itemId: ItemWheatSeeds
+      categoryId: CategorySeeds
+      ageId: AgeCopper
       displayName: Wheat seeds
       description: Wheat seeds
       unitsPerCubicMetre: 1
@@ -34,12 +32,10 @@ item-base:
       density: 1.27
       packFactor: 0.61
 
-  - item: &itemBarleySeeds
-      <<: *categorySeeds
-      <<: *copperAge
-      uniqueId: BarleySeeds
-      categoryId: Seeds
-      ageId: CopperAge
+  - item:
+      itemId: ItemBarleySeeds
+      categoryId: CategorySeeds
+      ageId: AgeCopper
       displayName: Barley seeds
       description: Barley seeds
       unitsPerCubicMetre: 1
@@ -48,12 +44,10 @@ item-base:
       density: 1.3
       packFactor: 0.48
 
-  - item: &itemOatSeeds
-      <<: *categorySeeds
-      <<: *copperAge
-      uniqueId: OatSeeds
-      categoryId: Seeds
-      ageId: CopperAge
+  - item:
+      itemId: ItemOatSeeds
+      categoryId: CategorySeeds
+      ageId: AgeCopper
       displayName: Oat seeds
       description: Oat seeds
       unitsPerCubicMetre: 1
@@ -62,12 +56,10 @@ item-base:
       density: 1.22
       packFactor: 0.41
 
-  - item: &itemCornSeed
-      <<: *categorySeeds
-      <<: *copperAge
-      uniqueId: CornSeeds
-      categoryId: Seeds
-      ageId: CopperAge
+  - item:
+      itemId: ItemCornSeeds
+      categoryId: CategorySeeds
+      ageId: AgeCopper
       displayName: Corn seeds
       description: Corn seeds
       unitsPerCubicMetre: 1
@@ -76,12 +68,10 @@ item-base:
       density: 1.25
       packFactor: 0.58
 
-  - item: &itemRiceSeeds
-      <<: *categorySeeds
-      <<: *copperAge
-      uniqueId: RiceSeeds
-      categoryId: Seeds
-      ageId: CopperAge
+  - item:
+      itemId: ItemRiceSeeds
+      categoryId: CategorySeeds
+      ageId: AgeCopper
       displayName: Rice seeds
       description: Rice seeds
       unitsPerCubicMetre: 1
@@ -90,12 +80,10 @@ item-base:
       density: 1.32
       packFactor: 0.61
 
-  - item: &itemSorghumSeeds
-      <<: *categorySeeds
-      <<: *copperAge
-      uniqueId: SorghumSeeds
-      categoryId: Seeds
-      ageId: CopperAge
+  - item:
+      itemId: ItemSorghumSeeds
+      categoryId: CategorySeeds
+      ageId: AgeCopper
       displayName: Sorghum seeds
       description: Sorghum seeds
       unitsPerCubicMetre: 1
@@ -104,12 +92,10 @@ item-base:
       density: 1.3
       packFactor: 0.51
 
-  - item: &itemPoppySeeds
-      <<: *categorySeeds
-      <<: *copperAge
-      uniqueId: PoppySeeds
-      categoryId: Seeds
-      ageId: CopperAge
+  - item:
+      itemId: ItemPoppySeeds
+      categoryId: CategorySeeds
+      ageId: AgeCopper
       displayName: Poppy seeds
       description: Poppy seeds
       unitsPerCubicMetre: 1
@@ -118,12 +104,10 @@ item-base:
       density: 1.25
       packFactor: 0.48
 
-  - item: &itemCocoaSeeds
-      <<: *categorySeeds
-      <<: *copperAge
-      uniqueId: CocoaSeeds
-      categoryId: Seeds
-      ageId: CopperAge
+  - item:
+      itemId: ItemCocoaSeeds
+      categoryId: CategorySeeds
+      ageId: AgeCopper
       displayName: Cocoa seeds
       description: Cocoa seeds
       unitsPerCubicMetre: 1
@@ -132,12 +116,10 @@ item-base:
       density: 1.2
       packFactor: 0.46
 
-  - item: &itemCocaSeeds
-      <<: *categorySeeds
-      <<: *copperAge
-      uniqueId: CocaSeeds
-      categoryId: Seeds
-      ageId: CopperAge
+  - item:
+      itemId: ItemCocaSeeds
+      categoryId: CategorySeeds
+      ageId: AgeCopper
       displayName: Coca seeds
       description: Coca seeds
       unitsPerCubicMetre: 1
@@ -146,12 +128,10 @@ item-base:
       density: 1.25
       packFactor: 0.44
 
-  - item: &itemCanolaSeeds
-      <<: *categorySeeds
-      <<: *postIndustrialAge
-      uniqueId: CanolaSeeds
-      categoryId: Seeds
-      ageId: Post-industrialAge
+  - item:
+      itemId: ItemCanolaSeeds
+      categoryId: CategorySeeds
+      ageId: AgePost-industrial
       displayName: Canola seeds
       description: Canola seeds
       unitsPerCubicMetre: 1

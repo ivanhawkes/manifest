@@ -1,312 +1,225 @@
 ---
-categories-base:
-  # Fallback category
-  - category: &categoryUnknown
-      uniqueId: Unknown
-      displayName: Unknown
-
-  # Standard categories
-  - category: &categoryAlcohol
-      uniqueId: Alcohol
-      displayName: Alcohol
-  - category: &categoryAlloys
-      uniqueId: Alloys
-      displayName: Alloys
-  - category: &categoryAnimalProducts
-      uniqueId: AnimalProducts
-      displayName: Animal Products
-  - category: &categoryAnimals
-      uniqueId: Animals
-      displayName: Animals
-  - category: &categoryAppliances
-      uniqueId: Appliances
-      displayName: Appliances
-  - category: &categoryArms
-      uniqueId: Arms
-      displayName: Arms
-  - category: &categoryChemicals
-      uniqueId: Chemicals
-      displayName: Chemicals
-  - category: &categoryCollectibles
-      uniqueId: Collectibles
-      displayName: Collectibles
-  - category: &categoryCommunications
-      uniqueId: Communications
-      displayName: Communications
-  - category: &categoryComputing
-      uniqueId: Computing
-      displayName: Computing
-  - category: &categoryConstructionMaterials
-      uniqueId: ConstructionMaterials
-      displayName: ConstructionMaterials
-  - category: &categoryConsumables
-      uniqueId: Consumables
-      displayName: Consumables
-  - category: &categoryCrafts
-      uniqueId: Crafts
-      displayName: Crafts
-  - category: &categoryCurrency
-      uniqueId: Currency
-      displayName: Currency
-  - category: &categoryDrugs
-      uniqueId: Drugs
-      displayName: Drugs
-  - category: &categoryElectronics
-      uniqueId: Electronics
-      displayName: Electronics
-  - category: &categoryEngineering
-      uniqueId: Engineering
-      displayName: Engineering
-  - category: &categoryEntertainment
-      uniqueId: Entertainment
-      displayName: Entertainment
-  - category: &categoryFarmingEquipment
-      uniqueId: FarmingEquipment
-      displayName: Farming Equipment
-  - category: &categoryFerments
-      uniqueId: Ferments
-      displayName: Ferments
-  - category: &categoryFertilisers
-      uniqueId: Fertilisers
-      displayName: Fertilisers
-  - category: &categoryFuels
-      uniqueId: Fuels
-      displayName: Fuels
-  - category: &categoryHumans
-      uniqueId: Humans
-      displayName: Humans
-  - category: &categoryInformation
-      uniqueId: Information
-      displayName: Information
-  - category: &categoryLuxuryGoods
-      uniqueId: LuxuryGoods
-      displayName: Luxury Goods
-  - category: &categoryMachinery
-      uniqueId: Machinery
-      displayName: Machinery
-  - category: &categoryMedicalEquipment
-      uniqueId: MedicalEquipment
-      displayName: Medical Equipment
-  - category: &categoryMedicine
-      uniqueId: Medicine
-      displayName: Medicine
-  - category: &categoryMetals
-      uniqueId: Metals
-      displayName: Metals
-  - category: &categoryMinerals
-      uniqueId: Minerals
-      displayName: Minerals
-  - category: &categoryMiningEquipment
-      uniqueId: MiningEquipment
-      displayName: Mining Equipment
-  - category: &categoryOptics
-      uniqueId: Optics
-      displayName: Optics
-  - category: &categoryPharmaceuticals
-      uniqueId: Pharmaceuticals
-      displayName: Pharmaceuticals
-  - category: &categoryPolymers
-      uniqueId: Polymers
-      displayName: Polymers
-  - category: &categoryScientificEquipment
-      uniqueId: ScientificEquipment
-      displayName: Scientific Equipment
-  - category: &categorySeeds
-      uniqueId: Seeds
-      displayName: Seeds
-  - category: &categorySlaves
-      uniqueId: Slaves
-      displayName: Slaves
-  - category: &categorySmallArms
-      uniqueId: SmallArms
-      displayName: Small Arms
-  - category: &categoryTextiles
-      uniqueId: Textiles
-      displayName: Textiles
-  - category: &categoryTools
-      uniqueId: Tools
-      displayName: Tools
-  - category: &categoryWater
-      uniqueId: Water
-      displayName: Water
-  - category: &categoryWriting
-      uniqueId: Writing
-      displayName: Writing
-
+# The categories of the trade goods, in alphabetical order by categoryId.
+#
+# The categoryId of a category is the value the categoryId of an item points at, and
+# the type weights the goods a world wants.
 categories:
   # Fallback category
   - category:
-      <<: *categoryUnknown
+      categoryId: CategoryUnknown
+      displayName: Unknown
       type: Unknown
       description: Unknown, catch all for items that are outside our present taxonomy
 
   # Standard categories
   - category:
-      <<: *categoryAlcohol
+      categoryId: CategoryAlcohol
+      displayName: Alcohol
       type: Alcohol
       description: Fermented and distilled drinks
   - category:
-      <<: *categoryAlloys
+      categoryId: CategoryAlloys
+      displayName: Alloys
       type: Alloys
       description: A combination of two or more metals
   - category:
-      <<: *categoryAnimalProducts
+      categoryId: CategoryAnimalProducts
+      displayName: Animal Products
       type: AnimalProducts
       description: Animal products
   - category:
-      <<: *categoryAnimals
+      categoryId: CategoryAnimals
+      displayName: Animals
       type: Animals
       description: Animals
   - category:
-      <<: *categoryAppliances
+      categoryId: CategoryAppliances
+      displayName: Appliances
       type: Appliances
       description: Household appliances
   - category:
-      <<: *categoryArms
+      categoryId: CategoryArms
+      displayName: Arms
       type: Arms
       description: Heavy weapons and ammunition
   - category:
-      <<: *categoryChemicals
+      categoryId: CategoryChemicals
+      displayName: Chemicals
       type: Chemicals
       description: Chemicals
   - category:
-      <<: *categoryCollectibles
+      categoryId: CategoryCollectibles
+      displayName: Collectibles
       type: Collectibles
       description: Collectibles of various kinds
   - category:
-      <<: *categoryCommunications
+      categoryId: CategoryCommunications
+      displayName: Communications
       type: Communications
       description: Communications equipment
   - category:
-      <<: *categoryComputing
+      categoryId: CategoryComputing
+      displayName: Computing
       type: Computing
       description: Computer and micro-controllers
   - category:
-      <<: *categoryConstructionMaterials
+      categoryId: CategoryConstructionMaterials
+      displayName: ConstructionMaterials
       type: ConstructionMaterials
       description: Construction materials
   - category:
-      <<: *categoryConsumables
+      categoryId: CategoryConsumables
+      displayName: Consumables
       type: Consumables
       description: Rations, meals, grains, vegetables, vitamins
   - category:
-      <<: *categoryCrafts
+      categoryId: CategoryCrafts
+      displayName: Crafts
       type: Crafts
       description: Pottery, ceramics, weaving...
   - category:
-      <<: *categoryCurrency
+      categoryId: CategoryCurrency
+      displayName: Currency
       type: Currency
       description: Coins, paper notes
   - category:
-      <<: *categoryDrugs
+      categoryId: CategoryDrugs
+      displayName: Drugs
       type: Drugs
       description: Non-prescription drugs
   - category:
-      <<: *categoryElectronics
+      categoryId: CategoryElectronics
+      displayName: Electronics
       type: Electronics
       description: Televisions, phones, tablets, game consoles
   - category:
-      <<: *categoryEngineering
+      categoryId: CategoryEngineering
+      displayName: Engineering
       type: Engineering
       description: Engineering knowledge and parts
   - category:
-      <<: *categoryEntertainment
+      categoryId: CategoryEntertainment
+      displayName: Entertainment
       type: Entertainment
       description: Media, toys
   - category:
-      <<: *categoryFarmingEquipment
+      categoryId: CategoryFarmingEquipment
+      displayName: Farming Equipment
       type: FarmingEquipment
       description: Farming equipment
   - category:
-      <<: *categoryFerments
+      categoryId: CategoryFerments
+      displayName: Ferments
       type: Ferments
       description: Ferments
   - category:
-      <<: *categoryFertilisers
+      categoryId: CategoryFertilisers
+      displayName: Fertilisers
       type: Fertilisers
       description: Fertilisers
   - category:
-      <<: *categoryFuels
+      categoryId: CategoryFuels
+      displayName: Fuels
       type: Fuels
       description: Petrol, diesel, spaceship-fuel
   - category:
-      <<: *categoryHumans
+      categoryId: CategoryHumans
+      displayName: Humans
       type: Humans
       description: Slaves, mercenaries, specialists
   - category:
-      <<: *categoryInformation
+      categoryId: CategoryInformation
+      displayName: Information
       type: Information
       description: Math, science, maps
   - category:
-      <<: *categoryLuxuryGoods
+      categoryId: CategoryLuxuryGoods
+      displayName: Luxury Goods
       type: LuxuryGoods
       description: Expensive goods with no purpose beyond appearances and prestige
   - category:
-      <<: *categoryMachinery
+      categoryId: CategoryMachinery
+      displayName: Machinery
       type: Machinery
       description: Machinery
   - category:
-      <<: *categoryMedicalEquipment
+      categoryId: CategoryMedicalEquipment
+      displayName: Medical Equipment
       type: MedicalEquipment
       description: Medical equipment
   - category:
-      <<: *categoryMedicine
+      categoryId: CategoryMedicine
+      displayName: Medicine
       type: Medicine
       description: Medicine
   - category:
-      <<: *categoryMetals
+      categoryId: CategoryMetals
+      displayName: Metals
       type: Metals
       description: Metals
   - category:
-      <<: *categoryMinerals
+      categoryId: CategoryMinerals
+      displayName: Minerals
       type: Minerals
       description: Minerals
   - category:
-      <<: *categoryMiningEquipment
+      categoryId: CategoryMiningEquipment
+      displayName: Mining Equipment
       type: MiningEquipment
       description: Mining equipment
   - category:
-      <<: *categoryOptics
+      categoryId: CategoryOptics
+      displayName: Optics
       type: Optics
       description: Optical lenses and equipment that uses them
   - category:
-      <<: *categoryPharmaceuticals
+      categoryId: CategoryPharmaceuticals
+      displayName: Pharmaceuticals
       type: Pharmaceuticals
       description: Pharmaceuticals
   - category:
-      <<: *categoryPolymers
+      categoryId: CategoryPolymers
+      displayName: Polymers
       type: Polymers
       description: Polymers
   - category:
-      <<: *categoryScientificEquipment
+      categoryId: CategoryScientificEquipment
+      displayName: Scientific Equipment
       type: ScientificEquipment
       description: Scientific equipment
   - category:
-      <<: *categorySeeds
+      categoryId: CategorySeeds
+      displayName: Seeds
       type: Seeds
       description: Seeds
   - category:
-      <<: *categorySlaves
+      categoryId: CategorySlaves
+      displayName: Slaves
       type: Slaves
       description: Indentured workforce members
   - category:
-      <<: *categorySmallArms
+      categoryId: CategorySmallArms
+      displayName: Small Arms
       type: SmallArms
       description: Weapons and ammunition intended for personal use
   - category:
-      <<: *categoryTextiles
+      categoryId: CategoryTextiles
+      displayName: Textiles
       type: Textiles
       description: Wool, cotton, flax and other woven materials
   - category:
-      <<: *categoryTools
+      categoryId: CategoryTools
+      displayName: Tools
       type: Tools
       description: Tools
   - category:
-      <<: *categoryWater
+      categoryId: CategoryWater
+      displayName: Water
       type: Water
       description: Water is life
   - category:
-      <<: *categoryWriting
+      categoryId: CategoryWriting
+      displayName: Writing
       type: Writing
       description: Paper, ink, books, scrolls
 ...

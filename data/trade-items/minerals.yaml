@@ -23,12 +23,10 @@
 item-base:
 
   # Minerals
-  - item: &itemSalt
-      <<: *categoryMinerals
-      <<: *ironAge
-      uniqueId: Salt
-      categoryId: Minerals
-      ageId: IronAge
+  - item:
+      itemId: ItemSalt
+      categoryId: CategoryMinerals
+      ageId: AgeIron
       displayName: Salt
       description: Sodium chloride (halite)
       unitsPerCubicMetre: 1
@@ -37,12 +35,10 @@ item-base:
       density: 2.16
       packFactor: 0.55
 
-  - item: &itemLime
-      <<: *categoryMinerals
-      <<: *ironAge
-      uniqueId: Lime
-      categoryId: Minerals
-      ageId: IronAge
+  - item:
+      itemId: ItemLime
+      categoryId: CategoryMinerals
+      ageId: AgeIron
       displayName: Lime
       description: Baked and crushed limestone
       unitsPerCubicMetre: 1
@@ -51,12 +47,10 @@ item-base:
       density: 3.34
       packFactor: 0.31
 
-  - item: &itemGraphite
-      <<: *categoryMinerals
-      <<: *industrialAge
-      uniqueId: Graphite
-      categoryId: Minerals
-      ageId: IndustrialAge
+  - item:
+      itemId: ItemGraphite
+      categoryId: CategoryMinerals
+      ageId: AgeIndustrial
       displayName: Graphite
       description: Graphite, machined and flexible foil
       unitsPerCubicMetre: 1000
@@ -65,12 +59,10 @@ item-base:
       density: 2.26
       packFactor: 0.9
 
-  - item: &itemPotash
-      <<: *categoryMinerals
-      <<: *ironAge
-      uniqueId: Potash
-      categoryId: Minerals
-      ageId: IronAge
+  - item:
+      itemId: ItemPotash
+      categoryId: CategoryMinerals
+      ageId: AgeIron
       displayName: Potash
       description: Muriate of potash, granular potassium chloride
       unitsPerCubicMetre: 1
@@ -79,12 +71,10 @@ item-base:
       density: 1.99
       packFactor: 0.58
 
-  - item: &itemNatron
-      <<: *categoryMinerals
-      <<: *ironAge
-      uniqueId: Natron
-      categoryId: Minerals
-      ageId: IronAge
+  - item:
+      itemId: ItemNatron
+      categoryId: CategoryMinerals
+      ageId: AgeIron
       displayName: Natron
       description: Natron, dense soda ash
       unitsPerCubicMetre: 1

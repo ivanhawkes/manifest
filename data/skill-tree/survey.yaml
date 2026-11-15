@@ -22,8 +22,8 @@
 #   gridX, gridY       The row at gridY 2.0, beside the yards and the lanes.
 skill-base:
 
-  - skill: &skillSurveyDeepRange
-      uniqueId: SurveyDeepRange
+  - skill:
+      skillId: SkillSurveyDeepRange
       displayName: Deep Survey
       description: The long look into the belt, the moons and the crust that finds the ore
       nodeType: Skill
@@ -35,15 +35,15 @@ skill-base:
       gridX: 10.0
       gridY: 2.0
 
-  - skill: &skillClaimMining
-      uniqueId: ClaimMining
+  - skill:
+      skillId: SkillClaimMining
       displayName: Mining Claim
       description: The ground staked on a strike, worked by the crew that can dig it
       nodeType: Skill
       requires:
-        - nodeId: SurveyDeepRange
+        - nodeId: SkillSurveyDeepRange
           requiredTier: 1
-        - nodeId: Mining
+        - nodeId: SkillMining
           requiredTier: 1
       maxTiers: 3
       resourceCostPerTier: 2
@@ -52,15 +52,15 @@ skill-base:
       gridX: 11.0
       gridY: 2.0
 
-  - skill: &skillClaimRefinery
-      uniqueId: ClaimRefinery
+  - skill:
+      skillId: SkillClaimRefinery
       displayName: Claim Refinery
       description: The crushing, leaching and smelting works that turn claim ore into metal
       nodeType: Skill
       requires:
-        - nodeId: ClaimMining
+        - nodeId: SkillClaimMining
           requiredTier: 1
-        - nodeId: Smelting
+        - nodeId: SkillSmelting
           requiredTier: 1
       maxTiers: 3
       resourceCostPerTier: 2
@@ -69,13 +69,13 @@ skill-base:
       gridX: 12.0
       gridY: 2.0
 
-  - skill: &skillClaimExclusive
-      uniqueId: ClaimExclusive
+  - skill:
+      skillId: SkillClaimExclusive
       displayName: Exclusive Claim
       description: The grant that shuts the other crews off a strike and everything near it
       nodeType: Skill
       requires:
-        - nodeId: ClaimMining
+        - nodeId: SkillClaimMining
           requiredTier: 2
       maxTiers: 3
       resourceCostPerTier: 3

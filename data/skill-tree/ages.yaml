@@ -22,14 +22,14 @@
 #                ladder reads left to right as the ages do. The production skills run
 #                along gridY 0.0 and the ship systems along gridY 1.0.
 #
-# The uniqueId of a gate is the uniqueId of its age in base/ages.yaml. The gate and the
+# The skillId of a gate is the ageId of its age in base/ages.yaml. The gate and the
 # age are the same idea seen from the two ends: a world generated in the Information Age
 # has the technology, so a lookup by the world's age finds its gate in the tree, and no
 # second naming scheme has to be kept in step.
 skill-base:
 
-  - skill: &skillStoneAge
-      uniqueId: StoneAge
+  - skill:
+      skillId: AgeStone
       displayName: Stone Age Technology
       description: Fire, dressed stone, bone and antler tools, and the working of hides
       nodeType: Tech
@@ -41,13 +41,13 @@ skill-base:
       gridX: -10.0
       gridY: -1.0
 
-  - skill: &skillCopperAge
-      uniqueId: CopperAge
+  - skill:
+      skillId: AgeCopper
       displayName: Copper Age Technology
       description: Smelted copper, the first metal tools and ornaments, and the wheel
       nodeType: Tech
       requires:
-        - nodeId: StoneAge
+        - nodeId: AgeStone
           requiredTier: 1
       maxTiers: 1
       resourceCostPerTier: 1
@@ -56,13 +56,13 @@ skill-base:
       gridX: -9.0
       gridY: -1.0
 
-  - skill: &skillBronzeAge
-      uniqueId: BronzeAge
+  - skill:
+      skillId: AgeBronze
       displayName: Bronze Age Technology
       description: Alloyed bronze, the plough, the sail, the loom and the first writing
       nodeType: Tech
       requires:
-        - nodeId: CopperAge
+        - nodeId: AgeCopper
           requiredTier: 1
       maxTiers: 1
       resourceCostPerTier: 1
@@ -71,13 +71,13 @@ skill-base:
       gridX: -8.0
       gridY: -1.0
 
-  - skill: &skillIronAge
-      uniqueId: IronAge
+  - skill:
+      skillId: AgeIron
       displayName: Iron Age Technology
       description: Smelted iron and steel, iron tools and weapons, and the keyed arch
       nodeType: Tech
       requires:
-        - nodeId: BronzeAge
+        - nodeId: AgeBronze
           requiredTier: 1
       maxTiers: 1
       resourceCostPerTier: 1
@@ -86,13 +86,13 @@ skill-base:
       gridX: -7.0
       gridY: -1.0
 
-  - skill: &skillClassicalAge
-      uniqueId: ClassicalAge
+  - skill:
+      skillId: AgeClassical
       displayName: Classical Age Technology
       description: Mathematics, geared mechanisms, the water clock, the screw and roads
       nodeType: Tech
       requires:
-        - nodeId: IronAge
+        - nodeId: AgeIron
           requiredTier: 1
       maxTiers: 1
       resourceCostPerTier: 1
@@ -101,13 +101,13 @@ skill-base:
       gridX: -6.0
       gridY: -1.0
 
-  - skill: &skillMedievalAge
-      uniqueId: MedievalAge
+  - skill:
+      skillId: AgeMedieval
       displayName: Medieval Age Technology
       description: Mechanical clockwork, optics, the blast furnace and the press
       nodeType: Tech
       requires:
-        - nodeId: ClassicalAge
+        - nodeId: AgeClassical
           requiredTier: 1
       maxTiers: 1
       resourceCostPerTier: 1
@@ -116,13 +116,13 @@ skill-base:
       gridX: -5.0
       gridY: -1.0
 
-  - skill: &skillPreIndustrialAge
-      uniqueId: Pre-industrialAge
+  - skill:
+      skillId: AgePre-industrial
       displayName: Pre-industrial Age Technology
       description: Precision mechanics, the telescope, the barometer and printed books
       nodeType: Tech
       requires:
-        - nodeId: MedievalAge
+        - nodeId: AgeMedieval
           requiredTier: 1
       maxTiers: 1
       resourceCostPerTier: 2
@@ -131,13 +131,13 @@ skill-base:
       gridX: -4.0
       gridY: -1.0
 
-  - skill: &skillIndustrialAge
-      uniqueId: IndustrialAge
+  - skill:
+      skillId: AgeIndustrial
       displayName: Industrial Age Technology
       description: Steam power, machine tools, the telegraph and the railway
       nodeType: Tech
       requires:
-        - nodeId: Pre-industrialAge
+        - nodeId: AgePre-industrial
           requiredTier: 1
       maxTiers: 1
       resourceCostPerTier: 2
@@ -146,13 +146,13 @@ skill-base:
       gridX: -3.0
       gridY: -1.0
 
-  - skill: &skillPostIndustrialAge
-      uniqueId: Post-industrialAge
+  - skill:
+      skillId: AgePost-industrial
       displayName: Post-industrial Age Technology
       description: Petrochemistry, electrical grids, flight, radio and mass electronics
       nodeType: Tech
       requires:
-        - nodeId: IndustrialAge
+        - nodeId: AgeIndustrial
           requiredTier: 1
       maxTiers: 1
       resourceCostPerTier: 2
@@ -161,13 +161,13 @@ skill-base:
       gridX: -2.0
       gridY: -1.0
 
-  - skill: &skillInformationAge
-      uniqueId: InformationAge
+  - skill:
+      skillId: AgeInformation
       displayName: Information Age Technology
       description: Microprocessors, computers, calculators, software and networks
       nodeType: Tech
       requires:
-        - nodeId: Post-industrialAge
+        - nodeId: AgePost-industrial
           requiredTier: 1
       maxTiers: 1
       resourceCostPerTier: 3
@@ -176,13 +176,13 @@ skill-base:
       gridX: -1.0
       gridY: -1.0
 
-  - skill: &skillAIAge
-      uniqueId: AIAge
+  - skill:
+      skillId: AgeAI
       displayName: AI Age Technology
       description: Machine learning, expert systems, robotics and autonomous trading
       nodeType: Tech
       requires:
-        - nodeId: InformationAge
+        - nodeId: AgeInformation
           requiredTier: 1
       maxTiers: 1
       resourceCostPerTier: 3
@@ -191,13 +191,13 @@ skill-base:
       gridX: 0.0
       gridY: -1.0
 
-  - skill: &skillSpaceAge
-      uniqueId: SpaceAge
+  - skill:
+      skillId: AgeSpace
       displayName: Space Age Technology
       description: Rocketry, orbital flight, satellites and space stations
       nodeType: Tech
       requires:
-        - nodeId: AIAge
+        - nodeId: AgeAI
           requiredTier: 1
       maxTiers: 1
       resourceCostPerTier: 4
@@ -206,13 +206,13 @@ skill-base:
       gridX: 1.0
       gridY: -1.0
 
-  - skill: &skillSpaceColonisationAge
-      uniqueId: SpaceColonisationAge
+  - skill:
+      skillId: AgeSpaceColonisation
       displayName: Space Colonisation Age Technology
       description: Closed life support, orbital habitats and in-situ resource use
       nodeType: Tech
       requires:
-        - nodeId: SpaceAge
+        - nodeId: AgeSpace
           requiredTier: 1
       maxTiers: 1
       resourceCostPerTier: 4
@@ -221,13 +221,13 @@ skill-base:
       gridX: 2.0
       gridY: -1.0
 
-  - skill: &skillSublimationAge
-      uniqueId: SublimationAge
+  - skill:
+      skillId: AgeSublimation
       displayName: Sublimation Age Technology
       description: Compiled matter, uploaded minds and computation beyond the physical
       nodeType: Tech
       requires:
-        - nodeId: SpaceColonisationAge
+        - nodeId: AgeSpaceColonisation
           requiredTier: 1
       maxTiers: 1
       resourceCostPerTier: 5

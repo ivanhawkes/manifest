@@ -20,8 +20,8 @@
 #   gridX, gridY       The row at gridY 2.0, beside the yards and the survey tree.
 skill-base:
 
-  - skill: &skillLaneConvoy
-      uniqueId: LaneConvoy
+  - skill:
+      skillId: SkillLaneConvoy
       displayName: Convoy System
       description: The sailing schedule and the assembly that gathers a lane's tonnage
       nodeType: Skill
@@ -33,13 +33,13 @@ skill-base:
       gridX: 5.0
       gridY: 2.0
 
-  - skill: &skillLaneEscortWing
-      uniqueId: LaneEscortWing
+  - skill:
+      skillId: SkillLaneEscortWing
       displayName: Escort Wing
       description: The hulls that fly with the convoy and answer when the mast calls
       nodeType: Skill
       requires:
-        - nodeId: LaneConvoy
+        - nodeId: SkillLaneConvoy
           requiredTier: 1
       maxTiers: 3
       resourceCostPerTier: 2
@@ -48,13 +48,13 @@ skill-base:
       gridX: 6.0
       gridY: 2.0
 
-  - skill: &skillLaneRouteWard
-      uniqueId: LaneRouteWard
+  - skill:
+      skillId: SkillLaneRouteWard
       displayName: Route Ward
       description: The stations that hold the jump points a lane depends on
       nodeType: Skill
       requires:
-        - nodeId: LaneConvoy
+        - nodeId: SkillLaneConvoy
           requiredTier: 1
       maxTiers: 3
       resourceCostPerTier: 2
@@ -63,13 +63,13 @@ skill-base:
       gridX: 7.0
       gridY: 2.0
 
-  - skill: &skillLaneWardenPatrol
-      uniqueId: LaneWardenPatrol
+  - skill:
+      skillId: SkillLaneWardenPatrol
       displayName: Warden Patrol
       description: The standing patrol that clears a lane and keeps it clear
       nodeType: Skill
       requires:
-        - nodeId: LaneEscortWing
+        - nodeId: SkillLaneEscortWing
           requiredTier: 1
       maxTiers: 3
       resourceCostPerTier: 3

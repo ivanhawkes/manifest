@@ -24,8 +24,8 @@
 #                      trade and service trees running on beside it.
 skill-base:
 
-  - skill: &skillPirateRaiderHulls
-      uniqueId: PirateRaiderHulls
+  - skill:
+      skillId: SkillPirateRaiderHulls
       displayName: Raider Hulls
       description: The fast hull and the drive that runs a trader down
       nodeType: Skill
@@ -37,13 +37,13 @@ skill-base:
       gridX: 0.0
       gridY: -2.0
 
-  - skill: &skillPirateBoardingParties
-      uniqueId: PirateBoardingParties
+  - skill:
+      skillId: SkillPirateBoardingParties
       displayName: Boarding Parties
       description: The grapple, the cutters and the crew that comes over the rail
       nodeType: Skill
       requires:
-        - nodeId: PirateRaiderHulls
+        - nodeId: SkillPirateRaiderHulls
           requiredTier: 1
       maxTiers: 3
       resourceCostPerTier: 2
@@ -52,13 +52,13 @@ skill-base:
       gridX: 1.0
       gridY: -2.0
 
-  - skill: &skillPirateRansomExchange
-      uniqueId: PirateRansomExchange
+  - skill:
+      skillId: SkillPirateRansomExchange
       displayName: Ransom Exchange
       description: The broker, the terms and the drop that turns a prize into credits
       nodeType: Skill
       requires:
-        - nodeId: PirateBoardingParties
+        - nodeId: SkillPirateBoardingParties
           requiredTier: 1
       maxTiers: 3
       resourceCostPerTier: 2
@@ -67,13 +67,13 @@ skill-base:
       gridX: 2.0
       gridY: -2.0
 
-  - skill: &skillPirateSafeHarbours
-      uniqueId: PirateSafeHarbours
+  - skill:
+      skillId: SkillPirateSafeHarbours
       displayName: Safe Harbours
       description: The anchorages, the depots and the fence that take a cargo ashore
       nodeType: Skill
       requires:
-        - nodeId: PirateRaiderHulls
+        - nodeId: SkillPirateRaiderHulls
           requiredTier: 1
       maxTiers: 3
       resourceCostPerTier: 2

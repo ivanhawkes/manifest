@@ -23,13 +23,13 @@
 #                      trees, below the age ladder they depend on.
 skill-base:
 
-  - skill: &skillServicePublicMedicine
-      uniqueId: ServicePublicMedicine
+  - skill:
+      skillId: SkillServicePublicMedicine
       displayName: Public Medicine Service
       description: The clinics, the immunisers and the drug ration a population is owed
       nodeType: Skill
       requires:
-        - nodeId: Pharmaceuticals
+        - nodeId: SkillPharmaceuticals
           requiredTier: 1
       maxTiers: 3
       resourceCostPerTier: 2
@@ -38,13 +38,13 @@ skill-base:
       gridX: 14.0
       gridY: -2.0
 
-  - skill: &skillServiceEducation
-      uniqueId: ServiceEducation
+  - skill:
+      skillId: SkillServiceEducation
       displayName: Education System
       description: The schools, the apprenticeships and the books that make a crew literate
       nodeType: Skill
       requires:
-        - nodeId: Research
+        - nodeId: SkillResearch
           requiredTier: 1
       maxTiers: 3
       resourceCostPerTier: 2

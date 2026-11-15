@@ -23,12 +23,10 @@
 item-base:
 
   # Chemicals
-  - item: &itemSodiumHydroxide
-      <<: *categoryChemicals
-      <<: *ironAge
-      uniqueId: SodiumHydroxide
-      categoryId: Chemicals
-      ageId: IronAge
+  - item:
+      itemId: ItemSodiumHydroxide
+      categoryId: CategoryChemicals
+      ageId: AgeIron
       displayName: Sodium Hydroxide
       description: Sodium Hydroxide, AKA caustic soda
       unitsPerCubicMetre: 1
@@ -37,12 +35,10 @@ item-base:
       density: 2.13
       packFactor: 0.54
 
-  - item: &itemNitrogen
-      <<: *categoryChemicals
-      <<: *industrialAge
-      uniqueId: Nitrogen
-      categoryId: Chemicals
-      ageId: IndustrialAge
+  - item:
+      itemId: ItemNitrogen
+      categoryId: CategoryChemicals
+      ageId: AgeIndustrial
       displayName: Nitrogen
       description: Nitrogen (refrigerated liquid)
       unitsPerCubicMetre: 1
@@ -51,12 +47,10 @@ item-base:
       density: 0.808
       packFactor: 0.9
 
-  - item: &itemPhosphorus
-      <<: *categoryChemicals
-      <<: *industrialAge
-      uniqueId: Phosphorus
-      categoryId: Chemicals
-      ageId: IndustrialAge
+  - item:
+      itemId: ItemPhosphorus
+      categoryId: CategoryChemicals
+      ageId: AgeIndustrial
       displayName: Phosphorus
       description: White phosphorus, shipped under water in sealed drums
       unitsPerCubicMetre: 1
@@ -65,12 +59,10 @@ item-base:
       density: 1.82
       packFactor: 0.85
 
-  - item: &itemSulfur
-      <<: *categoryChemicals
-      <<: *industrialAge
-      uniqueId: Sulfur
-      categoryId: Chemicals
-      ageId: IndustrialAge
+  - item:
+      itemId: ItemSulfur
+      categoryId: CategoryChemicals
+      ageId: AgeIndustrial
       displayName: Sulfur
       description: Sulfur, granulated
       unitsPerCubicMetre: 1
@@ -79,12 +71,10 @@ item-base:
       density: 2.07
       packFactor: 0.63
 
-  - item: &itemSulfuricAcid
-      <<: *categoryChemicals
-      <<: *industrialAge
-      uniqueId: SulfuricAcid
-      categoryId: Chemicals
-      ageId: IndustrialAge
+  - item:
+      itemId: ItemSulfuricAcid
+      categoryId: CategoryChemicals
+      ageId: AgeIndustrial
       displayName: Sulfuric Acid
       description: Sulfuric acid, 93 to 98 percent, in lined tanks
       unitsPerCubicMetre: 1
@@ -95,12 +85,10 @@ item-base:
 
   # Antimony is a metalloid traded by mass in ingots and shot, like the metals,
   # not a chemical bought by volume. The 2025 export restrictions doubled it.
-  - item: &itemAntimony
-      <<: *categoryChemicals
-      <<: *industrialAge
-      uniqueId: Antimony
-      categoryId: Chemicals
-      ageId: IndustrialAge
+  - item:
+      itemId: ItemAntimony
+      categoryId: CategoryChemicals
+      ageId: AgeIndustrial
       displayName: Antimony
       description: Antimony ingots
       unitsPerCubicMetre: 6680
@@ -109,12 +97,10 @@ item-base:
       density: 6.68
       packFactor: 0.75
 
-  - item: &itemChlorine
-      <<: *categoryChemicals
-      <<: *industrialAge
-      uniqueId: Chlorine
-      categoryId: Chemicals
-      ageId: IndustrialAge
+  - item:
+      itemId: ItemChlorine
+      categoryId: CategoryChemicals
+      ageId: AgeIndustrial
       displayName: Chlorine
       description: Chlorine (refrigerated liquid)
       unitsPerCubicMetre: 1
@@ -123,12 +109,10 @@ item-base:
       density: 1.56
       packFactor: 0.9
 
-  - item: &itemAmmonia
-      <<: *categoryChemicals
-      <<: *industrialAge
-      uniqueId: Ammonia
-      categoryId: Chemicals
-      ageId: IndustrialAge
+  - item:
+      itemId: ItemAmmonia
+      categoryId: CategoryChemicals
+      ageId: AgeIndustrial
       displayName: Ammonia
       description: Anhydrous ammonia (refrigerated liquid)
       unitsPerCubicMetre: 1
@@ -137,12 +121,10 @@ item-base:
       density: 0.682
       packFactor: 0.9
 
-  - item: &itemEthylene
-      <<: *categoryChemicals
-      <<: *industrialAge
-      uniqueId: Ethylene
-      categoryId: Chemicals
-      ageId: IndustrialAge
+  - item:
+      itemId: ItemEthylene
+      categoryId: CategoryChemicals
+      ageId: AgeIndustrial
       displayName: Ethylene
       description: Ethylene (refrigerated liquid)
       unitsPerCubicMetre: 1
@@ -151,12 +133,10 @@ item-base:
       density: 0.567
       packFactor: 0.9
 
-  - item: &itemNeodymium
-      <<: *categoryChemicals
-      <<: *postIndustrialAge
-      uniqueId: Neodymium
-      categoryId: Chemicals
-      ageId: Post-industrialAge
+  - item:
+      itemId: ItemNeodymium
+      categoryId: CategoryChemicals
+      ageId: AgePost-industrial
       displayName: Neodymium
       description: Neodymium metal, praseodymium neodymium alloy
       unitsPerCubicMetre: 7010
@@ -170,12 +150,10 @@ item-base:
   # 10 micrometre multilayer foil, which is what transfers as a flexible sheet.
   # The price is the 2025 figure for nanoplatelet and CVD film grades, which comes
   # out near 250 credits a kilogram once the film's own mass is counted.
-  - item: &itemGraphene
-      <<: *categoryChemicals
-      <<: *informationAge
-      uniqueId: Graphene
-      categoryId: Chemicals
-      ageId: InformationAge
+  - item:
+      itemId: ItemGraphene
+      categoryId: CategoryChemicals
+      ageId: AgeInformation
       displayName: Graphene
       description: Graphene, multilayer transfer film
       unitsPerCubicMetre: 100000

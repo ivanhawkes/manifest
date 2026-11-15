@@ -1,242 +1,145 @@
 ---
-# Simple version of the game
+# Simple version of the game: the whole skill tree and the small subset of the
+# items that makes a quick match. Both are named by itemId and skillId, and
+# build.sh resolves the names into the definitions of the skill-tree/ and
+# trade-items/ files.
 skills:
-  - skill:
-      <<: *skillMining
-  - skill:
-      <<: *skillSmelting
-  - skill:
-      <<: *skillLumber
-  - skill:
-      <<: *skillHerbalism
-  - skill:
-      <<: *skillAgriculture
-  - skill:
-      <<: *skillAnimalHusbandry
-  - skill:
-      <<: *skillAnimalProcessing
-  - skill:
-      <<: *skillFoodProcessing
-  - skill:
-      <<: *skillKilnMaterials
-  - skill:
-      <<: *skillChemicalManufacturing
-  - skill:
-      <<: *skillMetalworking
-  - skill:
-      <<: *skillPublishing
-  - skill:
-      <<: *skillPharmaceuticals
-  - skill:
-      <<: *skillResearch
-  - skill:
-      <<: *skillTextiles
-  - skill:
-      <<: *skillPolymers
-  - skill:
-      <<: *skillFuelRefining
+  - skillId: SkillMining
+  - skillId: SkillSmelting
+  - skillId: SkillLumber
+  - skillId: SkillHerbalism
+  - skillId: SkillAgriculture
+  - skillId: SkillAnimalHusbandry
+  - skillId: SkillAnimalProcessing
+  - skillId: SkillFoodProcessing
+  - skillId: SkillKilnMaterials
+  - skillId: SkillChemicalManufacturing
+  - skillId: SkillMetalworking
+  - skillId: SkillPublishing
+  - skillId: SkillPharmaceuticals
+  - skillId: SkillResearch
+  - skillId: SkillTextiles
+  - skillId: SkillPolymers
+  - skillId: SkillFuelRefining
 
   # The skill list of the small game is the whole tree: the items are what makes it
   # small, and a short tree would leave the age gates and the ship systems out of the
   # quick matches they are meant to test.
   #
   # The age gates: one per age, in age order.
-  - skill:
-      <<: *skillStoneAge
-  - skill:
-      <<: *skillCopperAge
-  - skill:
-      <<: *skillBronzeAge
-  - skill:
-      <<: *skillIronAge
-  - skill:
-      <<: *skillClassicalAge
-  - skill:
-      <<: *skillMedievalAge
-  - skill:
-      <<: *skillPreIndustrialAge
-  - skill:
-      <<: *skillIndustrialAge
-  - skill:
-      <<: *skillPostIndustrialAge
-  - skill:
-      <<: *skillInformationAge
-  - skill:
-      <<: *skillAIAge
-  - skill:
-      <<: *skillSpaceAge
-  - skill:
-      <<: *skillSpaceColonisationAge
-  - skill:
-      <<: *skillSublimationAge
+  - skillId: AgeStone
+  - skillId: AgeCopper
+  - skillId: AgeBronze
+  - skillId: AgeIron
+  - skillId: AgeClassical
+  - skillId: AgeMedieval
+  - skillId: AgePre-industrial
+  - skillId: AgeIndustrial
+  - skillId: AgePost-industrial
+  - skillId: AgeInformation
+  - skillId: AgeAI
+  - skillId: AgeSpace
+  - skillId: AgeSpaceColonisation
+  - skillId: AgeSublimation
 
   # The systems of the long-haul trader: screens, guns, lasers, computers, the drive
   # that makes the running and the mast that sees what is out there.
-  - skill:
-      <<: *skillShipShieldsFront
-  - skill:
-      <<: *skillShipShieldsSide
-  - skill:
-      <<: *skillShipShieldsRear
-  - skill:
-      <<: *skillShipGunsFront
-  - skill:
-      <<: *skillShipGunsRear
-  - skill:
-      <<: *skillShipLasersFront
-  - skill:
-      <<: *skillShipLasersRear
-  - skill:
-      <<: *skillShipNavigationComputer
-  - skill:
-      <<: *skillShipTraderAI
-  - skill:
-      <<: *skillShipEngineThrust
-  - skill:
-      <<: *skillShipManoeuvringJets
-  - skill:
-      <<: *skillShipAttitudeControl
-  - skill:
-      <<: *skillShipSensorLongRange
-  - skill:
-      <<: *skillShipSensorFireControl
-  - skill:
-      <<: *skillShipSensorCommercial
+  - skillId: SkillShipShieldsFront
+  - skillId: SkillShipShieldsSide
+  - skillId: SkillShipShieldsRear
+  - skillId: SkillShipGunsFront
+  - skillId: SkillShipGunsRear
+  - skillId: SkillShipLasersFront
+  - skillId: SkillShipLasersRear
+  - skillId: SkillShipNavigationComputer
+  - skillId: SkillShipTraderAI
+  - skillId: SkillShipEngineThrust
+  - skillId: SkillShipManoeuvringJets
+  - skillId: SkillShipAttitudeControl
+  - skillId: SkillShipSensorLongRange
+  - skillId: SkillShipSensorFireControl
+  - skillId: SkillShipSensorCommercial
 
   # The rest of the ship: the haul, running quiet and the crew.
-  - skill:
-      <<: *skillShipCargoHolds
-  - skill:
-      <<: *skillShipFuelBunkers
-  - skill:
-      <<: *skillShipSalvageRig
-  - skill:
-      <<: *skillShipLifeSupport
-  - skill:
-      <<: *skillShipStealthCoating
-  - skill:
-      <<: *skillShipEmissionsControl
-  - skill:
-      <<: *skillShipCountermeasures
-  - skill:
-      <<: *skillShipCrewTraining
-  - skill:
-      <<: *skillShipDamageControl
-  - skill:
-      <<: *skillShipSparesLockers
+  - skillId: SkillShipCargoHolds
+  - skillId: SkillShipFuelBunkers
+  - skillId: SkillShipSalvageRig
+  - skillId: SkillShipLifeSupport
+  - skillId: SkillShipStealthCoating
+  - skillId: SkillShipEmissionsControl
+  - skillId: SkillShipCountermeasures
+  - skillId: SkillShipCrewTraining
+  - skillId: SkillShipDamageControl
+  - skillId: SkillShipSparesLockers
 
   # The yards: the docks, the lines and the hull production.
-  - skill:
-      <<: *skillYardDrydock
-  - skill:
-      <<: *skillYardOutfitting
-  - skill:
-      <<: *skillYardModularHulls
-  - skill:
-      <<: *skillYardRefitDocks
+  - skillId: SkillYardDrydock
+  - skillId: SkillYardOutfitting
+  - skillId: SkillYardModularHulls
+  - skillId: SkillYardRefitDocks
 
   # The lanes: convoy, escort, ward and patrol.
-  - skill:
-      <<: *skillLaneConvoy
-  - skill:
-      <<: *skillLaneEscortWing
-  - skill:
-      <<: *skillLaneRouteWard
-  - skill:
-      <<: *skillLaneWardenPatrol
+  - skillId: SkillLaneConvoy
+  - skillId: SkillLaneEscortWing
+  - skillId: SkillLaneRouteWard
+  - skillId: SkillLaneWardenPatrol
 
   # Survey and claims: the deep look, the strike and the works.
-  - skill:
-      <<: *skillSurveyDeepRange
-  - skill:
-      <<: *skillClaimMining
-  - skill:
-      <<: *skillClaimRefinery
-  - skill:
-      <<: *skillClaimExclusive
+  - skillId: SkillSurveyDeepRange
+  - skillId: SkillClaimMining
+  - skillId: SkillClaimRefinery
+  - skillId: SkillClaimExclusive
 
   # Habitats and terraforming: the dome, the loop, the weather and the soil.
-  - skill:
-      <<: *skillHabitatDomes
-  - skill:
-      <<: *skillHabitatClosedLoop
-  - skill:
-      <<: *skillTerraformAtmosphere
-  - skill:
-      <<: *skillTerraformBiosphere
+  - skillId: SkillHabitatDomes
+  - skillId: SkillHabitatClosedLoop
+  - skillId: SkillTerraformAtmosphere
+  - skillId: SkillTerraformBiosphere
 
   # The pirate tree: hulls, boarding, ransom and harbours.
-  - skill:
-      <<: *skillPirateRaiderHulls
-  - skill:
-      <<: *skillPirateBoardingParties
-  - skill:
-      <<: *skillPirateRansomExchange
-  - skill:
-      <<: *skillPirateSafeHarbours
+  - skillId: SkillPirateRaiderHulls
+  - skillId: SkillPirateBoardingParties
+  - skillId: SkillPirateRansomExchange
+  - skillId: SkillPirateSafeHarbours
 
   # Law: the warrant, the pardon, the bench and the standing.
-  - skill:
-      <<: *skillLawAdmiraltyWarrant
-  - skill:
-      <<: *skillLawPiratePardon
-  - skill:
-      <<: *skillLawTribunal
-  - skill:
-      <<: *skillLawPirateStanding
+  - skillId: SkillLawAdmiraltyWarrant
+  - skillId: SkillLawPiratePardon
+  - skillId: SkillLawTribunal
+  - skillId: SkillLawPirateStanding
 
   # Trade services: the licence, the premium and the fence.
-  - skill:
-      <<: *skillTradeDockingLicence
-  - skill:
-      <<: *skillTradeInsurance
-  - skill:
-      <<: *skillTradeFencingNetwork
+  - skillId: SkillTradeDockingLicence
+  - skillId: SkillTradeInsurance
+  - skillId: SkillTradeFencingNetwork
 
   # The demand side: public medicine and the education system.
-  - skill:
-      <<: *skillServicePublicMedicine
-  - skill:
-      <<: *skillServiceEducation
+  - skillId: SkillServicePublicMedicine
+  - skillId: SkillServiceEducation
 
 items:
 
   # Metals
-  - item:
-      <<: *itemGold
-  - item:
-      <<: *itemSilver
-  - item:
-      <<: *itemCopper
+  - itemId: ItemGold
+  - itemId: ItemSilver
+  - itemId: ItemCopper
 
   # Minerals
-  - item:
-      <<: *itemSalt
-  - item:
-      <<: *itemLime
-  - item:
-      <<: *itemPotash
+  - itemId: ItemSalt
+  - itemId: ItemLime
+  - itemId: ItemPotash
   
   # Chemicals
-  - item:
-      <<: *itemNitrogen
-  - item:
-      <<: *itemPhosphorus
-  - item:
-      <<: *itemPotassium
+  - itemId: ItemNitrogen
+  - itemId: ItemPhosphorus
+  - itemId: ItemPotassium
 
   # Comforts
-  - item:
-      <<: *itemFurs
-  - item:
-      <<: *itemGlassware
-  - item:
-      <<: *itemSoap
+  - itemId: ItemFurs
+  - itemId: ItemGlassware
+  - itemId: ItemSoap
   
   # Medicine
-  - item:
-      <<: *itemAntibiotics
-  - item:
-      <<: *itemAnesthetics
-  - item:
-      <<: *itemAnalgesics
+  - itemId: ItemAntibiotics
+  - itemId: ItemAnesthetics
+  - itemId: ItemAnalgesics

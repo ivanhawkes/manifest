@@ -1,508 +1,98 @@
-# CivSim
+# Manifest
 
-A simulation of civilisations and their trade needs. Each civilisation is a planet or
-satellite in a solar system that is generated at run time, produces some of the trade
-goods, needs the rest, and trades against the others through prices that follow scarcity.
+A civilisation and space-trading simulation for [Jettison](https://github.com/ivanhawkes/jettison).
+Worlds produce and consume goods, scarcity changes prices, and progression changes the ships,
+markets and civilisations that trade them.
 
-The design target is the trading element of games built on the
-[Space Truckers](https://github.com/ivanhawkes/space-truckers) framework.
+Manifest follows Jettison's `feature-base` SDK, pinned to commit
+`f85092027eda49c29001f7589608df1f0b8827fb` (engine 0.1.0). `main` is not the SDK reference.
+`devenv.nix`, `devenv.yaml` and `devenv.lock` match that checkout. Shared libraries such as EnTT,
+yaml-cpp and doctest come from the engine's targets, including their compile definitions.
 
-## Goal
+## Build
 
-A satisfying space trading element: worlds whose economies differ enough that a player
-can find a profitable route, a skill tree that changes what a civilisation can produce,
-and a data set big enough to explore. The current scope is the core model, its
-configuration pipeline and a terminal front-end to exercise them.
-
-## Architecture
-
-| Target | What it is |
-| --- | --- |
-| `CivSimCore` | The plain C++20 core: configuration loading, universe names, the skill tree, the economy. No game engine, no terminal library. |
-| `CivSimCoreTui` | FTXUI terminal front-end used to drive the core during development. |
-| `ConfigTests`, `UniverseTests`, `ProgressionTests`, `SimulationTests` | Unit suites that run on embedded YAML, so they test the code and not the data. |
-| `DataTests` | Loads the generated documents and asserts they are a playable universe. |
-
-Inside the core:
-
-- `Core/SimulationConfig.h` - loads `ages.yaml`, `categories.yaml` and a game mode
-  (items and skills). YAML nulls are "not set", never the string `"null"`; every field
-  that is missing, null, mistyped or duplicated is a load error naming the entry, for
-  example `skills[2].requires[0]`.
-- `Core/Universe.h` - loads the solar system name pools (`latin`, `greek`, ...).
-- `Core/ProgressionManager.h` - the skill tree: tiers capped by `maxTiers`,
-  prerequisites, exclusive groups that lock out a rival branch, a resource pool to pay
-  for a tier. `Build` validates the graph, including cycles and prerequisites that can
-  never be reached.
-- `Core/Simulation.h` - generates worlds from the ages, categories, items and name
-  pools; gives each one an age, a population, specialities, production, demand and a
-  stockpile; prices goods by scarcity, market-wide and per world; plans trades that pay
-  for their freight; advances a tick of production, consumption and trade. A world's age
-  bounds the goods it can make, and the goods of the essential categories - the water,
-  food and fuel a population runs on, the medicines and the knowledge goods - are wanted
-  at every age, so a world that cannot make medicine is a buyer of it.
-
-The generation is deterministic for a seed, and the model uses only the fields the
-merged documents carry, so it runs on the data as it is.
-
-## Requirements
-
-I do most of the work on a NixOS Linux machine. The code is kept independent of any
-game engine so that NixOS and the tools of my choice stay usable. You are free to use
-whichever OS makes your heart flutter. Fellow NixOS users get a streamlined onboarding
-process.
-
-- CMake 3.24+ and Ninja, or any CMake generator you prefer.
-- A C++20 compiler. The development shell pins LLVM 21 (`devenv.nix`).
-- mikefarah/yq v4: `data/build.sh` merges the source YAML with it, and the test suite
-  reads the generated documents. The merge is tested with **v4.54.1**, the version the
-  development shell pins: v4.54.2 scopes YAML anchors to a single document, which the
-  shared anchors between the item files do not survive, and the data build fails. CMake
-  warns when the `yq` on `PATH` is not the tested version. A missing `yq` with the tests
-  enabled is a fatal configure error, rather than a suite that silently runs nothing:
-  build the core without the tests with `-DBUILD_TESTING=OFF`.
-- Git and network access at configure time: CMake fetches yaml-cpp 0.9.0 and FTXUI
-  7.0.3.
-
-## 1. Activate the Nix development environment
-
-From this directory:
+Use the locked devenv shell (`direnv allow`, or `devenv shell`). It supplies Clang 21, CMake 3.28+
+and Ninja, along with Jettison's complete SDK. From the repository root:
 
 ```bash
-direnv allow
+cmake --preset clang-debug
+cmake --build --preset clang-debug
+ctest --preset clang-debug
+build/clang-debug/source/tools/tui/manifest_tui
 ```
 
-The `.envrc` uses `devenv`. Ensure direnv is hooked into your interactive shell and
-devenv is installed.
-
-Example NixOS configuration for direnv:
-
-```nix
-{
-  programs.direnv = {
-    enable = true;
-    nix-direnv.enable = true;
-  };
-}
-```
-
-Rebuild your NixOS configuration after changing it, then add the appropriate shell
-hook:
+For engine development, point at the sibling `feature-base` checkout instead of downloading the
+pinned commit:
 
 ```bash
-# Bash
-eval "$(direnv hook bash)"
-
-# Zsh
-eval "$(direnv hook zsh)"
-
-# Fish
-direnv hook fish | source
+cmake --preset clang-debug -DJETTISON_SOURCE_DIR=/home/ivan/projects/jettison
 ```
 
-## 2. Build and test the standalone core
+This explicit override tests that checkout as it is; it does not verify it against the pin.
+Use an ignored `CMakeUserPresets.json` for machine-specific paths. Release and sanitised presets
+are `clang-release` and `clang-asan`. `-DMANIFEST_BUILD_TUI=OFF` omits the development UI and its
+FTXUI dependency. `-DBUILD_TESTING=OFF` omits tests. The engine's tests and renderer executables
+are excluded from the default build.
+
+The complete gate is:
 
 ```bash
-cmake -S . -B build -G Ninja \
-  -DCMAKE_CXX_COMPILER=clang++ \
-  -DCMAKE_BUILD_TYPE=Debug
-
-cmake --build build
-ctest --test-dir build --output-on-failure
+./scripts/ci.sh --werror --asan --log build/gate.log
 ```
 
-`cmake --build build` runs the `CivSimData` target, which is `data/build.sh`: it merges
-the source YAML into `data/core-config`, so a clean clone builds and tests with no
-manual data step. The five suites then run: the four unit suites on embedded YAML, and
-`DataTests` against the generated documents.
+It checks formatting and builds and tests Debug, Release, and a build with AddressSanitizer
+and UndefinedBehaviorSanitizer. CI uses the same locked Nix environment. See [build and gates](docs/build-and-gates.md).
 
-Formatting is part of the build: `.clang-format` covers `Source` and `Tests`, and CI
-checks it with `clang-format --dry-run -Werror` over every `.h`, `.hpp` and `.cpp` in
-the two trees. Format your work with:
+## Development console
+
+The development TUI uses Jettison's shell console backend. It loads the generated configuration
+on startup; try `generate 8`, `list`, `tick`, `prices` and `plan`. `help` lists the commands and
+`help generate` describes one. Quote paths or civilisation names containing spaces, for example
+`show "Abigail Prime"`. Tab completes command names, Up/Down recalls history, PageUp/PageDown
+scrolls and End follows new output. `clear` clears the view; the command transcript remains in
+`build/tui-session.log` when launched from a working tree with a `build/` directory. `quit`,
+`exit` or Ctrl-D ends the session.
+
+## Mod output
 
 ```bash
-find Source Tests \( -name '*.h' -o -name '*.hpp' -o -name '*.cpp' \) -print0 | xargs -0 clang-format -i
+cmake --build --preset clang-debug --target manifest_pack
 ```
 
-The parentheses carry the weight: `find`'s `-print` binds to the last `-name`, so a
-pipeline that ends `-name '*.h' -o -name '*.cpp' -print` lists the `.cpp` files only,
-the gate runs on a file list that never contains a header, and header drift passes. It
-is the command the CI step and the `wt` pre-merge hook run, so the gate and the habit
-stay the same command.
-
-## 3. Run the terminal front-end
-
-```bash
-./build/CivSimCoreTui
-```
-
-It loads `data/core-config` on startup, so the first command can be `generate 8 7`.
-
-| Command | What it does |
-| --- | --- |
-| `status` | Configuration, universe and skill tree state. |
-| `load [dir]` | Reload the ages, categories, full game mode and name pools. |
-| `generate [n] [seed]` | Generate `n` worlds (default 8, seed 1). |
-| `list` | Every world: name, pool, age, population, goods, treasury. |
-| `show <Civ-01>` | One world in detail: specialities, production, shortages. |
-| `prices [n]` | The `n` most over-priced goods, and the cheapest. |
-| `plan [n]` | The `n` best trade routes, with freight and profit. |
-| `tick [n]` | Advance `n` ticks: production, consumption, trades. |
-| `skills` | The skill tree with tiers, costs and locked groups. |
-| `upgrade <id>` | Buy one tier of a skill, paying from the resource pool. |
-| `clear`, `help`, `version`, `quit` | Log and session housekeeping. |
-
-`Tab` completes a command, `Up`/`Down` walk the command history, and `PageUp`/`PageDown`
-read the log. Every line the front-end prints is appended to `build/tui-session.log`,
-flushed as it is written, so `tail -f build/tui-session.log` in another pane follows a
-session and a crash mid-frame keeps the transcript.
-
-Population is in world units, not people: production and demand are units of goods per
-day, and the age sets the ceiling, so a SublimationAge world dwarfs a StoneAge one.
-
-## 4. Core API
-
-```cpp
-#include "Core/ProgressionManager.h"
-#include "Core/Simulation.h"
-#include "Core/SimulationConfig.h"
-#include "Core/Universe.h"
-
-CivSimCore::Ages ages;
-CivSimCore::Categories categories;
-CivSimCore::GameModeNode gameMode;
-CivSimCore::UniverseNamePools names;
-std::string error;
-
-if (!CivSimCore::LoadConfigAges("data/core-config/ages.yaml", ages, error) ||
-    !CivSimCore::LoadConfigCategories("data/core-config/categories.yaml", categories, error) ||
-    !CivSimCore::LoadConfigGameMode("data/core-config/full.yaml", gameMode, error) ||
-    !CivSimCore::LoadUniverseNamePools("data/universe/solar-system-names.yaml", names, error))
-{
-    // The message names the file, the entry and the field.
-}
-
-CivSimCore::GenerateOptions options;
-options.civilisationCount = 8;
-options.seed = 7;
-
-CivSimCore::Simulation simulation;
-if (!simulation.Generate(ages, categories, gameMode.items, names, options, error))
-{
-    // Handle error.
-}
-
-// The trade the player is looking for: buy where the good is cheap, sell where it is
-// scarce, and the route has to pay for its own freight.
-for (const CivSimCore::TradeRoute &route : simulation.PlanTrade(10))
-{
-    // route.itemId, route.sellerId, route.buyerId, route.quantity, route.profit
-}
-
-simulation.AdvanceTick(error);
-
-CivSimCore::ProgressionManager progression;
-progression.SetResources(20);
-
-if (!progression.Build(gameMode.skills, error))
-{
-    // A prerequisite is unknown, the graph has a cycle, a tier is out of reach, or a
-    // skill requires a rival of its own exclusive group.
-}
-
-progression.TryUpgrade("Smelting", error);
-```
-
-Each loader replaces its output container, so loading the same file twice into the same
-vector does not duplicate entries, and a failed load leaves the container empty.
-
-## Processing the YAML
-
-The YAML is edited as individual files with relative links and stored in **/data**. This
-is to keep them manageable and the ideas separate from each other during development. I
-am not aware of a way to make **yq** honour those links as separate files, so they are
-all combined into monolithic files before being used in the simulation.
-
-From the **/data** directory:
-
-```bash
-# Build all of the game-ready files using the source YAML.
-./build.sh
-```
-
-`cmake --build build` runs the same script through its `CivSimData` target, so you only
-need to run it by hand when you want the documents without a build.
-
-This writes the game-ready documents to **/data/core-config**, which is generated and
-not committed:
-
-| File | Contents |
-| --- | --- |
-| `full.yaml` | Every item in the game, with the skills. |
-| `simple.yaml` | The small subset of items used for quick matches and testing. |
-| `ages.yaml` | The ages on their own. |
-| `categories.yaml` | The categories on their own. |
-
-Every input file is a complete YAML document with a base key (`ages-base`,
-`categories-base`, `item-base`, `skill-base`) that holds the anchors used by the
-relative links. The merge explodes the links and drops the base keys, so every key in a
-generated file appears exactly once and the output is a plain document, with no
-`aliases` and no comments, ready for the loader.
-
-The inputs are read in this order:
-
-| Source | Contents |
-| --- | --- |
-| `base/ages.yaml` | The ages. |
-| `base/categories.yaml` | The categories. |
-| `trade-items/chemicals.yaml` | Chemicals, fuels, medicines, pharmaceuticals, plastics, dyes, fertilisers, pesticides, drugs, explosives, paints, adhesives, solvents, lubricants, industrial gases, hybrid materials, nuclear materials. |
-| `trade-items/metals.yaml` | Metals and metal goods: iron, copper, bronze, tin, lead, zinc, aluminium, titanium, nickel, chromium, tungsten, cobalt, silver, gold, platinum, machinery, tools, weapons, jewellery, structural materials. |
-| `trade-items/minerals.yaml` | Coal, crude oil, sand, gravel, limestone, iron ore, copper ore, bauxite, gypsum, salt, phosphorus, potassium, aggregates. |
-| `trade-items/misc.yaml` | The remaining categories: water, consumables, textiles, timber, precious stones, information, writing, medical equipment. |
-| `trade-items/seeds.yaml` | Arable, pastoral, fish and tree seeds. |
-| `skill-tree/skills.yaml` | The crafts of the economy. |
-| `skill-tree/ages.yaml` | The ages that gate the tree. |
-| `skill-tree/spaceship.yaml` | The ship systems, as a skill tree of their own. |
-| `skill-tree/shipyards.yaml` | The yards that build and mend. |
-| `skill-tree/lanes.yaml` | The lanes and the formations that run them. |
-| `skill-tree/survey.yaml` | The survey and the claims it stakes. |
-| `skill-tree/habitats.yaml` | Habitats and terraforming. |
-| `skill-tree/piracy.yaml` | The pirate arts. |
-| `skill-tree/law.yaml` | The warrant, the pardon, the bench, the standing. |
-| `skill-tree/trade.yaml` | Docking licences, cargo insurance, the fence. |
-| `skill-tree/services.yaml` | Public medicine and the education system. |
-| `game-mode/full.yaml` | The full game mode, built from the anchors above. |
-| `game-mode/simple.yaml` | The small subset of items used for quick matches and testing. |
-
-The order matters: the ages and categories are read first because the item files link to
-their anchors, and the game-mode files last because they link to the item and skill
-anchors defined by everything before them.
-
-The `*-base` keys - `ages-base`, `categories-base`, `item-base` and `skill-base` -
-exist only to define the anchors used by the relative links, and `item-base` is repeated
-in every item file, `skill-base` in every file of the skill tree. `build.sh` explodes the
-links and drops them, so every key in a generated file appears exactly once, and each
-item carries the fields inherited from its category and age.
-
-`build.sh` concatenates the files into one stream and `yq ea` walks it document by
-document, so an item file's `*categoryChemicals` and `*ironAge` resolve against the
-anchors defined in the category and age files that precede them. That is yq behaviour
-across documents, and it is version dependent: v4.54.1 resolves them, v4.54.2 enforces
-the spec's per-document anchor scope and the merge fails. The development shell and CI
-both pin v4.54.1, CMake warns on any other version, and `DataTests` asserts the scale
-of the merged documents - ages, categories, items, skills - so a merge that quietly
-truncates the game fails the suite instead of shipping a short one.
-
-Each item file writes two links beside the anchors it merges, `categoryId` and `ageId`.
-The merge flattens the anchors, so the links arrive in the generated document as ordinary
-fields, and they are the two dials the economy has: `ageId` bounds the goods a world can
-produce, `categoryId` weights the goods a world wants. A good with no link is in every
-deck and wanted at the ordinary rate, so an item file that forgets the lines costs the
-model a gate without failing a load. `DataTests` asserts that every item of the full game
-carries both links and that the ids name a loaded age and a loaded category.
-
-The full item list in `game-mode/full.yaml` is a selection of the anchors defined in the
-`trade-items/*` files. After adding, removing or renaming an item, add its `- item:`
-reference to `game-mode/full.yaml` (and to `game-mode/simple.yaml` if the item belongs
-in the small game), then run `./build.sh` from the **/data** directory. The same is true
-of the `- skill:` references of the skill tree: the anchors live in the `skill-tree/*`
-files, the list lives in the two `game-mode/*` files, and every node of the tree is in
-both game modes.
-
-`universe/solar-system-names.yaml` holds the name pools for the generated worlds. It is
-UTF-8, it is loaded by `Core/Universe.h`, and it is not part of the merge: `build.sh`
-does not read it.
-
-The skill tree is a set of anchors like the items: the eleven files of `skill-tree/*`
-define the nodes and their anchors - the crafts, the ages, the ship, the yards, the
-lanes, the survey, the habitats, the pirates, the law, the trade services and the public
-services - and the `game-mode/*` files select from them. The next section is about the
-tree.
-
-### The skill tree
-
-Every node is one of two kinds, and `nodeType` says which: a `Skill` is a craft that gets
-better as it is bought a tier at a time, and a `Tech` is a gate that is open or shut. The
-tree lives in eleven files:
-
-| File | Nodes | Shape |
-| --- | --- | --- |
-| `skill-tree/skills.yaml` | 17 crafts: Mining, Smelting, Agriculture, Fuel Refining | `nodeType: Skill`, `maxTiers: 3`, `resourceCostPerTier: 1`, all roots, no exclusive groups: parallel branches. |
-| `skill-tree/ages.yaml` | 14 age gates, one per age in `base/ages.yaml` | `nodeType: Tech`, `maxTiers: 1`, chained in age order, so each gate requires the gate of the age before it. The cost rises with the age, 1 to 5, so the ladder costs 31 units against the 1 a craft tier costs. |
-| `skill-tree/spaceship.yaml` | 25 ship systems of the long-haul trader | `nodeType: Skill`, `maxTiers: 3`, cost 3 for the drive, the laser mounts, the computers, the life support, the coating, the countermeasures and the repair party, 2 for the shield banks, the gun batteries, the thrusters, the arrays, the holds, the bunkers, the salvage rig, the emissions and the spares, no exclusive groups. |
-| `skill-tree/shipyards.yaml` | 4 yard nodes: the drydock, the outfitting line, the modular hull, the refit dock | `maxTiers: 3`, cost 2 to 4. The hulls the ship systems are fitted to. The modular hull asks the Information Age gate as well as the drydock. |
-| `skill-tree/lanes.yaml` | 4 lane nodes: convoy, escort wing, route ward, warden patrol | `maxTiers: 3`, cost 2 to 3. The formations a route is run with, and the warden's art is bought on top of the escort that escorts it. |
-| `skill-tree/survey.yaml` | 4 survey nodes: the deep survey, the mining claim, the claim refinery, the exclusive claim | `maxTiers: 3`, cost 2 to 3. A claim asks the survey that found the ground *and* the Mining craft that works it; the refinery asks Smelting. |
-| `skill-tree/habitats.yaml` | 4 habitat nodes: the domes, the closed loop, the atmosphere, the biosphere | `maxTiers: 3`, cost 3 to 4. The domes ask the Space Colonisation Age gate; the biosphere asks Agriculture. |
-| `skill-tree/piracy.yaml` | 4 pirate nodes: raider hulls, boarding parties, ransom exchange, safe harbours | `maxTiers: 3`, cost 2. The technology of the raider, from the hull that runs a trader down to the fence that lands the cargo. |
-| `skill-tree/law.yaml` | 4 law nodes: the admiralty warrant, the pardon, the tribunal, the standing among the crews | `maxTiers: 3`, cost 2 to 3. The warrant and the crews' standing are in the exclusive group `CleanStanding`. |
-| `skill-tree/trade.yaml` | 3 trade-service nodes: the docking licence, cargo insurance, the fencing network | `maxTiers: 3`, cost 1 to 2. Insurance asks the licence *and* the tribunal; the fence is the third member of `CleanStanding`. |
-| `skill-tree/services.yaml` | 2 public nodes: the medicine service, the education system | `maxTiers: 3`, cost 2. The demand side: medicine and education are demand, and these are the services a civilisation runs to meet it. |
-
-An age gate carries the `uniqueId` of its age: `InformationAge` is the age and the skill
-that opens computers, calculators, software and networks. The gate and the age are the
-same idea seen from the two ends, so a world generated in an age finds its gate by a
-lookup on the age, and no second naming scheme has to be kept in step. The grid puts the
-ladder on its own row at `gridY: -1.0`, in age order from left to right, with the ship
-systems on the row at `gridY: 1.0`.
-
-The ship systems are what a long-haul trader needs between worlds and against the pirates
-who live off that trade: `ShipShieldsFront`, `ShipShieldsSide` and `ShipShieldsRear` by
-arc of fire, `ShipGunsFront` and `ShipGunsRear`, `ShipLasersFront` and `ShipLasersRear`
-for the range the guns do not reach, `ShipEngineThrust` for the drive, `ShipManoeuvringJets`
-and `ShipAttitudeControl` for the working in space, `ShipSensorLongRange` with the
-`ShipSensorFireControl` and `ShipSensorCommercial` arrays on its mast, and the two
-computers that make the haul pay, `ShipNavigationComputer` for the jumps and
-`ShipTraderAI` for the cargo. The rest of the ship is the reason it is long haul:
-`ShipCargoHolds` and `ShipFuelBunkers` set the size of a run, `ShipSalvageRig` goes and
-brings back the cargo of a hull that cannot, `ShipLifeSupport` sets the days a crew can
-be out, and `ShipStealthCoating`, `ShipEmissionsControl` and `ShipCountermeasures`
-decide whether anyone sees the ship doing it. Under all of it sits the crew:
-`ShipCrewTraining` lets them work a bigger hull, `ShipDamageControl` keeps a ship flying
-with a screen down, `ShipSparesLockers` lets the party do it twice.
-
-Every system hangs off the one that has to be fitted first: each aft mount on its forward
-twin, the jets on the drive, the attitude control on the jets, the fire control and
-commercial arrays on the long range mast. The ship has one power feed and one dish, and
-the tree says so. Attitude control is the pointing that decides which arcs are in the
-fight, and fire control is the lock that fills them, so the propulsion line and the mast
-run into the guns and the screens. The links repeat that grammar down the hull: emissions
-control asks the coating, because a plate that hides a hull has to be run cold;
-countermeasures ask the side screen, because a burst is bought to cover an arc; the
-salvage rig asks the drive and the mast, because a tow is a propulsion job and a survey
-one; the spares ask the repair party; and the life support asks the crew and the side
-screen, because a breach is a damage-control problem in an arc no screen covers. No ship
-system is in an exclusive group, because a trader who can afford a forward and an aft
-screen fits both.
-
-The other eight trees are the ones a civilisation stands on, and they are where the ship
-meets the ground. The yards at `gridY: 2.0` build and mend the hulls the systems are
-fitted to; the lanes beside them run the routes the ship sails; the survey and the claims
-it stakes ask a craft as well as a sensor, so a mining claim needs the deep survey *and*
-the Mining craft, and the refinery that pays for the claim needs Smelting. The habitats
-at `gridY: 3.0` start at the Space Colonisation Age gate, because a dome is the
-technology that age is named for, and the biosphere seeded on top of the weather asks
-Agriculture. Below the age ladder, at `gridY: -2.0`, run the pirate arts, the law, the
-trade services and the public services: the raider hull, the boarding party, the ransom
-and the harbour; the warrant, the pardon, the bench and the standing among the crews; the
-docking licence, the cargo premium and the fence; the clinic and the school. Cargo
-insurance asks the licence that registers a ship *and* the bench that prices a cargo, and
-the fence asks the harbour that lands it: prerequisites that cross the rows are the point
-of the shape, and `DataTests` counts them, because a tree that stops linking is a set of
-lists.
-
-`CleanStanding` is the one exclusive group in the shipped data, and it is the reason the
-field exists: an admiralty warrant, a standing among the crews and a fence are one
-reputation spent three ways, so buying the warrant shuts the crews' tongue and the fence
-for good. `ProgressionManager::Validate` rejects a member that requires a rival of its
-own group, which is why the warrant and the standing are roots; the fence may ask a
-harbour, because a harbour is not a rival.
-
-The full tree is 85 nodes and 227 tiers, and `game-mode/simple.yaml` selects the same
-skills as `game-mode/full.yaml`: the items are what make the small game small, and a
-short tree would leave the gates, the ship and the standing trees out of the quick
-matches they are meant to test. `DataTests` asserts the scale of it - 71 crafts and ship
-systems three tiers deep, 14 gates - that every gate is one tier and sits on the gate of
-the age before, in age order, that the 25 ship systems and the 29 nodes of the standing
-trees exist with the effects and the costs they claim, that `CleanStanding` locks a chosen
-rival out, and that `ProgressionManager::Build` accepts the whole graph. The three-tier
-floor is asserted on the `Skill` nodes and not on the gates: a merge that dropped
-`maxTiers` lands on the loader default of one tier, which flattens a craft to a single
-click, and that is what the assertion is there to catch.
-
-Not in the tree, and not to be built without a decision on each: crew wages and morale;
-missions and contracts; fleets and task forces; price policy and market manipulation;
-research that takes time; population growth and migration; plague, wrecks and the other
-events that make a haul interesting; patrol and enforcement; government per world; the
-jump gate as infrastructure; and the refining of fuel as a chain of supply. The item data
-has a gap of the same shape: `SpaceAge` and `AIAge` ask for goods, and the merged full
-game mode has no item carrying those ages, because the item files open those sections and
-leave them empty. An age gate that opens no good is a gate with nothing behind it, and
-the production gate makes the absence show.
-
-## Units, prices and storage
-
-Every item carries five numeric fields. They describe the good as a physical object, so
-that a future cargo model can price freight by volume and mass; the current economy
-trades on `basePrice` alone and does not read the other four. The storage cube is the
-IBC cube, the one cubic metre intermediate bulk container, and the fields are defined
-against it:
-
-| Field | Meaning |
-| --- | --- |
-| `density` | Specific gravity of the material against water at sea level, so `1.0` is 1000 kg/m³. The solid value at 20 °C for a metal that is liquid at that temperature. |
-| `unitType` | The unit `basePrice` and `unitsPerCubicMetre` count: `Kilogram`, `Gram`, `Litre`, `Kilolitre`, `Unit`, `Sheet`, `SquareMetre`. |
-| `unitsPerCubicMetre` | Units of loose product filling one cubic metre of the material: see the table below. |
-| `packFactor` | The fraction of a cube the product fills, counting packaging, dunnage and the voids between pieces. A hollow blown flask is mostly air, so it is `0.05`; stacked ingots are `0.85`. |
-| `basePrice` | Market value per `unitType`, in credits at one credit to one US dollar, at 2025 spot and wholesale prices. Prices drive the model through the ratio of market price to base price, so the currency anchor only sets the relative level of the goods against each other. |
-
-| `unitType` | `unitsPerCubicMetre` | |
-| --- | --- | --- |
-| `Kilolitre` | `1` | A kilolitre is exactly a cubic metre, so bulk volume goods count one to the cube. |
-| `Litre` | `1000` | A cubic metre is a thousand litres. |
-| `Kilogram` | `density x 1000` | The mass of solid material in a cubic metre: copper at 8.96 is 8960. |
-| `Gram` | `density x 1000000` | The same mass in grams: gems at 3.5 are 3500000. |
-| `Unit` | tight-nested piece count | How many of the piece nest into a cubic metre: 2000 books, 40000 pieces of jewellery. |
-| `Sheet` | tight-nested sheet count | Sheets stacked to a metre with their interleaves. |
-| `SquareMetre` | `1 / thickness` | Sheet goods sold by area: a millimetre of graphite foil is 1000 m² to the cube. |
-
-For the goods counted by piece, sheet or square metre the count is a packed count, so
-it fixes the mass of the piece, and the figures agree through a mass identity that is
-the check to apply when a new item is added:
-
-```
-density x 1000 x packFactor  ==  kilograms in an IBC cube  ==  unitsPerCubicMetre x piece mass
-```
-
-A jeweller's piece of 15 grams of 12-specific-gravity metal takes 1.25 cm³ of metal in a
-25 cm³ fitted tray, so 40000 to the cube, a packFactor of 0.05 and 600 kilograms of
-metal in the cube on both sides of the identity. Goods counted by mass or by volume
-state the solid figure in `unitsPerCubicMetre`, and only `density x 1000 x packFactor`
-holds for them: an IBC cube of stacked copper ingots is 8.96 x 1000 x 0.85 kilograms,
-not 8960.
-
-Wheat seeds show the split the fields make: the density of a wheat kernel is 1.27, its
-test weight is 78 kg per hectolitre, so the packFactor is 0.61, the mass of a full cube
-is 775 kg, and 350 credits buys that cubic metre of certified seed. The bulk minerals
-and chemicals sit in the same shape: a kilolitre is the heap, and the air between the
-grains is most of the volume for a floured material like lime at 0.31.
-
-Prices are the current market figure for the traded form of the good, not for a purer
-or rarer form of it: uranium is the 2025 spot price of `U3O8` concentrate, the
-pharmaceuticals are bulk active-ingredient prices per kilogram, and the precious metals
-are per kilogram rather than the per-troy-ounce quote the market uses, so gold is
-130000 a kilogram.
-
-## Continuous integration
-
-`.github/workflows/ci.yml` configures, builds, runs `ctest` and checks formatting, on
-the pinned yq v4.54.1. A second job configures with the tests enabled and `yq` absent,
-and fails if that configure succeeds: a suite that quietly disappears is the bug that
-job guards.
-
-`.config/wt.toml` mirrors the same gates locally. `pre-merge` builds, runs the tests and
-checks formatting, so a merge needs all three.
-
-## Compatibility notes
-
-- The public core API does not expose yaml-cpp types.
-- yaml-cpp needs C++ exceptions, and the core is built with them.
-- The sample uses C++20.
-- The economy is a development harness: a small, deterministic supply, demand and price
-  model that is meant to be reasoned about, not tuned. Population, treasury and freight
-  are unitless model quantities.
-- `data/core-config` is generated output: edit the source YAML under `data/` and rebuild.
-
-## AI Disclosure
-
-This project is being made with the assistance of several AI models:
-
-- Qwen 3.8 125B - Swift IQ3 - KV 8,4 (local AI)
-- Chat GPT (scaffold)
-- Claude (core simulation, progression, tests, CI)
-
-AI will be utilised in research, ideation, writing specifications, requirements gathering and code production.
-
-I have 45 years of development experience from micro-controllers through to security and devops for highly available high traffic websites. 
-
-At this point in time it would be utterly foolish to create software without support from AI models. In the hands of a skilled and experienced developer it is an incredible force multiplier.
+This stages `build/clang-debug/mods/manifest/` and writes `build/clang-debug/manifest.pack` with
+Jettison's packer. Put either the directory or the pack under Jettison's user `mods/` directory.
+Both contain `mod.yaml`, `manifest/core-config/*.yaml`, and the universe name pools. The mod
+integration test mounts both through Jettison's VFS and compares every file.
+
+The package currently contains Manifest's configuration data. Jettison can mount it, but its
+sample game does not consume Manifest's configuration schema or execute this repository's C++
+economy. The C++ implementation builds as static host-side modules aggregated by `Manifest::Game`
+(with `Manifest::Core` as a compatibility alias); the TUI exercises them during development.
+The [host/script boundary](docs/host-script-boundary.md) assigns authoritative rules to linked
+native game code and bounded policy decisions to Wasm. Market prices now use an exact decimal
+representation; other continuous values retain floats/doubles. Shipping gameplay still needs
+the VFS loaders, world adapters and scripted scenario in the
+[roadmap](docs/roadmap.md).
+
+## Structure
+
+- `source/game/<module>/`: game modules, each with `CMakeLists.txt`, `include/manifest/<module>/`, `src/`, and unit `tests/` where applicable.
+- `source/tools/tui/`: the development console session, FTXUI frontend and console tests.
+- `source/test/`: cross-module effects, data and mod-pack suites, plus shared test helpers.
+- `source/external/`: the pinned engine SDK and optional development-only dependencies.
+- `cmake/ManifestModule.cmake`: module target, header, dependency and test rules matching Jettison's module helper.
+- `data/`: authored YAML; CMake merges it into `build/<preset>/data/core-config/` with mikefarah/yq v4.
+- `mods/manifest/`: mod metadata; generated data is staged alongside it in the build tree.
+
+The modules are `types`, `config`, `universe`, `progression`, `sim`, `ecs`, `effects`, and
+`market`. Each has a `Manifest::<Module>` target. `Manifest::Game` links the complete model;
+`Manifest::Core` remains an alias for existing consumers. The current C++ API retains its
+`Manifest::Core` namespace.
+
+[Architecture](docs/architecture.md), [coding standards](docs/coding-standards.md),
+[scope](docs/scope.md), and [model reference](docs/model.md) describe the implementation.
+
+MIT licensed; see [LICENSE](LICENSE).
+
+Clang-tidy is opt-in locally (`./scripts/ci.sh --tidy`), since it is expensive on the
+development laptop. CI enables it. Local builds default to two compile and test jobs.
