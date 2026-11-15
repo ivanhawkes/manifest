@@ -237,6 +237,9 @@ simulation days or two for 15. Cartridge mass/volume/price, tank volume/storage 
 cartridge trade units, installed/spare capacity, endurance,
 replacement/resupply, spent-cartridge handling and exhaustion consequences remain open.
 
+The subsequent [D-050](decision-ledger.md#d-050) refinement has one canonical tank-bank
+specification and is deferred under its recorded re-entry condition.
+
 Docked ships connected to working station life support pause onboard oxygen and scrubber
 consumption, retaining actual remaining supplies. Departure or service loss resumes
 applicable onboard use. Oxygen refills and cartridge replacements are separate resupply

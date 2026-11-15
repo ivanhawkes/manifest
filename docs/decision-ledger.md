@@ -72,6 +72,7 @@ changes, add the new row, mark the old one `superseded` and link both ways.
 | D-047 | Starting regions are allocated only with an operational starter-compatible public station, a physical regional delivery connection and an available working station life-support connection, and new players spawn connected | [Regional plan: selected scope](regional-economy-and-governance-plan.md#selected-scope) | selected | Manifest, stage 2 content |
 | D-048 | Basic docking, trading and regional delivery access stay available despite corporate restrictions, retaining charges, finite capacity, goods and funds and private-port policies | [Regional plan: selected scope](regional-economy-and-governance-plan.md#selected-scope) | selected | Manifest, later |
 | D-049 | LPG joins Fuels as a distinct kilogram-traded commodity with storage, production and consumption uses still open, and no ship-fuel role selected | [Stage 2 content plan](stage-2-content-plan.md) | selected | Manifest, stage 2 content |
+| <a id="d-050"></a>D-050 | Modular oxygen banks refine D-045: independently refillable/replaceable tanks preserve continuous supply from remaining usable tanks, with proportionally greater storage on larger hulls | [Small-ship plan: modular oxygen storage](small-trader-and-docking-plan.md#modular-oxygen-storage) | selected; deferred, not implemented | Manifest, later; re-entry after stages 1–4 acceptance |
 
 ## Numeric values
 
@@ -88,6 +89,7 @@ index points at the data keys instead of prose.
 | Frontier concession term and its start, disclosure and renewal rules | [Economy plan: real-time exclusive exploitation](economy-and-development-plan.md#real-time-exclusive-exploitation) |
 | Performance-security rate, forfeiture and mobilisation funds | [Contract plan: performance security](procurement-and-station-contracts-plan.md#performance-security-selected) |
 | Starter ship cargo capacities, life-support provisions and endurance | [Small-ship plan](small-trader-and-docking-plan.md) |
+| Starter oxygen bank layout, per-tank capacity, aggregate capacity and initial fill | [D-050 canonical specification](small-trader-and-docking-plan.md#modular-oxygen-storage), pending T4 authoring |
 | Item base prices, densities, unit types, pack factors | `data/trade-items/*.yaml`, described in [model reference](model.md#units-prices-and-storage) |
 | Marketplace fees, insurance, order lifetimes, price bounds | `MarketplaceOptions` in `source/game/market/include/manifest/market/Marketplace.h` |
 

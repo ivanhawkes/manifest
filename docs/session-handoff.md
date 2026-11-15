@@ -1,5 +1,23 @@
 # Session handoff
 
+## Tank correction after review — 2026-11-16
+
+Read the newest files by modification time, including the project analysis, workflow and
+decision ledger. The user's tank correction is recorded once in
+[D-050](decision-ledger.md#d-050), with the canonical specification, unresolved servicing
+details, SDK capability map and deferred re-entry condition in the ship plan. It refines
+D-045; older singular-tank descriptions below are historical. Broader prose deduplication
+remains T2, and authoring the selected values remains implementer task T4.
+
+Only planning documentation changed. No implementation, authored YAML, SDK/environment
+changes or build/CTest/tidy runs were performed. Documentation checks passed across 31
+files, 319 local targets and 88 heading/explicit anchors; `git diff --check` also passed.
+These establish no new gate evidence. The verification
+and implementer priorities in the analysis remain the next development work.
+
+Context recommendation: `/compact` before continuing; the current decision and review
+outcomes are recorded, and the old incremental balance discussion is historical.
+
 ## Project analysis and planning consolidation — 2026-11-16
 
 Baseline: Manifest `feature-base` at `f63a3a4`, clean tree, equal to `origin/feature-base` and to

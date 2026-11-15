@@ -27,9 +27,9 @@ The hull must physically accommodate both spaces without counting the same stock
 Moving goods from cargo into operating reserves must conserve actual stock and capacity;
 the transfer/replacement procedure still needs design.
 
-The selected starter operating oxygen maximum is 30 kg, so its initial 30 kg reserve
-fills the tank. Keep actual operating mass within 0–30 kg; oxygen carried as cargo is
-separate until transferred and cannot increase this operating limit. Tank physical
+The starter's operating oxygen bank is modular under
+[D-050](decision-ledger.md#d-050), detailed in the canonical section below. Cargo oxygen
+remains separate until transferred and cannot increase installed capacity. Physical tank
 volume/storage method, compartment dimensions, cartridge physical mass/volume, spare
 provision, upgrades and other journey limits remain open. This decision does not set
 the compact ship's oxygen capacity or initial reserves.
@@ -38,6 +38,60 @@ The compact ship's primary purpose is unspecified, and trade is not its primary
 requirement. It can carry some cargo, up to four IBC units, but is not the lone-trader
 starter. Do not assign it a scout, courier or other specialised role without a later
 product decision.
+
+## Modular oxygen storage
+
+Canonical specification for [D-050](decision-ledger.md#d-050), refining D-045's starter
+provisioning without changing its selected total oxygen reserve or cargo separation.
+The user replaced the single-tank interpretation with independently serviceable tanks.
+
+| Starter specification | User-selected design target |
+| --- | --- |
+| Installed oxygen tanks | 3 |
+| Oxygen capacity per tank | 10 kg |
+| Total installed operating oxygen capacity | Derived from installed tank capacities |
+| Initial fill | Every installed tank full |
+
+These are pending authoring targets for handoff T4, not loaded configuration. Under the
+planning-only policy, the implementer owns their authored data and validation.
+
+Each tank can be refilled or replaced independently before the bank is empty. Remaining
+usable tanks can continue supplying life support while another is serviced; neither the
+whole bank nor the tank being topped up has to be fully depleted first. Track capacity
+and actual remaining oxygen per tank, with the bank total derived from those records.
+An aggregate reserve alone is insufficient to represent changeover and partial refills.
+Replacement cannot silently replenish or discard oxygen remaining in the removed tank;
+define its destination and ownership with the eventual exchange procedure.
+
+Larger ships use the same modular arrangement with proportionally greater installed
+oxygen storage. Per-hull tank counts/capacities and the scaling basis remain open; do not
+infer them from cargo volume or assign every hull the starter's tank sizes. The compact
+ship's capacity and initial provisioning remain open. Tank/container definitions, dry
+mass, packed volume, consumption order, isolation/changeover, access, transfer duration,
+automation and in-flight servicing conditions also remain open.
+
+Delivery is selected but deferred: revisit after the first playable loop's stages 1–4
+acceptance criteria pass. This requirement does not displace Stage 1. Manifest owns hull
+definitions, tank state, consumption and servicing rules. Public pinned SDK
+`SimWorld::RegisterComponent`, `RegisterSystem`, `Save`, `Load` and `StateHash` provide
+generic state/system/persistence facilities; use Jettison's existing definition/archive
+pipeline for authoring. No additional generic SDK gap has been demonstrated for tank
+accounting. The current checkout's `docs/game-integration.md` supplies boundary guidance;
+that document is absent from the selected SDK commit. API provision remains conditional
+on a demonstrated gap during integration.
+
+Implementer acceptance evidence:
+
+- Validate the authored tank bank against the selected targets above, deriving its total
+  from individual tanks and preserving dedicated service storage versus cargo stock.
+- Top up a partly filled tank and replace an eligible tank while other tanks retain
+  oxygen, without requiring complete bank depletion or interrupting those usable tanks.
+- Preserve oxygen mass, ownership and tank identity through consumption, partial refill,
+  exchange, save/load and retry; reject over-capacity transfers without losing source stock.
+- Demonstrate independently authored larger-ship banks under the selected scaling rule
+  once that rule is specified, without cloning the starter's limits onto every hull.
+
+Tank rules, data and tests remain unimplemented. No runtime or gate result is claimed.
 
 ## Compact ship and matching dock requirements
 
@@ -112,8 +166,8 @@ matching environment. No SDK change has been made by this planning work.
    recovery and transfers. At one occupant relying on onboard service, each supply covers
    30 simulation days; station service pauses depletion without replenishment. Validate
    physical accommodation once storage choices are authored, enforcing the starter's
-   selected 30 kg operating oxygen maximum. Show the initial tank is full, a depleted
-   tank retains its actual mass and cargo oxygen cannot bypass the operating limit.
+   selected operating oxygen bank specification in D-050. Show all initial tanks are full,
+   partial tanks retain their actual mass and cargo oxygen cannot bypass installed limits.
    Demonstrate the starter's operating reserves and installed cartridge do not reduce its
    20 m³ cargo capacity; cargo supplies/spares do occupy their authored packed volume.
    Transfers into service storage must debit their source once, preserve ownership and

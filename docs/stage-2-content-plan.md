@@ -303,10 +303,10 @@ works. Overall journey endurance, tank physical volume, compartment dimensions, 
 physical values and spare provision remain open. Do not apply these initial quantities
 to the separate compact ship without a product decision.
 
-The starter's operating oxygen maximum is selected as 30 kg, so it begins full. Keep
-actual operating stock within 0–30 kg and track additional cargo oxygen separately until
-transferred. Cargo stock does not increase the operating limit. This selects oxygen mass
-capacity, leaving tank physical volume/storage method, upgrades and other hulls' limits open.
+The starter's modular oxygen bank and initial fill follow
+[D-050](decision-ledger.md#d-050). Use its canonical specification for authoring and
+per-tank validation; cargo oxygen cannot increase installed capacity. This deferred
+requirement does not enter the first playable loop's critical path.
 
 The starter's operating oxygen and installed cartridge occupy dedicated life-support
 space outside the 20-IBC trade hold. Supplies carried for trade or as loose spares count
