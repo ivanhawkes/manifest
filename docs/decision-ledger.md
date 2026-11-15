@@ -26,6 +26,7 @@ changes, add the new row, mark the old one `superseded` and link both ways.
 | D-004 | Authoritative rules live in linked native game modules; capability-limited Wasm supplies bounded policy inputs and observation only; there is no native C++ mod ABI | [Host and script boundary](host-script-boundary.md) | selected | Manifest, stages 1–3 |
 | D-005 | A CPU-only consumer that configures and runs without presentation dependencies is a separation acceptance criterion | [Boundary assessment](engine-game-boundary-assessment.md#amendments-to-the-five-stage-plan) | selected | Jettison, boundary / stage 1 |
 | D-006 | The pinned SDK revision, `devenv.nix`, `devenv.yaml` and `devenv.lock` stay identical to the selected engine checkout; shared dependency targets are reused, never refetched | `AGENTS.md`; [Build and gates](build-and-gates.md) | selected (deviation open, T5 in the [analysis](project-analysis-2026-11-16.md)) | both, boundary |
+| D-007 | Gate evidence is staged and named: clang-tidy runs in CI and stays opt-in locally, a recorded gate lists the stages and presets that ran, and a partial run is never reported as a gate | [Build and gates: verification evidence](build-and-gates.md#verification-evidence) | open (CI is red on two tidy findings, and the gate aborts in tidy before Release and ASan/UBSan; T9 fixes the findings, T10 reorders the stages) | Manifest, boundary |
 
 ## Product direction
 

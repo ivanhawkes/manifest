@@ -10,8 +10,9 @@ No implementation code, tests, fixtures, assets, `data/` YAML, `CMake`, `scripts
 `.vscode` files were changed, and no build, CTest, clang-format gate or clang-tidy run was
 performed, consistent with the planning-only policy in `AGENTS.md`. The documentation changes are
 uncommitted: new `docs/project-analysis-2026-11-16.md` and `docs/decision-ledger.md`, plus
-references and corrections in `docs/README.md`, `docs/roadmap.md`, `docs/development-stages.md`,
-`docs/build-and-gates.md`, `docs/agent-workflow.md`, `docs/coding-standards.md` and `README.md`.
+references and corrections in `AGENTS.md`, `docs/README.md`, `docs/roadmap.md`,
+`docs/development-stages.md`, `docs/build-and-gates.md`, `docs/agent-workflow.md`,
+`docs/coding-standards.md` and `README.md`.
 
 Findings, evidence and the T1–T8 handoffs are in the
 [project analysis](project-analysis-2026-11-16.md). In short: the model layer (17,398 lines, 8
@@ -27,10 +28,23 @@ Verification state matters for the next session. The newest recorded full gate i
 `docs/`, `README.md`, `AGENTS.md` and `.gitignore` changed, except `devenv.nix` adding `lazygit`,
 which alters the locked shell; the merge `2716380` is titled "Not sure of build status". No preset
 build tree exists locally and the top-level `build/` is the ignored pre-rename `CivSimLibrary`
-tree. Treat the gate as unverified at HEAD until handoff T1 records it, and use the CI `ci.log`
-artifact as the current authoritative evidence.
+tree. Treat the gate as unverified at HEAD until handoff T1 records it.
 
-The [decision ledger](decision-ledger.md) now indexes 36 selected decisions by ID with a single
+**CI is not the substitute.** The CI failure analysis added in the same change shows the
+[project analysis](project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16): CI has failed on
+twelve consecutive runs of the live branches, the format gate, the Debug build and all 11 suites pass
+in every one of them, and the runs abort in the CI-only clang-tidy stage on two findings —
+`source/game/types/include/manifest/types/Decimal.h:99`
+(`bugprone-implicit-widening-of-multiplication-result`, 16 reports because the header is scored per
+TU) and `source/game/market/src/Marketplace.cpp:1688`
+(`performance-inefficient-string-concatenation`). `scripts/tidy.py` forces
+`--warnings-as-errors=*`, which `.clang-tidy` itself does not. Because `scripts/ci.sh` runs tidy
+between the Debug and Release stages under `set -euo pipefail`, CI has produced no Release, ASan or
+UBSan evidence since 2026-11-14. `AGENTS.md` now carries this status in a section every agent reads
+before building, and the same facts are in [build and gates](build-and-gates.md#verification-evidence)
+and ledger row D-007.
+
+The [decision ledger](decision-ledger.md) now indexes 37 selected decisions by ID with a single
 canonical section, status, owner and stage, and the
 [agent workflow](agent-workflow.md#planning-discipline-after-the-2026-11-16-analysis) rules require
 future planning edits to link IDs instead of restating rules, and to add a stage/SDK-API/gap
@@ -41,18 +55,21 @@ that pointed at engine headings inside this repository's own documents were repo
 reduced: deduplication is handoff T2, an implementer task, so those documents still restate the
 same rules and numeric values and remain the drift risk the ledger is meant to remove.
 
-Next step, in order: T1 run and record the gate at HEAD; T5 reconcile `devenv.nix` with the pin and
+Next step, in order: T9 plus T1 in one gate run — apply the two one-line tidy fixes and run
+`./scripts/ci.sh --werror --asan --tidy --log build/gate-tidy.log`, then record the stages, results,
+log path and hashes here and push to confirm CI green; T10 move the tidy stage after Release and
+ASan/UBSan and stop the duplicate identical-branch runs; T5 reconcile `devenv.nix` with the pin and
 add the parity check; T7 repair the tracked `.vscode/*.example` targets; then begin Stage 1 of the
 [development stages](development-stages.md#stage-1-public-engine-host-and-standalone-bootstrap),
 starting from its exit criterion (Manifest starts, mounts its package and shuts down through public
 APIs, the Jettison sample still works, a clean checkout builds without the sibling repository) and
-the D-003/D-005 boundary work in Jettison. Use two compile jobs, keep local clang-tidy opt-in, and
-record the gate result here.
+the D-003/D-005 boundary work in Jettison. Use two compile jobs, keep local clang-tidy opt-in
+(T9's single gate run is that documented opt-in), and record the gate result here.
 
-Context recommendation: a **fresh session** for T1/Stage 1. The analysis conclusions are captured in
-the analysis document and this handoff, the next task needs only `AGENTS.md`, the ledger and the
-stage plan, and this session's investigation output is now historical. Compaction would keep
-investigation detail that the documents already preserve.
+Context recommendation: a **fresh session** for T9/T1 and Stage 1. The analysis, the CI failure
+analysis and this handoff carry the conclusions, the next task needs only `AGENTS.md`, the ledger
+and the stage plan, and this session's investigation output is now historical. Compaction would
+keep investigation detail that the documents already preserve.
 
 ## Regional population and government correction — 2026-11-16
 

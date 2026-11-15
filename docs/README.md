@@ -2,7 +2,7 @@
 
 - [Scope](scope.md)
 - [Decision ledger](decision-ledger.md)
-- [Project analysis — 2026-11-16](project-analysis-2026-11-16.md)
+- [Project analysis and CI failure analysis — 2026-11-16](project-analysis-2026-11-16.md)
 - [Architecture](architecture.md)
 - [Host and script boundary](host-script-boundary.md)
 - [Decimal market prices](market-prices.md)

@@ -55,16 +55,30 @@ A gate is recorded, not implied. After running it, add a short entry to
 [session handoff](session-handoff.md) with the commit, the presets and suites that passed, the
 three state hashes (generation, 100-tick, raw price) and the log path. Gate logs are ignored build
 artifacts under `build/`, never committed fixtures. "Configure succeeded", mounted content
-equality and documentation edits are not verification.
+equality and documentation edits are not verification. Record which stages actually ran: a partial
+run is not a gate.
 
 The newest recorded full gate is at `5d7f54e`: formatting and all 11 suites in Debug, Release and
 ASan/UBSan, with generation `10355632731109243635`, 100-tick `12410383246888723003` and raw price
 `15444164946577136117`. Nothing outside `docs/` and `README.md` changed after it except `AGENTS.md`,
 a `.gitignore` comment and `devenv.nix` (`+lazygit`), so the C++ build is expected intact, but the
 locked shell changed and no gate has been recorded at `f63a3a4` (handoff T1 in the
-[project analysis](project-analysis-2026-11-16.md)). `../.github/workflows/ci.yml` runs the full
-gate with `--tidy` on every push and uploads `build/ci.log`; it is the authoritative current
-evidence, and CI is where clang-tidy runs.
+[project analysis](project-analysis-2026-11-16.md)).
+
+`../.github/workflows/ci.yml` runs the full gate with `--tidy` on every push and uploads
+`build/ci.log`. **CI has been red continuously since 2026-11-14T17:05Z, on clang-tidy alone.** The
+format gate, the Debug build and all 11 suites pass in every failing run; the run then aborts in
+tidy on `source/game/types/include/manifest/types/Decimal.h:99`
+(`bugprone-implicit-widening-of-multiplication-result`, 16 reports, one per TU including the header)
+and `source/game/market/src/Marketplace.cpp:1688` (`performance-inefficient-string-concatenation`).
+`scripts/tidy.py` passes `--warnings-as-errors=*`, stricter than `.clang-tidy`'s
+`WarningsAsErrors: ''`, and the documented local gate omits `--tidy`, so neither route has been
+clean. Because `scripts/ci.sh` runs tidy between the Debug and Release stages under
+`set -euo pipefail`, those runs never reach Release or ASan/UBSan: **CI has produced no non-Debug
+gate evidence since 2026-11-14** and is not evidence for those presets. Name the stages that ran
+when reporting a gate result. Handoff T9 applies the two one-line, behaviour-preserving fixes and
+T10 reorders the stages so a tidy warning cannot mask sanitiser results; the evidence, timeline and
+run IDs are in [CI failure analysis](project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16).
 
 Preset builds live in `build/clang-debug/`, `build/clang-release/` and `build/clang-asan/`. A
 top-level `build/` containing `CivSim*` artifacts is the ignored pre-rename configure tree; remove

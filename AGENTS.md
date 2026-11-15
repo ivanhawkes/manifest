@@ -2,6 +2,9 @@
 
 Manifest is a Jettison mod project. Read `docs/coding-standards.md`,
 `docs/architecture.md` and `docs/build-and-gates.md` before changing it.
+For current verification state, open handoffs and the CI failure analysis, read
+`docs/project-analysis-2026-11-16.md`; for selected decisions and their status, read
+`docs/decision-ledger.md`.
 
 - Jettison's `feature-base` branch is the SDK reference; `main` may lag behind it.
   The sibling checkout is usually `../jettison`. The reproducible SDK commit is in
@@ -13,8 +16,37 @@ Manifest is a Jettison mod project. Read `docs/coding-standards.md`,
 - Build and test with the presets. `./scripts/ci.sh --werror --asan` is the local gate.
 - Avoid running clang-tidy locally: the development machine is an underpowered laptop.
   It is opt-in with `--tidy`, enabled in CI. Default local builds to two compile jobs.
+  The open handoff T9 authorises one local `--tidy` gate run to clear the two findings below.
 - A mounted content package is not yet playable gameplay. Document the host/script boundary
   and the remaining fixed-point/VFS integration accurately; see `docs/roadmap.md`.
+
+## Current verification and CI status (2026-11-16)
+
+Read this before building, validating or reporting a gate result. Details, run IDs and the
+handoff table are in `docs/project-analysis-2026-11-16.md`.
+
+- **CI has failed on twelve consecutive runs of the live branches, and the build is not the cause.**
+  Every run passes the format gate, the Debug build and all 11 CTest suites, then fails in the
+  CI-only clang-tidy stage on exactly two findings: `source/game/types/include/manifest/types/Decimal.h:99`
+  (`bugprone-implicit-widening-of-multiplication-result`, reported 16 times because
+  `HeaderFilterRegex: 'source/.*'` scores every TU that includes the header) and
+  `source/game/market/src/Marketplace.cpp:1688` (`performance-inefficient-string-concatenation`).
+  `scripts/tidy.py` passes `--warnings-as-errors=*`, stricter than `.clang-tidy`'s
+  `WarningsAsErrors: ''`. Both fixes are one-line and behaviour-preserving (handoff T9).
+- **CI has produced no Release, ASan or UBSan evidence since 2026-11-14.** `scripts/ci.sh` runs
+  tidy between the Debug and Release stages under `set -euo pipefail`, so each failing run aborts
+  before those stages. Never describe CI as passing or failing "the build": name the stage that
+  actually ran, and do not use a CI run as gate evidence for Release or the sanitiser presets.
+- **HEAD is unverified locally.** The last recorded full gate (Debug, Release, ASan/UBSan, 11
+  suites, state hashes) is at `5d7f54e`; the only non-document changes since are `AGENTS.md`,
+  `.gitignore` and `devenv.nix` (`+lazygit`). No preset build tree exists locally and the
+  top-level `build/` is the ignored pre-rename `CivSimLibrary` tree.
+- **Next implementer action:** one gate run covering the baseline and tidy together,
+  `./scripts/ci.sh --werror --asan --tidy --log build/gate-tidy.log`, with the two tidy fixes
+  (handoffs T1 and T9), then record the outcome, log path and hashes in `docs/session-handoff.md`.
+  Prefer `--skip-release` only for an intermediate pass; the recorded baseline needs all presets.
+- Planning agents must not reason "CI is green, therefore validated", and must not call the current
+  failures a build regression: they are tidy-only.
 
 ## Models and delegation
 

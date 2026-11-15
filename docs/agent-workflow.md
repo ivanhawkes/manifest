@@ -60,6 +60,12 @@ Two rules bind planning edits, from the [project analysis](project-analysis-2026
   sequence are recorded as deferred with a re-entry condition, not as next work. The first playable
   loop needs stages 1–4: a new pillar may not displace Stage 1.
 
+- **Gate claims name the stages that ran.** Before planning, implementing or reporting validation,
+  read the "Current verification and CI status" section of `AGENTS.md` and
+  [CI failure analysis](project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16). State which
+  presets and stages ran, and never treat a CI run as Release or sanitiser evidence while the gate
+  aborts in tidy, nor a Debug-only pass as a full gate.
+
 Planning output never marks work `implemented` without a named verifying suite and a recorded gate.
 
 ## Existing roles and delegation

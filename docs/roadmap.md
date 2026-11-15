@@ -21,6 +21,14 @@ the [decision ledger](decision-ledger.md). Roadmap and plan updates link ledger 
 restating rules, and no numeric balance value is added to prose: those move to authored YAML under
 handoff T4.
 
+**CI is red, and it is tidy-only.** Twelve consecutive failures on the live branches, all with the
+format gate, Debug build and 11 suites passing before the CI-only clang-tidy stage aborts on two
+findings; the run then dies before Release and ASan/UBSan, so CI has no non-Debug evidence since
+2026-11-14. Evidence and the two one-line fixes are in
+[CI failure analysis](project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16); handoff T9
+applies the fixes and T10 reorders the stages. Do not read a green roadmap plan as a green gate,
+and report gate results by stage.
+
 ## SDK and build baseline
 
 The [engine/game boundary assessment](engine-game-boundary-assessment.md) adds pending

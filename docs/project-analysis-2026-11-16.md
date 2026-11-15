@@ -24,8 +24,10 @@ lines against 17,398 lines of C++. Since the last verified gate, the only non-do
 changes are `AGENTS.md`, `.gitignore` and `devenv.nix`; the seven commits after that merge touch
 documentation only.
 The main risks are therefore not code quality in `source/game/`, but an unverified build
-baseline, duplicated planning prose with no traceability to code, balance values that exist only
-in prose, and product scope arriving faster than any of it can be built.
+baseline, a CI gate that is red on clang-tidy alone while suppressing its own Release and
+sanitiser stages ([CI failure analysis](#ci-failure-analysis--2026-11-16)), duplicated planning
+prose with no traceability to code, balance values that exist only in prose, and product scope
+arriving faster than any of it can be built.
 
 ## State at assessment
 
@@ -52,8 +54,68 @@ changed after the verified gate, so the source build is very likely intact. The 
 nevertheless **not verified at HEAD**, because the locked Nix shell changed. There is also no
 `build/clang-debug/`, `build/clang-release/` or `build/clang-asan/` tree and no gate log in this
 checkout: the top-level `build/` holds pre-rename `CivSimLibrary` artifacts from 2026-11-08 and
-is ignored by `.gitignore`. CI (`ci.yml`, full gate with `--tidy`) is the only current evidence,
-and its log is not captured in this document.
+is ignored by `.gitignore`. CI cannot fill this gap: see the next section.
+
+## CI failure analysis — 2026-11-16
+
+Investigated read-only with `gh run list` and `gh run view --log-failed` (`gh` 2.103.2,
+authenticated). No clang-tidy was run locally, as `AGENTS.md` requires.
+
+**CI has been continuously red since 2026-11-14T17:05Z.** The newest green run is 2026-11-10T01:27Z
+(`Added Context7 integration for Pi`, 42735907592). Seventeen runs have failed since, with three
+cancellations from rapid pushes; twelve of the failures are on the two live branches, running from
+2026-11-15T01:47Z (`Docs: sequence the next five development stages for Claude`, 43664731273) to the
+last pair at 2026-11-15T16:00Z (43733028966 on `feature-base` and 43733049052 on `main`). The last
+eight commits in that streak touch documentation and `AGENTS.md` only; the two before them
+(`dbeb191`, `2716380`) changed `.gitignore` and `devenv.nix`. CI's most recent build signal is
+therefore the Debug presets on `f63a3a4`. Two further runs listed at 2026-11-16T04:21Z
+(43806887285, 43806869597, both `failure`) were for a head commit GitHub no longer serves, and their
+run records now return 404; the counts above come from the run list at assessment time and exclude
+them.
+
+Every recent failure has the same shape, and the build is not the problem:
+
+| Stage in `scripts/ci.sh` | Result in CI |
+| --- | --- |
+| `scripts/format-check.sh` | pass |
+| Debug configure and build | pass |
+| `ctest --preset clang-debug` | pass: `100% tests passed out of 11` |
+| clang-tidy (`--tidy`, CI only) | **fail**: `1 warning treated as error`, process exit 1 |
+| Release build and CTest | never reached |
+| ASan/UBSan build and CTest | never reached |
+
+Two clang-tidy findings account for the streak, identical in each log:
+
+| # | Location | Check | Evidence |
+| --- | --- | --- | --- |
+| 1 | `source/game/types/include/manifest/types/Decimal.h:99`, `raw += digit * place;` | `bugprone-implicit-widening-of-multiplication-result` | 16 occurrences per run: the multiply is performed in `std::int64_t` and the result is then widened to `__int128_t`, and `HeaderFilterRegex: 'source/.*'` reports it once per TU that includes the header. The range (`digit` ≤ 9, `place` ≤ 10⁶) is well inside `int64`, so behaviour is correct, and the sibling branch at `Decimal.h:93` already writes `static_cast<__int128_t>(digit) * kScale`, so the header is internally inconsistent. |
+| 2 | `source/game/market/src/Marketplace.cpp:1688`, `errorMessage = "MarketplaceService: " + errorMessage;` | `performance-inefficient-string-concatenation` | One occurrence per run; first seen as `Marketplace.cpp:1576`, before the module reorganisation moved the line. |
+
+The streak begins with `81f72a6` (2026-11-15 00:13 +10, `Build: align Manifest with Jettison's SDK
+and module layout`), which added `scripts/tidy.py`, added `--tidy` to `scripts/ci.sh` and added
+`--tidy` to the CI gate. Run 43619179521 (2026-11-14T17:05Z) is the first with tidy and fails on
+finding 2 alone with `100% tests passed out of 10`. `5d7f54e` then introduced `Decimal.h` and
+finding 1, present from the 2026-11-14T18:15Z run onward.
+
+Local gates never saw these findings: the documented local gate omits `--tidy`, and the last
+recorded local gate at `5d7f54e` ran without it. CI is also stricter than the repository's own tidy
+configuration, because `scripts/tidy.py` passes `--warnings-as-errors=*` while `.clang-tidy` sets
+`WarningsAsErrors: ''`. The rule stated in `.clang-tidy` is that "a check earns its place by being
+clean over the project's own sources, or by pointing at something that gets fixed"; these two
+checks are neither, so the tree currently violates its own configured invariant.
+
+**The consequence is larger than the two warnings.** `scripts/ci.sh` runs tidy between the Debug
+and Release stages under `set -euo pipefail`, so every run in the streak aborts before Release and
+before ASan/UBSan: CI has produced no Release, ASan or UBSan evidence since 2026-11-14. Do not
+treat a CI run as gate evidence for those presets, and never describe CI as passing or failing
+"the build" without naming the stage that ran. The only route to Release and sanitiser evidence
+today is a local gate run (T1 with T9).
+
+Two smaller CI observations: `main` and `feature-base` are identical, so every push pays for two
+full gates, and rapid pushes cancelled three runs. The failures on 2026-11-10 and 2026-11-12
+(durations near 50 seconds) are a different, resolved era: CMake configure errors in the legacy
+monolithic `CMakeLists.txt` (`civsim_add_test`, `add_library` and `add_executable` with missing
+sources) from the acknowledged broken build, fixed by `81f72a6`.
 
 ## Findings
 
@@ -107,6 +169,13 @@ and its log is not captured in this document.
    path is `../../jettison/docs/…`, which resolves against the sibling checkout `AGENTS.md`
    documents, and both links now use it. Nothing enforces link integrity in CI, so this class of
    drift is unchecked: handoff T8.
+9. **CI is red on clang-tidy alone, and that red hides a coverage hole.** Twelve consecutive
+   failures on the live branches, with the format gate, Debug build and all 11 suites passing in
+   every run.
+   `Decimal.h:99` and `Marketplace.cpp:1688` fail the CI-only tidy stage, and `scripts/ci.sh`
+   aborts before Release and before ASan/UBSan, so CI has reported no sanitiser evidence since
+   2026-11-14. Tasks T9 and T10; full evidence, timeline and run IDs in
+   [CI failure analysis](#ci-failure-analysis--2026-11-16).
 
 ## Recommendations, in priority order
 
@@ -119,6 +188,11 @@ is the precondition for Stage 1.
 `devenv.nix` with the pinned SDK, documenting an explicit exception if `lazygit` is to stay;
 repair `.vscode/launch.json.example` and `.vscode/tasks.json.example` (the tracked task file
 selects `ALL_BUILD`, an MSBuild generator target, while the presets use Ninja).
+
+**P0 — make CI meaningful again (T9, T10).** Apply the two tidy fixes and move the tidy stage after
+the Release and ASan/UBSan stages. The current CI red streak is not a build failure: Debug builds
+and all 11 suites pass in every run, and the tidy abort is what suppresses Release and sanitiser
+evidence. Fixing the findings restores green; reordering the stages keeps the signal honest.
 
 **P1 — execute Stage 1, not further planning.** Stage 1 has written exit criteria: Manifest
 starts, mounts its package and shuts down through public APIs; the Jettison sample still works; a
@@ -157,9 +231,12 @@ clang-tidy left opt-in.
 | T6 | Enforce the scope funnel in planning: each new mechanic names its stage, the public SDK API it consumes and the demonstrated gap, and no new product pillar is scheduled before the Stage 4 acceptance criteria pass | Roadmap entries carry stage/API/gaps triplets; pillars are explicitly deferred with a re-entry condition |
 | T7 | Repair the tracked VS Code examples: preset-relative binary paths, real test target names, Ninja task target | A fresh clone's examples match `CMakePresets.json` and the generated binaries |
 | T8 | Add the cheap checks in the appendix to this document to CI: local Markdown link and heading-anchor integrity, `devenv.*` parity against the pinned engine revision, and the CMake dependency-closure boundary checks from the [boundary assessment](engine-game-boundary-assessment.md#enforcement-to-implement-later) | Checks run in CI and fail on violations; documented in [build and gates](build-and-gates.md) |
+| T9 | Fix the two clang-tidy findings that keep CI red: an explicit widening cast at `source/game/types/include/manifest/types/Decimal.h:99`, matching the `static_cast<__int128_t>` form already used at `Decimal.h:93`, and the `insert`/`append` form the check suggests at `source/game/market/src/Marketplace.cpp:1688`. Both preserve behaviour. Run `./scripts/ci.sh --werror --asan --tidy --log build/gate-tidy.log`, then push and confirm CI green | Local gate passes including tidy; the CI run on the fix commit is green; both findings are absent from `ci.log`, which now reaches Release and ASan/UBSan |
+| T10 | Repair the CI gate shape: run the tidy stage after Release and ASan/UBSan so a tidy warning cannot mask sanitiser evidence; run one gate per push rather than twice on identical `main` and `feature-base`; consider a bounded tidy baseline in place of `--warnings-as-errors=*`, and reporting header findings once rather than per TU | A failing tidy stage no longer prevents Release and ASan/UBSan results; one push costs one full gate |
 
-T1, T5, T7 and T8 are execution. T2, T3, T4, T6 and T8 also change content the planning documents
-propose; the implementer applies them and runs the gates.
+T1, T5, T7, T9 and T10 are execution. T2, T3, T4, T6 and T8 also change content the planning
+documents propose; the implementer applies them and runs the gates. T9 is the shortest path to a
+green CI and is best combined with T1 in one gate run.
 
 ## Method and limits
 
@@ -168,10 +245,11 @@ and merge structure; `source/` layout, sizes, tests, namespaces and every Jettis
 `CMakeLists.txt`, `CMakePresets.json`, `cmake/ManifestModule.cmake`,
 `source/external/CMakeLists.txt`; `data/build.sh` and authored YAML; `scripts/ci.sh`,
 `format-check.sh`, `tidy.py`; `.github/workflows/ci.yml`; `AGENTS.md`, `README.md`, `.gitignore`,
-`.vscode`, `.codex`; and the pinned versus checked-out engine `devenv.*` files. Not performed: any
-build, test, format, tidy, benchmark or engine run; no line-by-line audit of renderer, physics, ECS
-or marketplace algorithms; no C++ memory analysis. Quantities are `wc -l`/`grep` counts over the
-working tree, excluding `.git`, `build`, `.devenv` and `.cache`. The link and anchor checker was run
+`.vscode`, `.codex`; the pinned versus checked-out engine `devenv.*` files; and the GitHub Actions
+run list and failure logs for 2026-11-07 to 2026-11-15 through the authenticated `gh` CLI. Not
+performed: any build, test, format, tidy, benchmark or engine run; no line-by-line audit of
+renderer, physics, ECS or marketplace algorithms; no C++ memory analysis. Quantities are `wc -l`/
+`grep` counts over the working tree, excluding `.git`, `build`, `.devenv` and `.cache`. The link and anchor checker was run
 from `/tmp`, not added to `scripts/`, because tooling is implementer work under the planning-only
 policy; it is recorded in the appendix for handoff T8.
 
