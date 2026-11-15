@@ -1,5 +1,364 @@
 # Session handoff
 
+## Regional population and government correction — 2026-11-16
+
+This section supersedes the planet-scoped population/government assumptions in earlier
+handoffs. Baseline: `feature-base` at `2094b55` (`Planning: record economy, market fog and
+ship rules`), initially clean. The user corrected the simulation unit: several governmental,
+corporate or trading-bloc economic regions can exist on one physical planet, each with
+separate population and outcomes. They explicitly selected multiple regions on one planet
+in the first playable governance scenario, with each player initially controlling one
+region's public budget/development alongside their separate trading company.
+
+The new [regional model](regional-economy-and-governance-plan.md) separates physical planet,
+economic region, government/control, corporation, bloc membership, civilisation affiliation
+and station market. Regional state includes population, one household pool, needs/shortages,
+health/happiness, public accounts, local projects and policies. Organisations can relate to
+several regions, but overlapping membership must not duplicate people, money, goods or demand.
+Planet-wide totals are derived summaries. Existing wage/rounding/tax/cadence rules remain,
+with household/public settlement and tax carry now scoped per employer/region. Employment
+across regions needs explicit routing rules before it is enabled. Bronze project values
+remain, with the local project/unlock targeted at a region rather than the whole planet.
+
+The user subsequently selected continuous 0–100 scales for each region's health and happiness,
+allowing fractional changes. 100 is ideal and 0 the lowest modelled condition. Both start
+at 100 in the first balance-testing scenario; joining or acquiring an existing region and
+changing governor preserve current values. Save/load retains the saved values. The user then
+accepted condition updates after household purchases every 60 simulation seconds: unmet
+essentials lower both values, larger shortages cause greater losses and meeting all essentials
+allows gradual recovery. Happiness declines and recovers faster than health; bound both to
+0–100 without instantly resetting condition when deliveries resume. The user accepted initial
+rates per simulation hour: complete shortage loses 6 health/12 happiness, partial-shortage
+losses scale proportionally with severity, and full essentials recover 3 health/6 happiness.
+Apply fractional changes at the 60-second cadence (complete shortage −0.1/−0.2; full essentials
++0.05/+0.1), retaining bounds. One complete-shortage hour takes 100/100 to 94/88; a following
+full-essentials hour yields 97/94. These are balance-test values requiring gameplay validation.
+The user selected shortage severity as the weighted average of each required essential need's
+percentage unmet, with authored positive importance weights, initially equal (1). Cap each
+good's fulfilment at 100%; surplus cannot compensate for another missing essential. Prices
+and physical quantities do not set importance. Only actually satisfied current needs count;
+exclude optional goods and zero requirements. With no current essentials, there is no essential
+shortage; recovery requires all current essentials met, not a rounded display percentage.
+Two equally weighted essentials, one fully supplied and one half supplied, give 25% severity
+and losses of 1.5 health/3 happiness per simulation hour (0.025/0.05 per normal interval).
+The user selected a production work-rate penalty: lower health/happiness slow work, while
+completed batches retain declared material requirements, output quantities and total gross
+wages. Wage accrual follows completed work, so slower production also slows wage payments.
+Condition changes affect subsequent production steps, including remaining work in active
+batches, without reversing completed progress or earned/paid wages. Existing interruption,
+completion and cancellation rules remain. An illustrative half work rate doubles a ten-minute
+batch to twenty minutes for the same completed goods/wages; this does not choose recipe
+duration or wage amounts. The user selected the initial combined work-rate multiplier
+`(0.5 + health / 200) × (0.5 + happiness / 200)`, ranging from 25% to 100% of otherwise
+eligible rate. Example health/happiness → work rate: 100/100 → 100%, 50/100 → 75%,
+50/50 → 56.25%, 0/0 → 25%. This limits condition-induced slowdown to 75%; missing materials,
+insufficient funds or inactive facilities can still stop production entirely. No recipe,
+funding or operation requirement is bypassed. The values require balance validation.
+The user selected economic ordering: each fixed step advances production using condition
+from the previous completed step and settles completed batches. On each due 60-second
+economic boundary, regular payroll/tax comes next, then household purchases/consumption
+(essentials before permitted optional goods), then health/happiness update. The new multiplier
+applies from the next fixed step. Production continues on intervening steps; household and
+condition updates do not. Completion/cancellation settlement still occurs when processed;
+regular payments subtract prior settlement so a completion on the boundary cannot double-pay.
+New shortages cannot revise completed work or earned wages. Cadence/settled interval state
+must survive replay/recovery; the complete movement/docking/market/pricing graph remains
+to be resolved in stage 4. Population-size
+changes remain separate. Existing float/double policy applies to condition values.
+
+The user accepted an initial bread/drinking-water/basic-medical-supplies basket, then amended
+its food component: add rice, wheat, oats and barley as distinct tradable food commodities.
+Their explicit follow-up selects one staple-food need satisfied only by these four grains,
+not four separately required essentials and not bread. Water and basic medical supplies
+remain the other two needs; each of the three need weights initially equals 1. Bread remains
+tradable outside this first basket; seed commodities retain their existing IDs/values.
+
+The economy plan's grain handoff proposes `ItemRice`, `ItemWheat`, `ItemOats`, `ItemBarley`
+under existing consumables, with a bounded authoring/packaging/full-mode task for the user
+or user-selected non-OpenAI implementer. Current files contain the four seed items but no
+food items with those proposed IDs. No commodity YAML, code, build scripts, fixtures or tests
+were changed. The user then selected `Kilogram` units for all four food grains, with 1 kg
+of any qualifying grain meeting 1 kg of food demand, including mixtures. Each retains its
+own price/stock/storage; consumption debits the actual grain without creating a food
+commodity or changing another grain's inventory. A 100 kg requirement can use 60 kg rice
+plus 40 kg barley, or 100 kg of any one qualifying grain. Existing seed units are unchanged.
+Exact prices, physical/age values and remaining water/medical authoring
+remain open. The user subsequently selected aggregate population counts of people, with
+consumption rates authored per 1,000 people per simulation day (24 simulation hours or
+86,400 simulation seconds). Required interval quantity is
+`r × (P / 1,000) × (dt / 86,400)` for daily rate `r`, population `P` and elapsed seconds `dt`.
+A 25,000-person region needs 25 daily baskets over 1,440 normal 60-second updates, using
+one household pool. Retain fractional quantities under the float/double policy. Population
+sizes and growth/migration rules remain unselected.
+Existing population code still uses abstract world units; any supported migration must
+declare an explicit conversion to people and preserve totals, never silently relabel units.
+The user then accepted an initial staple-food requirement of 500 kg per 1,000 people per
+simulation day across the four qualifying grains. For 25,000 people this is 12,500 kg/day
+(12.5 tonnes), or `12,500 / 1,440` kg per normal 60-second interval. Preserve fractional
+requirements, one substitutable food need and actual grain consumption once. Finite funds,
+physical supply, shortages and no automatic catch-up demand still apply. This is a selected
+balance-test setting, not a validated economic result.
+The user then accepted initial drinking-water demand of 3,000 litres per 1,000 people per
+simulation day, with agricultural and industrial water treated as separate demands.
+For 25,000 people this is 75,000 litres (75 cubic metres) daily, or `75,000 / 1,440` litres
+per normal 60-second interval. Retain fractional quantities, actual accessible potable
+supply, finite household funds, single consumption, shortage consequences and no automatic
+catch-up purchasing. This is an initial balance-test rate; no viability result is claimed.
+Exact water commodity/inventory-unit/price/physical authoring remains open. Explicitly
+convert litre-based needs to the selected inventory unit while preserving volume; no unit
+enum or item definition has been added. Agricultural/industrial water quantities/rules remain open.
+The user then accepted a distinct Basic Medical Supplies commodity, traded in kilograms
+and representing routine medical consumables. Antibiotics, anaesthetics and analgesics
+remain separate commodities without automatic substitution. The economy plan's new
+medical handoff proposes `ItemBasicMedicalSupplies`, a bounded addition through the existing
+medicine authoring/registry/packaging/full-mode paths, and implementer checks. The item ID
+is proposed only; category choice, availability, price and physical values remain open.
+The user then accepted a basic-supplies consumption rate of 5 kg per 1,000 people per
+simulation day. For 25,000 people, this is 125 kg/day, or `125 / 1,440` kg per normal
+60-second interval. Preserve fractional quantities, actual physical supply, finite funds,
+single consumption, shortages and no automatic catch-up demand. All three first-basket
+rates are now selected as initial balance settings, without an economic viability result.
+No recipe, patient-level simulation or extra health bonus is selected.
+No commodity YAML, code, fixtures, scripts or tests were changed.
+
+The user additionally requested oxygen and carbon scrubbers in the planned item list,
+explicitly under a Life Support category, plus space-exploration requirements as follow-up.
+Stage 2 records both items and the category. Current trade-item definitions contain none
+of these. The user subsequently accepted tradable carbon scrubbers as replaceable
+consumable cartridges with finite scrubbing capacity, used by installed life-support
+machinery that stays aboard. Oxygen remains a separate consumable; oxygen reserves and
+remaining scrubbing capacity are distinct exploration supply constraints, both under
+Life Support. The user then selected occupant-days as the scrubbing-capacity unit: one
+occupant-day supports one person for one simulation day (86,400 simulation seconds).
+An illustrative 10-occupant-day cartridge supports one person for ten days or two for five;
+this does not select a cartridge rating. Fractional usage carries forward. For intervals
+requiring onboard scrubbing, usage is `C × dt / 86,400` occupant-days for `C` occupants
+and elapsed simulation seconds `dt`, summed over occupancy changes. The user then selected
+kilograms for oxygen inventory and trading, using the existing `Kilogram` unit. Preserve
+fractional mass; tank volume/storage capacity and mass-to-packed-volume conversion remain
+separate authoring choices. No tank pressure, storage method, refill/packaged-supply rule
+or container ownership was selected. The user then accepted initial oxygen use of 1 kg
+per occupant per simulation day while relying on onboard life support. One occupant on
+a 30-simulation-day journey requires 30 kg. Applicable interval demand is
+`C × dt / 86,400` kg for `C` occupants and elapsed simulation seconds `dt`, summed over
+occupancy changes, with fractional quantities retained. Oxygen remains independent of
+scrubber capacity. This is an initial gameplay balance value; tank physical volume and
+exhaustion consequences remain separate open decisions.
+The user subsequently accepted 30 occupant-days per fresh standard cartridge: one occupant
+for 30 simulation days or two for 15. This is an initial authored balance setting; retain
+fractional use and actual remaining capacity. Cartridge mass, physical volume, price and
+trade unit remain open, as do ship installed capacity and spare counts. Category/item IDs,
+physical values, endurance, power, replacement/resupply, spent-cartridge handling and
+exhaustion consequences remain open. Preserve actual inventory and remaining capacity through
+replacement, save/replay and transfers; no reset on docking/reconnect/load. Stage 2 records
+the distinction and implementer checks, not an implemented supply system.
+The user then accepted that docked ships connected to working station life support pause
+both onboard oxygen and scrubber consumption. This supplies ongoing needs without refilling
+tanks, restoring cartridge capacity or replacing cartridges; resupply remains separate.
+Departure or loss of service resumes applicable onboard consumption from actual remaining
+reserves. Docking alone does not establish working service. The user then accepted ongoing
+connected life support as included in the berth fee at stations offering it, with oxygen
+refills and replacement cartridges priced separately. Preserve that inclusion under accepted
+booking terms; no new ongoing life-support surcharge can be added to an accepted agreement.
+Numeric tariffs/billing, availability, capacity, connection procedures and station resource/
+funding accounting remain open; no unlimited station supply or free replenishment is
+selected. Stage 2 and the booking plan record billing, transition and recovery checks.
+The user then accepted that new players spawn connected to working life support at their
+starting public station. Allocation requires available working service capacity alongside
+the existing starter-compatible berth and regional delivery connection. An advertised
+service without working capacity is insufficient. Preserve the established connection
+through retry/recovery, with onboard oxygen/scrubber depletion paused while service works.
+The user subsequently accepted initial supplies for the 20-IBC starter: 30 kg oxygen and
+one fresh installed standard scrubber cartridge with 30 occupant-days. At one occupant,
+each provides 30 simulation days of onboard life support, not complete journey endurance.
+Provision these once during onboarding and preserve actual remaining mass/capacity through
+reconnect, docking, recovery and transfers. Working station service pauses their use.
+The user then accepted dedicated life-support space for the starter's operating oxygen
+and installed cartridge, outside the 20-IBC trade hold. Supplies carried for trade or as
+loose spares use cargo space under normal packed-volume rules. Keep explicit stock
+locations and conserve actual quantities/ownership through transfer or replacement;
+service storage cannot duplicate cargo. Physical accommodation must include both spaces.
+The user then accepted a 30 kg maximum operating oxygen reserve for the starter, making
+its initial tank full. Keep operating mass within 0–30 kg; additional cargo oxygen remains
+separate until transferred and cannot increase the operating limit. Tank physical volume/
+storage method, upgrades and compact-ship capacity remain open. Compartment dimensions,
+transfer procedures, cartridge physical values, spare provision,
+compact-ship reserves, station provisioning, numeric berth fees and later outages remain
+open; this does not select permanent service uptime or unlimited station capacity.
+This is an exploration/life-support design note; it does not add a fourth regional
+household essential or change the compact ship's separate four-IBC cargo allocation.
+The user additionally requested LPG as a tradable commodity and explicitly selected
+kilograms as its unit. Stage 2 records `Kilogram` inventory/trading under existing
+`CategoryFuels`, with proposed `ItemLPG` ID and the ordinary authoring/registry/packaging/
+full-mode implementer path. No LPG item was found in current trade-item definitions.
+Price, availability, physical storage/packing, container handling, production and
+consumption uses remain open; no ship-propulsion fuel role is selected. No YAML or
+implementation changes were made.
+Severity now weights essential needs: aggregate qualifying food consumption in its selected
+common measure, then count food once alongside water and medicine. Surplus food cannot offset
+missing water or medicine. Full food/water but no medicine gives severity one third and hourly
+losses of 2 health/4 happiness; a single qualifying grain can satisfy food without the others
+at the selected food rate. No automatic production/processing recipe was chosen;
+equal grain substitution is an initial game-balance rule.
+
+Fleet observation is still station-specific, and the 20-IBC starter and separate four-IBC
+compact ship requirements remain. One regional government does not imply whole-planet
+sovereignty. The user subsequently accepted regional acquisition protection: all
+player-governed regions, including acquired regions, are protected from purchase or seizure
+through the AI-acquisition mechanic. Otherwise eligible AI regions on the same planet remain
+purchasable without a sibling governor's veto; onboarding reserves stay outside the pool.
+Purchase transfers public decision rights, with treasury funds staying public and privately
+owned companies, ships and stations retaining their owners. Purchase pricing, payment recipient
+and voluntary player-to-player transfers remain open. The user also accepted regional frontier
+concessions: each names one region and covers its eligible resources, leaving neighbours
+independently available under their own eligibility rules. Keep the operational-port/concession
+activation trigger and 72-hour server-running duration; government control remains separate.
+Activation/expiry in one region must not start another's timer or change its resource rights.
+The user accepted one initial port-construction opportunity per eligible region: own, eligible
+AI or eligible unclaimed regions qualify; neighbouring ports do not block construction.
+Other players' governed regions are protected against unsolicited builds. Keep the funded
+construction race and competing ports at frontier concession expiry. A regional association
+sets construction eligibility while ports remain physical orbital stations. The user then
+accepted shared ports: a port may serve several regions on that planet under its owner's
+offered services, fees, priorities and access terms, honouring accepted bookings. Deliveries
+name a destination region and require physical transport; inventories, household funds and
+public budgets remain separate. Serving neighbours grants no government/resource rights,
+consumes none of their initial construction opportunities and reveals no other station's live
+market data. Transport costs, capacity and delivery times remain to be designed.
+The user also accepted a starting-access guarantee: allocate a region only with an operational
+public station supporting the starter ship and a physical delivery connection to that region.
+The subsequent life-support decision also requires an available working connection and
+spawns the new player connected, as recorded above.
+Basic docking, trading and regional delivery access remain available; corporate players cannot
+revoke this baseline. Service charges and finite capacity apply, and goods/spending funds
+remain finite. Private ports retain commercial policies. Exact fees, capacity and starting
+funds still need balancing; access does not establish profitable routes or affordable supplies.
+Control changes during construction and compatibility with onboarding
+reservations still need rules.
+
+The user additionally requested cultural and corporate character in station design, with
+customisable appearances, corporate colours/logos and distinct individual stations. This is
+recorded as a presentation requirement in the development plan, with detailed art direction,
+assets, controls and rebranding outside this economy/governance design. No visual assets or
+customisation implementation were produced.
+
+Shared station services and inter-region physical supply must not merge local inventories
+or funds. Generation/migration must allocate old totals
+explicitly, without copying a planet's people or treasury into every district.
+
+Current work is uncommitted planning documentation: the regional plan and aligned economy,
+government/gameplay, architecture/scope, ship requirements, stages 2–5, host/script, market visibility, procurement,
+stargate funding, development-stage, roadmap, index and handoff guidance. No implementation,
+assets/configuration, SDK/environment change, builds or gameplay/recovery checks ran.
+The implementer must demonstrate regional
+isolation on the same planet, public/company permission separation, regional payroll/tax,
+local condition/production and projects, conserved migration and saved/replayed relationships.
+Acquisition checks must reject another player's home and acquired regions, permit otherwise
+eligible AI neighbours without a sibling veto, and preserve public money/private ownership.
+Concession checks must isolate resource scope, activation and expiry across regions on the
+same planet, retaining original scope/timers and separate government control through recovery.
+Port checks must allow separate regional opportunities on one planet, preserve same-region
+funded races, reject unsolicited construction in player-governed regions and allow frontier
+competition at expiry. Shared-port checks must preserve named destinations, physical transport,
+separate regional economies/rights/opportunities and station observation rules, including
+protected bookings across new access denials. Detailed transport and construction/control-change
+cases need their separate rules. Onboarding checks must reject missing/incompatible/nonoperational
+public service or missing physical delivery links, retain basic public access under later
+corporate restrictions, and preserve finite capacity/goods/funds and private-port policies.
+Also reject unavailable working life support/capacity and verify successful spawn starts
+connected, with no onboard depletion or duplicate allocation/resupply through retry/recovery.
+Condition checks must establish both initial test values at 100, bounded fractional values
+within 0–100 and retention across joining, acquisition, governor change and save/replay.
+Demonstrate post-purchase updates once per due economic interval, larger shortages causing
+greater losses and full essentials permitting gradual recovery; happiness changes faster
+than health away from bounds. Restored deliveries cannot instantly reset condition, and
+retry/recovery must not duplicate responses. Include the selected hourly and fractional
+per-interval examples, partial-shortage scaling, bounds and elapsed-simulation-time semantics.
+Include the two-good 25%-severity case, noncompensating surpluses, weights independent of
+price/quantity, optional/zero-required goods excluded and recovery only after full essentials.
+With controlled work rates, check identical completed material/output/payroll totals, twice
+the baseline duration at half rate, and only subsequent progress/wage accrual changing after
+mid-batch condition changes. Preserve completed progress and earned/paid wages through recovery.
+Verify the four selected multiplier examples, independent/symmetric condition effects and
+material/funding/operation blocks even at the 25% condition floor.
+At economic boundaries, prove old condition governs current-step work, completion and regular
+payroll cannot double-pay, payroll/tax precedes purchases and resulting condition affects only
+the next fixed step. Intervening steps must not repeat household/condition updates; recovery
+retains cadence and settled interval state.
+The grain implementer must establish four distinct tradeable food definitions, unchanged seed
+IDs, valid references/physical/price fields, full-mode and directory/pack visibility, separate
+inventory/trades/cargo and the single substitutable food need without double consumption.
+Check selected `Kilogram` units, equal substitution and the 100 kg single-grain/60+40 kg
+mixture examples, with distinct inventories and no synthetic food commodity.
+Verify per-1,000-person daily scaling, fractional 60-second requirements and no demand
+at zero population. With a fixed population, 1,440 normal intervals must match the authored
+daily requirement within the declared numeric tolerance. Supported migration must apply
+its explicit legacy conversion once and preserve totals when splitting regions.
+Check 500 kg/day for 1,000 people and 12,500 kg/day for 25,000 people, including one grain
+and mixtures, without multiplying demand by the number of grain alternatives. Insufficient
+funds or physical stock must produce recorded shortages rather than synthetic consumption.
+Verify 3,000 litres/day per 1,000 people and 75,000 litres/day for 25,000 people, fractional
+60-second water requirements and volume-preserving inventory-unit conversion. Keep
+agricultural/industrial uses separate, with no double consumption of physical stock.
+Verify one distinct kilogram-based Basic Medical Supplies definition with separate stock,
+trades and cargo capacity; preserve specialised medicine definitions, directory/pack and
+full-mode visibility. Verify demand of 5 kg/day per 1,000 people and 125 kg/day for 25,000
+people, fractional intervals and daily totals. Consume actual accessible supplies once
+and retain shortages without silent substitution or automatic catch-up demand.
+For scrubbers, verify a fresh standard cartridge provides 30 occupant-days: one occupant
+for 30 simulation days or two for 15. After 15 occupant-days used, 15 remain without a
+reset on removal/docking/recovery. Check fractional use and
+daily/interval consistency, zero occupant-driven usage at zero occupancy, no double
+depletion or capacity gain through save/retry, and retained partial capacity. Supplied
+capacity cannot exceed the actual remaining reserve; exhaustion consequences are open.
+Verify oxygen uses `Kilogram`, with fractional mass, separate stock/transfers and conserved
+mass through the selected trade/loading/refill paths; physical storage checks must use
+the authored conversion. Save/recovery must preserve kilogram quantities without resets.
+Verify the selected 1 kg/occupant/day oxygen rate and 30 kg journey example, proportional
+occupancy/time scaling, fractional daily/interval consistency and zero occupant-driven
+usage at zero occupancy, with no double depletion through retry/recovery. Actual supplied
+mass cannot exceed the reserve; exhaustion rules remain open. Verify the selected connected
+station-service pause for both onboard supplies, continued onboard use without working
+service, and resumed use after departure/service loss. Split intervals at authoritative
+service transitions, with no double debit, skipped use or automatic replenishment through
+connection, docking, retries or recovery. Preserve separate resupply stock/ownership.
+Verify the starter initially receives 30 kg oxygen and one fresh installed cartridge
+with 30 occupant-days once; retain actual remaining supplies through retry/recovery,
+reconnect, docking and transfers. Show each covers 30 simulation days at one occupant
+onboard use, with depletion paused under station support. Physical accommodation must
+be validated after storage/tank/cartridge definitions are authored. Compact initial
+reserves and complete journey endurance remain open.
+Verify starter operating reserves/installed cartridge do not consume its 20 m³ trade
+hold; trade supplies and loose spares do use their authored cargo volume. Preserve stock
+locations, quantities and ownership through transfer/retry/recovery. Once destination
+limits and procedures are selected, reject overflow without duplication or loss.
+Verify the starter begins full at its 30 kg operating oxygen cap and retains actual
+remaining mass after use. Refills/transfers/recovery cannot exceed that cap or count
+cargo oxygen as installed reserve; overflow rejection must not lose source stock.
+Verify connected life support is covered by the berth fee at stations offering it, without
+a separate ongoing-service charge. Oxygen refills/cartridges need separate authorised
+purchases and actual supply. Preserve accepted service/fee inclusion across owner policy
+changes; billing cadence, numeric charges and service-failure settlements remain open.
+For LPG, verify a distinct `Kilogram` fuel item, directory/pack/full-mode visibility,
+separate trades/stock, fractional mass and physical cargo checks, preserving ownership
+and quantities through recovery.
+OpenAI agents supply the plan only under AGENTS.md; implementation/gates belong to the implementer.
+OpenAI agents remain planning-only. Earlier planning is committed in `2094b55`; no push
+occurred during that commit request.
+
+Documentation validation: `git diff --check` and 191 local Markdown targets, including
+24 heading anchors, across 19 changed/new planning documents passed. No missing targets,
+trailing whitespace or missing final newlines were found. These are documentation checks,
+not evidence of a working regional simulation or compatible migration.
+
+Next choose onboard transfer/replacement procedures, remaining storage limits, station provisioning/capacity and
+numeric tariffs, remaining commodity authoring values and within-basket purchase allocation.
+Region generation/allocation, organisation powers,
+cross-region employment/tax, ground transport and shared technology remain open.
+Continue this session for the Life Support/exploration requirements, which build on the
+recorded ship and item decisions. Do not treat the older one-home-planet allocation
+formula or employer/planet tax key below as the current contract.
+
 ## Household rules, population condition and market intelligence — 2026-11-15
 
 Resumed on `feature-base` at `4e78dbbf99b2951aa7da8de3591965802a65716d`

@@ -1,9 +1,11 @@
 # Stage 3: companies, authoritative state and commands
 
 Subsequent requirements: read [planetary/corporate planning](planetary-development-plan.md)
-before freezing schemas. Players also direct one planet's development/public budget; keep
-planet identity, public funds, company assets and control rights separate. The original
-AI-only civilisation scenario below is a fixture, not a restriction on governed planets.
+before freezing schemas and apply the [regional correction](regional-economy-and-governance-plan.md).
+Players also direct one region's development/public budget; keep physical planet, region,
+population/household/public accounts, government, company assets and control rights separate.
+The first governance scenario must include multiple regions on one planet. The original
+AI-only civilisation scenario below is a fixture, not a restriction on governed regions.
 Networking/TUI play is now required; its connection slice follows minimal authority.
 
 Planning handoff for Claude, prepared 2026-11-15. Depends on
@@ -49,13 +51,16 @@ then copy its state into the world.
 | State | Ownership and identity |
 | --- | --- |
 | Company | A distinct entity with stable company ID; one company per player principal initially. Membership belongs to world state; credentials do not. |
-| Civilisation | Existing authored identity, population, institutions and production policy; server controlled. |
-| Treasury | Separate balance on each company/civilisation account. Account identity includes owner kind, so equal text IDs cannot alias. |
+| Planet | Physical identity, environment and sites; parent of multiple economic regions, without another authoritative population or pooled treasury. |
+| Region | Stable regional ID/planet link; population, household funds, needs/condition, public accounts, local development and policies. |
+| Government/control | Explicit regional authority held/exercised by eligible organisations and principals. Corporate/bloc links cannot duplicate population or merge sibling accounts. |
+| Civilisation | Existing authored cultural/technology affiliation; distinct from physical planet, region, public authority and company. |
+| Treasury | Separate company, regional public and household accounts with explicit owners. Account identity includes owner kind, so equal text IDs cannot alias. |
 | Ship | Explicit company ownership; hull, capacity and physical location. Civilisation affiliation is a separate field if needed for technology or permissions. |
 | Venue inventory | One balance per owner kind/ID, venue ID and item ID. Company stock at two venues is two balances. |
 | Cargo | One balance per ship/item; the ship's owner controls it. Cargo is not venue stock. |
 | Order | Explicit account owner and venue, item, side, quantity, Decimal limit and lifecycle; a reservation names that order. |
-| Progression | Immutable shared skill definitions plus mutable tiers/exclusive choices owned by the company or civilisation that bought them. |
+| Progression | Immutable shared skill definitions plus explicitly scoped mutable tiers/exclusive choices: regional projects/infrastructure, company capabilities or declared shared civilisation technology. |
 | Identity allocation | Saved world service with checked, non-reusing counters; rebuilt lookup indexes are derived, counters are not. |
 | Request history | Saved world service containing actor request progress, pending/result records and deterministic retention state. |
 
@@ -221,6 +226,10 @@ Required checks for the implementer:
 
 - Company/civilisation balances stay distinct, including colliding textual IDs; one
   player cannot operate another's ship or inventory, or mint resources through provisioning.
+- Two regions on the same planet retain independent public/household funds, population,
+  condition and project permissions. Shared civilisation, corporation, government or bloc
+  membership grants only explicit authority and never duplicates accounts or people.
+  Player provisioning allocates one regional control right, not a whole physical planet.
 - No action takes effect before the assigned step. Conflicting commands execute in
   assigned order; second-command validation sees first-command effects.
 - Rejected actions preserve business state, reservations and identity allocation. Clock

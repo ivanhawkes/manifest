@@ -12,6 +12,21 @@ Jettison `feature-base` at `0564f19ed41bc7e0a278952153567d4a137a2f5b`. Manifest 
 Manifest documentation edits. Read the [boundary assessment](engine-game-boundary-assessment.md)
 and the selected SDK's game-integration guidance before implementation.
 
+The [regional correction](regional-economy-and-governance-plan.md) supersedes the earlier
+one-government/population-per-planet assumption. Public control, households, condition and
+local development are region-scoped; multiple governed economies must coexist on one planet
+in the first governance scenario. Player-governed regions are protected from the
+AI-acquisition mechanic; eligible AI neighbours on the same planet remain purchasable.
+Frontier resource concessions name one region and cover its eligible resources; neighbours
+remain independently available under their own eligibility rules. Historical planet-wide
+port eligibility is superseded by one initial construction opportunity per eligible region;
+neighbouring ports do not block it, and other players' governed regions are protected against
+unsolicited construction. A port may serve several regions on that planet under its owner's
+offered terms, with explicit physical delivery and separate economies/rights. Detailed
+transport remains open; starting regions have guaranteed basic public-port access. These rules
+do not make one governor sovereign
+over siblings.
+
 ## Confirmed direction and open choices
 
 - The game is a persistent, networked idle game. One headless server runs the authoritative
@@ -19,8 +34,8 @@ and the selected SDK's game-integration guidance before implementation.
   The existing TUI becomes a `connect`/`disconnect` gameplay client; a GUI uses the same
   commands and server state with the selected public engine capabilities. Manual TUI trading
   remains a stretch goal; automatic physical trading is required.
-- Each player initially controls one planet's development and public budget alongside a
-  separate trading company. Other inhabited planets have AI governors. A disconnected player
+- Each player initially controls one region's development and public budget alongside a
+  separate trading company. Other inhabited regions have AI governors. A disconnected player
   retains control; a server-side executor continues the player's saved standing policies.
 - The first development controls are project selection, investment budgets and public
   procurement. Taxes, subsidies and broad regulatory powers are outside this first slice.
@@ -50,9 +65,10 @@ and the selected SDK's game-integration guidance before implementation.
 - Planet tech needs exploited/imported materials and actual production facilities. The inner
   map begins more technologically developed and resource-depleted; outer regions are richer
   and less developed. These dependencies create the intended rush for control of fresh resources.
-- Players may purchase control of eligible AI planets or settle frontier worlds. Other
-  players' planets are protected from acquisition through this mechanic. One planet is the
-  starting entitlement, not a permanent cap. Whole-civilisation sovereignty is not implied.
+- Later purchases of eligible AI regional control rights and frontier settlement remain
+  goals. All player-governed regions are protected from the AI-acquisition mechanic;
+  otherwise eligible AI neighbours remain purchasable without a sibling governor's veto.
+  One region is the starting entitlement, not a permanent cap or planet-wide sovereignty.
 - The long-term objective is a trading corporation with enormous power over government and
   media, comparable in scale to Earth's largest corporations. There is no win condition.
   Players accumulate wealth, power and control, using them to establish a stranglehold on
@@ -92,7 +108,8 @@ Monopolisation and coercive economic power are desired possibilities. The design
 how dependencies are created and exercised, and how rivals respond. Supply withholding,
 exclusive contracts and government pressure can be candidate mechanics; combat, conquest and
 piracy do not become requirements through this goal. Influence cannot silently bypass the
-agreed protection against purchasing another player's planet.
+agreed protection against acquiring another player's governed region through the
+AI-acquisition mechanic.
 
 With no win condition, reaching a dominant position must leave meaningful decisions: managing
 a larger portfolio, protecting dependencies, negotiating access and confronting new markets
@@ -110,8 +127,10 @@ Keep these concepts explicit even where the first scenario has one of each:
 | --- | --- |
 | Player/principal | Authenticated identity and granted command permissions. |
 | Trading company | Commercial credits, ships, cargo, orders, contracts and corporate holdings. |
-| Planet | Stable physical identity, population, environment, infrastructure and local inventory. |
-| Planetary government/control right | Authority over the permitted development programme and public budget. |
+| Planet | Stable physical identity, environment and physical sites; parent of multiple regions. Population and economy totals are derived summaries. |
+| Economic region/district | Stable regional identity and planet link; population, household funds, needs/condition, public accounts, local development and policies. |
+| Government/control right | Authority over a target region's permitted development programme and public budget, without implied sibling-region control. |
+| Corporation or trading bloc relationships | Explicit ownership, control or membership links; do not duplicate a region's population, goods or accounts when groupings overlap. |
 | Civilisation affiliation | Cultural/technology identity and explicitly shared effects; not automatically the player's company. |
 | Corporate influence | Recorded relationships and leverage over institutions; not interchangeable with legal control. |
 
@@ -127,12 +146,14 @@ treasury, while `MarketplaceService::LoadSimulation` uses its ID for the planet,
 and venue. `BodyInfo` has a civilisation association, and effects select all bodies/markets
 of that civilisation. Preserve existing authored IDs and references; introduce explicit
 relationships and migrate runtime state rather than renaming content or mapping every new
-planet back to its controller's ID.
+planet or region back to its controller's ID. The development harness is evidence of the
+coupling to replace, not the required multi-region identity model.
 
-Persist independent planetary development state. Classify each progression/effect as local,
-company-wide or civilisation-wide before applying it. Buying another planet must not grant
+Persist independent regional development state. Classify each progression/effect as regional,
+physical-planet, company-wide or civilisation-wide before applying it. Buying another region
+must not grant
 all local improvements everywhere, reset its age, or copy the acquiring company's whole tree
-onto it. A civilisation's shared technology and a planet's installed infrastructure can
+onto it. A civilisation's shared technology and a region's installed infrastructure can
 coexist, but their concrete sharing rules remain open.
 
 ## Development and unattended operation
@@ -151,14 +172,14 @@ not accidentally grant an AI governor permission to spend all company funds or b
 The policy executor and autonomous AI governors use the same native validation rules.
 
 Keep economic cadence, development work, upkeep and travel on explicit simulation schedules.
-Do not run every planet's economic AI at physics frequency merely because ships need frequent
+Do not run every region's economic AI at physics frequency merely because ships need frequent
 movement updates. Cadence and deterministic work limits are game data/contracts; wall-clock
-timeouts cannot determine which planet finishes a project or gets a purchase first.
+timeouts cannot determine which region finishes a project or gets a purchase first.
 
 Population, age and habitability need separate transitions. The current generation scales
 population with age and fixes production/demand decks; increasing a tier must not regenerate
-the planet or create people and stock without a defined source. Age advancement can unlock
-production options without instantly installing them. A low-tech starting planet needs
+the planet/region or create people and stock without a defined source. Age advancement can unlock
+production options without instantly installing them. A low-tech starting region needs
 access to the player's starting space-trading operation or external services so the core
 loop is usable before local space technology exists.
 
@@ -216,7 +237,7 @@ For the pilot, use a deterministic scoring contribution from corruption and infl
 than modelling individual officials or adding random political outcomes. Keep normal bid
 quality relevant and bound arithmetic/work. Bribery affects award preference; it does not
 make an invalid/late bid eligible, create delivery capacity, bypass public-budget limits or
-override another player's protected planetary control. The payer is the company, separately
+override another player's protected regional control. The payer is the company, separately
 from the public procurement budget. Record the expense's explicit destination/sink and result;
 do not invent a recipient simulation or duplicate funds to make it work.
 
@@ -258,8 +279,8 @@ Then demonstrate real leverage: a planet relies on a company's delivered input o
 capacity; the company can use the price, renewal and access decisions granted by that
 agreement. Company-owned stations also have the confirmed owner rights below. Exclusivity
 and government-policy concessions through other contracts remain undecided. Protected
-player-planet control does not imply immunity from economic pressure: station access denial
-is allowed, but cannot transfer another player's planet. Wider government powers require
+player-region control does not imply immunity from economic pressure: station access denial
+is allowed, but cannot transfer another player's regional control. Wider government powers require
 their own rules rather than hidden administrator privileges.
 
 Measure delivered throughput, fulfilment, alternative suppliers/routes, dependence and the
@@ -270,21 +291,23 @@ company can exercise the power the user wants.
 ## Company-built stations and control of shipping
 
 Station construction and operation are an agreed corporate-growth goal. The concrete expansion
-asset is an orbital spaceport: a company may build around any planet that has no existing
-spaceport and is not owned/controlled by another player. Its own planets, AI planets and
-unclaimed/uninhabited worlds can qualify. No discretionary government permit is an additional
+asset is an orbital spaceport associated with a named region for construction eligibility.
+There is one initial construction opportunity per eligible region: a company may build for
+its own regions, eligible AI regions or eligible unclaimed regions. Another region's port
+on the same planet does not block construction. Other players' governed regions are protected
+against unsolicited port construction. No discretionary government permit is an additional
 agreed eligibility requirement. A company funds and physically supplies a very expensive
 construction project; completion creates an owned, operational spaceport with defined services
 and capacity. The selected reservation rules below establish the initial funding commitment;
 exact costs, stages and construction funding amounts remain to be designed.
 Save work/cargo/reservations and create the port once even when
 completion is replayed or a request retried.
-Purchasing planetary control is not a prerequisite for a port at an otherwise eligible AI
-planet; acquisition and port-led exploitation are alternative corporate growth paths.
+Purchasing regional control is not a prerequisite for a port at an otherwise eligible AI
+region; acquisition and port-led exploitation are alternative corporate growth paths.
 
 For this slice, use station/spaceport to describe that orbital shipping facility. Other station
-types may be designed later. Initially there is one first-port opportunity; reopened frontier
-concessions permit competing ports as specified in the economy/development plan. The user
+types may be designed later. Initially there is one first-port opportunity per eligible region;
+reopened frontier concessions permit competing ports as specified in the economy/development plan. The user
 selected these rules for the initial first-port construction race:
 
 - The first eligible company to start a funded construction project secures the site.
@@ -296,22 +319,28 @@ selected these rules for the initial first-port construction race:
 - The reservation grants construction priority. Resource exclusivity and government control
   require their own grant rules.
 
-For eligible frontier worlds, the selected resource grant starts when the first spaceport
-becomes operational and its exploitation concession activates. Publish the duration before
-construction starts; use 72 hours of actual server-running time as the initial balance-testing
+For an explicitly named eligible frontier region, the selected resource grant starts when
+the first eligible spaceport becomes operational and its exploitation concession activates.
+Publish the duration before construction starts; use 72 hours of actual server-running time as
+the initial balance-testing
 term. Shutdown pauses it; idle facilities and disconnected owners do not. Ownership transfers,
 rebuilding and government changes cannot restart or extend the term. At expiry rivals may
 exploit and build ports; the incumbent retains its infrastructure and may refuse new bookings
 at its own port. Protected homes retain separate rules. This concession does not transfer
-government control. See the [running-time contract](economy-and-development-plan.md#real-time-exclusive-exploitation).
+government control. It covers only that region's eligible resources; neighbouring regions
+remain independently available under their own eligibility rules, without sharing its timer.
+The regional construction rule supersedes the earlier planet-wide port restriction. A port
+may serve several regions on that planet without consuming neighbours' construction
+opportunities. See the
+[running-time contract](economy-and-development-plan.md#real-time-exclusive-exploitation).
 
 These selected rules prevent an indefinitely renewable claim without the intended construction
 commitment. They do not establish a measured anti-squatting result or a limit on funded projects.
 The mobilisation amount, payment beneficiary, scope of reserved funds, construction recipe,
 deadline duration/clock basis, and treatment of completed work still need design. Retaining
 ownership of unused goods does not define their collection, relocation or storage terms.
-Specify what happens if a planet's control changes while its port is being built; neither
-completion nor an AI-planet sale may silently violate the other player's control protection.
+Specify what happens if a region's control changes while its port is being built; neither
+completion nor an AI-region sale may silently violate the other player's control protection.
 
 Implementation handoff: accept eligibility, mobilisation payment, fund reservation and site
 claim atomically in authoritative order, rejecting competing starts without charging them.
@@ -321,6 +350,18 @@ includes racing companies, insufficient funds, token deliveries, deadline bounda
 abandonment, unused-property accounting and restart/retry at each transition. The exact clock
 and salvage/control-change contracts must be specified before claiming those cases are covered.
 
+### Station appearance and corporate identity
+
+Stations should have design and flair tied to the cultures and corporations that own and
+operate them. Provide a means to customise their appearance, including corporate colours,
+logos and other branding, while keeping individual stations visually distinct even within
+one corporate identity. Record this as a presentation requirement; detailed art direction,
+asset/modular design and customisation controls are outside this economic/governance plan.
+The treatment of differing owners/operators and later rebranding remains for that design.
+No visual assets or customisation system have been implemented by this planning work.
+
+### Station access and operation
+
 Owners may set fees, service/shipping priority and deny rivals access. Represent those as
 authoritative station policy, editable only by authorised company actors, with effective
 step and revision. Admission checks must cover player ships, NPCs and auto-traders through
@@ -328,6 +369,16 @@ one public engine boundary; an AI calling docking APIs directly cannot bypass re
 Queue scheduling needs deterministic policy, stable tie-breaks and visible waiting reasons.
 Bounded internal execution work is required, but equal commercial priority is not an agreed
 rule: favouring the owner's ships can be an intentional competitive advantage.
+
+A port may serve several regions on its planet under its owner's chosen services, fees,
+priorities and access terms. Accepted bookings remain protected. Each delivery identifies
+its destination region and requires physical transport; shared use cannot pool regional
+inventories, household funds or public budgets. Offering services to a neighbour grants no
+government control or resource rights there and does not consume its initial port-construction
+opportunity. A region can use a shared port and later develop its own eligible port. Shared
+services do not reveal other stations' live market data. Transport costs, capacity and
+delivery times still need design. Starting regions require continuing basic public-port
+access as specified in the onboarding policy below.
 
 The inspected `Dock::Station` has a compatibility-aware insertion queue, not admission or
 owner-priority policy hooks. `RequestPad` checks authority to command the ship, not permission
@@ -407,50 +458,70 @@ control planet-wide. No automatic right to build around another player's planet 
 ## Initial world size and joining over time
 
 Plan for registered participants over the server's expected life, not just simultaneous
-connections. Four connected clients is a network test size, not four lifetime planet slots.
+connections. Four connected clients is a network test size, not four lifetime home-region slots.
 An initial capacity model is:
 
-`inhabited planets >= intended admitted players + late-join reserve + protected AI planets + acquisition pool`.
+`eligible inhabited regions >= intended admitted players + late-join reserve regions + protected AI regions + acquisition pool`.
 
 These are disjoint allocations, not settled counts. The reserve must not also be sold as
-the acquisition pool. The new spaceport rule also applies to unassigned planets: a reserved
-AI starter with no port is still eligible for corporate construction. Do not invent a hidden
-reservation exemption. Consider existing public ports on starter reserves, explicit viable
-access arrangements, or onboarding with an existing corporate port; choose the policy before
-claiming that spare planet count alone guarantees viable starts. All inhabited planets
+the acquisition pool. Several regions may share a planet and its station services. Port
+construction eligibility is regional: a neighbour's port does not consume a region's initial
+opportunity. Existing construction claims, onboarding reservations and control changes still
+need an explicit compatibility policy; do not infer planet-wide authority from one district.
+The selected starting-access policy requires an operational public station supporting the
+starter ship and a physical delivery connection to the allocated region. Basic docking,
+trading and regional delivery remain available; corporate players cannot revoke this baseline
+access. Service charges and finite capacity still apply, with finite goods and spending funds.
+New players must spawn connected to working station life support, with available service
+capacity required at allocation. This pauses onboard oxygen/scrubber use. Initial starter
+reserves are 30 kg oxygen and one fresh installed 30-occupant-day cartridge, granted once;
+operating reserves use dedicated space outside its trade hold, while trade supplies and
+loose spares occupy cargo volume. Storage dimensions, station provisioning and later outages remain open.
+Private ports retain their commercial policies. Exact fees, capacity and starting funds still
+need balancing; access alone does not establish profitable routes or affordable supplies.
+Spare region count alone does not establish viable starts. All inhabited regions
 continue their economies under AI policies
 until allocated; reservation is an eligibility rule, not a frozen planet. A protected AI
 minimum can preserve counterparties, but its size and sale restrictions remain proposed
 balance decisions. At capacity, joining needs an explicit wait/expansion result rather
-than stealing an existing player's planet.
+than stealing an existing player's region.
 
-Starting planets need comparable viable opportunities, not identical production decks.
+Starting regions need comparable viable opportunities, not identical production decks.
 Evaluate imports, transport access, population needs, development headroom and location.
 AI hubs can be more developed than player starts. Late joiners enter an evolved economy:
 initial funds, access contracts or catch-up support, if selected, need authored sources
 and limits. Do not quietly undo earlier players' development to equalise the map.
 
 Keep the original two-venue scenario as a tiny engine/trading integration fixture. Add a
-separate governance fixture with one home per test player and AI neighbours. Capacity
-measurements must count all simulated planets, NPC companies, ships and queued projects,
+separate governance fixture with multiple independently governed regions on one planet,
+one regional home per test player and AI neighbours. Capacity
+measurements must count all simulated regions as well as planets, NPC companies, ships and queued projects,
 including worlds with no human connected. No planet count or month-long server capacity
 has been demonstrated.
 
 ## Acquiring additional planets
 
-Purchase transfers an eligible AI planet's development rights under an explicit offer.
+This historical heading now covers a portfolio of regional control rights; the regional
+correction does not authorise purchasing a whole physical planet by buying one district.
+Player-governed regions, including acquired regions, cannot be purchased or seized through
+the AI-acquisition mechanic. Otherwise eligible AI regions on that same planet remain
+purchasable; a sibling governor has no veto. Reserved onboarding regions remain ineligible.
+Purchase transfers an eligible AI region's public decision rights under an explicit offer
+naming its jurisdiction.
 Proposed safeguards are a revisioned offer, current eligibility/affordability checks and
 one atomic debit/control transfer at a step boundary. Two buyers racing cannot both pay
 successfully. Retry, reconnect or recovery cannot duplicate payment or award control twice.
 An offer becoming invalid produces a structured rejection without partial transfer.
 
-Specify who receives the purchase price and which assets, obligations and ongoing projects
-are included. A planet's public treasury is not automatically refunded into the purchaser's
-company wallet. Existing private inventories, orders, reservations and visitor access need
-defined continuity. Population and its needs remain part of the continuing planetary economy.
+Specify who receives the purchase price and how public obligations and ongoing projects
+continue. The region's treasury remains public money; privately owned companies, ships and
+stations retain their owners. Existing private inventories, orders, reservations and visitor
+access need defined continuity. Population and its needs remain part of the continuing
+regional economy. Voluntary player-to-player control transfers are a separate, unselected mechanic.
 
-Every acquired planet keeps its physical identity, development history and permitted local
-budget. The company gains a portfolio of control rights with per-planet policies. Consider
+Every acquired region keeps its identity, parent planet, development history and permitted local
+budget. Sibling regions remain independent. The company gains a portfolio of control rights
+with per-region policies. Consider
 administration and infrastructure costs as balance candidates without deciding a hard cap.
 AI governors can continue execution under the new player's authorised policies; they must
 not retain an independent purchasing right after control transfers.
@@ -501,12 +572,12 @@ Prefer append-only additions initially; removals and topology rewrites are outsi
 | Required mechanic | Existing public provision/evidence | Missing work and owner | Acceptance evidence |
 | --- | --- | --- | --- |
 | Governed idle world | Jettison `SimWorld::Step`, `WorldService`, commands, save/load/hash; Manifest world/effects components | Manifest control rights, independent budgets, saved project/policy state; Jettison neutral CPU host/build provision | AI and player projects progress with zero clients; replay and restore agree. |
-| Scoped development | Manifest `ProgressionManager`, `CivilisationEffectEngine`, habitat/service skill definitions | Manifest separates immutable definitions from per-owner/per-planet tiers, projects and effect scope | A local project affects only its target; rejected spending leaves both treasuries unchanged. |
+| Scoped development | Manifest `ProgressionManager`, `CivilisationEffectEngine`, habitat/service skill definitions | Manifest separates physical planet, region, organisation and immutable definitions from per-owner/per-region tiers, projects and effect scope | Multiple regions on one planet retain distinct population, public/household funds, condition and control. A local project affects only its target; rejected spending leaves all treasuries unchanged. |
 | Public tenders and corruption | Jettison fixed-step commands, saved/hashed world services and archives; no Manifest tender/bribery system was demonstrated | Manifest competitive bid/award/fulfilment lifecycle, government corruption trait and abstract influence expense after clean tendering | Honest and corrupt award cases, invalid bids, deadline boundaries, separate funds, exactly-once costs/payment and replay/recovery. |
 | Purchase of AI control | Jettison command handlers, serialised state and deterministic execution | Manifest offer eligibility, asset/liability scope, atomic transfer and request ledger | Race, unauthorised buyer, changed offer, retry and restart tests. |
 | Company power over institutions | Manifest companies/markets are planned; no government/media influence system was demonstrated | Manifest corporate holdings, contracts, leverage and rival response rules | A defined economic dependency permits a specific influence action; effects and limits survive replay. |
 | Company-controlled stations | Jettison `Docks`, `RequestPad` and compatibility-aware insertion queues; no admission/priority hooks were found | Jettison reusable admission/refusal and queue-ranking seams, with startup `Park` bypass scoped; Manifest construction, corporate ownership, fees and contracts | Independent docking-policy consumer plus Manifest build-once, fee-once, deterministic priority, equal NPC/player refusal and saved-policy/queue tests. |
-| Resource exploitation and puppet colonies | Manifest production, stockpiles, body effects and authored habitat skills; no complete colonial government or extraction loop was demonstrated | Manifest site eligibility, resource/project/colony schemas, company-control links and public procurement; reuse/provision public spatial/docking facilities | Eligible AI/unclaimed planet gains one supplied port, extraction chain and company-controlled colony; other-player planets and duplicate construction are rejected. |
+| Resource exploitation and puppet colonies | Manifest production, stockpiles, body effects and authored habitat skills; no complete colonial government or extraction loop was demonstrated | Manifest regional site eligibility, resource/project/colony schemas, company-control links and public procurement; reuse/provision public spatial/docking facilities | Eligible regions on one planet retain independent initial port opportunities and resource grants. Reject duplicate funded claims and unsolicited builds in other players' regions; allow competing frontier ports at expiry without transferring government control. |
 | Remote TUI/GUI play | Jettison capture/shown-component snapshots and controller primitives | Jettison reusable transport/session/encoding provision; Manifest authentication policy, commands, filtering and frontend views | Connect/disconnect, private-view filtering, stale revision and retry tests without FTXUI/rendering. |
 | More physical systems | Jettison `Galaxy`/`StarSystem` resolved YAML data, `PhysicsWorld::DefineStarSystem`, `LaneTravel::DefineStarSystem`/`SetGalaxy`, `PlotRoute` | Manifest frontier generation/policy; demonstrate whether existing composition suffices, then provision minimal reusable topology publication/identity gaps in Jettison | Independent two-to-three-system consumer plus Manifest expansion without broken transit. |
 | Stargate delivery and controlled access | Galaxy positions, lane-based routing/transit, `Gates::SetTollRule`, commands/services/archives | Manifest funded unmanned FTL expeditions, running-time arrival and gate-owner policy; Jettison reusable ungated-transit, policy-context or topology provision where existing APIs do not suffice; see the stargate capability map | An initially unconnected destination opens only after delivered/operational gate, with zero-client progress, shutdown/recovery correctness and owner-controlled access/fees. |
@@ -541,26 +612,28 @@ Retain existing stage numbers as foundational work packages, with these planning
 2. Network/idle slice: move the TUI to real remote commands and snapshots after minimal
    authority exists. Prove server progress without clients, physical auto-trading, NPCs and
    reconnect continuity. The old optional administration-only TUI is superseded.
-3. Single-planet development: one controlled home per participant, AI neighbours, bounded
+3. Regional development: multiple economies on one planet, one controlled home region per
+   participant, AI neighbours, bounded
    saved development queues, meaningful local effects and separate public/company finances.
    Public procurement uses competitive tenders; add the simple corruption/bribery slice
    after the clean tender lifecycle works.
 4. Persistent release: extend stage 5's journal/recovery contracts to control rights,
    project reservations, automation, government budgets and request outcomes. No production
    durability claim before its fault/restart evidence exists.
-5. Corporate growth: eligible AI control purchases and per-planet portfolio policies, then
+5. Corporate growth: eligible AI regional control purchases and per-region portfolio policies, then
    infrastructure/essential-supply/access-contract leverage and company-built stations with
    owner fees, shipping priority and rival denial, then physical resource exploitation and
    company-controlled colonies at eligible planets.
-   Preserve player-planet protection and late-join capacity; do not invent a win threshold.
+   Preserve player-region acquisition protection and late-join capacity; do not invent a win threshold.
 6. Frontier: static multi-system navigation first; then deterministic, durable expansion,
    claims and one physical settlement/terraforming scenario. This does not block the first
    governed-planet idle loop. Broader political/media simulation follows proven mechanics.
 
-Required scenario: multiple players receive distinct planets; AI neighbours run; one player
+Required scenario: multiple players receive distinct regions on one planet; AI neighbours run; one player
 starts development and trading and disconnects; work progresses; a late joiner receives a
-valid reserved planet; reconnecting shows the same control and separate budgets. A later
-scenario purchases an eligible AI planet while refusing a player-planet purchase. A final
+valid reserved region; reconnecting shows the same control and separate budgets. A later
+scenario purchases an eligible AI region while refusing a player-region purchase, allowing
+independent regional port opportunities on the same planet. A final
 frontier scenario expands with an in-flight ship, restarts, supplies a colony physically and
 continues from identical topology/project state. Each scenario checks unauthorised requests,
 duplicate requests, bounded histories/queues, inventory accounting and deterministic replay.
@@ -585,13 +658,23 @@ and core/frontier generation. Partial payment, booked terms and temporary runnin
 concessions followed by rival ports are confirmed. Supplier-funded performance security is
 selected with a starting 10% bond and proportional forfeiture. Funded construction-site
 reservation, non-refundable mobilisation, a fixed completion deadline and reopening on
-abandonment/expiry are also selected. Frontier exclusivity starts at operational port plus
-concession activation, with a disclosed provisional 72-hour server-running term. The first
+abandonment/expiry are also selected. Frontier exclusivity covers eligible resources in one
+named region, starting at operational port plus concession activation, with a disclosed
+provisional 72-hour server-running term. Neighbours retain independent eligibility and timers;
+government control stays separate. Regional construction and shared service scope are selected;
+owners may serve multiple regions on the same planet under their offered terms, with explicit
+physical delivery, independent economies/rights and protected bookings. Detailed transport
+remains open. Starting regions require continuing public access to basic docking, trading and
+regional delivery, with an operational starter-compatible station and physical delivery route
+at allocation. Require an available working life-support connection and spawn connected;
+reject missing or exhausted service capacity, preserving the connection through retry/recovery
+without duplicate spawn/resupply. Fees/capacity/funds still need balancing. Cultural styling, corporate branding and distinct customisable
+station appearances are recorded for later presentation design. The first
 [material/facility tech example](economy-and-development-plan.md#first-tech-example-bronze-metallurgy-selected)
 is Bronze metallurgy, using local copper, imported tin and an operational workshop. Detailed
 settlement, construction amounts/deadline/salvage and long-running demand/public-income
 circulation remain design work; selected quantities, throughput and the exclusivity term
 still need economic/pacing validation.
-Keep no-win open-ended play, company identity, player-planet acquisition protection and late-join
+Keep no-win open-ended play, company identity, player-region acquisition protection and late-join
 capacity as constraints. Server pacing, detailed influence rights, acquisition pricing and
 expansion triggers remain open choices.

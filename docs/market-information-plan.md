@@ -7,6 +7,12 @@ capabilities. Inspection used Manifest `feature-base` at `4e78dbb`, with plannin
 and public Jettison interfaces at SDK pin `f850920`. No code, assets, SDK pin or environment
 changed, and no builds or gameplay checks ran.
 
+The [regional correction](regional-economy-and-governance-plan.md) separates multiple regional
+economies/governments from physical planets and station markets. Regional control, corporate
+activity or bloc membership grants no additional live station reports and does not merge
+players' intelligence. The onboarding neighbour reports still refer to system connections
+and station markets, not to adjacent districts on a planet.
+
 ## Selected information rules
 
 Exact current market information is available to a player only for a space station where

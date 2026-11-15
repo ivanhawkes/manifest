@@ -21,10 +21,28 @@ current direction: a headless authoritative idle world; required remote TUI `con
 `disconnect` gameplay; a GUI sharing the server interface; NPCs, autopilot and physical
 auto-trading operating without clients. Manual TUI spaceport trading remains a stretch goal.
 
-Players start with development/public-budget control of one planet alongside a separate
-trading company. AI governs others. Eligible AI planets may be purchased and frontier worlds
-settled; other players' planets are protected from this acquisition mechanic. The world must
-provide starter capacity for its intended group and later joiners, plus an AI economy.
+The [regional correction](regional-economy-and-governance-plan.md) requires multiple governed
+economic regions on one physical planet in the first governance scenario. Players start
+with development/public-budget control of one region alongside a separate trading company.
+AI governs others. Region-scoped population, household/public accounts, condition, local
+projects and employer-region tax carry replace planet-scoped state. AI acquisitions cannot
+take player-governed regions, but otherwise eligible AI neighbours remain purchasable
+without a sibling governor's veto. Public money and private owners remain separate.
+Concessions cover eligible resources in one named frontier region, with independent neighbour
+eligibility/timers and government control separate. Port construction has one initial opportunity
+per eligible region, without a neighbouring port blocking it. A port may serve several regions
+on that planet under owner terms, preserving bookings, physical delivery and separate
+economies/rights/construction opportunities. Allocate starting regions only with an operational
+starter-compatible public station and physical delivery connection. Also require available
+working station life support and spawn the new player connected. The starter receives
+30 kg oxygen and one fresh installed 30-occupant-day cartridge once, in dedicated service
+space outside its trade hold. Trade supplies/loose spares use cargo volume; storage
+dimensions, station provisioning and later outages remain open. Guarantee continuing basic
+docking/trading/regional delivery access against corporate revocation, retaining charges,
+finite capacity/goods/funds and private-port policies. Detailed transport and starter
+fees/capacity/funds remain open.
+One controlled district does not confer whole-planet sovereignty. The world must
+provide eligible home-region capacity for its group and later joiners, plus an AI economy.
 Optional later expansion adds less developed or uninhabited systems at the existing map edge.
 
 There is no win condition. Companies accumulate wealth and control, seeking power over trade,
@@ -39,8 +57,10 @@ Corporate leverage starts with infrastructure, essential supplies and access con
 Company-built stations may set fees/shipping priorities and refuse rivals access. Their
 construction, ownership and policy are game rules; reusable docking admission/queue hooks
 must be provisioned in Jettison. Government financing and media influence follow later.
-A corporation may build a very expensive orbital spaceport at a planet with no existing port
-that is not owned/controlled by another player. It opens resource exploitation and colonies
+A corporation may build a very expensive orbital spaceport for its own, an eligible AI or an
+eligible unclaimed region. There is one initial construction opportunity per eligible region;
+neighbouring ports do not block it, and other players' governed regions are protected against
+unsolicited builds. It opens resource exploitation and colonies
 with company-controlled puppet governments. Prove this on a static map before requiring live
 frontier generation; construction rights and planet-wide control are distinct contracts.
 Later new-system access requires the [stargate expedition](stargate-expansion-plan.md): a
@@ -78,9 +98,46 @@ plus 1 kg tin into 10 kg bronze. Knowledge survives workshop loss; production st
 operational workshop. Quantities are starting test values; work duration, throughput and
 profitability remain unvalidated. Preserve the separate eight-good trading fixture.
 
+The first household basket has three equally weighted needs: staple food satisfied only
+by rice, wheat, oats or barley; drinking water; basic medical supplies. The four tradable food
+grains are alternatives within one need and distinct from planting seed; bread remains
+tradable outside this basket. Food grains trade in kilograms; 1 kg of any grain meets 1 kg
+of food demand, including mixtures. Keep separate stocks/prices/storage and debit actual
+grains once without creating a food commodity. Population counts people in aggregate;
+consumption rates are per 1,000 people per simulation day, scaled by population and elapsed
+simulation time with fractional quantities retained. Any supported migration must explicitly
+convert legacy abstract world units. Initial food demand is 500 kg per 1,000 people per
+simulation day across the qualifying grains. Drinking-water demand is 3,000 litres per
+1,000 people per simulation day, separate from agricultural/industrial water demand.
+Preserve physical volume through conversion to selected inventory units. Remaining item
+authoring values and population sizes need selection/
+implementation through the stage 2 content path.
+
+Basic Medical Supplies is a distinct tradable `Kilogram` commodity for routine medical
+consumables. Preserve specialised medicines as separate items without automatic substitution.
+Initial basic-supplies consumption is 5 kg per 1,000 people per simulation day, prorated
+across updates. Remaining authored values still need selection; the economy plan records
+the content implementer handoff.
+
 Further [economy rules](economy-and-development-plan.md) select aggregate households,
 pre-funded recipe payroll, progress-based wages, tax/rounding, regular payroll/purchases
 every 60 simulation seconds and health/happiness losses that both reduce production.
+Condition updates follow household purchases on that cadence: greater essential shortages
+cause greater losses, full essentials allow gradual recovery and happiness declines/recovers
+faster than health. Both remain within 0–100, initially 100 in the first balance-testing
+scenario, without resets on joining/acquisition/governor changes. Initial test rates per
+simulation hour are health −6/happiness −12 at complete shortage, partial losses proportional
+to severity, and health +3/happiness +6 recovery at full essentials. Severity averages required
+essential needs' unmet fractions using authored importance weights, initially equal. Food
+counts once across qualifying grains. Surplus cannot
+offset another missing essential. Condition slows production work rate while completed batches
+retain declared inputs, outputs and gross wages. Slower work slows proportional wage accrual;
+changes apply to subsequent steps without reversing progress or earned/paid wages. Initial
+multiplier is `(0.5 + health / 200) × (0.5 + happiness / 200)`, 25%–100% of otherwise eligible
+work rate; missing materials/funds or inactive facilities can still stop work entirely.
+Production uses prior-step condition and settles completion. At each due economic boundary,
+regular payroll/tax precedes household purchases/consumption, then condition updates for the
+next fixed step. Full movement/market integration ordering and balance need validation.
 The [market-information plan](market-information-plan.md) requires station-specific live
 data from docked fleet members, dated remembered reports, and one-time spawn reports for
 every station market in directly connected systems. Apply that knowledge boundary to
@@ -104,9 +161,10 @@ settlement and other failure defaults remain proposals. No code or gameplay-vali
 evidence is supplied by these additional plans.
 
 Keep the five stage numbers below as foundational work packages. Before committing state
-schemas in stages 2–3, account for distinct planet, company, control and public-budget records.
+schemas in stages 2–3, account for distinct planet, region, government, company, control,
+household and public-budget records, without duplicating population under bloc membership.
 The proposed extended order is host/content/minimal authority, a real network/TUI slice,
-idle physical trading and single-planet development, recovery, then multi-planet acquisition,
+idle physical trading and regional development on a shared planet, recovery, then control acquisitions,
 corporate influence and frontier settlement. GUI work uses the proven shared interface.
 Full frontier generation or political simulation must not block the first governed idle loop.
 

@@ -12,6 +12,28 @@ The starter ship is the entry point for a lone trader and has a cargo hold of 20
 ship below. Twenty IBC units is the selected starting hold capacity; upgrade rules and
 other starter specifications remain open.
 
+The subsequently selected initial starter supply is 30 kg of oxygen and one fresh
+installed standard scrubber cartridge, providing 30 occupant-days of scrubbing capacity.
+At one occupant, the selected onboard rates use both reserves over 30 simulation days.
+This is oxygen/scrubbing coverage, not a complete journey-endurance guarantee. Actual
+use pauses while connected to working station life support; new players spawn under
+that service. These are initial onboarding stocks, not refills on reconnect, docking,
+ownership transfer or recovery. Preserve actual remaining supplies thereafter.
+
+The selected starter storage rule places operating oxygen and the installed cartridge in
+dedicated life-support space outside the 20-IBC trade cargo hold. Supplies carried for
+trade or as loose spares occupy cargo space under the ordinary packed-volume rules.
+The hull must physically accommodate both spaces without counting the same stock twice.
+Moving goods from cargo into operating reserves must conserve actual stock and capacity;
+the transfer/replacement procedure still needs design.
+
+The selected starter operating oxygen maximum is 30 kg, so its initial 30 kg reserve
+fills the tank. Keep actual operating mass within 0–30 kg; oxygen carried as cargo is
+separate until transferred and cannot increase this operating limit. Tank physical
+volume/storage method, compartment dimensions, cartridge physical mass/volume, spare
+provision, upgrades and other journey limits remain open. This decision does not set
+the compact ship's oxygen capacity or initial reserves.
+
 The compact ship's primary purpose is unspecified, and trade is not its primary
 requirement. It can carry some cargo, up to four IBC units, but is not the lone-trader
 starter. Do not assign it a scout, courier or other specialised role without a later
@@ -85,6 +107,18 @@ matching environment. No SDK change has been made by this planning work.
    a new lone trader receiving the 20-IBC starter, legal starter loads totalling 20 m³ and
    rejection above its current capacity. Verify that onboarding selects the starter hull,
    not the compact hull or existing 900 m³ long-haul default.
+   Verify initial starter oxygen of 30 kg and one fresh installed cartridge with 30
+   occupant-days, one-time provisioning and retained partial reserves through retries,
+   recovery and transfers. At one occupant relying on onboard service, each supply covers
+   30 simulation days; station service pauses depletion without replenishment. Validate
+   physical accommodation once storage choices are authored, enforcing the starter's
+   selected 30 kg operating oxygen maximum. Show the initial tank is full, a depleted
+   tank retains its actual mass and cargo oxygen cannot bypass the operating limit.
+   Demonstrate the starter's operating reserves and installed cartridge do not reduce its
+   20 m³ cargo capacity; cargo supplies/spares do occupy their authored packed volume.
+   Transfers into service storage must debit their source once, preserve ownership and
+   reject destination overflow without duplicating or losing stock. Preserve location and
+   remaining capacity through retry/recovery once transfer rules and other storage limits are set.
 5. Demonstrate berth fit, oversized-hull rejection, approach/clearance, queue/occupancy,
    docking, cargo transfer and departure. Verify station market coverage only on confirmed
    docking, and the selected observation boundary when departing or changing ownership.

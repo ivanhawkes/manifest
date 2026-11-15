@@ -7,6 +7,13 @@ and proposed delivery contracts, not implemented gameplay. Inspection used Manif
 `f85092027eda49c29001f7589608df1f0b8827fb`, and the sibling's integration guidance at `0564f19`.
 No implementation, assets, configuration, SDK change or build/gate execution occurred.
 
+Under the subsequent [regional correction](regional-economy-and-governance-plan.md), a
+government-funded expedition identifies its regional public account/authority separately
+from a corporate sponsor and from physical planet/system IDs. Region control does not
+grant access to sibling treasuries or whole-planet sovereignty. Gate topology, quoted
+flight/commissioning timing, ownership and protected passage rules remain; reconcile prior
+home/concession geography separately without treating gate activation as a regional grant.
+
 ## Confirmed direction
 
 - Opening a new system for trade and development requires a government or corporation to

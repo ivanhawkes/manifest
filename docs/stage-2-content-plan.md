@@ -6,6 +6,14 @@ Planning handoff for Claude, prepared 2026-11-15. Depends on the completed
 are claimed. Inspection used Manifest `feature-base` at `2716380` and Jettison
 `feature-base` at `826c4bec125b6631a6ba8ee822c90463316c3511`; recheck after stage 1 lands.
 
+Before freezing schemas, apply the [regional correction](regional-economy-and-governance-plan.md).
+Define separate physical planet, economic region, government/company/bloc relationships
+and station/venue references. Region definitions and generation allocate population,
+household/public funds and local project/facility scope without duplicating planet totals.
+Keep the small trading fixture; the first governance fixture must demonstrate multiple
+independently governed economies on one planet, with player home regions and AI neighbours.
+Validate links and effective directory/pack equivalence through the same engine pipeline.
+
 ## Required direction
 
 The user explicitly requires Manifest to switch to Jettison's YAML loading mechanisms.
@@ -151,6 +159,235 @@ Stage 2 validates scenario definitions only. Company creation, cargo transfers, 
 settlement and advancement are stages 3–4. Scenario balance numbers and exact locations
 are implementation choices to record with the fixture; no economic viability claim
 is made until the command-driven loop demonstrates it.
+
+## Staple-grain content follow-up
+
+The user requires rice, wheat, oats and barley as four distinct tradable food commodities.
+The [grain handoff](economy-and-development-plan.md#staple-grain-commodities-selected-implementation-handoff)
+records proposed IDs, affected authoring/packaging/mode paths, unresolved physical/price
+values and implementer checks. Existing seed commodities retain their IDs and values.
+Use the current definition/registry/packaging path; no parallel loader or additional generic
+SDK capability is demonstrated for these items. No item definitions have been added by this plan.
+
+The governance basket has one staple-food need satisfied only by the four grains, plus
+drinking water and basic medical supplies, with each need initially weighted 1. Preserve
+the original eight-good trading fixture separately. The selected new grain unit is
+`Kilogram`; 1 kg of any qualifying grain satisfies 1 kg of food demand, including mixtures,
+while keeping separate prices/stocks/storage and consuming actual grain once without a
+new food stock item. Existing seed units remain unchanged. Regional population counts people
+in aggregate; consumption rates are per 1,000 people per simulation day, prorated by elapsed
+simulation time with fractional quantities retained. The selected initial food requirement
+is 500 kg per 1,000 people per simulation day, fulfilled by any qualifying grain mixture.
+Drinking-water demand is 3,000 litres per 1,000 people per simulation day, separate from
+agricultural/industrial water demand. The exact water item and inventory unit remain open;
+declare any litre-to-inventory conversion explicitly, preserving physical volume and
+fractional interval requirements. Population sizes,
+remaining grain/medical authoring values and the exact water item definition remain open.
+Any supported migration needs an explicit conversion from legacy abstract world units;
+do not count every grain as a separately mandatory essential.
+
+## Basic medical supplies content follow-up
+
+The selected medical essential is one distinct Basic Medical Supplies commodity, traded
+in kilograms and representing routine medical consumables. The
+[medical-supplies handoff](economy-and-development-plan.md#basic-medical-supplies-commodity-selected-implementation-handoff)
+records the proposed `ItemBasicMedicalSupplies` ID, existing authoring/packaging paths and
+implementer checks. Preserve existing antibiotics, anaesthetics and analgesics as separate
+commodities without automatic substitution. Initial basic-supplies demand is 5 kg per
+1,000 people per simulation day, or 125 kg/day for 25,000 people. Preserve fractional
+60-second requirements and verify daily totals. Select remaining item fields; no definition,
+recipe or new SDK capability has been implemented by this plan.
+Preserve the separate eight-good fixture and select the new item explicitly for governance.
+
+## LPG content follow-up
+
+Add LPG (liquefied petroleum gas) as a distinct tradable commodity, measured and traded
+in kilograms using the existing `Kilogram` unit. The user explicitly selected kilograms.
+Use the existing `CategoryFuels`; proposed item ID is `ItemLPG`, not an implemented
+definition. Read-only inspection found no LPG item in the current trade-item definitions.
+
+The user or a user-selected non-OpenAI implementer owns the addition through the ordinary
+definition/registry/packaging/full-mode path. A bounded authoring option is
+`data/trade-items/chemicals.yaml`, already included by `data/build.sh`, plus explicit
+selection in `data/game-mode/full.yaml`. Preserve existing item IDs and the separate
+eight-good fixture. Availability/age, base price, density, packing/storage conversion,
+container handling, production recipes and consumption uses remain open. Kilogram units
+do not determine physical volume or assign LPG as a ship's propulsion fuel.
+
+Implementer evidence: a distinct fuel definition using `Kilogram`, valid references and
+finite authored values, directory/pack and full-mode visibility, separate stock/orders/
+settlement, fractional mass transfers and cargo checks using the selected physical
+conversion. Preserve mass and ownership across transfers and recovery. No commodity
+YAML, build script, fixture, code or test was changed by this planning work.
+
+## Life Support and space-exploration content follow-up
+
+Add a Life Support category with the following planned items:
+
+| Planned item | Requirement to define |
+| --- | --- |
+| Oxygen | Separate consumable measured and traded in kilograms (`Kilogram`), required at 1 kg per occupant per simulation day while relying on onboard life support. The starter's operating reserve is capped at 30 kg; tank physical volume and other hull capacities remain open. |
+| Carbon scrubbers | Replaceable consumable cartridges used by installed life-support machinery. A fresh standard cartridge provides 30 occupant-days. Trade/storage units, physical values and resupply rules remain open. |
+
+The selected distinction is installed machinery versus consumable supplies. Scrubber
+machinery stays aboard when cartridges are replaced; the tradable carbon-scrubber item
+is the replaceable cartridge. Cartridges have finite scrubbing capacity and require
+replacement. Oxygen is a separate consumable, so oxygen reserves and remaining scrubbing
+capacity are two distinct exploration supply constraints. Neither replaces the other.
+Both consumables belong under Life Support. A fresh standard cartridge is rated at 30
+occupant-days. Ship endurance, consequences of exhaustion and spent-cartridge handling
+remain open.
+
+The selected oxygen inventory and trading unit is the kilogram, using the existing
+`Kilogram` commodity unit. Preserve fractional quantities under Manifest's float/double
+policy. Oxygen mass is the quoted, transferred and consumed quantity; tank volume, storage
+capacity and physical authoring values are separate choices. Selecting mass units does
+not select tank pressure, storage method, density/packing values, container ownership or
+whether a trade is a refill or a packaged supply. Declare the eventual mass-to-storage/
+packed-volume conversion explicitly and apply it consistently to loading and cargo checks.
+Do not infer a ship's oxygen reserve or endurance from its cargo volume or cartridge rating.
+
+The selected initial oxygen requirement is 1 kg per occupant per simulation day while
+relying on the ship's life support. One occupant on a 30-simulation-day journey requires
+30 kg. During applicable intervals, `C` occupants over `dt` simulation seconds require
+`C × dt / 86,400` kg, summed over occupancy changes. Retain fractional requirements and
+actual remaining mass; inventory cannot supply more than is physically available. Oxygen
+remains independent of scrubber capacity: a fresh cartridge does not replenish oxygen.
+This is an authored gameplay balance value, not a selected tank capacity or survival rule.
+The selected station-service rule below determines when these onboard requirements pause.
+
+The selected scrubbing-capacity unit is the occupant-day: one occupant-day supports one
+person for one simulation day (24 simulation hours or 86,400 simulation seconds). The
+selected initial standard-cartridge capacity is 30 occupant-days: a fresh cartridge
+supports one occupant for 30 simulation days or two for 15 simulation days. This is an
+authored gameplay balance value; cartridge mass, physical volume, trade unit and price
+remain open. It does not select a ship's installed capacity or carried spare count.
+Fractional usage carries forward under Manifest's float/double quantity policy. During intervals requiring
+onboard scrubbing, `C` occupants over `dt` simulation seconds require `C × dt / 86,400`
+occupant-days, summed over occupancy changes. Retain actual remaining capacity rather than
+rounding each interval to whole days or discarding a partially used cartridge's capacity.
+This measures scrubbing service capacity; commodity trade units and physical cargo size
+remain separate authoring choices.
+
+The selected docking rule pauses onboard oxygen and scrubber consumption while a ship
+is docked and connected to working station life support. Docking alone does not establish
+an active service connection. Station support covers ongoing occupant needs; it does not
+refill oxygen tanks, restore cartridge capacity or replace cartridges. Refills and cartridge
+replacement remain separate resupply operations with actual goods/accounting. When the
+connection ends, including departure or service loss, applicable onboard consumption
+resumes from actual remaining oxygen and scrubbing capacity; no supply reset occurs.
+At stations offering connected life support, its ongoing service is included in the
+berth fee. Oxygen refills and replacement cartridges have separate prices and remain
+separate resupply operations. Preserve the agreed service inclusion under accepted-booking
+terms; an owner cannot add a life-support surcharge to an already accepted berth agreement.
+Berth fee amounts/billing basis, refill and cartridge prices, service availability,
+capacity, connection procedures and station resource/funding rules remain open. Inclusion
+in a berth fee does not establish unlimited station supplies or free replenishment.
+
+The selected onboarding requirement is that each new player spawns connected to working
+life support at their starting public station. Allocation therefore requires an available
+service connection alongside the operational starter-compatible berth and physical
+regional delivery connection. An advertised service without available working capacity
+does not qualify. Establish and persist the initial connection with the authoritative
+spawn/allocation operation, so the new ship starts under station support. Initial starter
+supplies are selected below; numeric berth fees, station provisioning and later service
+outages remain open.
+
+The 20-IBC starter begins with 30 kg of oxygen and one fresh installed standard scrubber
+cartridge with 30 occupant-days of capacity. At one occupant, each provides 30 simulation
+days of onboard life support under the selected rates. Treat these as explicit initial
+onboarding stocks, granted once; reconnect, docking, recovery or acquisition cannot
+restore the starting amount. Retain actual remaining mass/capacity thereafter. The ship
+starts connected to station service, so these reserves are preserved while that service
+works. Overall journey endurance, tank physical volume, compartment dimensions, cartridge
+physical values and spare provision remain open. Do not apply these initial quantities
+to the separate compact ship without a product decision.
+
+The starter's operating oxygen maximum is selected as 30 kg, so it begins full. Keep
+actual operating stock within 0–30 kg and track additional cargo oxygen separately until
+transferred. Cargo stock does not increase the operating limit. This selects oxygen mass
+capacity, leaving tank physical volume/storage method, upgrades and other hulls' limits open.
+
+The starter's operating oxygen and installed cartridge occupy dedicated life-support
+space outside the 20-IBC trade hold. Supplies carried for trade or as loose spares count
+toward cargo capacity using their authored packed volume. Keep explicit stock locations;
+service storage is not a second copy of cargo inventory. The hull must accommodate both
+spaces. Transfers/replacement must debit actual source goods once and obey the eventually
+authored destination limits, including the starter's 30 kg operating oxygen cap. Timing,
+permissions, physical fields and other storage limits remain open.
+
+Implementer evidence must reject allocation when the required working connection is
+unavailable, including capacity exhaustion, and show a successful spawn already connected
+with both onboard depletion streams paused. Preserve the connection and actual reserves
+across retry/recovery without duplicate allocations, charges or resupply. Existing
+starter-berth and physical regional-delivery eligibility checks remain required.
+Verify the starter receives exactly 30 kg of oxygen and one fresh installed cartridge
+with 30 occupant-days once, preserving used quantities across retry/recovery and transfers.
+At one occupant relying on onboard service, each covers 30 simulation days, without
+counting their separate coverage as 60 days. Validate physical accommodation once authored;
+selected initial stock is not a substitute for storage/capacity definitions.
+Verify the starter's operating oxygen maximum is 30 kg and its initial reserve fills it.
+Consumption, refills, transfers and recovery must respect the cap, without treating cargo
+oxygen as installed reserve or silently losing source stock on an overflow rejection.
+Verify operating reserves leave the 20 m³ cargo hold available, while trade supplies and
+loose spares use cargo volume. Check conserved stock/location and retry/recovery across
+the selected transfer/replacement operations, rejecting overflow without duplicate stock.
+
+Implementer evidence must cover connected working service pausing both onboard depletion
+streams, a docked ship without service continuing onboard use, and departure/service loss
+resuming from retained reserves. Split elapsed intervals at authoritative connection/
+service transitions so neither supply is double-debited or silently skipped. Connection,
+docking, reconnect and recovery cannot refill tanks or restore cartridges. Explicit
+resupply must conserve actual stock and ownership separately. Persist connection/service
+state for replay; transition ordering, service accounting and exhaustion behaviour need
+resolution before implementation. No free refill or station resource model is selected.
+Verify the berth charge includes connected life-support service without a separate ongoing
+life-support charge. Refills and replacement cartridges must have distinct authorised
+purchase/resupply accounting and cannot be delivered or billed merely because a ship
+connects. Accepted fee/service terms survive later policy changes. Numeric tariffs,
+billing cadence and service-failure settlements still require design.
+
+Implementer evidence must distinguish machinery, oxygen inventory and cartridges/remaining
+capacity. Replacement must debit an actual accessible fresh cartridge once and apply its
+declared capacity without duplicating inventory, removing the machinery or replenishing
+oxygen. Preserve remaining supplies/capacity across save/replay and ship transfers rather
+than resetting them on docking, reconnect or reload. Resolve replacement timing, access,
+partial cartridges and spent-item handling before implementing those operations. Existing
+life-support skill/effect IDs remain stable; their presence does not implement consumable
+accounting or select these new values.
+Verify the oxygen definition uses `Kilogram`, independent oxygen mass in quotes/stock/
+transfers, fractional quantities and conservation across trade/loading/refill operations
+once those operations are selected. Physical capacity checks must use the authored storage
+conversion, and saved kilograms must retain their meaning across recovery. Selecting
+oxygen kilograms adds no new generic unit enum or loader.
+Verify 1 kg per occupant per simulation day and the 30 kg journey example. Check
+proportional occupancy/time scaling, fractional interval totals, no occupant-driven use
+at zero occupancy and no duplicate depletion across save/retry. At fixed occupancy relying
+on onboard supplies, interval requirements must sum to the daily requirement within declared
+numeric tolerance. Record only actual mass supplied; exhaustion consequences remain open.
+Verify a fresh standard cartridge supplies 30 occupant-days, supporting one occupant for
+30 simulation days or two for 15. After 15 occupant-days of use it retains 15, without
+resetting on removal, docking or recovery. Verify proportional fractional
+use, no occupant-driven depletion at zero occupancy and no capacity gain from dividing
+an interval or saving/reloading. At fixed occupancy requiring onboard scrubbing, interval
+usage must sum to the daily requirement within declared numeric tolerance. Never record
+more capacity supplied than actually remains; exhaustion consequences remain unselected.
+
+Track space-exploration requirements alongside this item list: identify required supplies/
+equipment, occupancy and journey duration, storage/cargo or equipment allocation, endurance,
+power dependencies, maintenance/resupply and consequences of exhaustion or failure. These
+details remain open beyond the selected machinery/cartridge distinction, oxygen kilogram
+unit, initial oxygen rate, occupant-day accounting, 30-occupant-day standard cartridge and
+connected station service pausing onboard depletion.
+Installed/spare capacity, storage values and survival mechanics remain unselected. Apply
+the eventual requirements to the relevant ship classes, including the long-journey compact
+ship, without silently taking its four-IBC cargo allocation for cabin/equipment needs.
+
+Read-only inspection found no Life Support category, oxygen item or carbon-scrubber item
+in the current trade-item definitions. Category/item IDs and authored fields remain to be
+selected. Use the ordinary definition/registry/packaging paths and preserve existing IDs.
+This note does not amend the selected three-need regional household basket or add content
+definitions, assets, scripts or gameplay implementation.
 
 ## Content identity
 

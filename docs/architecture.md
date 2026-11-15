@@ -96,11 +96,14 @@ remain integration work; see the roadmap.
 ## Dedicated server and administration (planned)
 
 The [gameplay and persistent server plan](gameplay-and-server-plan.md) defines the planned
-ownership and recovery contracts. Players control companies and initially one planet's
-development/public budget; AI governs other inhabited planets. Company assets, public funds,
-civilisation affiliation and planet control rights remain distinct. Goods reside at venues
-or aboard ships, with native loading, unloading and
-reservation checks. Worlds advance while the server runs and resume without downtime
+ownership and recovery contracts. The [regional correction](regional-economy-and-governance-plan.md)
+separates physical planets from their multiple economic/governmental regions. Players control
+companies and initially one region's development/public budget; AI governs other regions.
+Regional population, household/public accounts, health/happiness and local projects are
+authoritative; planet totals are derived. Company assets, government/control, bloc membership,
+civilisation affiliation and physical body remain distinct without duplicate population.
+Goods reside at venues or aboard ships, with native loading, unloading and reservation
+checks. Worlds advance while the server runs and resume without downtime
 catch-up. These contracts must guide host integration; the existing development classes
 do not yet implement them.
 
@@ -124,7 +127,7 @@ audio, input or a terminal. Administration has separate explicit permissions, an
 changes enter the controlled fixed-step command path.
 
 The world, NPC AI, autopilot, enabled physical auto-trading and development advance with zero
-clients connected. Disconnecting cannot stop enabled jobs, relinquish a planet or govern the
+clients connected. Disconnecting cannot stop enabled jobs, relinquish a region or govern the
 server lifetime. Persist standing policies and progress; reconnect returns current state,
 retry outcomes and a bounded activity summary. Manual spaceport trading in the TUI is a
 stretch goal; auto-trading is required. Do not use presentation event dispatch to schedule
@@ -132,20 +135,47 @@ authoritative work. Preserve command/protocol coverage independently of FTXUI an
 today console tests are still gated by `MANIFEST_BUILD_TUI`.
 
 The [planetary/corporate impact plan](planetary-development-plan.md) extends these contracts.
-Players may acquire eligible AI planets or settle frontier worlds while other players' planets
-remain protected from this acquisition mechanic. The open-ended aim is corporate control of
+Later AI regional-control purchases must reject player-governed regions, including acquired
+regions, while allowing otherwise eligible AI neighbours on the same planet without a
+sibling governor's veto. Transfer public decision rights, retain public money and private
+asset owners, and preserve reserved onboarding regions. Acquiring one region never implies
+sibling control. Frontier resource concessions cover eligible resources in one named region;
+neighbours retain independent eligibility and timers. Port construction eligibility is regional;
+ports may serve several regions on the same planet under owner terms and protected bookings.
+The open-ended aim is corporate control of
 trade, economies, government and media; there is no win condition. These game rules belong in
 Manifest. Jettison supplies reusable host, transport, archives, world services and optional
 spatial capabilities as their public gaps are provisioned. Networking is not implemented merely
 because in-memory command/snapshot facilities exist.
 
 Corporate spaceports are a further physical/control boundary: a company can fund an expensive
-orbital port at a planet without one, provided another player does not own/control that planet.
+orbital port for its own, an eligible AI or an eligible unclaimed region. Each eligible region
+has one initial construction opportunity, unaffected by neighbouring ports. Other players'
+governed regions are protected against unsolicited construction. Physical stations retain a
+named regional association for eligibility; frontier concession expiry enables competing ports.
 Fees, priority and rival-access refusal are owner policies. Resource exploitation and colonies
 with company-controlled puppet governments connect the port to long-term revenue and influence.
 Manifest owns construction, control links, contracts, extraction and separate colonial/public
 accounts; Jettison needs reusable docking admission and queue-policy seams. Existing docking
 checks authorise the ship's controller, not admission to the station.
+The regional construction rule supersedes earlier planet-wide port eligibility. Shared ports
+may serve several regions on the same planet under owner-chosen terms and protected bookings.
+Physical deliveries name a destination region; shared service cannot pool economies, transfer
+government/resource rights, consume neighbouring construction opportunities or reveal other
+stations' live market data. Onboarding requires an operational starter-compatible public
+station and physical regional delivery connection, with continuing basic docking/trading/delivery
+access corporate players cannot revoke. New players also require an available working
+station life-support connection and spawn connected, with actual connection state preserved
+through recovery. Initial starter supplies are 30 kg oxygen and one fresh installed
+30-occupant-day cartridge, provisioned once and then preserved as actual remaining state.
+Operating reserves use dedicated service space outside the starter's 20 m³ cargo hold;
+trade supplies and loose spares use cargo space. Track stock locations and conserved
+transfers. Compartment dimensions, station provisioning and later outages remain open. Charges,
+finite capacity/goods/funds and private-port policies remain. Detailed transport, starter
+fees/capacity/funds, onboarding/claim compatibility
+and control changes during construction still need explicit rules. Resource concessions cannot
+block exploitation in independently eligible siblings.
+Physical planet, station ownership and regional government are separate predicates.
 
 The [physical economy/development plan](economy-and-development-plan.md) refines the rules:
 authorised credit settlement is instant, while goods retain title/custody/location through

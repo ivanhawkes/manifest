@@ -87,19 +87,27 @@ planning decisions. A duration of days or months does not imply a timed victory 
 The first leverage mechanics to design are infrastructure, essential supplies and access
 contracts. Government financing and media influence follow. A powerful company can build and
 control a space station, set fees and shipping priorities, and refuse rivals access to it.
-Initial corporate spaceports may be built at eligible planets with no existing port that are
-not owned/controlled by another player; the frontier reopening exception is defined below.
+Initial corporate spaceports have one construction opportunity per eligible region: a company's
+own, eligible AI or eligible unclaimed region. Neighbouring ports on the same planet do not
+block construction; other players' governed regions are protected against unsolicited builds.
+Frontier concession expiry enables competing ports as defined below.
 They are very expensive and enable profits through resource exploitation and colonies with
 company-controlled puppet governments.
-Purchasing planetary control is not required before building at an otherwise eligible AI planet.
+Purchasing regional control is not required before building for an otherwise eligible AI region.
 The station must become a physical source of commercial leverage; ownership alone does not
 make it a mandatory gate for every ship in the system. See the [impact plan](planetary-development-plan.md).
 
-New resource concessions give an initial exclusive exploitation period measured in real
-elapsed server-running time; shutdown time does not count. Afterwards rivals may exploit
-the planet and build competing spaceports, even under the incumbent's puppet government.
-Starting home planets stay protected. This amends the earlier no-second-port rule for reopened
-frontier worlds. Incumbents retain infrastructure/capital advantages and may try to exhaust
+New resource concessions cover eligible resources in one explicitly named frontier region.
+Neighbours remain independently available under their own eligibility rules, with separate
+timers; government control remains separate. Shared ports may serve several regions on the
+same planet under owner terms and protected bookings, with explicit physical delivery and
+separate economies/rights. Starting regions require continuing basic public-port access;
+detailed transport and starter fees/capacity/funds remain open.
+Concessions give an initial exclusive period measured in real elapsed server-running time;
+shutdown time does not count. Afterwards rivals may exploit
+the covered regional resources, even under the incumbent's puppet government. Competing ports
+are allowed at regional concession expiry despite that government.
+Incumbents retain infrastructure/capital advantages and may try to exhaust
 resources before rivals arrive. The selected grant starts when the first eligible frontier
 spaceport becomes operational and its exploitation concession activates. Publish its duration
 before construction; use 72 server-running hours as the initial balance-testing term. Idle
@@ -128,8 +136,48 @@ must account for both broker prices, both warehouses and physical operating/acce
 Planetary tech advancement requires resource exploitation, imports of unavailable resources
 and actual production facilities, not just credits or knowledge prerequisites.
 
-Track aggregate population health and happiness in simulation; shortages lower those values
-and both reduce production. The [market-information plan](market-information-plan.md) selects
+The first household basket has three equally weighted needs: staple food, drinking water
+and basic medical supplies. Add rice, wheat, oats and barley as distinct tradable food
+commodities, preserving existing seed items. Only those four grains satisfy the single food
+need; bread remains tradable outside the essential basket. Food grains trade in kilograms,
+with 1 kg of any grain meeting 1 kg of food demand, including mixtures. Retain distinct
+stocks/prices/storage and consume actual grains, without a synthetic food commodity.
+Regional population counts people in aggregate; author demand per 1,000 people per simulation
+day, scaling fractional quantities by population and interval duration. Retain one household
+pool per region. Any supported migration needs an explicit conversion from legacy abstract
+world units. Initial staple-food demand is 500 kg per 1,000 people per simulation day;
+a 25,000-person region needs 12,500 kg/day across its qualifying grains. This balance-test
+requirement retains physical supply/funding limits and shortage recording. Initial
+drinking-water demand is 3,000 litres per 1,000 people per simulation day, separate from
+agricultural/industrial demand. For 25,000 people, this is 75,000 litres/day. Preserve
+fractional interval quantities and physical volume through inventory-unit conversions.
+Remaining commodity definitions and population sizes still need selection/implementation.
+
+Basic Medical Supplies is selected as a distinct tradable kilogram-based commodity for
+routine medical consumables. Antibiotics, anaesthetics and analgesics remain separate
+commodities without automatic substitution. Initial basic-supplies demand is 5 kg per
+1,000 people per simulation day, or 125 kg/day for 25,000 people, prorated across updates.
+All three first-basket consumption rates are selected; remaining authored item values
+are open. The economy plan records the bounded implementer handoff.
+
+Track aggregate population health and happiness in simulation, each on a continuous 0–100
+scale (100 ideal, 0 lowest modelled condition), starting both at 100 in the first balance-testing
+scenario. Existing values persist on joining, acquisition or governor changes. After household
+purchases every 60 simulation seconds, essential shortages lower both values with greater losses
+for larger shortages; full essentials permit gradual recovery. Happiness declines/recovers
+faster than health, with both bounded to 0–100. Initial test rates per simulation hour are
+health −6/happiness −12 at complete shortage, partial losses proportional to severity, and
+health +3/happiness +6 at full essentials. Severity averages required essentials' unmet
+fractions with authored importance weights, initially equal; cap fulfilment at 100% so surplus
+cannot offset another missing essential. Both values slow production work rate while completed
+batches retain declared inputs/outputs/gross wages. Slower work slows proportional wage accrual;
+changes affect subsequent steps without reversing progress or earned/paid wages. The initial
+multiplier is `(0.5 + health / 200) × (0.5 + happiness / 200)`, 25%–100% of otherwise eligible
+work rate. Missing materials/funds or inactive facilities can still stop work entirely.
+Production uses prior-step condition and settles completion; on each due economic boundary,
+regular payroll/tax precedes household purchases/consumption, then condition updates for the
+next fixed step. Full movement/market integration ordering and condition balance need validation.
+The [market-information plan](market-information-plan.md) selects
 live station data only with a fleet member docked there, dated remembered reports elsewhere,
 and spawn-time snapshots for every station market in directly connected systems. Fleet
 coverage must constrain UI queries, native trading decisions and script facts as well as
@@ -141,6 +189,40 @@ cargo. Manifest owns the class and balance; the pinned engine needs a reusable s
 capability. This ship's primary role is unspecified and trade is secondary. The separate
 lone-trader entry ship starts with a 20-IBC (20 m³) hold. Dimensions, endurance, costs,
 starter upgrades and each hull's berth fit remain design work.
+Its selected initial supplies are 30 kg of oxygen and one fresh installed standard
+scrubber cartridge (30 occupant-days): each covers 30 simulation days at one occupant.
+Provision once and preserve remaining supplies through reconnect/recovery/transfers;
+operating reserves use dedicated life-support space outside the 20 m³ trade hold. Trade
+supplies and loose spares use cargo volume. The starter's operating oxygen maximum is
+30 kg, so it begins full; cargo oxygen cannot bypass this cap. Compartment dimensions,
+tank physical volume, transfer procedures, full journey endurance and compact limits/
+reserves remain open.
+
+Add oxygen and carbon scrubbers to the planned item list under a Life Support category.
+The [exploration content follow-up](stage-2-content-plan.md#life-support-and-space-exploration-content-follow-up)
+tracks the related space-exploration requirements. Carbon scrubbers are replaceable
+consumable cartridges with finite capacity, used by installed machinery that stays aboard.
+Oxygen is a separate consumable measured and traded in kilograms, required at 1 kg per
+occupant per simulation day while relying on onboard life support. One occupant on a
+30-day journey requires 30 kg; retain fractional use. Its reserves and remaining scrubbing
+capacity are distinct supply constraints. Scrubbing capacity is measured in occupant-days:
+one supports one person for one simulation day, with fractional usage carried forward.
+A fresh standard cartridge is rated at 30 occupant-days, supporting one occupant for 30
+simulation days or two for 15. Cartridge mass/volume/price, tank volume/storage capacity,
+cartridge trade units, installed/spare capacity, endurance,
+replacement/resupply, spent-cartridge handling and exhaustion consequences remain open.
+
+Docked ships connected to working station life support pause onboard oxygen and scrubber
+consumption, retaining actual remaining supplies. Departure or service loss resumes
+applicable onboard use. Oxygen refills and cartridge replacements are separate resupply
+operations; docking/connection cannot reset supplies. At stations offering connected life
+support, ongoing service is included in the berth fee, with refills/cartridges priced
+separately and accepted terms protected. Numeric tariffs/billing, availability, capacity,
+connection procedures and station resource accounting remain open.
+
+Add LPG as a distinct tradable commodity under Fuels, using kilograms for inventory and
+trading. The stage 2 content plan records the addition; prices, availability, physical
+storage/packing, production and consumption uses remain open. No ship-fuel role is selected.
 
 Inner map worlds start at higher civilisation technology with depleted natural reserves;
 outer worlds are generally resource-rich and less developed, creating a frontier gold rush.
@@ -149,9 +231,11 @@ brokers, tech dependencies, geography, real-time rights and the capability/valid
 
 ## Planetary development, acquisition and frontier settlement
 
-**Added goal, 2026-11-15:** each player initially controls one planet's development and public
-budget alongside a separate trading company. AI governs other inhabited planets. A server
-starts with enough suitable planets for its intended group, later joiners and an AI economy.
+**Corrected model, 2026-11-16:** the [regional plan](regional-economy-and-governance-plan.md)
+requires multiple governed economies on a physical planet. Each player initially controls
+one region's development and public budget alongside a separate trading company. Regional
+population, households, condition and accounts remain independent; AI governs other regions.
+A server starts with enough suitable home regions for its group, later joiners and an AI economy.
 The intended play period may be days or months; campaign duration and pacing remain undecided.
 
 The first development controls are projects, investment budgets and public procurement.
@@ -165,9 +249,27 @@ accepted bookings; changed fees, priorities or exclusions apply to future reques
 [contract/booking plan](procurement-and-station-contracts-plan.md) proposes the clean tender,
 physical fulfilment/payment lifecycle and the precise commercial acceptance boundary.
 
-Players may later purchase control of eligible AI-controlled planets or settle frontier worlds.
-Other players' planets are protected from acquisition through this mechanic. One planet is a
-starting entitlement, not a permanent ownership cap. Public and company funds, inventory and
+Players may later purchase eligible AI regional control rights or settle frontier worlds.
+All player-governed regions are protected from the AI-acquisition mechanic. Eligible AI
+neighbours on the same planet remain purchasable without a sibling governor's veto; reserved
+onboarding regions stay ineligible. Purchase transfers regional public decision rights,
+leaving treasury funds public and private companies, ships and stations with their owners.
+Frontier concessions cover eligible resources in one named region; initial port-construction
+opportunities are also regional, with competing ports at concession expiry. Shared ports may
+serve several regions on that planet without consuming their construction opportunities or
+granting government/resource rights. Deliveries name a region and remain physical; owners
+choose offered terms and honour accepted bookings. Allocate starting regions only with an
+operational starter-compatible public station and physical regional delivery connection.
+New players spawn connected to working station life support; allocation requires an
+available service connection. The starter's selected 30 kg oxygen and one fresh installed
+cartridge remain intact while connected service works. Station provisioning and later
+outages remain separate design choices.
+Basic docking, trading and regional delivery access remain available despite corporate
+restrictions, retaining charges, finite capacity/goods/funds and private-port policies.
+Detailed transport, starter fees/capacity/funds, onboarding/claim compatibility and
+construction/control changes need separate rules.
+One region is a starting entitlement,
+not a permanent ownership cap or sovereignty over sibling regions. Public and company funds, inventory and
 permissions remain distinct; visitors' private assets retain their existing ownership.
 
 If needed, add systems at the outer reaches of the existing map without moving or regenerating
@@ -182,14 +284,16 @@ colonisation remain separate milestones; these capabilities are not implemented 
 See [planetary development and frontier planning](planetary-development-plan.md) for impacts,
 the capability map, unresolved choices and acceptance criteria. Its staged direction is:
 
-1. Account for governance and independent planet identities in the foundational state design.
-2. Prove one governed planet, AI neighbours and saved development queues in the idle server.
-3. Add atomic purchases of eligible AI planets, protected starter capacity and multi-planet policy.
-4. Add expensive corporate spaceport construction at eligible unserved planets, physical
+1. Account for independent planet, region, government/company and public/household identities.
+2. Prove multiple governed regions on one planet, AI neighbours and saved development queues.
+3. Add eligible AI regional-control purchases and portfolio policies, preserving player-region
+   protection, onboarding reserves, public money and private owners.
+4. Add expensive corporate spaceport construction for eligible regions, physical
    resource exploitation and colonies with company-controlled puppet governments.
 5. Prove deterministic frontier expansion, physical access, terraforming and settlement.
 
 The original one-system/two-venue scenario remains a small integration fixture. A later
-governance scenario must include a home planet for each test player and additional AI planets.
+governance scenario must include multiple economies on one planet, a home region for each
+test player and additional AI regions.
 Do not interpret the old deferral of player-controlled civilisations as excluding this new
 planet-development goal. Whole-civilisation sovereignty remains outside the agreed scope.

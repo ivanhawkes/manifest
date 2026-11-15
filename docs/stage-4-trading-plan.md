@@ -3,16 +3,27 @@
 Subsequent requirements: the [idle/planetary plan](planetary-development-plan.md) requires
 physical auto-trader jobs, autopilot and NPC operation with zero clients. Preserve the
 manual command fixture below, then prove saved standing policies and unattended jobs.
-Single-planet development adds a separate public-budget project loop; manual TUI trading
+Regional development adds a separate public-budget project loop; manual TUI trading
 is a stretch goal, and the TUI is to become a remote gameplay client.
 
 Subsequent economy decisions in the [economy plan](economy-and-development-plan.md) select
 aggregate household payroll/purchases every 60 simulation seconds, progress-based batch
 wages and tracked health/happiness losses that both reduce production. Those decisions
-amend the original governed-economy proposals below; full production/system ordering remains
-design work. The [market-information plan](market-information-plan.md) also supersedes
+amend the original governed-economy proposals below. The selected economic sequence is
+fixed-step production using prior-step condition and completion settlement, then due regular
+payroll/tax, household purchases/consumption and condition update. Updated condition applies
+from the next fixed step; the full movement/market scheduler graph remains design work.
+The [market-information plan](market-information-plan.md) also supersedes
 global real-time trader knowledge: fleet docking supplies station-specific live data;
 other estimates use dated observations, including one-time starting reports.
+
+The [regional correction](regional-economy-and-governance-plan.md) also replaces planet-wide
+household/government state with separate economies on a shared planet. The first governance
+fixture needs multiple regions, independently controlled public/household accounts, local
+condition/production and project effects. The selected Bronze project targets one region;
+its quantities and batch recipe remain. Payroll/tax settlement resolves region explicitly,
+with tax carry per employer/region. Shared stations do not pool regional funds or teleport
+goods, and regional authority grants no extra live market information.
 
 Planning handoff for Claude, prepared 2026-11-15. Depends on the public host,
 [validated content](stage-2-content-plan.md) and
@@ -58,17 +69,25 @@ from stage 2, and stage 3's ownership, inventory and command contracts.
 
 Keep Jettison's command-before-systems contract. Let `s` denote the clock step before
 `SimWorld::Step` advances it, and `N` the scenario's positive integer economic cadence.
-Define authored production/demand quantities per economic turn. They execute once when
-`(s + 1) % N == 0`; validate cadence arithmetic and persist its configuration identity.
+The selected economic cadence is 60 simulation seconds, represented by positive integer `N`
+steps under the scenario's fixed timestep. Production work advances every fixed step;
+regular payroll, household purchases/consumption and condition update execute once when
+`(s + 1) % N == 0`. Validate cadence arithmetic and persist its configuration identity and
+position. Author recipe quantities per batch and demand against elapsed simulation time,
+rather than silently treating a production batch as one economic turn.
 Do not use wall time, frame count or rounded elapsed seconds to trigger the economy.
 
-The proposed observable ordering is:
+The host skeleton below remains proposed, with the production/economic subsequence selected:
 
 1. Apply admitted commands in stage 3's global sequence order. Successful order commands
    may reserve and match immediately; cargo commands observe the current docked state.
 2. Expire orders with `s >= expiresStep`, refunding remaining reservations in stable order.
-3. On economic turns, apply production, then consumption, to civilisation-owned inventory
-   at its configured venue; calculate prices and submit native civilisation orders.
+3. Advance production each fixed step using regional condition from the previous completed
+   step, settling completed batches. On due economic turns, pay accrued regular payroll/tax,
+   then household purchases/consumption (essentials before permitted optional goods), then
+   update regional health/happiness. The new multiplier applies from the next fixed step.
+   Goods and funds retain explicit regional/owner/venue identities and physical access.
+   Pricing and native market-order placement must be integrated without reversing this sequence.
 4. Advance movement/docking through the engine scheduler's required dependencies.
    Reconcile Manifest travel intents after the relevant engine systems have run.
 5. Refresh authoritative quotes, then update permitted fleet observations and publish
@@ -81,6 +100,11 @@ The proposed observable ordering is:
 Declare dependencies explicitly; do not rely on registration accident. If movement's
 existing graph requires independent systems to interleave differently, preserve these
 observable boundaries and document the resolved graph before implementation.
+Test a batch completing exactly on an economic boundary: completion payroll settles once,
+regular payroll subtracts amounts already paid, households use actual available funds/goods,
+and resulting condition changes cannot rewrite that step's production or earned wages.
+On intervening steps, production continues without repeating household/condition updates.
+Save/replay/retry must retain cadence position and avoid duplicate economic responses.
 
 Matching excludes an order as soon as `s >= expiresStep`, even before the expiry sweep.
 Its remaining escrow becomes spendable after that sweep, so commands earlier in the
@@ -186,6 +210,16 @@ onboarding and load validation, and the compact class's limit across effects.
 The pinned SDK's fixed smallest pad does not provide the required smaller berth; provision
 the reusable engine capability before consuming it here. Dimensions, endurance, starter
 upgrades and each hull's berth fit remain open; neither class is implemented by this amendment.
+
+Selected starter life-support storage is separate from its 20 m³ trade hold: operating
+oxygen and the installed cartridge occupy dedicated service space. Trade supplies and
+loose spares use normal cargo capacity. Track actual stock locations; transfer into
+service storage debits cargo/source stock once and must obey authored destination limits.
+The starter's operating oxygen maximum is 30 kg; it begins full. Cargo oxygen remains
+separate until transferred and cannot increase this limit. Preserve stock, ownership
+and remaining service capacity through retry/recovery. Other hull limits, physical tank
+volume, compartment dimensions, item fields and transfer/replacement procedures
+remain open; separate storage does not grant unlimited reserves or duplicate inventory.
 
 Implement one shared quantity-to-volume conversion using the distinctions in
 [model units](model.md). Proposed rules derived from that contract:

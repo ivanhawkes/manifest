@@ -13,6 +13,7 @@
 - [Planetary development, corporate power and frontier planning](planetary-development-plan.md)
 - [Public supply contracts and station bookings](procurement-and-station-contracts-plan.md)
 - [Physical economy, brokers and planetary development](economy-and-development-plan.md)
+- [Regional populations, economies and government](regional-economy-and-governance-plan.md)
 - [Market information, fleet observation and stale reports](market-information-plan.md)
 - [Compact ship, matching dock and lone-trader starter](small-trader-and-docking-plan.md)
 - [Stargate expeditions and opening new systems](stargate-expansion-plan.md)

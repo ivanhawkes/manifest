@@ -6,6 +6,13 @@ automation to authoritative recovery as they land. Later acquisition and generat
 topology need the same guarantees. A remote TUI slice can precede this stage; durable
 production acknowledgements still require the recovery evidence below.
 
+Apply the [regional correction](regional-economy-and-governance-plan.md): persist physical
+planet/region relationships, regional population/household/public accounts, needs/condition,
+government/control and organisation links, local development and employer-region tax carry.
+Replay and migration must conserve totals without copying an old planet economy into every
+region. Recovery cases must include independently governed regions sharing a planet/station,
+not just economies on different planets.
+
 Planning handoff for Claude, prepared 2026-11-15. Depends on the completed
 [local trading loop](stage-4-trading-plan.md) and retains the
 [gameplay/server persistence contract](gameplay-and-server-plan.md).
@@ -38,6 +45,7 @@ compatibility policy and acknowledgement semantics belong to Manifest.
 Every authoritative value belongs in registered world state or a world service: account
 balances, venue inventory, cargo, reservations, orders, fills needed for decisions,
 company/civilisation progression, allocation counters, command sequencing/retry state,
+regional population and household/public funds, condition, control, projects and payroll jurisdiction,
 production cadence, RNG and in-flight engine/Manifest travel state. Rebuild lookup
 indexes and other derived caches. UI state, credentials and wall-clock timestamps are
 not authoritative simulation state.

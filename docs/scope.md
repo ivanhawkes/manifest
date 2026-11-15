@@ -22,11 +22,19 @@ see [architecture](architecture.md#dedicated-server-and-administration-planned) 
 [roadmap](roadmap.md#networked-idle-game-and-remote-clients).
 
 The [gameplay/server plan](gameplay-and-server-plan.md) retains a tiny one-system/two-venue
-trading fixture. The [planetary development plan](planetary-development-plan.md) adds one
-governed home planet per player alongside a separate trading company and public budget,
-AI neighbours, and enough planets for the intended group and later joiners. Players may
-purchase eligible AI planets or settle frontier worlds; other players' planets are protected
-from this acquisition mechanic. Later systems may extend the frontier with less developed
+trading fixture. The [regional correction](regional-economy-and-governance-plan.md) and
+[development plan](planetary-development-plan.md) require multiple governed economic regions
+on one planet, one controlled home region per player alongside a separate trading company,
+regional population/household/public accounts and AI neighbours. Allocate enough eligible
+regions for the group and later joiners. Player-governed regions are protected from AI
+acquisition; otherwise eligible AI neighbours on the same planet remain purchasable without
+a sibling governor's veto. Treasury stays public and private asset owners retain ownership.
+Frontier resource concessions cover eligible resources in one named region, leaving neighbours
+independently available under their own eligibility rules and government control separate.
+Port construction opportunities are regional; a port may serve several regions on that planet
+under owner terms, with protected bookings, physical delivery and separate economies/rights.
+one region's control is not whole-planet sovereignty. Later systems may extend the frontier
+with less developed
 or uninhabited planets for terraforming and settlement.
 
 There is no win condition. Players seek ever greater corporate wealth, power and control
@@ -37,9 +45,21 @@ Public contracts require competitive corporate bids; simple government corruptio
 abstract bribery can influence awards after basic tendering works. Detailed politics is deferred.
 Corporate leverage begins with infrastructure, essential supplies and access contracts;
 company-built stations may set fees, priorities and refuse rivals access to their services.
-A very expensive corporate orbital spaceport may be built around a planet with no port that
-is not owned/controlled by another player, enabling resource exploitation and colonies with
-company-controlled puppet governments. Exact resource/colony rights remain planning work.
+A very expensive corporate orbital spaceport may be built for a company's own, an eligible AI
+or an eligible unclaimed region, with one initial opportunity per eligible region. Neighbouring
+ports do not block it; other players' governed regions are protected against unsolicited builds.
+Ports enable resource exploitation and colonies with company-controlled puppet governments.
+Starting regions require an operational starter-compatible public station, a physical regional
+delivery connection and continuing basic docking/trading/delivery access corporate players
+cannot revoke. Charges and finite capacity/goods/funds still apply; private-port policies remain.
+New players spawn connected to working station life support, requiring an available
+connection at allocation. The starter receives 30 kg oxygen and one fresh installed
+30-occupant-day cartridge once, in dedicated life-support space outside its 20-IBC trade
+hold. Trade supplies and loose spares use cargo space; dimensions and later outages remain open.
+Exact colony powers, detailed shared-port transport and starter fees/capacity/funds remain planning work.
+Stations should express
+their cultures and corporate owners/operators through distinct customisable appearances,
+corporate colours and logos; detailed visual design is deferred.
 On frontier concessions, exploitation exclusivity is temporary and uses real elapsed
 server-running time, pausing in shutdown. Afterwards rival exploitation/ports are allowed,
 including under an incumbent puppet government; starting homes stay protected. This refines
@@ -47,7 +67,7 @@ the initial no-second-port rule.
 
 The [physical economy/development plan](economy-and-development-plan.md) records instant
 credits, physically transported goods, finite principal brokers, spreads/warehouse charges,
-production-limited supply and scarcity pricing. Planetary tech requires resource exploitation,
+production-limited supply and scarcity pricing. Regional tech requires resource exploitation,
 imports and real production facilities. The inner map starts higher-tech with depleted
 reserves; outer worlds are richer and less developed, driving a resource gold rush.
 World persistence, governed development and influence mechanics are planned requirements,

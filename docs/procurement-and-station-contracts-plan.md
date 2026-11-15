@@ -6,6 +6,19 @@ pending. This document changes no code, authored balance, schemas or engine SDK 
 The inspected baseline remains Manifest `feature-base` at `8f02d54` and Jettison `feature-base`
 at `0564f19`, with Manifest SDK pin `f85092027eda49c29001f7589608df1f0b8827fb`.
 
+The subsequent [regional correction](regional-economy-and-governance-plan.md) makes the
+issuing public authority/project region-scoped. Tender, budget reservation, acceptance and
+refund records must identify the region and its account separately from physical planet,
+station and the governor's company. Regions sharing a station/planet do not share budgets,
+project inventory or access to private bids. A regional project cannot impose authority
+over sibling districts. Resource concessions cover one named region's eligible resources;
+initial port-construction opportunities are regional, unaffected by neighbouring ports.
+Other players' governed regions are protected against unsolicited builds. A port may serve
+several regions on its planet under the owner's offered terms, with physical deliveries to
+named regions and independent funds/inventories/rights. Starting regions require continuing
+basic public-port access; detailed transport, starter fees/capacity/funds and
+construction/control changes need separate rules.
+
 ## Decisions and proposal status
 
 Confirmed: public procurement requires corporate bids, including the governor's own company;
@@ -17,6 +30,9 @@ starting rate remains subject to balance testing. Add simple corruption and abst
 after clean tendering works.
 Station owners can set fees/priorities and refuse rivals, but must honour accepted bookings;
 policy changes apply to future requests. Standing policies continue without connected clients.
+At stations offering connected life support, its ongoing service is included in the berth
+fee. Oxygen refills and replacement scrubber cartridges have separate prices and resupply
+accounting; inclusion does not replenish onboard reserves. Numeric tariffs remain open.
 
 Subsequent [economy/development requirements](economy-and-development-plan.md) specify instant
 credits, physical commodities, principal brokers and separate warehouse handling. Contract
@@ -88,7 +104,7 @@ qualified bid, close unawarded and release `B`. Record rejection/award results f
 Changing a client connection cannot reopen bidding, reset priorities or award the job again.
 
 Keep other companies' bids private while open, including from a player who governs the
-issuing planet. The authoritative award system can read them; that does not grant a GUI/TUI
+issuing region. The authoritative award system can read them; that does not grant a GUI/TUI
 or the governor's company privileged query access. Propose publishing winner, total price,
 deadline and a structured award reason after close. Disclosure of losing bids and later
 bribery details remains a design choice.
@@ -229,6 +245,21 @@ selected protection of accepted bookings. Establish an explicit acceptance bound
 | Arrival/queue/service | Valid accepted booking authorises its stated visit; physical compatibility and engine pad scheduling still apply. |
 | Completed/cancelled/expired | Store result; settle delivered services and release unused reservation according to frozen terms. No indefinite reusable access pass. |
 
+Shared ports may serve several regions on the same planet. The owner chooses which services
+to offer and their fees, priorities and access terms; the same accepted-booking protection
+applies. Name the destination region for each physical delivery and retain regional inventory,
+household and public-account separation. Serving a neighbour grants no government/resource
+rights, consumes no initial construction opportunity there and reveals no other station's live
+market data. Transport costs, capacity and delivery times need separate design.
+
+Selected life-support billing: at stations offering the service, the berth fee includes
+connected life support. Quote and retain that inclusion with accepted service/fee terms;
+later owner policy cannot append a separate ongoing life-support charge to that agreement.
+Separate authorised purchases cover oxygen refills and replacement scrubber cartridges.
+Connected service pauses onboard oxygen/scrubber use while working, without replenishing
+either reserve. Actual service availability/capacity, numeric charges, billing cadence and
+failure/refund treatment remain open; fee inclusion does not prove physical delivery.
+
 If policy changes before acceptance, a stale quote/request returns updated terms rather
 than accepting a higher price silently. At execution, validate the requesting actor, ship,
 station and quote/booking revision; one caller cannot accept another company's offer.
@@ -316,7 +347,17 @@ now select funded reservation, non-refundable mobilisation, a fixed completion d
 reopening on abandonment/expiry. Exact funding, deadline and salvage terms remain unresolved.
 The selected [exploitation grant](economy-and-development-plan.md#real-time-exclusive-exploitation)
 starts at the first eligible operational frontier port plus concession activation, with a
-disclosed provisional 72-hour server-running term. The selected first
+disclosed provisional 72-hour server-running term, covering eligible resources in one named
+region. Neighbours retain independent eligibility/timers; the grant transfers no government
+control. Regional construction permits one initial opportunity per eligible own, AI or
+unclaimed region, unaffected by neighbouring ports, and protects other players' governed
+regions against unsolicited builds. Competing frontier ports are allowed at concession expiry;
+shared services may cover several regions on the same planet under owner terms, with physical
+delivery and separate regional economies/rights. Starting regions require an operational
+starter-compatible public station and physical regional delivery connection, with continuing
+basic docking/trading/delivery access corporate players cannot revoke. Charges, finite
+capacity/goods/funds and private-port commercial policies remain. Detailed transport and
+starter fees/capacity/funds remain open. The selected first
 [tech project](economy-and-development-plan.md#first-tech-example-bronze-metallurgy-selected)
 uses 90 kg local copper and 10 kg imported tin with an operational workshop; competitive
 procurement and physical delivery apply to its public inputs. Next design long-running
