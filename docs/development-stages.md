@@ -15,10 +15,15 @@ standalone plan's workstreams. Preserve the product decisions and host/script co
 in the linked documents. Policy scripts and graphical presentation follow the proven
 native trading loop.
 
+The [prioritised delivery order](delivery-order.md) breaks these stages and their
+maintenance/amendment tasks into a dependency-ordered implementation queue. Use it
+to choose the next task; the detailed stage plans retain their acceptance contracts.
+
 Status at 2026-11-16: implementation of stages 1–5 remains pending. The
 [T1/T9 record](session-handoff.md#t1t9-local-verification--2026-11-16) establishes the local
-model-library baseline. The remaining maintenance handoffs and current SDK capability
-map are listed in the refreshed [Stage 1 plan](stage-1-host-plan.md#baseline-and-prerequisites).
+model-library baseline. Stage 1 planning is complete and ready for implementation;
+its remaining maintenance handoffs and current SDK capability map are listed in the
+[Stage 1 plan](stage-1-host-plan.md#baseline-and-prerequisites).
 The [project analysis](project-analysis-2026-11-16.md) retains the historical diagnosis.
 The amendments below are read together with the
 [decision ledger](decision-ledger.md), which carries each selected decision once with its status,
@@ -204,6 +209,10 @@ original delivery sequence.
 
 Establish how Manifest starts and owns a game through Jettison.
 
+**Planning complete; implementation pending.** Use the
+[detailed handoff](stage-1-host-plan.md) for the lifecycle contract, delivery slices
+and acceptance matrix. Complete its maintenance prerequisites before implementation.
+
 - In Jettison, expose the smallest public lifecycle/composition interface needed for
   game registration, content loading, world creation and shutdown.
 - Separate sample gameplay registration from reusable host services.
@@ -307,8 +316,9 @@ checkouts. Backups and restore tests address storage loss separately.
 
 ## Validation and delivery
 
-For every stage, Claude records acceptance evidence, updates the roadmap and runs the
-relevant suites and required repository gates. Use two local compile jobs; keep local
+For every stage, the selected implementer records acceptance evidence, updates the roadmap
+and runs the relevant suites and required repository gates. Follow
+[D-051](decision-ledger.md#d-051) for machine-specific concurrency; keep local
 clang-tidy opt-in. Commit Jettison changes before updating Manifest's immutable SDK pin,
 and keep the development environment identical to the selected SDK.
 
@@ -324,10 +334,13 @@ the number of registered players or worlds advancing while they are absent.
 
 ## Handoff
 
-Planning baseline: Manifest branch `feature-scaffold`, commit `f8014e5`, with a clean
-working tree before this document was added. No implementation, builds or gates were
-performed for this planning update. Recheck both repositories before implementation.
+The original planning baseline was `feature-scaffold` at `f8014e5`. For the current
+Stage 1 baseline, prerequisites and SDK capability map, use its
+[final planning handoff](stage-1-host-plan.md#baseline-and-prerequisites) and the newest
+[session handoff](session-handoff.md). No Stage 1 implementation or gates have been
+performed by these planning updates. Recheck both repositories before implementation.
 
-Start with stage 1. At each completed roadmap task, follow the session handoff guidance
+Start with Stage 1's maintenance prerequisites, then its delivery slices. At each
+completed roadmap task, follow the session handoff guidance
 in `agent-workflow.md`: recommend continuing, compacting or starting a fresh session,
 and leave concrete state and validation evidence when handing off.

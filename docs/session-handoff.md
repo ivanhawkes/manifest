@@ -1,5 +1,65 @@
 # Session handoff
 
+## Dependency-ordered task queue and stub permission — 2026-11-16
+
+Manifest remains on `feature-base` at `728bb95`. The four uncommitted Stage 1
+closeout documents are retained. This follow-up adds the
+[prioritised delivery order](delivery-order.md), workflow guidance and ledger entry;
+the accumulated changes are seven documentation files. No implementation or gate ran.
+
+The queue orders maintenance, all five stages, the intervening network slice and
+existing later workstreams. Each task names prerequisites and a completion boundary;
+stage acceptance and committed SDK provision precede dependent integration. T1/T9
+remain complete. T2/T3/T6 travel with affected work, T4 sits in Stage 2 and T8 checks
+attach to the boundaries they enforce. This is a scheduling index of existing scope,
+not new gameplay selection; unresolved choices retain explicit entry conditions.
+
+The user explicitly authorised useful stubs at the implementer's discretion. This is
+recorded as [D-056](decision-ledger.md#d-056), with canonical guidance in
+[agent workflow](agent-workflow.md#implementer-discretion-to-use-stubs). Scaffolding
+can support development, while prerequisite acceptance still requires implemented
+behavior and its checks. OpenAI planning-only restrictions remain unchanged.
+
+Next execution is M01, the first T10 slice, followed by the queue. Documentation
+validation passed: 32 files, 403 local links, no missing targets or anchors, and
+`git diff --check` clean. A read-only check of all 68 task rows confirmed unique IDs,
+ordered prerequisite references and complete stage-exit dependency coverage. No
+runtime evidence is claimed.
+Context recommendation: `/compact` before another planning topic; the execution
+order and implementer permission are now recorded in repository documentation.
+
+## Stage 1 planning complete — 2026-11-16
+
+Baseline: Manifest `feature-base` at `728bb95729c41bec887569ae60334acdd7056ea0`,
+clean before this documentation closeout. The SDK pin remains `f850920`; the clean
+sibling Jettison is still on `feature-base` at `0564f19`. Read-only comparison again
+found no source, CMake or asset changes between the pin and sibling HEAD.
+
+The [Stage 1 handoff](stage-1-host-plan.md) is complete for planning. It records the
+public API gaps, ownership and lifecycle constraints, delivery slices and acceptance
+matrix. No blocking product question remains for this stage; API naming and bounded
+extraction details belong to the implementer. No new product decision is selected by
+this closeout. The stage index and roadmap now distinguish completed planning from
+pending implementation and point to the verified model-library baseline instead of
+presenting the historical CI diagnosis as current status.
+
+Uncommitted work is confined to this handoff, the Stage 1 plan, the development-stage
+index and roadmap. No code, tests, assets, scripts, configuration, SDK pin or engine
+files changed; no build, gate or consumer configure ran. Documentation validation
+passed across 31 files and 376 local links with no missing targets or anchors;
+`git diff --check` passed. Live referenced-chat retrieval was unavailable; this
+closeout uses the repository's recorded decisions and handoffs.
+
+Next execution: complete the selected [T10](build-and-gates.md#t10-selected-gate-and-promotion-policy),
+[T5](build-and-gates.md#t5-selected-environment-parity-plan) and
+[T7](build-and-gates.md#t7-selected-editor-example-plan) handoffs, then follow the
+Stage 1 delivery slices. Implementation and gate execution belong to the user or a
+user-selected non-OpenAI implementer under the planning-only policy. Stage 1 remains
+unimplemented until its final committed SDK/Manifest pair passes the acceptance matrix.
+
+Context recommendation: `/compact` before Stage 2 planning; the Stage 1 contract is
+recorded and the next investigation concerns loaders rather than host composition.
+
 ## Stage 1 handoff review — 2026-11-16
 
 Reviewed the refreshed [Stage 1 plan](stage-1-host-plan.md) against the public SDK,

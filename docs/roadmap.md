@@ -6,15 +6,21 @@ development goals below extend that baseline. Networking is a required gameplay 
 the old optional administration-only TUI direction is superseded. The delivery amendments
 are planning proposals, and none of these capabilities is marked implemented yet.
 
+Use the [prioritised delivery order](delivery-order.md) for the task queue, explicit
+prerequisites, stage exit gates and deferred-work entry conditions. It incorporates
+the maintenance tasks and required network/regional amendments without renumbering
+the five foundational stages.
+
 ## Analysis follow-up — 2026-11-16
 
 The [project analysis](project-analysis-2026-11-16.md) assessed `feature-base` at `f63a3a4` and was
 extended by the [CI failure analysis](project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16)
-at `ee83ea5`. It confirms the roadmap's own statement that none of the amended capabilities is
-implemented: the model layer is tested, the engine integration is not, and Stage 1 has not started.
-It records handoffs T1–T10 for the implementer. The blocking ones are T9 and T1 taken together — the
-two one-line tidy fixes plus one verified gate run at HEAD, because the newest recorded gate
-is at `5d7f54e` and CI cannot substitute for it — and then Stage 1 itself. Planning continues only
+at `ee83ea5`. Its findings describe that historical baseline. The subsequent
+[T1/T9 verification record](session-handoff.md#t1t9-local-verification--2026-11-16)
+records the completed fixes and local full gate. This is model-library evidence;
+engine integration remains unimplemented. Stage 1 planning is complete in the
+[implementation handoff](stage-1-host-plan.md), including the required maintenance
+sequence T10, T5 and T7 before its delivery slices. Planning continues only
 within the scope funnel: a new mechanic names its stage, the public SDK API it consumes and the
 demonstrated gap.
 
@@ -23,13 +29,13 @@ the [decision ledger](decision-ledger.md). Roadmap and plan updates link ledger 
 restating rules, and no numeric balance value is added to prose: those move to authored YAML under
 handoff T4.
 
-**CI is red, and it is tidy-only.** Thirteen consecutive failures on the live branches, all with the
-format gate, Debug build and 11 suites passing before the CI-only clang-tidy stage aborts on two
-findings; the run then dies before Release and ASan/UBSan, so CI has no non-Debug evidence since
-2026-11-14. Evidence and the two one-line fixes are in
-[CI failure analysis](project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16); handoff T9
-applies the fixes and T10 reorders the stages. Do not read a green roadmap plan as a green gate,
-and report gate results by stage.
+The [CI failure analysis](project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16)
+retains the pre-fix tidy-only failure streak; it is not a current CI status report.
+T10 remains open because tidy still precedes Release and ASan/UBSan and can suppress
+their evidence on a future failure. Use the current
+[verification policy](build-and-gates.md#verification-evidence), inspect the exact
+commit's CI run and logs, and report the stages that actually ran. Planning completion
+does not establish a passing gate or completed Stage 1 implementation.
 
 ## SDK and build baseline
 

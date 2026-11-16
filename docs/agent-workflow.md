@@ -21,6 +21,21 @@ Implementation is performed by the user or a non-OpenAI implementer selected by 
 This policy does not select a replacement provider, model or tool. An implementation request
 to an OpenAI planning agent produces a plan and handoff under this policy, not a patch.
 
+## Implementer discretion to use stubs
+
+The user explicitly permits the implementer to write stubs when they judge them useful
+([D-056](decision-ledger.md#d-056)). Stubs may scaffold interfaces, isolate work or
+support incremental integration. Identify unfinished behavior clearly and follow the
+[coding standard](coding-standards.md#errors): an unsupported production operation must
+fail explicitly rather than report a fabricated success. Test doubles remain explicit
+test dependencies.
+
+A stub does not satisfy the dependency or acceptance criterion for the behavior it
+stands in for. Dependent work may be developed against the provisional interface, but
+cannot be accepted as integrated until the real prerequisite and required checks pass.
+Record remaining stubs and their replacement tasks in the implementation handoff. This
+permission does not change the OpenAI planning-only policy or authorise broader scope.
+
 ## Roadmap planning
 
 Before planning an integration, consult [development stages](development-stages.md),

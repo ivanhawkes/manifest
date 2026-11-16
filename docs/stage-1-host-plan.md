@@ -6,6 +6,14 @@ Planning handoff for the selected implementer, prepared 2026-11-15 and refreshed
 OpenAI work is repository inspection and planning documentation only, under the
 [agent workflow](agent-workflow.md#planning-only-policy).
 
+**Planning status: complete and ready for implementation.** The capability map,
+lifecycle, delivery slices and acceptance matrix below form the Stage 1 handoff.
+No product decision remains that blocks this stage; exact API names and extraction
+details are implementer choices within these constraints. Implementation and its
+acceptance evidence remain pending, after the maintenance prerequisites below.
+Use the [prioritised delivery order](delivery-order.md#priority-1-stage-1-host-and-bootstrap)
+for task dependencies across this stage and the wider plan.
+
 Apply the later [engine/game boundary assessment](engine-game-boundary-assessment.md).
 The host must be genre-neutral; engine-local gameplay stays in explicit test/sample
 targets. A neutral CPU consumer and presentation-free configuration are required alongside
@@ -15,9 +23,10 @@ the space sample, not deferred solely to a future server milestone.
 
 Read-only refresh on 2026-11-16:
 
-- Manifest: `feature-base`, `b105d7cba070b24d54c673f0ff034e1bd5413703`.
-  T10, T5 and T7 planning documentation is uncommitted; their implementation remains
-  pending. The [T1/T9 verification record](session-handoff.md#t1t9-local-verification--2026-11-16)
+- Manifest: `feature-base`, `728bb95729c41bec887569ae60334acdd7056ea0`, clean
+  before this planning closeout. T10, T5, T7 and the preceding Stage 1 handoff are
+  committed documentation; their implementation remains pending. The
+  [T1/T9 verification record](session-handoff.md#t1t9-local-verification--2026-11-16)
   establishes the local model-library baseline, not Stage 1 readiness.
 - The immutable SDK pin in `source/external/CMakeLists.txt` remains
   `f85092027eda49c29001f7589608df1f0b8827fb`. The clean sibling checkout is on
@@ -121,8 +130,10 @@ Startup follows this order:
 
 Stage 1 supplies lifecycle hooks for content and world registration, but Manifest's
 content phase only verifies the package contract and its initial world is empty.
-Typed economy definitions, restore flows and script startup remain later work. Do not
-invent placeholder save/script APIs to fill future slots in the interface.
+Typed economy definitions, restore flows and script startup remain later work. The
+implementer may use useful scaffolding or stubs under
+[D-056](decision-ledger.md#d-056); this does not require speculative save/script APIs
+or establish those later capabilities as implemented.
 
 On any startup failure, release all acquired resources and report the phase, source
 path and underlying cause. Partially started composition must clean up through RAII;
@@ -258,11 +269,16 @@ the graphics-free consumer check from render smoke tests under Xvfb. Verify the 
 Manifest fetch without a sibling override after the engine commit is available remotely;
 passing only against a dirty local engine does not complete delivery.
 
-## Completion and next step
+## Implementation completion and next step
 
 Stage 1 is complete when the public lifecycle, sample integration and Manifest bootstrap
 pass the matrix above against the committed SDK pin. A mounted package and an empty
 world are bootstrap evidence, not playable gameplay.
+
+Planning closes with this handoff; do not mark Stage 1 implemented until the final
+committed pair has the required evidence. Record results in
+[session handoff](session-handoff.md), then update the stage index and roadmap with
+the verified capabilities and remaining limitations.
 
 The next planning task is stage 2: loader inventory, typed definition mapping, atomic
 validation, schema/layering policy, content fingerprint and the small scenario. Preserve
