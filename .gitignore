@@ -1,24 +1,34 @@
 # Never all the environment file into a repo.
 .env
 
-# CMake
+# CMake / build trees (dependencies are fetched into the build tree by FetchContent)
 /build/
 /cmake-build-*/
 /CMakeFiles/
 /CMakeCache.txt
 /Testing/
+/compile_commands.json
+/compile_flags.txt
 
-# Editor/OS
+# Compiled shaders, produced by glslc during the build
+*.spv
+
+# Dear ImGui writes its window layout into the current working directory at run time
+imgui.ini
+
+# Editor / OS
 .idea/
-.vscode/
+.vscode/*
+!.vscode/tasks.json
+!.vscode/launch.json
 *.swp
 .DS_Store
 
 # Devenv
 .devenv
 
-# Clangd
-.cache/
+# Claude Code: personal settings (which project MCP servers this machine trusts)
+.claude/settings.local.json
 
-# Machine-specific SDK and dependency checkouts.
-/CMakeUserPresets.json
+# clangd index
+.cache/

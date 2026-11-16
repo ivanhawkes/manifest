@@ -22,6 +22,33 @@ For current verification state, open handoffs and the CI failure analysis, read
 - A mounted content package is not yet playable gameplay. Document the host/script boundary
   and the remaining fixed-point/VFS integration accurately; see `docs/roadmap.md`.
 
+## Environment & Tooling Instructions (NixOS + Niri + devenv.nix)
+
+You are operating inside a restricted `devenv.nix` shell environment on **NixOS** running the **Niri** Wayland compositor.
+
+### 1. NixOS / devenv.nix Constraints
+
+- **Do not** attempt to install global packages via `apt`, `brew`, `pip`, `npm -g`, `nix-env`, or `sudo`. All compilers, build tools, and language servers are declaratively managed by `devenv.nix`.
+- **Do not** hardcode FHS paths like `/usr/bin/...` or `/bin/bash`; rely strictly on `$PATH` provided by the active `devenv` shell.
+- If a required CLI tool, LSP binary, or C++ library is missing from `$PATH`, stop and report the exact package name needed so I can add it to `devenv.nix`.
+
+### 2. Mandatory `compile_commands.json` Generation
+
+Before running any C++ code analysis, refactoring, or LSP queries:
+
+1. Check if `compile_commands.json` exists in the repository root or active CMake build directory (`build/compile_commands.json`).
+2. If missing, inspect `CMakeLists.txt` (and `CMakePresets.json` if present) and ensure `-DCMAKE_EXPORT_COMPILE_COMMANDS=ON` is enabled during CMake configuration (e.g., `cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON` or `set(CMAKE_EXPORT_COMPILE_COMMANDS ON)` in `CMakeLists.txt`).
+3. Symlink or copy `build/compile_commands.json` to the project root (`ln -sf build/compile_commands.json compile_commands.json`) if it is not already accessible there so LSPs and static analyzers detect it automatically.
+
+### 3. Language Services (LSP) & Code Intelligence
+
+You are running in a terminal TUI environment (Claude Code, Codex CLI, or Pi). Enable and prioritize native LSP / code-intelligence tools over brute-force text `grep` across our 100K-line codebase whenever those capabilities or extensions are available in your harness:
+
+- **C++:** Use `clangd` (backed by `compile_commands.json`) for symbol definitions, references, type hierarchy, and diagnostics.
+- **YAML:** Use `yaml-language-server` for schema validation and key/structure checks on engine configuration and entity definitions.
+- **CMake:** Use `cmake-language-server` / `neocmakelsp` for target, variable, and dependency resolution.
+- If your current TUI agent lacks direct MCP/LSP tool bindings in this session, run `clangd --check=<file>` or use `compile_commands.json` flags directly via bash before falling back to targeted `rg` searches on `.hpp` headers.
+
 ## Current verification and CI status (2026-11-16)
 
 Read the current [T1/T9 verification record](docs/session-handoff.md#t1t9-local-verification--2026-11-16)
@@ -43,7 +70,7 @@ historical CI diagnosis and the remaining handoffs.
 - **Tool output in this project has emitted identifiers that do not exist.** The 2026-11-16 analysis
   saw two CI run records (43806887285, 43806869597, "created 2026-11-16T04:21Z") and a push rejection
   (`9ea337b..7c0a307`, "Docs: record the running-world economy decisions") that resolve to nothing on
-  GitHub: the records 404, `gh api` reports *No commit found for SHA* for both SHAs, no forced push
+  GitHub: the records 404, `gh api` reports _No commit found for SHA_ for both SHAs, no forced push
   event exists, and `FETCH_HEAD` plus the remote commit list show linear history to `531295e`. Nothing
   was lost. Confirm any externally-reported run or commit identifier against a second source (`gh api`,
   `git ls-remote`, `FETCH_HEAD`, the remote's commit list) before reporting it or writing it into docs;
