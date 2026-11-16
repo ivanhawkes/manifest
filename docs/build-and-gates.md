@@ -63,6 +63,45 @@ also defaults to two. Override `CMAKE_BUILD_PARALLEL_LEVEL` for compilation,
 These settings are independent; increasing compile workers does not require increasing
 test or tidy workers. CI has its own explicit limits in the workflow.
 
+## T5 selected environment-parity plan
+
+[D-054](decision-ledger.md#d-054) resolves the approach to the open D-006 deviation.
+Read-only comparison against the current SDK pin found exactly one extra package entry,
+`lazygit`, in Manifest's `devenv.nix`; `devenv.yaml` and `devenv.lock` are byte-identical.
+The user requires retaining the tool in the shared SDK development shell. This plan is
+selected, not implemented; the current environment mismatch remains until verified changes land.
+
+The implementer first adds the development tool to Jettison's shared shell, follows that
+repository's validation requirements and commits the engine change. Review every intervening
+commit before selecting the new SDK revision; a newer sibling checkout alone is not a reason
+to move the pin. Then update Manifest's immutable pin and copy all three environment files
+from that exact committed revision together. Preserve the byte-identity rule without a
+Manifest-only package exception. Adding this developer tool requires no gameplay API change.
+
+Add a parity check to Manifest's CI before compilation. Its revision authority is
+`MANIFEST_JETTISON_REVISION` in `source/external/CMakeLists.txt`, not a second hard-coded SHA,
+a moving branch or the current sibling checkout. Compare all three Manifest files against
+the committed blobs at that revision. The checker may reuse an available engine clone that
+contains the exact revision or obtain it independently; a local SDK override or uncommitted
+engine edits must not substitute a different baseline. Missing files, an unresolved or
+ambiguous pin, unavailable reference content and any byte difference fail with a useful
+file/revision diagnostic rather than silently skipping the check. Keep the lock file intact
+unless the selected SDK change itself requires updating it.
+
+Implementer ownership: Jettison's shared environment and its verification first; Manifest's
+SDK pin, matching environment files, parity tooling, CI wiring and workflow documentation
+second. Keep README and AGENTS guidance aligned with the final verified state. This is T5's
+parity deliverable, also referenced by T8; implement one check rather than separate copies.
+
+Acceptance evidence includes a passing comparison of all three files against the selected
+commit and rejection of a controlled difference in each file separately, including missing
+reference content. Show that local overrides cannot bypass the comparison. Confirm `lazygit`
+is available from the shared shell, record the engine verification and run Manifest's full
+gate from a clean checkout using its pinned fetch with no sibling-engine override. Retain
+the replay expectations and record exact revisions, stages and logs under D-007. Apply T10's
+selected CI order when its implementation has landed and use D-051's host-specific concurrency.
+Environment parity alone does not establish Stage 1's CPU-only consumer or gameplay integration.
+
 ## Verification evidence
 
 A gate is recorded, not implied. After running it, add a short entry to
@@ -85,11 +124,91 @@ so a future tidy failure can suppress Release and ASan/UBSan evidence; T10 remai
 The same handoff also addresses duplicate gates on identical branches. Preserve named-stage
 reporting, and prefer a combined local gate over repeated pushes.
 
+### T10 selected gate and promotion policy
+
+[D-052](decision-ledger.md#d-052) and [D-053](decision-ledger.md#d-053) select the following
+implementation contract. It is not implemented by this documentation change; the script and
+workflow described above remain the current behavior.
+
+Run formatting, Debug build/CTest, Release build/CTest, ASan/UBSan build/CTest, then
+clang-tidy in that order for the full gate. Keep `--warnings-as-errors=*` for tidy; do not
+introduce a warning baseline or suppress checks. Preserve the existing optional local flags:
+`--skip-release` omits Release, `--asan` includes sanitizers and `--tidy` includes tidy.
+Keep ordinary failure propagation: a tidy failure must fail the gate, after the requested
+build/test stages have completed. This does not require continuing after an earlier build or
+test failure, and a shortened local pass remains partial evidence.
+
+`feature-base` is the integration branch. Its push runs the full gate on the resulting
+commit. `main` receives only fast-forward promotions to an exact commit already tested on
+`feature-base`; it receives no independent changes or promotion merge commits. A promotion
+must verify a successful, completed full gate for that exact SHA under the applicable workflow.
+An ancestor's result, a PR merge candidate's result, a partial gate, or a missing, running,
+failed or cancelled run is insufficient. If the update cannot fast-forward, stop and resolve
+the divergence through integration and verification rather than rewriting either branch.
+
+Avoid the second full gate triggered solely by promoting the same SHA to `main`. Retain
+PR candidate verification for changes targeting `feature-base`; ordinary feature-branch pushes
+need not also run a full gate when the PR already provides that check. The integrated commit
+still needs its own `feature-base` result. Explicit manual diagnostic runs remain available.
+This policy removes duplicate promotion work; it does not equate distinct PR and integrated
+commits or cancel one branch's required run when another branch advances.
+
+Implementer scope: `scripts/ci.sh`, `.github/workflows/ci.yml`, the promotion procedure and
+their workflow documentation. Before changing triggers, inspect repository rules and required
+checks, and confirm that the verified integration result can authorize promotion without
+weakening protection or inventing a passing result for skipped work. Any required repository
+administration must be identified explicitly. `scripts/tidy.py` needs no warning-policy change.
+No SDK or gameplay changes are required. Concurrency follows [D-051](decision-ledger.md#d-051).
+
+Acceptance evidence must include a controlled tidy failure after successful requested
+build/test stages, with a nonzero gate result and logs showing those stages ran first; a
+passing full gate on the final implementation; and promotion checks covering exact-SHA success,
+unverified changes and divergence. Confirm that a normal verified fast-forward to `main`
+does not start another full gate, while a new integration commit and an explicit manual run
+still do. Record actual stages, logs and exact-commit CI evidence under D-007 before closing T10.
+
 Preset builds live in `build/clang-debug/`, `build/clang-release/` and `build/clang-asan/`. A
 top-level `build/` containing `CivSim*` artifacts is the ignored pre-rename configure tree; remove
 it rather than reading it as a current build. `.vscode/` is ignored, so the tracked
 `.vscode/*.example` files are the reference for a fresh clone; they are currently stale and are
 repaired by handoff T7.
+
+### T7 selected editor-example plan
+
+[D-055](decision-ledger.md#d-055) selects repair of the tracked
+`.vscode/launch.json.example` and `.vscode/tasks.json.example`, with setup instructions here.
+This is an implementer handoff; the examples have not changed. The current launch template
+names the removed `ManifestCoreTests` binary and supplies obsolete YAML arguments. The tracked
+task template already selects Ninja's `all` target; the historical analysis's `ALL_BUILD`
+description does not describe that tracked file. Ignored personal editor settings are separate.
+
+Provide two launch entries using these Debug executables, confirmed against CMake targets and
+the existing generated CTest commands:
+
+| Launch | Executable relative to the workspace |
+| --- | --- |
+| Simulation unit tests | `build/clang-debug/source/game/sim/manifest_sim_tests` |
+| Development TUI | `build/clang-debug/source/tools/tui/manifest_tui` |
+
+Remove the legacy launch arguments; the simulation suite requires no YAML path arguments.
+The TUI uses its configured data paths and normal startup interface. Make configure, build
+and test tasks explicitly use the `clang-debug` presets, with configure before build and
+build before tests or debugger launch. Task labels and `preLaunchTask` references must agree.
+Preserve Ninja-compatible targets and build dependencies for generated content; do not fall
+back to the pre-rename top-level build tree or source-tree generated YAML.
+
+Document copying the examples to ignored personal files, required editor/debugger extensions
+and launching the editor/tasks in the development shell. Validate the chosen debugger adapter's
+configuration fields rather than mixing adapters. Compilation follows D-051: the laptop stays
+within its limit and the tasks respect overrides appropriate to Lythir. Preserve existing
+personal editor files when updating the tracked templates.
+
+Acceptance: copy the examples in a fresh checkout, configure and build through the tasks,
+run the Debug CTest suites, and launch both entries through the debugger. Reach a source
+breakpoint in each and continue the simulation suite to success and the TUI to normal exit.
+Record the debugger/extension used and observed results. Inspecting JSON or finding an old
+binary alone does not establish working editor integration. No SDK, gameplay or test-source
+change is needed for this repair; this check is separate from the full gate's evidence.
 
 Proposed checks, not present (handoff T8): local Markdown link and heading-anchor integrity across
 `docs/`, `README.md` and `AGENTS.md` — an ad-hoc scan at the 2026-11-16 assessment covered 31

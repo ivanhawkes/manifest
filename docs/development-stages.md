@@ -1,6 +1,7 @@
 # Next development stages
 
-Approved by the user on 2026-11-15. Implementation belongs to Claude. These stages
+Approved by the user on 2026-11-15. Implementation follows the
+[planning-only model policy](agent-workflow.md#planning-only-policy). These stages
 refine the [standalone mod plan](standalone-mod-plan.md) and
 [gameplay and persistent server plan](gameplay-and-server-plan.md) into the next delivery
 sequence, originally a local persistent trading game before networking. The subsequent
@@ -14,9 +15,12 @@ standalone plan's workstreams. Preserve the product decisions and host/script co
 in the linked documents. Policy scripts and graphical presentation follow the proven
 native trading loop.
 
-Status at 2026-11-16, from the [project analysis](project-analysis-2026-11-16.md): none of stages
-1–5 has started. The critical path is handoff T1, a recorded gate at HEAD, then Stage 1, and the
-boundary work it exposes in Jettison. The amendments below are read together with the
+Status at 2026-11-16: implementation of stages 1–5 remains pending. The
+[T1/T9 record](session-handoff.md#t1t9-local-verification--2026-11-16) establishes the local
+model-library baseline. The remaining maintenance handoffs and current SDK capability
+map are listed in the refreshed [Stage 1 plan](stage-1-host-plan.md#baseline-and-prerequisites).
+The [project analysis](project-analysis-2026-11-16.md) retains the historical diagnosis.
+The amendments below are read together with the
 [decision ledger](decision-ledger.md), which carries each selected decision once with its status,
 owner and stage; the roadmap's delivery sequence governs ordering, and a new pillar does not
 displace Stage 1.
@@ -181,7 +185,7 @@ control rights as those land. Keep the two-venue test as a small fixture; add a 
 fixture with a home for each player and AI neighbours. Original stage-plan scope statements
 must be read with these amendments; none of this work has been implemented or validated.
 
-Detailed planning handoffs for Claude (implementation and validation remain pending):
+Detailed planning handoffs for the selected implementer (implementation and validation remain pending):
 
 - [Stage 1: public host and bootstrap](stage-1-host-plan.md).
 - [Stage 2: Jettison definitions and content](stage-2-content-plan.md).

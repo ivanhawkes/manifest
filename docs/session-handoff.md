@@ -1,5 +1,122 @@
 # Session handoff
 
+## Stage 1 handoff review — 2026-11-16
+
+Reviewed the refreshed [Stage 1 plan](stage-1-host-plan.md) against the public SDK,
+sample entry points, registration sites and archive contract. Corrected delivery
+ordering so the new host is provided and proven in Jettison before Manifest requires
+it, with the final Manifest bootstrap and compatible SDK update committed together.
+The CPU configuration/consumer proof now belongs explicitly to the engine host slice.
+
+The handoff distinguishes explicit Jetsam/sample selection from neutral Flotsam
+startup. It also records the existing trader registration's by-value system input:
+moving registration earlier with an empty list would break routes despite successful
+startup. Acceptance includes actual sample routing and preserved save registrations.
+Required metadata checks remain Manifest policy beyond generic archive decoding;
+failed startup must not run later hooks or prevent a subsequent independent instance.
+These clarify existing Stage 1/boundary requirements without selecting new gameplay.
+
+Only planning documentation changed. Branch/HEAD, SDK pin and the six uncommitted
+documentation files are unchanged from the preceding refresh; no implementation or
+build/gate execution occurred. Stage 1 implementation remains pending. Its handoff is
+ready for the selected implementer after the maintenance prerequisites, beginning with
+the existing [T10 contract](build-and-gates.md#t10-selected-gate-and-promotion-policy).
+Documentation checks passed: 31 files, 364 local links, no missing targets or anchors;
+`git diff --check` passed.
+
+Context recommendation: `/compact` before a separate Stage 2 loader investigation;
+the Stage 1 findings and implementation sequence are now recorded here. No additional
+Stage 1 planning round is needed unless review raises a specific question.
+
+## Stage 1 planning refresh — 2026-11-16
+
+Manifest remains on `feature-base` at `b105d7c`; the SDK pin is unchanged. The clean
+sibling engine remains at `0564f19` on `feature-base`. Read-only comparison found no
+implementation changes between the pin and sibling under source, CMake helpers or
+assets. The newer integration documentation describes the target boundary; it does
+not establish an implemented host seam.
+
+The refreshed [Stage 1 handoff](stage-1-host-plan.md) replaces its obsolete unknown-build
+baseline, links the selected maintenance prerequisites, and adds the
+[capability map](stage-1-host-plan.md#capability-map-and-demonstrated-gaps) with existing
+APIs, demonstrated gaps, ownership and acceptance evidence. It preserves the existing
+D-003/D-005 scope and lifecycle contract. Graphics-free configure, explicit sample
+composition/content, public metadata parsing and a complete SDK import check remain
+implementer work. Broader spatial/schema extraction retains its later-stage ordering.
+The development-stage status now links the current baseline rather than treating T1
+as uncompleted.
+
+Accumulated uncommitted changes are planning/workflow documentation in README,
+build/gates, the decision ledger, this handoff, development stages and the Stage 1 plan.
+No implementation, configuration, tests, assets or engine files changed. No build,
+gate, debugger or consumer configure ran. T10, T5 and T7 remain pending implementation,
+followed by Stage 1; this refresh does not mark any of them complete or select an
+implementation provider. The next planning step is review of this bounded Stage 1
+handoff; the implementer starts with its prerequisite and consumer-contract slice.
+Documentation validation passed across 31 files and 362 local links, with no missing
+targets or anchors; `git diff --check` passed.
+
+Context recommendation: continue this session for Stage 1 review; the relevant SDK
+evidence and ownership constraints are current and preserved here.
+
+## T7 planning decision — 2026-11-16
+
+Manifest remains on `feature-base` at `b105d7c`. The user accepted
+[D-055](decision-ledger.md#d-055); the canonical [T7 handoff](build-and-gates.md#t7-selected-editor-example-plan)
+records the affected templates, actual target paths, task ordering, environment requirements
+and debugger acceptance checks. Read-only inspection confirmed the targets against CMake and
+existing generated CTest commands. The tracked task template already uses `all`; do not carry
+forward the historical analysis's `ALL_BUILD` finding as a current tracked-file defect.
+
+The accumulated T10, T5 and T7 planning edits affect README, build/gates, the decision ledger
+and this handoff, and remain uncommitted. No implementation, editor configuration, SDK pin or
+engine file changed, and no build, test or debugger was run. All three tasks remain pending
+implementation and acceptance; their planning completion does not establish Stage 1 readiness.
+The next planning subject is Stage 1; execution still follows T10, T5 and T7 first.
+Documentation validation passed across 31 files and 345 local links, with no missing targets
+or anchors; `git diff --check` passed.
+
+Context recommendation: `/compact` before Stage 1 planning. The small maintenance handoffs
+are recorded, and the next architecture task needs the stage and engine-boundary documents
+rather than the resolved TUI and editor investigation.
+
+## T5 planning decision — 2026-11-16
+
+Planning continues on `feature-base` at `b105d7c` with the preceding T10 documentation edits
+still uncommitted. The user accepted [D-054](decision-ledger.md#d-054). The canonical
+[T5 handoff](build-and-gates.md#t5-selected-environment-parity-plan) records cross-repository
+ownership, pin/parity-check behavior and required acceptance evidence. D-006 remains in force;
+the actual deviation is still open until implementation and verification.
+
+Investigation compared the three environment files to committed SDK blobs read-only. Only
+the known extra package entry differs. No engine files, SDK pin, environment configuration,
+scripts or tests changed, and no shell evaluation or build/gate ran. Current planning edits
+are confined to README, build/gates, the decision ledger and this handoff. T10 and T5 remain
+unimplemented; T7 is the next bounded planning handoff before Stage 1.
+Documentation validation passed across 31 files and 341 local links, with no missing targets
+or anchors; `git diff --check` passed. The four planning-document changes remain uncommitted.
+
+Context recommendation: continue this session for T7; its editor-example inspection is small
+and shares the current preset/build context.
+
+## T10 planning decisions — 2026-11-16
+
+Planning baseline: `feature-base` at `b105d7c`, initially clean. The user accepted
+[D-052](decision-ledger.md#d-052) and selected the promotion workflow in
+[D-053](decision-ledger.md#d-053). The canonical implementation contract, affected files,
+remaining repository-rule inspection and acceptance evidence are in the
+[T10 policy](build-and-gates.md#t10-selected-gate-and-promotion-policy).
+
+T10 remains unimplemented. This change records planning only; no scripts, workflow
+configuration, code or tests changed, and no build, CTest, tidy or CI run was performed.
+The implementer should complete T10 using that contract, then address T5 and T7 before Stage 1.
+The prior T1/T9 evidence below remains the recorded baseline.
+Documentation checks passed: 31 files, 337 local links, no missing targets or anchors;
+`git diff --check` passed. The three documentation edits are uncommitted.
+
+Context recommendation: continue this session for adjacent planning; the T10 decisions are
+bounded and now recorded. Implementation belongs to the implementer under the general policy.
+
 ## T1/T9 local verification — 2026-11-16
 
 Tested tree: `feature-base` at `ee67443` plus the two source changes in this commit.
