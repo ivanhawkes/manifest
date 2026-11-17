@@ -97,7 +97,9 @@ the TUI is a stretch goal; configuring and observing physical auto-trading is re
 Preserve console workflows where useful, but move authoritative state out of `ManifestConsole`.
 Host, protocol and command tests must run without FTXUI or a renderer. Reuse Jettison's public
 simulation, AI, transit and persistence facilities; provision demonstrated generic host/network
-gaps in Jettison. Current snapshots and render smoke tests do not establish network replication
+gaps in Jettison, which owns the low-level networking common to many games while Manifest owns
+the dedicated server and its game rules ([D-057](decision-ledger.md#d-057)). Current snapshots
+and render smoke tests do not establish network replication
 or a true CPU-only server build. Transport, hosting and measured capacity remain open.
 
 Proposed sequencing: host/content/command foundations, then a small real TUI connection slice,

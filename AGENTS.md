@@ -22,6 +22,10 @@ For current verification state, open handoffs and the CI failure analysis, read
 - A mounted content package is not yet playable gameplay. Document the host/script boundary
   and the remaining fixed-point/VFS integration accurately; see `docs/roadmap.md`.
 
+## Agent Directions
+
+Answer concisely.
+
 ## Environment & Tooling Instructions (NixOS + Niri + devenv.nix)
 
 You are operating inside a restricted `devenv.nix` shell environment on **NixOS** running the **Niri** Wayland compositor.

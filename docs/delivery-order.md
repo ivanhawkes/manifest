@@ -11,8 +11,9 @@ Work from top to bottom. A dependency is complete only when its required checks 
 evidence are recorded, not when a patch or stub exists. Each row names its direct
 prerequisites; their prerequisites are inherited. Rows with independent prerequisites
 may be developed concurrently, but this list supplies the default priority for one
-implementer. The maintenance sequence is the agreed work order, including T7 before
-Stage 1; editor repair is not a technical dependency of the host API.
+implementer. The maintenance sequence is the agreed work order, except T7 (M05), which
+does not gate Stage 1 (2026-11-18): editor repair is not a technical dependency of the
+host API, so H01 follows M04 and M05 travels alongside Stage 1.
 
 Jettison provisions reusable SDK gaps first. Before a dependent Manifest change lands,
 commit the engine provision, make it fetchable and consume the compatible immutable
@@ -51,7 +52,7 @@ Canonical scope and evidence: [Stage 1](stage-1-host-plan.md).
 
 | Order / ID | Task and completion boundary | Must complete first |
 | --- | --- | --- |
-| 06 / H01 | Inventory the complete current SDK import contract and consumer-local packaging paths; reject partial SDKs and remove the moving-reference test fallback. | M05 |
+| 06 / H01 | Inventory the complete current SDK import contract and consumer-local packaging paths; reject partial SDKs and remove the moving-reference test fallback. | M04 |
 | 07 / H02 | Jettison: implement the public host owner, lifecycle and reusable metadata primitives, with ordered startup, failure cleanup and lifetime tests. | H01 |
 | 08 / H03 | Jettison: make presentation/editor/samples optional without losing CPU modules or the packer; prove a fresh configure without graphics discovery. | H02 |
 | 09 / H04 | Jettison: prove the independent non-space CPU consumer, definitions, deterministic stepping, save/load and teardown. | H02, H03 |

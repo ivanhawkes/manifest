@@ -171,8 +171,9 @@ costs, endurance, starter upgrades and the starter's berth fit remain open.
 
 The [contract/booking handoff](procurement-and-station-contracts-plan.md) proposes the first
 supply tender and accepted-booking lifecycle. Partial delivery payments and grandfathered
-booking terms are selected, as is a supplier-funded bond initially set at 10% of the winning
-offer, held until close with proportional forfeiture for undelivered goods. Detailed numeric
+booking terms are selected, as is a supplier-funded performance bond held until close with
+proportional forfeiture for undelivered goods ([D-042](decision-ledger.md#d-042); its rate
+is proposed, not accepted). Detailed numeric
 settlement and other failure defaults remain proposals. No code or gameplay-validation
 evidence is supplied by these additional plans.
 
