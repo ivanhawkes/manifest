@@ -54,8 +54,9 @@ env -u JETTISON_SOURCE_DIR CMAKE_BUILD_PARALLEL_LEVEL=24 CTEST_PARALLEL_LEVEL=24
 ```
 
 `clang-debug`, `clang-release` and `clang-asan` each built and passed 11 of 11, the `sim`
-suite's pinned replay hashes included; tidy was then clean, and the gate exited 0. T5 is closed
-once CI has passed on the pushed commit.
+suite's pinned replay hashes included; tidy was then clean, and the gate exited 0. CI run
+44234896283 (`push`, `feature-base`, `ea3edad`) passed, its environment-parity step first. T5 is
+closed.
 
 ## M02: feature-base triggers and exact-SHA promotion — 2026-11-18
 
