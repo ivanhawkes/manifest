@@ -245,8 +245,9 @@ Required checks for the implementer:
 - Queries enforce access restrictions and cannot mutate state; command coverage runs
   with `MANIFEST_BUILD_TUI=OFF`. Existing relevant suites remain green.
 
-Run required repository gates in the locked development environment with two compile/test
-jobs and no local clang-tidy. OpenAI planning performs none of that implementation work.
+Run required repository gates in the locked development environment with each machine's
+concurrency (D-051), local clang-tidy opt-in. OpenAI planning performs none of that
+implementation work.
 
 Before coding cargo operations, settle the concrete registry-adapter choice, the item
 capacity conversion owner and the minimum docking bootstrap against the stage 1–2 code.

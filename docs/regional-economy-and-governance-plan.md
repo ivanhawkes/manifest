@@ -270,7 +270,7 @@ Implementer acceptance must include:
 7. Save/hash/replay and crash/retry preserve parent links, control, regional accounts,
    condition, tax carries, projects and routes. Measure scaling by regions as well as planets,
    with zero clients and without individual-population agents. Implementer runs relevant
-   presets and gates with two compile jobs; local clang-tidy remains opt-in.
+   presets and gates with each machine's concurrency (D-051), local clang-tidy opt-in.
 8. Two frontier regions on one planet have independently scoped resource eligibility and
    concession lifecycles. Activation, extraction and expiry in A cannot grant rights, start
    a timer or block otherwise eligible exploitation in B. Preserve the named region and

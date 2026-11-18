@@ -431,7 +431,8 @@ The implementer verifies:
 - Every semantic rejection above, plus one-system/two-civilisation/two-venue/eight-good
   scenario validation and preservation of the full authored content set.
 - Existing relevant suites and final repository gates in the locked development shell,
-  with two compile/test jobs and no local clang-tidy. Engine changes require its gate too.
+  with each machine's concurrency (D-051), local clang-tidy opt-in. Engine changes require its
+  gate too.
 
 No builds, implementation changes or gates were performed for this plan. Proceed with
 stage 1 implementation first; refresh engine API details before starting stage 2.

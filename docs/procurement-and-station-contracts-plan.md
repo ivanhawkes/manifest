@@ -339,8 +339,9 @@ partial and excess delivery; payment fragmentation and overflow; supplier defaul
 own-company bidding without private-bid access; restart/retry around award, delivery and fee
 capture; queued/docked and in-flight bookings across price/ban changes; NPC parity; expiry,
 blocked travel and recovery with no clients. Test against both directory/pack content and
-cross-build replay hashes. Use repository presets/gates with two local compile jobs and no
-local clang-tidy for cross-repository implementation. None ran for this planning document.
+cross-build replay hashes. Use repository presets/gates with each machine's concurrency
+(D-051), local clang-tidy opt-in for cross-repository implementation. None ran for this
+planning document.
 
 The [construction-site rules](planetary-development-plan.md#company-built-stations-and-control-of-shipping)
 now select funded reservation, non-refundable mobilisation, a fixed completion deadline and

@@ -8,8 +8,15 @@ build configuration, assets or tests were changed; no build/gate was run.
 Documentation follow-up: both repositories' scope/architecture/workflow guidance has
 since been aligned with this assessment. Jettison's `docs/game-integration.md` now requires
 checking Manifest's current mechanics and provisioning reusable API gaps. References below
-to the old engine scope describe the inspected baseline; implementation coupling remains
-until the planned extraction is completed.
+to the old engine scope describe the inspected baseline.
+
+**Status, 2026-11-18:** the extraction is done in Jettison and is in Manifest's SDK pin
+`fafa758`. The H02–H05, A01 and W01 rows of
+[Jettison's history](../../jettison/docs/history.md#neutral-sdk-and-manifest-integration) record
+it, along with the enforcement checks below that now exist in Jettison: the dependency checks,
+the consumer matrix and the neutral-startup registration check. The evidence table below is the
+2026-11-15 baseline, and the lines it cites no longer exist. Manifest's side of these checks
+arrives with H06 and later stages.
 
 ## User's required boundary
 
@@ -180,8 +187,8 @@ hides behaviour changes or needlessly invalidates saves and authored IDs.
   production content. Update scope/architecture/SDK docs together with actual extraction;
   folder names alone do not enforce a dependency boundary.
 
-These checks are proposed, not present or executed. The implementer runs repository
-gates with two local compile jobs and no local clang-tidy, preserving engine sample
+The status note at the top lists which of these checks exist. The implementer runs repository
+gates at each machine's concurrency ([D-051](decision-ledger.md#d-051)), preserving engine sample
 coverage as well as Manifest checks. OpenAI agents remain planning-only.
 
 ## First implementation handoff

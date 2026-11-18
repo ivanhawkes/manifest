@@ -242,7 +242,8 @@ state to uninterrupted execution of exactly the same committed batches, includin
 steps, partial fills, expiry, travel and upgrades. Debug/Release/sanitised results must agree.
 
 Run the relevant existing suites and both repositories' required gates for touched code,
-with two compile/test jobs and no local clang-tidy. Record measured snapshot size, journal
+with each machine's concurrency (D-051), local clang-tidy opt-in. Record measured snapshot
+size, journal
 growth, fsync latency and recovery duration without inventing capacity claims. Define
 bounded storage/retention limits and test reaching them before marking the stage complete.
 

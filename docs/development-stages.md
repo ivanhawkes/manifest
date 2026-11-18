@@ -19,11 +19,7 @@ The [prioritised delivery order](delivery-order.md) breaks these stages and thei
 maintenance/amendment tasks into a dependency-ordered implementation queue. Use it
 to choose the next task; the detailed stage plans retain their acceptance contracts.
 
-Status at 2026-11-16: implementation of stages 1–5 remains pending. The
-[T1/T9 record](session-handoff.md#t1t9-local-verification--2026-11-16) establishes the local
-model-library baseline. Stage 1 planning is complete and ready for implementation;
-its remaining maintenance handoffs and current SDK capability map are listed in the
-[Stage 1 plan](stage-1-host-plan.md#baseline-and-prerequisites).
+Status: see the [delivery order](delivery-order.md#status-2026-11-18).
 The [project analysis](project-analysis-2026-11-16.md) retains the historical diagnosis.
 The amendments below are read together with the
 [decision ledger](decision-ledger.md), which carries each selected decision once with its status,
@@ -165,8 +161,8 @@ class with a truck-like tiny cabin, 4 m³ (four IBC units) of cargo and a matchi
 Its primary purpose remains unspecified and trade is secondary. The distinct lone-trader
 starter has a 20-IBC (20 m³) hold; onboarding must not confuse the two classes.
 Plan definitions in stage 2, ownership/capacity in stage 3, physical berth integration in
-stage 4 and recovery in stage 5. A smaller-berth capability is a demonstrated pinned-SDK
-gap; provision it in Jettison rather than copying docking code into Manifest. Dimensions,
+stage 4 and recovery in stage 5. The smaller berth is a pad class Manifest authors
+([D-044](decision-ledger.md)); Jettison provisioned it in W01. Dimensions,
 costs, endurance, starter upgrades and the starter's berth fit remain open.
 
 The [contract/booking handoff](procurement-and-station-contracts-plan.md) proposes the first
@@ -210,7 +206,7 @@ original delivery sequence.
 
 Establish how Manifest starts and owns a game through Jettison.
 
-**Planning complete; implementation pending.** Use the
+**In progress** ([status](delivery-order.md#status-2026-11-18)). Use the
 [detailed handoff](stage-1-host-plan.md) for the lifecycle contract, delivery slices
 and acceptance matrix. Complete its maintenance prerequisites before implementation.
 

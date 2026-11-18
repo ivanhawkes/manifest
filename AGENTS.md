@@ -83,7 +83,8 @@ historical CI diagnosis and the remaining handoffs.
   `feature-base` run passed. Tidy runs last since M01, so its failure no longer hides Release
   and ASan/UBSan results. Name the stages that actually ran; do not describe a tidy-only
   failure as a build regression.
-- **Next implementer work:** the T7 handoff, then Stage 1, following the analysis priorities.
+- **Next implementer work:** see the [delivery
+  order's status](docs/delivery-order.md#status-2026-11-18).
   The shell matches the SDK pin (T5, M04); `scripts/check-env-parity.sh` checks it in CI, and a
   pin move copies the three files from that commit. Avoid repeated gates without a new change or
   unresolved failure.

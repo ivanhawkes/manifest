@@ -662,7 +662,7 @@ fractional 60-second requirements and daily totals. At this rate, actual accessi
 must be consumed once, within household funds, without specialised stock silently substituting or surplus
 food/water compensating for missing supplies. Preserve shortages, fresh needs, no automatic
 catch-up demand and save/replay accounting. Content/market suites and required gates belong
-to the implementer, with two local compile jobs and local clang-tidy opt-in. No commodity
+to the implementer, with each machine's concurrency (D-051), local clang-tidy opt-in. No commodity
 YAML, code, fixture, asset, build script or test was changed in this planning work.
 
 ### Staple grain commodities (selected; implementation handoff)
@@ -1167,7 +1167,8 @@ time checkpoints and report the bounded elapsed-time loss instead of claiming pe
 
 Implementer checks include existing suites, long-run finite-funds/inventory scenarios,
 directory/pack equivalence, cross-build replay and crash/retry boundaries, using presets and
-required gates with two local compile jobs and no local clang-tidy for cross-repository work.
+required gates with each machine's concurrency (D-051), local clang-tidy opt-in for
+cross-repository work.
 Only source inspection and documentation checks have occurred; no economic/scale result is
 claimed. The first material/facility example, aggregate household foundation, pre-funded
 production payroll with authored recipe wage bills, progress-based earnings and

@@ -19,9 +19,17 @@ The host must be genre-neutral; engine-local gameplay stays in explicit test/sam
 targets. A neutral CPU consumer and presentation-free configuration are required alongside
 the space sample, not deferred solely to a future server milestone.
 
+## Delivery status, 2026-11-18
+
+Slices 1–3 are done and are in the pin; slices 4 and 5 (H06, H07) are open. The
+[delivery order's status](delivery-order.md#status-2026-11-18) is the canonical status. Jettison's
+[history](../../jettison/docs/history.md#neutral-sdk-and-manifest-integration) records what the
+engine slices built (`Jettison::Host`: `Host::Session`, `Host::Game`, `host/Package.h`). The
+evidence below describes the engine before those slices, and it is why they exist.
+
 ## Baseline and prerequisites
 
-Read-only refresh on 2026-11-16:
+Historical: this is the read-only refresh of 2026-11-16, before the slices above.
 
 - Manifest: `feature-base`, `728bb95729c41bec887569ae60334acdd7056ea0`, clean
   before this planning closeout. T10, T5, T7 and the preceding Stage 1 handoff are

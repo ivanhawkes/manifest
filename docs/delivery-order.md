@@ -29,8 +29,27 @@ Planning-only restrictions on OpenAI implementation remain in force.
 
 [T1/T9](session-handoff.md#t1t9-local-verification--2026-11-16) established the
 model-library baseline and fixed the two tidy findings. Do not repeat them as open
-tasks. Stage 1 planning is complete; its implementation is pending. The implementation
-rows below are all pending at this scheduling baseline.
+tasks.
+
+## Status, 2026-11-18
+
+Done: M01–M04 and H01 in Manifest ([session handoff](session-handoff.md)); H02–H05, and the
+Jettison rows A01 and W01 ahead of their place in this order, in Jettison
+([history](../../jettison/docs/history.md#neutral-sdk-and-manifest-integration)). All of these are
+in the SDK pin `fafa758`. Two consequences:
+
+- H06 builds against the pin itself: the host it adapts (`Jettison::Host`) is already fetched,
+  so the local override is optional, not required.
+- H07's pin and environment update happened in M04. What H07 still has to do is the acceptance
+  matrix, the fetched-consumption check, and settling the engine cross-review of H02–H05, A01
+  and W01, which cannot start before 2026-11-21. If that review changes the host API, the pin
+  moves again inside H07.
+
+A01 and W01 were built against these plans before C01 settled the planet, region and company
+identities. Before A02 binds hosted state, C01 confirms that a Jettison frame
+(`Sim::InFrame`, a partition the game chooses) and a save's details (`SaveInfo::details`, the
+game's own strings) still fit. A gap that turns up there is a new Jettison row, not a reopening
+of A01. M05 is still open, and runs alongside Stage 1.
 
 ## Priority 0: maintenance before Stage 1
 
@@ -91,7 +110,7 @@ Canonical scope: [Stage 3](stage-3-authority-plan.md).
 
 | Order / ID | Task and completion boundary | Must complete first |
 | --- | --- | --- |
-| 21 / A01 | Jettison boundary prerequisite: resolve neutral frame/partition and save-metadata seams needed for hosted state, with compatible fixtures; commit and consume any SDK provision. | C08 |
+| 21 / A01 | Jettison boundary prerequisite: resolve neutral frame/partition and save-metadata seams needed for hosted state, with compatible fixtures; commit and consume any SDK provision. **Done in Jettison 2026-11-18, in pin `fafa758`**; C01 rechecks the fit (see status). | C08 |
 | 22 / A02 | Add reflected one-world state, distinct accounts/control identities, counters and serialisation; settle the registry-adapter and capacity-conversion owners, then prove index rebuilding. | A01 |
 | 23 / A03 | Add trusted admission, fixed-step ordering, bounded retry/history state and structured command results. | A02 |
 | 24 / A04 | Implement retry-safe provisioning and atomic cargo load/unload using validated docked bootstrap state, real account ownership and capacity checks. | A03 |
@@ -126,7 +145,7 @@ Canonical scope: [Stage 4](stage-4-trading-plan.md), with the
 
 | Order / ID | Task and completion boundary | Must complete first |
 | --- | --- | --- |
-| 31 / W01 | Jettison: split the required generic physics/AI/scene capabilities from optional space adapters; provision needed docking/berth seams and verify independent consumers, then commit/pin. | A07 |
+| 31 / W01 | Jettison: split the required generic physics/AI/scene capabilities from optional space adapters; provision needed docking/berth seams and verify independent consumers, then commit/pin. **Done in Jettison 2026-11-18, in pin `fafa758`** (see status). | A07 |
 | 32 / W02 | Resolve outstanding settlement, transport, service and cadence choices; document the actual scheduler graph and transaction boundaries before integration. | W01, C08, A07 |
 | 33 / W03 | Adapt marketplace reservations, matching, partial settlement, cancellation, expiry and fees to owner/venue accounts with checked atomic writes. | W02 |
 | 34 / W04 | Integrate local production, finite brokers/demand, regional payroll/tax, essential purchases and health/happiness in the selected fixed-step order; eliminate automatic inter-venue stock transfers. | W03 |

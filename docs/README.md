@@ -9,7 +9,12 @@
 - [Coding standards](coding-standards.md)
 - [Build and gates](build-and-gates.md)
 - [Roadmap](roadmap.md)
+- [Prioritised delivery order](delivery-order.md): the task queue and its status
 - [Next development stages](development-stages.md)
+- Stage plans: [1 host](stage-1-host-plan.md), [2 content](stage-2-content-plan.md),
+  [3 authority](stage-3-authority-plan.md), [4 trading](stage-4-trading-plan.md),
+  [5 recovery](stage-5-recovery-plan.md)
+- [Engine/game boundary assessment](engine-game-boundary-assessment.md)
 - [Standalone mod implementation plan](standalone-mod-plan.md)
 - [Gameplay and persistent server plan](gameplay-and-server-plan.md)
 - [Planetary development, corporate power and frontier planning](planetary-development-plan.md)
@@ -21,3 +26,4 @@
 - [Stargate expeditions and opening new systems](stargate-expansion-plan.md)
 - [Models and agent workflow](agent-workflow.md)
 - [Model reference](model.md)
+- [Session handoff](session-handoff.md): dated evidence, newest first

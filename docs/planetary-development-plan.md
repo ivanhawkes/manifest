@@ -645,8 +645,8 @@ prove month-long real-time availability. Include a real unattended soak separate
 before changing route selection/indexes or adding simulation parallelism.
 
 Use relevant presets and both repositories' required gates for touched implementation, with
-two local compile jobs and no local clang-tidy for this cross-repository work. Validation
-is limited to source/API inspection and documentation whitespace/link checks; no builds,
+each machine's concurrency (D-051), local clang-tidy opt-in for this cross-repository work.
+Validation is limited to source/API inspection and documentation whitespace/link checks; no builds,
 economy runs, benchmarks or recovery tests were performed for this assessment.
 
 ## Next planning cycle

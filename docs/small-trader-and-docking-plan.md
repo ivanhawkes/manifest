@@ -129,7 +129,7 @@ that it fits the compact ship's dock.
 | --- | --- | --- |
 | Distinct Manifest hulls and stats | `ShipClassSpec`, `ShipEffectEngine::BuildShip` and `LongHaulTrader` exist; the existing long-haul hull has `CargoVolume` 900 and `LifeSupportDays` 45 | Manifest defines the compact class's 4 m³ limit and one-occupant accommodation, and the separate lone-trader starter's 20 m³ hold. Existing long-haul values are not their defaults. Load hosted content through the planned Jettison definition/archive pipeline, not another custom loader. |
 | Physical hull and docking | Pinned `Dock::HullDefinition` provides dimensions, hatch, model path, pad class and cruise data; `Docks::DefineHull`, `DefineLayout`, `Park`, `RequestPad` and `IsDocked` provide public integration points | Manifest supplies hull geometry, station layout and gameplay policy using public SDK APIs. Art and collision dimensions must agree with the authored definition. |
-| Smaller berth geometry | Pinned `PadClass` is `S/M/L/XL`; `PadSize(S)` is fixed at 35 × 40 m and `LargestHull(S)` at 25 × 20 × 8 m. `PadLayout` selects a class without per-pad dimensions | Demonstrated SDK gap for a berth smaller than the fixed S pad. The implementer provisions a reusable smaller-pad capability in Jettison, with fit/clearance/validation and compatibility coverage. Manifest owns this ship's size and station choices. An added class versus configurable geometry remains an API design decision. |
+| Smaller berth geometry | At `f850920`, `PadClass` was a closed `S/M/L/XL` enumeration. Provisioned in Jettison W01 (pin `fafa758`): a pad class is a definition, `Dock::PadClassDefinition`. See [D-044](decision-ledger.md) and Jettison's [history](../../jettison/docs/history.md#neutral-sdk-and-manifest-integration) | Manifest authors its compact berth and the hulls' classes as data, and owns this ship's size and station choices. |
 | Cargo, permissions and recovery | Existing effects expose `CargoVolume`; hosted ownership, packed-volume transfer, travel and persistence remain planned in stages 3–5 | Manifest enforces one authoritative cargo inventory with distinct 4 m³ compact and 20 m³ starter capacities across loading, trading, effects and recovery. Resolve starter upgrades separately. Do not use integer `Dock::Carry` crates as a second inventory or infer an unauthored mass limit. |
 
 Evidence: `source/game/effects/include/manifest/effects/ShipEffectEngine.h`,
@@ -147,10 +147,8 @@ matching environment. No SDK change has been made by this planning work.
    Define endurance, fittings, price and operating costs separately. Define the lone-trader
    starter with its 20-IBC hold and resolve its own hull dimensions, berth fit and upgrades.
    The compact ship's primary purpose remains unspecified.
-2. Provision and validate the public smaller-berth capability in Jettison. Preserve existing
-   authored class identifiers and saved meanings; do not renumber existing enum/save values
-   accidentally. Retain existing pad behaviour and exercise the new capability in a separate
-   engine fixture without Manifest content. Resolve use of larger compatible berths explicitly.
+2. Done in Jettison (W01, 2026-11-18): pad classes are data. A hull uses a larger compatible
+   berth by rank (`Docks::Fits`). Manifest decides which of its classes a station offers.
 3. Author Manifest definitions through the stage 2 registry/VFS/archive path. Keep the
    existing long-haul hull and authored IDs stable. Add the new hull/layout references to
    appropriate scenarios without assuming every station receives the new berth.
@@ -178,7 +176,8 @@ matching environment. No SDK change has been made by this planning work.
    docking, and the selected observation boundary when departing or changing ownership.
 6. Verify definition directory/pack equivalence and saved class/layout references, cargo,
    docking and travel through load/replay. The implementer runs relevant presets and the
-   required local gate with two compile jobs; local clang-tidy stays opt-in.
+   required local gate at the machine's concurrency ([D-051](decision-ledger.md#d-051)); local
+   clang-tidy stays opt-in.
 
 This plan establishes requirements and a public API gap, not build validity, playable
 integration, economic viability, endurance or performance evidence.

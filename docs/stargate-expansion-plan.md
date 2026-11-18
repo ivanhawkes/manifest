@@ -345,4 +345,5 @@ The incumbent's ban must not block the rival expedition or change the rival's po
 ownership. Existing journeys, gate obligations and planetary protection/concession state must
 survive the added endpoints and recovery. Jettison provision needs an independent consumer exercising ungated arrival
 and connection activation without Manifest's economy. Implementers run appropriate presets and
-gates with two local compile jobs and no local clang-tidy. No such evidence has been produced.
+gates with each machine's concurrency (D-051), local clang-tidy opt-in. No such evidence has
+been produced.

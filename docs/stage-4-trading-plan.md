@@ -329,7 +329,7 @@ Release and sanitised presets. Exercise in-memory save/load continuation during 
 open order and a journey; durable crash recovery remains stage 5.
 
 The implementer runs relevant market/effects/host/command/engine movement suites and
-required repository gates with two compile/test jobs and no local clang-tidy. Document
+required repository gates with each machine's concurrency (D-051), local clang-tidy opt-in. Document
 remaining graphics configuration dependencies honestly. A successful automated local
 loop establishes gameplay integration; it does not establish multiplayer, recovery,
 graphical presentation or public hosting readiness.
