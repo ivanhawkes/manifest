@@ -131,11 +131,10 @@ is not on `origin/feature-base`, and one without a completed, successful CI run 
 `feature-base` push. A cancelled run is re-run from Actions; a PR, manual or ancestor run does
 not count. The push is a plain fast-forward, so git also rejects a race with another update.
 
-The repository has no branch protection or rulesets (inspected 2026-11-18), so the script is the
-procedure, not an enforcement. Required status checks would not enforce it either: a pull
-request's merge-candidate result is reported on its head SHA. The only repository
-administration worth adding is a `main` ruleset that blocks force pushes and deletion. It is
-not applied.
+The script is the procedure, not an enforcement. Required status checks would not enforce it
+either: a pull request's merge-candidate result is reported on its head SHA. The repository's one
+rule is the ruleset "main: fast-forward only" (27518688, active, applied 2026-11-18, no bypass
+actors), which blocks force pushes to `main` and its deletion. `feature-base` has none.
 
 ### T10 selected gate and promotion policy
 

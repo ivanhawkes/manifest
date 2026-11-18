@@ -18,8 +18,24 @@ M02 every push ran the full gate, so promoting `49a761b` ran it twice (runs 4380
 | `ca68066` (local, unpushed) | not on `origin/feature-base` | refused, exit 1 |
 | `874df0d` (probe: parent `49a761b^`) | does not descend from `origin/main` | refused as divergence, exit 1 |
 
-The local gate is M01's: `scripts/ci.sh` is unchanged. This commit's CI evidence is recorded
-after its push.
+The local gate is M01's: `scripts/ci.sh` is unchanged.
+
+CI, after `f99b444` was pushed to `feature-base` with `ca68066` and `5f0e1a2`:
+
+- While run 44230423612 was in progress, `--check` refused `f99b444` (`in_progress`) and
+  `ca68066`, which has no run of its own (`runs: none`).
+- Run 44230423612 is a `push` run on `feature-base` at `f99b444`. It took 15 minutes and
+  succeeded. Its `ci.log` (artifact `ci-log`, downloaded to `build/ci-44230423612/ci.log`) shows
+  `clang-debug`, `clang-release` and `clang-asan` each configured, built and passing 11 of 11
+  suites in that order, then a clean tidy, which prints only findings. This is also M01's CI
+  evidence: `ca68066` is in the tested tree.
+- `scripts/promote.sh` fast-forwarded `main` from `49a761b` to `f99b444`, run by the user. No
+  run started for `main`: its newest is still 43802711116, at `49a761b`.
+- A manual dispatch on `feature-base` started run 44232829065 (`workflow_dispatch`, `f99b444`),
+  which was then cancelled.
+
+Repository administration: the ruleset "main: fast-forward only" (27518688) blocks force pushes
+to `main` and its deletion, with no bypass actors. T10 is closed.
 
 Tested tree: `feature-base` at `5f0e1a2` plus this commit's `scripts/ci.sh` change, which
 moves the tidy stage after the Release and ASan/UBSan stages ([D-052](decision-ledger.md#d-052)).
