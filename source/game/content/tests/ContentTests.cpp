@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <initializer_list>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -113,13 +114,19 @@ ContentSet LoadWith(const Overlay &overlay, std::string_view mode = "full")
 }
 
 
-// The overlay's one file breaks a rule, and the content set is refused, saying which.
-void CheckRefused(std::string_view path, std::string_view text, std::string_view expected)
+// The overlay's files break a rule, and the content set is refused, saying which.
+void CheckRefused(
+    std::initializer_list<std::pair<std::string_view, std::string_view>> files,
+    std::string_view expected)
 {
-	CAPTURE(path);
-	CAPTURE(text);
+	CAPTURE(expected);
 	const Overlay overlay;
-	overlay.Write(std::string{path}, text);
+	for (const auto &[path, text] : files)
+	{
+		CAPTURE(path);
+		CAPTURE(text);
+		overlay.Write(std::string{path}, text);
+	}
 	try
 	{
 		(void)LoadWith(overlay);
@@ -127,8 +134,15 @@ void CheckRefused(std::string_view path, std::string_view text, std::string_view
 	}
 	catch (const ContentError &error)
 	{
+		INFO(std::string{error.what()});
 		MANIFEST_CHECK_CONTAINS(std::string{error.what()}, expected);
 	}
+}
+
+
+void CheckRefused(std::string_view path, std::string_view text, std::string_view expected)
+{
+	CheckRefused({{path, text}}, expected);
 }
 
 
@@ -288,13 +302,34 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	    patch(skills, "skill-smelting"),
 	    "version: 1\nrequires: [{nodeId: SkillMining, requiredTier: 9}]\n",
 	    "requires 'SkillMining' asks for tier 9, of 3");
+	// Two skills no mode selects are still one graph.
+	CheckRefused(
+	    {{"manifest/definitions/skills/skill-review-a.yaml",
+	      "version: 1\nskillId: SkillReviewA\nrequires: [{nodeId: SkillReviewB}]\n"},
+	     {"manifest/definitions/skills/skill-review-b.yaml",
+	      "version: 1\nskillId: SkillReviewB\nrequires: [{nodeId: SkillReviewA}]\n"}},
+	    "manifest/definitions/skills/skill-review-a.yaml: Manifest.Skill 'SkillReviewA': requires "
+	    "prerequisite cycle");
 	CheckRefused(
 	    mining, "version: 1\nrequires: [{nodeId: SkillMining}]\n",
-	    "manifest/definitions/game-modes/full.yaml: Manifest.GameMode 'full': skills ");
+	    "manifest/definitions/skills/skill-mining.yaml: Manifest.Skill 'SkillMining': requires skill "
+	    "'SkillMining' requires itself (from base, overlay (patch))");
+	// The whole graph holds, but the mode leaves a prerequisite out.
+	CheckRefused(
+	    patch("manifest/definitions/game-modes/", "simple"),
+	    "version: 1\nskills: [{skillId: AgeCopper}]\n",
+	    "manifest/definitions/game-modes/simple.yaml: Manifest.GameMode 'simple': skills ");
 
 	const std::string latin = patch("manifest/definitions/name-pools/", "latin");
 	CheckRefused(latin, "version: 1\nnames: []\n", "Manifest.NamePool 'latin': names holds none");
 	CheckRefused(latin, "version: 1\nnames: [Aaron, '']\n", "names holds an empty name");
+	// A file named ".yaml" is a record whose name is empty, and so is its ID if it gives none.
+	CheckRefused(
+	    "manifest/definitions/name-pools/.yaml", "version: 1\nnames: [Abba]\n",
+	    "Manifest.NamePool '': pool is required");
+	CheckRefused(
+	    "manifest/definitions/game-modes/.yaml", "version: 1\n",
+	    "Manifest.GameMode '': name is required");
 	CheckRefused(
 	    "manifest/definitions/name-pools/coptic.yaml", "version: 1\npool: Coptic\nnames: [Abba]\n",
 	    "Manifest.NamePool 'Coptic': pool must be the record's name");
@@ -315,6 +350,28 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	const Overlay none;
 	CHECK_THROWS_WITH_AS(
 	    (void)LoadWith(none, "hard"), "manifest/definitions/game-modes: there is no game mode 'hard'",
+	    ContentError);
+}
+
+
+TEST_CASE(
+    "A refusal names only the layers the registry read: the topmost whole file and patches above it")
+{
+	const Overlay patched;
+	patched.Write("manifest/definitions/ages/age-stone.patch.yaml", "version: 1\ndisplayName: Flint\n");
+	const Overlay replaced;
+	replaced.Write("manifest/definitions/ages/age-stone.yaml", "version: 1\nageId: AgeStone\n");
+	const Overlay repatched;
+	repatched.Write("manifest/definitions/ages/age-stone.patch.yaml", "version: 1\ndescription: Old\n");
+	const std::array<Jettison::Vfs::Mount, 4> sources{
+	    {{"base", kModDirectory},
+	     {"patched", patched.Root()},
+	     {"replaced", replaced.Root()},
+	     {"repatched", repatched.Root()}}};
+	CHECK_THROWS_WITH_AS(
+	    (void)LoadContent(sources, "full"),
+	    "manifest/definitions/ages/age-stone.yaml: Manifest.Age 'AgeStone': displayName is required "
+	    "(from replaced, repatched (patch))",
 	    ContentError);
 }
 

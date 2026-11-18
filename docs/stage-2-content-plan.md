@@ -251,11 +251,11 @@ pools and the content identity) that holds no reference to its files or registry
 over ordered mounts builds a candidate file system and registry of its own and discards both, so
 a failure anywhere, a late type included, leaves the caller's set as it was; the console keeps its
 session through a failed `load`, and the host fails start-up in the content phase. A rule's
-failure names the record's virtual path, its type and ID, the field and the mounts that gave the
-record, a patch marked (`ContentError`); a record that does not read is the registry's
+failure names the record's virtual path, its type and ID, the field and the layers the registry
+read for it, the topmost whole file's mount and each patch at or above it (`ContentError`); a record that does not read is the registry's
 `FormatError`, naming its file and mount. Rules are reused, not copied: the base price is
-`Simulation::IsValidBasePrice`, which generation also calls, a mode's tree is
-`ProgressionManager::Build`, and an effect is `EffectCatalogue::Default()`. Each type loads
+`Simulation::IsValidBasePrice`, which generation also calls, the whole skill graph and each
+mode's tree are `ProgressionManager::Build`, and an effect is `EffectCatalogue::Default()`. Each type loads
 through a migration chain (`DefinitionType::migrations`, no steps at version 1); the wiring is
 tested with a two-version test format. The configuration records are the reflected types
 themselves (`SimulationConfig.h`, the item's physical fields now typed), so content converts

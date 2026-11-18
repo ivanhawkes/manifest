@@ -1,6 +1,7 @@
 #include <manifest/content/Content.h>
 
 #include <cmath>
+#include <cstddef>
 #include <format>
 #include <functional>
 #include <set>
@@ -60,12 +61,14 @@ class Checker
 		if (holds)
 			return;
 		const std::string path = std::format("{}/{}", m_directory, m_name);
-		std::string layers;
-		for (const auto &[suffix, label] :
-		     {std::pair{".yaml", ""}, std::pair{".patch.yaml", " (patch)"}})
-			for (const Jettison::Vfs::Layer &layer : m_files.ReadLayers(path + suffix))
-				layers += std::format(
-				    "{}{}{}", layers.empty() ? "" : ", ", m_files.Mounts()[layer.mount].name, label);
+		// What the registry read: the topmost whole file, then the patches at or above its mount,
+		// in mount order. A layer under the whole file was replaced, and gave nothing.
+		const std::vector<Jettison::Vfs::Layer> wholes = m_files.ReadLayers(path + ".yaml");
+		const std::size_t top = wholes.empty() ? 0 : wholes.back().mount;
+		std::string layers = wholes.empty() ? "" : m_files.Mounts()[top].name;
+		for (const Jettison::Vfs::Layer &patch : m_files.ReadLayers(path + ".patch.yaml"))
+			if (patch.mount >= top)
+				layers += std::format(", {} (patch)", m_files.Mounts()[patch.mount].name);
 		throw ContentError{std::format(
 		    "{}.yaml: {} '{}': {} {} (from {})", path, m_type, m_id, field, problem, layers)};
 	}
@@ -192,6 +195,54 @@ void CheckSkills(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 			        pRequired->maxTiers));
 		}
 	}
+
+	// The whole graph, as well as each mode's: a cycle among skills no mode selects is still one.
+	std::vector<Core::SkillNode> all;
+	for (const Core::SkillNode *pSkill : All<Core::SkillNode>(registry))
+		all.push_back(*pSkill);
+	Core::ProgressionManager progression;
+	std::string problem;
+	if (progression.Build(all, problem))
+		return;
+
+	// Reported against the skill whose own prerequisites fail with the fewest skills behind it, the
+	// first in name order of those: a skill in the cycle, not one that only depends on it.
+	std::string blamed;
+	std::size_t smallest = 0;
+	std::string reason;
+	for (const std::string &name : registry.Names<Core::SkillNode>())
+	{
+		std::vector<Core::SkillNode> closure;
+		std::set<std::string, std::less<>> reached;
+		std::vector<const Core::SkillNode *> pending{registry.Find<Core::SkillNode>(name)};
+		while (!pending.empty())
+		{
+			const Core::SkillNode *pNode = pending.back();
+			pending.pop_back();
+			if (!reached.insert(pNode->skillId).second)
+				continue;
+			closure.push_back(*pNode);
+			for (const Core::Prerequisite &prerequisite : pNode->requiredSkills)
+				pending.push_back(registry.Find<Core::SkillNode>(RegistryName(prerequisite.nodeId)));
+		}
+		std::string own;
+		if ((blamed.empty() || closure.size() < smallest) &&
+		    !Core::ProgressionManager{}.Build(closure, own))
+		{
+			blamed = name;
+			smallest = closure.size();
+			reason = std::move(own);
+		}
+	}
+	if (!blamed.empty())
+	{
+		if (reason.ends_with('.'))
+			reason.pop_back();
+		At<Core::SkillNode>(checker, blamed, registry.Find<Core::SkillNode>(blamed)->skillId);
+		checker.Require(false, "requires", reason);
+	}
+	throw ContentError{
+	    std::format("{}: {}", TypeOf(entt::resolve<Core::SkillNode>()).directory, problem)};
 }
 
 
@@ -205,6 +256,7 @@ void CheckNamePools(Checker &checker, const Jettison::Sim::DefinitionRegistry &r
 	{
 		const NamePoolDefinition &pool = *registry.Find<NamePoolDefinition>(name);
 		At<NamePoolDefinition>(checker, name, pool.pool);
+		checker.Require(!pool.pool.empty(), "pool", "is required");
 		checker.Require(pool.pool == name, "pool", "must be the record's name");
 		checker.Require(!pool.names.empty(), "names", "holds none");
 		for (const std::string &entry : pool.names)
@@ -256,6 +308,7 @@ void CheckGameModes(Checker &checker, const Jettison::Sim::DefinitionRegistry &r
 	{
 		const GameModeDefinition &mode = *registry.Find<GameModeDefinition>(name);
 		At<GameModeDefinition>(checker, name, name);
+		checker.Require(!name.empty(), "name", "is required: the record's file has none");
 		CheckSelections(
 		    checker, registry, mode.ages, &AgeSelection::ageId, &Core::AgeNode::ageId, "ages");
 		CheckSelections(

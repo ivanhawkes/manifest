@@ -13,12 +13,18 @@ at pin `e53681e`. Host overlays wait for C06's option contract.
 
 Evidence, on Lythir, 24 build and test jobs, 16 tidy: `./scripts/ci.sh --werror --asan --tidy`
 passed 21 of 21 in each of `clang-debug`, `clang-release` and `clang-asan`, and tidy clean (the
-first run's two `modernize-use-auto` findings fixed). `content` has 13 cases, 1095 assertions:
+first run's two `modernize-use-auto` findings fixed). `content` has 14 cases, 1100 assertions:
 every semantic rejection, registry refusals (a future version, an unknown field, an orphan patch),
 whole-file replacement, patch merge and `!append`, and a two-version test format's migrations.
 `host`, `console` and `data` load through the content set; `console` shows a late type's failure
 keeping the session and directory and pack loading the same content. The `sim` replay hashes did
 not move: none is pinned over the shipped categories, whose order is now the registry's.
+
+Codex cross-review, two rounds (`build/reviews/c03/`): round 1 found an unselected skill cycle
+passing, an empty pool ID through a `.yaml` record, and diagnostics naming discarded layers; all
+three were fixed and round 2 confirmed them. Round 2 found whole-graph skill failures reported
+without record, field and layer; they are now reported against the cycle's skill with the
+smallest prerequisite closure. That fix had no third round; the gate passed on it.
 
 ## C02: definitions through the engine registry — 2026-11-18
 
