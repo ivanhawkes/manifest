@@ -116,7 +116,7 @@ struct Stored
 Stored FindStored(const std::vector<char> &pack, std::string_view path)
 {
 	const auto count = ReadAt<std::uint32_t>(pack, 12);
-	std::size_t at = ReadAt<std::uint64_t>(pack, 16);
+	auto at = static_cast<std::size_t>(ReadAt<std::uint64_t>(pack, 16));
 	for (std::uint32_t file = 0; file < count; ++file)
 	{
 		const auto length = ReadAt<std::uint32_t>(pack, at);

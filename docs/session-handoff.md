@@ -1,5 +1,40 @@
 # Session handoff
 
+## H07: Stage 1 closed, SDK pin `e53681e` — 2026-11-18
+
+The pin moves from `fafa758` to Jettison `feature-base` `e53681ef16878b8eea70af9f59f87d774adb50f3`,
+which answers the engine cross-review of H02–H05, A01 and W01 and adds G01, the generic shell. The
+headers Manifest includes (`core`, `devtools` Console, `host` Package and Session, `math` Random,
+`sim` SimWorld, `vfs` FileSystem) are unchanged between the two, so no Manifest code changed for
+the move. The three environment files are byte-identical at both commits: `check-env-parity.sh`
+passes against the new pin.
+
+Evidence, on Lythir in the development shell, with D-051's host concurrency (24 build and test
+jobs, 16 tidy):
+
+- **Pinned fetch, no sibling:** a clean clone of `9256409` with the new pin (`build/h07-clean`),
+  `JETTISON_SOURCE_DIR` unset and empty in each cache, `_deps/jettison-src` at `e53681e` in all
+  three presets, fetched from GitHub (LFS included). `./scripts/ci.sh --werror --asan --tidy`:
+  `clang-debug`, `clang-release` and `clang-asan` each passed 20 of 20, the `sim` suite's pinned
+  replay hashes and `sdk_import` (complete and partial SDK) included. Tidy then found one
+  `modernize-use-auto` in `HostTests.cpp`, from H06, whose gate ran without `--tidy`; fixed with
+  a `static_cast`, after which the Debug build, the `host` suite and tidy were clean. Release and
+  ASan were not rebuilt for that line, the same type on this platform.
+- **Local override:** `build/trial-head`, `JETTISON_SOURCE_DIR` at the sibling (clean, `e53681e`),
+  passed 20 of 20.
+- **Packaging with tests and TUI off:** a fresh tree (`build/h07-notests`) with
+  `MANIFEST_BUILD_TESTS=OFF` and `MANIFEST_BUILD_TUI=OFF` built `manifest_pack` and `manifest`,
+  no FTXUI in its build graph; `manifest --content <abs>/manifest.pack --check-startup`, run from
+  an unrelated directory with `DISPLAY` and `WAYLAND_DISPLAY` unset, reported ready and exit 0.
+- **Engine side:** Jettison's independent consumer (`source/test/consumer`) fetched with
+  `JETTISON_GIT_TAG=e53681e` passed; the lifecycle, ownership, game-selection, `clang-cpu` and
+  sample checks are the engine gate's at that commit, which left it green. H06's content and CLI
+  cases are in the 20 suites above.
+
+The [Stage 1 acceptance matrix](stage-1-host-plan.md#acceptance-and-validation-handoff) is met.
+Limits that remain: CI on the pushed commit is not yet inspected, and a run with no controlling
+terminal is not exercised (as H06). Next: C01.
+
 ## M05: the editor examples — 2026-11-18
 
 T7 as [planned](build-and-gates.md#t7-selected-editor-example-plan), with the setup in

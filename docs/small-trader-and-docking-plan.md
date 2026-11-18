@@ -150,7 +150,7 @@ one: it is a large resupply platform, shaped like an oil rig hung in space, with
 technicians living aboard (it supports 500 people long term), storage hangars, and shuttle pads
 with shuttles on hand. Its layout has the two large pads and a range of smaller pads, skiff to
 destroyer, and every pad offers dry dock (a feature by name on the pad, `Dock::PadLayout::features`,
-in Jettison after pin `fafa758` and not yet pinned). Smaller craft may use it. The engine's layout, pads, bays and parked
+in Jettison and in pin `e53681e`). Smaller craft may use it. The engine's layout, pads, bays and parked
 ships express it with no engine edit; the people, what the hangars hold, what resupply and repair
 do and cost, and which systems have a platform are Manifest's, and not yet designed.
 

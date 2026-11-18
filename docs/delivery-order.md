@@ -33,15 +33,12 @@ tasks.
 
 ## Status, 2026-11-18
 
-Done: M01–M04, H01 and H06 in Manifest ([session handoff](session-handoff.md)); H02–H05, and the
-Jettison rows A01 and W01 ahead of their place in this order, in Jettison
-([history](../../jettison/docs/history.md#neutral-sdk-and-manifest-integration)). All of these are
-in the SDK pin `fafa758`, and H06 was built against the pin itself, with no local override. So:
+Done: M01–M04, H01, H06 and H07 in Manifest ([session handoff](session-handoff.md)); H02–H05, and
+the Jettison rows A01 and W01 ahead of their place in this order, in Jettison
+([history](../../jettison/docs/history.md#neutral-sdk-and-manifest-integration)). **Stage 1 is
+closed** (H07): the SDK pin is `e53681e`, which answers the engine cross-review of H02–H05, A01 and
+W01, and the acceptance matrix passed against its fetch with no sibling checkout. Next: C01.
 
-- H07's pin and environment update happened in M04. What H07 still has to do is the acceptance
-  matrix, the fetched-consumption check, and moving the pin to the commit that answers the engine
-  cross-review of H02–H05, A01 and W01 (run 2026-11-18, two rounds), which added
-  `App::Game::StarterShip` to the host API.
 - Jettison's G01, a generic rendered shell with the space gameplay moved to its sample, is done
   (2026-11-18, [history](../../jettison/docs/history.md#neutral-sdk-and-manifest-integration)),
   with a game of no space run in its smoke test. It did not gate Stage 1; L15's graphical client
@@ -80,7 +77,7 @@ Canonical scope and evidence: [Stage 1](stage-1-host-plan.md).
 | 09 / H04 | Jettison: prove the independent non-space CPU consumer, definitions, deterministic stepping, save/load and teardown. | H02, H03 |
 | 10 / H05 | Jettison: extract explicit sample composition/content, adapt Jetsam and Flotsam, preserve registration/save behavior and exercise an actual trader route. | H04 |
 | 11 / H06 | Manifest: add the host adapter and finite startup-check executable; test explicit directory/pack content, contextual rejection, unrelated working directory and TUI-independent teardown. | H05 |
-| 12 / H07 | Close Stage 1: commit/publish the validated engine, land the compatible Manifest adapter/import requirements with its pin/environment update, verify fetched consumption and the complete acceptance matrix. | H06 |
+| 12 / H07 | Close Stage 1: commit/publish the validated engine, land the compatible Manifest adapter/import requirements with its pin/environment update, verify fetched consumption and the complete acceptance matrix. **Done 2026-11-18, pin `e53681e`.** | H06 |
 
 Do not require the future host target in H01 before its SDK exists. H06 may use the
 explicit local override; H07 must prove the committed fetch. Add the Stage 1 dependency

@@ -204,7 +204,7 @@ original delivery sequence.
 
 Establish how Manifest starts and owns a game through Jettison.
 
-**In progress** ([status](delivery-order.md#status-2026-11-18)). Use the
+**Done** 2026-11-18, H07 ([status](delivery-order.md#status-2026-11-18)). Use the
 [detailed handoff](stage-1-host-plan.md) for the lifecycle contract, delivery slices
 and acceptance matrix. Complete its maintenance prerequisites before implementation.
 

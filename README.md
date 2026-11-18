@@ -5,7 +5,7 @@ Worlds produce and consume goods, scarcity changes prices, and progression chang
 markets and civilisations that trade them.
 
 Manifest follows Jettison's `feature-base` SDK, pinned to commit
-`fafa758f77bb87b9c79bc4d9246d2b70fd2deea5` (engine 0.1.0). `main` is not the SDK reference.
+`e53681ef16878b8eea70af9f59f87d774adb50f3` (engine 0.1.0). `main` is not the SDK reference.
 `devenv.nix`, `devenv.yaml` and `devenv.lock` match that commit byte for byte, and CI checks it
 with `scripts/check-env-parity.sh`. Shared libraries such as EnTT, yaml-cpp and doctest come from
 the engine's targets, including their compile definitions.
