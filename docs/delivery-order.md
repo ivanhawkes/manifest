@@ -42,9 +42,10 @@ in the SDK pin `fafa758`, and H06 was built against the pin itself, with no loca
   matrix, the fetched-consumption check, and moving the pin to the commit that answers the engine
   cross-review of H02–H05, A01 and W01 (run 2026-11-18, two rounds), which added
   `App::Game::StarterShip` to the host API.
-- Jettison's G01, a generic rendered shell with the space gameplay moved to its sample, is the
-  engine's next work ([roadmap](../../jettison/docs/roadmap.md#current-priority-neutral-sdk-and-manifest-integration)).
-  It does not gate Stage 1; L15's graphical client stands on it.
+- Jettison's G01, a generic rendered shell with the space gameplay moved to its sample, is done
+  (2026-11-18, [history](../../jettison/docs/history.md#neutral-sdk-and-manifest-integration)),
+  with a game of no space run in its smoke test. It did not gate Stage 1; L15's graphical client
+  stands on it.
 
 A01 and W01 were built against these plans before C01 settled the planet, region and company
 identities. Before A02 binds hosted state, C01 confirms that a Jettison frame
