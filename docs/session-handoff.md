@@ -1,5 +1,31 @@
 # Session handoff
 
+## H01: the SDK import contract — 2026-11-18
+
+Inventory, from Manifest's CMake: `Jettison::Core`, `Math`, `Vfs` and (with the TUI) `Devtools`;
+`jettison_warnings`; the `jettison_pack` tool and the `jettison_add_pack()` helper; the shared
+`EnTT::EnTT` and `yaml-cpp::yaml-cpp`, and with tests `doctest::doctest` and
+`doctest::doctest_with_main`. `source/external/CMakeLists.txt` previously checked only
+`Jettison::Math`, and that only to decide whether to fetch. It now checks the whole list after any
+source (pin, `JETTISON_SOURCE_DIR` or a parent) and fails naming each missing one. The future host
+target is not required yet: Manifest does not consume it before H06.
+
+Consumer-local packaging: `jettison_add_pack` writes `manifest.pack` into Manifest's own build
+tree, and the `mod` suite mounts both it and the staged directory, unchanged. The moving-reference
+fallback is already gone in Jettison: at `fafa758`, `source/test/consumer` requires
+`JETTISON_SOURCE_DIR` or `JETTISON_GIT_TAG` and fails configuration without either.
+
+`sdk_import` (CTest, about 7 s) configures `source/test/sdk-import` with fetching disabled. With
+stand-ins for the whole SDK, Manifest configures. With only `Jettison::Math`, configuration fails,
+and the test matches the exact list of ten missing names. With the helper check disabled
+temporarily, the test failed.
+
+Gate: the working tree on `ea3edad` plus this change. The pinned fetch was used, with
+`_deps/jettison-src` at `fafa758` in every preset. The run used M04's command, logging to
+`build/gate-h01.log`. `clang-debug`, `clang-release` and `clang-asan` each passed 12 of 12, then
+tidy was clean. The local override `build/trial-head` (`JETTISON_SOURCE_DIR` at the sibling,
+`fafa758`) rebuilt and passed 12 of 12.
+
 ## M04: SDK pin `fafa758` and the environment parity check — 2026-11-18
 
 SDK review: Jettison `f850920..fafa758` has 78 commits. The headers Manifest includes (`core`

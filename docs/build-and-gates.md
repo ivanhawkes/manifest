@@ -19,7 +19,12 @@ CI runs the full gate. `CMAKE_BUILD_PARALLEL_LEVEL`, `CTEST_PARALLEL_LEVEL` and
 `MANIFEST_TIDY_JOBS` control concurrency. Clang-format must be version 21.
 
 The CTest suites are `types`, `config`, `universe`, `progression`, `sim`, `ecs`, `market`,
-`effects`, `data` and `mod`, plus `console` when the TUI is enabled.
+`effects`, `data`, `mod` and `sdk_import`, plus `console` when the TUI is enabled.
+
+The SDK import boundary is `source/external/CMakeLists.txt`. Whether it fetched the pin, took
+`JETTISON_SOURCE_DIR` or found a parent's SDK, configuration fails unless every target and helper
+Manifest uses exists, naming each one missing. `sdk_import` configures Manifest under a parent with
+stand-in targets, complete and partial (`source/test/sdk-import`), without fetching or building.
 Module libraries publish their own header sets and dependencies;
 integration tests link the aggregate `Manifest::Game`. Existing assertions run under the engine's
 doctest version. The simulation suite pins generated and replayed state hashes. The mod suite

@@ -23,4 +23,10 @@ target_compile_definitions(manifest_mod_tests PRIVATE
     MANIFEST_MOD_PACK="${PROJECT_BINARY_DIR}/manifest.pack")
 add_dependencies(manifest_mod_tests manifest_pack)
 add_test(NAME mod COMMAND manifest_mod_tests)
+
+# The SDK import boundary under a parent that provides the SDK (H01): configures only, no build.
+add_test(NAME sdk_import COMMAND "${CMAKE_COMMAND}"
+    "-DMANIFEST_ROOT=${PROJECT_SOURCE_DIR}" "-DWORK=${CMAKE_CURRENT_BINARY_DIR}/sdk-import"
+    "-DGENERATOR=${CMAKE_GENERATOR}" "-DCXX=${CMAKE_CXX_COMPILER}"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/sdk-import/check.cmake")
 set_target_properties(manifest_effects_tests manifest_data_tests manifest_mod_tests PROPERTIES FOLDER "Test")

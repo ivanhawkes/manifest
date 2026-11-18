@@ -20,6 +20,32 @@ if(NOT TARGET Jettison::Math)
     endblock()
 endif()
 
+# Everything Manifest takes from the SDK, however it arrived: a parent's partial SDK fails here,
+# naming what is missing, instead of at whichever target first links it.
+set(manifest_sdk_required Jettison::Core Jettison::Math Jettison::Vfs jettison_warnings
+    jettison_pack EnTT::EnTT yaml-cpp::yaml-cpp)
+if(MANIFEST_BUILD_TESTS AND BUILD_TESTING)
+    list(APPEND manifest_sdk_required doctest::doctest doctest::doctest_with_main)
+endif()
+if(MANIFEST_BUILD_TUI)
+    list(APPEND manifest_sdk_required Jettison::Devtools)
+endif()
+set(manifest_sdk_missing "")
+foreach(target IN LISTS manifest_sdk_required)
+    if(NOT TARGET ${target})
+        list(APPEND manifest_sdk_missing ${target})
+    endif()
+endforeach()
+if(NOT COMMAND jettison_add_pack)
+    list(APPEND manifest_sdk_missing "jettison_add_pack()")
+endif()
+if(manifest_sdk_missing)
+    list(JOIN manifest_sdk_missing ", " manifest_sdk_missing)
+    message(FATAL_ERROR "The Jettison SDK is incomplete; missing: ${manifest_sdk_missing}. "
+        "Provide the whole SDK (add_subdirectory of a Jettison checkout), or none, so Manifest "
+        "fetches its pin.")
+endif()
+
 # FTXUI is only a development frontend; it adds no ABI to the shipped mod or core.
 # The engine has no terminal UI dependency. Keep Manifest's existing pin.
 if(MANIFEST_BUILD_TUI)
