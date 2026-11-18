@@ -39,9 +39,12 @@ Jettison rows A01 and W01 ahead of their place in this order, in Jettison
 in the SDK pin `fafa758`, and H06 was built against the pin itself, with no local override. So:
 
 - H07's pin and environment update happened in M04. What H07 still has to do is the acceptance
-  matrix, the fetched-consumption check, and settling the engine cross-review of H02–H05, A01
-  and W01, which cannot start before 2026-11-21. If that review changes the host API, the pin
-  moves again inside H07.
+  matrix, the fetched-consumption check, and moving the pin to the commit that answers the engine
+  cross-review of H02–H05, A01 and W01 (run 2026-11-18, two rounds), which added
+  `App::Game::StarterShip` to the host API.
+- Jettison's G01, a generic rendered shell with the space gameplay moved to its sample, is the
+  engine's next work ([roadmap](../../jettison/docs/roadmap.md#current-priority-neutral-sdk-and-manifest-integration)).
+  It does not gate Stage 1; L15's graphical client stands on it.
 
 A01 and W01 were built against these plans before C01 settled the planet, region and company
 identities. Before A02 binds hosted state, C01 confirms that a Jettison frame
