@@ -83,9 +83,10 @@ historical CI diagnosis and the remaining handoffs.
   `feature-base` run passed. Tidy runs last since M01, so its failure no longer hides Release
   and ASan/UBSan results. Name the stages that actually ran; do not describe a tidy-only
   failure as a build regression.
-- **Next implementer work:** the remaining T5 and T7 handoffs, then Stage 1, following
-  the analysis priorities. SDK/environment parity remains unresolved under T5; the local
-  gate does not settle it. Avoid repeated gates without a new change or unresolved failure.
+- **Next implementer work:** the T7 handoff, then Stage 1, following the analysis priorities.
+  The shell matches the SDK pin (T5, M04); `scripts/check-env-parity.sh` checks it in CI, and a
+  pin move copies the three files from that commit. Avoid repeated gates without a new change or
+  unresolved failure.
 - **Tool output in this project has emitted identifiers that do not exist.** The 2026-11-16 analysis
   saw two CI run records (43806887285, 43806869597, "created 2026-11-16T04:21Z") and a push rejection
   (`9ea337b..7c0a307`, "Docs: record the running-world economy decisions") that resolve to nothing on

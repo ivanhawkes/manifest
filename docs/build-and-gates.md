@@ -1,8 +1,8 @@
 # Build and gates
 
-Run inside `devenv shell` or the direnv-loaded shell. Environment parity with the selected SDK
-remains tracked under T5; see the current handoff. The SDK source pin is in
-`source/external/CMakeLists.txt`; to test a local engine,
+Run inside `devenv shell` or the direnv-loaded shell. The SDK source pin is
+`MANIFEST_JETTISON_REVISION` in `source/external/CMakeLists.txt`, and the shell's three files
+match it ([T5](#t5-selected-environment-parity-plan)). To test a local engine,
 configure with `-DJETTISON_SOURCE_DIR=/path/to/jettison` on `feature-base`.
 
 ```bash
@@ -67,10 +67,16 @@ test or tidy workers. CI has its own explicit limits in the workflow.
 
 [D-054](decision-ledger.md#d-054) resolves the approach to the open D-006 deviation.
 Desktop-only tools stay out of the shared shell: `lazygit` was removed from both repositories'
-`devenv.nix` on 2026-11-18 and is installed on the desktop instead. Manifest's three environment
-files match Jettison's current `feature-base` byte for byte, but not the pinned `f850920`, which
-predates the shell's desktop update. This plan is selected, not implemented; the mismatch with
-the pin remains until verified changes land.
+`devenv.nix` on 2026-11-18 and is installed on the desktop instead.
+
+Implemented in M04 (2026-11-18): the pin is `fafa758`, and the three files match it byte for
+byte. `scripts/check-env-parity.sh [repository]` reads the pin, fetches only that commit (from the
+pin's `GIT_REPOSITORY`, or a given clone, whose committed objects alone are used) and diffs each
+file against it; it never reads `JETTISON_SOURCE_DIR`. `scripts/test-env-parity.sh` runs it on
+copies against a throwaway repository: a match, each file differing or missing, a file absent at
+the pin, no pin, two pins, an abbreviated pin, an unknown pin, an engine's uncommitted edit and a
+`JETTISON_SOURCE_DIR` at matching files. CI runs both straight after checkout, before Nix and
+compilation. The handoff records the evidence. The plan as selected follows.
 
 Review every intervening Jettison commit before selecting the new SDK revision; a newer sibling
 checkout alone is not a reason to move the pin. Then update Manifest's immutable pin and copy all

@@ -5,13 +5,10 @@ Worlds produce and consume goods, scarcity changes prices, and progression chang
 markets and civilisations that trade them.
 
 Manifest follows Jettison's `feature-base` SDK, pinned to commit
-`f85092027eda49c29001f7589608df1f0b8827fb` (engine 0.1.0). `main` is not the SDK reference.
-`devenv.yaml` and `devenv.lock` match that checkout exactly. `devenv.nix` matches Jettison's current
-`feature-base` but not the pin, which predates the shell's desktop update: an open deviation from
-the identity rule in `AGENTS.md`. The accepted
-[T5 plan](docs/build-and-gates.md#t5-selected-environment-parity-plan) reconciles it. Shared
-libraries such as EnTT, yaml-cpp and doctest come from the engine's targets, including their
-compile definitions.
+`fafa758f77bb87b9c79bc4d9246d2b70fd2deea5` (engine 0.1.0). `main` is not the SDK reference.
+`devenv.nix`, `devenv.yaml` and `devenv.lock` match that commit byte for byte, and CI checks it
+with `scripts/check-env-parity.sh`. Shared libraries such as EnTT, yaml-cpp and doctest come from
+the engine's targets, including their compile definitions.
 
 ## Build
 
