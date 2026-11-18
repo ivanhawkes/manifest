@@ -123,6 +123,40 @@ especially cheap to operate have not been selected. The 20-IBC starter's berth r
 must be resolved from its own hull dimensions; cargo capacity alone does not establish
 that it fits the compact ship's dock.
 
+## Ship size classes and the resupply platform
+
+Settled by the user on 2026-11-18, in Jettison's pre-review (finding F10). Manifest's pad classes
+are named after historical ship classifications, largest to smallest: heavy destroyer,
+dreadnought, cruiser, destroyer, frigate, corvette, skiff. "Heavy destroyer" is a name made up for
+the game, and the spelling is British ("dreadnought"). The names label sizes, not historical
+dimensions. Each is a `Dock::PadClassDefinition` by its kebab-case name (`heavy-destroyer`).
+
+| Class | Rank | Largest hull, L x B x H (m) | Pad, W x L (m) | Docks at |
+| --- | --- | --- | --- | --- |
+| skiff | 0 | set by the compact ship above | 8 x 10 | a standard station |
+| corvette | 1 | 25 x 20 x 8 | 35 x 40 | a standard station |
+| frigate | 2 | 60 x 30 x 15 | 50 x 90 | a standard station |
+| destroyer | 3 | 140 x 50 x 30 | 80 x 180 | a standard station, the largest it takes |
+| cruiser | 4 | 300 x 80 x 60 | 120 x 360 | a dry dock, the smaller size |
+| dreadnought | 5 | 450 x 120 x 90 (proposed) | 180 x 540 (proposed) | the heavy destroyer's dry dock |
+| heavy-destroyer | 6 | 600 x 160 x 120 (proposed) | 240 x 720 (proposed) | a dry dock, the largest size |
+
+Corvette to cruiser are the Jettison sample's four classes at its sizes. The two largest rows are
+proposals, not selected values. A dreadnought docks because its class ranks below the heavy
+destroyer's and its largest hull fits that pad (Jettison's `Docks::Fits` checks both).
+
+Dry docks come in two sizes, the cruiser's and the heavy destroyer's. A dry dock is not a naval
+one: it is a large resupply platform, shaped like an oil rig hung in space, with crew and
+technicians living aboard (it supports 500 people long term), storage hangars, and shuttle pads
+with shuttles on hand. Its layout has the two large pads and a range of smaller pads, skiff to
+destroyer, and every pad offers dry dock (a feature by name on the pad, `Dock::PadLayout::features`,
+in Jettison after pin `fafa758` and not yet pinned). Smaller craft may use it. The engine's layout, pads, bays and parked
+ships express it with no engine edit; the people, what the hangars hold, what resupply and repair
+do and cost, and which systems have a platform are Manifest's, and not yet designed.
+
+Not yet authored: these definitions wait for the hosted content pipeline (C02 to C04) and the
+compact berth (W05).
+
 ## Capability map and demonstrated gap
 
 | Required mechanic | Existing public evidence | Owner and required work |

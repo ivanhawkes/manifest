@@ -73,6 +73,7 @@ changes, add the new row, mark the old one `superseded` and link both ways.
 | D-048 | Basic docking, trading and regional delivery access stay available despite corporate restrictions, retaining charges, finite capacity, goods and funds and private-port policies | [Regional plan: selected scope](regional-economy-and-governance-plan.md#selected-scope) | selected | Manifest, later |
 | D-049 | LPG joins Fuels as a distinct kilogram-traded commodity with storage, production and consumption uses still open, and no ship-fuel role selected | [Stage 2 content plan](stage-2-content-plan.md) | selected | Manifest, stage 2 content |
 | <a id="d-050"></a>D-050 | Modular oxygen banks refine D-045: independently refillable/replaceable tanks preserve continuous supply from remaining usable tanks, with proportionally greater storage on larger hulls | [Small-ship plan: modular oxygen storage](small-trader-and-docking-plan.md#modular-oxygen-storage) | selected; deferred, not implemented | Manifest, later; re-entry after stages 1–4 acceptance |
+| <a id="d-058"></a>D-058 | Pad classes are seven historical ship sizes, heavy destroyer to skiff; the classes above destroyer dock only at dry docks, which are resupply platforms in two sizes, every pad of which offers dry dock | [Small-ship plan: ship size classes](small-trader-and-docking-plan.md#ship-size-classes-and-the-resupply-platform) | selected; the two largest sizes proposed; not authored | Manifest, stages 2–4 |
 
 ## Workflow and verification decisions
 
