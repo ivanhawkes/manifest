@@ -1,6 +1,25 @@
 # Session handoff
 
-## M01: tidy after the build/test presets — 2026-11-18
+## M02: feature-base triggers and exact-SHA promotion — 2026-11-18
+
+Repository rules, inspected with `gh api` before the change: `main` and `feature-base` have no
+branch protection, the repository has no rulesets, and workflow tokens default to read. Before
+M02 every push ran the full gate, so promoting `49a761b` ran it twice (runs 43802514814 and
+43802711116). The workflow now runs on `feature-base` pushes, pull requests targeting
+`feature-base` and manual dispatch ([D-053](decision-ledger.md#d-053)).
+`scripts/promote.sh` does the promotion.
+
+`scripts/promote.sh --check`, run before this commit was pushed, with `origin/main` at `49a761b`:
+
+| Commit | Case | Result |
+| --- | --- | --- |
+| `f671dd7` (`origin/feature-base`) | own push run 44186843328, success | can fast-forward, exit 0 |
+| `3c11f01` | own push run 43853869237, cancelled | refused, exit 1 |
+| `ca68066` (local, unpushed) | not on `origin/feature-base` | refused, exit 1 |
+| `874df0d` (probe: parent `49a761b^`) | does not descend from `origin/main` | refused as divergence, exit 1 |
+
+The local gate is M01's: `scripts/ci.sh` is unchanged. This commit's CI evidence is recorded
+after its push.
 
 Tested tree: `feature-base` at `5f0e1a2` plus this commit's `scripts/ci.sh` change, which
 moves the tidy stage after the Release and ASan/UBSan stages ([D-052](decision-ledger.md#d-052)).

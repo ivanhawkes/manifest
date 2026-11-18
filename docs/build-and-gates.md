@@ -117,18 +117,34 @@ the tested tree, full command, presets, suites, replay hashes and log path. Both
 identified in the [historical CI analysis](project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16)
 are fixed. This does not establish engine integration or gameplay acceptance.
 
-The CI [workflow](../.github/workflows/ci.yml) runs the full gate with `--tidy` on every push
-and uploads `build/ci.log`. Report CI from the exact commit's run and fetched logs, separately
-from local evidence. Tidy runs last, after every requested build/test preset, and still fails
-the gate (M01, 2026-11-18). T10 remains open for the promotion and trigger work (M02), which
-also addresses duplicate gates on identical branches. Preserve named-stage
-reporting, and prefer a combined local gate over repeated pushes.
+The CI [workflow](../.github/workflows/ci.yml) runs the full gate with `--tidy` on each push to
+`feature-base`, on each pull request targeting it and on a manual dispatch, and uploads
+`build/ci.log`. A push to `main` or to another branch runs nothing (M02, 2026-11-18). Report CI
+from the exact commit's run and fetched logs, separately from local evidence. Tidy runs last,
+after every requested build/test preset, and still fails the gate (M01, 2026-11-18). Preserve
+named-stage reporting, and prefer a combined local gate over repeated pushes.
+
+### Promoting to main
+
+`scripts/promote.sh [--check] [commit]` fast-forwards `main` to a commit, by default
+`origin/feature-base`, and `--check` stops before the push. It refuses a commit that does not
+descend from `origin/main` (divergence: integrate on `feature-base` and verify there), one that
+is not on `origin/feature-base`, and one without a completed, successful CI run of its own from a
+`feature-base` push. A cancelled run is re-run from Actions; a PR, manual or ancestor run does
+not count. The push is a plain fast-forward, so git also rejects a race with another update.
+
+The repository has no branch protection or rulesets (inspected 2026-11-18), so the script is the
+procedure, not an enforcement. Required status checks would not enforce it either: a pull
+request's merge-candidate result is reported on its head SHA. The only repository
+administration worth adding is a `main` ruleset that blocks force pushes and deletion. It is
+not applied.
 
 ### T10 selected gate and promotion policy
 
 [D-052](decision-ledger.md#d-052) and [D-053](decision-ledger.md#d-053) select the following
 implementation contract. The gate order (D-052) is implemented in `scripts/ci.sh` (M01,
-2026-11-18); the promotion workflow and triggers (D-053) are not yet (M02).
+2026-11-18); the triggers and promotion (D-053) in the workflow and `scripts/promote.sh` (M02,
+2026-11-18), described [above](#promoting-to-main).
 
 Run formatting, Debug build/CTest, Release build/CTest, ASan/UBSan build/CTest, then
 clang-tidy in that order for the full gate. Keep `--warnings-as-errors=*` for tidy; do not

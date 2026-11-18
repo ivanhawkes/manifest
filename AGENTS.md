@@ -78,10 +78,12 @@ historical CI diagnosis and the remaining handoffs.
 - **Local gate results do not establish CI results.** Inspect the exact pushed commit's
   Actions run and logs before reporting its CI status. The pre-fix failure streak in the
   [analysis](docs/project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16) is historical.
-- **T10 remains open (M02).** Tidy runs last since M01, so its failure no longer hides
-  Release and ASan/UBSan results; exact-SHA promotion and CI triggers are still to do.
-  Name the stages that actually ran; do not describe a tidy-only failure as a build regression.
-- **Next implementer work:** the remaining T10, T5 and T7 handoffs, then Stage 1, following
+- **CI runs on `feature-base` pushes, PRs to it and manual dispatch, not on `main` (M02).**
+  Promote with `scripts/promote.sh`, which fast-forwards `main` only to a commit whose own
+  `feature-base` run passed. Tidy runs last since M01, so its failure no longer hides Release
+  and ASan/UBSan results. Name the stages that actually ran; do not describe a tidy-only
+  failure as a build regression.
+- **Next implementer work:** the remaining T5 and T7 handoffs, then Stage 1, following
   the analysis priorities. SDK/environment parity remains unresolved under T5; the local
   gate does not settle it. Avoid repeated gates without a new change or unresolved failure.
 - **Tool output in this project has emitted identifiers that do not exist.** The 2026-11-16 analysis

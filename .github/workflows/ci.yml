@@ -1,7 +1,10 @@
 name: ci
 on:
+  # Promoting a verified feature-base SHA to main needs no second gate (D-053, scripts/promote.sh).
   push:
+    branches: [feature-base]
   pull_request:
+    branches: [feature-base]
   workflow_dispatch:
 permissions:
   contents: read
