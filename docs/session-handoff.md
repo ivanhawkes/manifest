@@ -1,5 +1,36 @@
 # Session handoff
 
+## M04: SDK pin `fafa758` and the environment parity check — 2026-11-18
+
+SDK review: Jettison `f850920..fafa758` has 78 commits. The headers Manifest includes (`core`
+Assert, Hash, Log and Version; `devtools` Console; `math` Random; `vfs` FileSystem) changed only
+in comments and blank lines. The build gained `JETTISON_PRESENTATION` (default `ON`, so the
+configure is unchanged) and the `host`, `space` and `spacescene` modules, which Manifest does not
+link yet. `fafa758` changes only `devenv.nix` (lazygit out) and docs over `c1fe6e7`. A trial
+Debug build against `c1fe6e7` (`build/trial-head`) passed 11 of 11 with no Manifest change.
+
+The pin is `fafa758f77bb87b9c79bc4d9246d2b70fd2deea5`. The three environment files were already
+byte-identical to it (M03), so none changed. `scripts/check-env-parity.sh` passes against the
+pin's `GIT_REPOSITORY` (GitHub) and against the sibling clone. `scripts/test-env-parity.sh` passes
+all 14 cases: the match, each file differing (three cases), each file missing (three cases),
+`devenv.lock` absent at the pin, no pin, two pins, an abbreviated pin and an unknown pin all
+reject, while an uncommitted engine edit still passes against the committed blobs and a
+`JETTISON_SOURCE_DIR` at matching files does not stop a difference failing. CI runs both before
+Nix.
+
+Gate: a clean clone of `a47816a` (`build/m04-clean`), the pinned fetch, `JETTISON_SOURCE_DIR`
+unset and empty in each cache, and `_deps/jettison-src` at `fafa758` in all three presets. On
+Lythir, inside the development shell, with D-051's host concurrency:
+
+```sh
+env -u JETTISON_SOURCE_DIR CMAKE_BUILD_PARALLEL_LEVEL=24 CTEST_PARALLEL_LEVEL=24 \
+  MANIFEST_TIDY_JOBS=16 devenv shell -- ./scripts/ci.sh --werror --asan --tidy --log build/gate.log
+```
+
+`clang-debug`, `clang-release` and `clang-asan` each built and passed 11 of 11, the `sim`
+suite's pinned replay hashes included; tidy was then clean, and the gate exited 0. T5 is closed
+once CI has passed on the pushed commit.
+
 ## M02: feature-base triggers and exact-SHA promotion — 2026-11-18
 
 Repository rules, inspected with `gh api` before the change: `main` and `feature-base` have no
