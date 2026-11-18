@@ -47,7 +47,8 @@ A01 and W01 were built against these plans before C01 settled the planet, region
 identities. Before A02 binds hosted state, C01 confirms that a Jettison frame
 (`Sim::InFrame`, a partition the game chooses) and a save's details (`SaveInfo::details`, the
 game's own strings) still fit. A gap that turns up there is a new Jettison row, not a reopening
-of A01. M05 is still open, and runs alongside Stage 1.
+of A01. M05 is done (2026-11-18, [session handoff](session-handoff.md#m05-the-editor-examples--2026-11-18)) but for
+the launch from the editor itself, which the user confirms.
 
 ## Priority 0: maintenance before Stage 1
 

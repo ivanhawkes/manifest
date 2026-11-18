@@ -203,10 +203,8 @@ repaired by handoff T7.
 
 [D-055](decision-ledger.md#d-055) selects repair of the tracked
 `.vscode/launch.json.example` and `.vscode/tasks.json.example`, with setup instructions here.
-This is an implementer handoff; the examples have not changed. The current launch template
-names the removed `ManifestCoreTests` binary and supplies obsolete YAML arguments. The tracked
-task template already selects Ninja's `all` target; the historical analysis's `ALL_BUILD`
-description does not describe that tracked file. Ignored personal editor settings are separate.
+Delivered 2026-11-18 (M05): the setup is [below](#editor-setup), the evidence in the
+[session handoff](session-handoff.md#m05-the-editor-examples--2026-11-18).
 
 Provide two launch entries using these Debug executables, confirmed against CMake targets and
 the existing generated CTest commands:
@@ -235,6 +233,30 @@ breakpoint in each and continue the simulation suite to success and the TUI to n
 Record the debugger/extension used and observed results. Inspecting JSON or finding an old
 binary alone does not establish working editor integration. No SDK, gameplay or test-source
 change is needed for this repair; this check is separate from the full gate's evidence.
+
+#### Editor setup
+
+The tracked files are `.vscode/tasks.json.example` and `.vscode/launch.json.example`; the
+personal `.vscode/tasks.json` and `.vscode/launch.json` are ignored. In a checkout:
+
+```sh
+cp .vscode/tasks.json.example .vscode/tasks.json
+cp .vscode/launch.json.example .vscode/launch.json
+devenv shell -- code .
+```
+
+Start the editor from the development shell, so the tasks find `cmake`, `ctest` and clang on
+`PATH` and inherit D-051's concurrency overrides (`CMAKE_BUILD_PARALLEL_LEVEL`,
+`CTEST_PARALLEL_LEVEL`). The tasks are shell tasks on the `clang-debug` presets: `CMake:
+configure`, then `CMake: build` (the default build task, the `all` target), then `CTest: test`
+(the default test task). Both launches build first.
+
+The debugger is LLDB's own adapter: the **LLDB DAP** extension (`llvm-vs-code-extensions.lldb-dap`)
+running the development shell's `lldb-dap` (LLVM 21, matching the compiler). Set the extension's
+`lldb-dap.executable-path` to `<checkout>/.devenv/profile/bin/lldb-dap` if it does not find it on
+`PATH`. *Simulation unit tests* runs the suite in the debug console; *Development TUI* runs in the
+integrated terminal (`console: integratedTerminal`, lldb-dap 21 and later), which the
+full-screen interface needs.
 
 Proposed checks, not present (handoff T8): local Markdown link and heading-anchor integrity across
 `docs/`, `README.md` and `AGENTS.md` — an ad-hoc scan at the 2026-11-16 assessment covered 31

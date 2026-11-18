@@ -2,24 +2,29 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "type": "cmake",
             "label": "CMake: configure",
-            "command": "configure"
+            "type": "shell",
+            "command": "cmake",
+            "args": ["--preset", "clang-debug"],
+            "problemMatcher": []
         },
         {
-            "type": "cmake",
             "label": "CMake: build",
-            "command": "build",
-            "targets": [
-                "all"
-            ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "dependsOn": [
-                "CMake: configure"
-            ]
+            "type": "shell",
+            "command": "cmake",
+            "args": ["--build", "--preset", "clang-debug"],
+            "dependsOn": ["CMake: configure"],
+            "group": {"kind": "build", "isDefault": true},
+            "problemMatcher": ["$gcc"]
+        },
+        {
+            "label": "CTest: test",
+            "type": "shell",
+            "command": "ctest",
+            "args": ["--preset", "clang-debug"],
+            "dependsOn": ["CMake: build"],
+            "group": {"kind": "test", "isDefault": true},
+            "problemMatcher": []
         }
     ]
 }

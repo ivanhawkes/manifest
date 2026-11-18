@@ -1,5 +1,30 @@
 # Session handoff
 
+## M05: the editor examples — 2026-11-18
+
+T7 as [planned](build-and-gates.md#t7-selected-editor-example-plan), with the setup in
+[build and gates](build-and-gates.md#editor-setup). The examples' tasks are shell tasks on the
+`clang-debug` presets; the launches are the simulation suite and the TUI under `lldb-dap`, in
+place of Native Debug's `gdb` entry for the removed `ManifestCoreTests` and its YAML arguments.
+`lldb-dap` was chosen for its documented integrated-terminal launch, which the full-screen TUI
+needs. The personal `.vscode/launch.json` and `tasks.json`, tracked until now with the
+CivSim-era targets, are ignored and untracked; local copies stay on disk, but a pull into another
+checkout removes its copies there, so copy the examples again.
+
+Evidence, a clean clone of `f82451d` with the new examples copied to the personal files,
+`JETTISON_SOURCE_DIR` unset, on Lythir in the development shell:
+
+- The tasks' commands as written: `cmake --preset clang-debug` fetched the SDK at `fafa758`
+  (90 s); `cmake --build --preset clang-debug`, 353 steps (40 s); `ctest --preset clang-debug`,
+  20 of 20 suites passed.
+- Each launch entry's fields sent to the shell's `lldb-dap` (LLVM 21.1.8) by a minimal Debug
+  Adapter Protocol client: the simulation suite stopped at `SimulationTests.cpp:181` and
+  continued to exit code 0; the TUI, launched in a pseudo-terminal through the adapter's
+  `runInTerminal` request (as the editor's integrated terminal is), took `quit`, stopped at
+  `ManifestConsole.cpp:93` and continued to exit code 0.
+- Not done: the launch from the editor itself. The client stands in for the editor's side of the
+  protocol, so the extension's own handling is unchecked; the user confirms it once.
+
 ## H06: the host adapter and the start-up check — 2026-11-18
 
 Built against the pin `fafa758` itself (`_deps/jettison-src`), with no local override.
