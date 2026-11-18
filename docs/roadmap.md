@@ -31,8 +31,8 @@ handoff T4.
 
 The [CI failure analysis](project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16)
 retains the pre-fix tidy-only failure streak; it is not a current CI status report.
-T10 remains open because tidy still precedes Release and ASan/UBSan and can suppress
-their evidence on a future failure. Use the current
+Tidy now runs after Release and ASan/UBSan (M01); T10 remains open for exact-SHA promotion
+and CI triggers (M02). Use the current
 [verification policy](build-and-gates.md#verification-evidence), inspect the exact
 commit's CI run and logs, and report the stages that actually ran. Planning completion
 does not establish a passing gate or completed Stage 1 implementation.

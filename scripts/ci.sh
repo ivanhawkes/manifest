@@ -32,13 +32,14 @@ build_and_test() {
   ctest --preset "$preset"
 }
 build_and_test clang-debug
-# Only Manifest translation units, using the SDK's compile commands and tidy rules.
-if "$tidy"; then
-  python3 scripts/tidy.py build/clang-debug
-fi
 if "$release"; then
   build_and_test clang-release
 fi
 if "$asan"; then
   build_and_test clang-asan
+fi
+# Only Manifest translation units, using the SDK's compile commands and tidy rules. Last, so a
+# finding fails the gate without hiding the results of the build and test stages before it.
+if "$tidy"; then
+  python3 scripts/tidy.py build/clang-debug
 fi

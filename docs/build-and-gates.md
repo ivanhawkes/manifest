@@ -119,16 +119,16 @@ are fixed. This does not establish engine integration or gameplay acceptance.
 
 The CI [workflow](../.github/workflows/ci.yml) runs the full gate with `--tidy` on every push
 and uploads `build/ci.log`. Report CI from the exact commit's run and fetched logs, separately
-from local evidence. Tidy still runs between Debug and Release under `set -euo pipefail`,
-so a future tidy failure can suppress Release and ASan/UBSan evidence; T10 remains open.
-The same handoff also addresses duplicate gates on identical branches. Preserve named-stage
+from local evidence. Tidy runs last, after every requested build/test preset, and still fails
+the gate (M01, 2026-11-18). T10 remains open for the promotion and trigger work (M02), which
+also addresses duplicate gates on identical branches. Preserve named-stage
 reporting, and prefer a combined local gate over repeated pushes.
 
 ### T10 selected gate and promotion policy
 
 [D-052](decision-ledger.md#d-052) and [D-053](decision-ledger.md#d-053) select the following
-implementation contract. It is not implemented by this documentation change; the script and
-workflow described above remain the current behavior.
+implementation contract. The gate order (D-052) is implemented in `scripts/ci.sh` (M01,
+2026-11-18); the promotion workflow and triggers (D-053) are not yet (M02).
 
 Run formatting, Debug build/CTest, Release build/CTest, ASan/UBSan build/CTest, then
 clang-tidy in that order for the full gate. Keep `--warnings-as-errors=*` for tidy; do not

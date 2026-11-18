@@ -1,5 +1,31 @@
 # Session handoff
 
+## M01: tidy after the build/test presets — 2026-11-18
+
+Tested tree: `feature-base` at `5f0e1a2` plus this commit's `scripts/ci.sh` change, which
+moves the tidy stage after the Release and ASan/UBSan stages ([D-052](decision-ledger.md#d-052)).
+Tidy keeps `--warnings-as-errors=*` and stays fatal under `set -euo pipefail`. The CI workflow
+calls the same script, so it takes the same order. Ran on Lythir inside the development shell
+(Claude Code's sandbox), with the host's 24 threads under D-051:
+
+```sh
+env CMAKE_BUILD_PARALLEL_LEVEL=24 CTEST_PARALLEL_LEVEL=24 MANIFEST_TIDY_JOBS=24 \
+  ./scripts/ci.sh --werror --asan --tidy --log build/gate-m01.log
+```
+
+Controlled failure (`build/gate-m01-controlled-failure.log`): the same command, with a
+redundant `std::string` initialisation added to `Decimal::ToString`. Formatting passed, then
+`clang-debug`, `clang-release` and `clang-asan` each configured, built and passed all 11 suites.
+Tidy then reported `readability-redundant-string-init` at `Decimal.cpp:44` and the gate exited 1.
+The line was reverted. Passing gate (`build/gate-m01.log`): exit 0, formatting and tidy clean,
+11 of 11 suites in each preset. The `sim` replay case passed in every preset at its pinned
+values: generation `10355632731109243635`, 100 ticks `12410383246888723003`, raw prices
+`15444164946577136117`. The SDK was the pinned fetch, `f850920`, with `JETTISON_SOURCE_DIR`
+empty.
+
+This is local evidence. CI on the pushed commit is not yet checked. T10 remains open for M02:
+repository protections, exact-SHA promotion, triggers and their evidence.
+
 ## Dependency-ordered task queue and stub permission — 2026-11-16
 
 Manifest remains on `feature-base` at `728bb95`. The four uncommitted Stage 1
