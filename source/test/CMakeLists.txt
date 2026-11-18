@@ -16,6 +16,9 @@ add_test(NAME data COMMAND manifest_data_tests
     "${MANIFEST_DATA_OUTPUT_DIR}/simple.yaml"
     "${MANIFEST_DATA_SOURCE_DIR}/universe/solar-system-names.yaml")
 
+add_test(NAME packaging COMMAND "${BASH_PROGRAM}" "${CMAKE_CURRENT_SOURCE_DIR}/packaging-refusals.sh"
+    "${MANIFEST_DATA_SOURCE_DIR}")
+
 add_executable(manifest_mod_tests ModTests.cpp)
 target_link_libraries(manifest_mod_tests PRIVATE Jettison::Vfs yaml-cpp::yaml-cpp manifest_test_helpers doctest::doctest_with_main manifest_warnings)
 target_compile_definitions(manifest_mod_tests PRIVATE

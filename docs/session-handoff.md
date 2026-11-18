@@ -1,5 +1,20 @@
 # Session handoff
 
+## C02: definitions through the engine registry — 2026-11-18
+
+The six definition types load through `Jettison::Sim::DefinitionRegistry` from records that
+`data/build.sh` writes, and the canonical content manifest is defined; what was built is recorded
+in the [schema contract](stage-2-content-plan.md#records) and under
+[content identity](stage-2-content-plan.md#content-identity). Nothing consumes the records yet:
+the host, the TUI and the model still read `core-config` through the legacy loaders, which C03
+moves and retires. No Jettison gap: the SDK's Reflect, Serialise, Sim and Vfs at pin `e53681e`
+cover it, and are now in the SDK import's required list.
+
+Evidence, on Lythir, 24 build and test jobs, 16 tidy: `./scripts/ci.sh --werror --asan --tidy`
+passed 22 of 22 in each of `clang-debug`, `clang-release` and `clang-asan`, with the new `content`
+(10 cases, 4757 assertions) and `packaging` suites, and tidy clean. The `sim` replay hashes did not
+move: no generator reads the records yet.
+
 ## C01: the Stage 2 schema contract — 2026-11-18
 
 The [schema contract](stage-2-content-plan.md#schema-contract-c01-2026-11-18) settles the record

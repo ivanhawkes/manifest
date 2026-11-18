@@ -38,15 +38,19 @@ endif()
 
 # ─── Generated Game Data ───
 # The YAML is edited as separate files under data/ and merged into the monolithic
-# documents in data/core-config by data/build.sh, which needs yq (mikefarah v4).
+# documents in data/core-config by data/build.sh, which needs yq (mikefarah v4). The same script
+# writes the engine's definition records, one file per definition, under data/definitions.
 set(MANIFEST_DATA_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/data")
 set(MANIFEST_DATA_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/data/core-config")
+set(MANIFEST_DEFINITIONS_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/data/definitions")
 
+# The records are named by their IDs, so the directory stands for them, through a stamp.
 set(MANIFEST_DATA_OUTPUTS
     "${MANIFEST_DATA_OUTPUT_DIR}/full.yaml"
     "${MANIFEST_DATA_OUTPUT_DIR}/simple.yaml"
     "${MANIFEST_DATA_OUTPUT_DIR}/ages.yaml"
     "${MANIFEST_DATA_OUTPUT_DIR}/categories.yaml"
+    "${CMAKE_CURRENT_BINARY_DIR}/data/definitions.stamp"
 )
 
 find_program(YQ_EXECUTABLE NAMES yq)
@@ -94,16 +98,18 @@ if(YQ_EXECUTABLE)
             "with -DBUILD_TESTING=OFF.")
     endif()
 
-    # Only the source YAML, never the generated documents in data/core-config.
+    # Only the source YAML, never what build.sh writes into data/ when it is run by hand.
     file(GLOB_RECURSE MANIFEST_DATA_INPUTS CONFIGURE_DEPENDS
         "${MANIFEST_DATA_SOURCE_DIR}/*.yaml"
         "${MANIFEST_DATA_SOURCE_DIR}/*.yml"
     )
-    list(FILTER MANIFEST_DATA_INPUTS EXCLUDE REGEX "/core-config/")
+    list(FILTER MANIFEST_DATA_INPUTS EXCLUDE REGEX "/data/(core-config|definitions)/")
 
     add_custom_command(
         OUTPUT ${MANIFEST_DATA_OUTPUTS}
         COMMAND "${BASH_PROGRAM}" "${MANIFEST_DATA_SOURCE_DIR}/build.sh" "${MANIFEST_DATA_OUTPUT_DIR}"
+            "${MANIFEST_DEFINITIONS_OUTPUT_DIR}"
+        COMMAND "${CMAKE_COMMAND}" -E touch "${CMAKE_CURRENT_BINARY_DIR}/data/definitions.stamp"
         DEPENDS "${MANIFEST_DATA_SOURCE_DIR}/build.sh" ${MANIFEST_DATA_INPUTS}
         WORKING_DIRECTORY "${MANIFEST_DATA_SOURCE_DIR}"
         COMMENT "Merging the source YAML into data/core-config"
@@ -127,6 +133,8 @@ add_custom_target(manifest_mod
         "${CMAKE_CURRENT_SOURCE_DIR}/mods/manifest/mod.yaml" "${MANIFEST_MOD_DIRECTORY}/mod.yaml"
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${MANIFEST_DATA_OUTPUT_DIR}" "${MANIFEST_MOD_DIRECTORY}/manifest/core-config"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${MANIFEST_DEFINITIONS_OUTPUT_DIR}" "${MANIFEST_MOD_DIRECTORY}/manifest/definitions"
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${MANIFEST_DATA_SOURCE_DIR}/universe" "${MANIFEST_MOD_DIRECTORY}/manifest/universe"
     VERBATIM)

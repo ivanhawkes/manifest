@@ -44,6 +44,7 @@ The modules, in dependency order:
 | `ecs` | Entity registry and plain components | Types, engine EnTT |
 | `effects` | Catalogue and ship/civilisation effect systems | Types, config, progression, ECS |
 | `market` | Venues, reservations, order matching and settlement | Effects, simulation, ECS, progression |
+| `content` | Reflected definitions loaded through `Jettison::Sim::DefinitionRegistry`, record names, the canonical content manifest and fingerprint | Config, Jettison Reflect, Serialise and Sim |
 | `host` | Manifest composed into `Jettison::Host`: package policy and start-up | Jettison Host |
 
 `Manifest::Host` is outside `Manifest::Game`, so the model never depends on the host that drives
@@ -88,7 +89,9 @@ command transcript. Its sidebar, history navigation and Tab completion read the 
 rather than keeping a second command list or history. Build-time paths locate its generated data
 independently of the working directory. Console tests drive the session without a terminal.
 
-The mod package is content: `mod.yaml`, `manifest/core-config/` and `manifest/universe/`.
+The mod package is content: `mod.yaml`, `manifest/definitions/` (one record per definition, the
+engine's form), and the legacy `manifest/core-config/` and `manifest/universe/` until C03 moves
+their last callers.
 `manifest_mod` stages it and `manifest_pack` uses `jettison_add_pack`. The mod test reads both
 forms with `Jettison::Vfs::FileSystem` and compares their contents. These paths are namespaced so
 mounting Manifest does not replace the engine sample's definitions accidentally.

@@ -39,7 +39,9 @@ the Jettison rows A01 and W01 ahead of their place in this order, in Jettison
 closed** (H07): the SDK pin is `e53681e`, which answers the engine cross-review of H02–H05, A01 and
 W01, and the acceptance matrix passed against its fetch with no sibling checkout. C01 is done
 (2026-11-18): the [schema contract](stage-2-content-plan.md#schema-contract-c01-2026-11-18) names
-no Jettison gap, and its open authoring decisions gate C04 and C05. Next: C02.
+no Jettison gap, and its open authoring decisions gate C04 and C05. C02 is done (2026-11-18):
+the definitions load through the engine registry beside the legacy loaders, which they reproduce,
+and the content manifest is defined; no Jettison gap. Next: C03.
 
 - Jettison's G01, a generic rendered shell with the space gameplay moved to its sample, is done
   (2026-11-18, [history](../../jettison/docs/history.md#neutral-sdk-and-manifest-integration)),
@@ -91,7 +93,7 @@ against the delivered Stage 1 SDK before implementation.
 | Order / ID | Task and completion boundary | Must complete first |
 | --- | --- | --- |
 | 13 / C01 | Finalise schema mappings, defaults/null handling, ordered IDs, units, scenario frames and distinct planet/region/government/company relationships. Inventory remaining authoring decisions. **Done 2026-11-18**, [schema contract](stage-2-content-plan.md#schema-contract-c01-2026-11-18). | H07 |
-| 14 / C02 | Add reflected engine-readable definitions, generated record packaging and equivalence checks; define the canonical manifest/fingerprint builder and preserve exact price text and IDs/selections. | C01 |
+| 14 / C02 | Add reflected engine-readable definitions, generated record packaging and equivalence checks; define the canonical manifest/fingerprint builder and preserve exact price text and IDs/selections. **Done 2026-11-18**, [session handoff](session-handoff.md#c02-definitions-through-the-engine-registry--2026-11-18). | C01 |
 | 15 / C03 | Add atomic aggregate loading, shared semantic validation, engine layering/migration wiring and failure rollback; compute content identity before publication, migrate callers and retire custom readers after their last caller moves. | C02 |
 | 16 / C04 | T4 and item follow-ups: resolve required physical/storage fields and author tuning, grains, medical supplies, LPG, Life Support and hull definitions through the shared pipeline. Keep unselected values explicit and obtain decisions where required. | C03 |
 | 17 / C05 | Author the separate trading and multi-region governance fixtures, including valid starting access/service capacity and required project/production references. | C04 |

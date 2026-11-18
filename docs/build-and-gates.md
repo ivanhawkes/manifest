@@ -19,7 +19,7 @@ CI runs the full gate. `CMAKE_BUILD_PARALLEL_LEVEL`, `CTEST_PARALLEL_LEVEL` and
 `MANIFEST_TIDY_JOBS` control concurrency. Clang-format must be version 21.
 
 The CTest suites are `types`, `config`, `universe`, `progression`, `sim`, `ecs`, `market`,
-`host`, `effects`, `data`, `mod` and `sdk_import`, plus `console` when the TUI is enabled. The
+`host`, `content`, `effects`, `data`, `packaging`, `mod` and `sdk_import`, plus `console` when the TUI is enabled. The
 `cli_*` tests run the `manifest` executable from an unrelated directory with no display: both
 content forms start, and a missing source and bad command lines fail.
 

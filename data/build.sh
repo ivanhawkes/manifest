@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Resolve the output before changing directory; CMake passes an absolute build path.
+# Resolve the outputs before changing directory; CMake passes absolute build paths. The first is
+# the aggregate documents the legacy loaders read, the second the engine's definition records.
 output_dir="${1:-$(dirname "$0")/core-config}"
-mkdir -p "$output_dir"
+definitions_dir="${2:-$(dirname "$0")/definitions}"
+mkdir -p "$output_dir" "$definitions_dir"
 output_dir="$(cd "$output_dir" && pwd)"
+definitions_dir="$(cd "$definitions_dir" && pwd)"
 cd "$(dirname "$0")"
 
 # The files that define the game: the ages, the categories, every item and every
@@ -142,7 +145,90 @@ game_mode game-mode/simple.yaml "$tmp_dir/simple.yaml"
 yq -n 'load("base/ages.yaml")' > "$tmp_dir/ages.yaml"
 yq -n 'load("trade-items/categories.yaml")' > "$tmp_dir/categories.yaml"
 
-# The directory is generated and not committed, so a clean clone has none.
+# The definition records: one file per definition, in the form Jettison's DefinitionRegistry
+# loads, named by its ID in kebab case. The rule is RegistryName's in
+# source/game/content/src/Definitions.cpp, which the loader holds every record to, so a name this
+# writes differently is refused there rather than resolved by filename
+# (docs/stage-2-content-plan.md, "Records").
+kebab='sub("([a-z0-9])([A-Z])"; "${1}-${2}") | sub("([A-Z])([A-Z][a-z])"; "${1}-${2}") | downcase'
+
+# Legacy authoring writes null for an absent optional field. The engine's reader refuses null, so
+# these are left out and read as their defaults; a null in any other field is an error, here.
+optional_fields='^(description|targetEffectID|exclusiveGroupId)$'
+
+records_dir="$tmp_dir/definitions"
+
+# write_records <directory> <id field> <expression> <files...>: one record per mapping the
+# expression yields from the files.
+write_records() {
+  local directory="$1" id="$2" expression="$3" nulls collisions
+  shift 3
+
+  nulls=$(yq e -N "$expression | . as \$record | to_entries[]
+      | select(.value == null and (.key | test(\"$optional_fields\") | not))
+      | filename + \": \" + \$record.$id + \" has a null \" + .key" "$@")
+  if [[ -n "$nulls" ]]; then
+    printf 'build.sh: a required field is null:\n%s\n' "$nulls" >&2
+    exit 1
+  fi
+
+  # yq's split writes each record to its name, so two IDs with one name would leave one record.
+  collisions=$(yq e -N "$expression | .$id | $kebab" "$@" | sort | uniq -d)
+  if [[ -n "$collisions" ]]; then
+    printf 'build.sh: two %s share a record name:\n%s\n' "$directory" "$collisions" >&2
+    exit 1
+  fi
+
+  # The price is the text as authored, quoted so that no reader takes it for a float.
+  mkdir -p "$records_dir/$directory"
+  local file sources=()
+  for file in "$@"; do
+    sources+=("$PWD/$file")
+  done
+  (cd "$records_dir/$directory" && yq e -N "$expression
+      | {\"version\": 1} + with_entries(select(.value != null))
+      | with(select(has(\"basePrice\")); .basePrice |= (tostring | . style=\"double\"))
+      | ... comments=\"\"" -s ".$id | $kebab" "${sources[@]}")
+  for file in "$records_dir/$directory"/*.yml; do
+    mv "$file" "${file%.yml}.yaml"
+  done
+}
+
+write_records ages ageId '.ages[].age' base/ages.yaml
+write_records categories categoryId '.categories[].category' trade-items/categories.yaml
+item_files=() skill_files=()
+for file in "${DEFINITIONS[@]}"; do
+  case "$file" in
+    trade-items/categories.yaml | base/*) ;;
+    trade-items/*) item_files+=("$file") ;;
+    skill-tree/*) skill_files+=("$file") ;;
+  esac
+done
+write_records items itemId '.["item-base"][].item' "${item_files[@]}"
+write_records skills skillId '.["skill-base"][].skill' "${skill_files[@]}"
+write_records name-pools pool 'to_entries[] | {"pool": .key, "names": .value}' \
+  universe/solar-system-names.yaml
+
+# A game mode is named by its file. The registry lists definitions sorted by name, so the mode
+# carries the age order itself, taken from base/ages.yaml, beside its ordered selections.
+mkdir -p "$records_dir/game-modes"
+for mode in game-mode/*.yaml; do
+  MODE_FILE="$mode" yq e -n '
+    load("base/ages.yaml") as $ages
+    | load(strenv(MODE_FILE)) as $mode
+    | {"version": 1,
+       "ages": [$ages.ages[].age | {"ageId": .ageId}],
+       "items": $mode.items,
+       "skills": $mode.skills}
+    | ... comments=""
+  ' > "$records_dir/game-modes/$(basename "$mode")"
+done
+
+# The directories are generated and not committed, so a clean clone has none.
 mkdir -p "$output_dir"
 
 mv "$tmp_dir/full.yaml" "$tmp_dir/simple.yaml" "$tmp_dir/ages.yaml" "$tmp_dir/categories.yaml" "$output_dir/"
+
+# Replaced whole, so a record whose source was removed does not survive from an earlier build.
+rm -rf "$definitions_dir"
+mv "$records_dir" "$definitions_dir"

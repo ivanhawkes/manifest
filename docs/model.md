@@ -128,8 +128,10 @@ From the **data/** directory:
 `cmake --build --preset clang-debug` runs the same script through its `manifest_data` target, so you only
 need to run it by hand when you want the documents without a build.
 
-The manual command writes to **data/core-config/**. CMake writes to
-**build/<preset>/data/core-config/**. Neither output is committed:
+The manual command writes to **data/core-config/** and **data/definitions/**. CMake writes to
+**build/<preset>/data/core-config/** and **build/<preset>/data/definitions/**. Neither output is
+committed. The definitions are one record per age, category, item, skill, name pool and game mode,
+as the [schema contract](stage-2-content-plan.md#records) names them. The aggregate documents:
 
 | File | Contents |
 | --- | --- |

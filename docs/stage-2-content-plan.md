@@ -121,6 +121,13 @@ References resolve by authored ID through an index built at load.
 | `Manifest.GameMode` | `definitions/game-modes` | `game-mode/full.yaml`, `simple.yaml` | 2 |
 | `Manifest.Scenario` | `scenarios` | new, authored by C05 | 0 |
 
+**Built in C02 (2026-11-18).** `Manifest::Content` (`source/game/content`) registers the six types
+(`Definitions.h`) and loads them with the name check (`LoadDefinitions`); `data/build.sh` writes
+the records to `data/definitions/`, staged at `manifest/definitions/`. A mode's `ages` list is
+written from `base/ages.yaml`'s order, so it is authored once. Packaging refuses a null outside
+the optional fields and two IDs with one name (the `packaging` suite); the `content` suite holds
+every record to the legacy loaders' values, both modes' order and exact price text.
+
 ### Fields, defaults and null
 
 The reader starts from default member initialisers and rejects null in a whole file, so every
@@ -525,6 +532,12 @@ compatibility must not rely on a 64-bit match alone. Record engine/game versions
 separately, since native effect constants can change without YAML changing.
 Directory and pack forms of the same effective content must produce identical manifests
 and fingerprints; a change to price, selection order or scenario must change the manifest.
+
+**Defined in C02 (2026-11-18)** as `Manifest.ContentManifest` version 1, its layout in
+`ContentIdentity.h`; the `content` suite shows directory and pack agree and that a price, an order
+or an added definition changes it. It has no scenario yet: the scenario type joins the type list,
+and the selected scenario's name the manifest, when C05 authors one, as version 2 if a save has
+recorded version 1 by then.
 
 ## Delivery and acceptance
 
