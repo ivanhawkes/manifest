@@ -33,10 +33,10 @@ doctest version. The simulation suite pins generated and replayed state hashes. 
 mounts the staged directory and generated pack through the engine VFS. The default test build
 builds that pack first. The TUI executable is `build/<preset>/source/tools/tui/manifest_tui`.
 
-`manifest_data` merges authored YAML with mikefarah/yq v4 (tested with the devenv version,
-4.54.1). Missing yq fails configuration when tests are enabled; with tests disabled the C++
-library can build, but packaging still requires yq. Generated YAML lives in the build tree.
-Running `bash data/build.sh` manually retains the source-tree `data/core-config` default;
+`manifest_data` writes the definition records from the authored YAML with mikefarah/yq v4 (tested
+with the devenv version, 4.54.1). Missing yq fails configuration when tests are enabled; with tests
+disabled the C++ library can build, but packaging still requires yq. Generated records live in the
+build tree. Running `bash data/build.sh` manually writes to the source-tree `data/definitions`;
 `bash data/build.sh /absolute/output/path` selects an explicit output directory.
 
 The console suite checks command registration, quoted paths and names, completion and history,

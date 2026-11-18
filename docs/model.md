@@ -6,24 +6,19 @@ The development model and authored YAML. For build commands and mod integration,
 ## Core API
 
 ```cpp
+#include "manifest/content/Content.h"
 #include "manifest/progression/ProgressionManager.h"
 #include "manifest/sim/Simulation.h"
-#include "manifest/config/SimulationConfig.h"
-#include "manifest/universe/Universe.h"
 
-Manifest::Core::Ages ages;
-Manifest::Core::Categories categories;
-Manifest::Core::GameModeNode gameMode;
-Manifest::Core::UniverseNamePools names;
+// The staged package, a directory or a pack. Throws on content that does not read, or that
+// breaks a rule, naming the record, the field and the mounts that gave it.
+const Jettison::Vfs::Mount package{"manifest", "build/clang-debug/mods/manifest"};
+const Manifest::Content::ContentSet content = Manifest::Content::LoadContent({&package, 1}, "full");
+const Manifest::Core::Ages &ages = content.ages;
+const Manifest::Core::Categories &categories = content.categories;
+const Manifest::Core::GameModeNode &gameMode = content.gameMode;
+const Manifest::Core::UniverseNamePools &names = content.names;
 std::string error;
-
-if (!Manifest::Core::LoadConfigAges("build/clang-debug/data/core-config/ages.yaml", ages, error) ||
-    !Manifest::Core::LoadConfigCategories("build/clang-debug/data/core-config/categories.yaml", categories, error) ||
-    !Manifest::Core::LoadConfigGameMode("build/clang-debug/data/core-config/full.yaml", gameMode, error) ||
-    !Manifest::Core::LoadUniverseNamePools("data/universe/solar-system-names.yaml", names, error))
-{
-    // The message names the file, the entry and the field.
-}
 
 Manifest::Core::GenerateOptions options;
 options.civilisationCount = 8;
@@ -105,9 +100,8 @@ lane of the civilisation that owns them, and the ship engine fits the ship syste
 the same walk onto its hulls. Every number a venue charges is the base of
 `MarketplaceOptions` moved by the effects the tree put there, and
 `source/test/EffectsIntegrationTests.cpp` and `source/game/market/tests/MarketplaceTests.cpp` are the specification of that
-layer. Each loader replaces its output container, so loading the same file twice into
-the same vector does not duplicate entries, and a failed load leaves the container
-empty.
+layer. A content load builds a new set or throws, so a caller that keeps its set until a load
+succeeds keeps it through a failed one.
 
 ## Processing the YAML
 
@@ -115,38 +109,30 @@ The YAML is edited as individual files that refer to each other by id - `itemId`
 `skillId`, `categoryId` and `ageId` - and are stored in **data/**: an item names the
 category and the age it belongs to, and a game-mode file names the goods and the nodes
 it plays with. The split keeps the files manageable and the ideas separate from each
-other during development, and the merge resolves the references into monolithic
-documents before the simulation reads them.
+other during development; `build.sh` writes them as the engine's records, and the content
+loader resolves the references.
 
 From the **data/** directory:
 
 ```bash
-# Build all of the game-ready files using the source YAML.
+# Write the definition records from the source YAML.
 ./build.sh
 ```
 
 `cmake --build --preset clang-debug` runs the same script through its `manifest_data` target, so you only
-need to run it by hand when you want the documents without a build.
+need to run it by hand when you want the records without a build.
 
-The manual command writes to **data/core-config/** and **data/definitions/**. CMake writes to
-**build/<preset>/data/core-config/** and **build/<preset>/data/definitions/**. Neither output is
-committed. The definitions are one record per age, category, item, skill, name pool and game mode,
-as the [schema contract](stage-2-content-plan.md#records) names them. The aggregate documents:
-
-| File | Contents |
-| --- | --- |
-| `full.yaml` | Every item in the game, with the skills. |
-| `simple.yaml` | The small subset of items used for quick matches and testing. |
-| `ages.yaml` | The ages on their own. |
-| `categories.yaml` | The categories on their own. |
+The manual command writes to **data/definitions/**, and CMake to
+**build/<preset>/data/definitions/**; neither is committed. The records are one file per age,
+category, item, skill, name pool and game mode, as the
+[schema contract](stage-2-content-plan.md#records) names them, and `Manifest::Content::LoadContent`
+reads them through Jettison's registry and holds the whole set to its rules.
 
 Every input file is a complete YAML document that **yq** loads on its own: the item
 definitions live under `item-base`, repeated in every item file, the nodes of the tree
 under `skill-base`, repeated in every file of the skill tree, and the ages and the
-categories under `ages` and `categories`. The merge reads the two base keys as a lookup
-keyed on `itemId` and `skillId`, selects from it and drops them, so every key in a
-generated file appears exactly once and the output is a plain document, with no anchors,
-no aliases and no cross-file references left in it, ready for the loader.
+categories under `ages` and `categories`. `build.sh` writes each entry as a record of its own,
+named by its ID, with no anchors, no aliases and no cross-file references left in it.
 
 The inputs are read in this order:
 
@@ -173,33 +159,26 @@ The inputs are read in this order:
 | `game-mode/full.yaml` | The full game mode: the item and node ids selected from the definitions above. |
 | `game-mode/simple.yaml` | The small subset of items used for quick matches and testing. |
 
-The order matters for the two lists the merge concatenates: `base/ages.yaml` fixes the
-age order and `trade-items/categories.yaml` the category order. Each game-mode file
-lists its own goods, so the sections of the file group the items of the document it
-generates.
+One order is taken from the sources: `base/ages.yaml` fixes the age order, which `build.sh`
+writes into each game mode's `ages`. Each game-mode file lists its own goods and nodes in the
+order the game uses. Categories have no order the game reads, and load in the registry's.
 
-The `item-base` and `skill-base` keys hold the definitions, and they are the only keys
-the merge reads as a lookup rather than as a list. Ages and categories have no base key:
+The `item-base` and `skill-base` keys hold the definitions. Ages and categories have no base key:
 nothing is inherited from them any more, so their `ageId`, `categoryId` and displayName
 are written once, in the list the game reads.
 
-`build.sh` concatenates the definition files into one stream and `yq ea` folds that
-stream into the lookup: the ages, the categories, and the `itemId` and `skillId` to
-definition maps for the items and the skills. Nothing crosses a file boundary as an
-anchor, so a yq that scopes anchors to one document - v4.54.2 does exactly that - builds
-the data as well as v4.54.1 does: the pin in the development shell, in CI and in the
-CMake warning is a tested version, not a requirement. `DataTests` asserts the scale of
-the merged documents - ages, categories, items, skills - so a merge that quietly
+Nothing crosses a file boundary as an anchor, so a yq that scopes anchors to one document -
+v4.54.2 does exactly that - builds the data as well as v4.54.1 does: the pin in the development
+shell, in CI and in the CMake warning is a tested version, not a requirement. `DataTests` asserts
+the scale of the loaded content - ages, categories, items, skills - so a build that quietly
 truncates the game fails the suite instead of shipping a short one.
 
 Each item writes two references, `categoryId` and `ageId`, and both are plain text: the
 `categoryId` of a category in `trade-items/categories.yaml` and the `ageId` of an age in
 `base/ages.yaml`. They are the two dials the economy has: `ageId` bounds the goods a
-world can produce, `categoryId` weights the goods a world wants. A good with no reference
-is in every deck and wanted at the ordinary rate, so an item file that forgets the lines
-costs the model a gate without failing a load. `DataTests` asserts that every item of the
-full game carries both references and that the ids name a loaded age and a loaded
-category.
+world can produce, `categoryId` weights the goods a world wants. The content loader refuses an
+item whose references are missing or name nothing, and `DataTests` asserts that every item of the
+full game carries both.
 
 Every id carries the prefix of the kind of thing it names: `Age` for an age, `Category`
 for a category, `Item` for a good and `Skill` for a node of the tree. A reference
@@ -224,12 +203,9 @@ from the **data/** directory. The same is true of the `- skillId:` references of
 tree: the definitions live in the `skill-tree/*` files, the list lives in the two
 `game-mode/*` files, and every node of the tree is in both game modes.
 
-A reference with no definition behind it is the failure of a list typed by hand, and yq
-answers it with a null that the loader reads as an entry with no fields. `build.sh`
-compares the ids of a game-mode file with the ids of the definitions before it merges,
-and stops with the names it cannot resolve; the same check catches two definitions that
-share an `itemId` or a `skillId`, which the lookup would answer with the one it read
-last.
+A reference with no definition behind it is the failure of a list typed by hand. The content
+loader refuses it, naming the game mode, the list and the ID, as it refuses an ID selected twice;
+`build.sh` refuses two IDs that would be written to one record.
 
 `universe/solar-system-names.yaml` holds the name pools for the generated worlds, and
 every top-level key of the file is a pool: the file is two pools today, `latin` with 2695
@@ -237,7 +213,7 @@ names and `greek` with 3571, 6266 entries of which 5640 are unique - 626 names s
 pools. Every name is one word, and a class word is never in the file: the class is the
 generator's. `manifest/universe/Universe.h` keeps the pools in a map keyed by pool name, so
 `PoolNames()` is sorted and a walk over the pools gives the same order on every platform;
-the loader fails on a file with no pool, on a pool with no name, and on a null name. The
+the content loader refuses no pool, a pool with no name and an empty name. The
 generation builds one deck of (pool, name) pairs over the pools in that order, shuffles it
 with the seed of `GenerateOptions`, and takes the worlds off the front of it: a world's
 `pool` is the pool its name came from, and its name is that name and a suffix from the
@@ -245,12 +221,10 @@ generator's list of ten - `Prime`, `Alpha`, `Beta`, `Gamma`, `Delta`, `Epsilon`,
 `Eta`, `Theta`, `Iota` - chosen by world index, so the first world of a run is
 `<name> Prime`, the second `<name> Alpha`, the tenth `<name> Iota` and the eleventh
 `<name> Prime` again. A run that asks for more
-worlds than the pools hold names is answered with the two counts. The file is UTF-8, and it
-is not part of the merge: `build.sh` does not read it. `DataTests` loads the real file and
-asserts that the pools are many, that the names are more than a hundred, and that no pool
-is empty; `UniverseTests` tests the loader on the documents it writes: two pools sorted,
-loading twice replacing a pool, a null name rejected by pool name, and an unreadable file
-naming the path.
+worlds than the pools hold names is answered with the two counts. The file is UTF-8, and
+`build.sh` writes one record per pool, its names in their order. `DataTests` loads the real
+pools and asserts that they are many, that the names are more than a hundred, and that no pool
+is empty; `UniverseTests` tests the pools sorted and a pool added twice replaced.
 
 The skill tree is a set of definitions like the items: the eleven files of `skill-tree/*`
 define the nodes - the crafts, the ages, the ship, the yards, the lanes, the survey, the
@@ -374,8 +348,8 @@ with the effect, the cost and the prerequisites it claims, the prerequisites tha
 the trees counted, every gate sitting on the gate of the age before in age order,
 `CleanStanding` locking a chosen rival out and not the branch under it, and
 `ProgressionManager::Build` accepting the whole graph. The three-tier floor is asserted on
-the `Skill` nodes and not on the gates: a merge that dropped `maxTiers` lands on the
-loader default of one tier, which flattens a craft to a single click, and that is what the
+the `Skill` nodes and not on the gates: a build that dropped `maxTiers` lands on the
+schema default of one tier, which flattens a craft to a single click, and that is what the
 assertion is there to catch.
 
 Not in the tree, and not to be built without a decision on each: crew wages and morale;
@@ -522,10 +496,11 @@ at the price a trader posts on its book, so it reads none of the five. Freight b
 volume is the work that gives these fields their reader. What freight exists today is one
 number and a fraction of value: `Simulation::PlanTrade` charges `kFreightRate`, 0.08 of
 the base price of a good for every unit the route moves, so the cost of a haul is a share
-of what the good is worth, never a mass, a volume, a distance or a cube. The loader reads
-the four fields as optional strings and keeps the text verbatim; `Simulation::BasePrice`
-parses the fifth as an exact decimal price, and answers zero for invalid text. Generation
-rejects invalid, negative or oversized prices before replacing the world. Only prices use the
+of what the good is worth, never a mass, a volume, a distance or a cube. The loader reads the
+three numbers as doubles and the unit as `TradeUnit`, and refuses an item without them, a number
+that is not above zero, or a packing factor above one; `Simulation::BasePrice` parses the price
+text as an exact decimal price, and answers zero for invalid text. Content loading and generation
+both refuse invalid, negative or oversized prices (`Simulation::IsValidBasePrice`). Only prices use the
 [decimal representation](market-prices.md); quantities, physical metadata and effect stats
 retain their existing types. The storage cube is the
 IBC cube, the one cubic metre intermediate bulk container, and the fields are defined

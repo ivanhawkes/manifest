@@ -8,13 +8,8 @@ add_executable(manifest_data_tests DataTests.cpp)
 target_link_libraries(manifest_data_tests PRIVATE Manifest::Game manifest_test_helpers manifest_warnings)
 target_compile_definitions(manifest_data_tests PRIVATE DOCTEST_CONFIG_IMPLEMENT)
 target_compile_options(manifest_data_tests PRIVATE -ffp-contract=off)
-add_dependencies(manifest_data_tests manifest_data)
-add_test(NAME data COMMAND manifest_data_tests
-    "${MANIFEST_DATA_OUTPUT_DIR}/ages.yaml"
-    "${MANIFEST_DATA_OUTPUT_DIR}/categories.yaml"
-    "${MANIFEST_DATA_OUTPUT_DIR}/full.yaml"
-    "${MANIFEST_DATA_OUTPUT_DIR}/simple.yaml"
-    "${MANIFEST_DATA_SOURCE_DIR}/universe/solar-system-names.yaml")
+add_dependencies(manifest_data_tests manifest_mod)
+add_test(NAME data COMMAND manifest_data_tests "${MANIFEST_MOD_DIRECTORY}")
 
 add_test(NAME packaging COMMAND "${BASH_PROGRAM}" "${CMAKE_CURRENT_SOURCE_DIR}/packaging-refusals.sh"
     "${MANIFEST_DATA_SOURCE_DIR}")

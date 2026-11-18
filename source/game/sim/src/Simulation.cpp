@@ -238,12 +238,10 @@ bool Simulation::Generate(
 		return false;
 	}
 
-	// Reserve room for the maximum market/local multiplier (5 * 1.9). Validate
-	// before replacing the current world, so bad authored prices preserve the run.
+	// Validate before replacing the current world, so bad authored prices preserve the run.
 	for (const auto &item : items)
 	{
-		const auto price = Decimal::TryParse(item.basePrice);
-		if (!price || *price < 0 || *price > Decimal::Max() / 10)
+		if (!IsValidBasePrice(item.basePrice))
 		{
 			errorMessage = std::format(
 			    "item '{}' has invalid or oversized basePrice '{}'.", item.itemId, item.basePrice);
@@ -412,6 +410,14 @@ const Civilisation *Simulation::FindCivilisation(const std::string &idOrName) co
 	const int index = FindCivilisationIndex(m_civilisations, idOrName);
 
 	return index >= 0 ? &m_civilisations[static_cast<std::size_t>(index)] : nullptr;
+}
+
+
+bool Simulation::IsValidBasePrice(std::string_view text)
+{
+	// Room for the maximum market/local multiplier (5 * 1.9).
+	const auto price = Decimal::TryParse(text);
+	return price && *price >= 0 && *price <= Decimal::Max() / 10;
 }
 
 

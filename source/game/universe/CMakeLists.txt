@@ -5,7 +5,4 @@ manifest_add_module(universe
 		src/Universe.cpp
 	TESTS
 		tests/UniverseTests.cpp
-	PRIVATE_LIBRARIES
-		Manifest::Config
-		yaml-cpp::yaml-cpp
 )

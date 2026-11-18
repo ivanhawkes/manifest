@@ -62,8 +62,7 @@ cmake --build --preset clang-debug --target manifest_pack
 
 This stages `build/clang-debug/mods/manifest/` and writes `build/clang-debug/manifest.pack` with
 Jettison's packer. Put either the directory or the pack under Jettison's user `mods/` directory.
-Both contain `mod.yaml`, the definition records under `manifest/definitions/`, and the legacy
-`manifest/core-config/*.yaml` and universe name pools. The mod
+Both contain `mod.yaml` and the definition records under `manifest/definitions/`. The mod
 integration test mounts both through Jettison's VFS and compares every file.
 
 The package currently contains Manifest's configuration data. Jettison can mount it, but its
@@ -84,8 +83,8 @@ the VFS loaders, world adapters and scripted scenario in the
 - `source/test/`: cross-module effects, data and mod-pack suites, plus shared test helpers.
 - `source/external/`: the pinned engine SDK and optional development-only dependencies.
 - `cmake/ManifestModule.cmake`: module target, header, dependency and test rules matching Jettison's module helper.
-- `data/`: authored YAML; CMake merges it into `build/<preset>/data/core-config/`, and writes its
-  definition records to `build/<preset>/data/definitions/`, with mikefarah/yq v4.
+- `data/`: authored YAML; CMake writes its definition records to `build/<preset>/data/definitions/`
+  with mikefarah/yq v4.
 - `mods/manifest/`: mod metadata; generated data is staged alongside it in the build tree.
 
 The modules are `types`, `config`, `universe`, `progression`, `sim`, `ecs`, `effects`,

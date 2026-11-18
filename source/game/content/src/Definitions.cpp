@@ -11,6 +11,8 @@ namespace Manifest::Content
 {
 namespace
 {
+using Jettison::Serialise::YamlMigrations;
+
 constexpr Jettison::Serialise::FormatVersion kVersion1{1};
 
 
@@ -46,53 +48,53 @@ void RegisterTypes()
 		using namespace Jettison::Reflect;
 		constexpr Attribute kDefined = Attribute::Saved | Attribute::Moddable;
 
-		RegisterEnum<TradeUnit>("Manifest.TradeUnit")
-		    .Value<TradeUnit::Gram>("Gram")
-		    .Value<TradeUnit::Kilogram>("Kilogram")
-		    .Value<TradeUnit::Litre>("Litre")
-		    .Value<TradeUnit::Kilolitre>("Kilolitre")
-		    .Value<TradeUnit::Unit>("Unit")
-		    .Value<TradeUnit::Sheet>("Sheet")
-		    .Value<TradeUnit::SquareMetre>("SquareMetre");
+		RegisterEnum<Core::TradeUnit>("Manifest.TradeUnit")
+		    .Value<Core::TradeUnit::Gram>("Gram")
+		    .Value<Core::TradeUnit::Kilogram>("Kilogram")
+		    .Value<Core::TradeUnit::Litre>("Litre")
+		    .Value<Core::TradeUnit::Kilolitre>("Kilolitre")
+		    .Value<Core::TradeUnit::Unit>("Unit")
+		    .Value<Core::TradeUnit::Sheet>("Sheet")
+		    .Value<Core::TradeUnit::SquareMetre>("SquareMetre");
 		RegisterEnum<Core::NodeType>("Manifest.NodeType")
 		    .Value<Core::NodeType::Tech>("Tech")
 		    .Value<Core::NodeType::Skill>("Skill");
 
-		RegisterType<AgeDefinition>("Manifest.Age", Attribute::Moddable)
-		    .Field<&AgeDefinition::ageId>("ageId", kDefined)
-		    .Field<&AgeDefinition::displayName>("displayName", kDefined)
-		    .Field<&AgeDefinition::description>("description", kDefined);
-		RegisterType<CategoryDefinition>("Manifest.Category", Attribute::Moddable)
-		    .Field<&CategoryDefinition::categoryId>("categoryId", kDefined)
-		    .Field<&CategoryDefinition::displayName>("displayName", kDefined)
-		    .Field<&CategoryDefinition::type>("type", kDefined)
-		    .Field<&CategoryDefinition::description>("description", kDefined);
-		RegisterType<ItemDefinition>("Manifest.Item", Attribute::Moddable)
-		    .Field<&ItemDefinition::itemId>("itemId", kDefined)
-		    .Field<&ItemDefinition::categoryId>("categoryId", kDefined)
-		    .Field<&ItemDefinition::ageId>("ageId", kDefined)
-		    .Field<&ItemDefinition::displayName>("displayName", kDefined)
-		    .Field<&ItemDefinition::description>("description", kDefined)
-		    .Field<&ItemDefinition::unitsPerCubicMetre>("unitsPerCubicMetre", kDefined)
-		    .Field<&ItemDefinition::basePrice>("basePrice", kDefined)
-		    .Field<&ItemDefinition::unitType>("unitType", kDefined)
-		    .Field<&ItemDefinition::density>("density", kDefined)
-		    .Field<&ItemDefinition::packFactor>("packFactor", kDefined);
+		RegisterType<Core::AgeNode>("Manifest.Age", Attribute::Moddable)
+		    .Field<&Core::AgeNode::ageId>("ageId", kDefined)
+		    .Field<&Core::AgeNode::displayName>("displayName", kDefined)
+		    .Field<&Core::AgeNode::description>("description", kDefined);
+		RegisterType<Core::CategoryNode>("Manifest.Category", Attribute::Moddable)
+		    .Field<&Core::CategoryNode::categoryId>("categoryId", kDefined)
+		    .Field<&Core::CategoryNode::displayName>("displayName", kDefined)
+		    .Field<&Core::CategoryNode::type>("type", kDefined)
+		    .Field<&Core::CategoryNode::description>("description", kDefined);
+		RegisterType<Core::ItemNode>("Manifest.Item", Attribute::Moddable)
+		    .Field<&Core::ItemNode::itemId>("itemId", kDefined)
+		    .Field<&Core::ItemNode::categoryId>("categoryId", kDefined)
+		    .Field<&Core::ItemNode::ageId>("ageId", kDefined)
+		    .Field<&Core::ItemNode::displayName>("displayName", kDefined)
+		    .Field<&Core::ItemNode::description>("description", kDefined)
+		    .Field<&Core::ItemNode::unitsPerCubicMetre>("unitsPerCubicMetre", kDefined)
+		    .Field<&Core::ItemNode::basePrice>("basePrice", kDefined)
+		    .Field<&Core::ItemNode::unitType>("unitType", kDefined)
+		    .Field<&Core::ItemNode::density>("density", kDefined)
+		    .Field<&Core::ItemNode::packFactor>("packFactor", kDefined);
 		RegisterType<Core::Prerequisite>("Manifest.Prerequisite")
 		    .Field<&Core::Prerequisite::nodeId>("nodeId", kDefined)
 		    .Field<&Core::Prerequisite::requiredTier>("requiredTier", kDefined);
-		RegisterType<SkillDefinition>("Manifest.Skill", Attribute::Moddable)
-		    .Field<&SkillDefinition::skillId>("skillId", kDefined)
-		    .Field<&SkillDefinition::displayName>("displayName", kDefined)
-		    .Field<&SkillDefinition::description>("description", kDefined)
-		    .Field<&SkillDefinition::nodeType>("nodeType", kDefined)
-		    .Field<&SkillDefinition::requiredSkills>("requires", kDefined)
-		    .Field<&SkillDefinition::maxTiers>("maxTiers", kDefined)
-		    .Field<&SkillDefinition::resourceCostPerTier>("resourceCostPerTier", kDefined)
-		    .Field<&SkillDefinition::targetEffectID>("targetEffectID", kDefined)
-		    .Field<&SkillDefinition::exclusiveGroupId>("exclusiveGroupId", kDefined)
-		    .Field<&SkillDefinition::gridX>("gridX", kDefined)
-		    .Field<&SkillDefinition::gridY>("gridY", kDefined);
+		RegisterType<Core::SkillNode>("Manifest.Skill", Attribute::Moddable)
+		    .Field<&Core::SkillNode::skillId>("skillId", kDefined)
+		    .Field<&Core::SkillNode::displayName>("displayName", kDefined)
+		    .Field<&Core::SkillNode::description>("description", kDefined)
+		    .Field<&Core::SkillNode::nodeType>("nodeType", kDefined)
+		    .Field<&Core::SkillNode::requiredSkills>("requires", kDefined)
+		    .Field<&Core::SkillNode::maxTiers>("maxTiers", kDefined)
+		    .Field<&Core::SkillNode::resourceCostPerTier>("resourceCostPerTier", kDefined)
+		    .Field<&Core::SkillNode::targetEffectID>("targetEffectID", kDefined)
+		    .Field<&Core::SkillNode::exclusiveGroupId>("exclusiveGroupId", kDefined)
+		    .Field<&Core::SkillNode::gridX>("gridX", kDefined)
+		    .Field<&Core::SkillNode::gridY>("gridY", kDefined);
 		RegisterType<NamePoolDefinition>("Manifest.NamePool", Attribute::Moddable)
 		    .Field<&NamePoolDefinition::pool>("pool", kDefined)
 		    .Field<&NamePoolDefinition::names>("names", kDefined);
@@ -120,18 +122,18 @@ std::span<const DefinitionType> DefinitionTypes()
 	{
 		RegisterTypes();
 		return std::vector<DefinitionType>{
-		    {"Manifest.Age", "manifest/definitions/ages", kVersion1, entt::resolve<AgeDefinition>(),
-		     &IdOf<AgeDefinition, &AgeDefinition::ageId>},
-		    {"Manifest.Category", "manifest/definitions/categories", kVersion1,
-		     entt::resolve<CategoryDefinition>(),
-		     &IdOf<CategoryDefinition, &CategoryDefinition::categoryId>},
-		    {"Manifest.Item", "manifest/definitions/items", kVersion1, entt::resolve<ItemDefinition>(),
-		     &IdOf<ItemDefinition, &ItemDefinition::itemId>},
-		    {"Manifest.Skill", "manifest/definitions/skills", kVersion1,
-		     entt::resolve<SkillDefinition>(), &IdOf<SkillDefinition, &SkillDefinition::skillId>},
-		    {"Manifest.NamePool", "manifest/definitions/name-pools", kVersion1,
+		    {YamlMigrations{"Manifest.Age", kVersion1}, "manifest/definitions/ages",
+		     entt::resolve<Core::AgeNode>(), &IdOf<Core::AgeNode, &Core::AgeNode::ageId>},
+		    {YamlMigrations{"Manifest.Category", kVersion1}, "manifest/definitions/categories",
+		     entt::resolve<Core::CategoryNode>(),
+		     &IdOf<Core::CategoryNode, &Core::CategoryNode::categoryId>},
+		    {YamlMigrations{"Manifest.Item", kVersion1}, "manifest/definitions/items",
+		     entt::resolve<Core::ItemNode>(), &IdOf<Core::ItemNode, &Core::ItemNode::itemId>},
+		    {YamlMigrations{"Manifest.Skill", kVersion1}, "manifest/definitions/skills",
+		     entt::resolve<Core::SkillNode>(), &IdOf<Core::SkillNode, &Core::SkillNode::skillId>},
+		    {YamlMigrations{"Manifest.NamePool", kVersion1}, "manifest/definitions/name-pools",
 		     entt::resolve<NamePoolDefinition>(), &IdOf<NamePoolDefinition, &NamePoolDefinition::pool>},
-		    {"Manifest.GameMode", "manifest/definitions/game-modes", kVersion1,
+		    {YamlMigrations{"Manifest.GameMode", kVersion1}, "manifest/definitions/game-modes",
 		     entt::resolve<GameModeDefinition>(), nullptr},
 		};
 	}();
@@ -159,11 +161,12 @@ std::string RegistryName(std::string_view id)
 }
 
 
-void LoadDefinitions(Jettison::Sim::DefinitionRegistry &registry)
+void LoadDefinitions(Jettison::Sim::DefinitionRegistry &registry, std::span<const DefinitionType> types)
 {
-	for (const DefinitionType &definition : DefinitionTypes())
+	RegisterTypes();
+	for (const DefinitionType &definition : types)
 	{
-		registry.Load(definition.type, definition.directory, definition.version);
+		registry.Load(definition.type, definition.directory, definition.migrations);
 		if (definition.id == nullptr)
 			continue;
 		for (const std::string &name : registry.Names(definition.type))
@@ -172,7 +175,7 @@ void LoadDefinitions(Jettison::Sim::DefinitionRegistry &registry)
 			if (RegistryName(id) != name)
 				throw Jettison::Serialise::FormatError{std::format(
 				    "Definitions: {}/{}.yaml holds {} '{}', whose file would be {}.yaml",
-				    definition.directory, name, definition.name, id, RegistryName(id))};
+				    definition.directory, name, definition.migrations.Format(), id, RegistryName(id))};
 		}
 	}
 }

@@ -157,7 +157,7 @@ native tasks; there is no script behaviour-task hook in this pin.
 Script definitions live under the engine's `defs/scripts/` and name VFS `.wasm` paths. Use the
 existing definition registry, layering and `jettison_add_script`, initially Rust `no_std` as in
 the engine examples (C is also supported). Add these files to Manifest's package in item 5;
-the current `manifest/core-config/` documents are not engine script definitions.
+the `manifest/definitions/` records are not engine script definitions.
 
 - Input calls use fresh instances. They can read only option inputs; sending commands or
   accessing the key/value store while answering an input traps. There is no arbitrary world

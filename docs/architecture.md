@@ -37,23 +37,24 @@ The modules, in dependency order:
 | Module | Owns | Depends on |
 | --- | --- | --- |
 | `types` | Decimal prices; effect domains, stats, modifiers and operators | Standard library, Jettison Core invariant reporting |
-| `config` | Configuration schema, YAML loaders and field readers | Engine yaml-cpp |
-| `universe` | Ordered universe name pools | Config loader helpers |
+| `config` | Configuration records: ages, categories, items and skills, header only | Standard library |
+| `universe` | Ordered universe name pools | Standard library |
 | `progression` | Prerequisites, tiers, costs and exclusive branches | Config |
 | `sim` | World generation, production, consumption, pricing and trade routes | Config, universe, Jettison Math |
 | `ecs` | Entity registry and plain components | Types, engine EnTT |
 | `effects` | Catalogue and ship/civilisation effect systems | Types, config, progression, ECS |
 | `market` | Venues, reservations, order matching and settlement | Effects, simulation, ECS, progression |
-| `content` | Reflected definitions loaded through `Jettison::Sim::DefinitionRegistry`, record names, the canonical content manifest and fingerprint | Config, Jettison Reflect, Serialise and Sim |
-| `host` | Manifest composed into `Jettison::Host`: package policy and start-up | Jettison Host |
+| `content` | Reflected definitions loaded through `Jettison::Sim::DefinitionRegistry`, record names and migrations, the content set's validation and the canonical content manifest and fingerprint | Config, universe, progression, sim, effects, Jettison Reflect, Serialise, Sim and VFS |
+| `host` | Manifest composed into `Jettison::Host`: package policy and start-up | Content, Jettison Host |
 
 `Manifest::Host` is outside `Manifest::Game`, so the model never depends on the host that drives
 it. `Manifest::Host::Start` mounts one explicit directory or pack read-only and alone, with no user
 mods or writable overlay, and starts a `Jettison::Host::Session` with an empty world. The engine
 checks the description's format, engine requirement and required packages; Manifest requires a
-`mod.yaml` named `Manifest` with a release and an engine requirement, and reads each staged
-content file through the VFS, so a missing, unreadable or damaged one fails start-up. Content
-semantics are Stage 2's. The `manifest` executable (`source/apps/manifest/`) is
+`mod.yaml` named `Manifest` with a release and an engine requirement, and loads its definitions
+into the session's registry as one content set (`Manifest::Content::LoadContent`, the full game
+mode until a scenario names one), so a record that is missing, unreadable, damaged or breaks a
+rule fails start-up, naming the record, the field and its mounts. The `manifest` executable (`source/apps/manifest/`) is
 `manifest --content <directory-or-pack> --check-startup`: it starts, logs readiness, shuts down
 and exits 0; a failed start-up logs the phase, source and cause and exits 1, a bad command line
 prints usage and exits 2.
@@ -86,12 +87,12 @@ The `manifest_console` tooling library links `Jettison::Devtools`, reusing its C
 ImGui dependencies. The console backend draws nothing; the terminal does not initialise ImGui,
 Vulkan or the engine application. `manifest_tui` alone owns FTXUI, wall-clock refresh and the
 command transcript. Its sidebar, history navigation and Tab completion read the engine's console
-rather than keeping a second command list or history. Build-time paths locate its generated data
-independently of the working directory. Console tests drive the session without a terminal.
+rather than keeping a second command list or history. A build-time path locates the staged
+package independently of the working directory. Console tests drive the session without a terminal.
 
-The mod package is content: `mod.yaml`, `manifest/definitions/` (one record per definition, the
-engine's form), and the legacy `manifest/core-config/` and `manifest/universe/` until C03 moves
-their last callers.
+The mod package is content: `mod.yaml` and `manifest/definitions/`, one record per definition in
+the engine's form. The host, the console and the data suite read it through one entry point,
+`Manifest::Content::LoadContent`.
 `manifest_mod` stages it and `manifest_pack` uses `jettison_add_pack`. The mod test reads both
 forms with `Jettison::Vfs::FileSystem` and compares their contents. These paths are namespaced so
 mounting Manifest does not replace the engine sample's definitions accidentally.

@@ -1,11 +1,17 @@
 #pragma once
 
+#include <optional>
 #include <string>
 #include <vector>
 
 
 namespace Manifest::Core
 {
+// The configuration records, as Jettison's DefinitionRegistry reads them through Manifest::Content
+// (docs/stage-2-content-plan.md, "Schema contract"). A field a file leaves out keeps its
+// initialiser here; which fields are required, and every rule between records, is the content
+// set's validation, not the reader's.
+
 enum class NodeType
 {
 	Tech,
@@ -42,14 +48,26 @@ struct CategoryNode
 	// Display name of the category.
 	std::string displayName;
 
-	// Type of the category.
+	// Type of the category; empty means the categoryId.
 	std::string type;
 
-	// Description of the category.
+	// Description of the category; empty means the displayName.
 	std::string description;
 };
 
 using Categories = std::vector<CategoryNode>;
+
+// Registered by the names the authored files use.
+enum class TradeUnit
+{
+	Gram,
+	Kilogram,
+	Litre,
+	Kilolitre,
+	Unit,
+	Sheet,
+	SquareMetre
+};
 
 struct ItemNode
 {
@@ -62,30 +80,28 @@ struct ItemNode
 	// Description of the item.
 	std::string description;
 
-	// Category and age links. Optional: the merged documents in data/core-config
-	// resolve the category and age anchors through '<<', and the item's own itemId
-	// overwrites the inherited one, so these fields arrive empty. They are read when
-	// present so a data set that carries the links works unchanged.
+	// Category and age links: each names a loaded definition.
 	std::string categoryId;
 	std::string ageId;
 
 	// The number of units that can fit into one cubic metre of storage.
-	std::string unitsPerCubicMetre;
+	double unitsPerCubicMetre{0.0};
 
-	// Universal base price of the item.
+	// Universal base price of the item: Decimal text as authored, parsed by Decimal::TryParse
+	// where it is used, since a float in between would round the microcredits.
 	std::string basePrice;
 
 	// The type of units of measurement for this type of item.
-	std::string unitType;
+	std::optional<TradeUnit> unitType;
 
 	// Specific gravity of the item's material against water at sea level, so 1.0
 	// is 1000 kilograms per cubic metre.
-	std::string density;
+	double density{0.0};
 
 	// Packing factor of the item. The fraction of a storage cube the product
 	// fills, counting packaging, dunnage and the voids between the pieces, so the
 	// mass in a cubic metre is density x 1000 x packFactor kilograms.
-	std::string packFactor;
+	double packFactor{0.0};
 };
 
 using Items = std::vector<ItemNode>;
@@ -97,28 +113,28 @@ struct SkillNode
 	// prerequisite names.
 	std::string skillId;
 
-	// Display name of the skill.
+	// Display name of the skill; empty means the skillId.
 	std::string displayName;
 
 	// Description of the skill.
 	std::string description;
 
 	// Type of the node (Tech or Skill).
-	NodeType nodeType;
+	NodeType nodeType{NodeType::Skill};
 
 	// Maximum number of tiers this skill can have. Must be at least 1.
 	int maxTiers{1};
 
-	// List of skills required to unlock this skill.
+	// List of skills required to unlock this skill: the YAML key "requires".
 	std::vector<Prerequisite> requiredSkills;
 
 	// Amount of resources required to unlock this skill.
-	int resourceCostPerTier;
+	int resourceCostPerTier{1};
 
 	// ID of the effect that this skill targets.
 	std::string targetEffectID;
 
-	// Mutal exclusion group ID.
+	// Mutual exclusion group ID.
 	// If empty, this node has no rival choices.
 	// If populated, only ONE node sharing this group ID can be unlocked.
 	std::string exclusiveGroupId;
@@ -135,23 +151,4 @@ struct GameModeNode
 	Items items;
 	Skills skills;
 };
-
-// Configuration loaders. Each loader replaces the contents of its output
-// container: calling a loader twice with the same file gives the same entries,
-// never duplicated ones.
-//
-// Every loader returns true when the file parsed cleanly, false and a message in
-// ErrorMessage when it did not. Missing, null and mistyped required fields are
-// reported with the index and key of the offending entry.
-
-// Loads the ages configuration from a YAML file into a vector of AgeNode.
-bool LoadConfigAges(const std::string &filePath, Ages &ages, std::string &errorMessage);
-
-// Loads the categories configuration from a YAML file into a vector of CategoryNode.
-bool LoadConfigCategories(
-    const std::string &filePath, Categories &categories, std::string &errorMessage);
-
-// Loads the items and skills of a game mode from a YAML file into a GameModeNode.
-bool LoadConfigGameMode(
-    const std::string &filePath, GameModeNode &gameModeConfig, std::string &errorMessage);
 } // namespace Manifest::Core

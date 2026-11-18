@@ -1,6 +1,8 @@
 # Manifest composed into Jettison's host: its package policy and start-up. Not in Manifest::Game,
 # so the model library never depends on the host that will drive it.
 manifest_add_module(host
+	DEPENDS
+		content
 	HEADERS
 		include/manifest/host/Start.h
 	SOURCES

@@ -10,7 +10,7 @@ trap 'rm -rf "$work"' EXIT
 # expect_refusal <message>: build.sh over the damaged copy fails, saying so.
 expect_refusal() {
   local output
-  if output=$(bash "$work/data/build.sh" "$work/out/core-config" "$work/out/definitions" 2>&1); then
+  if output=$(bash "$work/data/build.sh" "$work/out/definitions" 2>&1); then
     printf 'packaging-refusals: build.sh packaged a copy that should fail with "%s"\n' "$1" >&2
     exit 1
   fi

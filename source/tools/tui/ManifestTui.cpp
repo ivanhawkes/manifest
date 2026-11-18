@@ -111,8 +111,7 @@ Decorator LineColour(const ConsoleLine &line)
 }
 } // namespace
 
-ManifestTui::ManifestTui()
-    : m_session{MANIFEST_DATA_DIRECTORY, MANIFEST_UNIVERSE_FILE}, m_logFile{OpenSessionLog()}
+ManifestTui::ManifestTui() : m_session{MANIFEST_MOD_DIRECTORY}, m_logFile{OpenSessionLog()}
 {
 }
 
@@ -293,7 +292,7 @@ void ManifestTui::Run()
 		             hbox(
 		                 {text("  data: "),
 		                  text(
-		                      m_session.IsConfigurationLoaded() ? m_session.DataDirectory()
+		                      m_session.IsConfigurationLoaded() ? m_session.ContentSource()
 		                                                        : "not loaded") |
 		                      Mocha::Text}),
 		             separatorDashed() | Mocha::Surface0, text(" tick ") | bold | center | Mocha::Peach,

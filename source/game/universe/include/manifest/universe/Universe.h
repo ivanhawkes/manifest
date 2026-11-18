@@ -8,9 +8,8 @@
 
 namespace Manifest::Core
 {
-// Name pools for the generated solar systems, loaded from
-// data/universe/solar-system-names.yaml. Every top level key in that file is a pool
-// of names (latin, greek, ...), each value a sequence of scalars.
+// Name pools for the generated solar systems: the Manifest.NamePool definitions, authored in
+// data/universe/solar-system-names.yaml, one pool of names (latin, greek, ...) to each key.
 //
 // The pools are stored in a map keyed by pool name so iteration order is the same on
 // every platform: the simulation draws names from a seeded generator over this order.
@@ -36,9 +35,4 @@ class UniverseNamePools
   private:
 	std::map<std::string, std::vector<std::string>> m_pools;
 };
-
-// Loads the name pools from a YAML file. Fails when the file cannot be read, when it
-// holds no pool, when a pool holds no name, or when a name is null.
-bool LoadUniverseNamePools(
-    const std::string &filePath, UniverseNamePools &pools, std::string &errorMessage);
 } // namespace Manifest::Core

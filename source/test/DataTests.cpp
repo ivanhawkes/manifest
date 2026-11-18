@@ -1,12 +1,16 @@
 #include "TestHelpers.h"
 
 #include <algorithm>
+#include <iostream>
 #include <map>
 #include <regex>
 #include <string>
 #include <vector>
 
+#include <jettison/vfs/Mount.h>
+
 #include <manifest/config/SimulationConfig.h>
+#include <manifest/content/Content.h>
 #include <manifest/progression/ProgressionManager.h>
 #include <manifest/sim/Simulation.h>
 #include <manifest/universe/Universe.h>
@@ -14,12 +18,8 @@
 
 namespace
 {
-// The generated documents, passed by CMake.
-std::string agesPath;
-std::string categoriesPath;
-std::string fullPath;
-std::string simplePath;
-std::string universePath;
+// The staged package, passed by CMake.
+std::string contentSource;
 
 std::vector<std::string> Ids(const Manifest::Core::Items &items)
 {
@@ -67,31 +67,31 @@ std::string TreeLabel(const std::string &nodeId)
 	return treeEnd == std::string::npos ? rest : rest.substr(0, treeEnd);
 }
 
+// The content set of a game mode, loaded once.
+const Manifest::Content::ContentSet &Load(const std::string &mode)
+{
+	static std::map<std::string, Manifest::Content::ContentSet> loaded;
+	if (!loaded.contains(mode))
+	{
+		const Jettison::Vfs::Mount source{"manifest", contentSource};
+		loaded.emplace(mode, Manifest::Content::LoadContent({&source, 1}, mode));
+	}
+	return loaded.at(mode);
+}
+
 Manifest::Core::Ages LoadAges()
 {
-	std::string errorMessage;
-	Manifest::Core::Ages ages;
-	CHECK(Manifest::Core::LoadConfigAges(agesPath, ages, errorMessage));
-
-	return ages;
+	return Load("full").ages;
 }
 
 Manifest::Core::Categories LoadCategories()
 {
-	std::string errorMessage;
-	Manifest::Core::Categories categories;
-	CHECK(Manifest::Core::LoadConfigCategories(categoriesPath, categories, errorMessage));
-
-	return categories;
+	return Load("full").categories;
 }
 
-Manifest::Core::GameModeNode LoadGameMode(const std::string &path)
+Manifest::Core::GameModeNode LoadGameMode(const std::string &mode)
 {
-	std::string errorMessage;
-	Manifest::Core::GameModeNode gameMode;
-	CHECK(Manifest::Core::LoadConfigGameMode(path, gameMode, errorMessage));
-
-	return gameMode;
+	return Load(mode).gameMode;
 }
 } // namespace
 
@@ -139,7 +139,7 @@ TEST_CASE("categories_load_from_the_generated_document")
 
 TEST_CASE("every_item_in_the_full_game_mode_has_a_price")
 {
-	const Manifest::Core::GameModeNode full = LoadGameMode(fullPath);
+	const Manifest::Core::GameModeNode full = LoadGameMode("full");
 
 	CHECK(full.items.size() >= 80);
 
@@ -149,7 +149,7 @@ TEST_CASE("every_item_in_the_full_game_mode_has_a_price")
 	{
 		CHECK(!item.itemId.empty());
 		CHECK(!item.displayName.empty());
-		CHECK(!item.unitType.empty());
+		CHECK(item.unitType.has_value());
 
 		// A price the trade model cannot parse is worse than a load failure, because the
 		// good is silently priced at nothing. A zero price is a free good in the data, so
@@ -173,7 +173,7 @@ TEST_CASE("every_item_carries_its_age_and_category_link")
 	// with no shortages is a universe with no trade.
 	const Manifest::Core::Ages ages = LoadAges();
 	const Manifest::Core::Categories categories = LoadCategories();
-	const Manifest::Core::GameModeNode full = LoadGameMode(fullPath);
+	const Manifest::Core::GameModeNode full = LoadGameMode("full");
 
 	std::vector<std::string> ageIds;
 	for (const auto &age : ages)
@@ -209,7 +209,7 @@ TEST_CASE("the_id_of_a_definition_names_the_kind_of_thing_it_is")
 	// with the word it starts with.
 	const Manifest::Core::Ages ages = LoadAges();
 	const Manifest::Core::Categories categories = LoadCategories();
-	const Manifest::Core::GameModeNode full = LoadGameMode(fullPath);
+	const Manifest::Core::GameModeNode full = LoadGameMode("full");
 
 	std::vector<std::string> ageIds;
 	for (const auto &age : ages)
@@ -279,7 +279,7 @@ TEST_CASE("nulls_in_the_skill_data_never_arrive_as_the_word_null")
 	// yaml-cpp renders a null as the scalar text "null". If that ever reaches the
 	// skill tree, every skill lands in an exclusive group named "null" and buying one
 	// skill locks out all the others.
-	const Manifest::Core::GameModeNode full = LoadGameMode(fullPath);
+	const Manifest::Core::GameModeNode full = LoadGameMode("full");
 
 	CHECK(full.skills.size() >= 85);
 
@@ -321,7 +321,7 @@ TEST_CASE("the_age_gates_are_the_ages")
 	// form the age ladder: each gate requires the gate of the age before it, and the
 	// first gate in age order is the only one with nothing under it.
 	const Manifest::Core::Ages ages = LoadAges();
-	const Manifest::Core::GameModeNode full = LoadGameMode(fullPath);
+	const Manifest::Core::GameModeNode full = LoadGameMode("full");
 
 	std::map<std::string, Manifest::Core::SkillNode> gates;
 	for (const auto &skill : full.skills)
@@ -374,7 +374,7 @@ TEST_CASE("the_ship_systems_are_worth_the_trip")
 	// better repair party can always fit more of it, and none of them is in an exclusive
 	// group: a trader who can afford a forward and an aft screen fits both, and the tree
 	// has to say so.
-	const Manifest::Core::GameModeNode full = LoadGameMode(fullPath);
+	const Manifest::Core::GameModeNode full = LoadGameMode("full");
 
 	const std::vector<std::string> shipSystems = {
 	    "SkillShipShieldsFront",    "SkillShipShieldsSide",        "SkillShipShieldsRear",
@@ -426,7 +426,7 @@ TEST_CASE("the_standing_trees_are_in_the_game")
 	// node the tree has, and the links that cross trees - the refinery on the Smelting
 	// craft, the biosphere on the Agriculture craft, the insurance on the tribunal - are
 	// the point of the whole shape: a tree that stands alone is a list, not a tree.
-	const Manifest::Core::GameModeNode full = LoadGameMode(fullPath);
+	const Manifest::Core::GameModeNode full = LoadGameMode("full");
 
 	const std::vector<std::string> standingTrees = {
 	    "SkillYardDrydock",           "SkillYardOutfitting",     "SkillYardModularHulls",
@@ -496,7 +496,7 @@ TEST_CASE("one_clean_choice_locks_the_rest_of_the_standing")
 	// reason the mechanic exists: an admiralty warrant, a standing among the crews and
 	// a fence are one reputation, spent three ways. Buy one and the other two are shut,
 	// so the tree has to be built, bought from a pool, and read back.
-	const Manifest::Core::GameModeNode full = LoadGameMode(fullPath);
+	const Manifest::Core::GameModeNode full = LoadGameMode("full");
 
 	const std::vector<std::string> members = {
 	    "SkillLawAdmiraltyWarrant",
@@ -550,7 +550,7 @@ TEST_CASE("one_clean_choice_locks_the_rest_of_the_standing")
 
 TEST_CASE("the_skill_tree_is_a_valid_graph")
 {
-	const Manifest::Core::GameModeNode full = LoadGameMode(fullPath);
+	const Manifest::Core::GameModeNode full = LoadGameMode("full");
 
 	Manifest::Core::ProgressionManager progression;
 	std::string errorMessage;
@@ -594,8 +594,8 @@ TEST_CASE("the_skill_tree_is_a_valid_graph")
 
 TEST_CASE("the_simple_game_mode_is_a_smaller_subset_of_the_full_one")
 {
-	const Manifest::Core::GameModeNode full = LoadGameMode(fullPath);
-	const Manifest::Core::GameModeNode simple = LoadGameMode(simplePath);
+	const Manifest::Core::GameModeNode full = LoadGameMode("full");
+	const Manifest::Core::GameModeNode simple = LoadGameMode("simple");
 
 	CHECK(simple.items.size() >= 12);
 	CHECK(simple.items.size() < full.items.size());
@@ -630,10 +630,7 @@ TEST_CASE("the_simple_game_mode_is_a_smaller_subset_of_the_full_one")
 
 TEST_CASE("the_universe_names_load")
 {
-	std::string errorMessage;
-	Manifest::Core::UniverseNamePools pools;
-
-	CHECK(Manifest::Core::LoadUniverseNamePools(universePath, pools, errorMessage));
+	const Manifest::Core::UniverseNamePools &pools = Load("full").names;
 	CHECK(pools.PoolCount() > std::size_t(0));
 	CHECK(pools.NameCount() > std::size_t(100));
 
@@ -645,15 +642,14 @@ TEST_CASE("the_universe_names_load")
 
 TEST_CASE("the_generated_data_drives_a_universe")
 {
-	// The end to end path the front-end uses: generated documents in, a trading
+	// The end to end path the front-end uses: the staged package in, a trading
 	// universe out.
 	const Manifest::Core::Ages ages = LoadAges();
 	const Manifest::Core::Categories categories = LoadCategories();
-	const Manifest::Core::GameModeNode full = LoadGameMode(fullPath);
+	const Manifest::Core::GameModeNode full = LoadGameMode("full");
 
+	const Manifest::Core::UniverseNamePools &pools = Load("full").names;
 	std::string errorMessage;
-	Manifest::Core::UniverseNamePools pools;
-	CHECK(Manifest::Core::LoadUniverseNamePools(universePath, pools, errorMessage));
 
 	Manifest::Core::GenerateOptions options;
 	options.civilisationCount = 8;
@@ -677,21 +673,16 @@ TEST_CASE("the_generated_data_drives_a_universe")
 
 int main(int argc, char **argv)
 {
-	if (argc != 6)
+	if (argc != 2)
 	{
 		std::cout << "Usage: " << argv[0]
-		          << " <ages.yaml> <categories.yaml> <full.yaml> <simple.yaml> "
-		             "<solar-system-names.yaml>\n"
-		             "Build them with: cmake --build <build-dir> --target manifest_data\n";
+		          << " <package directory or pack>\n"
+		             "Stage it with: cmake --build <build-dir> --target manifest_mod\n";
 
 		return 2;
 	}
 
-	agesPath = argv[1];
-	categoriesPath = argv[2];
-	fullPath = argv[3];
-	simplePath = argv[4];
-	universePath = argv[5];
+	contentSource = argv[1];
 
 	doctest::Context context;
 	return context.run();

@@ -243,6 +243,28 @@ directory discovery. Identify mounts by stable logical IDs and report that order
 
 ## Atomic loading and validation
 
+**Built in C03 (2026-11-18).** `Manifest::Content::LoadContent` (`Content.h`) is the one entry
+point: it loads every type, holds the whole set to the rules of
+[Fields, defaults and null](#fields-defaults-and-null) with every game mode, and returns an
+immutable `ContentSet` (the mode's ages, items and skills in its order, every category, the name
+pools and the content identity) that holds no reference to its files or registry. The overload
+over ordered mounts builds a candidate file system and registry of its own and discards both, so
+a failure anywhere, a late type included, leaves the caller's set as it was; the console keeps its
+session through a failed `load`, and the host fails start-up in the content phase. A rule's
+failure names the record's virtual path, its type and ID, the field and the mounts that gave the
+record, a patch marked (`ContentError`); a record that does not read is the registry's
+`FormatError`, naming its file and mount. Rules are reused, not copied: the base price is
+`Simulation::IsValidBasePrice`, which generation also calls, a mode's tree is
+`ProgressionManager::Build`, and an effect is `EffectCatalogue::Default()`. Each type loads
+through a migration chain (`DefinitionType::migrations`, no steps at version 1); the wiring is
+tested with a two-version test format. The configuration records are the reflected types
+themselves (`SimulationConfig.h`, the item's physical fields now typed), so content converts
+nothing but the name pools. A category's empty description still takes its display name, as the
+retired loader did. The legacy loaders, `YamlFieldReaders.h`, the name-pool reader and the
+merged `core-config` documents are gone, with their last callers; the package holds `mod.yaml`
+and the records. Host overlays stay with C06, which defines the option contract they share with
+the validator.
+
 Build a fresh candidate containing all registry types and their derived data. Load all
 types, resolve references, normalise defaults, run semantic checks and calculate the
 fingerprint before publishing a single immutable content-set owner. Jettison registry

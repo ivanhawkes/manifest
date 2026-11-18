@@ -1,12 +1,19 @@
-# The engine-loaded definitions and the content set's identity. Above config, universe, progression
-# and effects, which never depend back on it (docs/stage-2-content-plan.md).
+# The engine-loaded definitions, their validation as one set and its identity. Above config,
+# universe, progression, sim and effects, which never depend back on it
+# (docs/stage-2-content-plan.md).
 manifest_add_module(content
 	DEPENDS
 		config
+		universe
+		progression
+		sim
+		effects
 	HEADERS
+		include/manifest/content/Content.h
 		include/manifest/content/ContentIdentity.h
 		include/manifest/content/Definitions.h
 	SOURCES
+		src/Content.cpp
 		src/ContentIdentity.cpp
 		src/Definitions.cpp
 	TESTS
@@ -14,14 +21,14 @@ manifest_add_module(content
 	PUBLIC_LIBRARIES
 		EnTT::EnTT
 		Jettison::Serialise
+		Jettison::Vfs
 	PRIVATE_LIBRARIES
 		Jettison::Core
 		Jettison::Reflect
 		Jettison::Sim
 )
 if(TARGET manifest_content_tests)
-	# The legacy loaders are the equivalence checks' reference until C03 retires them.
-	target_link_libraries(manifest_content_tests PRIVATE Manifest::Universe Jettison::Sim Jettison::Vfs)
+	target_link_libraries(manifest_content_tests PRIVATE Jettison::Reflect Jettison::Sim yaml-cpp::yaml-cpp)
 	target_compile_definitions(manifest_content_tests PRIVATE
 		MANIFEST_MOD_DIRECTORY="${MANIFEST_MOD_DIRECTORY}"
 		MANIFEST_MOD_PACK="${PROJECT_BINARY_DIR}/manifest.pack")

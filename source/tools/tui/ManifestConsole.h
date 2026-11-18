@@ -7,10 +7,9 @@
 
 #include <jettison/devtools/Console.h>
 
-#include <manifest/config/SimulationConfig.h>
+#include <manifest/content/Content.h>
 #include <manifest/progression/ProgressionManager.h>
 #include <manifest/sim/Simulation.h>
-#include <manifest/universe/Universe.h>
 
 namespace Manifest::Tui
 {
@@ -19,7 +18,8 @@ namespace Manifest::Tui
 class ManifestConsole
 {
   public:
-	ManifestConsole(std::string dataDirectory, std::string universeFile);
+	// The content is the Manifest package, a directory or a pack, which load mounts on its own.
+	explicit ManifestConsole(std::string contentSource);
 	ManifestConsole(const ManifestConsole &) = delete;
 	ManifestConsole &operator=(const ManifestConsole &) = delete;
 
@@ -33,9 +33,9 @@ class ManifestConsole
 		return m_simulation;
 	}
 
-	const std::string &DataDirectory() const
+	const std::string &ContentSource() const
 	{
-		return m_dataDirectory;
+		return m_contentSource;
 	}
 
 	bool IsConfigurationLoaded() const
@@ -58,7 +58,7 @@ class ManifestConsole
 
 	std::string CommandVersion();
 	std::string CommandStatus();
-	std::string CommandLoad(const std::string &directory);
+	std::string CommandLoad(const std::string &source);
 	std::string CommandGenerate(Arguments arguments);
 	std::string CommandList();
 	std::string CommandShow(const std::string &argument);
@@ -68,15 +68,11 @@ class ManifestConsole
 	std::string CommandSkills();
 	std::string CommandUpgrade(const std::string &argument);
 
-	Manifest::Core::Ages m_ages;
-	Manifest::Core::Categories m_categories;
-	Manifest::Core::GameModeNode m_gameMode;
-	Manifest::Core::UniverseNamePools m_names;
+	Manifest::Content::ContentSet m_content;
 	Manifest::Core::Simulation m_simulation;
 	Manifest::Core::ProgressionManager m_progression;
 
-	std::string m_dataDirectory;
-	std::string m_universeFile;
+	std::string m_contentSource;
 	bool m_configLoaded{false};
 	bool m_quitRequested{false};
 

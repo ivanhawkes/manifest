@@ -37,21 +37,14 @@ if(MANIFEST_WERROR)
 endif()
 
 # ─── Generated Game Data ───
-# The YAML is edited as separate files under data/ and merged into the monolithic
-# documents in data/core-config by data/build.sh, which needs yq (mikefarah v4). The same script
-# writes the engine's definition records, one file per definition, under data/definitions.
+# The YAML is edited as separate files under data/, and data/build.sh, which needs yq (mikefarah
+# v4), writes the engine's definition records from it, one file per definition, under
+# data/definitions.
 set(MANIFEST_DATA_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/data")
-set(MANIFEST_DATA_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/data/core-config")
 set(MANIFEST_DEFINITIONS_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/data/definitions")
 
 # The records are named by their IDs, so the directory stands for them, through a stamp.
-set(MANIFEST_DATA_OUTPUTS
-    "${MANIFEST_DATA_OUTPUT_DIR}/full.yaml"
-    "${MANIFEST_DATA_OUTPUT_DIR}/simple.yaml"
-    "${MANIFEST_DATA_OUTPUT_DIR}/ages.yaml"
-    "${MANIFEST_DATA_OUTPUT_DIR}/categories.yaml"
-    "${CMAKE_CURRENT_BINARY_DIR}/data/definitions.stamp"
-)
+set(MANIFEST_DATA_OUTPUTS "${CMAKE_CURRENT_BINARY_DIR}/data/definitions.stamp")
 
 find_program(YQ_EXECUTABLE NAMES yq)
 find_program(BASH_PROGRAM NAMES bash)
@@ -64,8 +57,8 @@ if(NOT YQ_EXECUTABLE AND MANIFEST_BUILD_TESTS AND BUILD_TESTING)
     # A missing yq takes the generated documents and the data test suite with it.
     # Refuse the configure rather than configure a test suite that runs nothing.
     message(FATAL_ERROR
-        "yq (mikefarah/yq v4) was not found: the generated YAML in data/core-config cannot "
-        "be built and the data test suite cannot run. Activate the development shell "
+        "yq (mikefarah/yq v4) was not found: the definition records cannot be built "
+        "and the data test suite cannot run. Activate the development shell "
         "(direnv allow) or install mikefarah/yq v4. Build without the tests with "
         "-DBUILD_TESTING=OFF.")
 endif()
@@ -80,19 +73,19 @@ if(YQ_EXECUTABLE)
     if(NOT YQ_VERSION_STRING MATCHES "mikefarah" AND NOT YQ_VERSION_STRING MATCHES "[ (]v?4[.0-9]*[ )]?$")
         message(WARNING
             "data/build.sh expects mikefarah/yq v4; found '${YQ_VERSION_STRING}'. "
-            "The YAML merge may fail.")
+            "The records may not build.")
     endif()
 
     # Every source file under data/ is a document yq loads on its own, and the files
     # refer to each other by id - itemId, skillId, categoryId, ageId - so no anchor has
     # to survive the trip from one file to the next: any yq v4 builds the data. The
-    # development shell pins v4.54.1, and that is the version this merge is tested with,
+    # development shell pins v4.54.1, and that is the version the records are tested with,
     # which is what the warning is about.
     set(MANIFEST_YQ_TESTED_VERSION "4.54.1")
     if(NOT YQ_VERSION_STRING MATCHES "${MANIFEST_YQ_TESTED_VERSION}")
         message(WARNING
-            "The data merge is tested with mikefarah/yq v${MANIFEST_YQ_TESTED_VERSION}, the "
-            "version the development shell pins; found '${YQ_VERSION_STRING}'. The merge is "
+            "The records are tested with mikefarah/yq v${MANIFEST_YQ_TESTED_VERSION}, the "
+            "version the development shell pins; found '${YQ_VERSION_STRING}'. The script is "
             "plain v4 syntax and the source files link by id, so a v4 of any version "
             "should build it. Use the devenv shell for the tested version, or configure "
             "with -DBUILD_TESTING=OFF.")
@@ -107,12 +100,12 @@ if(YQ_EXECUTABLE)
 
     add_custom_command(
         OUTPUT ${MANIFEST_DATA_OUTPUTS}
-        COMMAND "${BASH_PROGRAM}" "${MANIFEST_DATA_SOURCE_DIR}/build.sh" "${MANIFEST_DATA_OUTPUT_DIR}"
+        COMMAND "${BASH_PROGRAM}" "${MANIFEST_DATA_SOURCE_DIR}/build.sh"
             "${MANIFEST_DEFINITIONS_OUTPUT_DIR}"
         COMMAND "${CMAKE_COMMAND}" -E touch "${CMAKE_CURRENT_BINARY_DIR}/data/definitions.stamp"
         DEPENDS "${MANIFEST_DATA_SOURCE_DIR}/build.sh" ${MANIFEST_DATA_INPUTS}
         WORKING_DIRECTORY "${MANIFEST_DATA_SOURCE_DIR}"
-        COMMENT "Merging the source YAML into data/core-config"
+        COMMENT "Writing the definition records into data/definitions"
         VERBATIM
     )
 
@@ -132,11 +125,7 @@ add_custom_target(manifest_mod
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${CMAKE_CURRENT_SOURCE_DIR}/mods/manifest/mod.yaml" "${MANIFEST_MOD_DIRECTORY}/mod.yaml"
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${MANIFEST_DATA_OUTPUT_DIR}" "${MANIFEST_MOD_DIRECTORY}/manifest/core-config"
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${MANIFEST_DEFINITIONS_OUTPUT_DIR}" "${MANIFEST_MOD_DIRECTORY}/manifest/definitions"
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${MANIFEST_DATA_SOURCE_DIR}/universe" "${MANIFEST_MOD_DIRECTORY}/manifest/universe"
     VERBATIM)
 if(TARGET manifest_data)
     add_dependencies(manifest_mod manifest_data)

@@ -15,10 +15,10 @@ TEST_CASE("Manifest directory and pack expose identical content through the engi
 
 	const auto files = directory.Enumerate("");
 	REQUIRE(files == pack.Enumerate(""));
-	// The six legacy files, beside one record per definition.
+	// mod.yaml, and one record per definition.
 	const auto definitions = directory.Enumerate("manifest/definitions");
 	REQUIRE_FALSE(definitions.empty());
-	REQUIRE(files.size() == 6 + definitions.size());
+	REQUIRE(files.size() == 1 + definitions.size());
 	for (const auto &path : files)
 	{
 		CAPTURE(path);
@@ -32,7 +32,5 @@ TEST_CASE("Manifest directory and pack expose identical content through the engi
 	CHECK(mod["version"].as<int>() == 1);
 	CHECK(mod["name"].as<std::string>() == "Manifest");
 	CHECK(mod["engine"].as<std::string>() == std::string(Jettison::Core::EngineVersion()));
-	CHECK(pack.Exists("manifest/core-config/full.yaml"));
-	CHECK(pack.Exists("manifest/universe/solar-system-names.yaml"));
 	CHECK(pack.Exists("manifest/definitions/game-modes/full.yaml"));
 }

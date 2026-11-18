@@ -17,15 +17,16 @@ ContentIdentity BuildContentIdentity(const Jettison::Sim::DefinitionRegistry &re
 	for (const DefinitionType &definition : DefinitionTypes())
 	{
 		const std::vector<std::string> names = registry.Names(definition.type);
-		writer.WriteName(definition.name);
-		writer.WriteUnsigned(definition.version.version, 4);
+		const Jettison::Serialise::FormatVersion version = definition.migrations.Current();
+		writer.WriteName(definition.migrations.Format());
+		writer.WriteUnsigned(version.version, 4);
 		writer.WriteUnsigned(names.size(), 4);
 		for (const std::string &name : names)
 		{
 			writer.WriteName(name);
 			writer.WriteBytes(
 			    Jettison::Serialise::BinaryArchive::Write(
-			        *registry.Find(definition.type, name), definition.version));
+			        *registry.Find(definition.type, name), version));
 		}
 	}
 

@@ -649,7 +649,7 @@ is included by `data/build.sh`, plus explicit selection in `data/game-mode/full.
 the separate governance fixture. `CategoryMedicine` is an existing category available
 for the implementer to assess. Preserve the original eight-good trading fixture. Use
 ordinary Jettison definition/registry/archive and market/inventory/cargo paths; no new
-generic SDK gap is demonstrated. Do not edit generated `data/core-config` outputs as
+generic SDK gap is demonstrated. Do not edit generated `data/definitions` records as
 authored source. Availability/age, category choice, base price, density, units per cubic
 metre and packing factor remain unselected; daily consumption is selected as 5 kg per
 1,000 people per simulation day.
@@ -691,7 +691,7 @@ authoring boundary is a new `data/trade-items/grains.yaml`, included in `data/bu
 definition list and selected in `data/game-mode/full.yaml`. Use the existing YAML/archive/
 registry and packaging mechanisms. Preserve the tiny eight-good trading fixture; select
 the new essentials explicitly in the separate governance fixture rather than silently
-changing unrelated mode selections. Do not edit generated `data/core-config` outputs as
+changing unrelated mode selections. Do not edit generated `data/definitions` records as
 the source of truth.
 
 The implementer must specify each grain's food form, availability/age, base price, density,

@@ -205,7 +205,7 @@ TEST_CASE("A damaged required file in the pack fails start-up as it is read")
 {
 	const Content content;
 	std::vector<char> pack = content.PackBytes();
-	const Stored stored = FindStored(pack, "manifest/core-config/full.yaml");
+	const Stored stored = FindStored(pack, "manifest/definitions/game-modes/full.yaml");
 	// A stored file has no checksum; a compressed one has its frame's.
 	REQUIRE(stored.method == 1);
 	pack[stored.offset + stored.size / 2] ^= 0x5a;
@@ -253,18 +253,25 @@ TEST_CASE("A newer engine requirement, or a required package not given, fails")
 }
 
 
-TEST_CASE("A required file that is missing, or cannot be read, fails")
+TEST_CASE("Content that is missing, cannot be read or breaks a rule fails")
 {
 	{
 		const Content content;
-		content.Remove("manifest/universe/solar-system-names.yaml");
+		content.Remove("manifest/definitions/game-modes/full.yaml");
+		CheckFails(content.Directory(), Phase::Content, "there is no game mode 'full'");
+	}
+	{
+		const Content content;
+		content.Put("manifest/definitions/ages/age-stone.patch.yaml", "version: 1\ndisplayName: ''\n");
 		CheckFails(
 		    content.Directory(), Phase::Content,
-		    "the required file manifest/universe/solar-system-names.yaml is missing");
+		    "manifest/definitions/ages/age-stone.yaml: Manifest.Age 'AgeStone': displayName is "
+		    "required (from manifest, manifest (patch))");
 	}
 
 	const Content content;
-	const std::filesystem::path file = content.Directory() / "manifest/core-config/full.yaml";
+	const std::filesystem::path file =
+	    content.Directory() / "manifest/definitions/game-modes/full.yaml";
 	std::filesystem::permissions(file, std::filesystem::perms::none);
 	// Root reads it anyway, as a CI container may run the suite.
 	if (std::ifstream{file}.is_open())

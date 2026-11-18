@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <map>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <manifest/config/SimulationConfig.h>
@@ -91,8 +92,8 @@ struct TradeRoute
 //
 // The model is a development harness: it is reproducible from the seed and it is
 // deliberately small enough to reason about. It reads basePrice from every good, plus
-// the ageId and categoryId links the merged documents write out. Those links are
-// optional: goods without them are in every deck and wanted at the ordinary rate.
+// its ageId and categoryId links. Loaded content always has them; a good built without
+// them is in every deck and wanted at the ordinary rate.
 class Simulation
 {
   public:
@@ -117,6 +118,10 @@ class Simulation
 
 	// Looks a world up by id ("Civ-03") or by name, case insensitive.
 	const Civilisation *FindCivilisation(const std::string &idOrName) const;
+
+	// Whether the text is a base price Generate accepts: exact nonnegative microcredits, with
+	// room for the maximum market/local multiplier. Content loading holds every item to it.
+	static bool IsValidBasePrice(std::string_view text);
 
 	// Exact microcredit price; zero when the field is invalid or negative.
 	static Decimal BasePrice(const ItemNode &item);

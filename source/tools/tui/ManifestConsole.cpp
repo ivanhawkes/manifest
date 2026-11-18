@@ -6,6 +6,7 @@
 #include <limits>
 #include <sstream>
 #include <stdexcept>
+#include <string_view>
 #include <utility>
 
 namespace Manifest::Tui
@@ -15,6 +16,10 @@ using Jettison::DevTools::Console;
 
 namespace
 {
+// The mode the development commands play.
+constexpr std::string_view kGameMode = "full";
+
+
 unsigned ParseCount(
     std::span<const std::string> arguments, std::size_t index, unsigned fallback, unsigned minimum,
     unsigned maximum)
@@ -36,8 +41,7 @@ std::string PadRight(const std::string &text, std::size_t width)
 }
 } // namespace
 
-ManifestConsole::ManifestConsole(std::string dataDirectory, std::string universeFile)
-    : m_dataDirectory{std::move(dataDirectory)}, m_universeFile{std::move(universeFile)}
+ManifestConsole::ManifestConsole(std::string contentSource) : m_contentSource{std::move(contentSource)}
 {
 	RegisterCommands();
 	m_console.CaptureLog();
@@ -64,7 +68,7 @@ void ManifestConsole::RegisterCommands()
 	    "status", "status: configuration, universe and skill tree state", 0, 0,
 	    [this](Arguments) { return CommandStatus(); });
 	RegisterCommand(
-	    "load", "load [directory]: reads the generated configuration and names", 0, 1,
+	    "load", "load [source]: loads the content of a package directory or pack", 0, 1,
 	    [this](Arguments arguments) { return CommandLoad(arguments.empty() ? "" : arguments[0]); });
 	RegisterCommand(
 	    "generate", "generate [count] [seed]: generates worlds (default 8, seed 1)", 0, 2,
@@ -109,10 +113,11 @@ std::string ManifestConsole::CommandVersion()
 std::string ManifestConsole::CommandStatus()
 {
 	std::ostringstream status;
-	status << "data " << m_dataDirectory << (m_configLoaded ? " (loaded)" : " (not loaded)") << "\n"
-	       << "ages " << m_ages.size() << ", categories " << m_categories.size() << ", items "
-	       << m_gameMode.items.size() << ", skills " << m_gameMode.skills.size() << ", names "
-	       << m_names.NameCount() << " in " << m_names.PoolCount() << " pools\n"
+	status << "content " << m_contentSource << (m_configLoaded ? " (loaded)" : " (not loaded)") << "\n"
+	       << "ages " << m_content.ages.size() << ", categories " << m_content.categories.size()
+	       << ", items " << m_content.gameMode.items.size() << ", skills "
+	       << m_content.gameMode.skills.size() << ", names " << m_content.names.NameCount() << " in "
+	       << m_content.names.PoolCount() << " pools\n"
 	       << (m_configLoaded ? m_simulation.StatusLine() : std::string("no universe: run generate"))
 	       << "\n"
 	       << "skill tree: " << m_progression.Summary();
@@ -121,40 +126,31 @@ std::string ManifestConsole::CommandStatus()
 }
 
 
-std::string ManifestConsole::CommandLoad(const std::string &directory)
+std::string ManifestConsole::CommandLoad(const std::string &source)
 {
-	const std::string target = directory.empty() ? m_dataDirectory : directory;
-	sim::Ages ages;
-	sim::Categories categories;
-	sim::GameModeNode gameMode;
-	sim::UniverseNamePools names;
+	const std::string target = source.empty() ? m_contentSource : source;
+	const Jettison::Vfs::Mount mount{"manifest", target};
+	Content::ContentSet content = Content::LoadContent({&mount, 1}, kGameMode);
 	sim::ProgressionManager progression;
 	std::string errorMessage;
-	if (!sim::LoadConfigAges(target + "/ages.yaml", ages, errorMessage) ||
-	    !sim::LoadConfigCategories(target + "/categories.yaml", categories, errorMessage) ||
-	    !sim::LoadConfigGameMode(target + "/full.yaml", gameMode, errorMessage) ||
-	    !sim::LoadUniverseNamePools(m_universeFile, names, errorMessage) ||
-	    !progression.Build(gameMode.skills, errorMessage))
-	{
+	if (!progression.Build(content.gameMode.skills, errorMessage))
 		throw std::runtime_error{errorMessage};
-	}
 
 	// A failed reload preserves the working session. A successful one replaces all
 	// configuration together and discards the universe generated from the previous data.
 	progression.SetResources(20);
-	m_ages = std::move(ages);
-	m_categories = std::move(categories);
-	m_gameMode = std::move(gameMode);
-	m_names = std::move(names);
+	m_content = std::move(content);
 	m_progression = std::move(progression);
 	m_simulation = {};
-	m_dataDirectory = target;
+	m_contentSource = target;
 	m_configLoaded = true;
 
 	return std::format(
-	    "Loaded {}: ages {}, categories {}, items {}, skills {}, names {} in {} pools.", target,
-	    m_ages.size(), m_categories.size(), m_gameMode.items.size(), m_gameMode.skills.size(),
-	    m_names.NameCount(), m_names.PoolCount());
+	    "Loaded {}: ages {}, categories {}, items {}, skills {}, names {} in {} pools, content "
+	    "{:016x}.",
+	    target, m_content.ages.size(), m_content.categories.size(), m_content.gameMode.items.size(),
+	    m_content.gameMode.skills.size(), m_content.names.NameCount(), m_content.names.PoolCount(),
+	    m_content.identity.fingerprint);
 }
 
 
@@ -170,14 +166,16 @@ std::string ManifestConsole::CommandGenerate(Arguments arguments)
 	options.seed = ParseCount(arguments, 1, 1, 0, std::numeric_limits<unsigned>::max());
 
 	std::string errorMessage;
-	if (!m_simulation.Generate(m_ages, m_categories, m_gameMode.items, m_names, options, errorMessage))
+	if (!m_simulation.Generate(
+	        m_content.ages, m_content.categories, m_content.gameMode.items, m_content.names, options,
+	        errorMessage))
 	{
 		throw std::runtime_error{errorMessage};
 	}
 
 	std::ostringstream result;
 	result << "Generated " << m_simulation.GetCivilisations().size() << " civilisations with seed "
-	       << options.seed << ", " << m_gameMode.items.size() << " goods.\n"
+	       << options.seed << ", " << m_content.gameMode.items.size() << " goods.\n"
 	       << m_simulation.StatusLine();
 
 	return result.str();

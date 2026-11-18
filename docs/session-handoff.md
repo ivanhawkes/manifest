@@ -1,5 +1,25 @@
 # Session handoff
 
+## C03: one validated content set — 2026-11-18
+
+The host, the console and the data suite load one content set through
+`Manifest::Content::LoadContent`, checked as a whole and built away from the caller's state, so a
+failed load leaves nothing behind; what was built is recorded under
+[atomic loading and validation](stage-2-content-plan.md#atomic-loading-and-validation). The
+legacy loaders, `YamlFieldReaders.h`, the name-pool reader, `ConfigTests` and the merged
+`core-config` documents are retired with their last callers, and the package is `mod.yaml` and
+the records. No Jettison gap: layering, migration chains and per-mount layers are public SDK calls
+at pin `e53681e`. Host overlays wait for C06's option contract.
+
+Evidence, on Lythir, 24 build and test jobs, 16 tidy: `./scripts/ci.sh --werror --asan --tidy`
+passed 21 of 21 in each of `clang-debug`, `clang-release` and `clang-asan`, and tidy clean (the
+first run's two `modernize-use-auto` findings fixed). `content` has 13 cases, 1095 assertions:
+every semantic rejection, registry refusals (a future version, an unknown field, an orphan patch),
+whole-file replacement, patch merge and `!append`, and a two-version test format's migrations.
+`host`, `console` and `data` load through the content set; `console` shows a late type's failure
+keeping the session and directory and pack loading the same content. The `sim` replay hashes did
+not move: none is pinned over the shipped categories, whose order is now the registry's.
+
 ## C02: definitions through the engine registry — 2026-11-18
 
 The six definition types load through `Jettison::Sim::DefinitionRegistry` from records that
