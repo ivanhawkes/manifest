@@ -47,8 +47,8 @@ on that planet under owner terms, preserving bookings, physical delivery and sep
 economies/rights/construction opportunities. Allocate starting regions only with an operational
 starter-compatible public station and physical delivery connection. Also require available
 working station life support and spawn the new player connected. The starter receives
-30 kg oxygen and one fresh installed 30-occupant-day cartridge once, in dedicated service
-space outside its trade hold. Trade supplies/loose spares use cargo volume; storage
+its oxygen and one fresh installed scrubber cartridge once ([D-045](decision-ledger.md), values in
+the [small-ship plan](small-trader-and-docking-plan.md#selected-ship-roles-and-cargo-capacities)), in dedicated service space outside its trade hold. Trade supplies/loose spares use cargo volume; storage
 dimensions, station provisioning and later outages remain open. Guarantee continuing basic
 docking/trading/regional delivery access against corporate revocation, retaining charges,
 finite capacity/goods/funds and private-port policies. Detailed transport and starter
@@ -97,16 +97,16 @@ protected. These refinements supersede the permanent no-second-port interpretati
 concessions. The host records timing inputs/expiry for replay; deterministic systems read no clock.
 The selected exclusivity grant starts when the first eligible frontier port becomes operational
 and its exploitation concession activates. Disclose its duration before construction; the
-initial balance-testing term is 72 server-running hours. Idle facilities and disconnected
+initial balance-testing term is the [economy plan: exclusive exploitation](economy-and-development-plan.md#real-time-exclusive-exploitation)'s, in server-running hours. Idle facilities and disconnected
 owners do not pause it; ownership transfers, rebuilding and government changes cannot renew
 or extend it. The concession does not itself transfer government control.
 
 The first selected [tech example](economy-and-development-plan.md#first-tech-example-bronze-metallurgy-selected)
 is Bronze metallurgy in the separate governance fixture. Basic smelting knowledge, a seeded
-operational local workshop and delivered public project inputs of 90 kg copper plus 10 kg tin
+operational local workshop and delivered public project inputs of copper and tin
 gate timed work. Use local copper and physically imported tin. Consume project inputs once;
-workshop interruption pauses work. Completion unlocks local production batches of 9 kg copper
-plus 1 kg tin into 10 kg bronze. Knowledge survives workshop loss; production still needs an
+workshop interruption pauses work. Completion unlocks local production batches of copper and tin
+into bronze (inputs and batch ratio: [economy plan: bronze](economy-and-development-plan.md#first-tech-example-bronze-metallurgy-selected)). Knowledge survives workshop loss; production still needs an
 operational workshop. Quantities are starting test values; work duration, throughput and
 profitability remain unvalidated. Preserve the separate eight-good trading fixture.
 
@@ -118,35 +118,33 @@ of food demand, including mixtures. Keep separate stocks/prices/storage and debi
 grains once without creating a food commodity. Population counts people in aggregate;
 consumption rates are per 1,000 people per simulation day, scaled by population and elapsed
 simulation time with fractional quantities retained. Any supported migration must explicitly
-convert legacy abstract world units. Initial food demand is 500 kg per 1,000 people per
-simulation day across the qualifying grains. Drinking-water demand is 3,000 litres per
-1,000 people per simulation day, separate from agricultural/industrial water demand.
+convert legacy abstract world units. The initial food demand, across the qualifying grains, and drinking-water demand are the
+[economy plan: households](economy-and-development-plan.md#aggregate-households-wages-and-consumer-demand-selected)'s; drinking water is separate from agricultural/industrial water demand.
 Preserve physical volume through conversion to selected inventory units. Remaining item
 authoring values and population sizes need selection/
 implementation through the stage 2 content path.
 
 Basic Medical Supplies is a distinct tradable `Kilogram` commodity for routine medical
 consumables. Preserve specialised medicines as separate items without automatic substitution.
-Initial basic-supplies consumption is 5 kg per 1,000 people per simulation day, prorated
-across updates. Remaining authored values still need selection; the economy plan records
+Basic-supplies consumption is prorated across updates at the [economy plan: households](economy-and-development-plan.md#aggregate-households-wages-and-consumer-demand-selected)'s
+rate. Remaining authored values still need selection; the economy plan records
 the content implementer handoff.
 
 Further [economy rules](economy-and-development-plan.md) select aggregate households,
 pre-funded recipe payroll, progress-based wages, tax/rounding, regular payroll/purchases
-every 60 simulation seconds and health/happiness losses that both reduce production.
+on a fixed simulation-time cadence ([economy plan: health and happiness](economy-and-development-plan.md#population-health-happiness-and-production-selected)) and health/happiness losses that both reduce production.
 Condition updates follow household purchases on that cadence: greater essential shortages
 cause greater losses, full essentials allow gradual recovery and happiness declines/recovers
 faster than health. Both remain within 0–100, initially 100 in the first balance-testing
-scenario, without resets on joining/acquisition/governor changes. Initial test rates per
-simulation hour are health −6/happiness −12 at complete shortage, partial losses proportional
-to severity, and health +3/happiness +6 recovery at full essentials. Severity averages required
+scenario, without resets on joining/acquisition/governor changes. Losses are proportional
+to severity and recovery happens at full essentials, at the initial test rates of the
+[economy plan: health and happiness](economy-and-development-plan.md#population-health-happiness-and-production-selected). Severity averages required
 essential needs' unmet fractions using authored importance weights, initially equal. Food
 counts once across qualifying grains. Surplus cannot
 offset another missing essential. Condition slows production work rate while completed batches
 retain declared inputs, outputs and gross wages. Slower work slows proportional wage accrual;
-changes apply to subsequent steps without reversing progress or earned/paid wages. Initial
-multiplier is `(0.5 + health / 200) × (0.5 + happiness / 200)`, 25%–100% of otherwise eligible
-work rate; missing materials/funds or inactive facilities can still stop work entirely.
+changes apply to subsequent steps without reversing progress or earned/paid wages. The initial
+work-rate multiplier is the [economy plan: health and happiness](economy-and-development-plan.md#population-health-happiness-and-production-selected)'s; missing materials/funds or inactive facilities can still stop work entirely.
 Production uses prior-step condition and settles completion. At each due economic boundary,
 regular payroll/tax precedes household purchases/consumption, then condition updates for the
 next fixed step. Full movement/market integration ordering and balance need validation.
@@ -157,9 +155,9 @@ queries, auto-traders and scripts before offering/ranking options; fleet coverag
 the intended information advantage. These remain planning requirements without runtime proof.
 
 The [small-ship plan](small-trader-and-docking-plan.md) adds a single-occupant long-journey
-class with a truck-like tiny cabin, 4 m³ (four IBC units) of cargo and a matching small berth.
+class with a truck-like tiny cabin, a very small cargo hold and a matching small berth.
 Its primary purpose remains unspecified and trade is secondary. The distinct lone-trader
-starter has a 20-IBC (20 m³) hold; onboarding must not confuse the two classes.
+starter has a larger hold (both capacities: [D-044](decision-ledger.md), the [small-ship plan](small-trader-and-docking-plan.md#selected-ship-roles-and-cargo-capacities)); onboarding must not confuse the two classes.
 Plan definitions in stage 2, ownership/capacity in stage 3, physical berth integration in
 stage 4 and recovery in stage 5. The smaller berth is a pad class Manifest authors
 ([D-044](decision-ledger.md)); Jettison provisioned it in W01. Dimensions,

@@ -145,7 +145,7 @@ are allowed at regional concession expiry despite that government.
 Incumbents retain infrastructure/capital advantages and may try to exhaust
 resources before rivals arrive. The selected grant starts when the first eligible frontier
 spaceport becomes operational and its exploitation concession activates. Publish its duration
-before construction; use 72 server-running hours as the initial balance-testing term. Idle
+before construction; the initial balance-testing term is the [economy plan: exclusive exploitation](economy-and-development-plan.md#real-time-exclusive-exploitation)'s. Idle
 facilities and disconnected owners do not pause it; ownership transfers, rebuilding and
 government changes cannot restart or extend it. The concession does not transfer government
 control. Validate the term against construction costs, extraction capacity and server pacing.
@@ -154,8 +154,8 @@ control. Validate the term against construction costs, extraction capacity and s
 
 The selected first [tech example](economy-and-development-plan.md#first-tech-example-bronze-metallurgy-selected)
 is Bronze metallurgy: basic smelting knowledge, an operational seeded workshop, local copper
-and physically imported tin. Consume 90 kg copper plus 10 kg tin once for the timed public
-project; completion unlocks repeat batches of 9 kg copper plus 1 kg tin into 10 kg bronze.
+and physically imported tin. Consume the copper and tin inputs once for the timed public
+project; completion unlocks repeat batches of copper and tin into bronze ([economy plan: bronze](economy-and-development-plan.md#first-tech-example-bronze-metallurgy-selected)).
 Facility interruption pauses project work, and completed knowledge survives facility loss;
 production requires an operational workshop. These are initial test quantities for the
 separate governance scenario; duration, throughput and profitability still need balancing.
@@ -180,35 +180,31 @@ stocks/prices/storage and consume actual grains, without a synthetic food commod
 Regional population counts people in aggregate; author demand per 1,000 people per simulation
 day, scaling fractional quantities by population and interval duration. Retain one household
 pool per region. Any supported migration needs an explicit conversion from legacy abstract
-world units. Initial staple-food demand is 500 kg per 1,000 people per simulation day;
-a 25,000-person region needs 12,500 kg/day across its qualifying grains. This balance-test
-requirement retains physical supply/funding limits and shortage recording. Initial
-drinking-water demand is 3,000 litres per 1,000 people per simulation day, separate from
-agricultural/industrial demand. For 25,000 people, this is 75,000 litres/day. Preserve
+world units. The initial staple-food and drinking-water demand rates are the [economy plan: households](economy-and-development-plan.md#aggregate-households-wages-and-consumer-demand-selected)'s;
+this balance-test requirement retains physical supply/funding limits and shortage recording,
+and drinking water is separate from agricultural/industrial demand. Preserve
 fractional interval quantities and physical volume through inventory-unit conversions.
 Remaining commodity definitions and population sizes still need selection/implementation.
 
 Basic Medical Supplies is selected as a distinct tradable kilogram-based commodity for
 routine medical consumables. Antibiotics, anaesthetics and analgesics remain separate
-commodities without automatic substitution. Initial basic-supplies demand is 5 kg per
-1,000 people per simulation day, or 125 kg/day for 25,000 people, prorated across updates.
+commodities without automatic substitution. Basic-supplies demand is prorated across updates at the
+economy plan's rate.
 All three first-basket consumption rates are selected; remaining authored item values
 are open. The economy plan records the bounded implementer handoff.
 
 Track aggregate population health and happiness in simulation, each on a continuous 0–100
 scale (100 ideal, 0 lowest modelled condition), starting both at 100 in the first balance-testing
 scenario. Existing values persist on joining, acquisition or governor changes. After household
-purchases every 60 simulation seconds, essential shortages lower both values with greater losses
+purchases at each economic cadence ([economy plan: health and happiness](economy-and-development-plan.md#population-health-happiness-and-production-selected)), essential shortages lower both values with greater losses
 for larger shortages; full essentials permit gradual recovery. Happiness declines/recovers
-faster than health, with both bounded to 0–100. Initial test rates per simulation hour are
-health −6/happiness −12 at complete shortage, partial losses proportional to severity, and
-health +3/happiness +6 at full essentials. Severity averages required essentials' unmet
+faster than health, with both bounded to 0–100. Partial losses are proportional to severity,
+and recovery happens at full essentials, at the initial test rates of the [economy plan: health and happiness](economy-and-development-plan.md#population-health-happiness-and-production-selected). Severity averages required essentials' unmet
 fractions with authored importance weights, initially equal; cap fulfilment at 100% so surplus
 cannot offset another missing essential. Both values slow production work rate while completed
 batches retain declared inputs/outputs/gross wages. Slower work slows proportional wage accrual;
 changes affect subsequent steps without reversing progress or earned/paid wages. The initial
-multiplier is `(0.5 + health / 200) × (0.5 + happiness / 200)`, 25%–100% of otherwise eligible
-work rate. Missing materials/funds or inactive facilities can still stop work entirely.
+work-rate multiplier is the economy plan's. Missing materials/funds or inactive facilities can still stop work entirely.
 Production uses prior-step condition and settles completion; on each due economic boundary,
 regular payroll/tax precedes household purchases/consumption, then condition updates for the
 next fixed step. Full movement/market integration ordering and condition balance need validation.
@@ -219,17 +215,17 @@ coverage must constrain UI queries, native trading decisions and script facts as
 provide the intended competitive advantage; global real-time trader knowledge is superseded.
 
 Add the [compact single-occupant ship and matching berth](small-trader-and-docking-plan.md):
-tiny truck-like living accommodation for long journeys and only four IBC units (4 m³) of
-cargo. Manifest owns the class and balance; the pinned engine needs a reusable smaller-pad
+tiny truck-like living accommodation for long journeys and a very small cargo hold
+([D-044](decision-ledger.md)). Manifest owns the class and balance; the pinned engine needs a reusable smaller-pad
 capability. This ship's primary role is unspecified and trade is secondary. The separate
-lone-trader entry ship starts with a 20-IBC (20 m³) hold. Dimensions, endurance, costs,
+lone-trader entry ship starts with a larger hold (capacities: the [small-ship plan](small-trader-and-docking-plan.md#selected-ship-roles-and-cargo-capacities)). Dimensions, endurance, costs,
 starter upgrades and each hull's berth fit remain design work.
-Its selected initial supplies are 30 kg of oxygen and one fresh installed standard
-scrubber cartridge (30 occupant-days): each covers 30 simulation days at one occupant.
+Its selected initial supplies are oxygen and one fresh installed standard scrubber
+cartridge ([D-045](decision-ledger.md); amounts and endurance: the [small-ship plan](small-trader-and-docking-plan.md#selected-ship-roles-and-cargo-capacities)).
 Provision once and preserve remaining supplies through reconnect/recovery/transfers;
-operating reserves use dedicated life-support space outside the 20 m³ trade hold. Trade
+operating reserves use dedicated life-support space outside the trade hold. Trade
 supplies and loose spares use cargo volume. The starter's operating oxygen maximum is
-30 kg, so it begins full; cargo oxygen cannot bypass this cap. Compartment dimensions,
+its initial supply, so it begins full; cargo oxygen cannot bypass this cap. Compartment dimensions,
 tank physical volume, transfer procedures, full journey endurance and compact limits/
 reserves remain open.
 
@@ -237,13 +233,12 @@ Add oxygen and carbon scrubbers to the planned item list under a Life Support ca
 The [exploration content follow-up](stage-2-content-plan.md#life-support-and-space-exploration-content-follow-up)
 tracks the related space-exploration requirements. Carbon scrubbers are replaceable
 consumable cartridges with finite capacity, used by installed machinery that stays aboard.
-Oxygen is a separate consumable measured and traded in kilograms, required at 1 kg per
-occupant per simulation day while relying on onboard life support. One occupant on a
-30-day journey requires 30 kg; retain fractional use. Its reserves and remaining scrubbing
+Oxygen is a separate consumable measured and traded in kilograms, required per
+occupant per simulation day while relying on onboard life support (rate: the [life-support follow-up](stage-2-content-plan.md#life-support-and-space-exploration-content-follow-up));
+retain fractional use. Its reserves and remaining scrubbing
 capacity are distinct supply constraints. Scrubbing capacity is measured in occupant-days:
 one supports one person for one simulation day, with fractional usage carried forward.
-A fresh standard cartridge is rated at 30 occupant-days, supporting one occupant for 30
-simulation days or two for 15. Cartridge mass/volume/price, tank volume/storage capacity,
+A fresh standard cartridge's rating is the [life-support follow-up](stage-2-content-plan.md#life-support-and-space-exploration-content-follow-up)'s. Cartridge mass/volume/price, tank volume/storage capacity,
 cartridge trade units, installed/spare capacity, endurance,
 replacement/resupply, spent-cartridge handling and exhaustion consequences remain open.
 
@@ -299,7 +294,7 @@ granting government/resource rights. Deliveries name a region and remain physica
 choose offered terms and honour accepted bookings. Allocate starting regions only with an
 operational starter-compatible public station and physical regional delivery connection.
 New players spawn connected to working station life support; allocation requires an
-available service connection. The starter's selected 30 kg oxygen and one fresh installed
+available service connection. The starter's selected oxygen and one fresh installed
 cartridge remain intact while connected service works. Station provisioning and later
 outages remain separate design choices.
 Basic docking, trading and regional delivery access remain available despite corporate
