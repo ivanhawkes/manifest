@@ -48,6 +48,8 @@ host. Keep the validator independent of TUI and runtime world construction.
 
 ## Schema and packaging proposal
 
+Finalised by the [schema contract](#schema-contract-c01-2026-11-18).
+
 Jettison's registry expects one versioned reflected object per file and derives its
 registry name from the relative filename. Adopt that format for hosted definitions:
 
@@ -91,6 +93,124 @@ after loading. Quote it in generated YAML, and verify exact microcredit values s
 the packaging transform. Continuous properties remain floats/doubles at runtime and
 existing ledgers stay whole-credit integers. Add no Decimal archive codec solely for
 this authoring path.
+
+## Schema contract (C01, 2026-11-18)
+
+Settled against Manifest `aa56443` and SDK pin `e53681e` by reading the authored data, the
+loaders and the SDK's `DefinitionRegistry`, `YamlArchive`, `Reflect`, `FileSystem`, `InFrame` and
+`SaveInfo`. It finalises the proposal above for C02; where they differ, this section governs. No
+code, data or gate changed. **No Jettison gap is demonstrated:** each need below maps to a public
+SDK call, so the engine's content-pipeline row has no work until C02 or C03 finds one.
+
+### Records
+
+One versioned file per record, every format at version 1. A registry name is the authored ID in
+kebab case: lower-cased, with a hyphen at each lower-to-upper or digit-to-upper boundary and before
+the last capital of a capital run followed by a lower-case letter (`ItemCopper` → `item-copper`,
+`ItemLPG` → `item-lpg`). The loader checks every record's ID against its name, so a mod's file at
+the wrong path is refused rather than resolved by filename; packaging rejects two IDs with one name.
+References resolve by authored ID through an index built at load.
+
+| Type | Directory under `manifest/` | Source | Count today |
+| --- | --- | --- | --- |
+| `Manifest.Age` | `definitions/ages` | `base/ages.yaml` | 14 |
+| `Manifest.Category` | `definitions/categories` | `trade-items/categories.yaml` | 43 |
+| `Manifest.Item` | `definitions/items` | `trade-items/*.yaml`, `item-base` | 89 |
+| `Manifest.Skill` | `definitions/skills` | `skill-tree/*.yaml`, `skill-base` (age gates included) | 85 |
+| `Manifest.NamePool` | `definitions/name-pools` | `universe/solar-system-names.yaml`, one per key | 2 |
+| `Manifest.GameMode` | `definitions/game-modes` | `game-mode/full.yaml`, `simple.yaml` | 2 |
+| `Manifest.Scenario` | `scenarios` | new, authored by C05 | 0 |
+
+### Fields, defaults and null
+
+The reader starts from default member initialisers and rejects null in a whole file, so every
+default below is an initialiser, and every "required" is a semantic check on the default. A legacy
+null is omitted by packaging only in the fields marked optional; a null elsewhere fails packaging
+with file, ID and field. A patch's null keeps the engine meaning (the field takes its default).
+Rules the current loader applies by raising a value silently to its floor become rejections; no
+authored value is below one.
+
+| Type | Field (YAML key) | C++ type, default | Rule |
+| --- | --- | --- | --- |
+| Age | `ageId`, `displayName` | string, empty | required |
+| Age | `description` | string, empty | optional |
+| Category | `categoryId`, `displayName` | string, empty | required |
+| Category | `type` | string, empty | empty takes `categoryId` (existing normalisation) |
+| Category | `description` | string, empty | optional |
+| Item | `itemId`, `displayName`, `categoryId`, `ageId` | string, empty | required; links resolve |
+| Item | `description` | string, empty | optional |
+| Item | `unitType` | `std::optional<TradeUnit>`, empty | required. Enumerators are the authored names: `Gram`, `Kilogram`, `Litre`, `Kilolitre`, `Unit`, `Sheet`, `SquareMetre` |
+| Item | `unitsPerCubicMetre`, `density` | double, 0 | required, finite, above 0 |
+| Item | `packFactor` | double, 0 | required, finite, in (0, 1] |
+| Item | `basePrice` | string, empty | required, quoted; `Decimal::TryParse`, nonnegative, with the multiplier headroom |
+| Skill | `skillId` | string, empty | required |
+| Skill | `displayName` | string, empty | empty takes `skillId` (existing normalisation) |
+| Skill | `description` | string, empty | optional |
+| Skill | `nodeType` | `NodeType`, `Skill` | `Tech` or `Skill`; a Tech node's ID names an age |
+| Skill | `maxTiers`, `resourceCostPerTier` | int, 1 | at least 1 |
+| Skill | `requires` → `requiredSkills` | vector of `{nodeId, requiredTier}`, empty | `nodeId` resolves; `requiredTier` default 1, from 1 to the target's `maxTiers`; no cycle |
+| Skill | `targetEffectID`, `exclusiveGroupId` | string, empty | optional, empty is none (31 and 82 legacy nulls); an effect resolves |
+| Skill | `gridX`, `gridY` | float, 0 | finite |
+| NamePool | `pool` | string, empty | required, equals the record's name |
+| NamePool | `names` | vector of string, empty | at least one, none empty; order kept |
+| GameMode | `ages`, `items`, `skills` | vectors of `{ageId}`, `{itemId}`, `{skillId}` | each resolves, none twice; order kept |
+
+Every shipped item carries its physical fields today, so none is optional: test fixtures that omit
+them gain them. Selections are mappings rather than bare strings so that a patch can use
+`!merge=itemId`. Age order is the mode's `ages` list (full and simple both list all 14), not the
+registry's sorted names. Category order has no gameplay meaning and takes registry order; the
+development generator draws specialities over it, so its pinned replay hashes move once in C03,
+shown to be the same set in another order. Name pools are already held sorted by name.
+
+### Units and time
+
+Simulation time is seconds of the fixed step. Rates are authored per simulation day (86,400 s), and
+population-scaled rates per 1,000 people per simulation day ([D-022](decision-ledger.md#d-022)).
+A good's quantity is a double in its `unitType`; its packed volume and mass follow
+`unitsPerCubicMetre`, `density` and `packFactor` as the field notes in `data/trade-items/` define
+them, never the trading unit alone. Prices are Decimal text, ledgers whole credits (int64).
+Positions are metres, `glm::dvec3`, in a system's frame.
+
+### Scenario and frames
+
+A scenario is one `Manifest.Scenario` record whose worlds are sequences of mappings keyed by their
+own IDs, so a patch merges with `!merge=<id field>`. IDs are unique within each list and, being
+save identity, stable.
+
+| List | Fields | Rules |
+| --- | --- | --- |
+| (root) | `gameMode`, `items: [{itemId}]` | the mode resolves; items are a subset of its items, order kept |
+| `systems` | `systemId`, `displayName` | each a Jettison frame, `Sim::FrameId(systemId)`; two IDs with one frame ID are refused |
+| `planets` | `planetId`, `systemId`, `displayName`, `position` | a physical body; no population or account of its own |
+| `civilisations` | `civilisationId`, `displayName`, `ageId` | cultural and technology identity only |
+| `organisations` | `organisationId`, `kind` (`Polity` or `Corporation`), `displayName` | owns accounts and assets from Stage 3 |
+| `regions` | `regionId`, `planetId`, `civilisationId`, `governorId`, `playerHome`, `population`, `householdFunds`, `publicFunds`, `health`, `happiness` | the one population owner; `governorId` names an organisation, empty only when `playerHome`; population finite and nonnegative; funds whole credits; condition 0–100 |
+| `venues` | `venueId`, `systemId`, `planetId` (optional), `position`, `operatorId`, `regions: [{regionId}]`, `market: [{itemId, production, demand, stock}]` | a named planet is in the venue's system, as are the served regions' planets; market items are scenario items; quantities finite and nonnegative, rates per simulation day |
+
+The eight-good trading fixture is then one system, two planets, two regions (one civilisation each)
+and two venues each serving one region; the governance fixture puts several regions on one planet.
+Trading blocs are left out until a rule or fixture needs one, since their shared powers are
+unselected.
+
+**A01's seams fit, unchanged.** Manifest's frame partition is the star system: planets, venues and
+ships are placed in its frame, an entity in stargate transit is in `kNoFrame`, and a region is
+jurisdiction located by its planet, not a frame. `SaveInfo::details` carries `scenario`, `content`
+(the fingerprint), `content-format` and `game-version`; the canonical content manifest itself, which
+a load compares exactly, goes in a game `SaveSection`, since a detail is a string a list shows.
+Diagnostics list contributing layers with `FileSystem::ReadLayers`, so per-field provenance needs no
+new engine API yet.
+
+### Authoring decisions still open
+
+| Decision | Owner, before |
+| --- | --- |
+| Drinking water's item, unit and litre conversion: no water item exists, though `CategoryWater` does | user, before C05 |
+| The four food grains' category (no food category exists; seeds are `CategorySeeds`), ages, prices and physical fields | user, C04 |
+| Basic Medical Supplies, LPG, oxygen and scrubber-cartridge fields; the Life Support category ID; the cartridge's unit | user, C04 |
+| Hull definitions (T4) | user, C04 |
+| Both fixtures' positions, rates, stock, populations, funds and operators | implementer, recorded with C05 |
+| How a player takes a `playerHome` region at allocation | A02 |
+| Trading-bloc schema | when a rule needs it |
 
 ## Versions, layering and migration
 

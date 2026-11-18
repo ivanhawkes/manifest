@@ -1,5 +1,13 @@
 # Session handoff
 
+## C01: the Stage 2 schema contract — 2026-11-18
+
+The [schema contract](stage-2-content-plan.md#schema-contract-c01-2026-11-18) settles the record
+types, field defaults and null handling, ordering, units, the scenario schema and its frames, by
+reading the authored data, the current loaders and the SDK at pin `e53681e`. Documentation only: no
+code, data or gate changed. No Jettison gap; A01's seams fit. The open authoring decisions it lists
+are the user's, before C04 and C05. Next: C02.
+
 ## H07: Stage 1 closed, SDK pin `e53681e` — 2026-11-18
 
 The pin moves from `fafa758` to Jettison `feature-base` `e53681ef16878b8eea70af9f59f87d774adb50f3`,

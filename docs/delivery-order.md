@@ -37,7 +37,9 @@ Done: M01–M04, H01, H06 and H07 in Manifest ([session handoff](session-handoff
 the Jettison rows A01 and W01 ahead of their place in this order, in Jettison
 ([history](../../jettison/docs/history.md#neutral-sdk-and-manifest-integration)). **Stage 1 is
 closed** (H07): the SDK pin is `e53681e`, which answers the engine cross-review of H02–H05, A01 and
-W01, and the acceptance matrix passed against its fetch with no sibling checkout. Next: C01.
+W01, and the acceptance matrix passed against its fetch with no sibling checkout. C01 is done
+(2026-11-18): the [schema contract](stage-2-content-plan.md#schema-contract-c01-2026-11-18) names
+no Jettison gap, and its open authoring decisions gate C04 and C05. Next: C02.
 
 - Jettison's G01, a generic rendered shell with the space gameplay moved to its sample, is done
   (2026-11-18, [history](../../jettison/docs/history.md#neutral-sdk-and-manifest-integration)),
@@ -45,10 +47,8 @@ W01, and the acceptance matrix passed against its fetch with no sibling checkout
   stands on it.
 
 A01 and W01 were built against these plans before C01 settled the planet, region and company
-identities. Before A02 binds hosted state, C01 confirms that a Jettison frame
-(`Sim::InFrame`, a partition the game chooses) and a save's details (`SaveInfo::details`, the
-game's own strings) still fit. A gap that turns up there is a new Jettison row, not a reopening
-of A01. M05 is done (2026-11-18, [session handoff](session-handoff.md#m05-the-editor-examples--2026-11-18)) but for
+identities. C01 confirmed that a Jettison frame (`Sim::InFrame`, the star system) and a save's
+details (`SaveInfo::details`) still fit, unchanged. M05 is done (2026-11-18, [session handoff](session-handoff.md#m05-the-editor-examples--2026-11-18)) but for
 the launch from the editor itself, which the user confirms.
 
 ## Priority 0: maintenance before Stage 1
@@ -90,7 +90,7 @@ against the delivered Stage 1 SDK before implementation.
 
 | Order / ID | Task and completion boundary | Must complete first |
 | --- | --- | --- |
-| 13 / C01 | Finalise schema mappings, defaults/null handling, ordered IDs, units, scenario frames and distinct planet/region/government/company relationships. Inventory remaining authoring decisions. | H07 |
+| 13 / C01 | Finalise schema mappings, defaults/null handling, ordered IDs, units, scenario frames and distinct planet/region/government/company relationships. Inventory remaining authoring decisions. **Done 2026-11-18**, [schema contract](stage-2-content-plan.md#schema-contract-c01-2026-11-18). | H07 |
 | 14 / C02 | Add reflected engine-readable definitions, generated record packaging and equivalence checks; define the canonical manifest/fingerprint builder and preserve exact price text and IDs/selections. | C01 |
 | 15 / C03 | Add atomic aggregate loading, shared semantic validation, engine layering/migration wiring and failure rollback; compute content identity before publication, migrate callers and retire custom readers after their last caller moves. | C02 |
 | 16 / C04 | T4 and item follow-ups: resolve required physical/storage fields and author tuning, grains, medical supplies, LPG, Life Support and hull definitions through the shared pipeline. Keep unselected values explicit and obtain decisions where required. | C03 |
