@@ -42,7 +42,7 @@ Canonical scope: [T10](build-and-gates.md#t10-selected-gate-and-promotion-policy
 | --- | --- | --- |
 | 01 / M01 | T10: move strict tidy after all requested build/test presets; prove controlled failure propagation. | T1/T9 |
 | 02 / M02 | Finish T10: inspect repository protections, implement exact-SHA promotion and CI triggers, verify the final workflow and record evidence. | M01 |
-| 03 / M03 | T5, Jettison: retain the shared developer tool in the SDK environment, verify and commit it. | M02 |
+| 03 / M03 | T5, both repositories: keep desktop-only tools out of the shared SDK environment (`lazygit` removed from both, 2026-11-18) and keep the three files identical. | M02 |
 | 04 / M04 | Finish T5: update Manifest's pin/environment together; implement the pin-based parity check and its failure cases; verify pinned consumption. | M03 |
 | 05 / M05 | T7: repair tracked editor examples and verify fresh-checkout tasks plus actual debugger launches. | M04 |
 

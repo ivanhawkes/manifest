@@ -66,17 +66,16 @@ test or tidy workers. CI has its own explicit limits in the workflow.
 ## T5 selected environment-parity plan
 
 [D-054](decision-ledger.md#d-054) resolves the approach to the open D-006 deviation.
-Read-only comparison against the current SDK pin found exactly one extra package entry,
-`lazygit`, in Manifest's `devenv.nix`; `devenv.yaml` and `devenv.lock` are byte-identical.
-The user requires retaining the tool in the shared SDK development shell. This plan is
-selected, not implemented; the current environment mismatch remains until verified changes land.
+Desktop-only tools stay out of the shared shell: `lazygit` was removed from both repositories'
+`devenv.nix` on 2026-11-18 and is installed on the desktop instead. Manifest's three environment
+files match Jettison's current `feature-base` byte for byte, but not the pinned `f850920`, which
+predates the shell's desktop update. This plan is selected, not implemented; the mismatch with
+the pin remains until verified changes land.
 
-The implementer first adds the development tool to Jettison's shared shell, follows that
-repository's validation requirements and commits the engine change. Review every intervening
-commit before selecting the new SDK revision; a newer sibling checkout alone is not a reason
-to move the pin. Then update Manifest's immutable pin and copy all three environment files
-from that exact committed revision together. Preserve the byte-identity rule without a
-Manifest-only package exception. Adding this developer tool requires no gameplay API change.
+Review every intervening Jettison commit before selecting the new SDK revision; a newer sibling
+checkout alone is not a reason to move the pin. Then update Manifest's immutable pin and copy all
+three environment files from that exact committed revision together. Preserve the
+byte-identity rule without a Manifest-only package exception.
 
 Add a parity check to Manifest's CI before compilation. Its revision authority is
 `MANIFEST_JETTISON_REVISION` in `source/external/CMakeLists.txt`, not a second hard-coded SHA,
@@ -95,9 +94,8 @@ parity deliverable, also referenced by T8; implement one check rather than separ
 
 Acceptance evidence includes a passing comparison of all three files against the selected
 commit and rejection of a controlled difference in each file separately, including missing
-reference content. Show that local overrides cannot bypass the comparison. Confirm `lazygit`
-is available from the shared shell, record the engine verification and run Manifest's full
-gate from a clean checkout using its pinned fetch with no sibling-engine override. Retain
+reference content. Show that local overrides cannot bypass the comparison. Record the engine
+verification and run Manifest's full gate from a clean checkout using its pinned fetch with no sibling-engine override. Retain
 the replay expectations and record exact revisions, stages and logs under D-007. Apply T10's
 selected CI order when its implementation has landed and use D-051's host-specific concurrency.
 Environment parity alone does not establish Stage 1's CPU-only consumer or gameplay integration.

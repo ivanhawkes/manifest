@@ -196,7 +196,7 @@ Test a restored backup with open orders, escrow, an in-flight ship and retry his
 
 Stage a Manifest executable, validator, required engine resources, Manifest content pack,
 runtime libraries as needed, licences and a build/content manifest. Do not ship the source
-checkout, yq, CMake, the development shell or `lazygit` as runtime requirements.
+checkout, yq, CMake or the development shell as runtime requirements.
 
 Use `Platform::ExecutablePath` for default installed content discovery relative to the
 executable and `Platform::ResolvePaths("manifest")` for separate writable application data.
