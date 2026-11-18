@@ -33,13 +33,11 @@ tasks.
 
 ## Status, 2026-11-18
 
-Done: M01–M04 and H01 in Manifest ([session handoff](session-handoff.md)); H02–H05, and the
+Done: M01–M04, H01 and H06 in Manifest ([session handoff](session-handoff.md)); H02–H05, and the
 Jettison rows A01 and W01 ahead of their place in this order, in Jettison
 ([history](../../jettison/docs/history.md#neutral-sdk-and-manifest-integration)). All of these are
-in the SDK pin `fafa758`. Two consequences:
+in the SDK pin `fafa758`, and H06 was built against the pin itself, with no local override. So:
 
-- H06 builds against the pin itself: the host it adapts (`Jettison::Host`) is already fetched,
-  so the local override is optional, not required.
 - H07's pin and environment update happened in M04. What H07 still has to do is the acceptance
   matrix, the fetched-consumption check, and settling the engine cross-review of H02–H05, A01
   and W01, which cannot start before 2026-11-21. If that review changes the host API, the pin

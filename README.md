@@ -78,6 +78,7 @@ the VFS loaders, world adapters and scripted scenario in the
 ## Structure
 
 - `source/game/<module>/`: game modules, each with `CMakeLists.txt`, `include/manifest/<module>/`, `src/`, and unit `tests/` where applicable.
+- `source/apps/manifest/`: `manifest --content <directory-or-pack> --check-startup`, the start-up check through Jettison's host.
 - `source/tools/tui/`: the development console session, FTXUI frontend and console tests.
 - `source/test/`: cross-module effects, data and mod-pack suites, plus shared test helpers.
 - `source/external/`: the pinned engine SDK and optional development-only dependencies.
@@ -85,8 +86,9 @@ the VFS loaders, world adapters and scripted scenario in the
 - `data/`: authored YAML; CMake merges it into `build/<preset>/data/core-config/` with mikefarah/yq v4.
 - `mods/manifest/`: mod metadata; generated data is staged alongside it in the build tree.
 
-The modules are `types`, `config`, `universe`, `progression`, `sim`, `ecs`, `effects`, and
-`market`. Each has a `Manifest::<Module>` target. `Manifest::Game` links the complete model;
+The modules are `types`, `config`, `universe`, `progression`, `sim`, `ecs`, `effects`,
+`market` and `host`. Each has a `Manifest::<Module>` target. `Manifest::Game` links the model,
+all but `host`;
 `Manifest::Core` remains an alias for existing consumers. The current C++ API retains its
 `Manifest::Core` namespace.
 

@@ -44,6 +44,18 @@ The modules, in dependency order:
 | `ecs` | Entity registry and plain components | Types, engine EnTT |
 | `effects` | Catalogue and ship/civilisation effect systems | Types, config, progression, ECS |
 | `market` | Venues, reservations, order matching and settlement | Effects, simulation, ECS, progression |
+| `host` | Manifest composed into `Jettison::Host`: package policy and start-up | Jettison Host |
+
+`Manifest::Host` is outside `Manifest::Game`, so the model never depends on the host that drives
+it. `Manifest::Host::Start` mounts one explicit directory or pack read-only and alone, with no user
+mods or writable overlay, and starts a `Jettison::Host::Session` with an empty world. The engine
+checks the description's format, engine requirement and required packages; Manifest requires a
+`mod.yaml` named `Manifest` with a release and an engine requirement, and reads each staged
+content file through the VFS, so a missing, unreadable or damaged one fails start-up. Content
+semantics are Stage 2's. The `manifest` executable (`source/apps/manifest/`) is
+`manifest --content <directory-or-pack> --check-startup`: it starts, logs readiness, shuts down
+and exits 0; a failed start-up logs the phase, source and cause and exits 1, a bad command line
+prints usage and exits 2.
 
 `cmake/ManifestModule.cmake` mirrors Jettison's module helper: static module libraries, public
 header sets, private warnings and implementation includes, and doctest suites. An edge to a module

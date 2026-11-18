@@ -5,6 +5,7 @@ if(MANIFEST_BUILD_TESTS AND BUILD_TESTING)
 endif()
 
 add_subdirectory(game)
+add_subdirectory(apps/manifest)
 if(MANIFEST_BUILD_TUI)
     add_subdirectory(tools/tui)
 endif()

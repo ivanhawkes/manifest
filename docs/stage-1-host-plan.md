@@ -21,7 +21,7 @@ the space sample, not deferred solely to a future server milestone.
 
 ## Delivery status, 2026-11-18
 
-Slices 1–3 are done and are in the pin; slices 4 and 5 (H06, H07) are open. The
+Slices 1–4 are done (slice 4, H06, in Manifest against the pin); slice 5 (H07) is open. The
 [delivery order's status](delivery-order.md#status-2026-11-18) is the canonical status. Jettison's
 [history](../../jettison/docs/history.md#neutral-sdk-and-manifest-integration) records what the
 engine slices built (`Jettison::Host`: `Host::Session`, `Host::Game`, `host/Package.h`). The

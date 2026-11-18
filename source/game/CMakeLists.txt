@@ -16,3 +16,5 @@ add_library(Manifest::Core ALIAS manifest_game)
 target_link_libraries(manifest_game INTERFACE
     Manifest::Types Manifest::Config Manifest::Universe Manifest::Progression
     Manifest::Sim Manifest::Ecs Manifest::Effects Manifest::Market)
+
+add_subdirectory(host)

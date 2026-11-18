@@ -19,6 +19,7 @@ The TUI is development tooling, not simulation code; its session transcript is U
 Source categories mirror Jettison:
 
 - game modules under `source/game/`;
+- applications under `source/apps/`;
 - tools under `source/tools/`;
 - integration tests under `source/test/`.
 

@@ -1,5 +1,35 @@
 # Session handoff
 
+## H06: the host adapter and the start-up check — 2026-11-18
+
+Built against the pin `fafa758` itself (`_deps/jettison-src`), with no local override.
+`Manifest::Host` (`source/game/host/`, outside `Manifest::Game`) composes Manifest into
+`Jettison::Host::Session`; `source/apps/manifest/` is
+`manifest --content <directory-or-pack> --check-startup`. [Architecture](architecture.md) has the
+contract. `Jettison::Host` joins the SDK import list, and `sdk_import` expects it.
+
+Content evidence, the `host` suite (8 cases): the staged directory and `manifest.pack` both start
+with an empty world and shut down twice; a session starts after a failed one and beside another.
+Each failure is a `StartupError` naming its phase and the source: missing source and a damaged
+pack index (mount); a damaged zstd payload of a required file, malformed `mod.yaml`, format version
+2, no `mod.yaml`, absent and empty name, wrong identity, absent release, absent engine requirement,
+engine 99.0.0, an unmet `requires`, a missing required file and an unreadable one (content). The
+unreadable case is skipped, with a message, for a user that reads a file without permissions.
+
+CLI evidence, seven `cli_*` tests run from `build/<preset>/source/apps/manifest/elsewhere` with
+absolute paths and `DISPLAY` and `WAYLAND_DISPLAY` unset: directory and pack exit 0; a missing
+source logs "Start-up failed in the mount phase, at ..."; no arguments, `--content` with no path,
+no `--check-startup` and an unknown argument exit nonzero. Not exercised: a run with no
+controlling terminal (nothing in the path opens one).
+
+Gate: `./scripts/ci.sh --werror --asan --log build/gate-h06.log`, with build and test
+parallelism at `nproc`; `clang-debug`, `clang-release` and `clang-asan` each passed 20 of 20.
+TUI-independence: a fresh tree with `-DMANIFEST_BUILD_TUI=OFF` and the pin's sources built
+`manifest_host_tests` and `manifest` and passed `host` and `cli_*`, with no FTXUI target in it.
+
+Fixed step 1 s and seed 0 are placeholders (a `shortcut:` in `Start.cpp`) until A03 selects
+the cadence and a scenario its seed. Next: H07.
+
 ## H01: the SDK import contract — 2026-11-18
 
 Inventory, from Manifest's CMake: `Jettison::Core`, `Math`, `Vfs` and (with the TUI) `Devtools`;
