@@ -180,7 +180,8 @@ for the same actor, and the request ledger's (actor, sequence) makes a retry acr
 safe, as it already does locally. Each session's inbound messages are bounded by Jettison. Past
 the bound the session is disconnected, while `QueueFull` stays the ledger's answer to a well-formed
 request when the world's queue is full. Requests are admitted between steps; the network never
-steps the world, and the world steps with no sessions.
+steps the world, and the world steps with no sessions. An actor may hold three sessions at once,
+which share its sequences ([D-082](decision-ledger.md#d-082)).
 
 **Snapshots.** Full, actor-filtered snapshots at a bounded rate. Each carries the step it was taken
 at, so a client can order snapshots and a real-time client can interpolate between them. Jettison

@@ -51,7 +51,15 @@ class Client
 	std::optional<std::uint64_t> Submit(
 	    std::string_view command, std::uint32_t version, std::span<const std::byte> payload);
 
-	// Closes the connection, sending what is queued first.
+	// Sends a request again under the sequence it was first sent with, as after a reconnect when its
+	// completion never arrived: the ledger answers it as the request it named, never running it twice.
+	// False before the welcome, after closing, or when it cannot be sent.
+	bool Retry(
+	    std::uint64_t sequence, std::string_view command, std::uint32_t version,
+	    std::span<const std::byte> payload);
+
+	// Closes the connection once what is queued is sent, at the next Poll: poll after it, or the
+	// server hears the client go only when it times out.
 	void Disconnect();
 
   private:

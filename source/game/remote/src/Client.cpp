@@ -65,16 +65,24 @@ std::vector<Reply> Client::Poll(std::chrono::milliseconds wait)
 std::optional<std::uint64_t> Client::Submit(
     std::string_view command, std::uint32_t version, std::span<const std::byte> payload)
 {
-	if (!m_welcome || m_closed)
-		return std::nullopt;
-	const auto *pFirst = reinterpret_cast<const std::uint8_t *>(payload.data());
-	const Remote::Submit submit{
-	    m_welcome->nextSequence, std::string{command}, version, {pFirst, pFirst + payload.size()}};
-	if (!m_net.Send(
-	        Jettison::Net::Channel::Reliable, static_cast<Jettison::Net::MessageKind>(Kind::Submit),
-	        BinaryArchive::Write(submit, kFormat)))
+	if (!m_welcome || !Retry(m_welcome->nextSequence, command, version, payload))
 		return std::nullopt;
 	return m_welcome->nextSequence++;
+}
+
+
+bool Client::Retry(
+    std::uint64_t sequence, std::string_view command, std::uint32_t version,
+    std::span<const std::byte> payload)
+{
+	if (!m_welcome || m_closed)
+		return false;
+	const auto *pFirst = reinterpret_cast<const std::uint8_t *>(payload.data());
+	const Remote::Submit submit{
+	    sequence, std::string{command}, version, {pFirst, pFirst + payload.size()}};
+	return m_net.Send(
+	    Jettison::Net::Channel::Reliable, static_cast<Jettison::Net::MessageKind>(Kind::Submit),
+	    BinaryArchive::Write(submit, kFormat));
 }
 
 

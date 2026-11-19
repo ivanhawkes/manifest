@@ -100,6 +100,28 @@ cargo's lots are bounded together (`world`), and a ship's cargo against its hull
 `CargoVolume`, whose empty map was taken for none given; a hull the map does not name now carries
 nothing (`company`). Round 7 approved with no finding open.
 
+## N03: several clients, reconnects and bounds — 2026-11-20
+
+On Jettison's `net` as N02 left it (pin `65846bb`), with no engine edit. An actor may hold three
+sessions at once ([D-082](decision-ledger.md#d-082)): the server counts an actor's sessions as it
+verifies a token and closes a fourth as `ServerFull` once admitted, since Jettison's verifier can
+refuse only as `BadCredential`. `Client::Retry` sends a request again under the sequence it was first
+sent with, so a client that reconnects without hearing a request complete asks again and is answered
+`Completed`, the request not run twice.
+
+Evidence, in the `remote` suite: three sessions of Ada's and one of Bea's served at once, each
+sent only its own company; Ada's fourth closed as `ServerFull`, and a place freed when one leaves;
+two of Ada's sessions sending one sequence with different content, the second refused as
+`RequestConflict` and its next request queued under the sequence the refusal named; the world
+stepping five times with no session, and a reconnecting administrator's retried provisioning
+answered `Completed` with one company provisioned; `kPendingPerActor` requests queued and the next
+`QueueFull`, while a client sending a thousand messages before the server takes in any is closed as
+`InboundOverflow`. The console still advertises only `observe`, `provision` and `cargo` remotely,
+and a snapshot holds no market rows (W07). Left: a session closing while its actor reconnects in the
+same poll counts against the cap until the server hears it go, so a client may meet `ServerFull` and
+try again; a request pending when its session closes is still reported to a later session only when
+retried (R08); one session per actor for a real-time variant (D-082).
+
 ## N02: the dedicated server and remote TUI — 2026-11-20
 
 Jettison provisioned the contract's gaps in its `net` module (engine `65846bb`, with its own

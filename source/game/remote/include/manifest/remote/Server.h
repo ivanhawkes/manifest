@@ -18,7 +18,9 @@ namespace Manifest::Remote
 // the token file, as the actor it names, its requests admitted through the world's one admission
 // path and its snapshot filtered to what that actor may see. Plaintext, for loopback or a LAN
 // (D-081). Single-threaded, as Jettison::Net is: the caller polls between steps and steps the
-// world itself, which steps the same with no session. Destroying it tells every client Shutdown.
+// world itself, which steps the same with no session. An actor may hold three sessions at once, each
+// sent its own replies and the actor's snapshot; a fourth is closed as ServerFull. Destroying it
+// tells every client Shutdown.
 class Server
 {
   public:
@@ -44,6 +46,8 @@ class Server
 		Credential credential;
 		// Queued here and not yet reported completed, oldest first.
 		std::vector<std::uint64_t> pending;
+		// Its actor held every session it may when it was verified: closed as ServerFull on admission.
+		bool overCap{false};
 	};
 
 	bool Verify(Jettison::Net::SessionId id, std::span<const std::byte> credential);

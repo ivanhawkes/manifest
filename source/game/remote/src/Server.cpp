@@ -1,6 +1,7 @@
 #include <manifest/remote/Server.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <iterator>
 #include <optional>
 #include <span>
@@ -26,6 +27,10 @@ using Jettison::Serialise::FormatVersion;
 
 constexpr Jettison::Core::Category kServer{"server"};
 constexpr FormatVersion kFormat{kVersion};
+// Sessions one actor may hold at once: a few frontends watching, as an idle game's player keeps.
+// shortcut: a real-time variant, where two sessions would both steer, wants one (a Superseded reason in
+// Jettison).
+constexpr std::size_t kSessionsPerActor = 3;
 
 
 Jettison::Net::ServerConfig Config(std::string address, std::uint16_t port)
@@ -89,7 +94,14 @@ bool Server::Verify(Jettison::Net::SessionId id, std::span<const std::byte> cred
 	std::optional<Credential> resolved = Resolve(m_tokens, token);
 	if (!resolved)
 		return false;
-	m_sessions[id] = {std::move(*resolved), {}};
+	const auto held = static_cast<std::size_t>(std::ranges::count_if(
+	    m_sessions,
+	    [&](const auto &entry)
+	    {
+		    return entry.second.credential.kind == resolved->kind &&
+		           entry.second.credential.id == resolved->id;
+	    }));
+	m_sessions[id] = {std::move(*resolved), {}, held >= kSessionsPerActor};
 	return true;
 }
 
@@ -109,6 +121,16 @@ void Server::Poll(std::chrono::milliseconds wait)
 			Jettison::Core::Log(
 			    Jettison::Core::Severity::Info, kServer, "{} left: {}", actor.id,
 			    Jettison::Net::ReasonName(event.reason));
+			m_sessions.erase(session);
+			continue;
+		}
+		if (session->second.overCap)
+		{
+			// Admitted by the engine, whose verifier can refuse only as BadCredential, so closed here.
+			Jettison::Core::Log(
+			    Jettison::Core::Severity::Info, kServer, "{} already has {} sessions", actor.id,
+			    kSessionsPerActor);
+			m_net.Disconnect(event.session, Jettison::Net::Reason::ServerFull);
 			m_sessions.erase(session);
 			continue;
 		}
