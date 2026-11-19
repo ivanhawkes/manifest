@@ -51,8 +51,10 @@ void RegisterTypes()
 		constexpr Attribute kDefined = Attribute::Saved | Attribute::Moddable;
 
 		RegisterEnum<Core::TradeUnit>("Manifest.TradeUnit")
-		    .Value<Core::TradeUnit::Gram>("Gram")
+		    .Value<Core::TradeUnit::Carat>("Carat")
+		    .Value<Core::TradeUnit::TroyOunce>("TroyOunce")
 		    .Value<Core::TradeUnit::Kilogram>("Kilogram")
+		    .Value<Core::TradeUnit::Tonne>("Tonne")
 		    .Value<Core::TradeUnit::Litre>("Litre")
 		    .Value<Core::TradeUnit::Kilolitre>("Kilolitre")
 		    .Value<Core::TradeUnit::Unit>("Unit")

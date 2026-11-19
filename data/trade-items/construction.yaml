@@ -1,0 +1,32 @@
+---
+# The fields and their units are defined in docs/model.md, "Units, prices and storage". Each
+# price is the 2026-11-19 spot or contract quote where the good has a market, sourced in the
+# same section, and the first-draft value converted to the unit where it has none.
+#
+# Building materials: cement by the tonne, screws by the piece.
+item-base:
+
+  - item:
+      itemId: ItemCement
+      categoryId: CategoryConstructionMaterials
+      ageId: AgeClassical
+      displayName: Cement
+      description: Lime and volcanic ash that sets under water
+      unitsPerCubicMetre: 3.15
+      basePrice: 128
+      unitType: Tonne
+      density: 3.15
+      packFactor: 0.42
+
+  - item:
+      itemId: ItemScrews
+      categoryId: CategoryConstructionMaterials
+      ageId: AgePre-industrial
+      displayName: Screws
+      description: Screws
+      unitsPerCubicMetre: 100000
+      basePrice: 0.05
+      unitType: Unit
+      density: 7.85
+      packFactor: 0.06
+...

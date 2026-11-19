@@ -1,0 +1,104 @@
+---
+# The fields and their units are defined in docs/model.md, "Units, prices and storage". Each
+# price is the 2026-11-19 spot or contract quote where the good has a market, sourced in the
+# same section, and the first-draft value converted to the unit where it has none.
+#
+# Farming equipment, instruments and machines, each counted by the piece.
+item-base:
+
+  - item:
+      itemId: ItemArdPlough
+      categoryId: CategoryFarmingEquipment
+      ageId: AgeCopper
+      displayName: Ard Plough
+      description: A scratch plough, drawn by oxen
+      unitsPerCubicMetre: 25
+      basePrice: 150
+      unitType: Unit
+      density: 0.75
+      packFactor: 0.4
+
+  - item:
+      itemId: ItemShaduf
+      categoryId: CategoryFarmingEquipment
+      ageId: AgeBronze
+      displayName: Shaduf
+      description: Water transporting equipment
+      unitsPerCubicMetre: 12
+      basePrice: 120
+      unitType: Unit
+      density: 0.7
+      packFactor: 0.35
+
+  - item:
+      itemId: ItemAntikythera
+      categoryId: CategoryScientificEquipment
+      ageId: AgeClassical
+      displayName: Antikythera
+      description: Geared calculator of the motions of the sun, moon and planets
+      unitsPerCubicMetre: 4000
+      basePrice: 2500
+      unitType: Unit
+      density: 8.8
+      packFactor: 0.45
+
+  - item:
+      itemId: ItemAstrolabe
+      categoryId: CategoryScientificEquipment
+      ageId: AgeClassical
+      displayName: Astrolabe
+      description: Instrument for taking the altitude of the sun and stars
+      unitsPerCubicMetre: 2000
+      basePrice: 600
+      unitType: Unit
+      density: 8.5
+      packFactor: 0.5
+
+  - item:
+      itemId: ItemStill
+      categoryId: CategoryScientificEquipment
+      ageId: AgeClassical
+      displayName: Still
+      description: Distillation equipment
+      unitsPerCubicMetre: 2
+      basePrice: 3500
+      unitType: Unit
+      density: 8.9
+      packFactor: 0.04
+
+  - item:
+      itemId: ItemClock
+      categoryId: CategoryEngineering
+      ageId: AgeMedieval
+      displayName: Clock
+      description: A time-keeping instrument e.g. pocket watch, grandfather clock
+      unitsPerCubicMetre: 200
+      basePrice: 250
+      unitType: Unit
+      density: 3.0
+      packFactor: 0.6
+
+  - item:
+      itemId: ItemCompass
+      categoryId: CategoryScientificEquipment
+      ageId: AgeMedieval
+      displayName: Compass
+      description: Compass
+      unitsPerCubicMetre: 2000
+      basePrice: 35
+      unitType: Unit
+      density: 5.0
+      packFactor: 0.5
+
+  - item:
+      itemId: ItemMicroscope
+      categoryId: CategoryScientificEquipment
+      ageId: AgePre-industrial
+      displayName: Microscope
+      description: Microscope
+      unitsPerCubicMetre: 200
+      basePrice: 350
+      unitType: Unit
+      density: 3.5
+      packFactor: 0.6
+...

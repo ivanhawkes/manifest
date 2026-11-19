@@ -16,10 +16,10 @@ economy:
 needs:
   - needId: NeedStapleFood
     weight: 1
-    perThousandPerDay: 500
-    unit: Kilogram
+    perThousandPerDay: 0.5
+    unit: Tonne
     items: [{itemId: ItemRice}, {itemId: ItemWheat}, {itemId: ItemOats}, {itemId: ItemBarley}]
-  # 3,000 litres, in kilolitres: every fluid is traded by the kilolitre.
+  # 3,000 litres, in kilolitres, the unit water is billed in.
   - needId: NeedDrinkingWater
     weight: 1
     perThousandPerDay: 3
@@ -60,7 +60,7 @@ procurement:
 projects:
   - projectId: ProjectBronzeMetallurgy
     requires: [{skillId: SkillSmelting}]
-    inputs: [{itemId: ItemCopper, quantity: 90}, {itemId: ItemTin, quantity: 10}]
+    inputs: [{itemId: ItemCopper, quantity: 0.09}, {itemId: ItemTin, quantity: 0.01}]
     unlocksRecipe: RecipeBronze
 
 recipes:

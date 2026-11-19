@@ -135,9 +135,7 @@ items:
   # Metals
   - itemId: ItemCopper
   - itemId: ItemTin
-  - itemId: ItemGold
   - itemId: ItemBrass
-  - itemId: ItemSilver
   - itemId: ItemBronze
   - itemId: ItemNickel
   - itemId: ItemIron
@@ -146,16 +144,20 @@ items:
   - itemId: ItemLithium
   - itemId: ItemMolybdenum
   - itemId: ItemAluminium
-  - itemId: ItemPalladium
-  - itemId: ItemPlatinum
   - itemId: ItemPotassium
-  - itemId: ItemRhodium
-  - itemId: ItemRuthenium
   - itemId: ItemUranium
   - itemId: ItemVanadium
   - itemId: ItemZinc
   - itemId: ItemAntimony
   - itemId: ItemNeodymium
+
+  # Precious metals
+  - itemId: ItemGold
+  - itemId: ItemSilver
+  - itemId: ItemPlatinum
+  - itemId: ItemPalladium
+  - itemId: ItemRhodium
+  - itemId: ItemRuthenium
 
   # Minerals
   - itemId: ItemSalt

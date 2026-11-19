@@ -182,16 +182,16 @@ TEST_CASE("the_household_and_life_support_goods_are_distinct_manifest_mode_items
 		const Manifest::Core::ItemNode *pGrain = find(grain);
 		REQUIRE(pGrain != nullptr);
 		CHECK(pGrain->categoryId == "CategoryConsumables");
-		CHECK(pGrain->unitType == TradeUnit::Kilogram);
+		CHECK(pGrain->unitType == TradeUnit::Tonne);
 	}
-	// The seeds keep their own units and prices: a food grain is not a renamed seed.
+	// The seeds keep their own prices, both by the tonne: a food grain is not a renamed seed.
 	for (const char *seed : {"ItemWheatSeeds", "ItemBarleySeeds", "ItemOatSeeds", "ItemRiceSeeds"})
 	{
 		CAPTURE(seed);
 		const Manifest::Core::ItemNode *pSeed = find(seed);
 		REQUIRE(pSeed != nullptr);
 		CHECK(pSeed->categoryId == "CategorySeeds");
-		CHECK(pSeed->unitType == TradeUnit::Kilolitre);
+		CHECK(pSeed->unitType == TradeUnit::Tonne);
 	}
 
 	const struct
@@ -202,8 +202,8 @@ TEST_CASE("the_household_and_life_support_goods_are_distinct_manifest_mode_items
 	} goods[] = {
 	    {"ItemBasicMedicalSupplies", "CategoryMedicalEquipment", TradeUnit::Kilogram},
 	    {"ItemAntibiotics", "CategoryMedicine", TradeUnit::Kilogram},
-	    {"ItemLPG", "CategoryFuels", TradeUnit::Kilolitre},
-	    {"ItemOxygen", "CategoryLifeSupport", TradeUnit::Kilolitre},
+	    {"ItemLPG", "CategoryFuels", TradeUnit::Tonne},
+	    {"ItemOxygen", "CategoryLifeSupport", TradeUnit::Kilogram},
 	    {"ItemCarbonScrubberCartridge", "CategoryLifeSupport", TradeUnit::Unit},
 	    {"ItemDrinkingWater", "CategoryWater", TradeUnit::Kilolitre},
 	};
@@ -281,9 +281,9 @@ TEST_CASE("the_balance_tuning_reproduces_the_plans_worked_examples")
 	const auto daily = [](const Manifest::Content::NeedDefinition &need, double people)
 	{ return need.perThousandPerDay * people / 1000.0; };
 	const auto &food = need("NeedStapleFood");
-	CHECK(daily(food, 25000.0) == doctest::Approx(12500.0));
-	CHECK(daily(food, 25000.0) / intervalsPerDay == doctest::Approx(8.68056).epsilon(1e-5));
-	CHECK(food.unit == TradeUnit::Kilogram);
+	CHECK(daily(food, 25000.0) == doctest::Approx(12.5));
+	CHECK(daily(food, 25000.0) / intervalsPerDay == doctest::Approx(0.00868056).epsilon(1e-5));
+	CHECK(food.unit == TradeUnit::Tonne);
 	CHECK(food.items.size() == 4);
 	// 75,000 litres, in kilolitres.
 	const auto &water = need("NeedDrinkingWater");

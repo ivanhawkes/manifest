@@ -188,6 +188,11 @@ categories:
       type: Polymers
       description: Polymers
   - category:
+      categoryId: CategoryPreciousMetals
+      displayName: Precious Metals
+      type: PreciousMetals
+      description: Gold, silver and the platinum group, traded by the troy ounce
+  - category:
       categoryId: CategoryScientificEquipment
       displayName: Scientific Equipment
       type: ScientificEquipment

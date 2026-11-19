@@ -1,0 +1,81 @@
+---
+# The fields and their units are defined in docs/model.md, "Units, prices and storage". Each
+# price is the 2026-11-19 spot or contract quote where the good has a market, sourced in the
+# same section, and the first-draft value converted to the unit where it has none.
+#
+# Gold, silver and the platinum group, bars by the troy ounce (31.1034768 grams) as the market
+# quotes them, so unitsPerCubicMetre is the ounces in a cubic metre of the solid metal.
+item-base:
+
+  - item:
+      itemId: ItemGold
+      categoryId: CategoryPreciousMetals
+      ageId: AgeCopper
+      displayName: Gold
+      description: Gold ingots
+      unitsPerCubicMetre: 621152
+      basePrice: 3725
+      unitType: TroyOunce
+      density: 19.32
+      packFactor: 0.8
+
+  - item:
+      itemId: ItemSilver
+      categoryId: CategoryPreciousMetals
+      ageId: AgeBronze
+      displayName: Silver
+      description: Silver ingots
+      unitsPerCubicMetre: 337261
+      basePrice: 45.03
+      unitType: TroyOunce
+      density: 10.49
+      packFactor: 0.8
+
+  - item:
+      itemId: ItemPlatinum
+      categoryId: CategoryPreciousMetals
+      ageId: AgeIndustrial
+      displayName: Platinum
+      description: Platinum ingots
+      unitsPerCubicMetre: 689634
+      basePrice: 1371
+      unitType: TroyOunce
+      density: 21.45
+      packFactor: 0.8
+
+  - item:
+      itemId: ItemPalladium
+      categoryId: CategoryPreciousMetals
+      ageId: AgeIndustrial
+      displayName: Palladium
+      description: Palladium ingots
+      unitsPerCubicMetre: 386452
+      basePrice: 949
+      unitType: TroyOunce
+      density: 12.02
+      packFactor: 0.8
+
+  - item:
+      itemId: ItemRhodium
+      categoryId: CategoryPreciousMetals
+      ageId: AgeIndustrial
+      displayName: Rhodium
+      description: Rhodium ingots
+      unitsPerCubicMetre: 398991
+      basePrice: 8550
+      unitType: TroyOunce
+      density: 12.41
+      packFactor: 0.8
+
+  - item:
+      itemId: ItemRuthenium
+      categoryId: CategoryPreciousMetals
+      ageId: AgeIndustrial
+      displayName: Ruthenium
+      description: Ruthenium ingots
+      unitsPerCubicMetre: 400277
+      basePrice: 1900
+      unitType: TroyOunce
+      density: 12.45
+      packFactor: 0.8
+...

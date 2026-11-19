@@ -19,11 +19,22 @@ DEFINITIONS=(
   trade-items/categories.yaml
   trade-items/chemicals.yaml
   trade-items/metals.yaml
+  trade-items/precious-metals.yaml
   trade-items/minerals.yaml
-  trade-items/misc.yaml
   trade-items/seeds.yaml
   trade-items/grains.yaml
   trade-items/life-support.yaml
+  trade-items/food-and-drink.yaml
+  trade-items/fuels.yaml
+  trade-items/crafts.yaml
+  trade-items/valuables.yaml
+  trade-items/writing-and-knowledge.yaml
+  trade-items/equipment.yaml
+  trade-items/construction.yaml
+  trade-items/animal-products.yaml
+  trade-items/medical.yaml
+  trade-items/household-goods.yaml
+  trade-items/slaves.yaml
   skill-tree/skills.yaml
   skill-tree/ages.yaml
   skill-tree/spaceship.yaml

@@ -139,14 +139,25 @@ The inputs are read in this order:
 | Source | Contents |
 | --- | --- |
 | `base/ages.yaml` | The 14 ages, in age order. |
-| `trade-items/categories.yaml` | The 44 categories. The goods of the item files are filed under 23 of them; 21 shelves hold no good at all, and 3 of those - `CategoryPharmaceuticals`, `CategoryPolymers` and `CategoryTextiles` - have a craft node of the same word. |
-| `trade-items/chemicals.yaml` | The 11 goods of `CategoryChemicals`: sodium hydroxide, nitrogen, phosphorus, sulfur, sulfuric acid, antimony, chlorine, ammonia, ethylene, neodymium, graphene. |
-| `trade-items/metals.yaml` | The 21 goods of `CategoryMetals`: copper, tin, brass, bronze, silver, nickel, iron, lead, cobalt, lithium, molybdenum, aluminium, palladium, platinum, potassium, rhodium, ruthenium, uranium, vanadium, zinc, gold. |
-| `trade-items/minerals.yaml` | The 5 goods of `CategoryMinerals`: salt, lime, graphite, potash, natron. |
-| `trade-items/misc.yaml` | The 44 goods of the 18 remaining categories: the consumables, the crafts, the ferments, the writing and the knowledge goods, the instruments of navigation, the sciences, farming, the home and the yard, charcoal and LPG, the luxury goods, the medicines and basic medical supplies, electronics, leather and furs, cement and screws, coins, and the one catch-all, slaves. |
-| `trade-items/seeds.yaml` | The 10 goods of `CategorySeeds`: wheat, barley, oat, corn, rice, sorghum, poppy, cocoa, coca and canola. |
-| `trade-items/grains.yaml` | The 4 food grains of `CategoryConsumables`, traded by the kilogram: wheat, barley, oats and rice. |
+| `trade-items/categories.yaml` | The 45 categories. The goods of the item files are filed under 27 of them; 18 shelves hold no good at all, and 3 of those - `CategoryPharmaceuticals`, `CategoryPolymers` and `CategoryTextiles` - have a craft node of the same word. |
+| `trade-items/chemicals.yaml` | The 9 goods of `CategoryChemicals`, by the tonne but graphene film by area: sodium hydroxide, nitrogen, phosphorus, sulfur, sulfuric acid, chlorine, ammonia, ethylene, graphene. |
+| `trade-items/metals.yaml` | The 17 goods of `CategoryMetals`, the base metals and antimony by the tonne, the minor metals by the kilogram: copper, tin, brass, bronze, nickel, iron, lead, cobalt, lithium, molybdenum, aluminium, potassium, uranium, vanadium, zinc, antimony, neodymium. |
+| `trade-items/precious-metals.yaml` | The 6 goods of `CategoryPreciousMetals`, by the troy ounce: gold, silver, platinum, palladium, rhodium, ruthenium. |
+| `trade-items/minerals.yaml` | Salt, lime, graphite and natron of `CategoryMinerals`, and potash of `CategoryFertilisers`, by the tonne. |
+| `trade-items/seeds.yaml` | The 10 goods of `CategorySeeds`, by the tonne: wheat, barley, oat, corn, rice, sorghum, poppy, cocoa, coca and canola. |
+| `trade-items/grains.yaml` | The 4 food grains of `CategoryConsumables`, by the tonne: wheat, barley, oats and rice. |
 | `trade-items/life-support.yaml` | The 2 goods of `CategoryLifeSupport`: oxygen by the kilogram and the scrubber cartridge by the piece. |
+| `trade-items/food-and-drink.yaml` | Water by the kilolitre, flour by the tonne, bread by the kilogram, and beer, wine and vinegar by the litre. |
+| `trade-items/fuels.yaml` | Charcoal and LPG, by the tonne. |
+| `trade-items/crafts.yaml` | Pottery, ceramics and glassware by the piece, pigments by the kilogram. |
+| `trade-items/valuables.yaml` | Gems and diamonds by the carat; jewellery, coins and fine art by the piece. |
+| `trade-items/writing-and-knowledge.yaml` | Papyrus and parchment by the sheet, ink by the litre, scrolls, books and the knowledge goods of maths, chemistry and physics by the piece. |
+| `trade-items/equipment.yaml` | The farming equipment, the instruments and the still, by the piece. |
+| `trade-items/construction.yaml` | Cement by the tonne, screws by the piece. |
+| `trade-items/animal-products.yaml` | Leather hides and furs, by the piece. |
+| `trade-items/medical.yaml` | Basic medical supplies and the three medicines, by the kilogram. |
+| `trade-items/household-goods.yaml` | Soap, home appliances and electronics, by the piece. |
+| `trade-items/slaves.yaml` | The one good of `CategorySlaves`, by the person. |
 | `skill-tree/skills.yaml` | The 17 crafts of the economy. |
 | `skill-tree/ages.yaml` | The 14 ages that gate the tree. |
 | `skill-tree/spaceship.yaml` | The 25 ship systems, as a skill tree of their own. |
@@ -511,20 +522,22 @@ against it:
 | Field | Meaning |
 | --- | --- |
 | `density` | Specific gravity of the material against water at sea level, so `1.0` is 1000 kg/m³. The solid value at 20 °C for a metal that is liquid at that temperature. |
-| `unitType` | The unit `basePrice` and `unitsPerCubicMetre` count: `Kilogram`, `Gram`, `Litre`, `Kilolitre`, `Unit`, `Sheet`, `SquareMetre`. |
+| `unitType` | The unit `basePrice` and `unitsPerCubicMetre` count, the one the good's real market trades it in: `Carat`, `TroyOunce`, `Kilogram`, `Tonne`, `Litre`, `Kilolitre`, `Unit`, `Sheet`, `SquareMetre`. |
 | `unitsPerCubicMetre` | Units of loose product filling one cubic metre of the material: see the table below. |
 | `packFactor` | The fraction of a cube the product fills, counting packaging, dunnage and the voids between pieces. A hollow blown flask is mostly air, so `ItemGlassware` is `0.05`; stacked `ItemCopper` ingots are `0.85`. |
-| `basePrice` | Market value per `unitType`, in credits at one credit to one US dollar, at 2025 spot and wholesale prices. Prices drive the model through the ratio of market price to base price, so the currency anchor only sets the relative level of the goods against each other. |
+| `basePrice` | Market value per `unitType`, in credits at one credit to one US dollar: the spot or contract quote of 2026-11-19 where the good has a market (the sources are below), and the first-draft 2025 value otherwise. Prices drive the model through the ratio of market price to base price, so the currency anchor only sets the relative level of the goods against each other. |
 
 | `unitType` | `unitsPerCubicMetre` | |
 | --- | --- | --- |
-| `Kilolitre` | `1` | A kilolitre is exactly a cubic metre, so bulk volume goods count one to the cube. |
+| `Carat` | `density x 5000000` | A carat is a fifth of a gram: `ItemGems` at 3.5 are 17500000. |
+| `TroyOunce` | `density x 1000 / 0.0311034768` | The ounces of solid metal in a cubic metre: `ItemGold` at 19.32 is 621152. |
+| `Kilogram` | `density x 1000` | The mass of solid material in a cubic metre: lithium at 0.534 is 534. |
+| `Tonne` | `density` | The same mass in tonnes: copper at 8.96 is 8.96. |
 | `Litre` | `1000` | A cubic metre is a thousand litres. |
-| `Kilogram` | `density x 1000` | The mass of solid material in a cubic metre: copper at 8.96 is 8960. |
-| `Gram` | `density x 1000000` | The same mass in grams: `ItemGems` at 3.5 are 3500000. |
+| `Kilolitre` | `1` | A kilolitre is exactly a cubic metre: water, the one good a utility meters by volume. |
 | `Unit` | tight-nested piece count | How many of the piece nest into a cubic metre: 2000 `ItemBooks`, 40000 pieces of `ItemJewellery`. |
 | `Sheet` | tight-nested sheet count | Sheets stacked to a metre with their interleaves: 50000 sheets of `ItemPapyrus`, 20000 of `ItemParchment`. |
-| `SquareMetre` | `1 / thickness` | Sheet goods sold by area: `ItemGraphite` is foil, and a millimetre of it is 1000 m² to the cube. |
+| `SquareMetre` | `1 / thickness` | Sheet goods sold by area: `ItemGraphene` is film, and at 10 µm it is 100000 m² to the cube. |
 
 For the goods counted by piece, sheet or square metre the count is a packed count, so
 it fixes the mass of the piece, and the figures agree through a mass identity that is
@@ -539,19 +552,51 @@ A jeweller's piece of 15 grams of 12-specific-gravity metal takes 1.25 cm³ of m
 metal in the cube on both sides of the identity. That is `ItemJewellery`. Goods counted by mass or by volume
 state the solid figure in `unitsPerCubicMetre`, and only `density x 1000 x packFactor`
 holds for them: an IBC cube of stacked copper ingots is 8.96 x 1000 x 0.85 kilograms,
-not 8960.
+not 8.96 tonnes.
 
 Wheat seeds, `ItemWheatSeeds`, show the split the fields make: the density of a wheat
-kernel is 1.27, its test weight is 78 kg per hectolitre, so the packFactor is 0.61, the
-mass of a full cube is 775 kg, and 350 credits buys that cubic metre of certified seed.
-The seeds are `Kilolitre` goods, so the unit that costs 350 credits is the heap, not the
-kilogram. The bulk minerals and chemicals sit in the same shape: a kilolitre is the heap,
-and the air between the grains is most of the volume for a floured material like `ItemLime`
-at 0.31, whose solid density is 3.34.
+kernel is 1.27, its test weight is 78 kg per hectolitre, so the packFactor is 0.61 and a
+full cube holds 775 kg of seed, which at 452 credits a tonne is 350 credits. The bulk
+minerals and chemicals sit in the same shape, and the air between the grains is most of the
+volume for a floured material like `ItemLime` at 0.31, whose solid density is 3.34.
 
-Prices are the current market figure for the traded form of the good, not for a purer
-or rarer form of it: uranium is the 2025 spot price of `U3O8` concentrate, the
-pharmaceuticals are bulk active-ingredient prices per kilogram, and the precious metals
-are per kilogram rather than the per-troy-ounce quote the market uses, so `ItemGold` is
-130000 a kilogram.
+Prices are the market figure for the traded form of the good, not for a purer or rarer
+form of it: uranium is the spot price of `U3O8` concentrate, the pharmaceuticals are bulk
+active-ingredient prices per kilogram, and the alloys are the LME value of the metal in
+them. Where the market quotes a unit the game does not measure, the price is converted:
+the pound to the kilogram, the bushel and the hundredweight to the tonne, and the yuan and
+the Australian dollar to the US dollar at the week's rate (6.68 and 0.678).
+
+The quotes of 2026-11-19 (the latest each source published, and its date where earlier):
+
+| Goods | Price | Source |
+| --- | --- | --- |
+| Copper, tin, aluminium, zinc, nickel, lead | 13226, 46650, 3061, 3776, 15790, 1840 a tonne | LME cash settlement, 17 November |
+| Brass, bronze | 9918, 16568 a tonne | LME value of 65:35 copper and zinc, and of the 9:1 copper and tin of `RecipeBronze` |
+| Iron | 458 a tonne | Brazilian pig iron FOB, November |
+| Cobalt | 33525 a tonne | indicative, 13 November |
+| Antimony | 17600 a tonne | Fastmarkets, Rotterdam, 4 November |
+| Lithium, neodymium | 90, 138 a kilogram | Chinese metal benchmarks, October and 4 November |
+| Molybdenum, vanadium | 76.5, 26.6 a kilogram | LME Molybdenum (Platts) 34.69 a pound; ferrovanadium 80%, Europe, 7 October |
+| Uranium | 198.7 a kilogram | U3O8 spot, 90.12 a pound, 18 November |
+| Gold, silver, platinum, palladium | 3725, 45.03, 1371, 949 an ounce | spot, 18 November |
+| Rhodium, ruthenium | 8550, 1900 an ounce | dealer bids, 17 and 18 November |
+| Wheat, oats | 209, 229 a tonne | CBOT, 5.70 and 3.33 a bushel, 18 and 5 November |
+| Barley | 244 a tonne | Australian feed barley FOB, A$360, 11 November |
+| Rice | 494 a tonne | Thai 5% broken, 18 November |
+| Cocoa seeds | 5145 a tonne | ICE cocoa, 18 November |
+| LPG | 720 a tonne | Saudi Aramco propane contract price, November |
+| Oxygen | 0.26 a kilogram | US bulk liquid oxygen, 263 a tonne, mid-2026 |
+| Ammonia, sulfur | 585, 733 a tonne | CFR Far East and CFR China, 12 November |
+| Potash | 365 a tonne | granular MOP CFR Brazil, 10 November |
+| Caustic soda | 840 a tonne | 98% flakes FOB Mersin, 1 November |
+| Sulfuric acid | 170 a tonne | Q3 2026 assessments |
+| Ethylene | 1100 a tonne | CFR Northeast Asia |
+| Yellow phosphorus, natron | 4261, 151 a tonne | Chinese spot, 16 and 5 November (natron as dense soda ash) |
+| Graphite | 323 a tonne | Chinese flake, -194 mesh, 4 September |
+
+Every other good has no market quote, and keeps its first-draft price converted to its
+unit: a kilolitre of a heaped good was the cube's heap, so the tonne price is the kilolitre
+price over `density x packFactor`, and a kilolitre of a liquid was the liquid, so the price
+is over `density` alone.
 

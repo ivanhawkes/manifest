@@ -1,0 +1,84 @@
+---
+# The fields and their units are defined in docs/model.md, "Units, prices and storage". Each
+# price is the 2026-11-19 spot or contract quote where the good has a market, sourced in the
+# same section, and the first-draft value converted to the unit where it has none.
+#
+# Water, flour, bread and the fermented drinks. Water is billed by the kilolitre, the cubic metre a
+# utility meters; the drinks by the litre; flour by the tonne and bread by the kilogram, as each
+# is sold wholesale.
+item-base:
+
+  # Bulk potable water at 2025 utility rates: one kilolitre to the cubic metre, three quarters of an
+  # IBC cube filled, as ItemBeer.
+  - item:
+      itemId: ItemDrinkingWater
+      categoryId: CategoryWater
+      ageId: AgeStone
+      displayName: Drinking Water
+      description: Potable water, in bulk
+      unitsPerCubicMetre: 1
+      basePrice: 2
+      unitType: Kilolitre
+      density: 1.0
+      packFactor: 0.75
+
+  - item:
+      itemId: ItemFlour
+      categoryId: CategoryConsumables
+      ageId: AgeCopper
+      displayName: Flour
+      description: Flour
+      unitsPerCubicMetre: 1.5
+      basePrice: 509
+      unitType: Tonne
+      density: 1.5
+      packFactor: 0.38
+
+  - item:
+      itemId: ItemBread
+      categoryId: CategoryConsumables
+      ageId: AgeCopper
+      displayName: Bread
+      description: Bread
+      unitsPerCubicMetre: 1050
+      basePrice: 2.82
+      unitType: Kilogram
+      density: 1.05
+      packFactor: 0.27
+
+  - item:
+      itemId: ItemBeer
+      categoryId: CategoryAlcohol
+      ageId: AgeCopper
+      displayName: Beer
+      description: Beer
+      unitsPerCubicMetre: 1000
+      basePrice: 1.2
+      unitType: Litre
+      density: 1.01
+      packFactor: 0.75
+
+  - item:
+      itemId: ItemWine
+      categoryId: CategoryAlcohol
+      ageId: AgeCopper
+      displayName: Wine
+      description: Wine
+      unitsPerCubicMetre: 1000
+      basePrice: 5.0
+      unitType: Litre
+      density: 1.0
+      packFactor: 0.7
+
+  - item:
+      itemId: ItemVinegar
+      categoryId: CategoryFerments
+      ageId: AgeCopper
+      displayName: Vinegar
+      description: Vinegar
+      unitsPerCubicMetre: 1000
+      basePrice: 1.0
+      unitType: Litre
+      density: 1.01
+      packFactor: 0.8
+...

@@ -751,8 +751,8 @@ TEST_CASE("A type's migrations bring an earlier file, and an earlier patch, to i
 TEST_CASE("A price keeps its authored text")
 {
 	const Loaded loaded{kModDirectory};
-	// Authored unquoted as 10.0: a float on the way would have made it "10".
-	CHECK(Get<Manifest::Core::ItemNode>(loaded, "ItemCopper").basePrice == "10.0");
+	// Authored unquoted as 5.0: a float on the way would have made it "5".
+	CHECK(Get<Manifest::Core::ItemNode>(loaded, "ItemWine").basePrice == "5.0");
 }
 
 

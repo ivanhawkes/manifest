@@ -1,25 +1,13 @@
 ---
-# Field conventions for every item in this file (the full note is in the README,
-# under "Units, prices and storage"):
+# The fields and their units are defined in docs/model.md, "Units, prices and storage". Each
+# price is the 2026-11-19 spot or contract quote where the good has a market, sourced in the
+# same section, and the first-draft value converted to the unit where it has none.
 #
-#   density            Specific gravity against water at sea level, so 1.0 is
-#                      1000 kg/m3, measured on the material the item is made of.
-#   unitType           The unit that basePrice and unitsPerCubicMetre count.
-#   unitsPerCubicMetre Units of loose product filling one cubic metre of solid
-#                      material: density x 1000 for Kilogram, and the packed piece
-#                      count of an IBC cube for Unit.
-#   packFactor         The fraction of an IBC cube's cubic metre that the product
-#                      fills, counting packaging, dunnage and interstitial voids.
-#                      Mass per IBC cube = density x 1000 x packFactor kilograms.
-#   basePrice          Market value per unitType, in credits at one credit to one
-#                      US dollar, at 2025 prices.
-#
-# The two consumables of a ship's life support. Oxygen is traded by the kilolitre, as every
-# fluid is, the refrigerated liquid in vacuum-jacketed tanks, packed as ItemNitrogen is; a ship's
-# tanks and its use are kilograms, 1,140 to the kilolitre at its density. A
-# cartridge is the replaceable lithium hydroxide charge of the installed scrubber,
-# rated fresh at 30 occupant-days; the machinery stays aboard. Sixteen cartridges
-# of 41 kg pack an IBC cube.
+# The two consumables of a ship's life support. Oxygen is the refrigerated liquid, traded by the
+# kilogram, the unit of a ship's tanks and its use, at the bulk liquid-oxygen price; it is packed
+# as ItemNitrogen is. A cartridge is the replaceable lithium hydroxide charge of the installed
+# scrubber, rated fresh at 30 occupant-days; the machinery stays aboard. Sixteen cartridges of
+# 41 kg pack an IBC cube.
 item-base:
 
   # Life support
@@ -29,9 +17,9 @@ item-base:
       ageId: AgeIndustrial
       displayName: Oxygen
       description: Breathing oxygen (refrigerated liquid)
-      unitsPerCubicMetre: 1
-      basePrice: 570
-      unitType: Kilolitre
+      unitsPerCubicMetre: 1140
+      basePrice: 0.26
+      unitType: Kilogram
       density: 1.14
       packFactor: 0.9
 

@@ -1,5 +1,17 @@
 # Session handoff
 
+## Units, today's prices and the item files — 2026-11-19
+
+[D-064](decision-ledger.md#d-064): every good trades in its real market's unit, with three new
+units (`Tonne`, `TroyOunce`, `Carat`) and `Gram` retired, at the 2026-11-19 quotes sourced in
+[the model](model.md#units-prices-and-storage). The fixtures' markets, the food need (0.5 t per
+1,000 a day) and the Bronze project's inputs (0.09 t and 0.01 t) are converted; the recipe's 9:1
+is a ratio and stands. `misc.yaml` is eleven family files, `build.sh` lists them, and CMake's glob
+already finds them. Seed and draft prices without a market are unchanged in value.
+
+Evidence, on Lythir: `./scripts/ci.sh --werror --asan --tidy` passed 21 of 21 in each of
+`clang-debug`, `clang-release` and `clang-asan`, and tidy clean.
+
 ## The item categories and ages reviewed — 2026-11-19
 
 The user left the first-draft categories and ages open to improvement; the revision is

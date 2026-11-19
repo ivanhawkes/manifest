@@ -24,7 +24,7 @@ rules remain open.
 ## Confirmed rules
 
 - Add LPG (liquefied petroleum gas) as a distinct tradable commodity under the existing
-  Fuels category, with inventory/trading measured in kilograms. Preserve fractional
+  Fuels category, traded by the tonne ([D-064](decision-ledger.md#d-064)), as the Aramco contract price is quoted. Preserve fractional
   quantities; price, physical storage/packing and production/consumption uses remain open.
   The [LPG handoff](stage-2-content-plan.md#lpg-content-follow-up) records the implementer task.
 - Authorised credits transfer instantly between entities, without distance or shipping delay.
@@ -583,8 +583,8 @@ update. Prorate by elapsed simulation time and retain fractional quantities. Cou
 actual accessible potable water consumed once, within physical supply and household funds.
 Insufficient supply/funds record unmet water needs under the existing severity and
 condition rules; no automatic catch-up purchasing follows. This is a balance-test setting.
-The water commodity is `ItemDrinkingWater`, traded by the kilolitre as every fluid is
-([D-060](decision-ledger.md#d-060)): the need is authored as 3 kL per 1,000 people per day, the
+The water commodity is `ItemDrinkingWater`, billed by the kilolitre as a utility meters it
+([D-064](decision-ledger.md#d-064)): the need is authored as 3 kL per 1,000 people per day, the
 same volume.
 
 The selected initial Basic Medical Supplies requirement is 5 kg per 1,000 people per

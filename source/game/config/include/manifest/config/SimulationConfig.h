@@ -60,8 +60,10 @@ using Categories = std::vector<CategoryNode>;
 // Registered by the names the authored files use.
 enum class TradeUnit
 {
-	Gram,
+	Carat,
+	TroyOunce,
 	Kilogram,
+	Tonne,
 	Litre,
 	Kilolitre,
 	Unit,

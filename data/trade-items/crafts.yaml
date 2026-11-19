@@ -1,0 +1,58 @@
+---
+# The fields and their units are defined in docs/model.md, "Units, prices and storage". Each
+# price is the 2026-11-19 spot or contract quote where the good has a market, sourced in the
+# same section, and the first-draft value converted to the unit where it has none.
+#
+# Pottery, pigments, ceramics and glassware. The ware is counted by the piece, so its packed count
+# fixes its mass; a hollow blown flask is almost all void, and fragile ware spends more of the cube
+# on straw and crate than on the ware itself.
+item-base:
+
+  - item:
+      itemId: ItemPottery
+      categoryId: CategoryCrafts
+      ageId: AgeStone
+      displayName: Pottery
+      description: Pottery
+      unitsPerCubicMetre: 150
+      basePrice: 25
+      unitType: Unit
+      density: 2.4
+      packFactor: 0.55
+
+  - item:
+      itemId: ItemPigments
+      categoryId: CategoryCrafts
+      ageId: AgeStone
+      displayName: Pigments
+      description: Pigments
+      unitsPerCubicMetre: 3000
+      basePrice: 8.9
+      unitType: Kilogram
+      density: 3.0
+      packFactor: 0.45
+
+  - item:
+      itemId: ItemCeramics
+      categoryId: CategoryCrafts
+      ageId: AgeClassical
+      displayName: Ceramics
+      description: Ceramics
+      unitsPerCubicMetre: 300
+      basePrice: 40
+      unitType: Unit
+      density: 2.4
+      packFactor: 0.55
+
+  - item:
+      itemId: ItemGlassware
+      categoryId: CategoryCrafts
+      ageId: AgeClassical
+      displayName: Glassware
+      description: Blown glass vessels
+      unitsPerCubicMetre: 400
+      basePrice: 30
+      unitType: Unit
+      density: 2.5
+      packFactor: 0.05
+...

@@ -1,58 +1,48 @@
 ---
-# Field conventions for every item in this file (the full note is in the README,
-# under "Units, prices and storage"):
+# The fields and their units are defined in docs/model.md, "Units, prices and storage". Each
+# price is the 2026-11-19 spot or contract quote where the good has a market, sourced in the
+# same section, and the first-draft value converted to the unit where it has none.
 #
-#   density            Specific gravity against water at sea level, so 1.0 is
-#                      1000 kg/m3, measured on the whole seed including its
-#                      internal pores, not the heap of seeds.
-#   unitType           The unit that basePrice and unitsPerCubicMetre count.
-#   unitsPerCubicMetre Units of loose product filling one cubic metre of solid
-#                      material: 1 for Kilolitre, since 1 kL is exactly 1 m3.
-#   packFactor         The fraction of an IBC cube's cubic metre that the seeds
-#                      fill, so it is the test weight of the grain over its
-#                      density. Wheat at 78 kg per hectolitre over 1.27 gives
-#                      0.61: the rest of the cube is the air between kernels.
-#                      Mass per IBC cube = density x 1000 x packFactor kilograms.
-#   basePrice          Market value per unitType, in credits at one credit to one
-#                      US dollar, at 2025 seed and commodity prices. Certified
-#                      seed costs far more than the same grain as food: hybrid
-#                      maize seed is a technology product, not a bulk crop.
+# Certified seed by the tonne. density is the whole seed, its pores included, and packFactor the
+# test weight over it: wheat at 78 kg per hectolitre over 1.27 gives 0.61, the rest of the cube
+# the air between kernels. Seed costs far more than the same grain as food: hybrid maize seed is a
+# technology product, not a bulk crop. Cocoa is the exception, its beans the ICE commodity.
 item-base:
 
   # Seeds
   - item:
       itemId: ItemWheatSeeds
       categoryId: CategorySeeds
-      ageId: AgeCopper
+      ageId: AgeStone
       displayName: Wheat seeds
       description: Wheat seeds
-      unitsPerCubicMetre: 1
-      basePrice: 350
-      unitType: Kilolitre
+      unitsPerCubicMetre: 1.27
+      basePrice: 452
+      unitType: Tonne
       density: 1.27
       packFactor: 0.61
 
   - item:
       itemId: ItemBarleySeeds
       categoryId: CategorySeeds
-      ageId: AgeCopper
+      ageId: AgeStone
       displayName: Barley seeds
       description: Barley seeds
-      unitsPerCubicMetre: 1
-      basePrice: 280
-      unitType: Kilolitre
+      unitsPerCubicMetre: 1.3
+      basePrice: 449
+      unitType: Tonne
       density: 1.3
       packFactor: 0.48
 
   - item:
       itemId: ItemOatSeeds
       categoryId: CategorySeeds
-      ageId: AgeCopper
+      ageId: AgeStone
       displayName: Oat seeds
       description: Oat seeds
-      unitsPerCubicMetre: 1
-      basePrice: 200
-      unitType: Kilolitre
+      unitsPerCubicMetre: 1.22
+      basePrice: 400
+      unitType: Tonne
       density: 1.22
       packFactor: 0.41
 
@@ -62,21 +52,21 @@ item-base:
       ageId: AgeCopper
       displayName: Corn seeds
       description: Corn seeds
-      unitsPerCubicMetre: 1
-      basePrice: 5000
-      unitType: Kilolitre
+      unitsPerCubicMetre: 1.25
+      basePrice: 6897
+      unitType: Tonne
       density: 1.25
       packFactor: 0.58
 
   - item:
       itemId: ItemRiceSeeds
       categoryId: CategorySeeds
-      ageId: AgeCopper
+      ageId: AgeStone
       displayName: Rice seeds
       description: Rice seeds
-      unitsPerCubicMetre: 1
-      basePrice: 1000
-      unitType: Kilolitre
+      unitsPerCubicMetre: 1.32
+      basePrice: 1242
+      unitType: Tonne
       density: 1.32
       packFactor: 0.61
 
@@ -86,9 +76,9 @@ item-base:
       ageId: AgeCopper
       displayName: Sorghum seeds
       description: Sorghum seeds
-      unitsPerCubicMetre: 1
-      basePrice: 2000
-      unitType: Kilolitre
+      unitsPerCubicMetre: 1.3
+      basePrice: 3017
+      unitType: Tonne
       density: 1.3
       packFactor: 0.51
 
@@ -98,9 +88,9 @@ item-base:
       ageId: AgeCopper
       displayName: Poppy seeds
       description: Poppy seeds
-      unitsPerCubicMetre: 1
-      basePrice: 5000
-      unitType: Kilolitre
+      unitsPerCubicMetre: 1.25
+      basePrice: 8333
+      unitType: Tonne
       density: 1.25
       packFactor: 0.48
 
@@ -110,9 +100,9 @@ item-base:
       ageId: AgeCopper
       displayName: Cocoa seeds
       description: Cocoa seeds
-      unitsPerCubicMetre: 1
-      basePrice: 3900
-      unitType: Kilolitre
+      unitsPerCubicMetre: 1.2
+      basePrice: 5145
+      unitType: Tonne
       density: 1.2
       packFactor: 0.46
 
@@ -122,9 +112,9 @@ item-base:
       ageId: AgeCopper
       displayName: Coca seeds
       description: Coca seeds
-      unitsPerCubicMetre: 1
-      basePrice: 2700
-      unitType: Kilolitre
+      unitsPerCubicMetre: 1.25
+      basePrice: 4909
+      unitType: Tonne
       density: 1.25
       packFactor: 0.44
 
@@ -134,9 +124,9 @@ item-base:
       ageId: AgePost-industrial
       displayName: Canola seeds
       description: Canola seeds
-      unitsPerCubicMetre: 1
-      basePrice: 1300
-      unitType: Kilolitre
+      unitsPerCubicMetre: 1.2
+      basePrice: 1970
+      unitType: Tonne
       density: 1.2
       packFactor: 0.55
 ...

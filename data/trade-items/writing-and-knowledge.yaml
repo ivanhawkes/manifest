@@ -1,0 +1,105 @@
+---
+# The fields and their units are defined in docs/model.md, "Units, prices and storage". Each
+# price is the 2026-11-19 spot or contract quote where the good has a market, sourced in the
+# same section, and the first-draft value converted to the unit where it has none.
+#
+# The writing materials, the texts and the knowledge goods. Papyrus and parchment are counted by
+# the sheet, ink by the litre.
+item-base:
+
+  - item:
+      itemId: ItemPapyrus
+      categoryId: CategoryWriting
+      ageId: AgeBronze
+      displayName: Papyrus
+      description: Papyrus
+      unitsPerCubicMetre: 50000
+      basePrice: 3
+      unitType: Sheet
+      density: 0.75
+      packFactor: 0.78
+
+  - item:
+      itemId: ItemInk
+      categoryId: CategoryWriting
+      ageId: AgeBronze
+      displayName: Ink
+      description: Ink
+      unitsPerCubicMetre: 1000
+      basePrice: 8.0
+      unitType: Litre
+      density: 1.1
+      packFactor: 0.8
+
+  - item:
+      itemId: ItemScrolls
+      categoryId: CategoryWriting
+      ageId: AgeBronze
+      displayName: Scrolls
+      description: Single texts wrapped in a cylinder with a sheath for protection
+      unitsPerCubicMetre: 1000
+      basePrice: 25
+      unitType: Unit
+      density: 1.1
+      packFactor: 0.6
+
+  - item:
+      itemId: ItemParchment
+      categoryId: CategoryWriting
+      ageId: AgeClassical
+      displayName: Parchment
+      description: Parchment
+      unitsPerCubicMetre: 20000
+      basePrice: 15
+      unitType: Sheet
+      density: 1.3
+      packFactor: 0.73
+
+  - item:
+      itemId: ItemMaths
+      categoryId: CategoryInformation
+      ageId: AgeClassical
+      displayName: Maths
+      description: Knowledge of maths
+      unitsPerCubicMetre: 500
+      basePrice: 1200
+      unitType: Unit
+      density: 0.95
+      packFactor: 0.85
+
+  - item:
+      itemId: ItemBooks
+      categoryId: CategoryWriting
+      ageId: AgeClassical
+      displayName: Books
+      description: Bound volumes containing sheets of paper or parchment
+      unitsPerCubicMetre: 2000
+      basePrice: 9
+      unitType: Unit
+      density: 0.95
+      packFactor: 0.85
+
+  - item:
+      itemId: ItemChemistry
+      categoryId: CategoryInformation
+      ageId: AgeMedieval
+      displayName: Chemistry
+      description: Knowledge of chemistry
+      unitsPerCubicMetre: 500
+      basePrice: 1500
+      unitType: Unit
+      density: 0.95
+      packFactor: 0.85
+
+  - item:
+      itemId: ItemPhysics
+      categoryId: CategoryInformation
+      ageId: AgePre-industrial
+      displayName: Physics
+      description: Knowledge of Physics
+      unitsPerCubicMetre: 500
+      basePrice: 1800
+      unitType: Unit
+      density: 0.95
+      packFactor: 0.85
+...

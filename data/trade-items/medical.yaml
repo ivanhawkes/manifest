@@ -1,0 +1,56 @@
+---
+# The fields and their units are defined in docs/model.md, "Units, prices and storage". Each
+# price is the 2026-11-19 spot or contract quote where the good has a market, sourced in the
+# same section, and the first-draft value converted to the unit where it has none.
+#
+# Medical supplies and the bulk active ingredients of the medicines, by the kilogram.
+item-base:
+
+  - item:
+      itemId: ItemBasicMedicalSupplies
+      categoryId: CategoryMedicalEquipment
+      ageId: AgeIndustrial
+      displayName: Basic Medical Supplies
+      description: Routine medical consumables, dressings, gloves, syringes and saline
+      unitsPerCubicMetre: 1000
+      basePrice: 15
+      unitType: Kilogram
+      density: 1.0
+      packFactor: 0.35
+
+  - item:
+      itemId: ItemAnesthetics
+      categoryId: CategoryMedicine
+      ageId: AgeIndustrial
+      displayName: Anesthetics
+      description: Anesthetics
+      unitsPerCubicMetre: 1200
+      basePrice: 60
+      unitType: Kilogram
+      density: 1.2
+      packFactor: 0.45
+
+  - item:
+      itemId: ItemAnalgesics
+      categoryId: CategoryMedicine
+      ageId: AgeIndustrial
+      displayName: Analgesics
+      description: Analgesics
+      unitsPerCubicMetre: 1300
+      basePrice: 12
+      unitType: Kilogram
+      density: 1.3
+      packFactor: 0.5
+
+  - item:
+      itemId: ItemAntibiotics
+      categoryId: CategoryMedicine
+      ageId: AgePost-industrial
+      displayName: Antibiotics
+      description: Antibiotics
+      unitsPerCubicMetre: 1140
+      basePrice: 45
+      unitType: Kilogram
+      density: 1.14
+      packFactor: 0.4
+...

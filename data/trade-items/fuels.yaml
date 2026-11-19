@@ -1,0 +1,33 @@
+---
+# The fields and their units are defined in docs/model.md, "Units, prices and storage". Each
+# price is the 2026-11-19 spot or contract quote where the good has a market, sourced in the
+# same section, and the first-draft value converted to the unit where it has none.
+#
+# Charcoal and LPG, both traded by the tonne: LPG at Saudi Aramco's propane contract price, the
+# Asian benchmark.
+item-base:
+
+  - item:
+      itemId: ItemCharcoal
+      categoryId: CategoryFuels
+      ageId: AgeStone
+      displayName: Charcoal
+      description: Wood with all the moisture removed
+      unitsPerCubicMetre: 1.3
+      basePrice: 989
+      unitType: Tonne
+      density: 1.3
+      packFactor: 0.35
+
+  - item:
+      itemId: ItemLPG
+      categoryId: CategoryFuels
+      ageId: AgeIndustrial
+      displayName: LPG
+      description: Liquefied petroleum gas, propane and butane under pressure
+      unitsPerCubicMetre: 0.54
+      basePrice: 720
+      unitType: Tonne
+      density: 0.54
+      packFactor: 0.45
+...

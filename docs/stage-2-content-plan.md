@@ -147,7 +147,7 @@ authored value is below one.
 | Category | `description` | string, empty | optional |
 | Item | `itemId`, `displayName`, `categoryId`, `ageId` | string, empty | required; links resolve |
 | Item | `description` | string, empty | optional |
-| Item | `unitType` | `std::optional<TradeUnit>`, empty | required. Enumerators are the authored names: `Gram`, `Kilogram`, `Litre`, `Kilolitre`, `Unit`, `Sheet`, `SquareMetre` |
+| Item | `unitType` | `std::optional<TradeUnit>`, empty | required. Enumerators are the authored names: `Carat`, `TroyOunce`, `Kilogram`, `Tonne`, `Litre`, `Kilolitre`, `Unit`, `Sheet`, `SquareMetre` ([D-064](decision-ledger.md#d-064)) |
 | Item | `unitsPerCubicMetre`, `density` | double, 0 | required, finite, above 0 |
 | Item | `packFactor` | double, 0 | required, finite, in (0, 1] |
 | Item | `basePrice` | string, empty | required, quoted; `Decimal::TryParse`, nonnegative, with the multiplier headroom |
@@ -238,8 +238,8 @@ new engine API yet.
 ### Item authoring (C04, 2026-11-19)
 
 The user selected the item values ([D-059](decision-ledger.md#d-059)); the numbers are the data's,
-in `data/trade-items/`. The four food grains are `CategoryConsumables`, of the Copper Age with their
-seeds, and keep their seed's kernel density and packing; rice is milled white rice. Basic Medical
+in `data/trade-items/`. The four food grains are `CategoryConsumables`, of the Stone Age with their
+seeds ([D-064](decision-ledger.md#d-064)), and keep their seed's kernel density and packing; rice is milled white rice. Basic Medical
 Supplies is `CategoryMedicalEquipment`, so the specialised medicines stay alone in
 `CategoryMedicine`. LPG is `CategoryFuels`. Oxygen, as the refrigerated liquid, and the scrubber
 cartridge are the new `CategoryLifeSupport`; one cartridge is one `Unit`, a fresh 30-occupant-day
@@ -431,7 +431,7 @@ Add a Life Support category with the following planned items:
 
 | Planned item | Requirement to define |
 | --- | --- |
-| Oxygen | Separate consumable traded by the kilolitre ([D-060](decision-ledger.md#d-060)) and measured aboard in kilograms, required at 1 kg per occupant per simulation day while relying on onboard life support. The starter's operating reserve is capped at 30 kg; tank physical volume and other hull capacities remain open. |
+| Oxygen | Separate consumable traded and measured aboard in kilograms ([D-064](decision-ledger.md#d-064)), required at 1 kg per occupant per simulation day while relying on onboard life support. The starter's operating reserve is capped at 30 kg; tank physical volume and other hull capacities remain open. |
 | Carbon scrubbers | Replaceable consumable cartridges used by installed life-support machinery. A fresh standard cartridge provides 30 occupant-days. Trade/storage units, physical values and resupply rules remain open. |
 
 The selected distinction is installed machinery versus consumable supplies. Scrubber
@@ -443,8 +443,8 @@ Both consumables belong under Life Support. A fresh standard cartridge is rated 
 occupant-days. Ship endurance, consequences of exhaustion and spent-cartridge handling
 remain open.
 
-The oxygen trading unit is the kilolitre ([D-060](decision-ledger.md#d-060), superseding the
-kilogram); aboard, tanks and use are kilograms, converted at the item's density. Preserve fractional quantities under Manifest's float/double
+The oxygen trading unit is the kilogram ([D-064](decision-ledger.md#d-064), superseding D-060's
+kilolitre), the unit of the tanks and the use aboard. Preserve fractional quantities under Manifest's float/double
 policy. Oxygen mass is the quoted, transferred and consumed quantity; tank volume, storage
 capacity and physical authoring values are separate choices. Selecting mass units does
 not select tank pressure, storage method, density/packing values, container ownership or
@@ -560,7 +560,7 @@ than resetting them on docking, reconnect or reload. Resolve replacement timing,
 partial cartridges and spent-item handling before implementing those operations. Existing
 life-support skill/effect IDs remain stable; their presence does not implement consumable
 accounting or select these new values.
-Verify the oxygen definition uses `Kilolitre`, independent oxygen mass in quotes/stock/
+Verify the oxygen definition uses `Kilogram`, independent oxygen mass in quotes/stock/
 transfers, fractional quantities and conservation across trade/loading/refill operations
 once those operations are selected. Physical capacity checks must use the authored storage
 conversion, and saved kilograms must retain their meaning across recovery. Selecting
