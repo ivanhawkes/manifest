@@ -109,6 +109,13 @@ struct ItemNode
 	double packFactor{0.0};
 };
 
+// The cubic metres a quantity of the item, in its unit, takes in a hold: the one conversion of a
+// quantity to space, its unit, density and packing being folded into unitsPerCubicMetre.
+inline double OccupiedVolume(const ItemNode &item, double quantity)
+{
+	return quantity / item.unitsPerCubicMetre;
+}
+
 using Items = std::vector<ItemNode>;
 
 struct SkillNode

@@ -15,6 +15,7 @@
 #include <jettison/vfs/FileSystem.h>
 
 #include <manifest/command/Requests.h>
+#include <manifest/company/Company.h>
 #include <manifest/world/World.h>
 
 namespace Manifest::Host
@@ -82,7 +83,7 @@ class Game final : public Jettison::Host::Game
 
 	void RegisterTypes() override
 	{
-		Command::RegisterTypes();
+		Company::RegisterTypes();
 	}
 
 
@@ -99,8 +100,8 @@ class Game final : public Jettison::Host::Game
 	    const Jettison::Sim::DefinitionRegistry & /*definitions*/) override
 	{
 		m_pIdentities = &World::RegisterWorld(world);
-		// No command is registered with it until A04's provisioning and cargo commands.
-		Command::RegisterRequests(world, *m_pIdentities);
+		Company::RegisterCommands(
+		    Command::RegisterRequests(world, *m_pIdentities), *m_pIdentities, m_content);
 	}
 
 

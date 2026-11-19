@@ -18,6 +18,7 @@ std::string_view IssuedPrefix(Kind kind)
 		case Kind::Principal: return "Principal";
 		case Kind::Company: return "Company";
 		case Kind::Organisation: return "Organisation";
+		case Kind::Ship: return "Ship";
 		case Kind::Region:
 		case Kind::CompanyAccount:
 		case Kind::PublicAccount:
@@ -80,6 +81,12 @@ std::function<void()> Identities::Load(
 		if (!index.emplace(std::pair{identity.kind, identity.id}, entity).second)
 			reader.Fail(std::format("two entities are named '{}'", identity.id));
 	}
+	for (const auto [entity, stock] : loaded.view<const Stock>().each())
+		if (const std::optional<std::string> problem = Broken(stock))
+			reader.Fail(*problem);
+	for (const auto [entity, cargo] : loaded.view<const Cargo>().each())
+		if (const std::optional<std::string> problem = Broken(cargo))
+			reader.Fail(*problem);
 	return [this, counters = std::move(counters), index = std::move(index)]() mutable
 	{
 		m_counters = std::move(counters);

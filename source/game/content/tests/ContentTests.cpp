@@ -10,6 +10,8 @@
 #include <format>
 #include <fstream>
 #include <initializer_list>
+#include <map>
+#include <set>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -330,6 +332,9 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	    "Manifest.Tuning 'balance': economy.intervalSeconds must be above 0");
 	CheckRefused(
 	    balance, "version: 1\neconomy: {wageTaxRate: 1}\n", "economy.wageTaxRate must be in [0, 1)");
+	CheckRefused(
+	    balance, "version: 1\ncompany: {startingCredits: 0}\n",
+	    "company.startingCredits must be above 0");
 	CheckRefused(balance, "version: 1\nneeds: []\n", "needs holds none");
 	CheckRefused(
 	    balance, "version: 1\nneeds: !merge=needId\n  - {needId: NeedStapleFood, weight: 0}\n",
@@ -932,4 +937,41 @@ TEST_CASE("A changed price, a reordered selection or an unselected definition ch
 	    "manifest/definitions/ages/age-golden.yaml",
 	    "version: 1\nageId: AgeGolden\ndisplayName: Golden\n");
 	CHECK(added.manifest != base.manifest);
+}
+
+
+TEST_CASE("A selected scenario's homes provision at the first station that docks the starter")
+{
+	Jettison::Vfs::FileSystem files;
+	files.AddMount({"base", kModDirectory});
+	Jettison::Sim::DefinitionRegistry definitions{files};
+	const ContentSet trading = LoadScenario(files, definitions, "trading");
+	CHECK(trading.tuning.company.startingCredits == 25000);
+	CHECK(
+	    trading.homeVenues ==
+	    std::map<std::string, std::string, std::less<>>{{"RegionOreHighlands", "VenueOreHighport"}});
+
+	const Overlay none;
+	CHECK(LoadWith(none).homeVenues.empty());
+}
+
+
+TEST_CASE("An item's quantity takes its units per cubic metre over it in a hold, in every unit")
+{
+	const Overlay none;
+	const ContentSet content = LoadWith(none);
+	std::set<Manifest::Core::TradeUnit> units;
+	for (const Manifest::Core::ItemNode &item : content.gameMode.items)
+	{
+		CAPTURE(item.itemId);
+		units.insert(item.unitType.value());
+		CHECK(Manifest::Core::OccupiedVolume(item, item.unitsPerCubicMetre) == 1.0);
+		CHECK(Manifest::Core::OccupiedVolume(item, 0.0) == 0.0);
+	}
+	CHECK(units.size() >= 5);
+	// Copper by the tonne, 8.96 to the cubic metre: the starter's 20 m^3 holds 179.2 t.
+	const auto copper = std::ranges::find(
+	    content.gameMode.items, std::string{"ItemCopper"}, &Manifest::Core::ItemNode::itemId);
+	REQUIRE(copper != content.gameMode.items.end());
+	CHECK(Manifest::Core::OccupiedVolume(*copper, 8.96 * 20.0) == doctest::Approx(20.0));
 }

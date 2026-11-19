@@ -262,7 +262,8 @@ their fittings and the compact ship's life support are left unset, and the start
 
 The balance inputs are one `Manifest.Tuning` record, `manifest/definitions/tuning/balance.yaml`
 (source `data/tuning/balance.yaml`), named by its file and required: the economic cadence and
-wage tax, the household needs, condition rates, onboard life-support consumption, the concession
+wage tax, the household needs, condition rates, a new company's starting credits (A04), onboard
+life-support consumption, the concession
 term, the performance-security rate, and the bronze project and recipe. The keys are indexed in
 the [ledger](decision-ledger.md#numeric-values). No rule reads them yet; the content suite holds
 each to its range and its references (a need's items in the need's unit, a project's skills,

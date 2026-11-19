@@ -55,6 +55,8 @@ struct ContentSet
 	std::map<std::string, ScenarioDefinition, std::less<>> scenarios;
 	// The scenario selected, by its name; empty for a set selected by game mode alone.
 	std::string scenario;
+	// The venue each of its player's home regions provisions a new player's ship at, by region ID.
+	std::map<std::string, std::string, std::less<>> homeVenues;
 	// Over every definition loaded, the mode's or not, and the scenario selected.
 	ContentIdentity identity;
 };

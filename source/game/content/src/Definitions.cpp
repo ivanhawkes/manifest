@@ -194,6 +194,8 @@ void RegisterTypes()
 		    .Field<&LifeSupportTuning::oxygenKilogramsPerOccupantDay>(
 		        "oxygenKilogramsPerOccupantDay", kDefined)
 		    .Field<&LifeSupportTuning::cartridgeOccupantDays>("cartridgeOccupantDays", kDefined);
+		RegisterType<CompanyTuning>("Manifest.CompanyTuning")
+		    .Field<&CompanyTuning::startingCredits>("startingCredits", kDefined);
 		RegisterType<ConcessionTuning>("Manifest.ConcessionTuning")
 		    .Field<&ConcessionTuning::termHours>("termHours", kDefined);
 		RegisterType<ProcurementTuning>("Manifest.ProcurementTuning")
@@ -212,6 +214,7 @@ void RegisterTypes()
 		    .Field<&TuningDefinition::needs>("needs", kDefined)
 		    .Field<&TuningDefinition::condition>("condition", kDefined)
 		    .Field<&TuningDefinition::lifeSupport>("lifeSupport", kDefined)
+		    .Field<&TuningDefinition::company>("company", kDefined)
 		    .Field<&TuningDefinition::concessions>("concessions", kDefined)
 		    .Field<&TuningDefinition::procurement>("procurement", kDefined)
 		    .Field<&TuningDefinition::projects>("projects", kDefined)

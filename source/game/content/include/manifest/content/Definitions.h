@@ -101,6 +101,13 @@ struct LifeSupportTuning
 	double cartridgeOccupantDays{0.0};
 };
 
+// A player's trading company as provisioning creates it.
+struct CompanyTuning
+{
+	// Whole credits, in its account.
+	std::int64_t startingCredits{0};
+};
+
 struct ConcessionTuning
 {
 	double termHours{0.0};
@@ -132,6 +139,7 @@ struct TuningDefinition
 	std::vector<NeedDefinition> needs;
 	ConditionTuning condition;
 	LifeSupportTuning lifeSupport;
+	CompanyTuning company;
 	ConcessionTuning concessions;
 	ProcurementTuning procurement;
 	std::vector<ProjectDefinition> projects;

@@ -5,6 +5,7 @@ manifest_add_module(host
 		content
 		world
 		command
+		company
 	HEADERS
 		include/manifest/host/Start.h
 	SOURCES

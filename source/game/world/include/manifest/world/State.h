@@ -1,7 +1,9 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <string>
+#include <vector>
 
 #include <manifest/content/Definitions.h>
 
@@ -18,7 +20,8 @@ enum class Kind
 	Region,
 	CompanyAccount,
 	PublicAccount,
-	HouseholdAccount
+	HouseholdAccount,
+	Ship
 };
 
 // Every hosted entity has one, given when it is created and never changed (Identities::Create).
@@ -67,6 +70,60 @@ struct Account
 	// Whole credits.
 	std::int64_t balance{0};
 };
+
+// A company's ship: its hull, a Manifest.Hull by ID, and the venue it is docked at, empty when it
+// is not. Stage 3 seeds the dock at provisioning; no command sets it.
+struct Ship
+{
+	std::string companyId;
+	std::string hullId;
+	std::string dockedAt;
+
+	bool operator==(const Ship &) const = default;
+};
+
+// An owner's goods at one venue, in the item's unit. Reserved goods back an order and cannot move;
+// the total held is the sum.
+struct Holding
+{
+	std::string venueId;
+	std::string itemId;
+	double available{0.0};
+	double reserved{0.0};
+
+	bool operator==(const Holding &) const = default;
+};
+
+// Every holding of the owner whose entity carries it, by (venue, item), none of them empty. The
+// owner is the entity's Identity, so equal IDs of two kinds hold apart.
+struct Stock
+{
+	std::vector<Holding> holdings;
+
+	bool operator==(const Stock &) const = default;
+};
+
+// A quantity of one item in a ship's hold, in the item's unit.
+struct Lot
+{
+	std::string itemId;
+	double quantity{0.0};
+
+	bool operator==(const Lot &) const = default;
+};
+
+// What a ship carries, by item, each lot above 0. Its owner's, at no venue.
+struct Cargo
+{
+	std::vector<Lot> lots;
+
+	bool operator==(const Cargo &) const = default;
+};
+
+// Why a Stock or a Cargo breaks the rules above, for a load to refuse: none when it keeps them.
+std::optional<std::string> Broken(const Stock &stock);
+
+std::optional<std::string> Broken(const Cargo &cargo);
 
 // The components and their service's record, with Reflect. Safe to call again.
 void RegisterTypes();

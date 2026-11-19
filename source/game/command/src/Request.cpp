@@ -26,7 +26,14 @@ void RegisterTypes()
 		    .Value<Result::RequestConflict>("RequestConflict")
 		    .Value<Result::RequestTooOld>("RequestTooOld")
 		    .Value<Result::UnknownTarget>("UnknownTarget")
-		    .Value<Result::InsufficientFunds>("InsufficientFunds");
+		    .Value<Result::InsufficientFunds>("InsufficientFunds")
+		    .Value<Result::AlreadyProvisioned>("AlreadyProvisioned")
+		    .Value<Result::NoHomeRegion>("NoHomeRegion")
+		    .Value<Result::NotDocked>("NotDocked")
+		    .Value<Result::WrongVenue>("WrongVenue")
+		    .Value<Result::InsufficientStock>("InsufficientStock")
+		    .Value<Result::CapacityExceeded>("CapacityExceeded")
+		    .Value<Result::InvalidQuantity>("InvalidQuantity");
 		RegisterEnum<ActorKind>("Manifest.Command.ActorKind")
 		    .Value<ActorKind::Principal>("Principal")
 		    .Value<ActorKind::Administrator>("Administrator");

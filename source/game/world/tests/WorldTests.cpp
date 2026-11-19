@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -162,4 +163,38 @@ TEST_CASE("A save naming two entities alike does not load, and the world is as i
 	CHECK(hosted.world.StateHash() == before);
 	CHECK(hosted.identities.Find(Kind::Region, "RegionOreHighlands") != entt::null);
 	CHECK(hosted.identities.Find(Kind::Region, "RegionTwice") == entt::null);
+}
+
+
+TEST_CASE("A save whose stock or cargo breaks its rules does not load, and the world is as it was")
+{
+	Hosted hosted;
+	CreateInitialState(hosted.world, hosted.identities, Trading());
+	const std::uint64_t before = hosted.world.StateHash();
+	const double nan = std::numeric_limits<double>::quiet_NaN();
+	const std::vector<Stock> stocks{
+	    {{{"VenueA", "ItemB", 1.0, 0.0}, {"VenueA", "ItemA", 1.0, 0.0}}},
+	    {{{"VenueA", "ItemA", 1.0, 0.0}, {"VenueA", "ItemA", 2.0, 0.0}}},
+	    {{{"VenueA", "ItemA", -1.0, 0.0}}},
+	    {{{"VenueA", "ItemA", 1.0, nan}}},
+	    {{{"VenueA", "ItemA", 0.0, 0.0}}},
+	    {{{"", "ItemA", 1.0, 0.0}}}};
+	for (const Stock &stock : stocks)
+	{
+		Hosted broken;
+		broken.world.Registry().emplace<Stock>(broken.world.Registry().create(), stock);
+		CHECK_THROWS_AS(hosted.world.Load(broken.world.Save()), Jettison::Serialise::FormatError);
+	}
+	const std::vector<Cargo> holds{
+	    {{{"ItemB", 1.0}, {"ItemA", 1.0}}},
+	    {{{"ItemA", 1.0}, {"ItemA", 1.0}}},
+	    {{{"ItemA", 0.0}}},
+	    {{{"ItemA", std::numeric_limits<double>::infinity()}}}};
+	for (const Cargo &cargo : holds)
+	{
+		Hosted broken;
+		broken.world.Registry().emplace<Cargo>(broken.world.Registry().create(), cargo);
+		CHECK_THROWS_AS(hosted.world.Load(broken.world.Save()), Jettison::Serialise::FormatError);
+	}
+	CHECK(hosted.world.StateHash() == before);
 }

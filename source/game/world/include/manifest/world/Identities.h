@@ -35,15 +35,16 @@ class Identities final : public Jettison::Sim::WorldService
 	// Null when the world has no such entity.
 	entt::entity Find(Kind kind, const std::string &id) const;
 
-	// An ID for a new Principal, Company or Organisation, "<Kind>n" with n counting from 1, skipping
-	// any the kind already has, and never handed out twice, across saves. The number is spent here,
-	// so a caller checks everything that could reject the action first. None once the kind's counter
-	// is exhausted. A kind that is not issued (a region, an account) is a programming error.
+	// An ID for a new Principal, Company, Organisation or Ship, "<Kind>n" with n counting from 1,
+	// skipping any the kind already has, and never handed out twice, across saves. The number is spent
+	// here, so a caller checks everything that could reject the action first. None once the kind's
+	// counter is exhausted. A kind that is not issued (a region, an account) is a programming error.
 	std::optional<std::string> Issue(Kind kind);
 
 	void Save(Jettison::Serialise::BinaryWriter &writer) const override;
 
-	// Fails the save for two entities of one kind and ID, or an empty ID.
+	// Fails the save for two entities of one kind and ID, an empty ID, or a Stock or Cargo that breaks
+	// its rules (Broken).
 	std::function<void()> Load(
 	    Jettison::Serialise::BinaryReader &reader, const entt::registry &loaded) override;
 

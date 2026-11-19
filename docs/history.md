@@ -52,6 +52,24 @@ details (`SaveInfo::details`) still fit, unchanged. M05 is done (2026-11-18, [se
 launches moved to CodeLLDB under NixOS `nix-ld`, and the user confirmed them from the editor
 (2026-11-19).
 
+## A04: provisioning and cargo — 2026-11-19
+
+The user selected a new company's starting credits, 25,000 ([D-077](decision-ledger.md#d-077)). The
+new `company` module registers three commands on A03's admission path
+([what was settled](stage-3-authority-plan.md#provisioning-a04)): the administrator provisions a
+player (principal, company and account, a `Polity` governing the first free home, the starter docked
+at the region's home venue), and a player loads and unloads goods between their company's stock at
+that venue and the ship's hold. Each checks everything before it writes: a second provisioning of
+one principal is `AlreadyProvisioned`, and none mints; wrong venue, undocked, reserved stock,
+capacity, nonfinite, nonpositive and another's ship write nothing. The volume conversion,
+`Core::OccupiedVolume`, sits beside `ItemNode`; the content set records each home's venue by C09's
+check. A load refuses broken stock or cargo (`company`, 6 cases; `world`, 7; `content`). No Jettison
+gap: the docked bootstrap is Manifest's `Ship::dockedAt`, the engine's docking waiting for W05's
+physics.
+
+Evidence, on Lythir: `./scripts/ci.sh --werror --asan --tidy` passed 36 of 36 in `clang-debug`,
+`clang-release` and `clang-asan`, 35 of 35 in `clang-notui`, and tidy clean.
+
 ## A03: admission and the request ledger — 2026-11-19
 
 The new `command` module is the one way a request reaches the hosted world

@@ -316,6 +316,39 @@ Jettison::Dock::PadClasses PadClassesOf(const Jettison::Sim::DefinitionRegistry 
 }
 
 
+// A new player is allocated a home only with somewhere to dock the starter, deliver to the region
+// and connect to working life support (D-047): the first venue in the scenario's order that is
+// public and operational, has life support, serves the region and has a pad of its layout, not for
+// display, that the starter's dock hull fits. Null for none.
+const VenueDefinition *HomeVenue(
+    const Jettison::Sim::DefinitionRegistry &registry, const Jettison::Dock::PadClasses &classes,
+    const ScenarioDefinition &scenario, std::string_view regionId)
+{
+	const auto *pStarterDock =
+	    registry.Find<Jettison::Dock::HullDefinition>(RegistryName(scenario.starterHull));
+	const auto docksStarter = [&](const VenueDefinition &venue)
+	{
+		const auto *pLayout = registry.Find<Jettison::Dock::StationLayout>(venue.layout);
+		return pStarterDock != nullptr && pLayout != nullptr &&
+		       std::ranges::any_of(
+		           pLayout->pads,
+		           [&](const Jettison::Dock::PadLayout &pad)
+		           {
+			           return !pad.display &&
+			                  Jettison::Dock::Fits(classes, *pStarterDock, pad.padClass);
+		           });
+	};
+	const auto found = std::ranges::find_if(
+	    scenario.venues,
+	    [&](const VenueDefinition &venue)
+	    {
+		    return venue.isPublic && venue.operational && venue.lifeSupportCapacity >= 1 &&
+		           Contains(venue.regions, regionId, &RegionSelection::regionId) && docksStarter(venue);
+	    });
+	return found == scenario.venues.end() ? nullptr : &*found;
+}
+
+
 // The engine's own check of a record (Dock::CheckHull and the like), whose FormatError names what
 // does not fit, reported against the record as any other broken rule is.
 template <typename Check> void RequireDock(const Checker &checker, Check check)
@@ -466,6 +499,8 @@ void CheckTuning(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 		checker.Require(
 		    Positive(tuning.lifeSupport.cartridgeOccupantDays), "lifeSupport.cartridgeOccupantDays",
 		    "must be above 0");
+		checker.Require(
+		    tuning.company.startingCredits > 0, "company.startingCredits", "must be above 0");
 		checker.Require(
 		    Positive(tuning.concessions.termHours), "concessions.termHours", "must be above 0");
 		checker.Require(
@@ -813,23 +848,6 @@ void CheckScenarios(
 			}
 		}
 
-		// A new player is allocated a home only with somewhere to dock the starter, deliver to the
-		// region and connect to working life support (D-047): a pad of the venue's layout, not for
-		// display, that the starter's dock hull fits.
-		const auto *pStarterDock =
-		    registry.Find<Jettison::Dock::HullDefinition>(RegistryName(scenario.starterHull));
-		const auto docksStarter = [&](const VenueDefinition &venue)
-		{
-			const auto *pLayout = registry.Find<Jettison::Dock::StationLayout>(venue.layout);
-			return pStarterDock != nullptr && pLayout != nullptr &&
-			       std::ranges::any_of(
-			           pLayout->pads,
-			           [&](const Jettison::Dock::PadLayout &pad)
-			           {
-				           return !pad.display &&
-				                  Jettison::Dock::Fits(classes, *pStarterDock, pad.padClass);
-			           });
-		};
 		for (const RegionDefinition &region : scenario.regions)
 		{
 			if (!region.playerHome)
@@ -837,16 +855,8 @@ void CheckScenarios(
 			checker.Require(
 			    starterResolves, "starterHull",
 			    std::format("is required: '{}' is a player's home", region.regionId));
-			const bool served = std::ranges::any_of(
-			    scenario.venues,
-			    [&](const VenueDefinition &venue)
-			    {
-				    return venue.isPublic && venue.operational && venue.lifeSupportCapacity >= 1 &&
-				           docksStarter(venue) &&
-				           Contains(venue.regions, region.regionId, &RegionSelection::regionId);
-			    });
 			checker.Require(
-			    served, "regions",
+			    HomeVenue(registry, classes, scenario, region.regionId) != nullptr, "regions",
 			    std::format(
 			        "'{}' is a player's home, and no operational public station serving it docks "
 			        "'{}' with life support to spare",
@@ -910,6 +920,16 @@ ContentSet Build(
 	for (const Core::ShipClassSpec *pHull : All<Core::ShipClassSpec>(registry))
 		content.hulls.push_back(*pHull);
 	content.scenario = scenario;
+	if (const auto selected = content.scenarios.find(scenario); selected != content.scenarios.end())
+	{
+		// The scenario checks hold every home to having one.
+		const Jettison::Dock::PadClasses classes = PadClassesOf(registry);
+		for (const RegionDefinition &region : selected->second.regions)
+			if (region.playerHome)
+				content.homeVenues.emplace(
+				    region.regionId,
+				    HomeVenue(registry, classes, selected->second, region.regionId)->venueId);
+	}
 	content.identity = BuildContentIdentity(registry, scenario);
 	return content;
 }

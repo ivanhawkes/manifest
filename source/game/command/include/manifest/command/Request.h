@@ -25,7 +25,17 @@ enum class Result
 	RequestTooOld,
 	// When it runs, from its command's rules.
 	UnknownTarget,
-	InsufficientFunds
+	InsufficientFunds,
+	// Provisioning a principal that already has a company, or with no home region free.
+	AlreadyProvisioned,
+	NoHomeRegion,
+	NotDocked,
+	WrongVenue,
+	// Too little available at the venue, or aboard, for the quantity.
+	InsufficientStock,
+	CapacityExceeded,
+	// Not finite, not above 0, or one whose arithmetic would not be.
+	InvalidQuantity
 };
 
 enum class ActorKind

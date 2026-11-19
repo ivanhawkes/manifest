@@ -198,6 +198,26 @@ the plan's codes, admission refuses `MalformedPayload`, `PayloadTooLarge`, `Sequ
 it runs, and one already completed is not run twice. The world identity in the envelope waits for
 a host that runs more than one world.
 
+<a id="provisioning-a04"></a>Settled in A04 (2026-11-19), in the `company` module. Three commands, each
+version 1. `Manifest.Company.Provision`, the administrator's, takes a principal's ID and the names
+it shows, and makes the `Principal`, a `Company` issued `Company<n>` with its `CompanyAccount` at
+`company.startingCredits` ([D-077](decision-ledger.md#d-077)), a `Polity` governing the first
+ungoverned home ([D-075](decision-ledger.md#d-075)), and one `Ship` issued `Ship<n>` of the
+scenario's starter hull, docked at the region's home venue: the first public, operational station
+with life support that serves it and has a pad the starter fits, which the content set records
+(`ContentSet::homeVenues`) by the check C09 made. A principal the world has is `AlreadyProvisioned`,
+so a retry under a new sequence mints nothing; with no home free it is `NoHomeRegion`. A ship's dock
+is its `Ship::dockedAt`, a venue's ID, which only provisioning sets: the engine's `Dock::Docking`
+needs physics and a station body, which W05 brings. `Manifest.Company.Load` and `Unload`, a player's,
+move a quantity between the company's `Stock` (a sorted `Holding` per venue and item, its available
+and reserved quantities) and the ship's `Cargo` (a sorted `Lot` per item), naming the venue the
+sender believes the ship is at. Every check runs before any write, with the plan's codes plus
+`InvalidQuantity` for a quantity whose sum would not be finite. Occupied volume is
+`Core::OccupiedVolume` over the hold against the hull's `CargoVolume`, with no tolerance, so a load
+that fills the hold exactly can be refused by its last bit. A load refuses a save whose stock or cargo
+is out of order, held twice, empty or not finite. Inventory comes from fixtures alone; nothing a
+player sends makes it. Life-support connections at the home station are not counted (W06).
+
 ## Stage 3 executable scope
 
 Deliver real company provisioning and cargo load/unload commands against the validated
