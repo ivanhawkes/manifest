@@ -52,6 +52,18 @@ details (`SaveInfo::details`) still fit, unchanged. M05 is done (2026-11-18, [se
 launches moved to CodeLLDB under NixOS `nix-ld`, and the user confirmed them from the editor
 (2026-11-19).
 
+## A05: queries and the observation boundary — 2026-11-19
+
+The new `query` module copies what an actor may see into a value snapshot at the completed step
+([what was settled](stage-3-authority-plan.md#queries-a05)): a player's own company, its credits,
+stock, ships and cargo, sorted by ID; every company for the administrator; nothing of a market or
+another company. Observing changes no state, and a snapshot is unchanged by later steps (`query`,
+2 cases). The company tests still read the registry for their checks. No Jettison gap: a const
+`SimWorld` gives the registry and the clock's step.
+
+Evidence, on Lythir: `./scripts/ci.sh --werror --asan --tidy` passed 37 of 37 in `clang-debug`,
+`clang-release` and `clang-asan`, 36 of 36 in `clang-notui`, and tidy clean.
+
 ## A04: provisioning and cargo — 2026-11-19
 
 The user selected a new company's starting credits, 25,000 ([D-077](decision-ledger.md#d-077)). The

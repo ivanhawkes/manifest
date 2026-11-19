@@ -251,6 +251,17 @@ elsewhere and one-time starting reports. Another company's private inventory and
 remain private. Apply filtering before replication; return no mutable registry references
 or component pointers to clients.
 
+<a id="queries-a05"></a>Settled in A05 (2026-11-19), in the `query` module. `Query::Observe` takes the
+world, its identities and an actor, read-only, and copies out a `Snapshot`: the clock's step, then the
+actor's company (its ID, name, credits and holdings, and each ship's hull, dock and cargo), sorted by
+ID, with nothing in it pointing back into the world. A player sees only the company their principal
+runs, none before provisioning, and the `Administrator` every company. It is called between steps, so
+it reads completed state only. A command's result is `Requests::Outcome`, already the sender's alone.
+The observation boundary: the snapshot holds no market and no other company's stock or credits;
+market rows stay out until W07 adds the fleet-observation filter, and a later market view goes in the
+snapshot behind that filter, not beside it. Regions, their accounts and the player's polity are not
+yet in it.
+
 Split command/query services and their tests from terminal presentation. FTXUI remains
 optional. Preserve the development console's established workflows and tests; distinguish
 its local sandbox from hosted commands until each workflow has an authoritative equivalent.
