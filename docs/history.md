@@ -52,6 +52,19 @@ details (`SaveInfo::details`) still fit, unchanged. M05 is done (2026-11-18, [se
 launches moved to CodeLLDB under NixOS `nix-ld`, and the user confirmed them from the editor
 (2026-11-19).
 
+## A03: admission and the request ledger — 2026-11-19
+
+The new `command` module is the one way a request reaches the hosted world
+([what was settled](stage-3-authority-plan.md#admission-a03)). Admission checks the actor, the
+command, its version and payload and the sequence before it assigns a global order and queues the
+envelope on the world; a refusal consumes no sequence. Requests run at the next step in admission
+order, the second of two conflicting ones seeing the first's effects. Identical retries answer
+from the pending or completed record, a reused sequence with another payload is a conflict, and a
+pruned one is too old, never run again. Save and load keep the pending work, progress and results,
+and a replay of the recorded envelopes rebuilds the world and the ledger to the same hash without
+admission (`command`, 9 cases). No command is registered yet; A04 adds provisioning and cargo. No
+Jettison gap: the engine's queue is saved and its applied commands are recorded with their step.
+
 ## A02: one hosted world — 2026-11-19
 
 The user chose how a player takes a home region ([D-075](decision-ledger.md#d-075)) and how a

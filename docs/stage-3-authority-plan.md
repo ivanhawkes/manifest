@@ -185,6 +185,19 @@ new sequence numbers or authenticating a live connection. Handle pending request
 snapshots so replay cannot enqueue them twice. Reject inconsistent restored ledgers/queues.
 This is an integration seam requiring tests, not a capability supplied by CommandQueue.
 
+<a id="admission-a03"></a>Settled in A03 (2026-11-19), in the `command` module. A request is one
+reflected envelope, `Manifest::Command::Request`: the actor's kind and ID, its sequence, the global
+order admission assigned, the command's name and version, and its payload as the binary archive's
+canonical bytes, which an identical retry is compared on. `Requests::Admit` is the one admission
+path; it queues the envelope on the world's `CommandQueue`, whose saved queue holds the pending
+work. An actor is a `Principal` that must exist in the world, or the `Administrator` the trusted
+harness makes, and each command names the one kind that may send it. The limits are 256 retained
+results and 32 pending requests per actor, 1,024 queued commands and a 4,096-byte payload. Besides
+the plan's codes, admission refuses `MalformedPayload`, `PayloadTooLarge`, `SequenceGap` and
+`SequenceExhausted`, consuming no sequence. A replayed envelope advances its actor's ledger where
+it runs, and one already completed is not run twice. The world identity in the envelope waits for
+a host that runs more than one world.
+
 ## Stage 3 executable scope
 
 Deliver real company provisioning and cargo load/unload commands against the validated

@@ -46,7 +46,8 @@ The modules, in dependency order:
 | `market` | Venues, reservations, order matching and settlement | Effects, simulation, ECS, progression |
 | `content` | Reflected definitions loaded through `Jettison::Sim::DefinitionRegistry`, record names and migrations, the content set's validation and the canonical content manifest and fingerprint | Config, universe, progression, sim, effects, Jettison Reflect, Serialise, Sim and VFS |
 | `world` | The hosted state on the engine's `SimWorld`: owner identities, organisations, regions, accounts and the saved counters new IDs come from (`Identities`), seeded from the scenario | Content, Jettison Sim |
-| `host` | Manifest composed into `Jettison::Host`: package policy and start-up | Content, world, Jettison Host |
+| `command` | The one admission path into the hosted world and every actor's saved request ledger: ordering, retries, bounds and structured results (`Requests`) | World, Jettison Serialise and Sim |
+| `host` | Manifest composed into `Jettison::Host`: package policy and start-up | Content, world, command, Jettison Host |
 
 `Manifest::Host` is outside `Manifest::Game`, so the model never depends on the host that drives
 it. `Manifest::Host::Start` mounts the options' sources read-only, the package and then each

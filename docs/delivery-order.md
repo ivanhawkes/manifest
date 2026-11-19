@@ -28,7 +28,7 @@ Planning-only restrictions on OpenAI implementation remain in force.
 ## Status
 
 Stages 1 and 2 are done: each finished row is marked **Done** with its date and a link to what it
-built, and how each task went is in [history](history.md). A02 is done; next: A03.
+built, and how each task went is in [history](history.md). A03 is done; next: A04.
 
 ## Priority 0: maintenance before Stage 1
 
@@ -92,7 +92,7 @@ Canonical scope: [Stage 3](stage-3-authority-plan.md).
 | --- | --- | --- |
 | 21 / A01 | Jettison boundary prerequisite: resolve neutral frame/partition and save-metadata seams needed for hosted state, with compatible fixtures; commit and consume any SDK provision. **Done in Jettison 2026-11-18, in pin `fafa758`**; C01 rechecks the fit (see status). | C08 |
 | 22 / A02 | First refresh the [Stage 3 plan](stage-3-authority-plan.md)'s 2026-11-15 inventory against the Stage 1–2 code, and obtain the user's choice of how a player takes a `playerHome` region at allocation ([open](stage-2-content-plan.md#authoring-decisions-still-open)). Add reflected one-world state, distinct accounts/control identities, counters and serialisation; settle the registry-adapter and capacity-conversion owners, then prove index rebuilding. Commands and queries live in a game module, not `tools/tui`, so A06 moves the console onto them rather than rewriting them. Add the TUI-off build to the gate. **Done 2026-11-19**, [history](history.md#a02-one-hosted-world--2026-11-19). | A01 |
-| 23 / A03 | Add trusted admission, fixed-step ordering, bounded retry/history state and structured command results. | A02 |
+| 23 / A03 | Add trusted admission, fixed-step ordering, bounded retry/history state and structured command results. **Done 2026-11-19**, [history](history.md#a03-admission-and-the-request-ledger--2026-11-19). | A02 |
 | 24 / A04 | Implement retry-safe provisioning and atomic cargo load/unload using validated docked bootstrap state, real account ownership and capacity checks. | A03 |
 | 25 / A05 | Add immutable actor-filtered queries and result snapshots; define the observation boundary before exposing market views. | A04 |
 | 26 / A06 | Separate command/query services and tests from FTXUI; preserve the development console without a second hosted simulation. | A05 |
