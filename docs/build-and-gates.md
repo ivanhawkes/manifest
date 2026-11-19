@@ -31,7 +31,8 @@ Module libraries publish their own header sets and dependencies;
 integration tests link the aggregate `Manifest::Game`. Existing assertions run under the engine's
 doctest version. The simulation suite pins generated and replayed state hashes. The mod suite
 mounts the staged directory and generated pack through the engine VFS. The default test build
-builds that pack first. The TUI executable is `build/<preset>/source/tools/tui/manifest_tui`.
+builds that pack first, validated before and after packing
+([content identity](stage-2-content-plan.md#content-identity)). The TUI executable is `build/<preset>/source/tools/tui/manifest_tui`.
 
 `manifest_data` writes the definition records from the authored YAML with mikefarah/yq v4 (tested
 with the devenv version, 4.54.1). Missing yq fails configuration when tests are enabled; with tests

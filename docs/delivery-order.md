@@ -54,7 +54,9 @@ own records and checked as the engine checks them, venues name a station layout,
 access asks the engine's fit rule, provisioned without a world in pin `15e2561`. C06 is done
 (2026-11-19): `manifest-validate` takes the host's options ([D-070](decision-ledger.md#d-070)),
 the package, ordered overlays named by their `mod.yaml` and a required scenario, and loads what the
-host loads with no world, through the engine's package rules provisioned in pin `30ea3f3`. Next: C07.
+host loads with no world, through the engine's package rules provisioned in pin `30ea3f3`. C07 is
+done (2026-11-19): the build validates the staged directory with each scenario, packs it, and
+validates the pack against the directory's manifest to the byte; no Jettison gap. Next: C08.
 
 - Jettison's G01, a generic rendered shell with the space gameplay moved to its sample, is done
   (2026-11-18, [history](../../jettison/docs/history.md#neutral-sdk-and-manifest-integration)),
@@ -113,7 +115,7 @@ against the delivered Stage 1 SDK before implementation.
 | 17 / C05 | Author the separate trading and multi-region governance fixtures, including valid starting access/service capacity and required project/production references. | C04 |
 | 17b / C09 | Share Jettison's ship and station definitions ([plan](small-trader-and-docking-plan.md#shared-ship-and-station-definitions-c09-done-2026-11-19)): pad classes, a dock hull for each hull with the starter a skiff, venues naming station layouts, and the engine's fit rule without a world. **Done 2026-11-19**, [plan](small-trader-and-docking-plan.md#shared-ship-and-station-definitions-c09-done-2026-11-19). | C05 |
 | 18 / C06 | Add the validator CLI through the same loader; verify host agreement, explicit overlays, contextual provenance and failure behavior. **Done 2026-11-19**, [options](stage-2-content-plan.md#versions-layering-and-migration). | C03, C09 |
-| 19 / C07 | Verify directory/pack content-manifest identity and add the validation build graph: validator → staged directory validation → pack → pack validation. | C06 |
+| 19 / C07 | Verify directory/pack content-manifest identity and add the validation build graph: validator → staged directory validation → pack → pack validation. **Done 2026-11-19**, [identity](stage-2-content-plan.md#content-identity). | C06 |
 | 20 / C08 | Close Stage 2: verify directory/pack identity, layering/migration, late-failure rollback and semantic rejection; run final gates and record the delivered schema/content contract. | C07 |
 
 No task may infer physical cargo volume from a commodity's trading unit. Resolve

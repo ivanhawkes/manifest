@@ -33,5 +33,5 @@ if(TARGET manifest_content_tests)
 	target_compile_definitions(manifest_content_tests PRIVATE
 		MANIFEST_MOD_DIRECTORY="${MANIFEST_MOD_DIRECTORY}"
 		MANIFEST_MOD_PACK="${PROJECT_BINARY_DIR}/manifest.pack")
-	add_dependencies(manifest_content_tests manifest_pack)
+	add_dependencies(manifest_content_tests manifest_validate_pack)
 endif()

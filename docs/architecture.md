@@ -60,7 +60,8 @@ rule fails start-up, naming the record, the field and its mounts. The `manifest`
 start-up logs the phase, source and cause and exits 1, a bad command line prints usage and exits 2.
 `manifest-validate <options>` (`Manifest::Host::Validate`) loads the same sources with the same
 rules and no world, and logs the mounts in order, the scenario and the content fingerprint, with
-the host's exit statuses; the options are recorded under
+the host's exit statuses, and with `--manifest <file>` writes the content manifest, which the build
+compares between the staged directory and its pack; the options are recorded under
 [versions, layering and migration](stage-2-content-plan.md#versions-layering-and-migration).
 
 `cmake/ManifestModule.cmake` mirrors Jettison's module helper: static module libraries, public

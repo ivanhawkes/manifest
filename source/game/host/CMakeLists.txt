@@ -19,5 +19,5 @@ if(TARGET manifest_host_tests)
 		MANIFEST_MOD_PACK="${PROJECT_BINARY_DIR}/manifest.pack"
 		MANIFEST_HOST_OVERLAYS="${CMAKE_CURRENT_SOURCE_DIR}/tests/overlays")
 	# Also what stages the content the manifest executable's checks start from.
-	add_dependencies(manifest_host_tests manifest_pack)
+	add_dependencies(manifest_host_tests manifest_validate_pack)
 endif()

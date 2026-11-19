@@ -21,7 +21,7 @@ target_link_libraries(manifest_mod_tests PRIVATE Jettison::Vfs yaml-cpp::yaml-cp
 target_compile_definitions(manifest_mod_tests PRIVATE
     MANIFEST_MOD_DIRECTORY="${MANIFEST_MOD_DIRECTORY}"
     MANIFEST_MOD_PACK="${PROJECT_BINARY_DIR}/manifest.pack")
-add_dependencies(manifest_mod_tests manifest_pack)
+add_dependencies(manifest_mod_tests manifest_validate_pack)
 add_test(NAME mod COMMAND manifest_mod_tests)
 
 # The SDK import boundary under a parent that provides the SDK (H01): configures only, no build.

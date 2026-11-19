@@ -138,7 +138,38 @@ else()
         COMMAND ${CMAKE_COMMAND} -E echo "manifest_mod requires mikefarah/yq v4"
         COMMAND ${CMAKE_COMMAND} -E false)
 endif()
+
+# The staged directory is validated with each scenario before it is packed, and the pack after, its
+# content manifest the directory's to the byte: content the host would refuse is never packed, and a
+# pack that loads differently fails the build. The validator does not depend on what it validates.
+file(GLOB MANIFEST_SCENARIOS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/data/scenarios/*.yaml")
+set(MANIFEST_VALIDATED_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/validated")
+set(manifest_validate_mod_commands)
+set(manifest_validate_pack_commands)
+foreach(scenario_file IN LISTS MANIFEST_SCENARIOS)
+    cmake_path(GET scenario_file STEM scenario)
+    set(manifests "${MANIFEST_VALIDATED_DIRECTORY}/${scenario}")
+    list(APPEND manifest_validate_mod_commands
+        COMMAND manifest-validate --content "${MANIFEST_MOD_DIRECTORY}" --scenario ${scenario}
+            --manifest "${manifests}.directory.manifest")
+    list(APPEND manifest_validate_pack_commands
+        COMMAND manifest-validate --content "${CMAKE_CURRENT_BINARY_DIR}/manifest.pack"
+            --scenario ${scenario} --manifest "${manifests}.pack.manifest"
+        COMMAND ${CMAKE_COMMAND} -E compare_files
+            "${manifests}.directory.manifest" "${manifests}.pack.manifest")
+endforeach()
+add_custom_target(manifest_validate_mod
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${MANIFEST_VALIDATED_DIRECTORY}"
+    ${manifest_validate_mod_commands}
+    COMMENT "Validating the staged content with each scenario"
+    VERBATIM)
+add_dependencies(manifest_validate_mod manifest_mod manifest-validate)
 jettison_add_pack(manifest_pack
     SOURCE "${MANIFEST_MOD_DIRECTORY}"
     OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/manifest.pack"
-    DEPENDS manifest_mod)
+    DEPENDS manifest_validate_mod)
+add_custom_target(manifest_validate_pack
+    ${manifest_validate_pack_commands}
+    COMMENT "Validating the pack with each scenario, against the staged content"
+    VERBATIM)
+add_dependencies(manifest_validate_pack manifest_pack)

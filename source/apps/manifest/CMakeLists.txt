@@ -50,9 +50,13 @@ if(MANIFEST_BUILD_TESTS AND BUILD_TESTING)
     add_test(NAME validate_no_arguments COMMAND ${validate} WORKING_DIRECTORY "${elsewhere}")
     add_test(NAME validate_unknown_argument COMMAND ${validate} ${directory} --check-startup
         WORKING_DIRECTORY "${elsewhere}")
+    add_test(NAME validate_no_manifest_path COMMAND ${validate} ${directory} --manifest
+        WORKING_DIRECTORY "${elsewhere}")
+    add_test(NAME validate_unwritable_manifest COMMAND ${validate} ${directory}
+        --manifest "${elsewhere}/none/trading.manifest" WORKING_DIRECTORY "${elsewhere}")
 
     set_tests_properties(cli_no_arguments cli_no_path cli_no_scenario cli_no_check
-        cli_unknown_argument validate_no_arguments validate_unknown_argument
+        cli_unknown_argument validate_no_arguments validate_unknown_argument validate_no_manifest_path
         PROPERTIES WILL_FAIL TRUE)
     # Each failure is the one expected, not a crash: only a failed start-up logs its phase.
     set(missing "Start-up failed in the mount phase, at ${elsewhere}/none")
@@ -64,6 +68,8 @@ BlankAge \\(patch\\)\\)")
         PROPERTIES PASS_REGULAR_EXPRESSION "${blank}")
     set_tests_properties(validate_unknown_scenario
         PROPERTIES PASS_REGULAR_EXPRESSION "there is no scenario 'elsewhere'")
+    set_tests_properties(validate_unwritable_manifest PROPERTIES PASS_REGULAR_EXPRESSION
+        "the manifest could not be written to ${elsewhere}/none/trading.manifest")
     set_tests_properties(validate_directory validate_pack PROPERTIES PASS_REGULAR_EXPRESSION
         "mount 1: manifest, from .*valid: scenario trading, game mode manifest, content [0-9a-f]+")
     set_tests_properties(validate_overlay PROPERTIES PASS_REGULAR_EXPRESSION

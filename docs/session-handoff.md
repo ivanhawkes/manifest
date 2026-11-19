@@ -2,7 +2,16 @@
 
 ## Next, on resuming — 2026-11-19
 
-C07, as `delivery-order.md` has it.
+C08, closing Stage 2, as `delivery-order.md` has it; then Codex's cross-review of the stage's
+commits together.
+
+## C07: the validation build graph — 2026-11-19
+
+As [content identity](stage-2-content-plan.md#content-identity) records: `manifest_validate_mod`,
+`manifest_pack`, `manifest_validate_pack`, each scenario validated on the directory and on the pack,
+the manifests compared to the byte. Scenario `trading` with `starterHull: HullNope` failed the build
+at `manifest_validate_mod` and left no pack (checked by hand, restored). The `validate_*` tests add
+a `--manifest` with no path (usage, 2) and an unwritable one (1, naming it). No Jettison gap.
 
 ## Unknown retired — 2026-11-19
 

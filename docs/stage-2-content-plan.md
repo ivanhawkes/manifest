@@ -634,6 +634,14 @@ scenario is in it; since C06 the selected scenario's name follows the records, e
 selected by game mode alone, still version 1 since no save had recorded it; a different scenario
 gives a different manifest (the `host` suite).
 
+**Verified in the build since C07 (2026-11-19).** `manifest_validate_mod` runs `manifest-validate`
+on the staged directory with each scenario under `data/scenarios/`; `manifest_pack` packs only
+content that passed, and `manifest_validate_pack` validates the pack with each scenario and compares
+its manifest with the directory's to the byte (`--manifest <file>` writes it, under
+`build/<preset>/validated/`). Content the host would refuse fails the build before the pack, and a
+pack that loads differently fails it after; the suites that read the pack build through it. The
+validator depends on neither.
+
 ## Delivery and acceptance
 
 1. Add reflected schemas and engine loading, generated packaging records and exact-value
