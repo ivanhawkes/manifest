@@ -6,6 +6,7 @@
 #include <functional>
 #include <map>
 #include <optional>
+#include <span>
 #include <string>
 #include <utility>
 
@@ -41,15 +42,25 @@ class Identities final : public Jettison::Sim::WorldService
 	// counter is exhausted. A kind that is not issued (a region, an account) is a programming error.
 	std::optional<std::string> Issue(Kind kind);
 
+	// The IBCs each hull's hold carries, by hull ID, which Load holds each ship's cargo to; a hull it
+	// does not name carries none. Unset, as in a world with no company commands, a load checks each
+	// hold against kMaxHoldIbcs alone.
+	void SetHolds(std::map<std::string, std::uint64_t, std::less<>> holds)
+	{
+		m_holds = std::move(holds);
+	}
+
 	void Save(Jettison::Serialise::BinaryWriter &writer) const override;
 
-	// Fails the save for two entities of one kind and ID, an empty ID, or a Stock or Cargo that breaks
-	// its rules (Broken).
+	// Fails the save for two entities of one kind and ID, an empty ID, a Stock or Cargo that breaks
+	// its rules (Broken), or, once SetHolds has run, a ship carrying more than its hull's hold.
 	std::function<void()> Load(
-	    Jettison::Serialise::BinaryReader &reader, const entt::registry &loaded) override;
+	    Jettison::Serialise::BinaryReader &reader, const entt::registry &loaded,
+	    std::span<const entt::meta_any> queued) override;
 
   private:
 	std::map<std::pair<Kind, std::string>, entt::entity> m_index;
 	IdentityCounters m_counters;
+	std::optional<std::map<std::string, std::uint64_t, std::less<>>> m_holds;
 };
 } // namespace Manifest::World

@@ -1,6 +1,5 @@
 #include <manifest/world/State.h>
 
-#include <cmath>
 #include <format>
 #include <tuple>
 
@@ -10,14 +9,6 @@
 
 namespace Manifest::World
 {
-namespace
-{
-bool Quantity(double value)
-{
-	return std::isfinite(value) && value >= 0.0;
-}
-} // namespace
-
 
 std::optional<std::string> Broken(const Stock &stock)
 {
@@ -26,11 +17,13 @@ std::optional<std::string> Broken(const Stock &stock)
 		const Holding &holding = stock.holdings[at];
 		if (holding.venueId.empty() || holding.itemId.empty())
 			return "a holding names no venue or item";
-		if (!Quantity(holding.available) || !Quantity(holding.reserved) ||
-		    holding.available + holding.reserved == 0.0)
+		if (holding.available == 0 && holding.reserved == 0)
+			return std::format("the holding of '{}' at '{}' is empty", holding.itemId, holding.venueId);
+		if (holding.available > Core::kMaxWarehouseIbcs ||
+		    holding.reserved > Core::kMaxWarehouseIbcs - holding.available)
 			return std::format(
-			    "the holding of '{}' at '{}' is empty or not a quantity", holding.itemId,
-			    holding.venueId);
+			    "the holding of '{}' at '{}' is over a warehouse's {} IBCs", holding.itemId,
+			    holding.venueId, Core::kMaxWarehouseIbcs);
 		if (at > 0 && std::tie(stock.holdings[at - 1].venueId, stock.holdings[at - 1].itemId) >=
 		                  std::tie(holding.venueId, holding.itemId))
 			return "the holdings are out of order or held twice";
@@ -41,11 +34,15 @@ std::optional<std::string> Broken(const Stock &stock)
 
 std::optional<std::string> Broken(const Cargo &cargo)
 {
+	std::uint64_t carried = 0;
 	for (std::size_t at = 0; at < cargo.lots.size(); ++at)
 	{
 		const Lot &lot = cargo.lots[at];
-		if (lot.itemId.empty() || !Quantity(lot.quantity) || lot.quantity == 0.0)
-			return "a lot names no item or holds no quantity";
+		if (lot.itemId.empty() || lot.containers == 0)
+			return "a lot names no item or holds no IBC";
+		if (lot.containers > Core::kMaxHoldIbcs - carried)
+			return std::format("the lots are over a hold's {} IBCs", Core::kMaxHoldIbcs);
+		carried += lot.containers;
 		if (at > 0 && cargo.lots[at - 1].itemId >= lot.itemId)
 			return "the lots are out of order or held twice";
 	}
@@ -103,7 +100,7 @@ void RegisterTypes()
 		RegisterType<Stock>("Manifest.World.Stock").Field<&Stock::holdings>("holdings", kSaved);
 		RegisterType<Lot>("Manifest.World.Lot")
 		    .Field<&Lot::itemId>("itemId", kSaved)
-		    .Field<&Lot::quantity>("quantity", kSaved);
+		    .Field<&Lot::containers>("containers", kSaved);
 		RegisterType<Cargo>("Manifest.World.Cargo").Field<&Cargo::lots>("lots", kSaved);
 		RegisterType<IdentityCounters>("Manifest.World.IdentityCounters")
 		    .Field<&IdentityCounters::issued>("issued", kSaved);

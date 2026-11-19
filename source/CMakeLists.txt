@@ -6,7 +6,10 @@ endif()
 
 add_subdirectory(game)
 add_subdirectory(apps/manifest)
-add_subdirectory(tools/console)
+# A presentation-free SDK has no developer console, so no development console either.
+if(TARGET Jettison::Devtools)
+    add_subdirectory(tools/console)
+endif()
 if(MANIFEST_BUILD_TUI)
     add_subdirectory(tools/tui)
 endif()

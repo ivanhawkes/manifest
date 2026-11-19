@@ -29,8 +29,8 @@ Planning-only restrictions on OpenAI implementation remain in force.
 
 Stages 1 and 2 are done: each finished row is marked **Done** with its date and a link to what it
 built, and how each task went is in [history](history.md). A07 is done (2026-11-19): **Stage 3 is closed**, its checks each held by a gated test
-([delivered](stage-3-authority-plan.md#delivered-a07-2026-11-19)); no Jettison gap. Next: Codex's
-cross-review of the stage's commits (A02 to A07), then N01.
+([delivered](stage-3-authority-plan.md#delivered-a07-2026-11-19)). Its cross-review's findings are
+fixed on pin `bc4facb` ([history](history.md#stage-3-cross-review--2026-11-19)). Next: N01.
 
 ## Priority 0: maintenance before Stage 1
 

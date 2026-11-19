@@ -1,6 +1,7 @@
 #include <manifest/command/Requests.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <format>
 #include <limits>
 #include <memory>
@@ -64,7 +65,8 @@ const Request *FindPending(const ActorLedger &ledger, std::uint64_t sequence)
 
 
 // The ledger's rules, as Load holds a save to them: completed then pending, contiguous from floor to
-// next, each request its actor's, within the limits, none ordered after the last order assigned.
+// next and in increasing global order, each request its actor's, within the limits, none ordered
+// after the last order assigned.
 std::optional<std::string> Broken(const ActorLedger &ledger, std::uint64_t lastOrder)
 {
 	if (ledger.id.empty())
@@ -76,6 +78,7 @@ std::optional<std::string> Broken(const ActorLedger &ledger, std::uint64_t lastO
 	if (ledger.completed.size() + ledger.pending.size() != ledger.next - ledger.floor)
 		return std::format("'{}' is missing requests between its floor and next", ledger.id);
 	std::uint64_t sequence = ledger.floor;
+	std::uint64_t order = 0;
 	auto check = [&](const Request &request) -> std::optional<std::string>
 	{
 		if (request.actorKind != ledger.kind || request.actorId != ledger.id)
@@ -84,6 +87,11 @@ std::optional<std::string> Broken(const ActorLedger &ledger, std::uint64_t lastO
 			return std::format("'{}' has its requests out of sequence", ledger.id);
 		if (request.order == 0 || request.order > lastOrder)
 			return std::format("'{}' has a request ordered after the last order", ledger.id);
+		if (request.order <= order)
+			return std::format("'{}' has its requests out of admission's order", ledger.id);
+		if (request.payload.size() > kMaxPayloadBytes)
+			return std::format("'{}' has a request larger than the payload limit", ledger.id);
+		order = request.order;
 		return std::nullopt;
 	};
 	for (const Completed &completed : ledger.completed)
@@ -111,24 +119,15 @@ Receipt Requests::Admit(
 	if (actor.id.empty() || (actor.kind == ActorKind::Principal &&
 	                         m_identities.Find(World::Kind::Principal, actor.id) == entt::null))
 		return Refused(Result::NotAuthorised);
-	const auto handler = m_handlers.find(command);
-	if (handler == m_handlers.end() || handler->second.version != version)
-		return Refused(Result::UnsupportedCommand);
-	if (handler->second.sender != actor.kind)
-		return Refused(Result::NotAuthorised);
-	if (payload.size() > kMaxPayloadBytes)
-		return Refused(Result::PayloadTooLarge);
-	if (!handler->second.decodes(payload))
-		return Refused(Result::MalformedPayload);
 
+	// A sequence already admitted answers from the ledger before the handlers are asked, so a retry
+	// still has its receipt after a restart that registers another version of its command.
 	const auto known = m_actors.find({actor.kind, actor.id});
 	const ActorLedger fresh = Fresh(actor.kind, actor.id);
 	const ActorLedger &ledger = known == m_actors.end() ? fresh : known->second;
-	if (sequence == 0 || sequence > ledger.next)
-		return Refused(Result::SequenceGap);
-	if (sequence < ledger.floor)
+	if (sequence != 0 && sequence < ledger.floor)
 		return Refused(Result::RequestTooOld);
-	if (sequence < ledger.next)
+	if (sequence != 0 && sequence < ledger.next)
 	{
 		if (const Completed *completed = FindCompleted(ledger, sequence))
 			return SameRequest(completed->request, command, version, payload)
@@ -141,6 +140,18 @@ Receipt Requests::Admit(
 		           ? Receipt{Receipt::Status::Queued, Result::Succeeded, pending->order}
 		           : Refused(Result::RequestConflict);
 	}
+
+	const auto handler = m_handlers.find(command);
+	if (handler == m_handlers.end() || handler->second.version != version)
+		return Refused(Result::UnsupportedCommand);
+	if (handler->second.sender != actor.kind)
+		return Refused(Result::NotAuthorised);
+	if (payload.size() > kMaxPayloadBytes)
+		return Refused(Result::PayloadTooLarge);
+	if (!handler->second.decodes(payload))
+		return Refused(Result::MalformedPayload);
+	if (sequence != ledger.next)
+		return Refused(Result::SequenceGap);
 	if (ledger.next == kLast || m_order == kLast)
 		return Refused(Result::SequenceExhausted);
 	if (ledger.pending.size() >= kPendingPerActor ||
@@ -234,7 +245,8 @@ void Requests::Save(Jettison::Serialise::BinaryWriter &writer) const
 
 
 std::function<void()> Requests::Load(
-    Jettison::Serialise::BinaryReader &reader, const entt::registry & /*loaded*/)
+    Jettison::Serialise::BinaryReader &reader, const entt::registry & /*loaded*/,
+    std::span<const entt::meta_any> queued)
 {
 	RequestLedger saved;
 	reader.Read(saved);
@@ -243,10 +255,48 @@ std::function<void()> Requests::Load(
 	{
 		if (const std::optional<std::string> problem = Broken(ledger, saved.order))
 			reader.Fail(*problem);
+		// Execute takes a request off its ledger before decoding it, so one it cannot read is refused
+		// here rather than lost there.
+		for (const Request &request : ledger.pending)
+			if (const auto handler = m_handlers.find(request.command);
+			    handler != m_handlers.end() && handler->second.version == request.version &&
+			    !handler->second.decodes(std::as_bytes(std::span{request.payload})))
+				reader.Fail(
+				    std::format(
+				        "request {} of '{}' has a payload its command cannot read", request.sequence,
+				        ledger.id));
 		Key key{ledger.kind, ledger.id};
 		if (!actors.emplace(std::move(key), std::move(ledger)).second)
 			reader.Fail("an actor's ledger is saved twice");
 	}
+	// A pending request the queue lacks would answer its retry as queued for ever, and two queued
+	// out of admission's order would run out of it.
+	if (queued.size() > kQueueCapacity)
+		reader.Fail("the queue holds more commands than its limit");
+	std::size_t matched = 0;
+	std::uint64_t lastOrder = 0;
+	for (const entt::meta_any &command : queued)
+	{
+		const auto *request = command.try_cast<const Request>();
+		if (request == nullptr)
+			continue;
+		const auto ledger = actors.find({request->actorKind, request->actorId});
+		const Request *admitted =
+		    ledger == actors.end() ? nullptr : FindPending(ledger->second, request->sequence);
+		if (admitted == nullptr || !SameRequest(*admitted, *request) ||
+		    admitted->order != request->order || request->order <= lastOrder)
+			reader.Fail(
+			    std::format(
+			        "request {} of '{}' is queued out of order or not pending in its ledger",
+			        request->sequence, request->actorId));
+		lastOrder = request->order;
+		++matched;
+	}
+	std::size_t pending = 0;
+	for (const ActorLedger &ledger : actors | std::views::values)
+		pending += ledger.pending.size();
+	if (matched != pending)
+		reader.Fail("the ledger has a request pending that the queue does not hold");
 	return [this, order = saved.order, actors = std::move(actors)]() mutable
 	{
 		m_order = order;

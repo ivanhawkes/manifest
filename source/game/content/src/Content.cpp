@@ -291,6 +291,13 @@ void CheckHulls(Checker &checker, const Jettison::Sim::DefinitionRegistry &regis
 			checker.Require(
 			    std::isfinite(value) && value >= 0.0, "baseStats",
 			    std::format("{} must be finite and not below 0", Core::StatName(stat)));
+		if (const auto volume = hull.baseStats.find(Core::EffectStat::CargoVolume);
+		    volume != hull.baseStats.end())
+			checker.Require(
+			    volume->second <= static_cast<double>(Core::kMaxHoldIbcs) &&
+			        std::trunc(volume->second) == volume->second,
+			    "baseStats",
+			    std::format("CargoVolume must be a whole number of IBCs up to {}", Core::kMaxHoldIbcs));
 		for (const std::string &effect : hull.fitableEffects)
 			checker.Require(
 			    effects.Has(effect), "fitableEffects", std::format("'{}' names no effect", effect));

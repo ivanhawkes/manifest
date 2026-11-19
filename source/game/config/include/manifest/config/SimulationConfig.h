@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>
@@ -109,14 +110,17 @@ struct ItemNode
 	double packFactor{0.0};
 };
 
-// The cubic metres a quantity of the item, in its unit, takes in a hold: the one conversion of a
-// quantity to space, its unit, density and packing being folded into unitsPerCubicMetre.
-inline double OccupiedVolume(const ItemNode &item, double quantity)
-{
-	return quantity / item.unitsPerCubicMetre;
-}
-
 using Items = std::vector<ItemNode>;
+
+// Goods are held and moved in IBCs (D-078): containers of one cubic metre, each full, so an IBC is an
+// item's unitsPerCubicMetre in its unit. The most a hull's hold carries is the largest hull class's
+// envelope, the heavy destroyer's 600 x 160 x 120 m (small-trader-and-docking-plan.md, "Ship size
+// classes"): no hold is bigger than its hull. Content and the commands each refuse a hull over it.
+inline constexpr std::uint64_t kMaxHoldIbcs = 11'520'000;
+
+// The most IBCs one owner holds of one item at one venue's warehouse: a hundred of the largest holds.
+// Even in gold's troy ounces, 621,152 to the IBC, that many is below 2^53.
+inline constexpr std::uint64_t kMaxWarehouseIbcs = 100 * kMaxHoldIbcs;
 
 struct SkillNode
 {

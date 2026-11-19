@@ -104,9 +104,11 @@ class Requests final : public Jettison::Sim::WorldService
 
 	void Save(Jettison::Serialise::BinaryWriter &writer) const override;
 
-	// Fails the save for a ledger that breaks its own rules or the limits.
+	// Fails the save for a ledger that breaks its own rules or the limits, or whose pending requests
+	// are not exactly the queued ones, in the order admission gave them.
 	std::function<void()> Load(
-	    Jettison::Serialise::BinaryReader &reader, const entt::registry &loaded) override;
+	    Jettison::Serialise::BinaryReader &reader, const entt::registry &loaded,
+	    std::span<const entt::meta_any> queued) override;
 
   private:
 	struct Handler

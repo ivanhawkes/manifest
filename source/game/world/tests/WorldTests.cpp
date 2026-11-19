@@ -171,14 +171,15 @@ TEST_CASE("A save whose stock or cargo breaks its rules does not load, and the w
 	Hosted hosted;
 	CreateInitialState(hosted.world, hosted.identities, Trading());
 	const std::uint64_t before = hosted.world.StateHash();
-	const double nan = std::numeric_limits<double>::quiet_NaN();
+	constexpr std::uint64_t kFull = Manifest::Core::kMaxWarehouseIbcs;
 	const std::vector<Stock> stocks{
-	    {{{"VenueA", "ItemB", 1.0, 0.0}, {"VenueA", "ItemA", 1.0, 0.0}}},
-	    {{{"VenueA", "ItemA", 1.0, 0.0}, {"VenueA", "ItemA", 2.0, 0.0}}},
-	    {{{"VenueA", "ItemA", -1.0, 0.0}}},
-	    {{{"VenueA", "ItemA", 1.0, nan}}},
-	    {{{"VenueA", "ItemA", 0.0, 0.0}}},
-	    {{{"", "ItemA", 1.0, 0.0}}}};
+	    {{{"VenueA", "ItemB", 1, 0}, {"VenueA", "ItemA", 1, 0}}},
+	    {{{"VenueA", "ItemA", 1, 0}, {"VenueA", "ItemA", 2, 0}}},
+	    {{{"VenueA", "ItemA", kFull + 1, 0}}},
+	    {{{"VenueA", "ItemA", kFull, 1}}},
+	    {{{"VenueA", "ItemA", 1, std::numeric_limits<std::uint64_t>::max()}}},
+	    {{{"VenueA", "ItemA", 0, 0}}},
+	    {{{"", "ItemA", 1, 0}}}};
 	for (const Stock &stock : stocks)
 	{
 		Hosted broken;
@@ -186,10 +187,12 @@ TEST_CASE("A save whose stock or cargo breaks its rules does not load, and the w
 		CHECK_THROWS_AS(hosted.world.Load(broken.world.Save()), Jettison::Serialise::FormatError);
 	}
 	const std::vector<Cargo> holds{
-	    {{{"ItemB", 1.0}, {"ItemA", 1.0}}},
-	    {{{"ItemA", 1.0}, {"ItemA", 1.0}}},
-	    {{{"ItemA", 0.0}}},
-	    {{{"ItemA", std::numeric_limits<double>::infinity()}}}};
+	    {{{"ItemB", 1}, {"ItemA", 1}}},
+	    {{{"ItemA", 1}, {"ItemA", 1}}},
+	    {{{"ItemA", 0}}},
+	    {{{"", 1}}},
+	    {{{"ItemA", Manifest::Core::kMaxHoldIbcs + 1}}},
+	    {{{"ItemA", Manifest::Core::kMaxHoldIbcs}, {"ItemB", 1}}}};
 	for (const Cargo &cargo : holds)
 	{
 		Hosted broken;

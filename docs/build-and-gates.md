@@ -13,8 +13,9 @@ ctest --preset clang-debug
 ```
 
 Presets are `clang-debug`, `clang-notui`, `clang-release` and `clang-asan`. Each has its own build
-tree, generated data and staged mod. `clang-notui` is Debug with `MANIFEST_BUILD_TUI=OFF`, which
-holds the game's command and query coverage to a build without the terminal interface. The gate
+tree, generated data and staged mod. `clang-notui` is Debug with `MANIFEST_BUILD_TUI=OFF` and the engine's
+`JETTISON_PRESENTATION=OFF`, which holds the game's command and query coverage to a build without
+the terminal interface or the engine's renderer, UI and developer console. The gate
 runs formatting, Debug build and CTest, the same for `clang-notui`, Release build and CTest, and
 optionally ASan/UBSan build and CTest. `--skip-release` supports a shorter local pass;
 CI runs the full gate. `CMAKE_BUILD_PARALLEL_LEVEL`, `CTEST_PARALLEL_LEVEL` and
@@ -55,13 +56,11 @@ The console suite checks command registration, quoted paths and names, completio
 typed errors, numeric bounds, configuration reloads and the load/generate/tick/trade-planning
 workflow. Run it without a terminal using `ctest --preset clang-debug -R '^console$'`.
 
-`MANIFEST_BUILD_TUI=OFF` omits the terminal, console tooling and FTXUI.
+`MANIFEST_BUILD_TUI=OFF` omits the terminal and FTXUI; an SDK without presentation also omits the
+development console, which is built on the engine's.
 `BUILD_TESTING=OFF` or `MANIFEST_BUILD_TESTS=OFF`
 omits the suites. Manifest tests and the TUI default to off when a host consumes the project.
-The presets set both to on, so the gate builds that configuration only. The TUI-off build, the
-shape a game server ships, is not yet a gate stage: it was checked by hand for H07 and C08
-(`cmake --preset clang-debug -B build/tui-off -DMANIFEST_BUILD_TUI=OFF`, then build and `ctest`).
-Adding it to the gate is open.
+The presets set both to on, so the gate builds that configuration only.
 `MANIFEST_WERROR=ON` makes project warnings fatal. `MANIFEST_CCACHE=OFF` and
 `JETTISON_CCACHE=OFF` disable compiler caches. C++ module scanning is disabled because this
 project uses headers, keeping compile commands directly usable by clangd and clang-tidy.

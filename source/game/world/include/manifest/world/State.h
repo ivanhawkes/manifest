@@ -82,14 +82,14 @@ struct Ship
 	bool operator==(const Ship &) const = default;
 };
 
-// An owner's goods at one venue, in the item's unit. Reserved goods back an order and cannot move;
-// the total held is the sum.
+// An owner's goods at one venue's warehouse, in IBCs (D-078), their total at most kMaxWarehouseIbcs.
+// Reserved IBCs back an order and cannot move; the total held is the sum.
 struct Holding
 {
 	std::string venueId;
 	std::string itemId;
-	double available{0.0};
-	double reserved{0.0};
+	std::uint64_t available{0};
+	std::uint64_t reserved{0};
 
 	bool operator==(const Holding &) const = default;
 };
@@ -103,11 +103,11 @@ struct Stock
 	bool operator==(const Stock &) const = default;
 };
 
-// A quantity of one item in a ship's hold, in the item's unit.
+// The IBCs of one item in a ship's hold, at most kMaxHoldIbcs.
 struct Lot
 {
 	std::string itemId;
-	double quantity{0.0};
+	std::uint64_t containers{0};
 
 	bool operator==(const Lot &) const = default;
 };

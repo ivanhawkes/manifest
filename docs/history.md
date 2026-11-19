@@ -52,6 +52,54 @@ details (`SaveInfo::details`) still fit, unchanged. M05 is done (2026-11-18, [se
 launches moved to CodeLLDB under NixOS `nix-ld`, and the user confirmed them from the editor
 (2026-11-19).
 
+## Stage 3 cross-review — 2026-11-19
+
+Codex reviewed `9de7cb0..97f6e52` in seven rounds (`build/reviews/stage-3`), the last approving. Round 1's three findings:
+
+- **F1:** a load or unload checked only that each side's sum was finite, so 1 t loaded from 2^54 t
+  left the venue at 2^54 t, and unloaded onto it vanished. Each side is now refused as
+  `InvalidQuantity` when rounding would change it by more than one part in 2^24 of the quantity,
+  the plan's one residue rule; `company` holds both cases and a 0.1 t + 0.2 t move that only rounds.
+- **F2:** a save loaded whose queue lacked a pending request (its retry answered queued for ever) or
+  held two out of admission's order (run out of order). The engine's services could not see the
+  queue, a Jettison gap: pin `bc4facb` gives `WorldService::Load` the queued commands, and
+  `Requests` refuses a queue that is not its pending requests in order (`command`).
+- **F3:** A06 made `Jettison::Devtools` required, which an SDK without presentation lacks, and
+  `clang-notui` kept presentation on, so missed it. The console is built where the SDK has the
+  engine's developer console, and `clang-notui` builds against an SDK without presentation.
+
+Round 2 resolved F1 and F3, left F2 open on one actor's pending requests saved out of admission's
+order, and found two more: a pending payload its command cannot read loaded and was lost when the
+step took it off the ledger (F4), and capacity summed the lot's and the load's volumes apart, so
+two loads could fill the starter's 20 m^3 hold to 20.000000000000004 m^3 (F5). Fixed after it:
+`Requests::Load` holds each actor's requests to increasing order and refuses an unreadable
+pending payload (`command`), and a load is measured over the lot it would store (`company`). The
+user asked for a third round. It resolved F2 and F4, left F5 open on a new item's lot summed in another
+order than the hold stores it, and found two more: a retry after a restart that registers another
+version of its command was refused rather than answered from the ledger (F6), and a save was not held
+to the payload and queue limits (F7). Fixed after it: the user selected whole IBCs for cargo
+([D-078](decision-ledger.md#d-078)), so a move counts IBCs and capacity is an integer count, and the
+venue takes or gives the IBCs times `unitsPerCubicMetre` under F1's rule; `Admit` answers a retained
+sequence before asking the commands; `Requests::Load` refuses a payload over 4,096 bytes and a queue
+over 1,024 commands. The `company` suite's pinned replay hash moves with `Lot` and `Move`, now IBC
+counts, and its fixture's quantities: `0x6754d1546a115533` to `0xe885f21ff9a48a55`.
+
+A fourth round, at the user's request, resolved F5 to F7 and found one more: a hull's `CargoVolume` had
+no upper bound, so content could pass 2^64 and its cast to an IBC count was undefined behaviour (F8).
+The user then set the bounds and took warehouse holdings into IBCs too (D-078, 2026-11-20): a hold
+carries at most 11,520,000 IBCs, the heavy destroyer's envelope, and a warehouse at most a hundred
+of those; content and the commands each refuse a hull over it or not whole (`content`, `company`), a
+save refuses a holding or lot over its limit (`world`), and an unload past the warehouse's is
+`CapacityExceeded`. With every count an integer, round 1's residue rule is gone. The pinned hash moves
+again with `Holding`, now IBC counts: `0x63a4858a587bffa5`.
+
+A fifth round resolved F8 and found one more: a save was held to the hold limit lot by lot, so 11,520,000
+IBCs of copper and one of tin, or 21 IBCs in the 20-IBC starter, loaded (F9). Fixed after it: a
+cargo's lots are bounded together (`world`), and a ship's cargo against its hull's hold, which
+`Company::RegisterCommands` gives `Identities` (`company`). Round 6 left F9 open on hulls with no
+`CargoVolume`, whose empty map was taken for none given; a hull the map does not name now carries
+nothing (`company`). Round 7 approved with no finding open.
+
 ## A07: Stage 3 closed — 2026-11-19
 
 **Stage 3 is closed** ([delivered](stage-3-authority-plan.md#delivered-a07-2026-11-19)), each of its

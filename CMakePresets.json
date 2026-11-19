@@ -50,7 +50,8 @@
       "inherits": "clang-debug",
       "binaryDir": "${sourceDir}/build/clang-notui",
       "cacheVariables": {
-        "MANIFEST_BUILD_TUI": "OFF"
+        "MANIFEST_BUILD_TUI": "OFF",
+        "JETTISON_PRESENTATION": "OFF"
       }
     }
   ],

@@ -1,7 +1,7 @@
 # Jettison feature-base, pinned rather than following main or a moving branch.
 # Updating this commit and the development shell is one SDK change. Fetch the engine
 # first: EnTT, yaml-cpp and doctest must be its targets, never second copies here.
-set(MANIFEST_JETTISON_REVISION 30ea3f317b5ecba50d507384102d34745ec53475)
+set(MANIFEST_JETTISON_REVISION bc4facbf8cbe5128a1ad1a6dd42dc7b114868faa)
 set(JETTISON_SOURCE_DIR "" CACHE PATH "Use a local Jettison checkout instead of the pinned revision")
 if(NOT TARGET Jettison::Math)
     if(JETTISON_SOURCE_DIR)
@@ -22,11 +22,15 @@ endif()
 
 # Everything Manifest takes from the SDK, however it arrived: a parent's partial SDK fails here,
 # naming what is missing, instead of at whichever target first links it.
-set(manifest_sdk_required Jettison::Core Jettison::Devtools Jettison::Dock Jettison::Host Jettison::Math
+set(manifest_sdk_required Jettison::Core Jettison::Dock Jettison::Host Jettison::Math
     Jettison::Reflect Jettison::Serialise Jettison::Sim Jettison::Vfs jettison_warnings
     jettison_pack EnTT::EnTT yaml-cpp::yaml-cpp)
 if(MANIFEST_BUILD_TESTS AND BUILD_TESTING)
     list(APPEND manifest_sdk_required doctest::doctest doctest::doctest_with_main)
+endif()
+# The development console takes the engine's, which is built with its presentation; the TUI is on it.
+if(MANIFEST_BUILD_TUI)
+    list(APPEND manifest_sdk_required Jettison::Devtools)
 endif()
 set(manifest_sdk_missing "")
 foreach(target IN LISTS manifest_sdk_required)

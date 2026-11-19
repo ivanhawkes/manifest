@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <format>
 #include <functional>
 #include <map>
@@ -26,14 +27,14 @@ using Jettison::Sim::SimWorld;
 using World::Kind;
 
 
-// What the commands run on: the scenario's items and the hulls' cargo volumes, looked up once.
+// What the commands run on: the scenario's items and the IBCs each hull holds, looked up once.
 struct Rules
 {
 	World::Identities &identities;
 	const Content::ContentSet &content;
 	const Content::ScenarioDefinition &scenario;
 	std::map<std::string, const Core::ItemNode *, std::less<>> items;
-	std::map<std::string, double, std::less<>> cargoVolumes;
+	std::map<std::string, std::uint64_t, std::less<>> holds;
 };
 
 
@@ -122,8 +123,7 @@ Result Moved(SimWorld &world, const Rules &rules, const Actor &actor, const Move
 	const auto item = rules.items.find(move.itemId);
 	if (item == rules.items.end())
 		return Result::UnknownTarget;
-	const double quantity = move.quantity;
-	if (!std::isfinite(quantity) || quantity <= 0.0)
+	if (move.containers == 0)
 		return Result::InvalidQuantity;
 
 	World::Stock &stock = registry.get<World::Stock>(company);
@@ -139,41 +139,38 @@ Result Moved(SimWorld &world, const Rules &rules, const Actor &actor, const Move
 
 	if (aboard)
 	{
-		if (!held || holding->available < quantity)
+		if (!held || holding->available < move.containers)
 			return Result::InsufficientStock;
-		double occupied = Core::OccupiedVolume(*item->second, quantity);
+		const auto hold = rules.holds.find(ship.hullId);
+		std::uint64_t free = hold == rules.holds.end() ? 0 : hold->second;
 		for (const World::Lot &aboardLot : cargo.lots)
-			occupied += Core::OccupiedVolume(*rules.items.at(aboardLot.itemId), aboardLot.quantity);
-		const auto volume = rules.cargoVolumes.find(ship.hullId);
-		if (!(occupied <= (volume == rules.cargoVolumes.end() ? 0.0 : volume->second)))
+			free -= std::min(free, aboardLot.containers);
+		if (move.containers > free)
 			return Result::CapacityExceeded;
-		const double after = (carried ? lot->quantity : 0.0) + quantity;
-		if (!std::isfinite(after))
-			return Result::InvalidQuantity;
 
-		holding->available -= quantity;
-		if (holding->available == 0.0 && holding->reserved == 0.0)
+		holding->available -= move.containers;
+		if (holding->available == 0 && holding->reserved == 0)
 			stock.holdings.erase(holding);
 		if (carried)
-			lot->quantity = after;
+			lot->containers += move.containers;
 		else
-			cargo.lots.insert(lot, {move.itemId, after});
+			cargo.lots.insert(lot, {move.itemId, move.containers});
 		return Result::Succeeded;
 	}
 
-	if (!carried || lot->quantity < quantity)
+	if (!carried || lot->containers < move.containers)
 		return Result::InsufficientStock;
-	const double after = (held ? holding->available : 0.0) + quantity;
-	if (!std::isfinite(after))
-		return Result::InvalidQuantity;
+	const std::uint64_t warehoused = held ? holding->available + holding->reserved : 0;
+	if (move.containers > Core::kMaxWarehouseIbcs - warehoused)
+		return Result::CapacityExceeded;
 
-	lot->quantity -= quantity;
-	if (lot->quantity == 0.0)
+	lot->containers -= move.containers;
+	if (lot->containers == 0)
 		cargo.lots.erase(lot);
 	if (held)
-		holding->available = after;
+		holding->available += move.containers;
 	else
-		stock.holdings.insert(holding, {move.venueId, move.itemId, after, 0.0});
+		stock.holdings.insert(holding, {move.venueId, move.itemId, move.containers, 0});
 	return Result::Succeeded;
 }
 } // namespace
@@ -194,7 +191,7 @@ void RegisterTypes()
 		    .Field<&Move::shipId>("shipId", kSaved)
 		    .Field<&Move::venueId>("venueId", kSaved)
 		    .Field<&Move::itemId>("itemId", kSaved)
-		    .Field<&Move::quantity>("quantity", kSaved);
+		    .Field<&Move::containers>("containers", kSaved);
 		return true;
 	}();
 	(void)registered;
@@ -215,10 +212,20 @@ void RegisterCommands(
 		JETTISON_VERIFY(item != content.gameMode.items.end());
 		rules->items.emplace(selection.itemId, &*item);
 	}
+	// Content refuses these too; a set built some other way is refused here before the cast.
 	for (const Core::ShipClassSpec &hull : content.hulls)
 		if (const auto volume = hull.baseStats.find(Core::EffectStat::CargoVolume);
 		    volume != hull.baseStats.end())
-			rules->cargoVolumes.emplace(hull.hullId, volume->second);
+		{
+			// NaN fails the last comparison.
+			if (volume->second < 0.0 || volume->second > static_cast<double>(Core::kMaxHoldIbcs) ||
+			    std::trunc(volume->second) != volume->second)
+				throw std::invalid_argument{std::format(
+				    "hull '{}' has a CargoVolume of {}, not a whole number of IBCs up to {}",
+				    hull.hullId, volume->second, Core::kMaxHoldIbcs)};
+			rules->holds.emplace(hull.hullId, static_cast<std::uint64_t>(volume->second));
+		}
+	identities.SetHolds(rules->holds);
 
 	requests.Register<Provision>(
 	    std::string{kProvision}, kVersion, Command::ActorKind::Administrator,

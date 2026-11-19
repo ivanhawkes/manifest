@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <cmath>
 #include <cstddef>
 #include <filesystem>
 #include <format>
@@ -295,6 +296,11 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	CheckRefused(
 	    starter, "version: 1\nbaseStats: {CargoVolume: -1}\n",
 	    "baseStats Cargo Volume must be finite and not below 0");
+	// A hold is whole IBCs, none bigger than the largest hull class's envelope.
+	for (const std::string_view volume : {"18446744073709551616", "11520001", "20.5"})
+		CheckRefused(
+		    starter, std::format("version: 1\nbaseStats: {{CargoVolume: {}}}\n", volume),
+		    "CargoVolume must be a whole number of IBCs up to 11520000");
 	CheckRefused(
 	    starter, "version: 1\nfitableEffects: [Teleport]\n",
 	    "fitableEffects 'Teleport' names no effect");
@@ -956,7 +962,7 @@ TEST_CASE("A selected scenario's homes provision at the first station that docks
 }
 
 
-TEST_CASE("An item's quantity takes its units per cubic metre over it in a hold, in every unit")
+TEST_CASE("An IBC holds an item's units per cubic metre, a finite amount above 0 in every unit")
 {
 	const Overlay none;
 	const ContentSet content = LoadWith(none);
@@ -965,13 +971,13 @@ TEST_CASE("An item's quantity takes its units per cubic metre over it in a hold,
 	{
 		CAPTURE(item.itemId);
 		units.insert(item.unitType.value());
-		CHECK(Manifest::Core::OccupiedVolume(item, item.unitsPerCubicMetre) == 1.0);
-		CHECK(Manifest::Core::OccupiedVolume(item, 0.0) == 0.0);
+		CHECK(std::isfinite(item.unitsPerCubicMetre));
+		CHECK(item.unitsPerCubicMetre > 0.0);
 	}
 	CHECK(units.size() >= 5);
-	// Copper by the tonne, 8.96 to the cubic metre: the starter's 20 m^3 holds 179.2 t.
+	// Copper by the tonne, 8.96 to the IBC: the starter's 20 IBCs hold 179.2 t.
 	const auto copper = std::ranges::find(
 	    content.gameMode.items, std::string{"ItemCopper"}, &Manifest::Core::ItemNode::itemId);
 	REQUIRE(copper != content.gameMode.items.end());
-	CHECK(Manifest::Core::OccupiedVolume(*copper, 8.96 * 20.0) == doctest::Approx(20.0));
+	CHECK(copper->unitsPerCubicMetre == 8.96);
 }

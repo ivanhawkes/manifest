@@ -48,16 +48,6 @@ std::string PadRight(const std::string &text, std::size_t width)
 }
 
 
-double ParseQuantity(const std::string &text)
-{
-	double value{};
-	const auto [end, error] = std::from_chars(text.data(), text.data() + text.size(), value);
-	if (error != std::errc{} || end != text.data() + text.size())
-		throw std::runtime_error{std::format("expected a quantity, got '{}'", text)};
-	return value;
-}
-
-
 std::string_view ResultName(Command::Result result)
 {
 	return Jettison::Reflect::EnumName(entt::meta_any{result});
@@ -129,9 +119,8 @@ void ManifestConsole::RegisterCommands()
 	    "provision", "provision <principal> <company name>: queues a player's start, as the host", 2, 2,
 	    [this](Arguments arguments) { return CommandProvision(arguments[0], arguments[1]); });
 	RegisterCommand(
-	    "cargo",
-	    "cargo load|unload <principal> <ship> <venue> <item> <quantity>: queues a player's move", 6, 6,
-	    [this](Arguments arguments) { return CommandCargo(arguments); });
+	    "cargo", "cargo load|unload <principal> <ship> <venue> <item> <IBCs>: queues a player's move",
+	    6, 6, [this](Arguments arguments) { return CommandCargo(arguments); });
 	RegisterCommand(
 	    "step", "step [count]: advances the hosted world and reports what ran (default 1)", 0, 1,
 	    [this](Arguments arguments) { return CommandStep(arguments); });
@@ -488,15 +477,14 @@ std::string ManifestConsole::CommandObserve(Arguments arguments)
 		     << company.companyId << " '" << company.displayName << "': " << company.credits
 		     << " credits";
 		for (const World::Holding &holding : company.holdings)
-			view << "\n  at " << holding.venueId << ": " << holding.itemId << " "
-			     << sim::FormatNumber(holding.available) << " available, "
-			     << sim::FormatNumber(holding.reserved) << " reserved";
+			view << "\n  at " << holding.venueId << ": " << holding.itemId << " " << holding.available
+			     << " IBC available, " << holding.reserved << " reserved";
 		for (const Query::ShipView &ship : company.ships)
 		{
 			view << "\n  " << ship.shipId << " " << ship.hullId << ", "
 			     << (ship.dockedAt.empty() ? std::string{"undocked"} : "docked at " + ship.dockedAt);
 			for (const World::Lot &lot : ship.cargo)
-				view << "\n    " << lot.itemId << " " << sim::FormatNumber(lot.quantity);
+				view << "\n    " << lot.itemId << " " << lot.containers << " IBC";
 		}
 	}
 	return view.str();
@@ -541,7 +529,9 @@ std::string ManifestConsole::CommandCargo(Arguments arguments)
 	    {Command::ActorKind::Principal, arguments[1]},
 	    arguments[0] == "load" ? Company::kLoad : Company::kUnload,
 	    BinaryArchive::Write(
-	        Company::Move{arguments[2], arguments[3], arguments[4], ParseQuantity(arguments[5])},
+	        Company::Move{
+	            arguments[2], arguments[3], arguments[4],
+	            ParseCount(arguments, 5, 0, 1, std::numeric_limits<unsigned>::max())},
 	        Jettison::Serialise::FormatVersion{Company::kVersion}));
 }
 

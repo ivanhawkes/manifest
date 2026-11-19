@@ -221,6 +221,9 @@ and remaining service capacity through retry/recovery. Other hull limits, physic
 volume, compartment dimensions, item fields and transfer/replacement procedures
 remain open; separate storage does not grant unlimited reserves or duplicate inventory.
 
+Since [D-078](decision-ledger.md#d-078) (Stage 3) goods are held and moved in whole IBCs, each the
+item's `unitsPerCubicMetre`, so an order trades IBCs or converts at its boundary; what follows
+predates it and is to be reconciled with it before W02 and W05.
 Implement one shared quantity-to-volume conversion using the distinctions in
 [model units](model.md). Proposed rules derived from that contract:
 

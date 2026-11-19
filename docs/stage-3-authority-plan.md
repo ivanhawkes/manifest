@@ -109,12 +109,13 @@ before making any writes. Preflight both source and destination arithmetic. Dete
 clamping of arithmetic residue, if needed, must have one documented rule and tests;
 never use a tolerance to permit a material overdraft.
 
-Use the existing content units and packing semantics for capacity. Settled in A02: an item's
-occupied volume is its quantity over `ItemNode::unitsPerCubicMetre`, which already folds in the
-unit, density and packing, against the hull's `CargoVolume` in cubic metres. The one owner is a
-function beside `ItemNode` in `config`, added with A04's cargo commands and tested for each
-supported unit; nothing computes it yet. Do not treat every item unit as one cubic metre. Derived occupied capacity is rebuilt from authoritative cargo and
-validated definitions; cargo and a second mutable capacity counter must not drift apart.
+Use the existing content units and packing semantics for capacity. Settled in A02, and since
+[D-078](decision-ledger.md#d-078) counted in whole IBCs: a hold carries IBCs of one cubic metre,
+each full, which is `ItemNode::unitsPerCubicMetre` of the item in its unit (that figure already
+folds in the unit, density and packing), and a hull holds the whole cubic metres of its
+`CargoVolume`. Do not treat every item unit as one cubic metre. Derived occupied capacity is
+rebuilt from authoritative cargo and validated definitions; cargo and a second mutable capacity
+counter must not drift apart.
 
 Docked location comes from authoritative state, not a client flag. Jettison already
 exposes `Dock::Docking`, its `Docked` stage, station/pad links and `Docks` services.
@@ -195,7 +196,14 @@ harness makes, and each command names the one kind that may send it. The limits 
 results and 32 pending requests per actor, 1,024 queued commands and a 4,096-byte payload. Besides
 the plan's codes, admission refuses `MalformedPayload`, `PayloadTooLarge`, `SequenceGap` and
 `SequenceExhausted`, consuming no sequence. A replayed envelope advances its actor's ledger where
-it runs, and one already completed is not run twice. The world identity in the envelope waits for
+it runs, and one already completed is not run twice. A save loads only if the queue holds exactly
+the actors' pending requests, in the order admission gave them, each actor's in its own sequence
+and global order, each payload one its command reads; the engine gives a service the
+queued commands as it loads since pin `bc4facb`. A save is held to the limits too: no payload
+over 4,096 bytes and no queue over 1,024 commands. A retry of a sequence already admitted is answered
+from the ledger before the commands are asked, so it keeps its receipt after a restart that registers
+another version of its command; a new request at a version no longer registered is refused, and a
+pending one runs as `UnsupportedCommand`. The world identity in the envelope waits for
 a host that runs more than one world.
 
 <a id="provisioning-a04"></a>Settled in A04 (2026-11-19), in the `company` module. Three commands, each
@@ -209,13 +217,20 @@ with life support that serves it and has a pad the starter fits, which the conte
 so a retry under a new sequence mints nothing; with no home free it is `NoHomeRegion`. A ship's dock
 is its `Ship::dockedAt`, a venue's ID, which only provisioning sets: the engine's `Dock::Docking`
 needs physics and a station body, which W05 brings. `Manifest.Company.Load` and `Unload`, a player's,
-move a quantity between the company's `Stock` (a sorted `Holding` per venue and item, its available
-and reserved quantities) and the ship's `Cargo` (a sorted `Lot` per item), naming the venue the
-sender believes the ship is at. Every check runs before any write, with the plan's codes plus
-`InvalidQuantity` for a quantity whose sum would not be finite. Occupied volume is
-`Core::OccupiedVolume` over the hold against the hull's `CargoVolume`, with no tolerance, so a load
-that fills the hold exactly can be refused by its last bit. A load refuses a save whose stock or cargo
-is out of order, held twice, empty or not finite. Inventory comes from fixtures alone; nothing a
+move a whole number of IBCs ([D-078](decision-ledger.md#d-078)) between the company's `Stock` (a
+sorted `Holding` per venue and item, its available and reserved IBCs) and the ship's `Cargo` (a
+sorted `Lot` per item, its IBCs), naming the venue the sender believes the ship is at. Every count is
+an integer, so a move conserves exactly and no residue rule is needed. Every check runs before any
+write, with the plan's codes: `InvalidQuantity` for no IBCs, and `CapacityExceeded` for a load past
+the hull's hold or an unload past the warehouse's limit. Both limits are `Core` constants: a hold
+carries at most `kMaxHoldIbcs`, 11,520,000, the largest hull class's envelope (the heavy
+destroyer's 600 x 160 x 120 m, [ship size classes](small-trader-and-docking-plan.md#ship-size-classes-and-the-resupply-platform));
+a warehouse holds at most `kMaxWarehouseIbcs`, a hundred of those, of one item for one owner at one
+venue. A hull's `CargoVolume` must be a whole number of IBCs up to `kMaxHoldIbcs`: content refuses
+one that is not, and so does registering the commands, should a set arrive some other way. A load
+refuses a save whose stock or cargo is out of order, held twice, empty or over its limit, or whose
+ship carries more than its hull's hold, which registering the commands gives the world's
+`Identities` from the same IBC counts the commands use. Inventory comes from fixtures alone; nothing a
 player sends makes it. Life-support connections at the home station are not counted (W06).
 
 ## Stage 3 executable scope
@@ -337,11 +352,11 @@ above is held by a test that runs in the gate:
 | Two regions of one planet | `company`: the governance scenario's two homes go to two players' polities, each region with its own public and household accounts. Project permissions wait for projects (W11, W12) |
 | No action before its step, conflicts in order | `command`: two grants for one balance; `company`: two loads for one holding and two provisionings for one home in one step, the second refused by what the first did |
 | Rejection atomicity | `company`: every refused move leaves the player's view as it was, and a refused provisioning spends no ID; `command`: a refused admission consumes no sequence |
-| Conservation | `company`: loads and unloads move the quantity between that venue and that hold, credits untouched |
+| Conservation | `company`: loads and unloads move whole IBCs between that venue and that hold, credits untouched; a hold carries them up to its hull's, a warehouse up to its limit, and a hull over the largest is refused by content and by the commands |
 | Retries | `command`: pending and completed retries, conflicts, gaps, bounds and pruning; `company`: a provisioning and a load retried run once |
-| Save, load and replay | `company`: a save with a request pending and a replay from the start reach the hosted world's hash, views and outcomes, pinned to one hash in every gate build (Debug, Release, sanitised, TUI off); `command` and `world`: the ledger and lookups rebuilt, a broken save refused. The world holds no credentials (none exist before N01) and no console state |
+| Save, load and replay | `company`: a save with a request pending and a replay from the start reach the hosted world's hash, views and outcomes, pinned to one hash in every gate build (Debug, Release, sanitised, TUI off); `command` and `world`: the ledger and lookups rebuilt, a broken save refused, a queue that is not the ledger's pending requests in order, an unreadable payload and a save over the limits among them; a retry answered after a restart that registers another version of its command. The world holds no credentials (none exist before N01) and no console state |
 | Queries | `query`: a player sees only their company, the host every one, and observing changes nothing |
-| TUI off | `clang-notui` is a gate stage (A02); the console's suite runs in it (A06) |
+| TUI off | `clang-notui` is a gate stage (A02), against an SDK without presentation since the stage's cross-review; the console, which needs the engine's developer console, is built and tested apart from FTXUI in the other three (A06) |
 
 Stage 4 is handed these contracts, which its plan holds in full:
 
@@ -360,4 +375,5 @@ consuming no sequence (`company`). Still later: the envelope's world identity, w
 than one world; authentication (N01); durable acknowledgement (Stage 5).
 
 The [stage's exit criterion](development-stages.md#stage-3-company-ownership-and-authoritative-commands)
-is met. No Jettison gap: Stage 3 built on pin `30ea3f3` throughout.
+is met. A02 to A07 built on pin `30ea3f3` with no Jettison gap; the stage's cross-review named one, a
+service loaded with the commands a save queues, provisioned in pin `bc4facb`.

@@ -26,15 +26,16 @@ struct Provision
 // at and the ship's hold, the one way and the other, neither changing their owner. The venue is the
 // one the sender believes the ship is at. Each checks everything before it writes anything: the
 // ship (UnknownTarget), that the sender's company owns it (NotAuthorised), that it is docked
-// (NotDocked) at the venue (WrongVenue), the scenario's item (UnknownTarget), the quantity
+// (NotDocked) at the venue (WrongVenue), the scenario's item (UnknownTarget), a count above 0
 // (InvalidQuantity), enough available to move, reserved goods not counted (InsufficientStock), and
-// on loading the hull's cargo volume (CapacityExceeded).
+// room for them: the hull's hold on loading, the warehouse's kMaxWarehouseIbcs on unloading
+// (CapacityExceeded).
 struct Move
 {
 	std::string shipId;
 	std::string venueId;
 	std::string itemId;
-	double quantity{0.0};
+	std::uint64_t containers{0};
 };
 
 inline constexpr std::string_view kProvision = "Manifest.Company.Provision";

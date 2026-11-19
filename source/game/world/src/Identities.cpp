@@ -1,5 +1,6 @@
 #include <manifest/world/Identities.h>
 
+#include <cstdint>
 #include <format>
 #include <limits>
 #include <stdexcept>
@@ -69,7 +70,8 @@ void Identities::Save(Jettison::Serialise::BinaryWriter &writer) const
 
 
 std::function<void()> Identities::Load(
-    Jettison::Serialise::BinaryReader &reader, const entt::registry &loaded)
+    Jettison::Serialise::BinaryReader &reader, const entt::registry &loaded,
+    std::span<const entt::meta_any> /*queued*/)
 {
 	IdentityCounters counters;
 	reader.Read(counters);
@@ -87,6 +89,20 @@ std::function<void()> Identities::Load(
 	for (const auto [entity, cargo] : loaded.view<const Cargo>().each())
 		if (const std::optional<std::string> problem = Broken(cargo))
 			reader.Fail(*problem);
+	if (m_holds)
+		for (const auto [entity, ship, cargo] : loaded.view<const Ship, const Cargo>().each())
+		{
+			// Broken has bounded the sum, so it cannot wrap.
+			std::uint64_t carried = 0;
+			for (const Lot &lot : cargo.lots)
+				carried += lot.containers;
+			const auto hold = m_holds->find(ship.hullId);
+			if (carried > (hold == m_holds->end() ? 0 : hold->second))
+				reader.Fail(
+				    std::format(
+				        "a ship of hull '{}' carries {} IBCs, more than its hold", ship.hullId,
+				        carried));
+		}
 	return [this, counters = std::move(counters), index = std::move(index)]() mutable
 	{
 		m_counters = std::move(counters);

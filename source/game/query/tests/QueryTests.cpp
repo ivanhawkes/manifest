@@ -88,8 +88,8 @@ TEST_CASE("A player sees their own company as it was at the completed step, and 
 	Hosted hosted{"trading"};
 	CHECK(hosted.Observe(kAda) == Snapshot{0, {}});
 	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
-	hosted.Stock("Company1").holdings = {{"VenueOreHighport", "ItemCopper", 10.0, 2.0}};
-	const Company::Move move{"Ship1", "VenueOreHighport", "ItemCopper", 3.0};
+	hosted.Stock("Company1").holdings = {{"VenueOreHighport", "ItemCopper", 3, 2}};
+	const Company::Move move{"Ship1", "VenueOreHighport", "ItemCopper", 3};
 	REQUIRE(hosted.Run(kAda, Company::kLoad, move) == Result::Succeeded);
 
 	const std::uint64_t hash = hosted.world.StateHash();
@@ -102,15 +102,15 @@ TEST_CASE("A player sees their own company as it was at the completed step, and 
 	        {{"Company1",
 	          "Co",
 	          25000,
-	          {{"VenueOreHighport", "ItemCopper", 7.0, 2.0}},
-	          {{"Ship1", "HullLoneTraderStarter", "VenueOreHighport", {{"ItemCopper", 3.0}}}}}}});
+	          {{"VenueOreHighport", "ItemCopper", 0, 2}},
+	          {{"Ship1", "HullLoneTraderStarter", "VenueOreHighport", {{"ItemCopper", 3}}}}}}});
 
 	REQUIRE(hosted.Run(kAda, Company::kUnload, move) == Result::Succeeded);
-	CHECK(loaded.companies[0].ships[0].cargo[0].quantity == 3.0);
+	CHECK(loaded.companies[0].ships[0].cargo[0].containers == 3);
 	const Snapshot unloaded = hosted.Observe(kAda);
 	CHECK(unloaded.step == 3);
 	CHECK(unloaded.companies[0].ships[0].cargo.empty());
-	CHECK(unloaded.companies[0].holdings[0].available == 10.0);
+	CHECK(unloaded.companies[0].holdings[0].available == 3);
 }
 
 
@@ -119,10 +119,10 @@ TEST_CASE("Each player sees only their own company and results, and the host see
 	Hosted hosted{"governance"};
 	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
 	REQUIRE(hosted.Provision("Bea") == Result::Succeeded);
-	hosted.Stock("Company2").holdings = {{"VenueForgeHighport", "ItemCopper", 5.0, 0.0}};
+	hosted.Stock("Company2").holdings = {{"VenueForgeHighport", "ItemCopper", 10, 0}};
 	REQUIRE(
 	    hosted.Run(
-	        kBea, Company::kLoad, Company::Move{"Ship2", "VenueForgeHighport", "ItemCopper", 1.0}) ==
+	        kBea, Company::kLoad, Company::Move{"Ship2", "VenueForgeHighport", "ItemCopper", 1}) ==
 	    Result::Succeeded);
 
 	const Snapshot adas = hosted.Observe(kAda);
@@ -136,7 +136,7 @@ TEST_CASE("Each player sees only their own company and results, and the host see
 	const Snapshot beas = hosted.Observe(kBea);
 	REQUIRE(beas.companies.size() == 1);
 	CHECK(beas.companies[0].companyId == "Company2");
-	CHECK(beas.companies[0].ships[0].cargo == std::vector<World::Lot>{{"ItemCopper", 1.0}});
+	CHECK(beas.companies[0].ships[0].cargo == std::vector<World::Lot>{{"ItemCopper", 1}});
 
 	// A principal the world does not have, and one named as the host is, see nothing.
 	CHECK(hosted.Observe({ActorKind::Principal, "Cy"}).companies.empty());

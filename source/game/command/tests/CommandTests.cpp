@@ -3,10 +3,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <initializer_list>
 #include <memory>
 #include <span>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <jettison/reflect/Reflect.h>
@@ -77,12 +79,12 @@ Result ApplyGrant(
 // A world as the host registers one, with two principals and one region's account.
 struct Hosted
 {
-	Hosted()
+	explicit Hosted(std::uint32_t grantVersion = kGrantVersion)
 	    : identities{(RegisterTestTypes(), Manifest::World::RegisterWorld(world))},
 	      requests{RegisterRequests(world, identities)}
 	{
 		requests.Register<Grant>(
-		    "Test.Grant", kGrantVersion, ActorKind::Principal,
+		    "Test.Grant", grantVersion, ActorKind::Principal,
 		    [this](SimWorld &target, const Actor &actor, const Grant &grant)
 		    { return ApplyGrant(target, actor, grant, identities); });
 		requests.Register<Audit>(
@@ -135,7 +137,8 @@ class Forged final : public Jettison::Sim::WorldService
 	}
 
 	std::function<void()> Load(
-	    Jettison::Serialise::BinaryReader & /*reader*/, const entt::registry & /*loaded*/) override
+	    Jettison::Serialise::BinaryReader & /*reader*/, const entt::registry & /*loaded*/,
+	    std::span<const entt::meta_any> /*queued*/) override
 	{
 		return [] {};
 	}
@@ -168,12 +171,14 @@ Request Queued(const std::string &actorId, std::uint64_t sequence, std::uint64_t
 }
 
 
-std::vector<std::byte> ForgedSave(RequestLedger ledger)
+std::vector<std::byte> ForgedSave(RequestLedger ledger, const std::vector<Request> &queue = {})
 {
 	RegisterTestTypes();
 	SimWorld world{1.0, 0};
 	Manifest::World::RegisterWorld(world);
 	world.AddService("Manifest.Requests", std::make_unique<Forged>(std::move(ledger)));
+	for (const Request &request : queue)
+		world.Commands().Push(request);
 	return world.Save();
 }
 } // namespace
@@ -375,4 +380,98 @@ TEST_CASE("A saved ledger that breaks its rules does not load")
 	refused({0, {Ledger("Ada", 2, 1, {Queued("Ada", 1, 1)})}});
 	refused({1, {Ledger("Ada", 2, 1, {Queued("Bea", 1, 1)})}});
 	refused({0, {Ledger("Ada", 1, 1), Ledger("Ada", 1, 1)}});
+}
+
+
+TEST_CASE("A save whose queue is not its ledger's pending requests, in order, does not load")
+{
+	Hosted hosted;
+	hosted.Populate();
+	hosted.Send(kAda, 1, 10);
+	hosted.Send(kBea, 1, -20);
+	std::vector<entt::meta_any> admitted = hosted.world.Commands().Drain();
+	REQUIRE(admitted.size() == 2);
+	auto saved = [&](std::initializer_list<std::size_t> queued)
+	{
+		(void)hosted.world.Commands().Drain();
+		for (const std::size_t index : queued)
+			hosted.world.Commands().Push(admitted[index]);
+		return hosted.world.Save();
+	};
+
+	Hosted loaded;
+	loaded.Populate();
+	const std::uint64_t before = loaded.world.StateHash();
+	for (const auto &[queued, problem] :
+	     {std::pair{saved({0}), "the queue does not hold"}, std::pair{saved({1, 0}), "out of order"},
+	      std::pair{saved({0, 0}), "out of order"}})
+	{
+		CHECK_THROWS_WITH_AS(
+		    loaded.world.Load(queued), doctest::Contains(problem), Jettison::Serialise::FormatError);
+		CHECK(loaded.world.StateHash() == before);
+	}
+	loaded.world.Load(saved({0, 1}));
+	loaded.world.Step();
+	CHECK(loaded.Balance() == 90);
+	CHECK(loaded.requests.Outcome(kBea, 1)->request.order == 2);
+}
+
+
+TEST_CASE("A saved ledger whose pending requests the step could not run does not load")
+{
+	Hosted hosted;
+	hosted.Populate();
+	const std::uint64_t before = hosted.world.StateHash();
+	auto granting = [](Request request)
+	{
+		for (const std::byte byte :
+		     BinaryArchive::Write(Grant{"RegionA", 10}, FormatVersion{kGrantVersion}))
+			request.payload.push_back(std::to_integer<std::uint8_t>(byte));
+		return request;
+	};
+	// The queue in global order, but Ada's ledger holds her second request before her first.
+	const Request first = granting(Queued("Ada", 1, 2));
+	const Request second = granting(Queued("Ada", 2, 1));
+	// A Grant whose payload is empty, in the queue and the ledger alike, and one over the limit.
+	const Request empty = Queued("Ada", 1, 1);
+	Request large = granting(Queued("Ada", 1, 1));
+	large.payload.resize(kMaxPayloadBytes + 1);
+	for (const auto &[save, problem] :
+	     {std::pair{
+	          ForgedSave({2, {Ledger("Ada", 3, 1, {first, second})}}, {second, first}),
+	          "out of admission's order"},
+	      std::pair{ForgedSave({1, {Ledger("Ada", 2, 1, {empty})}}, {empty}), "cannot read"},
+	      std::pair{ForgedSave({1, {Ledger("Ada", 2, 1, {large})}}, {large}), "payload limit"},
+	      std::pair{ForgedSave({0, {}}, std::vector<Request>(kQueueCapacity + 1, first)), "its limit"}})
+	{
+		CHECK_THROWS_WITH_AS(
+		    hosted.world.Load(save), doctest::Contains(problem), Jettison::Serialise::FormatError);
+		CHECK(hosted.world.StateHash() == before);
+	}
+}
+
+
+TEST_CASE(
+    "A retry is answered from the ledger after a restart registers another version of its command")
+{
+	Hosted hosted;
+	hosted.Populate();
+	REQUIRE(hosted.Send(kAda, 1, 10).status == Status::Queued);
+	hosted.world.Step();
+	REQUIRE(hosted.Send(kAda, 2, 20).status == Status::Queued);
+
+	Hosted upgraded{kGrantVersion + 1};
+	upgraded.world.Load(hosted.world.Save());
+	const Receipt completed = upgraded.Send(kAda, 1, 10);
+	CHECK(completed.status == Status::Completed);
+	CHECK(completed.result == Result::Succeeded);
+	CHECK(completed.order == 1);
+	const Receipt pending = upgraded.Send(kAda, 2, 20);
+	CHECK(pending.status == Status::Queued);
+	CHECK(pending.order == 2);
+	// A new request at the old version is refused, and the pending one runs as unsupported.
+	CHECK(upgraded.Send(kAda, 3, 30).result == Result::UnsupportedCommand);
+	upgraded.world.Step();
+	CHECK(upgraded.Send(kAda, 2, 20).result == Result::UnsupportedCommand);
+	CHECK(upgraded.Balance() == 110);
 }
