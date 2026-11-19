@@ -8,6 +8,14 @@ good is filed under it and no code names it (the `"Unknown"` strings in `EffectT
 `data/trade-items/categories.yaml`, with its row in `docs/model.md`'s file table. Record it as a
 ledger row beside D-069, gate it and commit. Then C06, as `delivery-order.md` has it.
 
+## Station names — 2026-11-19
+
+The user chose Old Norse for the generated universe's station names, beside Latin for systems and
+Greek for planets, each unique among its kind: 634 names in `data/universe/station-names.yaml`,
+none in the other two pools. Not loaded yet: the world generator deals from every pool
+`build.sh` writes, so the file waits for station generation. Committed without the gate, at the
+user's word.
+
 ## C09: Jettison's ship and station definitions — 2026-11-19
 
 [D-062](decision-ledger.md#d-062), built as the
