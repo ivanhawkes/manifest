@@ -75,6 +75,7 @@ changes, add the new row, mark the old one `superseded` and link both ways.
 | <a id="d-050"></a>D-050 | Modular oxygen banks refine D-045: independently refillable/replaceable tanks preserve continuous supply from remaining usable tanks, with proportionally greater storage on larger hulls | [Small-ship plan: modular oxygen storage](small-trader-and-docking-plan.md#modular-oxygen-storage) | selected; deferred, not implemented | Manifest, later; re-entry after stages 1–4 acceptance |
 | <a id="d-058"></a>D-058 | Pad classes are seven historical ship sizes, heavy destroyer to skiff; the classes above destroyer dock only at dry docks, which are resupply platforms in two sizes, every pad of which offers dry dock | [Small-ship plan: ship size classes](small-trader-and-docking-plan.md#ship-size-classes-and-the-resupply-platform) | selected; the two largest sizes proposed; not authored | Manifest, stages 2–4 |
 | <a id="d-059"></a>D-059 | C04 item and hull authoring: the food grains are `CategoryConsumables`, Basic Medical Supplies `CategoryMedicalEquipment`, LPG `CategoryFuels`, and oxygen and the scrubber cartridge a new `CategoryLifeSupport`, the cartridge traded by the piece; the long-haul trader, the lone-trader starter and the compact ship become hull definitions, each unselected value left unset | [Stage 2 content plan: item authoring](stage-2-content-plan.md#item-authoring-c04-2026-11-19) | selected 2026-11-19; implemented (`data` and `content` suites) | Manifest, stage 2 content (C04) |
+| <a id="d-060"></a>D-060 | Every fluid is traded by the kilolitre. Drinking water is `ItemDrinkingWater`, `CategoryWater`, of the Stone Age, at 2 credits a kilolitre (2025 utility rates), one to the cubic metre and packed as beer is; its need is authored as 3 kL per 1,000 people per day, the selected 3,000 litres. The item data's categories and ages are a first draft, open to improvement | [Stage 2 content plan: scenario and frames](stage-2-content-plan.md#scenario-and-frames) | selected 2026-11-19; implemented in C05 (`data` and `content` suites) | Manifest, stage 2 content (C05) |
 
 ## Workflow and verification decisions
 
@@ -106,10 +107,11 @@ worked examples, which the data suite checks against the data.
 | Bronze project inputs and batch ratio | `balance.yaml`: `projects`, `recipes` | [Economy plan: first tech example](economy-and-development-plan.md#first-tech-example-bronze-metallurgy-selected) |
 | Hull cargo capacities, occupants, oxygen tanks and cartridges | `data/ships/hulls.yaml` | [Small-ship plan](small-trader-and-docking-plan.md), [D-050](small-trader-and-docking-plan.md#modular-oxygen-storage) |
 | Item base prices, densities, unit types, pack factors | `data/trade-items/*.yaml` | [Model reference](model.md#units-prices-and-storage) |
+| The fixtures' positions, populations, funds, condition, station capacities and market rates | `data/scenarios/trading.yaml`, `governance.yaml` | [Stage 2 content plan: scenario and frames](stage-2-content-plan.md#scenario-and-frames) |
 | Marketplace fees, insurance, order lifetimes, price bounds | `MarketplaceOptions` in `source/game/market/include/manifest/market/Marketplace.h` | the header |
 
-Still open, so in no file: the drinking-water item, recipe wage bills and work durations, the
-bond's whole-credit rounding, the compact ship's life support, and population sizes.
+Still open, so in no file: recipe wage bills and work durations, the
+bond's whole-credit rounding, the compact ship's life support, and population sizes beyond the fixtures' test values.
 
 ## Open questions carried by the plans
 

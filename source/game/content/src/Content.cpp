@@ -1,7 +1,9 @@
 #include <manifest/content/Content.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <format>
 #include <functional>
 #include <set>
@@ -11,6 +13,7 @@
 #include <vector>
 
 #include <jettison/sim/DefinitionRegistry.h>
+#include <jettison/sim/Snapshot.h>
 #include <jettison/vfs/FileSystem.h>
 
 #include <manifest/content/Definitions.h>
@@ -28,6 +31,13 @@ template <typename T> std::vector<const T *> All(const Jettison::Sim::Definition
 	for (const std::string &name : registry.Names<T>())
 		definitions.push_back(registry.Find<T>(name));
 	return definitions;
+}
+
+
+template <typename Range, typename Value, typename Projection>
+bool Contains(const Range &range, const Value &value, Projection projection)
+{
+	return std::ranges::find(range, value, projection) != std::ranges::end(range);
 }
 
 
@@ -493,6 +503,281 @@ void CheckGameModes(Checker &checker, const Jettison::Sim::DefinitionRegistry &r
 		checker.Require(progression.Build(Resolve(registry, mode).skills, problem), "skills", problem);
 	}
 }
+
+
+// The IDs of one of a scenario's lists, each required and given once.
+template <typename T>
+std::set<std::string, std::less<>> ListIds(
+    const Checker &checker, const std::vector<T> &list, std::string T::*id, std::string_view field)
+{
+	std::set<std::string, std::less<>> ids;
+	for (const T &entry : list)
+	{
+		checker.Require(!(entry.*id).empty(), field, "an ID is required");
+		checker.Require(
+		    ids.insert(entry.*id).second, field, std::format("'{}' is given twice", entry.*id));
+	}
+	return ids;
+}
+
+
+bool Finite(const glm::dvec3 &position)
+{
+	return std::isfinite(position.x) && std::isfinite(position.y) && std::isfinite(position.z);
+}
+
+
+// A region's projects: known prerequisites, an operational workshop, and inputs some venue makes.
+void CheckProjects(
+    const Checker &checker, const ScenarioDefinition &scenario, const TuningDefinition &tuning,
+    const RegionDefinition &region)
+{
+	for (const ProjectSelection &selection : region.projects)
+	{
+		const auto project =
+		    std::ranges::find(tuning.projects, selection.projectId, &ProjectDefinition::projectId);
+		checker.Require(
+		    project != tuning.projects.end(), "regions",
+		    std::format("'{}' project '{}' names no project", region.regionId, selection.projectId));
+		for (const SkillSelection &skill : project->requiredSkills)
+			checker.Require(
+			    Contains(region.skills, skill.skillId, &SkillSelection::skillId), "regions",
+			    std::format(
+			        "'{}' project '{}' requires '{}', which the region does not know", region.regionId,
+			        project->projectId, skill.skillId));
+		// shortcut: every project is metallurgy's, worked at a workshop; a project names its
+		// facility when a second needs another.
+		checker.Require(
+		    std::ranges::any_of(
+		        region.facilities, [](const FacilityDefinition &facility)
+		        { return facility.kind == FacilityKind::Workshop && facility.operational; }),
+		    "regions",
+		    std::format(
+		        "'{}' project '{}' needs an operational workshop", region.regionId,
+		        project->projectId));
+
+		std::vector<ItemQuantity> needed = project->inputs;
+		const auto recipe =
+		    std::ranges::find(tuning.recipes, project->unlocksRecipe, &RecipeDefinition::recipeId);
+		needed.insert(needed.end(), recipe->inputs.begin(), recipe->inputs.end());
+		for (const ItemQuantity &input : needed)
+		{
+			const bool made = std::ranges::any_of(
+			    scenario.venues,
+			    [&](const VenueDefinition &venue)
+			    {
+				    return std::ranges::any_of(
+				        venue.market, [&](const MarketEntry &entry)
+				        { return entry.itemId == input.itemId && entry.production > 0.0; });
+			    });
+			checker.Require(
+			    made, "regions",
+			    std::format(
+			        "'{}' project '{}' needs '{}', which no venue produces", region.regionId,
+			        project->projectId, input.itemId));
+		}
+	}
+}
+
+
+void CheckScenarios(
+    Checker &checker, const Jettison::Sim::DefinitionRegistry &registry, const TuningDefinition &tuning)
+{
+	for (const std::string &name : registry.Names<ScenarioDefinition>())
+	{
+		const ScenarioDefinition &scenario = *registry.Find<ScenarioDefinition>(name);
+		At<ScenarioDefinition>(checker, name, name);
+
+		const auto *pMode = registry.Find<GameModeDefinition>(scenario.gameMode);
+		checker.Require(
+		    pMode != nullptr, "gameMode", std::format("'{}' names no game mode", scenario.gameMode));
+		std::set<std::string, std::less<>> items;
+		for (const ItemSelection &item : scenario.items)
+		{
+			checker.Require(
+			    Contains(pMode->items, item.itemId, &ItemSelection::itemId), "items",
+			    std::format("'{}' is not one of mode '{}''s items", item.itemId, scenario.gameMode));
+			checker.Require(
+			    items.insert(item.itemId).second, "items",
+			    std::format("selects '{}' twice", item.itemId));
+		}
+
+		const auto systems = ListIds(checker, scenario.systems, &SystemDefinition::systemId, "systems");
+		std::set<std::uint64_t> frames;
+		for (const std::string &system : systems)
+			checker.Require(
+			    frames.insert(Jettison::Sim::FrameId(system)).second, "systems",
+			    std::format("'{}' has another system's frame ID", system));
+
+		const auto planets = ListIds(checker, scenario.planets, &PlanetDefinition::planetId, "planets");
+		for (const PlanetDefinition &planet : scenario.planets)
+		{
+			checker.Require(
+			    systems.contains(planet.systemId), "planets",
+			    std::format("'{}' system '{}' names nothing", planet.planetId, planet.systemId));
+			checker.Require(
+			    Finite(planet.position), "planets",
+			    std::format("'{}' position must be finite", planet.planetId));
+		}
+		const auto systemOf = [&](std::string_view planetId)
+		{
+			return std::ranges::find(scenario.planets, planetId, &PlanetDefinition::planetId)->systemId;
+		};
+
+		const auto civilisations = ListIds(
+		    checker, scenario.civilisations, &CivilisationDefinition::civilisationId, "civilisations");
+		for (const CivilisationDefinition &civilisation : scenario.civilisations)
+		{
+			const auto *pAge = registry.Find<Core::AgeNode>(RegistryName(civilisation.ageId));
+			checker.Require(
+			    pAge != nullptr && pAge->ageId == civilisation.ageId, "civilisations",
+			    std::format(
+			        "'{}' age '{}' names nothing", civilisation.civilisationId, civilisation.ageId));
+		}
+
+		const auto organisations = ListIds(
+		    checker, scenario.organisations, &OrganisationDefinition::organisationId, "organisations");
+		for (const OrganisationDefinition &organisation : scenario.organisations)
+			checker.Require(
+			    organisation.kind.has_value(), "organisations",
+			    std::format("'{}' kind is required", organisation.organisationId));
+
+		const auto regions = ListIds(checker, scenario.regions, &RegionDefinition::regionId, "regions");
+		for (const RegionDefinition &region : scenario.regions)
+		{
+			const auto problem = [&](std::string_view text)
+			{ return std::format("'{}' {}", region.regionId, text); };
+			checker.Require(
+			    planets.contains(region.planetId), "regions",
+			    problem(std::format("planet '{}' names nothing", region.planetId)));
+			checker.Require(
+			    civilisations.contains(region.civilisationId), "regions",
+			    problem(std::format("civilisation '{}' names nothing", region.civilisationId)));
+			checker.Require(
+			    organisations.contains(region.governorId) ||
+			        (region.governorId.empty() && region.playerHome),
+			    "regions",
+			    problem(
+			        std::format(
+			            "governor '{}' names no organisation, and only a player's home has none",
+			            region.governorId)));
+			checker.Require(
+			    NotNegative(region.population), "regions",
+			    problem("population must be finite and not below 0"));
+			checker.Require(
+			    region.householdFunds >= 0 && region.publicFunds >= 0, "regions",
+			    problem("funds must not be below 0"));
+			for (const double condition : {region.health, region.happiness})
+				checker.Require(
+				    NotNegative(condition) && condition <= 100.0, "regions",
+				    problem("health and happiness must be in [0, 100]"));
+			for (const SkillSelection &skill : region.skills)
+			{
+				const auto *pSkill = registry.Find<Core::SkillNode>(RegistryName(skill.skillId));
+				checker.Require(
+				    pSkill != nullptr && pSkill->skillId == skill.skillId, "regions",
+				    problem(std::format("skill '{}' names nothing", skill.skillId)));
+			}
+			(void)ListIds(checker, region.facilities, &FacilityDefinition::facilityId, "regions");
+			for (const FacilityDefinition &facility : region.facilities)
+				checker.Require(
+				    facility.kind.has_value(), "regions",
+				    problem(std::format("facility '{}' kind is required", facility.facilityId)));
+			CheckProjects(checker, scenario, tuning, region);
+		}
+
+		const auto *pStarter = registry.Find<Core::ShipClassSpec>(RegistryName(scenario.starterHull));
+		const bool starterResolves = pStarter != nullptr && pStarter->hullId == scenario.starterHull;
+		checker.Require(
+		    scenario.starterHull.empty() || starterResolves, "starterHull",
+		    std::format("'{}' names no hull", scenario.starterHull));
+
+		(void)ListIds(checker, scenario.venues, &VenueDefinition::venueId, "venues");
+		for (const VenueDefinition &venue : scenario.venues)
+		{
+			const auto problem = [&](std::string_view text)
+			{ return std::format("'{}' {}", venue.venueId, text); };
+			checker.Require(
+			    systems.contains(venue.systemId), "venues",
+			    problem(std::format("system '{}' names nothing", venue.systemId)));
+			checker.Require(
+			    venue.planetId.empty() ||
+			        (planets.contains(venue.planetId) && systemOf(venue.planetId) == venue.systemId),
+			    "venues", problem(std::format("planet '{}' is not in its system", venue.planetId)));
+			checker.Require(Finite(venue.position), "venues", problem("position must be finite"));
+			checker.Require(
+			    organisations.contains(venue.operatorId), "venues",
+			    problem(std::format("operator '{}' names no organisation", venue.operatorId)));
+			for (const HullSelection &hull : venue.hulls)
+			{
+				const auto *pHull = registry.Find<Core::ShipClassSpec>(RegistryName(hull.hullId));
+				checker.Require(
+				    pHull != nullptr && pHull->hullId == hull.hullId, "venues",
+				    problem(std::format("hull '{}' names nothing", hull.hullId)));
+			}
+			checker.Require(
+			    venue.lifeSupportCapacity >= 0, "venues",
+			    problem("lifeSupportCapacity must not be below 0"));
+			std::set<std::string, std::less<>> served;
+			for (const RegionSelection &selection : venue.regions)
+			{
+				checker.Require(
+				    regions.contains(selection.regionId), "venues",
+				    problem(std::format("region '{}' names nothing", selection.regionId)));
+				checker.Require(
+				    served.insert(selection.regionId).second, "venues",
+				    problem(std::format("serves '{}' twice", selection.regionId)));
+				const auto region = std::ranges::find(
+				    scenario.regions, selection.regionId, &RegionDefinition::regionId);
+				checker.Require(
+				    systemOf(region->planetId) == venue.systemId, "venues",
+				    problem(std::format("region '{}' is in another system", selection.regionId)));
+			}
+			std::set<std::string, std::less<>> goods;
+			for (const MarketEntry &entry : venue.market)
+			{
+				checker.Require(
+				    items.contains(entry.itemId), "venues",
+				    problem(std::format("market item '{}' is not a scenario item", entry.itemId)));
+				checker.Require(
+				    goods.insert(entry.itemId).second, "venues",
+				    problem(std::format("market lists '{}' twice", entry.itemId)));
+				checker.Require(
+				    NotNegative(entry.production) && NotNegative(entry.demand) &&
+				        NotNegative(entry.stock),
+				    "venues",
+				    problem(
+				        std::format(
+				            "market '{}' quantities must be finite and not below 0", entry.itemId)));
+			}
+		}
+
+		// A new player is allocated a home only with somewhere to dock the starter, deliver to the
+		// region and connect to working life support (D-047).
+		for (const RegionDefinition &region : scenario.regions)
+		{
+			if (!region.playerHome)
+				continue;
+			checker.Require(
+			    starterResolves, "starterHull",
+			    std::format("is required: '{}' is a player's home", region.regionId));
+			const bool served = std::ranges::any_of(
+			    scenario.venues,
+			    [&](const VenueDefinition &venue)
+			    {
+				    return venue.isPublic && venue.operational && venue.lifeSupportCapacity >= 1 &&
+				           Contains(venue.hulls, scenario.starterHull, &HullSelection::hullId) &&
+				           Contains(venue.regions, region.regionId, &RegionSelection::regionId);
+			    });
+			checker.Require(
+			    served, "regions",
+			    std::format(
+			        "'{}' is a player's home, and no operational public station serving it docks "
+			        "'{}' with life support to spare",
+			        region.regionId, scenario.starterHull));
+		}
+	}
+}
 } // namespace
 
 
@@ -511,6 +796,11 @@ ContentSet LoadContent(
 	CheckHulls(checker, registry);
 	CheckTuning(checker, registry);
 	CheckGameModes(checker, registry);
+	const auto *pTuning = registry.Find<TuningDefinition>("balance");
+	if (pTuning == nullptr)
+		throw ContentError{std::format(
+		    "{}: there is no balance tuning", TypeOf(entt::resolve<TuningDefinition>()).directory)};
+	CheckScenarios(checker, registry, *pTuning);
 
 	const auto *pMode = registry.Find<GameModeDefinition>(gameMode);
 	if (pMode == nullptr)
@@ -532,11 +822,9 @@ ContentSet LoadContent(
 	content.gameMode = Resolve(registry, *pMode);
 	for (const NamePoolDefinition *pPool : All<NamePoolDefinition>(registry))
 		content.names.AddPool(pPool->pool, pPool->names);
-	const auto *pTuning = registry.Find<TuningDefinition>("balance");
-	if (pTuning == nullptr)
-		throw ContentError{std::format(
-		    "{}: there is no balance tuning", TypeOf(entt::resolve<TuningDefinition>()).directory)};
 	content.tuning = *pTuning;
+	for (const std::string &name : registry.Names<ScenarioDefinition>())
+		content.scenarios.emplace(name, *registry.Find<ScenarioDefinition>(name));
 	for (const Core::ShipClassSpec *pHull : All<Core::ShipClassSpec>(registry))
 		content.hulls.push_back(*pHull);
 	content.identity = BuildContentIdentity(registry);

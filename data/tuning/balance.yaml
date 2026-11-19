@@ -19,11 +19,12 @@ needs:
     perThousandPerDay: 500
     unit: Kilogram
     items: [{itemId: ItemRice}, {itemId: ItemWheat}, {itemId: ItemOats}, {itemId: ItemBarley}]
-  # Its item is open: no water item exists yet (before C05).
+  # 3,000 litres, in kilolitres: every fluid is traded by the kilolitre.
   - needId: NeedDrinkingWater
     weight: 1
-    perThousandPerDay: 3000
-    unit: Litre
+    perThousandPerDay: 3
+    unit: Kilolitre
+    items: [{itemId: ItemDrinkingWater}]
   - needId: NeedBasicMedicalSupplies
     weight: 1
     perThousandPerDay: 5

@@ -126,6 +126,9 @@ add_custom_target(manifest_mod
         "${CMAKE_CURRENT_SOURCE_DIR}/mods/manifest/mod.yaml" "${MANIFEST_MOD_DIRECTORY}/mod.yaml"
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${MANIFEST_DEFINITIONS_OUTPUT_DIR}" "${MANIFEST_MOD_DIRECTORY}/manifest/definitions"
+    # Authored as the records themselves, so staged as they are.
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/data/scenarios" "${MANIFEST_MOD_DIRECTORY}/manifest/scenarios"
     VERBATIM)
 if(TARGET manifest_data)
     add_dependencies(manifest_mod manifest_data)

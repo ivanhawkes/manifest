@@ -1,0 +1,140 @@
+version: 1
+# The multi-region governance fixture (docs/regional-economy-and-governance-plan.md): four regions on
+# Forge, each its own economy, two of them players' homes and two AI neighbours, all served by one
+# public highport; and a Cassiter region across the system that sells tin and the industrial goods
+# Forge cannot make. Forge East works the Bronze project (D-029) with local copper, tin from
+# Cassiter and a seeded workshop. Every number is an initial test value recorded with C05, not a
+# balance result. Positions are metres in the system's frame, a station 42,000 km out from its
+# planet; market rates are per simulation day, in the item's unit.
+gameMode: full
+starterHull: HullLoneTraderStarter
+items:
+  - itemId: ItemRice
+  - itemId: ItemWheat
+  - itemId: ItemOats
+  - itemId: ItemBarley
+  - itemId: ItemDrinkingWater
+  - itemId: ItemBasicMedicalSupplies
+  - itemId: ItemCopper
+  - itemId: ItemTin
+  - itemId: ItemBronze
+  - itemId: ItemOxygen
+  - itemId: ItemCarbonScrubberCartridge
+
+systems:
+  - {systemId: SystemCrucible, displayName: Crucible}
+
+planets:
+  - {planetId: PlanetForge, systemId: SystemCrucible, displayName: Forge, position: [1.2e11, 0, 0]}
+  - {planetId: PlanetCassiter, systemId: SystemCrucible, displayName: Cassiter, position: [-1.6e11, 0, 3.0e10]}
+
+civilisations:
+  - {civilisationId: CivilisationForge, displayName: Forge, ageId: AgeCopper}
+  - {civilisationId: CivilisationCassiter, displayName: Cassiter, ageId: AgeIndustrial}
+
+organisations:
+  - {organisationId: OrganisationForgeEastCouncil, kind: Polity, displayName: Forge East Council}
+  - {organisationId: OrganisationForgeWestCouncil, kind: Polity, displayName: Forge West Council}
+  - {organisationId: OrganisationCassiterAssembly, kind: Polity, displayName: Cassiter Assembly}
+  - {organisationId: OrganisationCassiterMining, kind: Corporation, displayName: Cassiter Mining}
+
+regions:
+  # The players' homes, ungoverned until each is allocated.
+  - regionId: RegionForgeNorth
+    planetId: PlanetForge
+    civilisationId: CivilisationForge
+    governorId: ""
+    playerHome: true
+    population: 25000
+    householdFunds: 5000000
+    publicFunds: 1000000
+    health: 100
+    happiness: 100
+  - regionId: RegionForgeSouth
+    planetId: PlanetForge
+    civilisationId: CivilisationForge
+    governorId: ""
+    playerHome: true
+    population: 25000
+    householdFunds: 5000000
+    publicFunds: 1000000
+    health: 100
+    happiness: 100
+  # The AI neighbours. Forge East knows smelting and has the workshop the Bronze project needs.
+  - regionId: RegionForgeEast
+    planetId: PlanetForge
+    civilisationId: CivilisationForge
+    governorId: OrganisationForgeEastCouncil
+    population: 25000
+    householdFunds: 5000000
+    publicFunds: 1000000
+    health: 100
+    happiness: 100
+    skills: [{skillId: SkillSmelting}]
+    facilities: [{facilityId: FacilityForgeEastWorkshop, kind: Workshop, operational: true}]
+    projects: [{projectId: ProjectBronzeMetallurgy}]
+  - regionId: RegionForgeWest
+    planetId: PlanetForge
+    civilisationId: CivilisationForge
+    governorId: OrganisationForgeWestCouncil
+    population: 25000
+    householdFunds: 5000000
+    publicFunds: 1000000
+    health: 100
+    happiness: 100
+  - regionId: RegionCassiterLowlands
+    planetId: PlanetCassiter
+    civilisationId: CivilisationCassiter
+    governorId: OrganisationCassiterAssembly
+    population: 25000
+    householdFunds: 8000000
+    publicFunds: 2000000
+    health: 100
+    happiness: 100
+
+venues:
+  # One public station serving all four Forge regions, each a separate economy.
+  - venueId: VenueForgeHighport
+    systemId: SystemCrucible
+    planetId: PlanetForge
+    position: [1.20042e11, 0, 0]
+    operatorId: OrganisationForgeEastCouncil
+    public: true
+    operational: true
+    hulls: [{hullId: HullLoneTraderStarter}, {hullId: HullCompactSingle}, {hullId: HullTraderLongHaul}]
+    lifeSupportCapacity: 8
+    regions:
+      - regionId: RegionForgeNorth
+      - regionId: RegionForgeSouth
+      - regionId: RegionForgeEast
+      - regionId: RegionForgeWest
+    market:
+      - {itemId: ItemRice, production: 15000, demand: 0, stock: 60000}
+      - {itemId: ItemWheat, production: 20000, demand: 0, stock: 80000}
+      - {itemId: ItemOats, production: 8000, demand: 0, stock: 30000}
+      - {itemId: ItemBarley, production: 9000, demand: 0, stock: 35000}
+      - {itemId: ItemDrinkingWater, production: 320, demand: 0, stock: 1000}
+      - {itemId: ItemCopper, production: 3000, demand: 0, stock: 30000}
+      - {itemId: ItemBasicMedicalSupplies, production: 0, demand: 500, stock: 1000}
+      - {itemId: ItemTin, production: 0, demand: 50, stock: 0}
+      - {itemId: ItemOxygen, production: 0, demand: 20, stock: 200}
+      - {itemId: ItemCarbonScrubberCartridge, production: 0, demand: 1, stock: 8}
+  # A private dock, on its owner's terms.
+  - venueId: VenueCassiterDock
+    systemId: SystemCrucible
+    planetId: PlanetCassiter
+    position: [-1.59958e11, 0, 3.0e10]
+    operatorId: OrganisationCassiterMining
+    public: false
+    operational: true
+    hulls: [{hullId: HullLoneTraderStarter}, {hullId: HullCompactSingle}, {hullId: HullTraderLongHaul}]
+    lifeSupportCapacity: 4
+    regions: [{regionId: RegionCassiterLowlands}]
+    market:
+      - {itemId: ItemTin, production: 400, demand: 0, stock: 4000}
+      - {itemId: ItemBasicMedicalSupplies, production: 600, demand: 0, stock: 3000}
+      - {itemId: ItemOxygen, production: 200, demand: 0, stock: 2000}
+      - {itemId: ItemCarbonScrubberCartridge, production: 10, demand: 0, stock: 100}
+      - {itemId: ItemDrinkingWater, production: 80, demand: 0, stock: 300}
+      - {itemId: ItemRice, production: 0, demand: 12500, stock: 20000}
+      - {itemId: ItemCopper, production: 0, demand: 500, stock: 1000}

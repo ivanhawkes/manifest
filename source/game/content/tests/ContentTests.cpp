@@ -315,8 +315,8 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	CheckRefused(
 	    balance,
 	    "version: 1\nneeds: !merge=needId\n  - {needId: NeedDrinkingWater, items: [{itemId: "
-	    "ItemBeer}]}\n",
-	    "'NeedDrinkingWater' item 'ItemBeer' is not traded in the need's unit");
+	    "ItemRice}]}\n",
+	    "'NeedDrinkingWater' item 'ItemRice' is not traded in the need's unit");
 	CheckRefused(
 	    balance,
 	    "version: 1\nneeds: !merge=needId\n  - {needId: NeedStapleFood, items: [{itemId: ItemRice}, "
@@ -408,6 +408,231 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	CHECK_THROWS_WITH_AS(
 	    (void)LoadWith(none, "hard"), "manifest/definitions/game-modes: there is no game mode 'hard'",
 	    ContentError);
+}
+
+
+TEST_CASE("The fixtures are the trading and governance scenarios their plans describe")
+{
+	const Overlay none;
+	const ContentSet content = LoadWith(none);
+	REQUIRE(content.scenarios.size() == 2);
+
+	// One system, two planets each with a region of its own civilisation and a public station, and
+	// eight goods (docs/stage-2-content-plan.md, "Initial scenario").
+	const ScenarioDefinition &trading = content.scenarios.at("trading");
+	CHECK(trading.items.size() == 8);
+	CHECK(trading.systems.size() == 1);
+	CHECK(trading.planets.size() == 2);
+	CHECK(trading.civilisations.size() == 2);
+	REQUIRE(trading.regions.size() == 2);
+	CHECK(trading.regions[0].civilisationId != trading.regions[1].civilisationId);
+	CHECK(trading.venues.size() == 2);
+	// Complementary: each good is made at one station and wanted at the other.
+	for (const ItemSelection &item : trading.items)
+	{
+		CAPTURE(item.itemId);
+		int made = 0;
+		int wanted = 0;
+		for (const VenueDefinition &venue : trading.venues)
+			for (const MarketEntry &entry : venue.market)
+				if (entry.itemId == item.itemId)
+				{
+					made += entry.production > 0.0 ? 1 : 0;
+					wanted += entry.demand > 0.0 ? 1 : 0;
+				}
+		CHECK(made == 1);
+		CHECK(wanted == 1);
+	}
+
+	// Several independently governed regions on one planet: a home for each player and AI
+	// neighbours, served by one station, and the Bronze project's region.
+	const ScenarioDefinition &governance = content.scenarios.at("governance");
+	int homes = 0;
+	int neighbours = 0;
+	for (const RegionDefinition &region : governance.regions)
+		if (region.planetId == "PlanetForge")
+			(region.playerHome ? homes : neighbours) += 1;
+	CHECK(homes == 2);
+	CHECK(neighbours == 2);
+	const auto forge =
+	    std::ranges::find(governance.venues, "VenueForgeHighport", &VenueDefinition::venueId);
+	REQUIRE(forge != governance.venues.end());
+	CHECK(forge->regions.size() == 4);
+	const auto east =
+	    std::ranges::find(governance.regions, "RegionForgeEast", &RegionDefinition::regionId);
+	REQUIRE(east != governance.regions.end());
+	REQUIRE(east->projects.size() == 1);
+	CHECK(east->projects[0].projectId == "ProjectBronzeMetallurgy");
+}
+
+
+TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the entry")
+{
+	const std::string governance = "manifest/scenarios/governance.patch.yaml";
+	const std::string trading = "manifest/scenarios/trading.patch.yaml";
+	CheckRefused(
+	    governance, "version: 1\ngameMode: hard\n",
+	    "manifest/scenarios/governance.yaml: Manifest.Scenario 'governance': gameMode 'hard' names no "
+	    "game mode");
+	CheckRefused(
+	    trading, "version: 1\ngameMode: simple\n",
+	    "items 'ItemTin' is not one of mode 'simple''s items");
+	CheckRefused(
+	    trading, "version: 1\nitems: !append [{itemId: ItemCopper}]\n",
+	    "items selects 'ItemCopper' twice");
+	CheckRefused(
+	    trading, "version: 1\nsystems: !append [{systemId: SystemAnvil}]\n",
+	    "systems 'SystemAnvil' is given twice");
+	CheckRefused(
+	    trading,
+	    "version: 1\nplanets: !merge=planetId\n  - {planetId: PlanetOre, systemId: SystemNowhere}\n",
+	    "planets 'PlanetOre' system 'SystemNowhere' names nothing");
+	CheckRefused(
+	    trading,
+	    "version: 1\nplanets: !merge=planetId\n  - {planetId: PlanetOre, position: [.nan, 0, 0]}\n",
+	    "planets 'PlanetOre' position must be finite");
+	CheckRefused(
+	    trading,
+	    "version: 1\ncivilisations: !merge=civilisationId\n  - {civilisationId: CivilisationOre, "
+	    "ageId: "
+	    "AgeNowhere}\n",
+	    "civilisations 'CivilisationOre' age 'AgeNowhere' names nothing");
+	CheckRefused(
+	    trading,
+	    "version: 1\norganisations: !merge=organisationId\n  - {organisationId: "
+	    "OrganisationBrineCouncil, "
+	    "kind: ~}\n",
+	    "organisations 'OrganisationBrineCouncil' kind is required");
+
+	const auto region = [](std::string_view fields)
+	{
+		return std::format(
+		    "version: 1\nregions: !merge=regionId\n  - {{regionId: RegionBrineCoast, {}}}\n", fields);
+	};
+	CheckRefused(
+	    trading, region("planetId: PlanetNowhere"),
+	    "'RegionBrineCoast' planet 'PlanetNowhere' names nothing");
+	CheckRefused(
+	    trading, region("civilisationId: CivilisationNowhere"),
+	    "'RegionBrineCoast' civilisation 'CivilisationNowhere' names nothing");
+	CheckRefused(
+	    trading, region("governorId: ''"),
+	    "'RegionBrineCoast' governor '' names no organisation, and only a player's home has none");
+	CheckRefused(trading, region("population: -1"), "'RegionBrineCoast' population must be finite");
+	CheckRefused(trading, region("publicFunds: -1"), "'RegionBrineCoast' funds must not be below 0");
+	CheckRefused(
+	    trading, region("health: 101"), "'RegionBrineCoast' health and happiness must be in [0, 100]");
+	CheckRefused(
+	    trading, region("skills: [{skillId: SkillNowhere}]"),
+	    "'RegionBrineCoast' skill 'SkillNowhere' names nothing");
+	CheckRefused(
+	    trading,
+	    region(
+	        "facilities: [{facilityId: FacilityA, kind: Workshop}, {facilityId: FacilityA, kind: "
+	        "Workshop}]"),
+	    "regions 'FacilityA' is given twice");
+	CheckRefused(
+	    trading, region("facilities: [{facilityId: FacilityA}]"),
+	    "'RegionBrineCoast' facility 'FacilityA' kind is required");
+
+	const auto east = [](std::string_view fields)
+	{
+		return std::format(
+		    "version: 1\nregions: !merge=regionId\n  - {{regionId: RegionForgeEast, {}}}\n", fields);
+	};
+	CheckRefused(
+	    governance, east("projects: [{projectId: ProjectNowhere}]"),
+	    "'RegionForgeEast' project 'ProjectNowhere' names no project");
+	CheckRefused(
+	    governance, east("skills: []"),
+	    "'RegionForgeEast' project 'ProjectBronzeMetallurgy' requires 'SkillSmelting', which the "
+	    "region "
+	    "does not know");
+	CheckRefused(
+	    governance,
+	    east(
+	        "facilities: [{facilityId: FacilityForgeEastWorkshop, kind: Workshop, operational: "
+	        "false}]"),
+	    "'RegionForgeEast' project 'ProjectBronzeMetallurgy' needs an operational workshop");
+	// The tin is Cassiter's: without it the project has no supplier.
+	CheckRefused(
+	    governance,
+	    "version: 1\nvenues: !merge=venueId\n  - {venueId: VenueCassiterDock, market: [{itemId: "
+	    "ItemTin, "
+	    "production: 0}]}\n",
+	    "'RegionForgeEast' project 'ProjectBronzeMetallurgy' needs 'ItemTin', which no venue produces");
+
+	CheckRefused(
+	    trading, "version: 1\nstarterHull: HullNowhere\n", "starterHull 'HullNowhere' names no hull");
+	CheckRefused(
+	    trading, "version: 1\nstarterHull: ''\n",
+	    "starterHull is required: 'RegionOreHighlands' is a player's home");
+
+	const auto venue = [](std::string_view fields)
+	{
+		return std::format(
+		    "version: 1\nvenues: !merge=venueId\n  - {{venueId: VenueBrineHighport, {}}}\n", fields);
+	};
+	CheckRefused(
+	    trading, "version: 1\nvenues: !append [{venueId: VenueBrineHighport}]\n",
+	    "venues 'VenueBrineHighport' is given twice");
+	CheckRefused(
+	    trading, venue("systemId: SystemNowhere"),
+	    "'VenueBrineHighport' system 'SystemNowhere' names nothing");
+	CheckRefused(
+	    {{trading,
+	      "version: 1\nsystems: !append [{systemId: SystemFar}]\nplanets: !append [{planetId: "
+	      "PlanetFar, "
+	      "systemId: SystemFar}]\nvenues: !merge=venueId\n  - {venueId: VenueBrineHighport, planetId: "
+	      "PlanetFar}\n"}},
+	    "'VenueBrineHighport' planet 'PlanetFar' is not in its system");
+	CheckRefused(
+	    trading, venue("position: [0, .inf, 0]"), "'VenueBrineHighport' position must be finite");
+	CheckRefused(
+	    trading, venue("operatorId: OrganisationNowhere"),
+	    "'VenueBrineHighport' operator 'OrganisationNowhere' names no organisation");
+	CheckRefused(
+	    trading, venue("hulls: [{hullId: HullNowhere}]"),
+	    "'VenueBrineHighport' hull 'HullNowhere' names nothing");
+	CheckRefused(
+	    trading, venue("lifeSupportCapacity: -1"),
+	    "'VenueBrineHighport' lifeSupportCapacity must not be below 0");
+	CheckRefused(
+	    trading, venue("regions: [{regionId: RegionNowhere}]"),
+	    "'VenueBrineHighport' region 'RegionNowhere' names nothing");
+	CheckRefused(
+	    trading, venue("regions: [{regionId: RegionBrineCoast}, {regionId: RegionBrineCoast}]"),
+	    "'VenueBrineHighport' serves 'RegionBrineCoast' twice");
+	CheckRefused(
+	    {{trading,
+	      "version: 1\nsystems: !append [{systemId: SystemFar}]\nvenues: !merge=venueId\n  - {venueId: "
+	      "VenueBrineHighport, systemId: SystemFar, planetId: ''}\n"}},
+	    "'VenueBrineHighport' region 'RegionBrineCoast' is in another system");
+	CheckRefused(
+	    trading, venue("market: [{itemId: ItemBread}]"),
+	    "'VenueBrineHighport' market item 'ItemBread' is not a scenario item");
+	CheckRefused(
+	    trading, venue("market: [{itemId: ItemSalt}, {itemId: ItemSalt}]"),
+	    "'VenueBrineHighport' market lists 'ItemSalt' twice");
+	CheckRefused(
+	    trading, venue("market: [{itemId: ItemSalt, stock: -1}]"),
+	    "'VenueBrineHighport' market 'ItemSalt' quantities must be finite and not below 0");
+
+	// A player's home needs an operational public station that docks the starter, serves the region
+	// and has life support to spare (D-047); each lack alone refuses it.
+	for (const std::string_view lack :
+	     {"public: false", "operational: false", "lifeSupportCapacity: 0",
+	      "hulls: [{hullId: HullCompactSingle}]", "regions: []"})
+	{
+		CAPTURE(lack);
+		CheckRefused(
+		    trading,
+		    std::format(
+		        "version: 1\nvenues: !merge=venueId\n  - {{venueId: VenueOreHighport, {}}}\n", lack),
+		    "regions 'RegionOreHighlands' is a player's home, and no operational public station "
+		    "serving it "
+		    "docks 'HullLoneTraderStarter' with life support to spare");
+	}
 }
 
 

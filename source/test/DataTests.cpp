@@ -205,6 +205,7 @@ TEST_CASE("the_household_and_life_support_goods_are_distinct_full_mode_items")
 	    {"ItemLPG", "CategoryFuels", TradeUnit::Kilogram},
 	    {"ItemOxygen", "CategoryLifeSupport", TradeUnit::Kilogram},
 	    {"ItemCarbonScrubberCartridge", "CategoryLifeSupport", TradeUnit::Unit},
+	    {"ItemDrinkingWater", "CategoryWater", TradeUnit::Kilolitre},
 	};
 	for (const auto &good : goods)
 	{
@@ -284,10 +285,12 @@ TEST_CASE("the_balance_tuning_reproduces_the_plans_worked_examples")
 	CHECK(daily(food, 25000.0) / intervalsPerDay == doctest::Approx(8.68056).epsilon(1e-5));
 	CHECK(food.unit == TradeUnit::Kilogram);
 	CHECK(food.items.size() == 4);
+	// 75,000 litres, in kilolitres.
 	const auto &water = need("NeedDrinkingWater");
-	CHECK(daily(water, 25000.0) == doctest::Approx(75000.0));
-	CHECK(water.unit == TradeUnit::Litre);
-	CHECK(water.items.empty());
+	CHECK(daily(water, 25000.0) * 1000.0 == doctest::Approx(75000.0));
+	CHECK(water.unit == TradeUnit::Kilolitre);
+	REQUIRE(water.items.size() == 1);
+	CHECK(water.items[0].itemId == "ItemDrinkingWater");
 	const auto &medical = need("NeedBasicMedicalSupplies");
 	CHECK(daily(medical, 25000.0) == doctest::Approx(125.0));
 	for (const auto &each : tuning.needs)

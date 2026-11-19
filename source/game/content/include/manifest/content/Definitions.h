@@ -1,7 +1,9 @@
 #pragma once
 
 #include <entt/entt.hpp>
+#include <glm/vec3.hpp>
 
+#include <cstdint>
 #include <optional>
 #include <span>
 #include <string>
@@ -134,6 +136,140 @@ struct TuningDefinition
 	ProcurementTuning procurement;
 	std::vector<ProjectDefinition> projects;
 	std::vector<RecipeDefinition> recipes;
+};
+
+// A scenario: the world a game starts from, named by its file (docs/stage-2-content-plan.md,
+// "Scenario and frames"). Every list is keyed by its own ID, so a patch merges by it
+// (!merge=regionId); an ID is unique within its list and, being save identity, stable. Positions
+// are metres in the system's frame, quantities in the item's unit, rates per simulation day.
+enum class OrganisationKind
+{
+	Polity,
+	Corporation
+};
+
+enum class FacilityKind
+{
+	Workshop
+};
+
+// A star system: a Jettison frame, Sim::FrameId(systemId).
+struct SystemDefinition
+{
+	std::string systemId;
+	std::string displayName;
+};
+
+// A physical body, with no population or account of its own: its regions hold those.
+struct PlanetDefinition
+{
+	std::string planetId;
+	std::string systemId;
+	std::string displayName;
+	glm::dvec3 position{0.0};
+};
+
+// Cultural and technology identity only.
+struct CivilisationDefinition
+{
+	std::string civilisationId;
+	std::string displayName;
+	std::string ageId;
+};
+
+struct OrganisationDefinition
+{
+	std::string organisationId;
+	std::optional<OrganisationKind> kind;
+	std::string displayName;
+};
+
+// Seeded explicitly, so that using one never needs the technology it serves.
+struct FacilityDefinition
+{
+	std::string facilityId;
+	std::optional<FacilityKind> kind;
+	bool operational{false};
+};
+
+struct ProjectSelection
+{
+	std::string projectId;
+};
+
+// The one owner of a population and its accounts.
+struct RegionDefinition
+{
+	std::string regionId;
+	std::string planetId;
+	std::string civilisationId;
+	// An organisation; empty only for a player's home, which no one governs until it is allocated.
+	std::string governorId;
+	bool playerHome{false};
+	double population{0.0};
+	// Whole credits.
+	std::int64_t householdFunds{0};
+	std::int64_t publicFunds{0};
+	double health{0.0};
+	double happiness{0.0};
+	// What the region knows.
+	std::vector<SkillSelection> skills;
+	std::vector<FacilityDefinition> facilities;
+	// Its public projects, each a tuning project.
+	std::vector<ProjectSelection> projects;
+};
+
+struct RegionSelection
+{
+	std::string regionId;
+};
+
+struct HullSelection
+{
+	std::string hullId;
+};
+
+struct MarketEntry
+{
+	std::string itemId;
+	double production{0.0};
+	double demand{0.0};
+	double stock{0.0};
+};
+
+// A station or port, delivering physically to the regions it serves.
+struct VenueDefinition
+{
+	std::string venueId;
+	std::string systemId;
+	// The planet it serves from; empty for one in open space.
+	std::string planetId;
+	glm::dvec3 position{0.0};
+	std::string operatorId;
+	// Open to every company on equal terms, as a starting region's station must be.
+	bool isPublic{false};
+	bool operational{false};
+	// The hulls it docks.
+	std::vector<HullSelection> hulls;
+	// Ships it can keep connected to working life support at once.
+	int lifeSupportCapacity{0};
+	std::vector<RegionSelection> regions;
+	std::vector<MarketEntry> market;
+};
+
+struct ScenarioDefinition
+{
+	std::string gameMode;
+	// The hull a new player starts in: a player's home needs a station that docks it.
+	std::string starterHull;
+	// A subset of the mode's items, in its order.
+	std::vector<ItemSelection> items;
+	std::vector<SystemDefinition> systems;
+	std::vector<PlanetDefinition> planets;
+	std::vector<CivilisationDefinition> civilisations;
+	std::vector<OrganisationDefinition> organisations;
+	std::vector<RegionDefinition> regions;
+	std::vector<VenueDefinition> venues;
 };
 
 // A type the registry loads, in the order the content manifest lists the types.

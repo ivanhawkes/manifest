@@ -213,6 +213,78 @@ void RegisterTypes()
 		    .Field<&GameModeDefinition::ages>("ages", kDefined)
 		    .Field<&GameModeDefinition::items>("items", kDefined)
 		    .Field<&GameModeDefinition::skills>("skills", kDefined);
+
+		RegisterEnum<OrganisationKind>("Manifest.OrganisationKind")
+		    .Value<OrganisationKind::Polity>("Polity")
+		    .Value<OrganisationKind::Corporation>("Corporation");
+		RegisterEnum<FacilityKind>("Manifest.FacilityKind").Value<FacilityKind::Workshop>("Workshop");
+		RegisterType<SystemDefinition>("Manifest.System")
+		    .Field<&SystemDefinition::systemId>("systemId", kDefined)
+		    .Field<&SystemDefinition::displayName>("displayName", kDefined);
+		RegisterType<PlanetDefinition>("Manifest.Planet")
+		    .Field<&PlanetDefinition::planetId>("planetId", kDefined)
+		    .Field<&PlanetDefinition::systemId>("systemId", kDefined)
+		    .Field<&PlanetDefinition::displayName>("displayName", kDefined)
+		    .Field<&PlanetDefinition::position>("position", kDefined);
+		RegisterType<CivilisationDefinition>("Manifest.Civilisation")
+		    .Field<&CivilisationDefinition::civilisationId>("civilisationId", kDefined)
+		    .Field<&CivilisationDefinition::displayName>("displayName", kDefined)
+		    .Field<&CivilisationDefinition::ageId>("ageId", kDefined);
+		RegisterType<OrganisationDefinition>("Manifest.Organisation")
+		    .Field<&OrganisationDefinition::organisationId>("organisationId", kDefined)
+		    .Field<&OrganisationDefinition::kind>("kind", kDefined)
+		    .Field<&OrganisationDefinition::displayName>("displayName", kDefined);
+		RegisterType<FacilityDefinition>("Manifest.Facility")
+		    .Field<&FacilityDefinition::facilityId>("facilityId", kDefined)
+		    .Field<&FacilityDefinition::kind>("kind", kDefined)
+		    .Field<&FacilityDefinition::operational>("operational", kDefined);
+		RegisterType<ProjectSelection>("Manifest.ProjectSelection")
+		    .Field<&ProjectSelection::projectId>("projectId", kDefined);
+		RegisterType<RegionDefinition>("Manifest.Region")
+		    .Field<&RegionDefinition::regionId>("regionId", kDefined)
+		    .Field<&RegionDefinition::planetId>("planetId", kDefined)
+		    .Field<&RegionDefinition::civilisationId>("civilisationId", kDefined)
+		    .Field<&RegionDefinition::governorId>("governorId", kDefined)
+		    .Field<&RegionDefinition::playerHome>("playerHome", kDefined)
+		    .Field<&RegionDefinition::population>("population", kDefined)
+		    .Field<&RegionDefinition::householdFunds>("householdFunds", kDefined)
+		    .Field<&RegionDefinition::publicFunds>("publicFunds", kDefined)
+		    .Field<&RegionDefinition::health>("health", kDefined)
+		    .Field<&RegionDefinition::happiness>("happiness", kDefined)
+		    .Field<&RegionDefinition::skills>("skills", kDefined)
+		    .Field<&RegionDefinition::facilities>("facilities", kDefined)
+		    .Field<&RegionDefinition::projects>("projects", kDefined);
+		RegisterType<RegionSelection>("Manifest.RegionSelection")
+		    .Field<&RegionSelection::regionId>("regionId", kDefined);
+		RegisterType<HullSelection>("Manifest.HullSelection")
+		    .Field<&HullSelection::hullId>("hullId", kDefined);
+		RegisterType<MarketEntry>("Manifest.MarketEntry")
+		    .Field<&MarketEntry::itemId>("itemId", kDefined)
+		    .Field<&MarketEntry::production>("production", kDefined)
+		    .Field<&MarketEntry::demand>("demand", kDefined)
+		    .Field<&MarketEntry::stock>("stock", kDefined);
+		RegisterType<VenueDefinition>("Manifest.Venue")
+		    .Field<&VenueDefinition::venueId>("venueId", kDefined)
+		    .Field<&VenueDefinition::systemId>("systemId", kDefined)
+		    .Field<&VenueDefinition::planetId>("planetId", kDefined)
+		    .Field<&VenueDefinition::position>("position", kDefined)
+		    .Field<&VenueDefinition::operatorId>("operatorId", kDefined)
+		    .Field<&VenueDefinition::isPublic>("public", kDefined)
+		    .Field<&VenueDefinition::operational>("operational", kDefined)
+		    .Field<&VenueDefinition::hulls>("hulls", kDefined)
+		    .Field<&VenueDefinition::lifeSupportCapacity>("lifeSupportCapacity", kDefined)
+		    .Field<&VenueDefinition::regions>("regions", kDefined)
+		    .Field<&VenueDefinition::market>("market", kDefined);
+		RegisterType<ScenarioDefinition>("Manifest.Scenario", Attribute::Moddable)
+		    .Field<&ScenarioDefinition::gameMode>("gameMode", kDefined)
+		    .Field<&ScenarioDefinition::starterHull>("starterHull", kDefined)
+		    .Field<&ScenarioDefinition::items>("items", kDefined)
+		    .Field<&ScenarioDefinition::systems>("systems", kDefined)
+		    .Field<&ScenarioDefinition::planets>("planets", kDefined)
+		    .Field<&ScenarioDefinition::civilisations>("civilisations", kDefined)
+		    .Field<&ScenarioDefinition::organisations>("organisations", kDefined)
+		    .Field<&ScenarioDefinition::regions>("regions", kDefined)
+		    .Field<&ScenarioDefinition::venues>("venues", kDefined);
 		return true;
 	}();
 	(void)registered;
@@ -244,6 +316,8 @@ std::span<const DefinitionType> DefinitionTypes()
 		     entt::resolve<GameModeDefinition>(), nullptr},
 		    {YamlMigrations{"Manifest.Tuning", kVersion1}, "manifest/definitions/tuning",
 		     entt::resolve<TuningDefinition>(), nullptr},
+		    {YamlMigrations{"Manifest.Scenario", kVersion1}, "manifest/scenarios",
+		     entt::resolve<ScenarioDefinition>(), nullptr},
 		};
 	}();
 	return types;

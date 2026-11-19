@@ -1,7 +1,10 @@
 #pragma once
 
+#include <functional>
+#include <map>
 #include <span>
 #include <stdexcept>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -48,6 +51,8 @@ struct ContentSet
 	std::vector<Core::ShipClassSpec> hulls;
 	// The balance record, tuning/balance.
 	TuningDefinition tuning;
+	// Every scenario by its name, checked against its own game mode, which need not be this set's.
+	std::map<std::string, ScenarioDefinition, std::less<>> scenarios;
 	// Over every definition loaded, the mode's or not.
 	ContentIdentity identity;
 };

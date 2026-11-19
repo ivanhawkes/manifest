@@ -1,5 +1,21 @@
 # Session handoff
 
+## C05: the trading and governance scenarios — 2026-11-19
+
+The user selected drinking water ([D-060](decision-ledger.md#d-060)): every fluid is traded by the
+kilolitre, so `ItemDrinkingWater` is one, and its need is authored as 3 kL. `Manifest.Scenario`
+joins the definition types with the `trading` and `governance` fixtures, checked as recorded under
+[scenario and frames](stage-2-content-plan.md#scenario-and-frames); the schema there gained a
+starter hull, venue access and life-support capacity, and a region's skills, facilities and
+projects, which the starting-access and project checks read. No Jettison gap: a `glm::dvec3`, an
+`int64` and a registered enumeration were already archive fields. Which scenario runs, and its name
+in the content manifest, are C06's.
+
+Evidence, on Lythir, 24 jobs: `./scripts/ci.sh --werror --asan --tidy` passed 21 of 21 in each of
+`clang-debug`, `clang-release` and `clang-asan`, and tidy clean. `content` checks both fixtures'
+shape and refuses each scenario rule, each lack of starting access alone; `data` checks the water
+item and the need's 75 kL for 25,000 people; `mod` counts the staged scenarios.
+
 ## C04: items, hulls and the balance record — 2026-11-19
 
 The user selected C04's values ([D-059](decision-ledger.md#d-059)), recorded under

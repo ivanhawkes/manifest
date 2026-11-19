@@ -120,7 +120,7 @@ References resolve by authored ID through an index built at load.
 | `Manifest.NamePool` | `definitions/name-pools` | `universe/solar-system-names.yaml`, one per key | 2 |
 | `Manifest.Hull` | `definitions/hulls` | `ships/hulls.yaml`, `hull-base` (C04) | 3 |
 | `Manifest.GameMode` | `definitions/game-modes` | `game-mode/full.yaml`, `simple.yaml` | 2 |
-| `Manifest.Scenario` | `scenarios` | new, authored by C05 | 0 |
+| `Manifest.Scenario` | `scenarios` | `scenarios/*.yaml`, authored as records (C05) | 2 |
 
 **Built in C02 (2026-11-18).** `Manifest::Content` (`source/game/content`) registers the six types
 (`Definitions.h`) and loads them with the name check (`LoadDefinitions`); `data/build.sh` writes
@@ -206,6 +206,26 @@ and two venues each serving one region; the governance fixture puts several regi
 Trading blocs are left out until a rule or fixture needs one, since their shared powers are
 unselected.
 
+**Built in C05 (2026-11-19).** `ScenarioDefinition` (`Definitions.h`) is the table above with what
+C05's starting-access and project checks need: the root names a `starterHull`; a venue is `public`
+and `operational` or not, lists the `hulls` it docks and has a `lifeSupportCapacity`, ships it can
+keep on working life support; a region lists the `skills` it knows, its seeded `facilities`
+(`{facilityId, kind: Workshop, operational}`) and its public `projects`, each a tuning project.
+`LoadContent` checks every scenario against its own mode, whichever the set is built for, and the
+set holds them all by name. Beyond the table's rules: a player's home is served by an operational
+public venue that docks the starter hull with life-support capacity of at least 1 (D-047); a
+region's project needs its prerequisites known, an operational workshop, and every project and
+recipe input produced by some venue of the scenario. Two fixtures, staged as they are authored at
+`manifest/scenarios/`, their values recorded with them ([ledger](decision-ledger.md#numeric-values)):
+
+- `trading`: the eight goods in system Anvil, Ore and Brine each a region of its own civilisation
+  with a public highport, each good made at one and wanted at the other. Ore's region is a
+  player's home, Brine's governed by its council.
+- `governance`: four regions on Forge, two players' homes and two AI neighbours, all served by one
+  public highport; Cassiter, an Industrial region across the system, sells tin, basic medical
+  supplies and the life-support goods from a corporation's private dock. Forge East knows smelting,
+  has the seeded workshop and works the Bronze project on local copper and Cassiter's tin.
+
 **A01's seams fit, unchanged.** Manifest's frame partition is the star system: planets, venues and
 ships are placed in its frame, an entity in stargate transit is in `kNoFrame`, and a region is
 jurisdiction located by its planet, not a frame. `SaveInfo::details` carries `scenario`, `content`
@@ -243,14 +263,14 @@ term, the performance-security rate, and the bronze project and recipe. The keys
 the [ledger](decision-ledger.md#numeric-values). No rule reads them yet; the content suite holds
 each to its range and its references (a need's items in the need's unit, a project's skills,
 inputs and recipe), and the data suite to the plans' worked examples. A need, project or recipe
-patches by its ID (`!merge=needId`). Drinking water's need has no item until one is selected.
+patches by its ID (`!merge=needId`). Drinking water's need is `ItemDrinkingWater`, in kilolitres
+([D-060](decision-ledger.md#d-060)).
 
 ### Authoring decisions still open
 
 | Decision | Owner, before |
 | --- | --- |
-| Drinking water's item, unit and litre conversion: no water item exists, though `CategoryWater` does | user, before C05 |
-| Both fixtures' positions, rates, stock, populations, funds and operators | implementer, recorded with C05 |
+| Which scenario a host or the validator runs, and its name in the content manifest | C06's options |
 | How a player takes a `playerHome` region at allocation | A02 |
 | Trading-bloc schema | when a rule needs it |
 
@@ -592,9 +612,9 @@ and fingerprints; a change to price, selection order or scenario must change the
 
 **Defined in C02 (2026-11-18)** as `Manifest.ContentManifest` version 1, its layout in
 `ContentIdentity.h`; the `content` suite shows directory and pack agree and that a price, an order
-or an added definition changes it. It has no scenario yet: the scenario type joins the type list,
-and the selected scenario's name the manifest, when C05 authors one, as version 2 if a save has
-recorded version 1 by then.
+or an added definition changes it. Since C05 the scenarios are a type of the list, so every
+scenario is in it; the selected scenario's name joins it with C06's selection, as version 2 if a
+save has recorded version 1 by then.
 
 ## Delivery and acceptance
 

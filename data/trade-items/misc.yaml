@@ -27,6 +27,20 @@
 item-base:
 
   # Stone Age
+  # Bulk potable water at 2025 utility rates, by the kilolitre as every fluid is: one to the cubic
+  # metre, three quarters of an IBC cube filled, as ItemBeer.
+  - item:
+      itemId: ItemDrinkingWater
+      categoryId: CategoryWater
+      ageId: AgeStone
+      displayName: Drinking Water
+      description: Potable water, in bulk
+      unitsPerCubicMetre: 1
+      basePrice: 2
+      unitType: Kilolitre
+      density: 1.0
+      packFactor: 0.75
+
   - item:
       itemId: ItemCharcoal
       categoryId: CategoryFuels

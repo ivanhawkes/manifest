@@ -554,7 +554,7 @@ representing routine medical consumables. Existing antibiotic/anaesthetic/analge
 remain separate commodities; this selection does not make them substitutes for the basic
 supplies need. The selected medical rate is 5 kg per 1,000 people per simulation day;
 remaining item authoring values are open.
-Drinking water still needs a concrete authored item. Keep all three need weights at 1
+Drinking water is `ItemDrinkingWater` ([D-060](decision-ledger.md#d-060)). Keep all three need weights at 1
 initially; adding grain alternatives cannot increase food's weight relative to water or medicine.
 
 Trade all four food grains in kilograms. For initial balance testing, 1 kg of any qualifying
@@ -583,10 +583,9 @@ update. Prorate by elapsed simulation time and retain fractional quantities. Cou
 actual accessible potable water consumed once, within physical supply and household funds.
 Insufficient supply/funds record unmet water needs under the existing severity and
 condition rules; no automatic catch-up purchasing follows. This is a balance-test setting.
-The exact water commodity, inventory unit, price and physical authoring values remain open.
-The implementer must declare any conversion from litre-based demand to the selected
-inventory unit, preserving physical volume; selecting litres here does not add a unit enum
-or an item definition.
+The water commodity is `ItemDrinkingWater`, traded by the kilolitre as every fluid is
+([D-060](decision-ledger.md#d-060)): the need is authored as 3 kL per 1,000 people per day, the
+same volume.
 
 The selected initial Basic Medical Supplies requirement is 5 kg per 1,000 people per
 simulation day. For 25,000 people, this is 125 kg/day, or `125 / 1,440` kg (approximately

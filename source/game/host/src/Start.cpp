@@ -24,7 +24,7 @@ using Jettison::Host::StartupError;
 // The name mod.yaml gives, not the source's file name: a renamed pack is still Manifest.
 constexpr std::string_view kPackageName = "Manifest";
 
-// shortcut: the full game mode until a scenario (C05) names the mode it is played in.
+// shortcut: the full game mode until C06's options select a scenario, which names its mode.
 constexpr std::string_view kGameMode = "full";
 
 // shortcut: one-second steps and seed 0 while the world is empty; A03 selects the cadence and a

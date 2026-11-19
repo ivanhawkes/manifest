@@ -1,0 +1,95 @@
+version: 1
+# The eight-good trading fixture (docs/stage-2-content-plan.md, "Initial scenario"): one system,
+# two planets, a region and a public station on each, with complementary markets, so a ship buys
+# where a good is made and sells where it is wanted. Metals and furs come from Ore, salt, lime,
+# glassware and soap from Brine. Every number is an initial test value recorded with C05, not a
+# balance result. Positions are metres in the system's frame, a station 42,000 km out from its
+# planet; market rates are per simulation day, in the item's unit.
+gameMode: full
+starterHull: HullLoneTraderStarter
+items:
+  - itemId: ItemCopper
+  - itemId: ItemTin
+  - itemId: ItemGold
+  - itemId: ItemSalt
+  - itemId: ItemLime
+  - itemId: ItemFurs
+  - itemId: ItemGlassware
+  - itemId: ItemSoap
+
+systems:
+  - {systemId: SystemAnvil, displayName: Anvil}
+
+planets:
+  - {planetId: PlanetOre, systemId: SystemAnvil, displayName: Ore, position: [1.496e11, 0, 0]}
+  - {planetId: PlanetBrine, systemId: SystemAnvil, displayName: Brine, position: [-2.279e11, 0, 0]}
+
+civilisations:
+  - {civilisationId: CivilisationOre, displayName: Ore, ageId: AgeClassical}
+  - {civilisationId: CivilisationBrine, displayName: Brine, ageId: AgeClassical}
+
+organisations:
+  - {organisationId: OrganisationAnvilPortAuthority, kind: Polity, displayName: Anvil Port Authority}
+  - {organisationId: OrganisationBrineCouncil, kind: Polity, displayName: Brine Council}
+
+regions:
+  # The player's home, ungoverned until it is allocated.
+  - regionId: RegionOreHighlands
+    planetId: PlanetOre
+    civilisationId: CivilisationOre
+    governorId: ""
+    playerHome: true
+    population: 25000
+    householdFunds: 5000000
+    publicFunds: 1000000
+    health: 100
+    happiness: 100
+  - regionId: RegionBrineCoast
+    planetId: PlanetBrine
+    civilisationId: CivilisationBrine
+    governorId: OrganisationBrineCouncil
+    population: 25000
+    householdFunds: 5000000
+    publicFunds: 1000000
+    health: 100
+    happiness: 100
+
+venues:
+  - venueId: VenueOreHighport
+    systemId: SystemAnvil
+    planetId: PlanetOre
+    position: [1.49642e11, 0, 0]
+    operatorId: OrganisationAnvilPortAuthority
+    public: true
+    operational: true
+    hulls: [{hullId: HullLoneTraderStarter}, {hullId: HullCompactSingle}, {hullId: HullTraderLongHaul}]
+    lifeSupportCapacity: 4
+    regions: [{regionId: RegionOreHighlands}]
+    market:
+      - {itemId: ItemCopper, production: 2000, demand: 0, stock: 20000}
+      - {itemId: ItemTin, production: 300, demand: 0, stock: 3000}
+      - {itemId: ItemGold, production: 2, demand: 0, stock: 20}
+      - {itemId: ItemFurs, production: 40, demand: 0, stock: 400}
+      - {itemId: ItemSalt, production: 0, demand: 3, stock: 5}
+      - {itemId: ItemLime, production: 0, demand: 5, stock: 5}
+      - {itemId: ItemGlassware, production: 0, demand: 200, stock: 300}
+      - {itemId: ItemSoap, production: 0, demand: 1500, stock: 2000}
+  - venueId: VenueBrineHighport
+    systemId: SystemAnvil
+    planetId: PlanetBrine
+    position: [-2.27858e11, 0, 0]
+    operatorId: OrganisationAnvilPortAuthority
+    public: true
+    operational: true
+    hulls: [{hullId: HullLoneTraderStarter}, {hullId: HullCompactSingle}, {hullId: HullTraderLongHaul}]
+    lifeSupportCapacity: 4
+    regions: [{regionId: RegionBrineCoast}]
+    market:
+      - {itemId: ItemSalt, production: 4, demand: 0, stock: 40}
+      - {itemId: ItemLime, production: 6, demand: 0, stock: 60}
+      - {itemId: ItemGlassware, production: 250, demand: 0, stock: 2500}
+      - {itemId: ItemSoap, production: 2000, demand: 0, stock: 20000}
+      - {itemId: ItemCopper, production: 0, demand: 1500, stock: 2000}
+      - {itemId: ItemTin, production: 0, demand: 250, stock: 300}
+      - {itemId: ItemGold, production: 0, demand: 1.5, stock: 2}
+      - {itemId: ItemFurs, production: 0, demand: 30, stock: 40}

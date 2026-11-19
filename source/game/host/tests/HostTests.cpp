@@ -258,7 +258,8 @@ TEST_CASE("Content that is missing, cannot be read or breaks a rule fails")
 	{
 		const Content content;
 		content.Remove("manifest/definitions/game-modes/full.yaml");
-		CheckFails(content.Directory(), Phase::Content, "there is no game mode 'full'");
+		// The scenarios name it first.
+		CheckFails(content.Directory(), Phase::Content, "gameMode 'full' names no game mode");
 	}
 	{
 		const Content content;

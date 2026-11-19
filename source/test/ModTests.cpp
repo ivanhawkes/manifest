@@ -15,10 +15,12 @@ TEST_CASE("Manifest directory and pack expose identical content through the engi
 
 	const auto files = directory.Enumerate("");
 	REQUIRE(files == pack.Enumerate(""));
-	// mod.yaml, and one record per definition.
+	// mod.yaml, and one record per definition and scenario.
 	const auto definitions = directory.Enumerate("manifest/definitions");
+	const auto scenarios = directory.Enumerate("manifest/scenarios");
 	REQUIRE_FALSE(definitions.empty());
-	REQUIRE(files.size() == 1 + definitions.size());
+	REQUIRE_FALSE(scenarios.empty());
+	REQUIRE(files.size() == 1 + definitions.size() + scenarios.size());
 	for (const auto &path : files)
 	{
 		CAPTURE(path);

@@ -165,6 +165,7 @@ items:
   - itemId: ItemNatron
 
   # Stone Age
+  - itemId: ItemDrinkingWater
   - itemId: ItemCharcoal
   - itemId: ItemPottery
   - itemId: ItemPigments

@@ -45,8 +45,10 @@ and the content manifest is defined; no Jettison gap. C03 is done (2026-11-18): 
 console and the data suite load one validated content set through the engine, and the legacy
 loaders and merged documents are retired; no Jettison gap. C04 is done (2026-11-19): the user selected its
 authoring values ([D-059](decision-ledger.md#d-059)); eight items, three hull definitions on
-Jettison's map fields (pin `4d60ea0`) and T4's balance record are authored and validated. Next: C05,
-which needs the drinking-water item decided first.
+Jettison's map fields (pin `4d60ea0`) and T4's balance record are authored and validated. C05 is
+done (2026-11-19): drinking water is authored ([D-060](decision-ledger.md#d-060)), and the trading
+and governance [scenarios](stage-2-content-plan.md#scenario-and-frames) are validated, starting
+access and the Bronze project's references included; no Jettison gap. Next: C06.
 
 - Jettison's G01, a generic rendered shell with the space gameplay moved to its sample, is done
   (2026-11-18, [history](../../jettison/docs/history.md#neutral-sdk-and-manifest-integration)),
