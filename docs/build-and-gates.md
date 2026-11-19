@@ -236,12 +236,13 @@ change is needed for this repair; this check is separate from the full gate's ev
 
 #### Editor setup
 
-The tracked files are `.vscode/tasks.json.example` and `.vscode/launch.json.example`; the
-personal `.vscode/tasks.json` and `.vscode/launch.json` are ignored. In a checkout:
+The tracked files are `.vscode/tasks.json.example`, `.vscode/launch.json.example` and
+`.vscode/settings.json.example`; the personal copies without `.example` are ignored. In a checkout:
 
 ```sh
 cp .vscode/tasks.json.example .vscode/tasks.json
 cp .vscode/launch.json.example .vscode/launch.json
+cp .vscode/settings.json.example .vscode/settings.json
 devenv shell -- code .
 ```
 
@@ -252,11 +253,11 @@ configure`, then `CMake: build` (the default build task, the `all` target), then
 (the default test task). Both launches build first.
 
 The debugger is **CodeLLDB** (`vadimcn.vscode-lldb`) with the development shell's LLDB 21,
-matching the compiler: set `"lldb.library": "${workspaceFolder}/.devenv/profile/lib/liblldb.so"`
-in the user settings (CodeLLDB expands the variable; LLDB finds its `lldb-server` beside the
-library). On NixOS, CodeLLDB's adapter is a generic Linux binary, so the system needs
-`programs.nix-ld.enable = true`; without it the adapter fails with "Could not start dynamically
-linked executable". *Simulation unit tests* runs the suite in the debug console (`terminal:
+matching the compiler, which the settings example names as `lldb.library` (CodeLLDB expands
+`${workspaceFolder}`; LLDB finds its `lldb-server` beside the library). The example also points
+the C/C++ extension at the shell's clang. On NixOS, CodeLLDB's adapter is a generic Linux binary,
+so the system needs `programs.nix-ld.enable = true`; without it the adapter fails with "Could not
+start dynamically linked executable". *Simulation unit tests* runs the suite in the debug console (`terminal:
 console`); *Development TUI* runs in the integrated terminal (`terminal: integrated`), which the
 full-screen interface needs.
 
