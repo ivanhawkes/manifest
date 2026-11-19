@@ -18,8 +18,8 @@ Apply the [engine/game boundary assessment](engine-game-boundary-assessment.md) 
 binding durable hosted state: generic spatial identity and save mechanisms belong to
 Jettison, while company ownership, permissions and retry policy remain Manifest's.
 
-Inspection baseline: Manifest `feature-base` at `2716380`, Jettison `feature-base`
-at `826c4bec125b6631a6ba8ee822c90463316c3511`. Refresh this inventory after stages 1–2.
+Inspection baseline: Manifest `feature-base` at `0c6e544`, Jettison `feature-base` at `f0b8a37`
+(Manifest's SDK pin `30ea3f3`), refreshed 2026-11-19 after stages 1–2.
 
 ## Findings that determine the migration
 
@@ -27,19 +27,21 @@ at `826c4bec125b6631a6ba8ee822c90463316c3511`. Refresh this inventory after stag
   It cannot remain an independently owned authoritative registry alongside `SimWorld`.
 - `ecs/Components.h` associates ships and orders with civilisations. `Stockpile`
   is keyed only by item; it has no venue or company boundary.
-- `market/Marketplace.*` accepts caller-supplied civilisation and tick in an order.
-  Cancellation has no actor argument. Posting can match and settle immediately.
+- `market/Marketplace.*` accepts a caller-supplied civilisation in an `OrderRequest` and
+  a caller-supplied tick in `AdvanceTick`. Cancellation has no actor argument. Posting can
+  match and settle immediately, and `ExecuteOrder` walks the book.
   `LoadSimulation` copies development simulation state into the ECS representation.
 - `progression/ProgressionManager.*` combines immutable definitions with one mutable
   tier/resource pool. That pool must not serve every company or share a civilisation wallet.
-- `ManifestConsole` owns local simulation/progression state. Its library and tests
-  are currently built only when the FTXUI frontend is enabled.
+- `ManifestConsole` (`source/tools/tui`) owns local simulation/progression state. Its library
+  and tests are built only when `MANIFEST_BUILD_TUI` is on.
 - Jettison's `CommandQueue` applies queued commands in insertion order at the beginning
   of `SimWorld::Step`, then runs systems and advances the clock. It does not provide
   actor authentication, request deduplication or durable acknowledgement.
-- The engine's generic archives support reflected objects and vectors, but do not list
-  arbitrary maps/sets or Manifest Decimal as codecs. Existing components must not be
-  registered wholesale with an assumption that they are serialisable.
+- The engine's generic archives support reflected objects, sequences and maps keyed by a string
+  or a registered enumeration, written in key order. They have no set or Manifest `Decimal`
+  codec. Existing components must not be registered wholesale with an assumption that they
+  are serialisable.
 
 ## Authoritative state model
 
@@ -63,6 +65,13 @@ then copy its state into the world.
 | Progression | Immutable shared skill definitions plus explicitly scoped mutable tiers/exclusive choices: regional projects/infrastructure, company capabilities or declared shared civilisation technology. |
 | Identity allocation | Saved world service with checked, non-reusing counters; rebuilt lookup indexes are derived, counters are not. |
 | Request history | Saved world service containing actor request progress, pending/result records and deterministic retention state. |
+
+<a id="home-region-allocation"></a>Allocating a player a home region creates a new `Polity`
+organisation for that player and sets the region's `governorId` to it; the region is the first
+ungoverned `playerHome` region in the world's region order: authored order in a scenario,
+generation order on a server, whose supply of free regions is the
+[roadmap's](roadmap.md#region-supply). The player's trading company stays a separate
+organisation ([D-075](decision-ledger.md#d-075)).
 
 Prefer separate reflected inventory/cargo balance records or components to opaque
 maps hidden inside public components. If a service retains maps internally, serialise

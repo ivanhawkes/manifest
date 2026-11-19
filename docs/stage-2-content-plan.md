@@ -274,7 +274,6 @@ patches by its ID (`!merge=needId`). Drinking water's need is `ItemDrinkingWater
 
 | Decision | Owner, before |
 | --- | --- |
-| How a player takes a `playerHome` region at allocation | A02 |
 | Trading-bloc schema | when a rule needs it |
 
 ## Versions, layering and migration

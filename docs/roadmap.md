@@ -245,7 +245,12 @@ brokers, tech dependencies, geography, real-time rights and the capability/valid
 requires multiple governed economies on a physical planet. Each player initially controls
 one region's development and public budget alongside a separate trading company. Regional
 population, households, condition and accounts remain independent; AI governs other regions.
-A server starts with enough suitable home regions for its group, later joiners and an AI economy.
+<a id="region-supply"></a>A server launches with a configurable number of regions made by the
+universe generator, enough suitable home regions for its group, later joiners and an AI economy.
+As players join it keeps the share of free home regions to players within a configurable range,
+generating new regions when the share falls below it ([D-076](decision-ledger.md#d-076)); the
+range's values are open. Generation runs outward, so allocating in generation order gives early
+players the regions nearest the centre: an intended early-joiner advantage.
 The intended play period may be days or months; campaign duration and pacing remain undecided.
 
 The first development controls are projects, investment budgets and public procurement.
