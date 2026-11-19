@@ -11,7 +11,8 @@
 
 namespace Manifest::Content
 {
-ContentIdentity BuildContentIdentity(const Jettison::Sim::DefinitionRegistry &registry)
+ContentIdentity BuildContentIdentity(
+    const Jettison::Sim::DefinitionRegistry &registry, std::string_view scenario)
 {
 	Jettison::Serialise::BinaryWriter writer{"Manifest.ContentManifest"};
 	for (const DefinitionType &definition : DefinitionTypes())
@@ -29,6 +30,7 @@ ContentIdentity BuildContentIdentity(const Jettison::Sim::DefinitionRegistry &re
 			        *registry.Find(definition.type, name), version));
 		}
 	}
+	writer.WriteName(scenario);
 
 	ContentIdentity identity;
 	identity.manifest = writer.Finish(kContentManifestFormat);

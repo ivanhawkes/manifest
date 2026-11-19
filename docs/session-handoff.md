@@ -6,7 +6,26 @@ Still open from before C09: the user asked to retire `CategoryUnknown`, the fall
 good is filed under it and no code names it (the `"Unknown"` strings in `EffectTypes.cpp` and
 `Components.cpp` are enum fallbacks, unrelated); it is the one entry in
 `data/trade-items/categories.yaml`, with its row in `docs/model.md`'s file table. Record it as a
-ledger row beside D-069, gate it and commit. Then C06, as `delivery-order.md` has it.
+ledger row beside D-069, gate it and commit. Then C07, as `delivery-order.md` has it.
+
+## C06: the validator and the host's options — 2026-11-19
+
+[D-070](decision-ledger.md#d-070), built as
+[versions, layering and migration](stage-2-content-plan.md#versions-layering-and-migration)
+records. The user selected a required `--scenario` and overlays named by their `mod.yaml`. The host
+and `manifest-validate` share `Manifest::Host::Options` and `ParseOptions`; `Validate` loads what
+`Start` loads with no world, and `Content::LoadScenario` resolves the scenario's game mode and puts
+its name in the content manifest, still version 1. One Jettison gap: the session's package rules
+without a world, `Jettison::Host::DescribePackages`, provisioned in Jettison `30ea3f3` (its history,
+"Content pipeline: package rules without a world"), and the pin moved to it. The shell files did
+not change. The development console still loads by game mode.
+
+Evidence, on Lythir: `./scripts/ci.sh --werror --asan --tidy` passed 31 of 31 in each of
+`clang-debug`, `clang-release` and `clang-asan` against the fetched pin, and tidy clean. `host`
+fails `Start` and `Validate` with the same report for every refusal, an overlay's included, agrees on
+the content manifest for the directory, the pack and an overlay, and reads the options; the
+`cli_*` and `validate_*` tests run both executables from an unrelated directory, a broken overlay
+naming its patch.
 
 ## Station names — 2026-11-19
 

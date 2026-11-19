@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string_view>
 #include <vector>
 
 #include <jettison/serialise/Archive.h>
@@ -20,7 +21,8 @@ namespace Manifest::Content
 // Format "Manifest.ContentManifest", in Jettison's binary layout (BinaryWriter): for each type of
 // DefinitionTypes, in that order, its reflected name, its format version (4 bytes) and its record
 // count (4 bytes), then each record in name order, as its name and its BinaryArchive bytes after
-// their length. Every loaded definition is in it, used by the selected mode or not; host paths,
+// their length, then the selected scenario's name, empty for a set selected by game mode alone.
+// Every loaded definition is in it, used by the selected scenario or not; host paths,
 // mounts, pack compression and times are not, so a directory and a pack of the same content give
 // the same bytes. A change to that layout, or to the hash, is a new version.
 inline constexpr Jettison::Serialise::FormatVersion kContentManifestFormat{1};
@@ -32,5 +34,6 @@ struct ContentIdentity
 };
 
 // The registry holds every type of DefinitionTypes, as LoadDefinitions leaves it.
-ContentIdentity BuildContentIdentity(const Jettison::Sim::DefinitionRegistry &registry);
+ContentIdentity BuildContentIdentity(
+    const Jettison::Sim::DefinitionRegistry &registry, std::string_view scenario);
 } // namespace Manifest::Content

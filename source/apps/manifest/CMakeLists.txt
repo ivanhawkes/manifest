@@ -2,28 +2,70 @@ add_executable(manifest main.cpp)
 set_target_properties(manifest PROPERTIES FOLDER "Apps")
 target_link_libraries(manifest PRIVATE Manifest::Host Jettison::Core manifest_warnings)
 
+# The content validator: the host's options and loading, with no world.
+add_executable(manifest-validate validate.cpp)
+set_target_properties(manifest-validate PROPERTIES FOLDER "Apps")
+target_link_libraries(manifest-validate PRIVATE Manifest::Host Jettison::Core manifest_warnings)
+
 if(MANIFEST_BUILD_TESTS AND BUILD_TESTING)
     # Run from a directory with nothing of Manifest in it, given absolute paths, with no display:
     # nothing is found from the working directory or needs a window. The content is staged and
     # packed for the host suite (source/game/host).
     set(elsewhere "${CMAKE_CURRENT_BINARY_DIR}/elsewhere")
     file(MAKE_DIRECTORY "${elsewhere}")
-    set(run "${CMAKE_COMMAND}" -E env --unset=DISPLAY --unset=WAYLAND_DISPLAY $<TARGET_FILE:manifest>)
-    add_test(NAME cli_directory COMMAND ${run} --content "${MANIFEST_MOD_DIRECTORY}" --check-startup
+    set(env "${CMAKE_COMMAND}" -E env --unset=DISPLAY --unset=WAYLAND_DISPLAY)
+    set(run ${env} $<TARGET_FILE:manifest>)
+    set(validate ${env} $<TARGET_FILE:manifest-validate>)
+    set(directory --content "${MANIFEST_MOD_DIRECTORY}" --scenario trading)
+    set(pack --content "${PROJECT_BINARY_DIR}/manifest.pack" --scenario trading)
+    set(overlays "${PROJECT_SOURCE_DIR}/source/game/host/tests/overlays")
+
+    add_test(NAME cli_directory COMMAND ${run} ${directory} --check-startup
         WORKING_DIRECTORY "${elsewhere}")
-    add_test(NAME cli_pack COMMAND ${run} --content "${PROJECT_BINARY_DIR}/manifest.pack" --check-startup
-        WORKING_DIRECTORY "${elsewhere}")
-    add_test(NAME cli_missing_content COMMAND ${run} --content "${elsewhere}/none" --check-startup
-        WORKING_DIRECTORY "${elsewhere}")
+    add_test(NAME cli_pack COMMAND ${run} ${pack} --check-startup WORKING_DIRECTORY "${elsewhere}")
+    add_test(NAME cli_missing_content COMMAND ${run} --content "${elsewhere}/none" --scenario trading
+        --check-startup WORKING_DIRECTORY "${elsewhere}")
     add_test(NAME cli_no_arguments COMMAND ${run} WORKING_DIRECTORY "${elsewhere}")
-    add_test(NAME cli_no_path COMMAND ${run} --check-startup --content WORKING_DIRECTORY "${elsewhere}")
-    add_test(NAME cli_no_check COMMAND ${run} --content "${MANIFEST_MOD_DIRECTORY}"
+    add_test(NAME cli_no_path COMMAND ${run} --check-startup --scenario trading --content
         WORKING_DIRECTORY "${elsewhere}")
-    add_test(NAME cli_unknown_argument COMMAND ${run} --content "${MANIFEST_MOD_DIRECTORY}"
-        --check-startup --serve WORKING_DIRECTORY "${elsewhere}")
-    set_tests_properties(cli_no_arguments cli_no_path cli_no_check cli_unknown_argument
+    add_test(NAME cli_no_scenario COMMAND ${run} --content "${MANIFEST_MOD_DIRECTORY}" --check-startup
+        WORKING_DIRECTORY "${elsewhere}")
+    add_test(NAME cli_no_check COMMAND ${run} ${directory} WORKING_DIRECTORY "${elsewhere}")
+    add_test(NAME cli_unknown_argument COMMAND ${run} ${directory} --check-startup --serve
+        WORKING_DIRECTORY "${elsewhere}")
+    add_test(NAME cli_broken_overlay COMMAND ${run} ${directory} --overlay "${overlays}/blank-age"
+        --check-startup WORKING_DIRECTORY "${elsewhere}")
+
+    # The validator agrees with the host: the same options pass, and fail with the same report.
+    add_test(NAME validate_directory COMMAND ${validate} ${directory} WORKING_DIRECTORY "${elsewhere}")
+    add_test(NAME validate_pack COMMAND ${validate} ${pack} WORKING_DIRECTORY "${elsewhere}")
+    add_test(NAME validate_overlay COMMAND ${validate} ${directory} --overlay "${overlays}/copper"
+        WORKING_DIRECTORY "${elsewhere}")
+    add_test(NAME validate_missing_content COMMAND ${validate} --content "${elsewhere}/none"
+        --scenario trading WORKING_DIRECTORY "${elsewhere}")
+    add_test(NAME validate_broken_overlay COMMAND ${validate} ${directory}
+        --overlay "${overlays}/blank-age" WORKING_DIRECTORY "${elsewhere}")
+    add_test(NAME validate_unknown_scenario COMMAND ${validate} --content "${MANIFEST_MOD_DIRECTORY}"
+        --scenario elsewhere WORKING_DIRECTORY "${elsewhere}")
+    add_test(NAME validate_no_arguments COMMAND ${validate} WORKING_DIRECTORY "${elsewhere}")
+    add_test(NAME validate_unknown_argument COMMAND ${validate} ${directory} --check-startup
+        WORKING_DIRECTORY "${elsewhere}")
+
+    set_tests_properties(cli_no_arguments cli_no_path cli_no_scenario cli_no_check
+        cli_unknown_argument validate_no_arguments validate_unknown_argument
         PROPERTIES WILL_FAIL TRUE)
-    # The failure is the one expected, not a crash: only a failed start-up logs its phase.
-    set_tests_properties(cli_missing_content PROPERTIES
-        PASS_REGULAR_EXPRESSION "Start-up failed in the mount phase, at ${elsewhere}/none")
+    # Each failure is the one expected, not a crash: only a failed start-up logs its phase.
+    set(missing "Start-up failed in the mount phase, at ${elsewhere}/none")
+    set(blank "age-stone.yaml: Manifest.Age 'AgeStone': displayName is required \\(from manifest, \
+BlankAge \\(patch\\)\\)")
+    set_tests_properties(cli_missing_content validate_missing_content
+        PROPERTIES PASS_REGULAR_EXPRESSION "${missing}")
+    set_tests_properties(cli_broken_overlay validate_broken_overlay
+        PROPERTIES PASS_REGULAR_EXPRESSION "${blank}")
+    set_tests_properties(validate_unknown_scenario
+        PROPERTIES PASS_REGULAR_EXPRESSION "there is no scenario 'elsewhere'")
+    set_tests_properties(validate_directory validate_pack PROPERTIES PASS_REGULAR_EXPRESSION
+        "mount 1: manifest, from .*valid: scenario trading, game mode manifest, content [0-9a-f]+")
+    set_tests_properties(validate_overlay PROPERTIES PASS_REGULAR_EXPRESSION
+        "mount 2: Copper, from ${overlays}/copper.*valid: scenario trading")
 endif()

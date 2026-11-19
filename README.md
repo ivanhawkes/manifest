@@ -5,7 +5,7 @@ Worlds produce and consume goods, scarcity changes prices, and progression chang
 markets and civilisations that trade them.
 
 Manifest follows Jettison's `feature-base` SDK, pinned to commit
-`15e2561a8ea53cee31b275aeb099a4cc6d313c3f` (engine 0.1.0). `main` is not the SDK reference.
+`30ea3f317b5ecba50d507384102d34745ec53475` (engine 0.1.0). `main` is not the SDK reference.
 `devenv.nix`, `devenv.yaml` and `devenv.lock` match that commit byte for byte, and CI checks it
 with `scripts/check-env-parity.sh`. Shared libraries such as EnTT, yaml-cpp and doctest come from
 the engine's targets, including their compile definitions.
@@ -78,7 +78,7 @@ the VFS loaders, world adapters and scripted scenario in the
 ## Structure
 
 - `source/game/<module>/`: game modules, each with `CMakeLists.txt`, `include/manifest/<module>/`, `src/`, and unit `tests/` where applicable.
-- `source/apps/manifest/`: `manifest --content <directory-or-pack> --check-startup`, the start-up check through Jettison's host.
+- `source/apps/manifest/`: `manifest <options> --check-startup`, the start-up check through Jettison's host, and `manifest-validate <options>`, the content validator; the options are `--content <directory-or-pack> [--overlay <directory-or-pack>]... --scenario <name>`.
 - `source/tools/tui/`: the development console session, FTXUI frontend and console tests.
 - `source/test/`: cross-module effects, data and mod-pack suites, plus shared test helpers.
 - `source/external/`: the pinned engine SDK and optional development-only dependencies.

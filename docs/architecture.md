@@ -48,16 +48,20 @@ The modules, in dependency order:
 | `host` | Manifest composed into `Jettison::Host`: package policy and start-up | Content, Jettison Host |
 
 `Manifest::Host` is outside `Manifest::Game`, so the model never depends on the host that drives
-it. `Manifest::Host::Start` mounts one explicit directory or pack read-only and alone, with no user
-mods or writable overlay, and starts a `Jettison::Host::Session` with an empty world. The engine
+it. `Manifest::Host::Start` mounts the options' sources read-only, the package and then each
+explicit overlay ([D-070](decision-ledger.md#d-070)), with no user mods or writable mount, and
+starts a `Jettison::Host::Session` with an empty world. The engine
 checks the description's format, engine requirement and required packages; Manifest requires a
 `mod.yaml` named `Manifest` with a release and an engine requirement, and loads its definitions
-into the session's registry as one content set (`Manifest::Content::LoadContent`, the Manifest
-game mode until a scenario names one), so a record that is missing, unreadable, damaged or breaks a
+into the session's registry as one content set for the scenario (`Manifest::Content::LoadScenario`,
+its game mode the scenario's), so a record that is missing, unreadable, damaged or breaks a
 rule fails start-up, naming the record, the field and its mounts. The `manifest` executable (`source/apps/manifest/`) is
-`manifest --content <directory-or-pack> --check-startup`: it starts, logs readiness, shuts down
-and exits 0; a failed start-up logs the phase, source and cause and exits 1, a bad command line
-prints usage and exits 2.
+`manifest <options> --check-startup`: it starts, logs readiness, shuts down and exits 0; a failed
+start-up logs the phase, source and cause and exits 1, a bad command line prints usage and exits 2.
+`manifest-validate <options>` (`Manifest::Host::Validate`) loads the same sources with the same
+rules and no world, and logs the mounts in order, the scenario and the content fingerprint, with
+the host's exit statuses; the options are recorded under
+[versions, layering and migration](stage-2-content-plan.md#versions-layering-and-migration).
 
 `cmake/ManifestModule.cmake` mirrors Jettison's module helper: static module libraries, public
 header sets, private warnings and implementation includes, and doctest suites. An edge to a module

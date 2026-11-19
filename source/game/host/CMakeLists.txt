@@ -16,7 +16,8 @@ if(TARGET manifest_host_tests)
 	target_link_libraries(manifest_host_tests PRIVATE Jettison::Vfs)
 	target_compile_definitions(manifest_host_tests PRIVATE
 		MANIFEST_MOD_DIRECTORY="${MANIFEST_MOD_DIRECTORY}"
-		MANIFEST_MOD_PACK="${PROJECT_BINARY_DIR}/manifest.pack")
+		MANIFEST_MOD_PACK="${PROJECT_BINARY_DIR}/manifest.pack"
+		MANIFEST_HOST_OVERLAYS="${CMAKE_CURRENT_SOURCE_DIR}/tests/overlays")
 	# Also what stages the content the manifest executable's checks start from.
 	add_dependencies(manifest_host_tests manifest_pack)
 endif()

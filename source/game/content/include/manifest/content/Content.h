@@ -53,7 +53,9 @@ struct ContentSet
 	TuningDefinition tuning;
 	// Every scenario by its name, checked against its own game mode, which need not be this set's.
 	std::map<std::string, ScenarioDefinition, std::less<>> scenarios;
-	// Over every definition loaded, the mode's or not.
+	// The scenario selected, by its name; empty for a set selected by game mode alone.
+	std::string scenario;
+	// Over every definition loaded, the mode's or not, and the scenario selected.
 	ContentIdentity identity;
 };
 
@@ -67,8 +69,14 @@ ContentSet LoadContent(
     const Jettison::Vfs::FileSystem &files, Jettison::Sim::DefinitionRegistry &registry,
     std::string_view gameMode);
 
-// The same, over the sources mounted read-only in order, a later one over an earlier, in a file
-// system and a registry of its own that are gone when it returns: a failure anywhere leaves
+// The same for a scenario, a scenario record's name: the set is for its game mode, and its name is
+// in the set's identity. What a host and the validator run.
+ContentSet LoadScenario(
+    const Jettison::Vfs::FileSystem &files, Jettison::Sim::DefinitionRegistry &registry,
+    std::string_view scenario);
+
+// The same as LoadContent, over the sources mounted read-only in order, a later one over an earlier, in
+// a file system and a registry of its own that are gone when it returns: a failure anywhere leaves
 // nothing behind, so a caller's working content is kept by keeping its own set.
 ContentSet LoadContent(std::span<const Jettison::Vfs::Mount> sources, std::string_view gameMode);
 } // namespace Manifest::Content

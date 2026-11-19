@@ -274,7 +274,6 @@ patches by its ID (`!merge=needId`). Drinking water's need is `ItemDrinkingWater
 
 | Decision | Owner, before |
 | --- | --- |
-| Which scenario a host or the validator runs, and its name in the content manifest | C06's options |
 | How a player takes a `playerHome` region at allocation | A02 |
 | Trading-bloc schema | when a rule needs it |
 
@@ -300,6 +299,20 @@ Expose explicit ordered overlay sources for host and validator, using the same o
 contract. Preserve stage 1's mandatory base-package validation; do not add automatic
 directory discovery. Identify mounts by stable logical IDs and report that order.
 
+**Built in C06 (2026-11-19)**, as [D-070](decision-ledger.md#d-070) selects. `Manifest::Host::Options`
+(`Start.h`) is the contract, read from a command line by `ParseOptions` for both executables:
+`--content <directory-or-pack> [--overlay <directory-or-pack>]... --scenario <name>`, each overlay
+mounted over the package in the order given. The package mounts as `manifest`, an overlay under
+the name its `mod.yaml` gives, which a later overlay's `requires` names; an overlay with no
+`mod.yaml` or no name, or a name already mounted, fails in the mount phase. `manifest --check-startup`
+starts a session on the options (`Start`); `manifest-validate` loads the same sources with no world
+(`Validate`): the same mounts, the engine's package rules (`Jettison::Host::DescribePackages`,
+provisioned in Jettison `30ea3f3`), Manifest's package check and `Content::LoadScenario`, failing with
+the same `StartupError` text, a rule's failure naming the layers read, overlays among them. On
+success it logs each mount in order with its source, the scenario, its game mode and the content
+fingerprint, and exits 0; content that would not start exits 1, a bad command line 2. The scenario
+is required and names the game mode the set is resolved for.
+
 ## Atomic loading and validation
 
 **Built in C03 (2026-11-18).** `Manifest::Content::LoadContent` (`Content.h`) is the one entry
@@ -321,8 +334,8 @@ themselves (`SimulationConfig.h`, the item's physical fields now typed), so cont
 nothing but the name pools. A category's empty description still takes its display name, as the
 retired loader did. The legacy loaders, `YamlFieldReaders.h`, the name-pool reader and the
 merged `core-config` documents are gone, with their last callers; the package holds `mod.yaml`
-and the records. Host overlays stay with C06, which defines the option contract they share with
-the validator.
+and the records. Host overlays are C06's, under [versions, layering and
+migration](#versions-layering-and-migration).
 
 Build a fresh candidate containing all registry types and their derived data. Load all
 types, resolve references, normalise defaults, run semantic checks and calculate the
@@ -617,8 +630,9 @@ and fingerprints; a change to price, selection order or scenario must change the
 **Defined in C02 (2026-11-18)** as `Manifest.ContentManifest` version 1, its layout in
 `ContentIdentity.h`; the `content` suite shows directory and pack agree and that a price, an order
 or an added definition changes it. Since C05 the scenarios are a type of the list, so every
-scenario is in it; the selected scenario's name joins it with C06's selection, as version 2 if a
-save has recorded version 1 by then.
+scenario is in it; since C06 the selected scenario's name follows the records, empty for a set
+selected by game mode alone, still version 1 since no save had recorded it; a different scenario
+gives a different manifest (the `host` suite).
 
 ## Delivery and acceptance
 

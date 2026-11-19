@@ -854,12 +854,10 @@ void CheckScenarios(
 		}
 	}
 }
-} // namespace
 
 
-ContentSet LoadContent(
-    const Jettison::Vfs::FileSystem &files, Jettison::Sim::DefinitionRegistry &registry,
-    std::string_view gameMode)
+// Loads every definition type and holds the whole set to its rules.
+void LoadChecked(const Jettison::Vfs::FileSystem &files, Jettison::Sim::DefinitionRegistry &registry)
 {
 	LoadDefinitions(registry);
 
@@ -878,7 +876,14 @@ ContentSet LoadContent(
 		throw ContentError{std::format(
 		    "{}: there is no balance tuning", TypeOf(entt::resolve<TuningDefinition>()).directory)};
 	CheckScenarios(checker, registry, *pTuning);
+}
 
+
+// The set for a game mode of a checked registry, and the scenario selected, if one is.
+ContentSet Build(
+    const Jettison::Sim::DefinitionRegistry &registry, std::string_view gameMode,
+    std::string_view scenario)
+{
 	const auto *pMode = registry.Find<GameModeDefinition>(gameMode);
 	if (pMode == nullptr)
 		throw ContentError{std::format(
@@ -899,13 +904,38 @@ ContentSet LoadContent(
 	content.gameMode = Resolve(registry, *pMode);
 	for (const NamePoolDefinition *pPool : All<NamePoolDefinition>(registry))
 		content.names.AddPool(pPool->pool, pPool->names);
-	content.tuning = *pTuning;
+	content.tuning = *registry.Find<TuningDefinition>("balance");
 	for (const std::string &name : registry.Names<ScenarioDefinition>())
 		content.scenarios.emplace(name, *registry.Find<ScenarioDefinition>(name));
 	for (const Core::ShipClassSpec *pHull : All<Core::ShipClassSpec>(registry))
 		content.hulls.push_back(*pHull);
-	content.identity = BuildContentIdentity(registry);
+	content.scenario = scenario;
+	content.identity = BuildContentIdentity(registry, scenario);
 	return content;
+}
+} // namespace
+
+
+ContentSet LoadContent(
+    const Jettison::Vfs::FileSystem &files, Jettison::Sim::DefinitionRegistry &registry,
+    std::string_view gameMode)
+{
+	LoadChecked(files, registry);
+	return Build(registry, gameMode, {});
+}
+
+
+ContentSet LoadScenario(
+    const Jettison::Vfs::FileSystem &files, Jettison::Sim::DefinitionRegistry &registry,
+    std::string_view scenario)
+{
+	LoadChecked(files, registry);
+	const auto *pScenario = registry.Find<ScenarioDefinition>(scenario);
+	if (pScenario == nullptr)
+		throw ContentError{std::format(
+		    "{}: there is no scenario '{}'", TypeOf(entt::resolve<ScenarioDefinition>()).directory,
+		    scenario)};
+	return Build(registry, pScenario->gameMode, scenario);
 }
 
 

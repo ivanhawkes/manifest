@@ -243,7 +243,7 @@ TEST_CASE(
 	}
 	CHECK(content.names.PoolNames() == loaded.registry.Names<NamePoolDefinition>());
 	CHECK(content.names.Find("latin") == Get<NamePoolDefinition>(loaded, "latin").names);
-	CHECK(content.identity.manifest == BuildContentIdentity(loaded.registry).manifest);
+	CHECK(content.identity.manifest == BuildContentIdentity(loaded.registry, {}).manifest);
 
 	// The Manifest mode is every record: the ones no mode selects are counted here too.
 	CHECK(loaded.registry.Names<Manifest::Core::ItemNode>().size() == content.gameMode.items.size());
@@ -890,23 +890,23 @@ TEST_CASE("A field a record leaves out keeps the schema's default")
 
 TEST_CASE("The directory and the pack give the same manifest, and so the same fingerprint")
 {
-	const ContentIdentity directory = BuildContentIdentity(Loaded{kModDirectory}.registry);
-	const ContentIdentity pack = BuildContentIdentity(Loaded{MANIFEST_MOD_PACK}.registry);
+	const ContentIdentity directory = BuildContentIdentity(Loaded{kModDirectory}.registry, {});
+	const ContentIdentity pack = BuildContentIdentity(Loaded{MANIFEST_MOD_PACK}.registry, {});
 	CHECK(directory.manifest == pack.manifest);
 	CHECK(directory.fingerprint == pack.fingerprint);
 	CHECK(directory.fingerprint != 0);
-	CHECK(BuildContentIdentity(Loaded{kModDirectory}.registry).manifest == directory.manifest);
+	CHECK(BuildContentIdentity(Loaded{kModDirectory}.registry, {}).manifest == directory.manifest);
 }
 
 
 TEST_CASE("A changed price, a reordered selection or an unselected definition changes the manifest")
 {
-	const ContentIdentity base = BuildContentIdentity(Loaded{kModDirectory}.registry);
+	const ContentIdentity base = BuildContentIdentity(Loaded{kModDirectory}.registry, {});
 	const auto identity = [](std::string_view path, std::string_view text)
 	{
 		const Overlay overlay;
 		overlay.Write(std::string{path}, text);
-		return BuildContentIdentity(Loaded{kModDirectory, overlay.Root()}.registry);
+		return BuildContentIdentity(Loaded{kModDirectory, overlay.Root()}.registry, {});
 	};
 
 	const ContentIdentity price = identity(
