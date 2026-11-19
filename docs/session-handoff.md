@@ -1,5 +1,13 @@
 # Session handoff
 
+## Next, on resuming — 2026-11-19
+
+The user asked, before a break, to retire `CategoryUnknown`, the fallback category. No good is
+filed under it and no code names it (the `"Unknown"` strings in `EffectTypes.cpp` and
+`Components.cpp` are enum fallbacks, unrelated); it is the one entry in
+`data/trade-items/categories.yaml`, with its row in `docs/model.md`'s file table. Record it as a
+ledger row beside D-069, gate it and commit. Then C09, as `delivery-order.md` has it.
+
 ## Collectibles retired — 2026-11-19
 
 [D-069](decision-ledger.md#d-069): the user retired the empty `CategoryCollectibles`. Committed without the gate,
