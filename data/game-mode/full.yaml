@@ -206,6 +206,8 @@ items:
   - itemId: ItemMicroscope
   # Pre-industrial Age
   # Industrial Age
+  - itemId: ItemLPG
+  - itemId: ItemBasicMedicalSupplies
   # Post-industrial Age
   # Information Age
   # AI Age
@@ -232,3 +234,13 @@ items:
   - itemId: ItemCocoaSeeds
   - itemId: ItemCocaSeeds
   - itemId: ItemCanolaSeeds
+
+  # Food grains
+  - itemId: ItemWheat
+  - itemId: ItemBarley
+  - itemId: ItemOats
+  - itemId: ItemRice
+
+  # Life support
+  - itemId: ItemOxygen
+  - itemId: ItemCarbonScrubberCartridge

@@ -22,6 +22,8 @@ DEFINITIONS=(
   trade-items/minerals.yaml
   trade-items/misc.yaml
   trade-items/seeds.yaml
+  trade-items/grains.yaml
+  trade-items/life-support.yaml
   skill-tree/skills.yaml
   skill-tree/ages.yaml
   skill-tree/spaceship.yaml

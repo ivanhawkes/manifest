@@ -448,6 +448,29 @@ item-base:
 
 
   # Industrial Age
+  - item:
+      itemId: ItemLPG
+      categoryId: CategoryFuels
+      ageId: AgeIndustrial
+      displayName: LPG
+      description: Liquefied petroleum gas, propane and butane under pressure
+      unitsPerCubicMetre: 540
+      basePrice: 0.40
+      unitType: Kilogram
+      density: 0.54
+      packFactor: 0.45
+
+  - item:
+      itemId: ItemBasicMedicalSupplies
+      categoryId: CategoryMedicalEquipment
+      ageId: AgeIndustrial
+      displayName: Basic Medical Supplies
+      description: Routine medical consumables, dressings, gloves, syringes and saline
+      unitsPerCubicMetre: 1000
+      basePrice: 15
+      unitType: Kilogram
+      density: 1.0
+      packFactor: 0.35
 
   # Post-industrial Age
 

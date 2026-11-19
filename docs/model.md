@@ -139,12 +139,14 @@ The inputs are read in this order:
 | Source | Contents |
 | --- | --- |
 | `base/ages.yaml` | The 14 ages, in age order. |
-| `trade-items/categories.yaml` | The 43 categories. The goods of the item files are filed under 21 of them; 22 shelves hold no good at all, and 3 of those - `CategoryPharmaceuticals`, `CategoryPolymers` and `CategoryTextiles` - have a craft node of the same word. |
+| `trade-items/categories.yaml` | The 44 categories. The goods of the item files are filed under 23 of them; 21 shelves hold no good at all, and 3 of those - `CategoryPharmaceuticals`, `CategoryPolymers` and `CategoryTextiles` - have a craft node of the same word. |
 | `trade-items/chemicals.yaml` | The 11 goods of `CategoryChemicals`: sodium hydroxide, nitrogen, phosphorus, sulfur, sulfuric acid, antimony, chlorine, ammonia, ethylene, neodymium, graphene. |
 | `trade-items/metals.yaml` | The 21 goods of `CategoryMetals`: copper, tin, brass, bronze, silver, nickel, iron, lead, cobalt, lithium, molybdenum, aluminium, palladium, platinum, potassium, rhodium, ruthenium, uranium, vanadium, zinc, gold. |
 | `trade-items/minerals.yaml` | The 5 goods of `CategoryMinerals`: salt, lime, graphite, potash, natron. |
-| `trade-items/misc.yaml` | The 42 goods of the 17 remaining categories: the consumables, the crafts, the ferments, the writing and the knowledge goods, the instruments of navigation, the sciences, farming, the home and the yard, charcoal, the luxury goods, the medicines, electronics, leather and furs, cement and screws, coins, and the one catch-all, slaves. |
+| `trade-items/misc.yaml` | The 44 goods of the 18 remaining categories: the consumables, the crafts, the ferments, the writing and the knowledge goods, the instruments of navigation, the sciences, farming, the home and the yard, charcoal and LPG, the luxury goods, the medicines and basic medical supplies, electronics, leather and furs, cement and screws, coins, and the one catch-all, slaves. |
 | `trade-items/seeds.yaml` | The 10 goods of `CategorySeeds`: wheat, barley, oat, corn, rice, sorghum, poppy, cocoa, coca and canola. |
+| `trade-items/grains.yaml` | The 4 food grains of `CategoryConsumables`, traded by the kilogram: wheat, barley, oats and rice. |
+| `trade-items/life-support.yaml` | The 2 goods of `CategoryLifeSupport`: oxygen by the kilogram and the scrubber cartridge by the piece. |
 | `skill-tree/skills.yaml` | The 17 crafts of the economy. |
 | `skill-tree/ages.yaml` | The 14 ages that gate the tree. |
 | `skill-tree/spaceship.yaml` | The 25 ship systems, as a skill tree of their own. |

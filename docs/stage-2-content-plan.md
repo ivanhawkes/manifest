@@ -114,8 +114,8 @@ References resolve by authored ID through an index built at load.
 | Type | Directory under `manifest/` | Source | Count today |
 | --- | --- | --- | --- |
 | `Manifest.Age` | `definitions/ages` | `base/ages.yaml` | 14 |
-| `Manifest.Category` | `definitions/categories` | `trade-items/categories.yaml` | 43 |
-| `Manifest.Item` | `definitions/items` | `trade-items/*.yaml`, `item-base` | 89 |
+| `Manifest.Category` | `definitions/categories` | `trade-items/categories.yaml` | 44 |
+| `Manifest.Item` | `definitions/items` | `trade-items/*.yaml`, `item-base` | 97 |
 | `Manifest.Skill` | `definitions/skills` | `skill-tree/*.yaml`, `skill-base` (age gates included) | 85 |
 | `Manifest.NamePool` | `definitions/name-pools` | `universe/solar-system-names.yaml`, one per key | 2 |
 | `Manifest.GameMode` | `definitions/game-modes` | `game-mode/full.yaml`, `simple.yaml` | 2 |
@@ -207,14 +207,24 @@ a load compares exactly, goes in a game `SaveSection`, since a detail is a strin
 Diagnostics list contributing layers with `FileSystem::ReadLayers`, so per-field provenance needs no
 new engine API yet.
 
+### Item authoring (C04, 2026-11-19)
+
+The user selected the item values ([D-059](decision-ledger.md#d-059)); the numbers are the data's,
+in `data/trade-items/`. The four food grains are `CategoryConsumables`, of the Copper Age with their
+seeds, and keep their seed's kernel density and packing; rice is milled white rice. Basic Medical
+Supplies is `CategoryMedicalEquipment`, so the specialised medicines stay alone in
+`CategoryMedicine`. LPG is `CategoryFuels`. Oxygen, as the refrigerated liquid, and the scrubber
+cartridge are the new `CategoryLifeSupport`; one cartridge is one `Unit`, a fresh 30-occupant-day
+charge of 41 kg, 16 to the IBC cube. The medical supplies, LPG and both life-support goods are of
+the Industrial Age, which bounds production, not trade: an earlier region imports them. All eight
+are selected in the full mode; the simple mode and the eight-good fixture are unchanged.
+
 ### Authoring decisions still open
 
 | Decision | Owner, before |
 | --- | --- |
 | Drinking water's item, unit and litre conversion: no water item exists, though `CategoryWater` does | user, before C05 |
-| The four food grains' category (no food category exists; seeds are `CategorySeeds`), ages, prices and physical fields | user, C04 |
-| Basic Medical Supplies, LPG, oxygen and scrubber-cartridge fields; the Life Support category ID; the cartridge's unit | user, C04 |
-| Hull definitions (T4) | user, C04 |
+| Hull definitions (T4) | selected 2026-11-19 ([D-059](decision-ledger.md#d-059)); authoring in C04 |
 | Both fixtures' positions, rates, stock, populations, funds and operators | implementer, recorded with C05 |
 | How a player takes a `playerHome` region at allocation | A02 |
 | Trading-bloc schema | when a rule needs it |

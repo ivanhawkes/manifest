@@ -133,6 +133,11 @@ categories:
       type: Information
       description: Math, science, maps
   - category:
+      categoryId: CategoryLifeSupport
+      displayName: Life Support
+      type: LifeSupport
+      description: Breathing oxygen and carbon scrubber cartridges
+  - category:
       categoryId: CategoryLuxuryGoods
       displayName: Luxury Goods
       type: LuxuryGoods

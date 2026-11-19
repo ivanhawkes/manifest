@@ -163,6 +163,64 @@ TEST_CASE("every_item_in_the_full_game_mode_has_a_price")
 	}
 }
 
+// C04's goods (docs/stage-2-content-plan.md): the four food grains beside their seeds, the
+// household's medical supplies beside the specialised medicines, LPG, and the life-support
+// consumables in their own category.
+TEST_CASE("the_household_and_life_support_goods_are_distinct_full_mode_items")
+{
+	using Manifest::Core::TradeUnit;
+	const Manifest::Core::GameModeNode full = LoadGameMode("full");
+	const auto find = [&](const std::string &itemId) -> const Manifest::Core::ItemNode *
+	{
+		const auto found = std::ranges::find(full.items, itemId, &Manifest::Core::ItemNode::itemId);
+		return found == full.items.end() ? nullptr : &*found;
+	};
+
+	for (const char *grain : {"ItemWheat", "ItemBarley", "ItemOats", "ItemRice"})
+	{
+		CAPTURE(grain);
+		const Manifest::Core::ItemNode *pGrain = find(grain);
+		REQUIRE(pGrain != nullptr);
+		CHECK(pGrain->categoryId == "CategoryConsumables");
+		CHECK(pGrain->unitType == TradeUnit::Kilogram);
+	}
+	// The seeds keep their own units and prices: a food grain is not a renamed seed.
+	for (const char *seed : {"ItemWheatSeeds", "ItemBarleySeeds", "ItemOatSeeds", "ItemRiceSeeds"})
+	{
+		CAPTURE(seed);
+		const Manifest::Core::ItemNode *pSeed = find(seed);
+		REQUIRE(pSeed != nullptr);
+		CHECK(pSeed->categoryId == "CategorySeeds");
+		CHECK(pSeed->unitType == TradeUnit::Kilolitre);
+	}
+
+	const struct
+	{
+		const char *itemId;
+		const char *categoryId;
+		TradeUnit unit;
+	} goods[] = {
+	    {"ItemBasicMedicalSupplies", "CategoryMedicalEquipment", TradeUnit::Kilogram},
+	    {"ItemAntibiotics", "CategoryMedicine", TradeUnit::Kilogram},
+	    {"ItemLPG", "CategoryFuels", TradeUnit::Kilogram},
+	    {"ItemOxygen", "CategoryLifeSupport", TradeUnit::Kilogram},
+	    {"ItemCarbonScrubberCartridge", "CategoryLifeSupport", TradeUnit::Unit},
+	};
+	for (const auto &good : goods)
+	{
+		CAPTURE(good.itemId);
+		const Manifest::Core::ItemNode *pGood = find(good.itemId);
+		REQUIRE(pGood != nullptr);
+		CHECK(pGood->categoryId == good.categoryId);
+		CHECK(pGood->unitType == good.unit);
+	}
+
+	// A cartridge is counted by piece, so its packed count fixes its mass: 41 kg, 16 to the cube.
+	const Manifest::Core::ItemNode &cartridge = *find("ItemCarbonScrubberCartridge");
+	const double cubeMass = cartridge.density * 1000.0 * cartridge.packFactor;
+	CHECK(cubeMass / cartridge.unitsPerCubicMetre == doctest::Approx(41.0).epsilon(0.01));
+}
+
 TEST_CASE("every_item_carries_its_age_and_category_link")
 {
 	// Generation reads item.ageId to bound what a world can make and item.categoryId to

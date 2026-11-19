@@ -1,0 +1,71 @@
+---
+# Field conventions for every item in this file (the full note is in the README,
+# under "Units, prices and storage"):
+#
+#   density            Specific gravity against water at sea level, so 1.0 is
+#                      1000 kg/m3, measured on the whole kernel including its
+#                      internal pores, not the heap of kernels.
+#   unitType           The unit that basePrice and unitsPerCubicMetre count.
+#   unitsPerCubicMetre Units of loose product filling one cubic metre of solid
+#                      material: density x 1000 for Kilogram.
+#   packFactor         The fraction of an IBC cube's cubic metre that the grain
+#                      fills, so it is the test weight of the grain over its
+#                      density, as for the seeds of the same crop.
+#                      Mass per IBC cube = density x 1000 x packFactor kilograms.
+#   basePrice          Market value per unitType, in credits at one credit to one
+#                      US dollar, at 2025 commodity prices.
+#
+# The food grains, the staples a household eats, are not the seeds in seeds.yaml:
+# certified seed is priced as a technology product and traded by the kilolitre, the
+# food grain as a bulk crop by the kilogram. Wheat, barley and oats are the cleaned
+# whole grain, with their seed's kernel and packing; rice is milled white rice.
+item-base:
+
+  # Food grains
+  - item:
+      itemId: ItemWheat
+      categoryId: CategoryConsumables
+      ageId: AgeCopper
+      displayName: Wheat
+      description: Cleaned whole wheat grain
+      unitsPerCubicMetre: 1270
+      basePrice: 0.20
+      unitType: Kilogram
+      density: 1.27
+      packFactor: 0.61
+
+  - item:
+      itemId: ItemBarley
+      categoryId: CategoryConsumables
+      ageId: AgeCopper
+      displayName: Barley
+      description: Cleaned whole barley grain
+      unitsPerCubicMetre: 1300
+      basePrice: 0.22
+      unitType: Kilogram
+      density: 1.3
+      packFactor: 0.48
+
+  - item:
+      itemId: ItemOats
+      categoryId: CategoryConsumables
+      ageId: AgeCopper
+      displayName: Oats
+      description: Cleaned whole oat grain
+      unitsPerCubicMetre: 1220
+      basePrice: 0.24
+      unitType: Kilogram
+      density: 1.22
+      packFactor: 0.41
+
+  - item:
+      itemId: ItemRice
+      categoryId: CategoryConsumables
+      ageId: AgeCopper
+      displayName: Rice
+      description: Milled white rice
+      unitsPerCubicMetre: 1450
+      basePrice: 0.40
+      unitType: Kilogram
+      density: 1.45
+      packFactor: 0.58
