@@ -14,6 +14,7 @@
 #include <jettison/vfs/FileSystem.h>
 
 #include <manifest/company/Company.h>
+#include <manifest/query/Query.h>
 #include <manifest/world/World.h>
 
 using namespace Manifest::Company;
@@ -22,7 +23,10 @@ using Jettison::Serialise::FormatVersion;
 using Jettison::Sim::SimWorld;
 using Manifest::Command::Actor;
 using Manifest::Command::ActorKind;
+using Manifest::Command::Receipt;
 using Manifest::Command::Result;
+using Manifest::Query::CompanyView;
+using Manifest::Query::Snapshot;
 using Manifest::World::Kind;
 namespace World = Manifest::World;
 
@@ -48,7 +52,9 @@ const Actor kAda{ActorKind::Principal, "Ada"};
 const Actor kBea{ActorKind::Principal, "Bea"};
 
 
-// A world as the host makes one, in its scenario's initial state.
+// A world as the host makes one, in its scenario's initial state. What a player can see is checked
+// through their query; the registry is read only for what a snapshot leaves out, and written only
+// as fixture bootstrap.
 struct Hosted
 {
 	explicit Hosted(const std::string &scenario = "trading")
@@ -59,15 +65,25 @@ struct Hosted
 		World::CreateInitialState(world, identities, content);
 	}
 
+	// The request admitted as the actor's next.
+	template <typename T> Receipt Admit(const Actor &actor, std::string_view command, const T &payload)
+	{
+		const std::vector<std::byte> bytes = BinaryArchive::Write(payload, FormatVersion{kVersion});
+		return requests.Admit(
+		    world, actor, requests.NextSequence(actor), std::string{command}, kVersion, bytes);
+	}
+
 	// The request admitted, as the actor's next, and run in the next step.
 	template <typename T> Result Run(const Actor &actor, std::string_view command, const T &payload)
 	{
 		const std::uint64_t sequence = requests.NextSequence(actor);
-		const std::vector<std::byte> bytes = BinaryArchive::Write(payload, FormatVersion{kVersion});
-		const auto receipt =
-		    requests.Admit(world, actor, sequence, std::string{command}, kVersion, bytes);
-		REQUIRE(receipt.status == Manifest::Command::Receipt::Status::Queued);
+		REQUIRE(Admit(actor, command, payload).status == Receipt::Status::Queued);
 		world.Step();
+		return Outcome(actor, sequence);
+	}
+
+	Result Outcome(const Actor &actor, std::uint64_t sequence) const
+	{
 		const auto completed = requests.Outcome(actor, sequence);
 		REQUIRE(completed);
 		return completed->result;
@@ -88,6 +104,19 @@ struct Hosted
 		return Run(actor, kUnload, move);
 	}
 
+	Snapshot Observe(const Actor &actor) const
+	{
+		return Manifest::Query::Observe(world, identities, actor);
+	}
+
+	// The player's own company, as their query shows it.
+	CompanyView Seen(const Actor &actor) const
+	{
+		const Snapshot snapshot = Observe(actor);
+		REQUIRE(snapshot.companies.size() == 1);
+		return snapshot.companies[0];
+	}
+
 	entt::entity Find(Kind kind, const std::string &id) const
 	{
 		const entt::entity found = identities.Find(kind, id);
@@ -100,11 +129,6 @@ struct Hosted
 		return world.Registry().get<World::Stock>(Find(Kind::Company, companyId));
 	}
 
-	World::Cargo &Cargo(const std::string &shipId)
-	{
-		return world.Registry().get<World::Cargo>(Find(Kind::Ship, shipId));
-	}
-
 	const Manifest::Content::ContentSet &content;
 	SimWorld world{1.0, 0};
 	World::Identities &identities;
@@ -112,19 +136,50 @@ struct Hosted
 };
 
 
+// The company's available quantity of the item at the venue, 0 where it holds none.
+double AtVenue(const CompanyView &company, std::string_view venueId, std::string_view itemId)
+{
+	for (const World::Holding &holding : company.holdings)
+		if (holding.venueId == venueId && holding.itemId == itemId)
+			return holding.available;
+	return 0.0;
+}
+
+
+// The quantity of the item aboard the company's ship, 0 where it carries none.
+double Aboard(const CompanyView &company, std::string_view shipId, std::string_view itemId)
+{
+	for (const Manifest::Query::ShipView &ship : company.ships)
+		if (ship.shipId == shipId)
+			for (const World::Lot &lot : ship.cargo)
+				if (lot.itemId == itemId)
+					return lot.quantity;
+	return 0.0;
+}
+
+
+// The fixture's stock, written between the first two steps as bootstrap: no player command makes it.
+void Seed(Hosted &hosted)
+{
+	hosted.Stock("Company1").holdings = {{"VenueForgeHighport", "ItemCopper", 10.0, 0.0}};
+	hosted.Stock("Company2").holdings = {{"VenueForgeHighport", "ItemTin", 3.0, 1.0}};
+}
 } // namespace
 
 
 TEST_CASE("Provisioning gives a player a company, its credits, a home and a docked ship, once")
 {
 	Hosted hosted;
+	CHECK(hosted.Observe(kAda).companies.empty());
 	CHECK(hosted.Provision("Ada") == Result::Succeeded);
-	const entt::registry &registry = hosted.world.Registry();
+	CHECK(
+	    hosted.Seen(kAda) ==
+	    CompanyView{
+	        "Company1", "Co", 25000, {}, {{"Ship1", "HullLoneTraderStarter", "VenueOreHighport", {}}}});
 
+	// What the snapshot leaves out: the principal, and the polity governing the player's home.
+	const entt::registry &registry = hosted.world.Registry();
 	CHECK(registry.get<World::Principal>(hosted.Find(Kind::Principal, "Ada")).displayName == "Ada");
-	const auto &company = registry.get<World::Company>(hosted.Find(Kind::Company, "Company1"));
-	CHECK(company.principalId == "Ada");
-	CHECK(registry.get<World::Account>(hosted.Find(Kind::CompanyAccount, "Company1")).balance == 25000);
 	const auto &polity =
 	    registry.get<World::Organisation>(hosted.Find(Kind::Organisation, "Organisation1"));
 	CHECK(polity.kind == Manifest::Content::OrganisationKind::Polity);
@@ -132,11 +187,6 @@ TEST_CASE("Provisioning gives a player a company, its credits, a home and a dock
 	CHECK(
 	    registry.get<World::Region>(hosted.Find(Kind::Region, "RegionOreHighlands")).governorId ==
 	    "Organisation1");
-	CHECK(
-	    registry.get<World::Ship>(hosted.Find(Kind::Ship, "Ship1")) ==
-	    World::Ship{"Company1", "HullLoneTraderStarter", "VenueOreHighport"});
-	CHECK(hosted.Cargo("Ship1").lots.empty());
-	CHECK(hosted.Stock("Company1").holdings.empty());
 
 	// Again under a new sequence, it makes nothing: the ledger answers a retry, this the principal.
 	const std::size_t entities = registry.view<const World::Identity>().size();
@@ -144,6 +194,8 @@ TEST_CASE("Provisioning gives a player a company, its credits, a home and a dock
 	// The only home is taken, and the rejection spends no ID.
 	CHECK(hosted.Provision("Bea") == Result::NoHomeRegion);
 	CHECK(hosted.Run(kHost, kProvision, Provision{"", "", ""}) == Result::MalformedPayload);
+	CHECK(hosted.Observe(kBea).companies.empty());
+	CHECK(hosted.Observe(kHost).companies.size() == 1);
 	CHECK(registry.view<const World::Identity>().size() == entities);
 	CHECK(hosted.identities.Issue(Kind::Company) == "Company2");
 }
@@ -154,10 +206,7 @@ TEST_CASE("A principal's ID can be a company's, and the two stay apart")
 	Hosted hosted;
 	CHECK(hosted.Provision("Company1") == Result::Succeeded);
 	CHECK(hosted.Find(Kind::Principal, "Company1") != hosted.Find(Kind::Company, "Company1"));
-	CHECK(
-	    hosted.world.Registry()
-	        .get<World::Company>(hosted.Find(Kind::Company, "Company1"))
-	        .principalId == "Company1");
+	CHECK(hosted.Seen({ActorKind::Principal, "Company1"}).companyId == "Company1");
 }
 
 
@@ -168,25 +217,32 @@ TEST_CASE("Loading and unloading conserve the goods between the venue and the ho
 	hosted.Stock("Company1").holdings = {{"VenueOreHighport", "ItemCopper", 10.0, 0.0}};
 	auto move = [](double quantity)
 	{ return Move{"Ship1", "VenueOreHighport", "ItemCopper", quantity}; };
+	auto split = [&](double atVenue, double aboard)
+	{
+		const CompanyView ada = hosted.Seen(kAda);
+		CHECK(AtVenue(ada, "VenueOreHighport", "ItemCopper") == atVenue);
+		CHECK(Aboard(ada, "Ship1", "ItemCopper") == aboard);
+		// Nothing is kept as a record of zero.
+		CHECK(ada.holdings.empty() == (atVenue == 0.0));
+		CHECK(ada.ships[0].cargo.empty() == (aboard == 0.0));
+	};
 
 	CHECK(hosted.Load(kAda, move(4.0)) == Result::Succeeded);
-	CHECK(hosted.Stock("Company1").holdings[0].available == 6.0);
-	CHECK(hosted.Cargo("Ship1").lots == std::vector<World::Lot>{{"ItemCopper", 4.0}});
+	split(6.0, 4.0);
 	CHECK(hosted.Unload(kAda, move(1.5)) == Result::Succeeded);
-	CHECK(hosted.Stock("Company1").holdings[0].available == 7.5);
-	CHECK(hosted.Cargo("Ship1").lots[0].quantity == 2.5);
+	split(7.5, 2.5);
 	CHECK(hosted.Unload(kAda, move(2.5)) == Result::Succeeded);
-	CHECK(hosted.Cargo("Ship1").lots.empty());
+	split(10.0, 0.0);
 	CHECK(hosted.Load(kAda, move(10.0)) == Result::Succeeded);
-	CHECK(hosted.Stock("Company1").holdings.empty());
+	split(0.0, 10.0);
+	CHECK(hosted.Seen(kAda).credits == 25000);
 	// Unloading at a venue holding none of the item makes its holding, in its place.
 	hosted.Stock("Company1").holdings = {
 	    {"VenueA", "ItemCopper", 1.0, 0.0}, {"VenueZ", "ItemCopper", 1.0, 0.0}};
 	CHECK(hosted.Unload(kAda, move(10.0)) == Result::Succeeded);
-	REQUIRE(hosted.Stock("Company1").holdings.size() == 3);
-	CHECK(
-	    hosted.Stock("Company1").holdings[1] ==
-	    World::Holding{"VenueOreHighport", "ItemCopper", 10.0, 0.0});
+	const CompanyView ada = hosted.Seen(kAda);
+	REQUIRE(ada.holdings.size() == 3);
+	CHECK(ada.holdings[1] == World::Holding{"VenueOreHighport", "ItemCopper", 10.0, 0.0});
 }
 
 
@@ -199,11 +255,7 @@ TEST_CASE("A rejected move writes nothing")
 	    {"VenueOreHighport", "ItemCopper", 1000.0, 5.0},
 	    {"VenueOreHighport", "ItemTin", 1.0, 0.0}};
 	REQUIRE(hosted.Load(kAda, {"Ship1", "VenueOreHighport", "ItemTin", 1.0}) == Result::Succeeded);
-	const World::Stock stock = hosted.Stock("Company1");
-	const World::Cargo cargo = hosted.Cargo("Ship1");
-	const std::int64_t credits = hosted.world.Registry()
-	                                 .get<World::Account>(hosted.Find(Kind::CompanyAccount, "Company1"))
-	                                 .balance;
+	const CompanyView before = hosted.Seen(kAda);
 
 	auto copper = [](double quantity, std::string venue = "VenueOreHighport")
 	{ return Move{"Ship1", std::move(venue), "ItemCopper", quantity}; };
@@ -236,23 +288,21 @@ TEST_CASE("A rejected move writes nothing")
 		CAPTURE(move.itemId);
 		CAPTURE(move.quantity);
 		CHECK((aboard ? hosted.Load(kAda, move) : hosted.Unload(kAda, move)) == expected);
-		CHECK(hosted.Stock("Company1") == stock);
-		CHECK(hosted.Cargo("Ship1") == cargo);
+		CHECK(hosted.Seen(kAda) == before);
 	}
 	// A player with no company of their own, or a ship of someone else's.
 	entt::registry &registry = hosted.world.Registry();
 	registry.emplace<World::Principal>(
 	    hosted.identities.Create(registry, Kind::Principal, "Bea"), "Bea");
 	CHECK(hosted.Load(kBea, copper(1.0)) == Result::NotAuthorised);
-	CHECK(hosted.Stock("Company1") == stock);
+	CHECK(hosted.Observe(kBea).companies.empty());
+	CHECK(hosted.Seen(kAda) == before);
 
 	registry.get<World::Ship>(hosted.Find(Kind::Ship, "Ship1")).dockedAt.clear();
+	const CompanyView undocked = hosted.Seen(kAda);
 	CHECK(hosted.Load(kAda, copper(1.0)) == Result::NotDocked);
 	CHECK(hosted.Unload(kAda, {"Ship1", "VenueOreHighport", "ItemTin", 1.0}) == Result::NotDocked);
-	CHECK(hosted.Stock("Company1") == stock);
-	CHECK(hosted.Cargo("Ship1") == cargo);
-	CHECK(
-	    registry.get<World::Account>(hosted.Find(Kind::CompanyAccount, "Company1")).balance == credits);
+	CHECK(hosted.Seen(kAda) == undocked);
 }
 
 
@@ -268,8 +318,17 @@ TEST_CASE("Two players take the governance scenario's homes, and neither moves t
 	CHECK(
 	    registry.get<World::Region>(hosted.Find(Kind::Region, "RegionForgeSouth")).governorId ==
 	    "Organisation2");
-	CHECK(registry.get<World::Ship>(hosted.Find(Kind::Ship, "Ship2")).dockedAt == "VenueForgeHighport");
-	CHECK(registry.get<World::Ship>(hosted.Find(Kind::Ship, "Ship2")).companyId == "Company2");
+	// Two regions of one planet, each with its own two accounts: a player governs one, not the planet.
+	CHECK(
+	    registry.get<World::Region>(hosted.Find(Kind::Region, "RegionForgeNorth")).planetId ==
+	    registry.get<World::Region>(hosted.Find(Kind::Region, "RegionForgeSouth")).planetId);
+	for (const Kind kind : {Kind::PublicAccount, Kind::HouseholdAccount})
+		CHECK(hosted.Find(kind, "RegionForgeNorth") != hosted.Find(kind, "RegionForgeSouth"));
+	const CompanyView bea = hosted.Seen(kBea);
+	CHECK(bea.companyId == "Company2");
+	REQUIRE(bea.ships.size() == 1);
+	CHECK(bea.ships[0].shipId == "Ship2");
+	CHECK(bea.ships[0].dockedAt == "VenueForgeHighport");
 
 	hosted.Stock("Company1").holdings = {{"VenueForgeHighport", "ItemCopper", 5.0, 0.0}};
 	const Move adas{"Ship1", "VenueForgeHighport", "ItemCopper", 1.0};
@@ -279,28 +338,157 @@ TEST_CASE("Two players take the governance scenario's homes, and neither moves t
 	CHECK(hosted.Load(kAda, beas) == Result::NotAuthorised);
 	CHECK(hosted.Load(kAda, adas) == Result::Succeeded);
 	CHECK(hosted.Unload(kBea, adas) == Result::NotAuthorised);
-	CHECK(hosted.Stock("Company1").holdings[0].available == 4.0);
-	CHECK(hosted.Stock("Company2").holdings.empty());
+	CHECK(AtVenue(hosted.Seen(kAda), "VenueForgeHighport", "ItemCopper") == 4.0);
+	CHECK(Aboard(hosted.Seen(kAda), "Ship1", "ItemCopper") == 1.0);
+	CHECK(hosted.Seen(kBea) == bea);
 }
 
 
-TEST_CASE("A save keeps the companies, their stock and holds, and the loaded world carries on alike")
+TEST_CASE("Requests run in their step in admission order, the later seeing what the earlier did")
+{
+	Hosted hosted{"governance"};
+	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
+	hosted.Stock("Company1").holdings = {{"VenueForgeHighport", "ItemCopper", 10.0, 0.0}};
+	const CompanyView before = hosted.Seen(kAda);
+	const Move six{"Ship1", "VenueForgeHighport", "ItemCopper", 6.0};
+	const Receipt first = hosted.Admit(kAda, kLoad, six);
+	const Receipt second = hosted.Admit(kAda, kLoad, six);
+	// Two players for the one home left, in one step.
+	const Receipt bea = hosted.Admit(kHost, kProvision, Provision{"Bea", "Bea", "Co"});
+	const Receipt cy = hosted.Admit(kHost, kProvision, Provision{"Cy", "Cy", "Co"});
+	CHECK(second.order == first.order + 1);
+	CHECK(cy.order == bea.order + 1);
+	CHECK(hosted.Seen(kAda) == before);
+	CHECK(hosted.Observe(kBea).companies.empty());
+
+	hosted.world.Step();
+	CHECK(hosted.Outcome(kAda, 1) == Result::Succeeded);
+	CHECK(hosted.Outcome(kAda, 2) == Result::InsufficientStock);
+	CHECK(hosted.requests.Outcome(kAda, 2)->step == hosted.requests.Outcome(kAda, 1)->step);
+	CHECK(AtVenue(hosted.Seen(kAda), "VenueForgeHighport", "ItemCopper") == 4.0);
+	CHECK(Aboard(hosted.Seen(kAda), "Ship1", "ItemCopper") == 6.0);
+	CHECK(hosted.Outcome(kHost, 2) == Result::Succeeded);
+	CHECK(hosted.Outcome(kHost, 3) == Result::NoHomeRegion);
+	CHECK(hosted.Seen(kBea).companyId == "Company2");
+	CHECK(hosted.Observe({ActorKind::Principal, "Cy"}).companies.empty());
+}
+
+
+TEST_CASE("A retried command runs once, and the next stage's commands are refused as unsupported")
 {
 	Hosted hosted;
-	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
-	hosted.Stock("Company1").holdings = {{"VenueOreHighport", "ItemCopper", 10.0, 0.0}};
-	const Move move{"Ship1", "VenueOreHighport", "ItemCopper", 3.0};
-	REQUIRE(hosted.Load(kAda, move) == Result::Succeeded);
-	const std::vector<std::byte> save = hosted.world.Save();
+	const std::vector<std::byte> ada =
+	    BinaryArchive::Write(Provision{"Ada", "Ada", "Co"}, FormatVersion{kVersion});
+	const std::vector<std::byte> bea =
+	    BinaryArchive::Write(Provision{"Bea", "Bea", "Co"}, FormatVersion{kVersion});
+	auto provision = [&](const std::vector<std::byte> &payload)
+	{
+		return hosted.requests.Admit(
+		    hosted.world, kHost, 1, std::string{kProvision}, kVersion, payload);
+	};
 
-	Hosted loaded;
+	const Receipt queued = provision(ada);
+	const Receipt pending = provision(ada);
+	CHECK(pending.status == Receipt::Status::Queued);
+	CHECK(pending.order == queued.order);
+	CHECK(hosted.world.Commands().Pending().size() == 1);
+	hosted.world.Step();
+	const Receipt completed = provision(ada);
+	CHECK(completed.status == Receipt::Status::Completed);
+	CHECK(completed.result == Result::Succeeded);
+	CHECK(provision(bea).result == Result::RequestConflict);
+	CHECK(hosted.world.Commands().Pending().empty());
+	CHECK(hosted.Observe(kHost).companies.size() == 1);
+
+	hosted.Stock("Company1").holdings = {{"VenueOreHighport", "ItemCopper", 10.0, 0.0}};
+	const std::vector<std::byte> load = BinaryArchive::Write(
+	    Move{"Ship1", "VenueOreHighport", "ItemCopper", 4.0}, FormatVersion{kVersion});
+	auto send = [&](std::uint64_t sequence, std::string_view command)
+	{
+		return hosted.requests.Admit(
+		    hosted.world, kAda, sequence, std::string{command}, kVersion, load);
+	};
+	REQUIRE(send(1, kLoad).status == Receipt::Status::Queued);
+	hosted.world.Step();
+	CHECK(send(1, kLoad).status == Receipt::Status::Completed);
+	CHECK(send(1, kUnload).result == Result::RequestConflict);
+	hosted.world.Step();
+	CHECK(Aboard(hosted.Seen(kAda), "Ship1", "ItemCopper") == 4.0);
+
+	// Whatever Stage 4 names its order, travel and upgrade commands, none is registered before its
+	// rules are, and refusing one consumes no sequence.
+	for (const std::string_view command :
+	     {"Manifest.Market.PlaceOrder", "Manifest.Market.CancelOrder", "Manifest.Travel.Depart",
+	      "Manifest.Company.Upgrade"})
+	{
+		CAPTURE(command);
+		const Receipt refused = send(2, command);
+		CHECK(refused.status == Receipt::Status::Refused);
+		CHECK(refused.result == Result::UnsupportedCommand);
+	}
+	CHECK(hosted.requests.NextSequence(kAda) == 2);
+}
+
+
+TEST_CASE("A save with work pending, and a replay from the start, carry the companies on alike")
+{
+	const Move adasCopper{"Ship1", "VenueForgeHighport", "ItemCopper", 4.0};
+	const Move beasTin{"Ship2", "VenueForgeHighport", "ItemTin", 1.0};
+
+	Hosted hosted{"governance"};
+	const std::vector<std::byte> start = hosted.world.Save();
+	hosted.world.SetRecording(true);
+	hosted.Admit(kHost, kProvision, Provision{"Ada", "Ada", "Ada's"});
+	hosted.Admit(kHost, kProvision, Provision{"Bea", "Bea", "Bea's"});
+	hosted.world.Step();
+	Seed(hosted);
+	hosted.Admit(kAda, kLoad, adasCopper);
+	hosted.Admit(kBea, kLoad, beasTin);
+	hosted.Admit(kBea, kLoad, adasCopper);
+	hosted.world.Step();
+	hosted.Admit(kAda, kUnload, Move{"Ship1", "VenueForgeHighport", "ItemCopper", 1.5});
+	hosted.Admit(kAda, kLoad, Move{"Ship1", "VenueForgeHighport", "ItemTin", 1.0});
+	hosted.world.Step();
+	hosted.Admit(kBea, kUnload, beasTin);
+	const std::vector<std::byte> save = hosted.world.Save();
+	hosted.world.Step();
+
+	CHECK(hosted.Outcome(kBea, 2) == Result::NotAuthorised);
+	CHECK(hosted.Outcome(kAda, 3) == Result::InsufficientStock);
+	CHECK(hosted.Outcome(kBea, 3) == Result::Succeeded);
+	const CompanyView adas = hosted.Seen(kAda);
+	CHECK(adas.displayName == "Ada's");
+	CHECK(AtVenue(adas, "VenueForgeHighport", "ItemCopper") == 7.5);
+	CHECK(Aboard(adas, "Ship1", "ItemCopper") == 2.5);
+	CHECK(
+	    hosted.Seen(kBea).holdings ==
+	    std::vector<World::Holding>{{"VenueForgeHighport", "ItemTin", 3.0, 1.0}});
+
+	Hosted loaded{"governance"};
 	loaded.world.Load(save);
+	CHECK(loaded.world.Commands().Pending().size() == 1);
+	CHECK(loaded.requests.NextSequence(kBea) == 4);
+	loaded.world.Step();
 	CHECK(loaded.world.StateHash() == hosted.world.StateHash());
-	CHECK(loaded.Cargo("Ship1") == hosted.Cargo("Ship1"));
-	CHECK(loaded.Provision("Ada") == Result::AlreadyProvisioned);
-	CHECK(hosted.Provision("Ada") == Result::AlreadyProvisioned);
-	CHECK(loaded.Unload(kAda, move) == Result::Succeeded);
-	CHECK(hosted.Unload(kAda, move) == Result::Succeeded);
-	CHECK(loaded.world.StateHash() == hosted.world.StateHash());
-	CHECK(loaded.Stock("Company1").holdings[0].available == 10.0);
+	CHECK(loaded.Observe(kHost) == hosted.Observe(kHost));
+
+	Hosted replayed{"governance"};
+	replayed.world.Load(start);
+	for (std::uint64_t step = 0; step < 4; ++step)
+	{
+		if (step == 1)
+			Seed(replayed);
+		for (const Jettison::Sim::AppliedCommand &applied : hosted.world.Recorded())
+			if (applied.step == step)
+				replayed.world.Commands().Push(applied.command);
+		replayed.world.Step();
+	}
+	CHECK(replayed.world.StateHash() == hosted.world.StateHash());
+	CHECK(replayed.Observe(kHost) == hosted.Observe(kHost));
+	CHECK(replayed.Outcome(kBea, 2) == Result::NotAuthorised);
+	CHECK(replayed.requests.NextSequence(kAda) == 4);
+
+	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves only
+	// with what a save holds or the engine's save format, and a change that moves it says so.
+	CHECK(hosted.world.StateHash() == 0x6754d1546a115533ULL);
 }

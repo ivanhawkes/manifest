@@ -52,6 +52,23 @@ details (`SaveInfo::details`) still fit, unchanged. M05 is done (2026-11-18, [se
 launches moved to CodeLLDB under NixOS `nix-ld`, and the user confirmed them from the editor
 (2026-11-19).
 
+## A07: Stage 3 closed — 2026-11-19
+
+**Stage 3 is closed** ([delivered](stage-3-authority-plan.md#delivered-a07-2026-11-19)), each of its
+checks held by a gated test. The company tests check what a player sees through `Query::Observe`,
+reading the registry only for the principal, the polity and region and the identity counters. Four
+cases are new: requests in one step run in admission order (two loads for one holding, two
+provisionings for the one home left); a retried provisioning and load run once, and order, travel and
+upgrade commands are refused as unsupported until Stage 4 registers them; two regions of one planet
+keep their own accounts; and a save with a request pending and a replay from the start reach the
+hosted world's hash, views and outcomes, pinned to one hash in every gate build (`company`, 8 cases).
+Stage 4 is handed its order, travel and upgrade contracts. No Jettison gap: Stage 3 built on pin
+`30ea3f3` throughout.
+
+Evidence, on Lythir: `./scripts/ci.sh --werror --asan --tidy` at 24 workers passed 37 of 37 in
+`clang-debug`, `clang-release`, `clang-asan` and `clang-notui`, the pinned hash holding in each, and
+tidy clean.
+
 ## A06: the console apart from FTXUI — 2026-11-19
 
 The console library and its tests moved from `tools/tui` to `tools/console`, so they build and run

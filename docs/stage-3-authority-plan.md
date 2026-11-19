@@ -320,3 +320,44 @@ Before coding cargo operations, settle the concrete registry-adapter choice, the
 capacity conversion owner and the minimum docking bootstrap against the stage 1–2 code.
 Do not defer authority or numeric invariants to those choices. Network transport,
 authentication, durable journals, full market integration and travel remain later stages.
+
+### Delivered (A07, 2026-11-19)
+
+Stage 3 is closed. The delivered contract is the sections above marked settled:
+[the registry owner](#registry-owner), [admission](#admission-a03),
+[provisioning and cargo](#provisioning-a04), [queries](#queries-a05) and
+[the console](#console-a06). The company tests check what a player sees through
+`Query::Observe`, reading the registry only for what a snapshot leaves out (the principal, the
+polity and region, the identity counters) and writing it only as fixture bootstrap. Each check
+above is held by a test that runs in the gate:
+
+| Check | Held by |
+| --- | --- |
+| Distinct balances and identities, no minting | `world`: the same text in two kinds is two entities, one region's two accounts; `company`: a principal's ID that is a company's, a second provisioning makes nothing |
+| Two regions of one planet | `company`: the governance scenario's two homes go to two players' polities, each region with its own public and household accounts. Project permissions wait for projects (W11, W12) |
+| No action before its step, conflicts in order | `command`: two grants for one balance; `company`: two loads for one holding and two provisionings for one home in one step, the second refused by what the first did |
+| Rejection atomicity | `company`: every refused move leaves the player's view as it was, and a refused provisioning spends no ID; `command`: a refused admission consumes no sequence |
+| Conservation | `company`: loads and unloads move the quantity between that venue and that hold, credits untouched |
+| Retries | `command`: pending and completed retries, conflicts, gaps, bounds and pruning; `company`: a provisioning and a load retried run once |
+| Save, load and replay | `company`: a save with a request pending and a replay from the start reach the hosted world's hash, views and outcomes, pinned to one hash in every gate build (Debug, Release, sanitised, TUI off); `command` and `world`: the ledger and lookups rebuilt, a broken save refused. The world holds no credentials (none exist before N01) and no console state |
+| Queries | `query`: a player sees only their company, the host every one, and observing changes nothing |
+| TUI off | `clang-notui` is a gate stage (A02); the console's suite runs in it (A06) |
+
+Stage 4 is handed these contracts, which its plan holds in full:
+
+- **Orders** ([order and settlement](stage-4-trading-plan.md#order-and-settlement-contract), W02,
+  W03): commands of their own on `Requests`, a player's, reserving by moving a `Holding`'s
+  available into its reserved under the escrow convention above, with this plan's cancellation
+  authority. Their new rejections join `Command::Result`.
+- **Travel** ([cargo capacity and physical travel](stage-4-trading-plan.md#cargo-capacity-and-physical-travel),
+  W05): the engine's docking takes over `Ship::dockedAt`, which only provisioning writes today.
+- **Upgrades** ([first company purchase](stage-4-trading-plan.md#first-company-purchase), W08):
+  paid from the `CompanyAccount`, the retry answered by the ledger.
+- **Market views** (W07): in the snapshot, behind the fleet-observation filter.
+
+Until each is registered, a command of that kind is refused at admission as `UnsupportedCommand`,
+consuming no sequence (`company`). Still later: the envelope's world identity, with a host of more
+than one world; authentication (N01); durable acknowledgement (Stage 5).
+
+The [stage's exit criterion](development-stages.md#stage-3-company-ownership-and-authoritative-commands)
+is met. No Jettison gap: Stage 3 built on pin `30ea3f3` throughout.

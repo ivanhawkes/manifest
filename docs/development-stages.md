@@ -249,6 +249,8 @@ unrelated working directory. This is definition loading, not yet the complete tr
 
 Depends on stages 1–2. Establish the state model before connecting the full trading loop.
 
+**Done** 2026-11-19, A07 ([delivered](stage-3-authority-plan.md#delivered-a07-2026-11-19)).
+
 - Represent companies separately from civilisations.
 - Define ownership of treasuries, ships, venue inventory, cargo and orders.
 - Register authoritative state in one Jettison simulation world.
