@@ -42,5 +42,5 @@ concurrency is set per machine ([D-051](decision-ledger.md#d-051)).
 - **Determinism:** the engine's list of deterministic modules names engine modules. In Manifest,
   the simulation-side game modules are held to the same rules, under the contract of
   [D-002](decision-ledger.md).
-- **Declaration spacing:** the engine enforces it with `scripts/space-declarations.py`. Manifest
-  has no such check, so the rule applies here only as house style.
+- **Declaration spacing:** the engine checks it by hand with `scripts/space-declarations.py`. Manifest
+  has no such script, so the rule applies here only as house style.
