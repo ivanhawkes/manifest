@@ -68,7 +68,7 @@ does not restate it.
 
 ## Current verification and CI status (2026-11-16)
 
-Read the current [T1/T9 verification record](docs/session-handoff.md#t1t9-local-verification--2026-11-16)
+Read the current [T1/T9 verification record](docs/history.md#t1t9-local-verification--2026-11-16)
 before building, validating or reporting a gate result. The project analysis retains the
 historical CI diagnosis and the remaining handoffs.
 
@@ -83,8 +83,9 @@ historical CI diagnosis and the remaining handoffs.
   `feature-base` run passed. Tidy runs last since M01, so its failure no longer hides Release
   and ASan/UBSan results. Name the stages that actually ran; do not describe a tidy-only
   failure as a build regression.
-- **Next implementer work:** see the [delivery
-  order's status](docs/delivery-order.md#status-2026-11-18).
+- **Next implementer work:** see the [delivery order's status](docs/delivery-order.md#status)
+  and the [session handoff](docs/session-handoff.md); how earlier tasks went is in
+  [history](docs/history.md).
   The shell matches the SDK pin (T5, M04); `scripts/check-env-parity.sh` checks it in CI, and a
   pin move copies the three files from that commit. Avoid repeated gates without a new change or
   unresolved failure.

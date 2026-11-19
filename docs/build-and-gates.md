@@ -137,7 +137,7 @@ equality and documentation edits are not verification. Record which stages actua
 run is not a gate.
 
 The newest local evidence is the
-[T1/T9 verification record](session-handoff.md#t1t9-local-verification--2026-11-16), including
+[T1/T9 verification record](history.md#t1t9-local-verification--2026-11-16), including
 the tested tree, full command, presets, suites, replay hashes and log path. Both tidy findings
 identified in the [historical CI analysis](project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16)
 are fixed. This does not establish engine integration or gameplay acceptance.
@@ -218,7 +218,7 @@ repaired by handoff T7.
 [D-055](decision-ledger.md#d-055) selects repair of the tracked
 `.vscode/launch.json.example` and `.vscode/tasks.json.example`, with setup instructions here.
 Delivered 2026-11-18 (M05): the setup is [below](#editor-setup), the evidence in the
-[session handoff](session-handoff.md#m05-the-editor-examples--2026-11-18).
+[session handoff](history.md#m05-the-editor-examples--2026-11-18).
 
 Provide two launch entries using these Debug executables, confirmed against CMake targets and
 the existing generated CTest commands:

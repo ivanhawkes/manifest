@@ -25,52 +25,10 @@ and the [gate policy](build-and-gates.md).
 Implementers may write useful stubs under [D-056](decision-ledger.md#d-056).
 Planning-only restrictions on OpenAI implementation remain in force.
 
-## Completed prerequisites
+## Status
 
-[T1/T9](session-handoff.md#t1t9-local-verification--2026-11-16) established the
-model-library baseline and fixed the two tidy findings. Do not repeat them as open
-tasks.
-
-## Status, 2026-11-18
-
-Done: M01–M04, H01, H06 and H07 in Manifest ([session handoff](session-handoff.md)); H02–H05, and
-the Jettison rows A01 and W01 ahead of their place in this order, in Jettison
-([history](../../jettison/docs/history.md#neutral-sdk-and-manifest-integration)). **Stage 1 is
-closed** (H07): the SDK pin is `e53681e`, which answers the engine cross-review of H02–H05, A01 and
-W01, and the acceptance matrix passed against its fetch with no sibling checkout. C01 is done
-(2026-11-18): the [schema contract](stage-2-content-plan.md#schema-contract-c01-2026-11-18) names
-no Jettison gap, and its open authoring decisions gate C04 and C05. C02 is done (2026-11-18):
-the definitions load through the engine registry beside the legacy loaders, which they reproduce,
-and the content manifest is defined; no Jettison gap. C03 is done (2026-11-18): the host, the
-console and the data suite load one validated content set through the engine, and the legacy
-loaders and merged documents are retired; no Jettison gap. C04 is done (2026-11-19): the user selected its
-authoring values ([D-059](decision-ledger.md#d-059)); eight items, three hull definitions on
-Jettison's map fields (pin `4d60ea0`) and T4's balance record are authored and validated. C05 is
-done (2026-11-19): drinking water is authored ([D-060](decision-ledger.md#d-060)), and the trading
-and governance [scenarios](stage-2-content-plan.md#scenario-and-frames) are validated, starting
-access and the Bronze project's references included; no Jettison gap. C09 is done (2026-11-19): the
-shared ship and station definitions ([D-062](decision-ledger.md#d-062)) are authored as Jettison's
-own records and checked as the engine checks them, venues name a station layout, and starting
-access asks the engine's fit rule, provisioned without a world in pin `15e2561`. C06 is done
-(2026-11-19): `manifest-validate` takes the host's options ([D-070](decision-ledger.md#d-070)),
-the package, ordered overlays named by their `mod.yaml` and a required scenario, and loads what the
-host loads with no world, through the engine's package rules provisioned in pin `30ea3f3`. C07 is
-done (2026-11-19): the build validates the staged directory with each scenario, packs it, and
-validates the pack against the directory's manifest to the byte; no Jettison gap. C08 is done
-(2026-11-19): **Stage 2 is closed**, its checks each held by a gated test
-([delivered](stage-2-content-plan.md#delivered-c08-2026-11-19)); no Jettison gap. Next: Codex's
-cross-review of the stage's commits, then A02.
-
-- Jettison's G01, a generic rendered shell with the space gameplay moved to its sample, is done
-  (2026-11-18, [history](../../jettison/docs/history.md#neutral-sdk-and-manifest-integration)),
-  with a game of no space run in its smoke test. It did not gate Stage 1; L15's graphical client
-  stands on it.
-
-A01 and W01 were built against these plans before C01 settled the planet, region and company
-identities. C01 confirmed that a Jettison frame (`Sim::InFrame`, the star system) and a save's
-details (`SaveInfo::details`) still fit, unchanged. M05 is done (2026-11-18, [session handoff](session-handoff.md#m05-the-editor-examples--2026-11-18)); its
-launches moved to CodeLLDB under NixOS `nix-ld`, and the user confirmed them from the editor
-(2026-11-19).
+Stages 1 and 2 are done: each finished row is marked **Done** with its date and a link to what it
+built, and how each task went is in [history](history.md). Next: A02.
 
 ## Priority 0: maintenance before Stage 1
 
@@ -112,8 +70,8 @@ against the delivered Stage 1 SDK before implementation.
 | Order / ID | Task and completion boundary | Must complete first |
 | --- | --- | --- |
 | 13 / C01 | Finalise schema mappings, defaults/null handling, ordered IDs, units, scenario frames and distinct planet/region/government/company relationships. Inventory remaining authoring decisions. **Done 2026-11-18**, [schema contract](stage-2-content-plan.md#schema-contract-c01-2026-11-18). | H07 |
-| 14 / C02 | Add reflected engine-readable definitions, generated record packaging and equivalence checks; define the canonical manifest/fingerprint builder and preserve exact price text and IDs/selections. **Done 2026-11-18**, [session handoff](session-handoff.md#c02-definitions-through-the-engine-registry--2026-11-18). | C01 |
-| 15 / C03 | Add atomic aggregate loading, shared semantic validation, engine layering/migration wiring and failure rollback; compute content identity before publication, migrate callers and retire custom readers after their last caller moves. **Done 2026-11-18**, [session handoff](session-handoff.md#c03-one-validated-content-set--2026-11-18). | C02 |
+| 14 / C02 | Add reflected engine-readable definitions, generated record packaging and equivalence checks; define the canonical manifest/fingerprint builder and preserve exact price text and IDs/selections. **Done 2026-11-18**, [session handoff](history.md#c02-definitions-through-the-engine-registry--2026-11-18). | C01 |
+| 15 / C03 | Add atomic aggregate loading, shared semantic validation, engine layering/migration wiring and failure rollback; compute content identity before publication, migrate callers and retire custom readers after their last caller moves. **Done 2026-11-18**, [session handoff](history.md#c03-one-validated-content-set--2026-11-18). | C02 |
 | 16 / C04 | T4 and item follow-ups: resolve required physical/storage fields and author tuning, grains, medical supplies, LPG, Life Support and hull definitions through the shared pipeline. Keep unselected values explicit and obtain decisions where required. **Done 2026-11-19**, [item authoring](stage-2-content-plan.md#item-authoring-c04-2026-11-19), [tuning](stage-2-content-plan.md#tuning-t4-c04-2026-11-19). | C03 |
 | 17 / C05 | Author the separate trading and multi-region governance fixtures, including valid starting access/service capacity and required project/production references. **Done 2026-11-19**, [scenarios](stage-2-content-plan.md#scenario-and-frames). | C04 |
 | 17b / C09 | Share Jettison's ship and station definitions ([plan](small-trader-and-docking-plan.md#shared-ship-and-station-definitions-c09-done-2026-11-19)): pad classes, a dock hull for each hull with the starter a skiff, venues naming station layouts, and the engine's fit rule without a world. **Done 2026-11-19**, [plan](small-trader-and-docking-plan.md#shared-ship-and-station-definitions-c09-done-2026-11-19). | C05 |

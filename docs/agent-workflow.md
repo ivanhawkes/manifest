@@ -26,7 +26,7 @@ to an OpenAI planning agent produces a plan and handoff under this policy, not a
 The user explicitly permits the implementer to write stubs when they judge them useful
 ([D-056](decision-ledger.md#d-056)). Stubs may scaffold interfaces, isolate work or
 support incremental integration. Identify unfinished behavior clearly and follow the
-[coding standard](coding-standards.md#errors): an unsupported production operation must
+[coding standard](../../jettison/docs/coding-standards.md#errors): an unsupported production operation must
 fail explicitly rather than report a fabricated success. Test doubles remain explicit
 test dependencies.
 

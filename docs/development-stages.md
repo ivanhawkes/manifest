@@ -19,7 +19,7 @@ The [prioritised delivery order](delivery-order.md) breaks these stages and thei
 maintenance/amendment tasks into a dependency-ordered implementation queue. Use it
 to choose the next task; the detailed stage plans retain their acceptance contracts.
 
-Status: see the [delivery order](delivery-order.md#status-2026-11-18).
+Status: see the [delivery order](delivery-order.md#status).
 The [project analysis](project-analysis-2026-11-16.md) retains the historical diagnosis.
 The amendments below are read together with the
 [decision ledger](decision-ledger.md), which carries each selected decision once with its status,
@@ -204,7 +204,7 @@ original delivery sequence.
 
 Establish how Manifest starts and owns a game through Jettison.
 
-**Done** 2026-11-18, H07 ([status](delivery-order.md#status-2026-11-18)). Use the
+**Done** 2026-11-18, H07 ([status](history.md#status-2026-11-18)). Use the
 [detailed handoff](stage-1-host-plan.md) for the lifecycle contract, delivery slices
 and acceptance matrix. Complete its maintenance prerequisites before implementation.
 

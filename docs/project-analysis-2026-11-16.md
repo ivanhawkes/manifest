@@ -2,7 +2,7 @@
 
 This is the historical assessment before the T9 fixes. The current local baseline and
 T1/T9 completion evidence are in the
-[verification record](session-handoff.md#t1t9-local-verification--2026-11-16); the original
+[verification record](history.md#t1t9-local-verification--2026-11-16); the original
 measurements and CI failure history below are preserved as assessed.
 
 Assessed at Manifest `feature-base` `f63a3a4` (`Ran out of tokens. Partial work being committed.`),

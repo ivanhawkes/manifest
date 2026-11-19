@@ -26,4 +26,5 @@
 - [Stargate expeditions and opening new systems](stargate-expansion-plan.md)
 - [Models and agent workflow](agent-workflow.md)
 - [Model reference](model.md)
-- [Session handoff](session-handoff.md): dated evidence, newest first
+- [Session handoff](session-handoff.md): where the next session starts
+- [History](history.md): each task's dated evidence and how it was closed, newest first

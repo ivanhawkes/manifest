@@ -22,7 +22,7 @@ the space sample, not deferred solely to a future server milestone.
 ## Delivery status, 2026-11-18
 
 Slices 1–5 are done (slice 4, H06, and slice 5, H07, in Manifest); Stage 1 is closed. The
-[delivery order's status](delivery-order.md#status-2026-11-18) is the canonical status. Jettison's
+[delivery order's status](delivery-order.md#status) is the canonical status. Jettison's
 [history](../../jettison/docs/history.md#neutral-sdk-and-manifest-integration) records what the
 engine slices built (`Jettison::Host`: `Host::Session`, `Host::Game`, `host/Package.h`). The
 evidence below describes the engine before those slices, and it is why they exist.
@@ -34,7 +34,7 @@ Historical: this is the read-only refresh of 2026-11-16, before the slices above
 - Manifest: `feature-base`, `728bb95729c41bec887569ae60334acdd7056ea0`, clean
   before this planning closeout. T10, T5, T7 and the preceding Stage 1 handoff are
   committed documentation; their implementation remains pending. The
-  [T1/T9 verification record](session-handoff.md#t1t9-local-verification--2026-11-16)
+  [T1/T9 verification record](history.md#t1t9-local-verification--2026-11-16)
   establishes the local model-library baseline, not Stage 1 readiness.
 - The immutable SDK pin in `source/external/CMakeLists.txt` remains
   `f85092027eda49c29001f7589608df1f0b8827fb`. The clean sibling checkout is on
