@@ -246,4 +246,16 @@ item-base:
       unitType: Kilogram
       density: 4.51
       packFactor: 0.35
+
+  - item:
+      itemId: ItemCopperWire
+      categoryId: CategoryMetals
+      ageId: AgeIndustrial
+      displayName: Copper Wire
+      description: Copper wire and cable, on drums
+      unitsPerCubicMetre: 8.96
+      basePrice: 14500
+      unitType: Tonne
+      density: 8.96
+      packFactor: 0.6
 ...

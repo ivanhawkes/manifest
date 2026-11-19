@@ -92,4 +92,16 @@ item-base:
       unitType: Tonne
       density: 5.0
       packFactor: 0.48
+
+  - item:
+      itemId: ItemClay
+      categoryId: CategoryMinerals
+      ageId: AgeStone
+      displayName: Clay
+      description: Kaolin and ball clay
+      unitsPerCubicMetre: 2.6
+      basePrice: 150
+      unitType: Tonne
+      density: 2.6
+      packFactor: 0.5
 ...

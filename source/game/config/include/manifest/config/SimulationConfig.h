@@ -68,6 +68,7 @@ enum class TradeUnit
 	Kilolitre,
 	CubicMetre,
 	Barrel,
+	MMBtu,
 	Unit,
 	Sheet,
 	SquareMetre

@@ -34,12 +34,13 @@ DEFINITIONS=(
   trade-items/animal-products.yaml
   trade-items/medical.yaml
   trade-items/household-goods.yaml
-  trade-items/slaves.yaml
+  trade-items/humans.yaml
   trade-items/textiles.yaml
   trade-items/polymers.yaml
   trade-items/technology.yaml
   trade-items/arms.yaml
   trade-items/fertilisers.yaml
+  trade-items/drugs.yaml
   skill-tree/skills.yaml
   skill-tree/ages.yaml
   skill-tree/spaceship.yaml

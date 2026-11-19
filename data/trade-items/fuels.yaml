@@ -90,4 +90,40 @@ item-base:
       unitType: Kilogram
       density: 0.059
       packFactor: 0.5
+
+  - item:
+      itemId: ItemNaturalGas
+      categoryId: CategoryFuels
+      ageId: AgeIndustrial
+      displayName: Natural Gas
+      description: Liquefied natural gas, by its energy
+      unitsPerCubicMetre: 23
+      basePrice: 27.88
+      unitType: MMBtu
+      density: 0.45
+      packFactor: 0.9
+
+  - item:
+      itemId: ItemDiesel
+      categoryId: CategoryFuels
+      ageId: AgeIndustrial
+      displayName: Diesel
+      description: Diesel, kerosene and jet fuel
+      unitsPerCubicMetre: 0.84
+      basePrice: 900
+      unitType: Tonne
+      density: 0.84
+      packFactor: 0.9
+
+  - item:
+      itemId: ItemReactorFuel
+      categoryId: CategoryFuels
+      ageId: AgePost-industrial
+      displayName: Reactor Fuel
+      description: Enriched uranium fuel assemblies
+      unitsPerCubicMetre: 2
+      basePrice: 1500000
+      unitType: Unit
+      density: 10.4
+      packFactor: 0.125
 ...

@@ -41,4 +41,40 @@ item-base:
       unitType: Unit
       density: 3.0
       packFactor: 0.033
+
+  - item:
+      itemId: ItemBatteries
+      categoryId: CategoryElectronics
+      ageId: AgeInformation
+      displayName: Batteries
+      description: Lithium-ion battery modules of one kilowatt-hour
+      unitsPerCubicMetre: 100
+      basePrice: 108
+      unitType: Unit
+      density: 2.5
+      packFactor: 0.24
+
+  - item:
+      itemId: ItemSolarPanels
+      categoryId: CategoryElectronics
+      ageId: AgePost-industrial
+      displayName: Solar Panels
+      description: Photovoltaic panels of 400 watts
+      unitsPerCubicMetre: 14
+      basePrice: 148
+      unitType: Unit
+      density: 2.5
+      packFactor: 0.12
+
+  - item:
+      itemId: ItemSatellites
+      categoryId: CategoryCommunications
+      ageId: AgeSpace
+      displayName: Satellites
+      description: Small satellites of the 150 kg class
+      unitsPerCubicMetre: 1
+      basePrice: 5000000
+      unitType: Unit
+      density: 2.7
+      packFactor: 0.056
 ...

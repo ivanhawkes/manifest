@@ -153,6 +153,7 @@ items:
   - itemId: ItemNeodymium
   - itemId: ItemSteel
   - itemId: ItemTitanium
+  - itemId: ItemCopperWire
 
   # Precious metals
   - itemId: ItemGold
@@ -173,6 +174,7 @@ items:
   - itemId: ItemIronOre
   - itemId: ItemUrea
   - itemId: ItemDAP
+  - itemId: ItemClay
 
   # Stone Age
   - itemId: ItemDrinkingWater
@@ -186,6 +188,8 @@ items:
   - itemId: ItemTimber
   - itemId: ItemLivestock
   - itemId: ItemMedicinalHerbs
+  - itemId: ItemPreservedMeat
+  - itemId: ItemWool
   # Copper Age
   - itemId: ItemArdPlough
   - itemId: ItemFlour
@@ -197,6 +201,7 @@ items:
   - itemId: ItemCotton
   - itemId: ItemCloth
   - itemId: ItemTools
+  - itemId: ItemPassengers
   # Bronze Age
   - itemId: ItemJewellery
   - itemId: ItemPapyrus
@@ -207,6 +212,7 @@ items:
   # Iron Age
   - itemId: ItemCoins
   - itemId: ItemDiamonds
+  - itemId: ItemPrisoners
   # Classical Age
   - itemId: ItemParchment
   - itemId: ItemMaths
@@ -218,11 +224,14 @@ items:
   - itemId: ItemCement
   - itemId: ItemStill
   - itemId: ItemFineArt
+  - itemId: ItemSpices
   # Medieval Age
   - itemId: ItemChemistry
   - itemId: ItemClock
   - itemId: ItemCompass
   - itemId: ItemPaper
+  - itemId: ItemSugar
+  - itemId: ItemTea
   # Pre-industrial Age
   - itemId: ItemScrews
   - itemId: ItemPhysics
@@ -231,6 +240,8 @@ items:
   - itemId: ItemCoke
   - itemId: ItemLenses
   - itemId: ItemSmallArms
+  - itemId: ItemCoffee
+  - itemId: ItemTobacco
   # Industrial Age
   - itemId: ItemLPG
   - itemId: ItemBasicMedicalSupplies
@@ -240,20 +251,33 @@ items:
   - itemId: ItemMachinery
   - itemId: ItemRubber
   - itemId: ItemRadio
+  - itemId: ItemNaturalGas
+  - itemId: ItemDiesel
+  - itemId: ItemMiningDrills
+  - itemId: ItemHeavyWeapons
+  - itemId: ItemTourists
   # Post-industrial Age
   - itemId: ItemHomeAppliances
   - itemId: ItemAntibiotics
   - itemId: ItemPlastics
+  - itemId: ItemReactorFuel
+  - itemId: ItemSolarPanels
+  - itemId: ItemVaccines
   # Information Age
   - itemId: ItemElectronics
   - itemId: ItemSiliconWafers
+  - itemId: ItemBatteries
+  - itemId: ItemMedia
   # AI Age
   - itemId: ItemProcessors
+  - itemId: ItemRobots
   # Space Age
   - itemId: ItemLiquidHydrogen
+  - itemId: ItemSatellites
   # Space Colonisation Age
   - itemId: ItemHelium3
   - itemId: ItemHabitatModule
+  - itemId: ItemWaterIce
 
   # Seeds
   - itemId: ItemWheatSeeds

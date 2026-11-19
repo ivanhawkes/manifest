@@ -1,5 +1,15 @@
 # Session handoff
 
+## Twenty-four more goods, and the humans — 2026-11-19
+
+[D-068](decision-ledger.md#d-068): the 21 goods just outside D-066's 30, natural gas by the new
+`MMBtu`, and the user's `CategoryHumans` with slaves, passengers, prisoners and tourists in
+`humans.yaml` (renamed from `slaves.yaml`, and `build.sh` with it); `drugs.yaml` joins the list.
+`data`'s shared-word check takes machinery in place of the retired slaves shelf.
+
+Evidence, on Lythir: `./scripts/ci.sh --werror --asan --tidy` passed 21 of 21 in each of
+`clang-debug`, `clang-release` and `clang-asan`, and tidy clean.
+
 ## Astralis at 30 goods — 2026-11-19
 
 [D-067](decision-ledger.md#d-067): the user allowed Astralis 30 goods; the ten added are listed there.

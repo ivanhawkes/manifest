@@ -59,6 +59,7 @@ void RegisterTypes()
 		    .Value<Core::TradeUnit::Kilolitre>("Kilolitre")
 		    .Value<Core::TradeUnit::CubicMetre>("CubicMetre")
 		    .Value<Core::TradeUnit::Barrel>("Barrel")
+		    .Value<Core::TradeUnit::MMBtu>("MMBtu")
 		    .Value<Core::TradeUnit::Unit>("Unit")
 		    .Value<Core::TradeUnit::Sheet>("Sheet")
 		    .Value<Core::TradeUnit::SquareMetre>("SquareMetre");

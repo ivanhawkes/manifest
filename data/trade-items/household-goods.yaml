@@ -41,4 +41,16 @@ item-base:
       unitType: Unit
       density: 1.5
       packFactor: 0.55
+
+  - item:
+      itemId: ItemMedia
+      categoryId: CategoryEntertainment
+      ageId: AgeInformation
+      displayName: Media
+      description: Films, music and games on physical media
+      unitsPerCubicMetre: 2000
+      basePrice: 20
+      unitType: Unit
+      density: 1.2
+      packFactor: 0.17
 ...

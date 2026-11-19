@@ -137,4 +137,28 @@ item-base:
       unitType: Unit
       density: 2.5
       packFactor: 0.08
+
+  - item:
+      itemId: ItemMiningDrills
+      categoryId: CategoryMiningEquipment
+      ageId: AgeIndustrial
+      displayName: Mining Drills
+      description: Rock drills and drilling rigs
+      unitsPerCubicMetre: 0.25
+      basePrice: 50000
+      unitType: Unit
+      density: 7.0
+      packFactor: 0.071
+
+  - item:
+      itemId: ItemRobots
+      categoryId: CategoryMachinery
+      ageId: AgeAI
+      displayName: Robots
+      description: Industrial and service robots
+      unitsPerCubicMetre: 0.5
+      basePrice: 50000
+      unitType: Unit
+      density: 5.0
+      packFactor: 0.03
 ...

@@ -65,4 +65,16 @@ item-base:
       unitType: Kilogram
       density: 0.8
       packFactor: 0.25
+
+  - item:
+      itemId: ItemVaccines
+      categoryId: CategoryPharmaceuticals
+      ageId: AgePost-industrial
+      displayName: Vaccines
+      description: Vaccines, by the dose, in cold-chain packs
+      unitsPerCubicMetre: 50000
+      basePrice: 10
+      unitType: Unit
+      density: 1.0
+      packFactor: 0.25
 ...

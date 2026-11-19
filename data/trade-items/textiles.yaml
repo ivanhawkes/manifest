@@ -29,4 +29,16 @@ item-base:
       unitType: SquareMetre
       density: 0.6
       packFactor: 0.8
+
+  - item:
+      itemId: ItemWool
+      categoryId: CategoryTextiles
+      ageId: AgeStone
+      displayName: Wool
+      description: Scoured wool, in bales
+      unitsPerCubicMetre: 1310
+      basePrice: 11.68
+      unitType: Kilogram
+      density: 1.31
+      packFactor: 0.4
 ...

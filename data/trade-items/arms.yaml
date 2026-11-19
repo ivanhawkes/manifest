@@ -17,4 +17,16 @@ item-base:
       unitType: Unit
       density: 7.0
       packFactor: 0.03
+
+  - item:
+      itemId: ItemHeavyWeapons
+      categoryId: CategoryArms
+      ageId: AgeIndustrial
+      displayName: Heavy Weapons
+      description: Artillery and crew-served weapons
+      unitsPerCubicMetre: 0.1
+      basePrice: 250000
+      unitType: Unit
+      density: 7.85
+      packFactor: 0.064
 ...

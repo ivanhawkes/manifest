@@ -81,4 +81,76 @@ item-base:
       unitType: Litre
       density: 1.01
       packFactor: 0.8
+
+  - item:
+      itemId: ItemSugar
+      categoryId: CategoryConsumables
+      ageId: AgeMedieval
+      displayName: Sugar
+      description: Raw cane sugar, in bulk
+      unitsPerCubicMetre: 1.59
+      basePrice: 398
+      unitType: Tonne
+      density: 1.59
+      packFactor: 0.55
+
+  - item:
+      itemId: ItemPreservedMeat
+      categoryId: CategoryConsumables
+      ageId: AgeStone
+      displayName: Preserved Meat and Fish
+      description: Frozen, salted and dried meat and fish
+      unitsPerCubicMetre: 1.05
+      basePrice: 7114
+      unitType: Tonne
+      density: 1.05
+      packFactor: 0.6
+
+  - item:
+      itemId: ItemSpices
+      categoryId: CategoryConsumables
+      ageId: AgeClassical
+      displayName: Spices
+      description: Black pepper and the other dried spices
+      unitsPerCubicMetre: 1.2
+      basePrice: 7350
+      unitType: Tonne
+      density: 1.2
+      packFactor: 0.45
+
+  - item:
+      itemId: ItemTea
+      categoryId: CategoryConsumables
+      ageId: AgeMedieval
+      displayName: Tea
+      description: Black tea, in chests
+      unitsPerCubicMetre: 900
+      basePrice: 3.0
+      unitType: Kilogram
+      density: 0.9
+      packFactor: 0.35
+
+  - item:
+      itemId: ItemCoffee
+      categoryId: CategoryConsumables
+      ageId: AgePre-industrial
+      displayName: Coffee
+      description: Green arabica coffee beans, in bags
+      unitsPerCubicMetre: 1.2
+      basePrice: 6086
+      unitType: Tonne
+      density: 1.2
+      packFactor: 0.55
+
+  - item:
+      itemId: ItemWaterIce
+      categoryId: CategoryWater
+      ageId: AgeSpaceColonisation
+      displayName: Water Ice
+      description: Water ice, mined in space
+      unitsPerCubicMetre: 0.917
+      basePrice: 1000
+      unitType: Tonne
+      density: 0.917
+      packFactor: 0.7
 ...

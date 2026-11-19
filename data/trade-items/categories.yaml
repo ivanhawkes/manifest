@@ -126,7 +126,7 @@ categories:
       categoryId: CategoryHumans
       displayName: Humans
       type: Humans
-      description: Mercenaries, specialists and other hired crews
+      description: Tourists, prisoners, slaves and passengers who need a ride somewhere
   - category:
       categoryId: CategoryInformation
       displayName: Information
@@ -202,11 +202,6 @@ categories:
       displayName: Seeds
       type: Seeds
       description: Seeds
-  - category:
-      categoryId: CategorySlaves
-      displayName: Slaves
-      type: Slaves
-      description: Indentured workforce members
   - category:
       categoryId: CategorySmallArms
       displayName: Small Arms

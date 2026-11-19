@@ -428,7 +428,7 @@ TEST_CASE("the_id_of_a_definition_names_the_kind_of_thing_it_is")
 		    std::find(categoryIds.begin(), categoryIds.end(), "Category" + word) != categoryIds.end());
 	}
 
-	for (const std::string &word : {"Electronics", "Slaves"})
+	for (const std::string &word : {"Electronics", "Machinery"})
 	{
 		CHECK(std::find(itemIds.begin(), itemIds.end(), "Item" + word) != itemIds.end());
 		CHECK(
