@@ -50,7 +50,7 @@ item-base:
   - item:
       itemId: ItemGold
       categoryId: CategoryMetals
-      ageId: AgeBronze
+      ageId: AgeCopper
       displayName: Gold
       description: Gold ingots
       unitsPerCubicMetre: 19320
@@ -62,7 +62,7 @@ item-base:
   - item:
       itemId: ItemBrass
       categoryId: CategoryMetals
-      ageId: AgeBronze
+      ageId: AgeClassical
       displayName: Brass
       description: Brass ingots
       unitsPerCubicMetre: 8500
@@ -98,7 +98,7 @@ item-base:
   - item:
       itemId: ItemNickel
       categoryId: CategoryMetals
-      ageId: AgeBronze
+      ageId: AgeIndustrial
       displayName: Nickel
       description: Nickel ingots
       unitsPerCubicMetre: 8910
@@ -122,7 +122,7 @@ item-base:
   - item:
       itemId: ItemLead
       categoryId: CategoryMetals
-      ageId: AgeIron
+      ageId: AgeCopper
       displayName: Lead
       description: Lead ingots
       unitsPerCubicMetre: 11340
@@ -250,7 +250,7 @@ item-base:
   - item:
       itemId: ItemUranium
       categoryId: CategoryMetals
-      ageId: AgeIndustrial
+      ageId: AgePost-industrial
       displayName: Uranium
       description: Uranium, oxide concentrate in sealed drums
       unitsPerCubicMetre: 8300
@@ -274,7 +274,7 @@ item-base:
   - item:
       itemId: ItemZinc
       categoryId: CategoryMetals
-      ageId: AgeIndustrial
+      ageId: AgePre-industrial
       displayName: Zinc
       description: Zinc ingots
       unitsPerCubicMetre: 7140
@@ -282,4 +282,28 @@ item-base:
       unitType: Kilogram
       density: 7.14
       packFactor: 0.9
+
+  - item:
+      itemId: ItemAntimony
+      categoryId: CategoryMetals
+      ageId: AgeMedieval
+      displayName: Antimony
+      description: Antimony ingots
+      unitsPerCubicMetre: 6680
+      basePrice: 40.0
+      unitType: Kilogram
+      density: 6.68
+      packFactor: 0.75
+
+  - item:
+      itemId: ItemNeodymium
+      categoryId: CategoryMetals
+      ageId: AgePost-industrial
+      displayName: Neodymium
+      description: Neodymium metal, praseodymium neodymium alloy
+      unitsPerCubicMetre: 7010
+      basePrice: 90.0
+      unitType: Kilogram
+      density: 7.01
+      packFactor: 0.8
 ...

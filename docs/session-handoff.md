@@ -1,5 +1,16 @@
 # Session handoff
 
+## The item categories and ages reviewed — 2026-11-19
+
+The user left the first-draft categories and ages open to improvement; the revision is
+[D-063](decision-ledger.md#d-063). `misc.yaml` and the Manifest mode's list are regrouped under the
+new ages, the unsorted goods among them, and antimony and neodymium move to `metals.yaml`. Units
+were not in scope: potassium ingots, bread, flour and home appliances are still authored by the
+kilolitre, as are the bulk solids.
+
+Evidence, on Lythir: `./scripts/ci.sh --werror --asan --tidy` passed 21 of 21 in each of
+`clang-debug`, `clang-release` and `clang-asan`, and tidy clean, with no test changed.
+
 ## C05: the trading and governance scenarios — 2026-11-19
 
 The user selected drinking water ([D-060](decision-ledger.md#d-060)): every fluid is traded by the

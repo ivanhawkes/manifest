@@ -64,7 +64,7 @@ categories:
       description: Computer and micro-controllers
   - category:
       categoryId: CategoryConstructionMaterials
-      displayName: ConstructionMaterials
+      displayName: Construction Materials
       type: ConstructionMaterials
       description: Construction materials
   - category:
@@ -126,7 +126,7 @@ categories:
       categoryId: CategoryHumans
       displayName: Humans
       type: Humans
-      description: Slaves, mercenaries, specialists
+      description: Mercenaries, specialists and other hired crews
   - category:
       categoryId: CategoryInformation
       displayName: Information

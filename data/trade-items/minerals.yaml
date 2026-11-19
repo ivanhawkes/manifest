@@ -26,7 +26,7 @@ item-base:
   - item:
       itemId: ItemSalt
       categoryId: CategoryMinerals
-      ageId: AgeIron
+      ageId: AgeStone
       displayName: Salt
       description: Sodium chloride (halite)
       unitsPerCubicMetre: 1
@@ -38,7 +38,7 @@ item-base:
   - item:
       itemId: ItemLime
       categoryId: CategoryMinerals
-      ageId: AgeIron
+      ageId: AgeStone
       displayName: Lime
       description: Baked and crushed limestone
       unitsPerCubicMetre: 1
@@ -61,8 +61,8 @@ item-base:
 
   - item:
       itemId: ItemPotash
-      categoryId: CategoryMinerals
-      ageId: AgeIron
+      categoryId: CategoryFertilisers
+      ageId: AgeIndustrial
       displayName: Potash
       description: Muriate of potash, granular potassium chloride
       unitsPerCubicMetre: 1
@@ -74,9 +74,9 @@ item-base:
   - item:
       itemId: ItemNatron
       categoryId: CategoryMinerals
-      ageId: AgeIron
+      ageId: AgeBronze
       displayName: Natron
-      description: Natron, dense soda ash
+      description: Natron, natural soda from dry lake beds
       unitsPerCubicMetre: 1
       basePrice: 270
       unitType: Kilolitre

@@ -127,11 +127,9 @@ items:
   - itemId: ItemPhosphorus
   - itemId: ItemSulfur
   - itemId: ItemSulfuricAcid
-  - itemId: ItemAntimony
   - itemId: ItemChlorine
   - itemId: ItemAmmonia
   - itemId: ItemEthylene
-  - itemId: ItemNeodymium
   - itemId: ItemGraphene
 
   # Metals
@@ -156,6 +154,8 @@ items:
   - itemId: ItemUranium
   - itemId: ItemVanadium
   - itemId: ItemZinc
+  - itemId: ItemAntimony
+  - itemId: ItemNeodymium
 
   # Minerals
   - itemId: ItemSalt
@@ -170,59 +170,58 @@ items:
   - itemId: ItemPottery
   - itemId: ItemPigments
   - itemId: ItemSlaves
-  - itemId: ItemArdPlough
+  - itemId: ItemLeatherhides
+  - itemId: ItemFurs
+  - itemId: ItemGems
   # Copper Age
+  - itemId: ItemArdPlough
   - itemId: ItemFlour
   - itemId: ItemBread
   - itemId: ItemBeer
   - itemId: ItemWine
+  - itemId: ItemVinegar
   # Bronze Age
-  - itemId: ItemJewellry
-  # Iron Age
-  - itemId: ItemParchment
+  - itemId: ItemJewellery
   - itemId: ItemPapyrus
   - itemId: ItemInk
-  - itemId: ItemVinegar
   - itemId: ItemShaduf
+  - itemId: ItemScrolls
+  - itemId: ItemSoap
+  # Iron Age
+  - itemId: ItemCoins
+  - itemId: ItemDiamonds
   # Classical Age
+  - itemId: ItemParchment
   - itemId: ItemMaths
   - itemId: ItemAntikythera
   - itemId: ItemAstrolabe
-  - itemId: ItemChemistry
-  - itemId: ItemClock
   - itemId: ItemCeramics
   - itemId: ItemBooks
-  - itemId: ItemScrolls
-  - itemId: ItemLeatherhides
-  - itemId: ItemFurs
   - itemId: ItemGlassware
   - itemId: ItemCement
   - itemId: ItemStill
-  - itemId: ItemScrews
-  - itemId: ItemCompass
-  - itemId: ItemCoins
-  - itemId: ItemSoap
+  - itemId: ItemFineArt
   # Medieval Age
+  - itemId: ItemChemistry
+  - itemId: ItemClock
+  - itemId: ItemCompass
+  # Pre-industrial Age
+  - itemId: ItemScrews
   - itemId: ItemPhysics
   - itemId: ItemMicroscope
-  # Pre-industrial Age
   # Industrial Age
   - itemId: ItemLPG
   - itemId: ItemBasicMedicalSupplies
+  - itemId: ItemAnesthetics
+  - itemId: ItemAnalgesics
   # Post-industrial Age
+  - itemId: ItemHomeAppliances
+  - itemId: ItemAntibiotics
   # Information Age
+  - itemId: ItemElectronics
   # AI Age
   # Space Age
   # Space Colonisation Age
-  # Uncategorised
-  - itemId: ItemHomeAppliances
-  - itemId: ItemElectronics
-  - itemId: ItemAntibiotics
-  - itemId: ItemAnesthetics
-  - itemId: ItemAnalgesics
-  - itemId: ItemGems
-  - itemId: ItemDiamonds
-  - itemId: ItemFineArt
 
   # Seeds
   - itemId: ItemWheatSeeds

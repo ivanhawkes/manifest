@@ -191,9 +191,7 @@ reuses one word across two tables - `SkillPharmaceuticals` is the bench that wor
 drug and `CategoryPharmaceuticals` the shelf it lands on, `SkillPolymers` and
 `SkillTextiles` the looms and `CategoryPolymers` and `CategoryTextiles` the bales,
 `ItemElectronics` the good and `CategoryElectronics` its sort, `ItemSlaves` the cargo and
-`CategoryUnknown` the shelf it is filed under, which is not the `CategorySlaves` the
-category document names: the shelf is there and no good is on it - and the prefix is what
-keeps the two ids apart.
+`CategorySlaves` its shelf - and the prefix is what keeps the two ids apart.
 `DataTests` asserts the prefixes, the one name shared by design - the gate of an age
 carries the `ageId` of the age it opens - and that no other name is an age, a category, a
 good and a node in turn. The ages drop the old `Age` postfix for the prefix, so no id
@@ -524,7 +522,7 @@ against it:
 | `Litre` | `1000` | A cubic metre is a thousand litres. |
 | `Kilogram` | `density x 1000` | The mass of solid material in a cubic metre: copper at 8.96 is 8960. |
 | `Gram` | `density x 1000000` | The same mass in grams: `ItemGems` at 3.5 are 3500000. |
-| `Unit` | tight-nested piece count | How many of the piece nest into a cubic metre: 2000 `ItemBooks`, 40000 pieces of `ItemJewellry`. |
+| `Unit` | tight-nested piece count | How many of the piece nest into a cubic metre: 2000 `ItemBooks`, 40000 pieces of `ItemJewellery`. |
 | `Sheet` | tight-nested sheet count | Sheets stacked to a metre with their interleaves: 50000 sheets of `ItemPapyrus`, 20000 of `ItemParchment`. |
 | `SquareMetre` | `1 / thickness` | Sheet goods sold by area: `ItemGraphite` is foil, and a millimetre of it is 1000 m² to the cube. |
 
@@ -538,10 +536,7 @@ density x 1000 x packFactor  ==  kilograms in an IBC cube  ==  unitsPerCubicMetr
 
 A jeweller's piece of 15 grams of 12-specific-gravity metal takes 1.25 cm³ of metal in a
 25 cm³ fitted tray, so 40000 to the cube, a packFactor of 0.05 and 600 kilograms of
-metal in the cube on both sides of the identity. That is `ItemJewellry`, the id the data
-spells with one `l`, and the spelling is the data's, not the loader's: `ItemJewellry`,
-`ItemJewellery` and `ItemJewelry` are three different ids to the loader, and the first is
-the one the game-mode lists name. Goods counted by mass or by volume
+metal in the cube on both sides of the identity. That is `ItemJewellery`. Goods counted by mass or by volume
 state the solid figure in `unitsPerCubicMetre`, and only `density x 1000 x packFactor`
 holds for them: an IBC cube of stacked copper ingots is 8.96 x 1000 x 0.85 kilograms,
 not 8960.

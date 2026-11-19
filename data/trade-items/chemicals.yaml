@@ -26,7 +26,7 @@ item-base:
   - item:
       itemId: ItemSodiumHydroxide
       categoryId: CategoryChemicals
-      ageId: AgeIron
+      ageId: AgeIndustrial
       displayName: Sodium Hydroxide
       description: Sodium Hydroxide, AKA caustic soda
       unitsPerCubicMetre: 1
@@ -62,7 +62,7 @@ item-base:
   - item:
       itemId: ItemSulfur
       categoryId: CategoryChemicals
-      ageId: AgeIndustrial
+      ageId: AgeClassical
       displayName: Sulfur
       description: Sulfur, granulated
       unitsPerCubicMetre: 1
@@ -85,18 +85,6 @@ item-base:
 
   # Antimony is a metalloid traded by mass in ingots and shot, like the metals,
   # not a chemical bought by volume. The 2025 export restrictions doubled it.
-  - item:
-      itemId: ItemAntimony
-      categoryId: CategoryChemicals
-      ageId: AgeIndustrial
-      displayName: Antimony
-      description: Antimony ingots
-      unitsPerCubicMetre: 6680
-      basePrice: 40.0
-      unitType: Kilogram
-      density: 6.68
-      packFactor: 0.75
-
   - item:
       itemId: ItemChlorine
       categoryId: CategoryChemicals
@@ -132,18 +120,6 @@ item-base:
       unitType: Kilolitre
       density: 0.567
       packFactor: 0.9
-
-  - item:
-      itemId: ItemNeodymium
-      categoryId: CategoryChemicals
-      ageId: AgePost-industrial
-      displayName: Neodymium
-      description: Neodymium metal, praseodymium neodymium alloy
-      unitsPerCubicMetre: 7010
-      basePrice: 90.0
-      unitType: Kilogram
-      density: 7.01
-      packFactor: 0.8
 
   # Graphene is sold by the square metre of film, so the count in a cubic metre is
   # the reciprocal of the film thickness: 100000 square metres to the cube is a
