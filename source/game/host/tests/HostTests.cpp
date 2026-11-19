@@ -20,6 +20,8 @@
 #include <jettison/sim/SimWorld.h>
 #include <jettison/vfs/FileSystem.h>
 
+#include <manifest/world/State.h>
+
 using Jettison::Host::Phase;
 using Jettison::Host::StartupError;
 
@@ -189,7 +191,7 @@ void CheckFailsDescribed(const std::string &description, Phase phase, std::strin
 } // namespace
 
 
-TEST_CASE("The staged directory and pack both start Manifest with an empty world, and shut down")
+TEST_CASE("The staged directory and pack both start Manifest with the scenario's world, and shut down")
 {
 	for (const std::filesystem::path content : {MANIFEST_MOD_DIRECTORY, MANIFEST_MOD_PACK})
 	{
@@ -200,7 +202,8 @@ TEST_CASE("The staged directory and pack both start Manifest with an empty world
 		REQUIRE(session->Packages().front().description);
 		CHECK(session->Packages().front().description->name == "Manifest");
 		const entt::registry &registry = session->World().Registry();
-		CHECK(registry.storage<entt::entity>()->size() == 0);
+		CHECK(registry.view<const Manifest::World::Region>().size() == 2);
+		CHECK(registry.view<const Manifest::World::Account>().size() == 4);
 		session->Shutdown();
 		CHECK_FALSE(session->Running());
 		session->Shutdown();

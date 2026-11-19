@@ -43,6 +43,15 @@
         "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address,undefined",
         "CMAKE_SHARED_LINKER_FLAGS": "-fsanitize=address,undefined"
       }
+    },
+    {
+      "name": "clang-notui",
+      "displayName": "Clang Debug without the terminal interface",
+      "inherits": "clang-debug",
+      "binaryDir": "${sourceDir}/build/clang-notui",
+      "cacheVariables": {
+        "MANIFEST_BUILD_TUI": "OFF"
+      }
     }
   ],
   "buildPresets": [
@@ -57,6 +66,10 @@
     {
       "name": "clang-asan",
       "configurePreset": "clang-asan"
+    },
+    {
+      "name": "clang-notui",
+      "configurePreset": "clang-notui"
     }
   ],
   "testPresets": [
@@ -77,6 +90,13 @@
     {
       "name": "clang-asan",
       "configurePreset": "clang-asan",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-notui",
+      "configurePreset": "clang-notui",
       "output": {
         "outputOnFailure": true
       }

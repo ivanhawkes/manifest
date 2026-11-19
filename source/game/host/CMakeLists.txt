@@ -3,6 +3,7 @@
 manifest_add_module(host
 	DEPENDS
 		content
+		world
 	HEADERS
 		include/manifest/host/Start.h
 	SOURCES

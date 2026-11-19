@@ -43,9 +43,9 @@ std::vector<Jettison::Vfs::Mount> Mounts(const Options &options);
 // must be the Manifest package: a mod.yaml naming it, with its release and engine requirement
 // given. Every package's engine requirement and required packages are satisfied, and the
 // definitions are loaded and checked as one content set for the scenario
-// (Manifest::Content::LoadScenario). The world it starts is empty. Throws
-// Jettison::Host::StartupError naming the phase, the source and the cause, having released
-// everything it acquired.
+// (Manifest::Content::LoadScenario). The world it starts holds the scenario's state
+// (Manifest::World::CreateInitialState). Throws Jettison::Host::StartupError naming the phase, the
+// source and the cause, having released everything it acquired.
 std::unique_ptr<Jettison::Host::Session> Start(const Options &options);
 
 // What Start loads, with no world: the same sources, package rules and content set, failing as

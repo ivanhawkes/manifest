@@ -52,6 +52,18 @@ details (`SaveInfo::details`) still fit, unchanged. M05 is done (2026-11-18, [se
 launches moved to CodeLLDB under NixOS `nix-ld`, and the user confirmed them from the editor
 (2026-11-19).
 
+## A02: one hosted world — 2026-11-19
+
+The user chose how a player takes a home region ([D-075](decision-ledger.md#d-075)) and how a
+server keeps free regions in supply ([D-076](decision-ledger.md#d-076)), and renamed `EcsWorld` to
+`EntityStore`. Stage 3's inventory was refreshed: the engine's archives now write string- and
+enumeration-keyed maps, which the plan had listed as missing. The new `world` module puts the hosted
+state on the session's `SimWorld` ([registry owner](stage-3-authority-plan.md#registry-owner)):
+organisations, regions and their public and household accounts are seeded from the scenario, a
+kind is part of every identity so equal text never aliases, and `Identities` saves its counters and
+rebuilds its lookup on load, refusing a duplicate (`world`, 6 cases; `host`). The capacity
+conversion's owner is settled for A04. `clang-notui` is a gate stage. No Jettison gap.
+
 ## Stage 2 cross-review — 2026-11-19
 
 Codex reviewed `aa56443..f715040` in two rounds (`build/reviews/stage-2`). Three findings, each fixed:

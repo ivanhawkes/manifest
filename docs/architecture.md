@@ -41,16 +41,18 @@ The modules, in dependency order:
 | `universe` | Ordered universe name pools | Standard library |
 | `progression` | Prerequisites, tiers, costs and exclusive branches | Config |
 | `sim` | World generation, production, consumption, pricing and trade routes | Config, universe, Jettison Math |
-| `ecs` | Entity registry and plain components | Types, engine EnTT |
+| `ecs` | `EntityStore`, a string-ID entity store, and plain components: development and the market and effects code, off the hosted world until Stage 4 moves them | Types, engine EnTT |
 | `effects` | Catalogue and ship/civilisation effect systems | Types, config, progression, ECS |
 | `market` | Venues, reservations, order matching and settlement | Effects, simulation, ECS, progression |
 | `content` | Reflected definitions loaded through `Jettison::Sim::DefinitionRegistry`, record names and migrations, the content set's validation and the canonical content manifest and fingerprint | Config, universe, progression, sim, effects, Jettison Reflect, Serialise, Sim and VFS |
-| `host` | Manifest composed into `Jettison::Host`: package policy and start-up | Content, Jettison Host |
+| `world` | The hosted state on the engine's `SimWorld`: owner identities, organisations, regions, accounts and the saved counters new IDs come from (`Identities`), seeded from the scenario | Content, Jettison Sim |
+| `host` | Manifest composed into `Jettison::Host`: package policy and start-up | Content, world, Jettison Host |
 
 `Manifest::Host` is outside `Manifest::Game`, so the model never depends on the host that drives
 it. `Manifest::Host::Start` mounts the options' sources read-only, the package and then each
 explicit overlay ([D-070](decision-ledger.md#d-070)), with no user mods or writable mount, and
-starts a `Jettison::Host::Session` with an empty world. The engine
+starts a `Jettison::Host::Session` whose world holds the scenario's state
+(`Manifest::World::CreateInitialState`). The engine
 checks the description's format, engine requirement and required packages; Manifest requires a
 `mod.yaml` named `Manifest` with a release and an engine requirement, and loads its definitions
 into the session's registry as one content set for the scenario (`Manifest::Content::LoadScenario`,

@@ -84,11 +84,14 @@ microcredit value, using checked conversion at the boundary. Do not serialise th
 remain checked whole-credit integers. Preserve authored IDs and YAML keys; changing
 runtime ownership fields is not permission to rename content identities.
 
-Replace hosted uses of `EntityStore` with either a non-owning registry adapter or direct
-engine-world services. Choose one migration approach and document its lifetime. A
-non-owning adapter must reacquire/rebuild derived indexes when the engine replaces
-registry contents during load. Keep a standalone owning wrapper only for isolated
-development/tests if needed; it must not appear in the hosted authority graph.
+<a id="registry-owner"></a>Settled in A02 (2026-11-19): hosted state lives directly on the engine
+world. The `world` module registers its components on the session's `SimWorld` and adds one world
+service, `Manifest::World::Identities`, which owns the saved ID counters and the derived lookup from
+a kind and ID to its entity; the world owns the service for its lifetime, and every load rebuilds
+the lookup from the loaded entities, refusing a duplicate. `EntityStore` is not adapted: it stays
+the owning store of development and tests, and the market and effects code it serves move onto the
+world's components when their hosted forms are built, starting in Stage 4. It never enters the
+hosted authority graph.
 
 ## Inventory, reservations and capacity
 
@@ -106,10 +109,11 @@ before making any writes. Preflight both source and destination arithmetic. Dete
 clamping of arithmetic residue, if needed, must have one documented rule and tests;
 never use a tolerance to permit a material overdraft.
 
-Use the existing content units and packing semantics for capacity. The implementer
-must identify the single conversion owner for item quantity to occupied volume/mass,
-extract it if necessary and test each supported unit. Do not treat every item unit as
-one cubic metre. Derived occupied capacity is rebuilt from authoritative cargo and
+Use the existing content units and packing semantics for capacity. Settled in A02: an item's
+occupied volume is its quantity over `ItemNode::unitsPerCubicMetre`, which already folds in the
+unit, density and packing, against the hull's `CargoVolume` in cubic metres. The one owner is a
+function beside `ItemNode` in `config`, added with A04's cargo commands and tested for each
+supported unit; nothing computes it yet. Do not treat every item unit as one cubic metre. Derived occupied capacity is rebuilt from authoritative cargo and
 validated definitions; cargo and a second mutable capacity counter must not drift apart.
 
 Docked location comes from authoritative state, not a client flag. Jettison already

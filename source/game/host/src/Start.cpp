@@ -14,6 +14,8 @@
 #include <jettison/sim/DefinitionRegistry.h>
 #include <jettison/vfs/FileSystem.h>
 
+#include <manifest/world/World.h>
+
 namespace Manifest::Host
 {
 namespace
@@ -29,8 +31,8 @@ constexpr std::string_view kPackageName = "Manifest";
 // The package's mount, which an overlay's requires names.
 constexpr std::string_view kPackageMount = "manifest";
 
-// shortcut: one-second steps and seed 0 while the world is empty; A03 selects the cadence and a
-// scenario its seed.
+// shortcut: one-second steps and seed 0 while no system steps the world; A03 selects the cadence and
+// a scenario its seed.
 constexpr double kFixedStep = 1.0;
 constexpr std::uint64_t kSeed = 0;
 
@@ -77,6 +79,12 @@ class Game final : public Jettison::Host::Game
 	{
 	}
 
+	void RegisterTypes() override
+	{
+		World::RegisterTypes();
+	}
+
+
 	void LoadContent(
 	    const Jettison::Vfs::FileSystem &files, std::span<const Package> packages,
 	    Jettison::Sim::DefinitionRegistry &definitions) override
@@ -84,10 +92,25 @@ class Game final : public Jettison::Host::Game
 		m_content = Host::LoadContent(files, packages, definitions, m_scenario);
 	}
 
+
+	void RegisterWorld(
+	    Jettison::Sim::SimWorld &world,
+	    const Jettison::Sim::DefinitionRegistry & /*definitions*/) override
+	{
+		m_pIdentities = &World::RegisterWorld(world);
+	}
+
+
+	void CreateInitialState(Jettison::Sim::SimWorld &world) override
+	{
+		World::CreateInitialState(world, *m_pIdentities, m_content);
+	}
+
   private:
 	std::string m_scenario;
-	// What the world will run on, once A03 builds one.
 	Content::ContentSet m_content;
+	// The world's own service, which outlives every call the session makes here.
+	World::Identities *m_pIdentities{nullptr};
 };
 } // namespace
 

@@ -34,7 +34,7 @@ fi
 # The presets set every option a stage depends on, so a build's cache cannot hold one the key misses.
 gate_key() {
   local index tree
-  if grep -qs '^JETTISON_SOURCE_DIR:PATH=.' build/clang-{debug,release,asan}/CMakeCache.txt; then
+  if grep -qs '^JETTISON_SOURCE_DIR:PATH=.' build/clang-{debug,release,asan,notui}/CMakeCache.txt; then
     echo local-engine
     return
   fi
@@ -66,6 +66,8 @@ build_and_test() {
   ctest --preset "$preset" --no-tests=error
 }
 build_and_test clang-debug
+# The game's command and query coverage with the development terminal interface left out.
+build_and_test clang-notui
 if "$release"; then
   build_and_test clang-release
 fi

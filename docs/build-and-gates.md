@@ -12,9 +12,11 @@ ctest --preset clang-debug
 ./scripts/ci.sh --werror --asan --log build/gate.log
 ```
 
-Presets are `clang-debug`, `clang-release` and `clang-asan`. Each has its own build tree, generated
-data and staged mod. The gate runs formatting, Debug build and CTest, Release build and
-CTest, and optionally ASan/UBSan build and CTest. `--skip-release` supports a shorter local pass;
+Presets are `clang-debug`, `clang-notui`, `clang-release` and `clang-asan`. Each has its own build
+tree, generated data and staged mod. `clang-notui` is Debug with `MANIFEST_BUILD_TUI=OFF`, which
+holds the game's command and query coverage to a build without the terminal interface. The gate
+runs formatting, Debug build and CTest, the same for `clang-notui`, Release build and CTest, and
+optionally ASan/UBSan build and CTest. `--skip-release` supports a shorter local pass;
 CI runs the full gate. `CMAKE_BUILD_PARALLEL_LEVEL`, `CTEST_PARALLEL_LEVEL` and
 `MANIFEST_TIDY_JOBS` control concurrency. Clang-format must be version 21.
 
@@ -207,7 +209,8 @@ unverified changes and divergence. Confirm that a normal verified fast-forward t
 does not start another full gate, while a new integration commit and an explicit manual run
 still do. Record actual stages, logs and exact-commit CI evidence under D-007 before closing T10.
 
-Preset builds live in `build/clang-debug/`, `build/clang-release/` and `build/clang-asan/`. A
+Preset builds live in `build/clang-debug/`, `build/clang-notui/`, `build/clang-release/` and
+`build/clang-asan/`. A
 top-level `build/` containing `CivSim*` artifacts is the ignored pre-rename configure tree; remove
 it rather than reading it as a current build. `.vscode/` is ignored, so the tracked
 `.vscode/*.example` files are the reference for a fresh clone; they are currently stale and are
