@@ -114,8 +114,8 @@ References resolve by authored ID through an index built at load.
 | Type | Directory under `manifest/` | Source | Count today |
 | --- | --- | --- | --- |
 | `Manifest.Age` | `definitions/ages` | `base/ages.yaml` | 14 |
-| `Manifest.Category` | `definitions/categories` | `trade-items/categories.yaml` | 44 |
-| `Manifest.Item` | `definitions/items` | `trade-items/*.yaml`, `item-base` | 97 |
+| `Manifest.Category` | `definitions/categories` | `trade-items/categories.yaml` | 42 |
+| `Manifest.Item` | `definitions/items` | `trade-items/*.yaml`, `item-base` | 152 |
 | `Manifest.Skill` | `definitions/skills` | `skill-tree/*.yaml`, `skill-base` (age gates included) | 85 |
 | `Manifest.NamePool` | `definitions/name-pools` | `universe/solar-system-names.yaml`, one per key | 2 |
 | `Manifest.Hull` | `definitions/hulls` | `ships/hulls.yaml`, `hull-base` (C04) | 3 |

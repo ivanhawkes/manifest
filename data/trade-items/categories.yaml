@@ -4,14 +4,6 @@
 # The categoryId of a category is the value the categoryId of an item points at, and
 # the type weights the goods a world wants.
 categories:
-  # Fallback category
-  - category:
-      categoryId: CategoryUnknown
-      displayName: Unknown
-      type: Unknown
-      description: Unknown, catch all for items that are outside our present taxonomy
-
-  # Standard categories
   - category:
       categoryId: CategoryAlcohol
       displayName: Alcohol

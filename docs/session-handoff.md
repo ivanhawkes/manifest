@@ -2,11 +2,12 @@
 
 ## Next, on resuming — 2026-11-19
 
-Still open from before C09: the user asked to retire `CategoryUnknown`, the fallback category. No
-good is filed under it and no code names it (the `"Unknown"` strings in `EffectTypes.cpp` and
-`Components.cpp` are enum fallbacks, unrelated); it is the one entry in
-`data/trade-items/categories.yaml`, with its row in `docs/model.md`'s file table. Record it as a
-ledger row beside D-069, gate it and commit. Then C07, as `delivery-order.md` has it.
+C07, as `delivery-order.md` has it.
+
+## Unknown retired — 2026-11-19
+
+[D-071](decision-ledger.md#d-071): the user retired the empty fallback `CategoryUnknown`. The
+legacy `data/core-config/` files, outside the build, keep it as they keep `CategoryCollectibles`.
 
 ## C06: the validator and the host's options — 2026-11-19
 
