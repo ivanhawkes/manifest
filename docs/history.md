@@ -100,6 +100,36 @@ cargo's lots are bounded together (`world`), and a ship's cargo against its hull
 `CargoVolume`, whose empty map was taken for none given; a hull the map does not name now carries
 nothing (`company`). Round 7 approved with no finding open.
 
+## N02: the dedicated server and remote TUI — 2026-11-20
+
+Jettison provisioned the contract's gaps in its `net` module (engine `65846bb`, with its own
+consumer's loopback run), and Manifest builds on them with no engine edit. A new `remote` module
+holds the protocol (`manifest`, version 1: a welcome naming the token's actor and its next sequence,
+a request, and a reply carrying the ledger's receipt and the actor's next sequence, sent at
+admission and again once the request has run, so a client sends a refused sequence again), the token file (YAML of BLAKE2b digests, written whole through a file beside it), the
+server and the client. The server resolves a session's actor only from its token, admits its
+requests through `Command::Requests` between steps, and sends each session `Query::Observe`'s view
+of its own actor after every step. It reads the token file again when it changes and closes, as
+`Revoked`, every session whose token is gone. A message that is not a request, or does not decode,
+closes the session as `BadMessage`.
+
+`manifest <options> --serve --tokens <file> [--address] [--port]` steps the world at its fixed step
+against the wall clock (`Time::FixedStepAccumulator`), with or without clients, and stops cleanly on
+SIGINT or SIGTERM, telling its clients `Shutdown`. `manifest-token` issues and revokes tokens,
+printing a token once and keeping only its digest. The console's `connect <host:port> <token>` and
+`disconnect` play on a server: while connected, `observe`, `provision` and `cargo` go to it as the
+token's actor, so `cargo` takes no principal; the TUI prints what arrives on its refresh tick and
+shows the connection in its side pane.
+
+Evidence: the `remote` suite (a bad token refused; the administrator provisioning two players; a
+player refused provisioning as `NotAuthorised` and its next request sent under the same sequence; each player's snapshot only their own company;
+revocation, a bad message and shutdown each closing the session with its reason), the `console`
+suite's connect case against an in-process server, and `cli_serve`, which runs the executable with
+no client for two seconds and checks that it stepped and stopped on SIGINT. Left: N03's several
+clients, reconnects and bounded queues; a request still pending when its session closes is
+reported to a later session only when it is retried; the TUI's frame itself is not under a test;
+the port defaults to an ephemeral one; plaintext until encryption (D-081).
+
 ## N01: the network contract — 2026-11-20
 
 The user selected the transport, the credential and the encryption plan

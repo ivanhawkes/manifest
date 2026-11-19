@@ -23,3 +23,5 @@ target_link_libraries(manifest_game INTERFACE
     Manifest::Sim Manifest::Ecs Manifest::Effects Manifest::Market Manifest::Content Manifest::World Manifest::Command Manifest::Company Manifest::Query)
 
 add_subdirectory(host)
+
+add_subdirectory(remote)

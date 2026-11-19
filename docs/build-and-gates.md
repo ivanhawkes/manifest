@@ -31,9 +31,11 @@ skips a unit that was clean and whose compile command, includes (`ninja -t deps`
 `.clang-tidy` are unchanged since, recorded under `<build>/tidy-clean`.
 
 The CTest suites are `types`, `config`, `universe`, `progression`, `sim`, `ecs`, `market`,
-`host`, `content`, `effects`, `data`, `packaging`, `mod` and `sdk_import`, plus `console` when the TUI is enabled. The
+`host`, `content`, `effects`, `remote`, `data`, `packaging`, `mod` and `sdk_import`, plus `console` when the TUI is enabled. The
 `cli_*` tests run the `manifest` executable from an unrelated directory with no display: both
-content forms start, and a missing source and bad command lines fail.
+content forms start, and a missing source and bad command lines fail. `cli_serve` runs the server
+with no client, checks that it stepped, and stops it with SIGINT; the `token_*` tests run
+`manifest-token`'s refusals.
 
 The SDK import boundary is `source/external/CMakeLists.txt`. Whether it fetched the pin, took
 `JETTISON_SOURCE_DIR` or found a parent's SDK, configuration fails unless every target and helper

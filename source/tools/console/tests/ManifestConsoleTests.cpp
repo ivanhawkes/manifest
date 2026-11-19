@@ -2,6 +2,7 @@
 
 #include <doctest/doctest.h>
 
+#include <chrono>
 #include <filesystem>
 #include <format>
 #include <fstream>
@@ -10,6 +11,11 @@
 #include <vector>
 
 #include <jettison/core/Log.h>
+#include <jettison/net/Token.h>
+
+#include <manifest/host/Start.h>
+#include <manifest/remote/Server.h>
+#include <manifest/remote/Tokens.h>
 
 #include "TestHelpers.h"
 
@@ -263,4 +269,72 @@ TEST_CASE("Manifest console: host replaces the one hosted world, and a failed ho
 	CHECK(session.HostedStep() == 0);
 	CHECK(Execute(session, "step").text == "Hosted world at step 1.");
 	MANIFEST_CHECK_CONTAINS(Execute(session, "observe").text, "no company");
+}
+
+
+TEST_CASE("Manifest console: connect plays on a server as the token's actor, and disconnect leaves it")
+{
+	const std::string adminToken = Jettison::Net::GenerateToken();
+	const std::string adaToken = Jettison::Net::GenerateToken();
+	const Manifest::Test::TempFile tokens{"", ".tokens.yaml"};
+	using Manifest::Command::ActorKind;
+	Manifest::Remote::WriteTokens(
+	    tokens.Path(), {{{Jettison::Net::DigestToken(adminToken), ActorKind::Administrator, "Operator"},
+	                     {Jettison::Net::DigestToken(adaToken), ActorKind::Principal, "Ada"}}});
+	const auto pHosted = Manifest::Host::Start({MANIFEST_MOD_DIRECTORY, {}, "trading"});
+	Manifest::Remote::Server server{*pHosted, tokens.Path(), "127.0.0.1", 0};
+	const std::string endpoint = std::format("127.0.0.1:{}", server.Port());
+
+	// Both ends polled, the world stepped when asked, until the console prints the line.
+	ManifestConsole session{MANIFEST_MOD_DIRECTORY};
+	const auto await = [&](std::string_view expected, bool step = false)
+	{
+		if (step)
+		{
+			pHosted->World().Step();
+			server.Publish();
+		}
+		const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{2};
+		while (std::chrono::steady_clock::now() < deadline)
+		{
+			server.Poll(std::chrono::milliseconds{1});
+			for (const std::string &line : session.Poll())
+				if (line.find(expected) != std::string::npos)
+					return line;
+		}
+		return std::string{"nothing like: "} + std::string{expected};
+	};
+
+	CHECK(
+	    Execute(session, "connect " + endpoint + " " + Jettison::Net::GenerateToken()).text ==
+	    "Connecting to " + endpoint + ".");
+	CHECK(await("Disconnected") == "Disconnected from " + endpoint + ": bad credential.");
+
+	Execute(session, "connect " + endpoint + " " + adminToken);
+	CHECK(await("Connected") == "Connected to " + endpoint + " as Operator; your next request is 1.");
+	CHECK(Execute(session, "provision Ada \"Ada Freight\"").text == "Sent request 1 to the server.");
+	CHECK(await("queued").starts_with("Request 1 queued in order 1"));
+	CHECK(await("Request 1:", true) == "Request 1: Succeeded at step 0.");
+
+	// A player's connection replaces the administrator's: cargo needs no principal, and observe
+	// shows the server's view of the player, never another's.
+	Execute(session, "connect " + endpoint + " " + adaToken);
+	CHECK(await("Connected") == "Connected to " + endpoint + " as Ada; your next request is 1.");
+	CHECK(
+	    Execute(session, "cargo load Ada Ship1 VenueOreHighport ItemCopper 1").kind ==
+	    ConsoleLine::Kind::Error);
+	CHECK(Execute(session, "observe Bea").kind == ConsoleLine::Kind::Error);
+	Execute(session, "cargo load Ship1 VenueOreHighport ItemCopper 1");
+	CHECK(await("queued").starts_with("Request 1 queued in order 2"));
+	CHECK(await("Request 1:", true) == "Request 1: InsufficientStock at step 1.");
+	CHECK(Execute(session, "observe").text.starts_with("step 2, as Ada\nCompany1 'Ada Freight'"));
+	CHECK(
+	    Execute(session, "status").text.find("connected: to " + endpoint + " as Ada") !=
+	    std::string::npos);
+
+	CHECK(Execute(session, "disconnect").text == "Disconnected from " + endpoint + ".");
+	CHECK(session.Connected() == nullptr);
+	CHECK(Execute(session, "disconnect").kind == ConsoleLine::Kind::Error);
+	// Back to the local harness: observe needs a hosted world again.
+	CHECK(Execute(session, "observe").kind == ConsoleLine::Kind::Error);
 }

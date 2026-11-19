@@ -1,7 +1,9 @@
 #include "ManifestConsole.h"
 
 #include <algorithm>
+#include <array>
 #include <charconv>
+#include <chrono>
 #include <format>
 #include <limits>
 #include <sstream>
@@ -9,6 +11,7 @@
 #include <string_view>
 #include <utility>
 
+#include <jettison/net/Protocol.h>
 #include <jettison/reflect/Reflect.h>
 #include <jettison/serialise/Archive.h>
 
@@ -56,6 +59,32 @@ std::string_view ResultName(Command::Result result)
 
 // The administrator, as the trusted harness makes it; a principal's ID never names it.
 const Command::Actor kHost{Command::ActorKind::Administrator, "Host"};
+
+
+std::string Describe(const Query::Snapshot &snapshot, std::string_view as)
+{
+	std::ostringstream view;
+	view << "step " << snapshot.step << ", as " << as;
+	if (snapshot.companies.empty())
+		view << ": no company";
+	for (const Query::CompanyView &company : snapshot.companies)
+	{
+		view << "\n"
+		     << company.companyId << " '" << company.displayName << "': " << company.credits
+		     << " credits";
+		for (const World::Holding &holding : company.holdings)
+			view << "\n  at " << holding.venueId << ": " << holding.itemId << " " << holding.available
+			     << " IBC available, " << holding.reserved << " reserved";
+		for (const Query::ShipView &ship : company.ships)
+		{
+			view << "\n  " << ship.shipId << " " << ship.hullId << ", "
+			     << (ship.dockedAt.empty() ? std::string{"undocked"} : "docked at " + ship.dockedAt);
+			for (const World::Lot &lot : ship.cargo)
+				view << "\n    " << lot.itemId << " " << lot.containers << " IBC";
+		}
+	}
+	return view.str();
+}
 } // namespace
 
 ManifestConsole::ManifestConsole(std::string contentSource) : m_contentSource{std::move(contentSource)}
@@ -119,11 +148,19 @@ void ManifestConsole::RegisterCommands()
 	    "provision", "provision <principal> <company name>: queues a player's start, as the host", 2, 2,
 	    [this](Arguments arguments) { return CommandProvision(arguments[0], arguments[1]); });
 	RegisterCommand(
-	    "cargo", "cargo load|unload <principal> <ship> <venue> <item> <IBCs>: queues a player's move",
-	    6, 6, [this](Arguments arguments) { return CommandCargo(arguments); });
+	    "cargo",
+	    "cargo load|unload [principal] <ship> <venue> <item> <IBCs>: queues a player's move; the "
+	    "principal only when not connected",
+	    5, 6, [this](Arguments arguments) { return CommandCargo(arguments); });
 	RegisterCommand(
 	    "step", "step [count]: advances the hosted world and reports what ran (default 1)", 0, 1,
 	    [this](Arguments arguments) { return CommandStep(arguments); });
+	RegisterCommand(
+	    "connect", "connect <host:port> <token>: plays on a server as the token's actor", 2, 2,
+	    [this](Arguments arguments) { return CommandConnect(arguments[0], arguments[1]); });
+	RegisterCommand(
+	    "disconnect", "disconnect: leaves the server; the world goes on without you", 0, 0,
+	    [this](Arguments) { return CommandDisconnect(); });
 	const auto quit = [this](Arguments)
 	{
 		m_quitRequested = true;
@@ -155,7 +192,12 @@ std::string ManifestConsole::CommandStatus()
 	       << "\n"
 	       << "sandbox skill tree: " << m_progression.Summary() << "\n"
 	       << "hosted: "
-	       << (m_pHosted ? std::format("step {}", *HostedStep()) : std::string("none: run host"));
+	       << (m_pHosted ? std::format("step {}", *HostedStep()) : std::string("none: run host"))
+	       << "\nconnected: "
+	       << (!m_pRemote ? std::string{"no: run connect"}
+	           : m_pRemote->Welcomed()
+	               ? std::format("to {} as {}", m_remoteEndpoint, m_pRemote->Welcomed()->actorId)
+	               : std::format("connecting to {}", m_remoteEndpoint));
 
 	return status.str();
 }
@@ -461,33 +503,19 @@ std::string ManifestConsole::CommandHost(const std::string &scenario)
 
 std::string ManifestConsole::CommandObserve(Arguments arguments)
 {
+	if (m_pRemote)
+	{
+		if (!arguments.empty())
+			throw std::runtime_error{"Connected: observe shows only your own view; disconnect first."};
+		if (!m_pRemote->Latest())
+			return "No snapshot yet: the server sends one after its next step.";
+		return Describe(*m_pRemote->Latest(), m_pRemote->Welcomed()->actorId);
+	}
 	Jettison::Host::Session &hosted = Hosted();
 	const Command::Actor actor =
 	    arguments.empty() ? kHost : Command::Actor{Command::ActorKind::Principal, arguments[0]};
-	const Query::Snapshot snapshot =
-	    Query::Observe(hosted.World(), Host::HostedServices(hosted).identities, actor);
-
-	std::ostringstream view;
-	view << "step " << snapshot.step << ", as " << actor.id;
-	if (snapshot.companies.empty())
-		view << ": no company";
-	for (const Query::CompanyView &company : snapshot.companies)
-	{
-		view << "\n"
-		     << company.companyId << " '" << company.displayName << "': " << company.credits
-		     << " credits";
-		for (const World::Holding &holding : company.holdings)
-			view << "\n  at " << holding.venueId << ": " << holding.itemId << " " << holding.available
-			     << " IBC available, " << holding.reserved << " reserved";
-		for (const Query::ShipView &ship : company.ships)
-		{
-			view << "\n  " << ship.shipId << " " << ship.hullId << ", "
-			     << (ship.dockedAt.empty() ? std::string{"undocked"} : "docked at " + ship.dockedAt);
-			for (const World::Lot &lot : ship.cargo)
-				view << "\n    " << lot.itemId << " " << lot.containers << " IBC";
-		}
-	}
-	return view.str();
+	return Describe(
+	    Query::Observe(hosted.World(), Host::HostedServices(hosted).identities, actor), actor.id);
 }
 
 
@@ -508,15 +536,24 @@ std::string ManifestConsole::Admit(
 }
 
 
+std::string ManifestConsole::Send(std::string_view command, std::span<const std::byte> payload)
+{
+	const std::optional<std::uint64_t> sequence =
+	    m_pRemote->Submit(command, Company::kVersion, payload);
+	if (!sequence)
+		throw std::runtime_error{"Not connected yet: wait for the welcome."};
+	return std::format("Sent request {} to the server.", *sequence);
+}
+
+
 std::string ManifestConsole::CommandProvision(
     const std::string &principalId, const std::string &companyName)
 {
 	using Jettison::Serialise::BinaryArchive;
-	return Admit(
-	    kHost, Company::kProvision,
-	    BinaryArchive::Write(
-	        Company::Provision{principalId, principalId, companyName},
-	        Jettison::Serialise::FormatVersion{Company::kVersion}));
+	const std::vector<std::byte> payload = BinaryArchive::Write(
+	    Company::Provision{principalId, principalId, companyName},
+	    Jettison::Serialise::FormatVersion{Company::kVersion});
+	return m_pRemote ? Send(Company::kProvision, payload) : Admit(kHost, Company::kProvision, payload);
 }
 
 
@@ -524,15 +561,21 @@ std::string ManifestConsole::CommandCargo(Arguments arguments)
 {
 	if (arguments[0] != "load" && arguments[0] != "unload")
 		throw std::runtime_error{std::format("expected load or unload, got '{}'", arguments[0])};
+	// Connected, the actor is the token's, so the principal is not given.
+	const std::size_t first = m_pRemote ? 1 : 2;
+	if (arguments.size() != first + 4)
+		throw std::runtime_error{
+		    m_pRemote ? "usage: cargo load|unload <ship> <venue> <item> <IBCs>, as you, when connected"
+		              : "usage: cargo load|unload <principal> <ship> <venue> <item> <IBCs>"};
 	using Jettison::Serialise::BinaryArchive;
-	return Admit(
-	    {Command::ActorKind::Principal, arguments[1]},
-	    arguments[0] == "load" ? Company::kLoad : Company::kUnload,
-	    BinaryArchive::Write(
-	        Company::Move{
-	            arguments[2], arguments[3], arguments[4],
-	            ParseCount(arguments, 5, 0, 1, std::numeric_limits<unsigned>::max())},
-	        Jettison::Serialise::FormatVersion{Company::kVersion}));
+	const std::string_view command = arguments[0] == "load" ? Company::kLoad : Company::kUnload;
+	const std::vector<std::byte> payload = BinaryArchive::Write(
+	    Company::Move{
+	        arguments[first], arguments[first + 1], arguments[first + 2],
+	        ParseCount(arguments, first + 3, 0, 1, std::numeric_limits<unsigned>::max())},
+	    Jettison::Serialise::FormatVersion{Company::kVersion});
+	return m_pRemote ? Send(command, payload)
+	                 : Admit({Command::ActorKind::Principal, arguments[1]}, command, payload);
 }
 
 
@@ -557,5 +600,92 @@ std::string ManifestConsole::CommandStep(Arguments arguments)
 	}
 	m_unreported = std::move(unreported);
 	return report;
+}
+
+
+std::string ManifestConsole::CommandConnect(const std::string &endpoint, const std::string &token)
+{
+	const std::size_t colon = endpoint.rfind(':');
+	if (colon == std::string::npos || colon == 0)
+		throw std::runtime_error{std::format("expected host:port, got '{}'", endpoint)};
+	const std::array<std::string, 1> port{endpoint.substr(colon + 1)};
+	// A failed connect keeps the connection there was; a replaced one is closed.
+	auto pRemote = std::make_unique<Remote::Client>(
+	    endpoint.substr(0, colon), static_cast<std::uint16_t>(ParseCount(port, 0, 0, 1, 65535)), token);
+	if (m_pRemote)
+		m_pRemote->Disconnect();
+	m_pRemote = std::move(pRemote);
+	m_remoteEndpoint = endpoint;
+	return std::format("Connecting to {}.", endpoint);
+}
+
+
+std::string ManifestConsole::CommandDisconnect()
+{
+	if (!m_pRemote)
+		throw std::runtime_error{"Not connected."};
+	m_pRemote->Disconnect();
+	(void)m_pRemote->Poll(std::chrono::milliseconds{100});
+	m_pRemote.reset();
+	return std::format("Disconnected from {}.", m_remoteEndpoint);
+}
+
+
+std::vector<std::string> ManifestConsole::Poll()
+{
+	std::vector<std::string> lines;
+	if (!m_pRemote)
+		return lines;
+	const bool welcomed = m_pRemote->Welcomed().has_value();
+	std::vector<Remote::Reply> replies;
+	try
+	{
+		replies = m_pRemote->Poll();
+	}
+	catch (const std::exception &error)
+	{
+		// A server that answers in another shape than its version's: nothing more of it is read.
+		lines.push_back(std::format("Disconnected from {}: {}.", m_remoteEndpoint, error.what()));
+		m_pRemote.reset();
+		return lines;
+	}
+	for (const Remote::Reply &reply : replies)
+	{
+		const Command::Receipt &receipt = reply.receipt;
+		switch (receipt.status)
+		{
+			case Command::Receipt::Status::Queued:
+				lines.push_back(
+				    std::format(
+				        "Request {} queued in order {}: it runs at the server's next step.",
+				        reply.sequence, receipt.order));
+				break;
+			case Command::Receipt::Status::Completed:
+				lines.push_back(
+				    std::format(
+				        "Request {}: {} at step {}.", reply.sequence, ResultName(receipt.result),
+				        receipt.step));
+				break;
+			case Command::Receipt::Status::Refused:
+				lines.push_back(
+				    std::format("Request {} refused: {}.", reply.sequence, ResultName(receipt.result)));
+				break;
+		}
+	}
+	// Nothing of a session comes before its welcome.
+	if (!welcomed && m_pRemote->Welcomed())
+		lines.insert(
+		    lines.begin(), std::format(
+		                       "Connected to {} as {}; your next request is {}.", m_remoteEndpoint,
+		                       m_pRemote->Welcomed()->actorId, m_pRemote->Welcomed()->nextSequence));
+	if (m_pRemote->Closed())
+	{
+		lines.push_back(
+		    std::format(
+		        "Disconnected from {}: {}.", m_remoteEndpoint,
+		        Jettison::Net::ReasonName(*m_pRemote->Closed())));
+		m_pRemote.reset();
+	}
+	return lines;
 }
 } // namespace Manifest::Tools

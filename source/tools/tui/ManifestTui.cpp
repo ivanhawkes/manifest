@@ -178,6 +178,13 @@ void ManifestTui::Run()
 	    inputBox,
 	    [&](Event event)
 	    {
+		    // The refresh thread's tick: what the server sent is printed on this thread.
+		    if (event == Event::Custom)
+		    {
+			    for (const std::string &line : m_session.Poll())
+				    print(line);
+			    return false;
+		    }
 		    if (event == Event::CtrlD)
 		    {
 			    inputData = "quit";
@@ -284,6 +291,13 @@ void ManifestTui::Run()
 		    }
 		    const auto &simulation = m_session.GetSimulation();
 		    const auto hostedStep = m_session.HostedStep();
+		    const Remote::Client *pRemote = m_session.Connected();
+		    std::string remote = "not connected";
+		    if (pRemote && pRemote->Welcomed())
+			    remote = pRemote->Welcomed()->actorId +
+			             (pRemote->Latest() ? ", step " + std::to_string(pRemote->Latest()->step) : "");
+		    else if (pRemote)
+			    remote = "connecting";
 		    auto rightPane =
 		        vbox(
 		            {text(" universe ") | bold | center | Mocha::Lavender,
@@ -312,6 +326,9 @@ void ManifestTui::Run()
 		             hbox(
 		                 {text("  "),
 		                  text(hostedStep ? std::to_string(*hostedStep) : "not hosted") | Mocha::Text}),
+		             separatorDashed() | Mocha::Surface0,
+		             text(" server ") | bold | center | Mocha::Peach,
+		             hbox({text("  "), text(remote) | Mocha::Text}),
 		             separatorDashed() | Mocha::Surface0,
 		             text(" commands ") | bold | center | Mocha::Blue,
 		             vbox(std::move(commandColumn))}) |

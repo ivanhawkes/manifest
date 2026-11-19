@@ -1,6 +1,12 @@
 add_executable(manifest main.cpp)
 set_target_properties(manifest PROPERTIES FOLDER "Apps")
-target_link_libraries(manifest PRIVATE Manifest::Host Jettison::Core manifest_warnings)
+target_link_libraries(manifest PRIVATE
+    Manifest::Host Manifest::Remote Jettison::Core Jettison::Time manifest_warnings)
+
+# The server's CLI for its token file: issues and revokes bearer tokens, keeping their digests.
+add_executable(manifest-token token.cpp)
+set_target_properties(manifest-token PROPERTIES FOLDER "Apps")
+target_link_libraries(manifest-token PRIVATE Manifest::Remote Jettison::Net manifest_warnings)
 
 # The content validator: the host's options and loading, with no world.
 add_executable(manifest-validate validate.cpp)
@@ -33,6 +39,17 @@ if(MANIFEST_BUILD_TESTS AND BUILD_TESTING)
     add_test(NAME cli_no_check COMMAND ${run} ${directory} WORKING_DIRECTORY "${elsewhere}")
     add_test(NAME cli_unknown_argument COMMAND ${run} ${directory} --check-startup --serve
         WORKING_DIRECTORY "${elsewhere}")
+    add_test(NAME cli_serve_no_tokens COMMAND ${run} ${directory} --serve
+        WORKING_DIRECTORY "${elsewhere}")
+    add_test(NAME cli_serve_missing_tokens COMMAND ${run} ${directory} --serve
+        --tokens "${elsewhere}/none.yaml" WORKING_DIRECTORY "${elsewhere}")
+    add_test(NAME cli_serve COMMAND "${BASH_PROGRAM}" "${CMAKE_CURRENT_SOURCE_DIR}/serve-smoke.sh"
+        $<TARGET_FILE:manifest> $<TARGET_FILE:manifest-token> "${MANIFEST_MOD_DIRECTORY}"
+        WORKING_DIRECTORY "${elsewhere}")
+    add_test(NAME token_revoke_none COMMAND $<TARGET_FILE:manifest-token>
+        --tokens "${elsewhere}/none.yaml" revoke principal Ada WORKING_DIRECTORY "${elsewhere}")
+    add_test(NAME token_no_arguments COMMAND $<TARGET_FILE:manifest-token>
+        WORKING_DIRECTORY "${elsewhere}")
     add_test(NAME cli_broken_overlay COMMAND ${run} ${directory} --overlay "${overlays}/blank-age"
         --check-startup WORKING_DIRECTORY "${elsewhere}")
 
@@ -56,7 +73,7 @@ if(MANIFEST_BUILD_TESTS AND BUILD_TESTING)
         --manifest "${elsewhere}/none/trading.manifest" WORKING_DIRECTORY "${elsewhere}")
 
     set_tests_properties(cli_no_arguments cli_no_path cli_no_scenario cli_no_check
-        cli_unknown_argument validate_no_arguments validate_unknown_argument validate_no_manifest_path
+        cli_unknown_argument cli_serve_no_tokens token_no_arguments validate_no_arguments validate_unknown_argument validate_no_manifest_path
         PROPERTIES WILL_FAIL TRUE)
     # Each failure is the one expected, not a crash: only a failed start-up logs its phase.
     set(missing "Start-up failed in the mount phase, at ${elsewhere}/none")
@@ -66,6 +83,9 @@ BlankAge \\(patch\\)\\)")
         PROPERTIES PASS_REGULAR_EXPRESSION "${missing}")
     set_tests_properties(cli_broken_overlay validate_broken_overlay
         PROPERTIES PASS_REGULAR_EXPRESSION "${blank}")
+    set_tests_properties(cli_serve_missing_tokens
+        PROPERTIES PASS_REGULAR_EXPRESSION "the token file ${elsewhere}/none.yaml cannot be read")
+    set_tests_properties(token_revoke_none PROPERTIES PASS_REGULAR_EXPRESSION "principal Ada has no token")
     set_tests_properties(validate_unknown_scenario
         PROPERTIES PASS_REGULAR_EXPRESSION "there is no scenario 'elsewhere'")
     set_tests_properties(validate_unwritable_manifest PROPERTIES PASS_REGULAR_EXPRESSION

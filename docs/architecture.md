@@ -146,12 +146,15 @@ The approved direction is a dedicated network server, launched through a CLI and
 server platform. It owns the authoritative simulation and networking and runs unattended under
 a service manager or container platform, without a renderer or interactive terminal. Startup
 uses configuration and command-line arguments; operation provides logs and clean shutdown.
-This is a future architecture, not an existing server implementation.
+Its first slice exists (N02): `manifest --serve` steps the world unattended and serves it
+through the `remote` module on Jettison's `net`, with `manifest-token` for its tokens; durability,
+recovery and hosting outside a trusted network do not yet.
 
 The existing TUI is to become a required remote gameplay client with `connect <endpoint>` and
 `disconnect`. Extract its authoritative state into the server, retain useful FTXUI/console
 presentation and share a client command/query layer with Manifest's GUI. Clients display
-filtered server snapshots and submit intentions. The GUI can use the selected public engine
+filtered server snapshots and submit intentions. Its `connect` and `disconnect` exist (N02), beside
+the local hosted commands of the development harness. The GUI can use the selected public engine
 features for presentation; the server selects simulation capabilities without rendering,
 audio, input or a terminal. Administration has separate explicit permissions, and all state
 changes enter the controlled fixed-step command path.

@@ -3,7 +3,7 @@
 add_library(manifest_console STATIC ManifestConsole.cpp ManifestConsole.h)
 target_include_directories(manifest_console PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(manifest_console
-    PUBLIC Manifest::Game Manifest::Host Jettison::Devtools
+    PUBLIC Manifest::Game Manifest::Host Manifest::Remote Jettison::Devtools
     PRIVATE Jettison::Reflect manifest_warnings)
 set_target_properties(manifest_console PROPERTIES FOLDER "Tools")
 
