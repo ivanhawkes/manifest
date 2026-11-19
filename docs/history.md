@@ -52,6 +52,22 @@ details (`SaveInfo::details`) still fit, unchanged. M05 is done (2026-11-18, [se
 launches moved to CodeLLDB under NixOS `nix-ld`, and the user confirmed them from the editor
 (2026-11-19).
 
+## A06: the console apart from FTXUI — 2026-11-19
+
+The console library and its tests moved from `tools/tui` to `tools/console`, so they build and run
+with the TUI off; `manifest_tui` is only the FTXUI frontend ([what was settled](stage-3-authority-plan.md#console-a06)).
+The console's existing commands are its sandbox, labelled so in `status` and the TUI. New hosted
+commands drive at most one hosted world, which `host <scenario>` starts through `Host::Start`:
+`provision`, `cargo load|unload`, `observe` and `step`. They go only through the world's admission
+and `Query::Observe`, which a frontend reaches by `Host::HostedServices`. The sandbox's tick and the
+hosted step move only their own clocks; a failed `host` keeps the world there was, and a successful
+one replaces it with its queued requests (`console`, 10 cases). `Jettison::Devtools` is now required
+whether the TUI is built or not, and the SDK-import check's expected list says so. No Jettison gap:
+the session's `GetGame()` reaches Manifest's services.
+
+Evidence, on Lythir: `./scripts/ci.sh --werror --asan --tidy` passed 37 of 37 in `clang-debug`,
+`clang-release`, `clang-asan` and `clang-notui`, and tidy clean.
+
 ## A05: queries and the observation boundary — 2026-11-19
 
 The new `query` module copies what an actor may see into a value snapshot at the completed step

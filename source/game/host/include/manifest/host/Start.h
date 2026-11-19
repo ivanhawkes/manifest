@@ -11,7 +11,9 @@
 #include <jettison/host/Session.h>
 #include <jettison/vfs/Mount.h>
 
+#include <manifest/command/Requests.h>
 #include <manifest/content/Content.h>
+#include <manifest/world/Identities.h>
 
 namespace Manifest::Host
 {
@@ -47,6 +49,15 @@ std::vector<Jettison::Vfs::Mount> Mounts(const Options &options);
 // (Manifest::World::CreateInitialState). Throws Jettison::Host::StartupError naming the phase, the
 // source and the cause, having released everything it acquired.
 std::unique_ptr<Jettison::Host::Session> Start(const Options &options);
+
+// The services of a started session's world, which it owns: what a frontend admits requests to and
+// observes through, with the world. Throws std::bad_cast for a session Start did not return.
+struct Services
+{
+	World::Identities &identities;
+	Command::Requests &requests;
+};
+Services HostedServices(Jettison::Host::Session &session);
 
 // What Start loads, with no world: the same sources, package rules and content set, failing as
 // Start fails. The validator's check.

@@ -86,14 +86,18 @@ progression, ships, civilisations and markets together, so it is
 belong in `source/test/`. They do not publish game headers.
 
 `manifest_tui` is a development executable outside the simulation. Its `ManifestConsole` session
-registers the development commands with `Jettison::DevTools::Console`, the same backend used by
+(`source/tools/console`, built and tested with `MANIFEST_BUILD_TUI` off) registers the development commands with `Jettison::DevTools::Console`, the same backend used by
 Jettison's shell. The engine owns tokenisation (including quoted arguments), command dispatch,
 help, clear, vars, history, completion, log capture and the bounded 2000-entry scrollback. Manifest
 commands validate argument counts and numeric bounds; rejected commands become console errors.
 Configuration reloads replace the session together: a failure preserves the previous configuration
 and world, while a successful load resets the world and progression before the next generation.
+Those commands play a local sandbox no player shares. The hosted commands (`host`, `observe`,
+`provision`, `cargo`, `step`) drive one hosted world, started through `Host::Start`, only through its
+admission (`Command::Requests`) and `Query::Observe`; `Host::HostedServices` gives a frontend the
+world's services. Nothing in the sandbox reaches the hosted world, and there is at most one.
 
-The `manifest_console` tooling library links `Jettison::Devtools`, reusing its Core, Reflect and
+The `manifest_console` tooling library links `Jettison::Devtools` and `Manifest::Host`, reusing its Core, Reflect and
 ImGui dependencies. The console backend draws nothing; the terminal does not initialise ImGui,
 Vulkan or the engine application. `manifest_tui` alone owns FTXUI, wall-clock refresh and the
 command transcript. Its sidebar, history navigation and Tab completion read the engine's console

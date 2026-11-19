@@ -9,7 +9,14 @@
 #include <string_view>
 #include <utility>
 
-namespace Manifest::Tui
+#include <jettison/reflect/Reflect.h>
+#include <jettison/serialise/Archive.h>
+
+#include <manifest/company/Company.h>
+#include <manifest/host/Start.h>
+#include <manifest/query/Query.h>
+
+namespace Manifest::Tools
 {
 namespace sim = Manifest::Core;
 using Jettison::DevTools::Console;
@@ -39,6 +46,26 @@ std::string PadRight(const std::string &text, std::size_t width)
 {
 	return text.size() >= width ? text : text + std::string(width - text.size(), ' ');
 }
+
+
+double ParseQuantity(const std::string &text)
+{
+	double value{};
+	const auto [end, error] = std::from_chars(text.data(), text.data() + text.size(), value);
+	if (error != std::errc{} || end != text.data() + text.size())
+		throw std::runtime_error{std::format("expected a quantity, got '{}'", text)};
+	return value;
+}
+
+
+std::string_view ResultName(Command::Result result)
+{
+	return Jettison::Reflect::EnumName(entt::meta_any{result});
+}
+
+
+// The administrator, as the trusted harness makes it; a principal's ID never names it.
+const Command::Actor kHost{Command::ActorKind::Administrator, "Host"};
 } // namespace
 
 ManifestConsole::ManifestConsole(std::string contentSource) : m_contentSource{std::move(contentSource)}
@@ -92,6 +119,22 @@ void ManifestConsole::RegisterCommands()
 	RegisterCommand(
 	    "upgrade", "upgrade <skillId>: buys one tier", 1, 1,
 	    [this](Arguments arguments) { return CommandUpgrade(arguments[0]); });
+	RegisterCommand(
+	    "host", "host <scenario>: starts the hosted world from the content, replacing the last", 1, 1,
+	    [this](Arguments arguments) { return CommandHost(arguments[0]); });
+	RegisterCommand(
+	    "observe", "observe [principal]: what a player sees of the hosted world (default: the host)", 0,
+	    1, [this](Arguments arguments) { return CommandObserve(arguments); });
+	RegisterCommand(
+	    "provision", "provision <principal> <company name>: queues a player's start, as the host", 2, 2,
+	    [this](Arguments arguments) { return CommandProvision(arguments[0], arguments[1]); });
+	RegisterCommand(
+	    "cargo",
+	    "cargo load|unload <principal> <ship> <venue> <item> <quantity>: queues a player's move", 6, 6,
+	    [this](Arguments arguments) { return CommandCargo(arguments); });
+	RegisterCommand(
+	    "step", "step [count]: advances the hosted world and reports what ran (default 1)", 0, 1,
+	    [this](Arguments arguments) { return CommandStep(arguments); });
 	const auto quit = [this](Arguments)
 	{
 		m_quitRequested = true;
@@ -118,9 +161,12 @@ std::string ManifestConsole::CommandStatus()
 	       << ", items " << m_content.gameMode.items.size() << ", skills "
 	       << m_content.gameMode.skills.size() << ", names " << m_content.names.NameCount() << " in "
 	       << m_content.names.PoolCount() << " pools\n"
+	       << "sandbox: "
 	       << (m_configLoaded ? m_simulation.StatusLine() : std::string("no universe: run generate"))
 	       << "\n"
-	       << "skill tree: " << m_progression.Summary();
+	       << "sandbox skill tree: " << m_progression.Summary() << "\n"
+	       << "hosted: "
+	       << (m_pHosted ? std::format("step {}", *HostedStep()) : std::string("none: run host"));
 
 	return status.str();
 }
@@ -398,4 +444,128 @@ std::string ManifestConsole::CommandUpgrade(const std::string &argument)
 }
 
 
-} // namespace Manifest::Tui
+std::optional<std::uint64_t> ManifestConsole::HostedStep() const
+{
+	if (!m_pHosted)
+		return std::nullopt;
+	return m_pHosted->World().Clock().Step();
+}
+
+
+Jettison::Host::Session &ManifestConsole::Hosted()
+{
+	if (!m_pHosted)
+		throw std::runtime_error{"No hosted world: run host first."};
+	return *m_pHosted;
+}
+
+
+std::string ManifestConsole::CommandHost(const std::string &scenario)
+{
+	// A failed start keeps the hosted world there was; the replaced one shuts down with its requests.
+	std::unique_ptr<Jettison::Host::Session> hosted = Host::Start({m_contentSource, {}, scenario});
+	m_pHosted = std::move(hosted);
+	m_unreported.clear();
+	return std::format("Hosting {} from {}, at step {}.", scenario, m_contentSource, *HostedStep());
+}
+
+
+std::string ManifestConsole::CommandObserve(Arguments arguments)
+{
+	Jettison::Host::Session &hosted = Hosted();
+	const Command::Actor actor =
+	    arguments.empty() ? kHost : Command::Actor{Command::ActorKind::Principal, arguments[0]};
+	const Query::Snapshot snapshot =
+	    Query::Observe(hosted.World(), Host::HostedServices(hosted).identities, actor);
+
+	std::ostringstream view;
+	view << "step " << snapshot.step << ", as " << actor.id;
+	if (snapshot.companies.empty())
+		view << ": no company";
+	for (const Query::CompanyView &company : snapshot.companies)
+	{
+		view << "\n"
+		     << company.companyId << " '" << company.displayName << "': " << company.credits
+		     << " credits";
+		for (const World::Holding &holding : company.holdings)
+			view << "\n  at " << holding.venueId << ": " << holding.itemId << " "
+			     << sim::FormatNumber(holding.available) << " available, "
+			     << sim::FormatNumber(holding.reserved) << " reserved";
+		for (const Query::ShipView &ship : company.ships)
+		{
+			view << "\n  " << ship.shipId << " " << ship.hullId << ", "
+			     << (ship.dockedAt.empty() ? std::string{"undocked"} : "docked at " + ship.dockedAt);
+			for (const World::Lot &lot : ship.cargo)
+				view << "\n    " << lot.itemId << " " << sim::FormatNumber(lot.quantity);
+		}
+	}
+	return view.str();
+}
+
+
+std::string ManifestConsole::Admit(
+    const Command::Actor &actor, std::string_view command, std::span<const std::byte> payload)
+{
+	Jettison::Host::Session &hosted = Hosted();
+	Command::Requests &requests = Host::HostedServices(hosted).requests;
+	const std::uint64_t sequence = requests.NextSequence(actor);
+	const Command::Receipt receipt = requests.Admit(
+	    hosted.World(), actor, sequence, std::string{command}, Company::kVersion, payload);
+	if (receipt.status == Command::Receipt::Status::Refused)
+		return std::format("Refused: {}.", ResultName(receipt.result));
+	m_unreported.emplace_back(actor, sequence);
+	return std::format(
+	    "Queued {}'s request {} in order {}: it runs at the next step.", actor.id, sequence,
+	    receipt.order);
+}
+
+
+std::string ManifestConsole::CommandProvision(
+    const std::string &principalId, const std::string &companyName)
+{
+	using Jettison::Serialise::BinaryArchive;
+	return Admit(
+	    kHost, Company::kProvision,
+	    BinaryArchive::Write(
+	        Company::Provision{principalId, principalId, companyName},
+	        Jettison::Serialise::FormatVersion{Company::kVersion}));
+}
+
+
+std::string ManifestConsole::CommandCargo(Arguments arguments)
+{
+	if (arguments[0] != "load" && arguments[0] != "unload")
+		throw std::runtime_error{std::format("expected load or unload, got '{}'", arguments[0])};
+	using Jettison::Serialise::BinaryArchive;
+	return Admit(
+	    {Command::ActorKind::Principal, arguments[1]},
+	    arguments[0] == "load" ? Company::kLoad : Company::kUnload,
+	    BinaryArchive::Write(
+	        Company::Move{arguments[2], arguments[3], arguments[4], ParseQuantity(arguments[5])},
+	        Jettison::Serialise::FormatVersion{Company::kVersion}));
+}
+
+
+std::string ManifestConsole::CommandStep(Arguments arguments)
+{
+	Jettison::Host::Session &hosted = Hosted();
+	const unsigned steps = ParseCount(arguments, 0, 1, 1, 1000);
+	for (unsigned index = 0; index < steps; ++index)
+		hosted.World().Step();
+
+	const Command::Requests &requests = Host::HostedServices(hosted).requests;
+	std::string report = std::format("Hosted world at step {}.", *HostedStep());
+	std::vector<std::pair<Command::Actor, std::uint64_t>> unreported;
+	for (auto &[actor, sequence] : m_unreported)
+	{
+		if (const std::optional<Command::Completed> outcome = requests.Outcome(actor, sequence))
+			report += std::format(
+			    "\n  {}'s request {}, {}: {} at step {}", actor.id, sequence, outcome->request.command,
+			    ResultName(outcome->result), outcome->step);
+		else
+			unreported.emplace_back(std::move(actor), sequence);
+	}
+	m_unreported = std::move(unreported);
+	return report;
+}
+} // namespace Manifest::Tools

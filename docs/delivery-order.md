@@ -28,7 +28,7 @@ Planning-only restrictions on OpenAI implementation remain in force.
 ## Status
 
 Stages 1 and 2 are done: each finished row is marked **Done** with its date and a link to what it
-built, and how each task went is in [history](history.md). A05 is done; next: A06.
+built, and how each task went is in [history](history.md). A06 is done; next: A07.
 
 ## Priority 0: maintenance before Stage 1
 
@@ -95,7 +95,7 @@ Canonical scope: [Stage 3](stage-3-authority-plan.md).
 | 23 / A03 | Add trusted admission, fixed-step ordering, bounded retry/history state and structured command results. **Done 2026-11-19**, [history](history.md#a03-admission-and-the-request-ledger--2026-11-19). | A02 |
 | 24 / A04 | Implement retry-safe provisioning and atomic cargo load/unload using validated docked bootstrap state, real account ownership and capacity checks. **Done 2026-11-19**, [history](history.md#a04-provisioning-and-cargo--2026-11-19). | A03 |
 | 25 / A05 | Add immutable actor-filtered queries and result snapshots; define the observation boundary before exposing market views. **Done 2026-11-19**, [history](history.md#a05-queries-and-the-observation-boundary--2026-11-19). | A04 |
-| 26 / A06 | Separate command/query services and tests from FTXUI; preserve the development console without a second hosted simulation. | A05 |
+| 26 / A06 | Separate command/query services and tests from FTXUI; preserve the development console without a second hosted simulation. **Done 2026-11-19**, [history](history.md#a06-the-console-apart-from-ftxui--2026-11-19). | A05 |
 | 27 / A07 | Close Stage 3: prove authorisation, conservation, rejection atomicity, sequencing/retries and in-memory save/replay with TUI disabled; hand over full order/travel/upgrade contracts. | A06 |
 
 Provisioning may use a validated seeded dock/service state at this stage. It must not

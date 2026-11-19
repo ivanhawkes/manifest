@@ -283,6 +283,7 @@ void ManifestTui::Run()
 			    commandColumn.push_back(text(line) | Mocha::Subtext0);
 		    }
 		    const auto &simulation = m_session.GetSimulation();
+		    const auto hostedStep = m_session.HostedStep();
 		    auto rightPane =
 		        vbox(
 		            {text(" universe ") | bold | center | Mocha::Lavender,
@@ -295,7 +296,8 @@ void ManifestTui::Run()
 		                      m_session.IsConfigurationLoaded() ? m_session.ContentSource()
 		                                                        : "not loaded") |
 		                      Mocha::Text}),
-		             separatorDashed() | Mocha::Surface0, text(" tick ") | bold | center | Mocha::Peach,
+		             separatorDashed() | Mocha::Surface0,
+		             text(" sandbox tick ") | bold | center | Mocha::Peach,
 		             hbox(
 		                 {text("  "),
 		                  text(
@@ -305,6 +307,11 @@ void ManifestTui::Run()
 		             hbox(
 		                 {text("  worlds: "),
 		                  text(std::to_string(simulation.GetCivilisations().size())) | Mocha::Text}),
+		             separatorDashed() | Mocha::Surface0,
+		             text(" hosted step ") | bold | center | Mocha::Peach,
+		             hbox(
+		                 {text("  "),
+		                  text(hostedStep ? std::to_string(*hostedStep) : "not hosted") | Mocha::Text}),
 		             separatorDashed() | Mocha::Surface0,
 		             text(" commands ") | bold | center | Mocha::Blue,
 		             vbox(std::move(commandColumn))}) |

@@ -22,14 +22,11 @@ endif()
 
 # Everything Manifest takes from the SDK, however it arrived: a parent's partial SDK fails here,
 # naming what is missing, instead of at whichever target first links it.
-set(manifest_sdk_required Jettison::Core Jettison::Dock Jettison::Host Jettison::Math Jettison::Reflect
-    Jettison::Serialise Jettison::Sim Jettison::Vfs jettison_warnings
+set(manifest_sdk_required Jettison::Core Jettison::Devtools Jettison::Dock Jettison::Host Jettison::Math
+    Jettison::Reflect Jettison::Serialise Jettison::Sim Jettison::Vfs jettison_warnings
     jettison_pack EnTT::EnTT yaml-cpp::yaml-cpp)
 if(MANIFEST_BUILD_TESTS AND BUILD_TESTING)
     list(APPEND manifest_sdk_required doctest::doctest doctest::doctest_with_main)
-endif()
-if(MANIFEST_BUILD_TUI)
-    list(APPEND manifest_sdk_required Jettison::Devtools)
 endif()
 set(manifest_sdk_missing "")
 foreach(target IN LISTS manifest_sdk_required)

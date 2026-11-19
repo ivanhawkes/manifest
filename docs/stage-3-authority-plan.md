@@ -33,8 +33,8 @@ Inspection baseline: Manifest `feature-base` at `0c6e544`, Jettison `feature-bas
   `LoadSimulation` copies development simulation state into the ECS representation.
 - `progression/ProgressionManager.*` combines immutable definitions with one mutable
   tier/resource pool. That pool must not serve every company or share a civilisation wallet.
-- `ManifestConsole` (`source/tools/tui`) owns local simulation/progression state. Its library
-  and tests are built only when `MANIFEST_BUILD_TUI` is on.
+- `ManifestConsole` (`source/tools/console` since A06) owns local simulation/progression state, its
+  sandbox. Its library and tests were built only when `MANIFEST_BUILD_TUI` was on, until A06.
 - Jettison's `CommandQueue` applies queued commands in insertion order at the beginning
   of `SimWorld::Step`, then runs systems and advances the clock. It does not provide
   actor authentication, request deduplication or durable acknowledgement.
@@ -266,6 +266,16 @@ Split command/query services and their tests from terminal presentation. FTXUI r
 optional. Preserve the development console's established workflows and tests; distinguish
 its local sandbox from hosted commands until each workflow has an authoritative equivalent.
 Do not silently start a second simulation behind a hosted frontend.
+
+<a id="console-a06"></a>Settled in A06 (2026-11-19). The console library and its tests moved to
+`source/tools/console`, built and run with `MANIFEST_BUILD_TUI` off; `manifest_tui` is only the FTXUI
+frontend. The console's existing commands are its sandbox, labelled so in `status` and the TUI, and
+none has a hosted equivalent yet. Its hosted commands drive at most one hosted world: `host
+<scenario>` starts it from the content source through `Host::Start` (a failed start keeps the one
+there was, a successful one replaces it and its queued requests), `provision` admits as the
+administrator, `cargo load|unload` as the named principal, `observe [principal]` is
+`Query::Observe`, and `step` advances the world and prints each admitted request's result. They reach
+the world only through `Host::HostedServices`, the session's identities and requests.
 
 ## Delivery and acceptance
 

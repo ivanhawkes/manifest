@@ -1,0 +1,20 @@
+# The development console's commands, apart from any terminal: built and tested with the TUI off
+# (docs/stage-3-authority-plan.md, "Queries and tooling").
+add_library(manifest_console STATIC ManifestConsole.cpp ManifestConsole.h)
+target_include_directories(manifest_console PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(manifest_console
+    PUBLIC Manifest::Game Manifest::Host Jettison::Devtools
+    PRIVATE Jettison::Reflect manifest_warnings)
+set_target_properties(manifest_console PROPERTIES FOLDER "Tools")
+
+if(MANIFEST_BUILD_TESTS AND BUILD_TESTING)
+    add_executable(manifest_console_tests tests/ManifestConsoleTests.cpp)
+    target_link_libraries(manifest_console_tests PRIVATE
+        manifest_console manifest_test_helpers doctest::doctest_with_main manifest_warnings)
+    target_compile_definitions(manifest_console_tests PRIVATE
+        MANIFEST_MOD_DIRECTORY="${MANIFEST_MOD_DIRECTORY}"
+        MANIFEST_MOD_PACK="${PROJECT_BINARY_DIR}/manifest.pack")
+    add_dependencies(manifest_console_tests manifest_validate_pack)
+    set_target_properties(manifest_console_tests PROPERTIES FOLDER "Test")
+    add_test(NAME console COMMAND manifest_console_tests)
+endif()

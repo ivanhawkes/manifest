@@ -6,6 +6,7 @@ endif()
 
 add_subdirectory(game)
 add_subdirectory(apps/manifest)
+add_subdirectory(tools/console)
 if(MANIFEST_BUILD_TUI)
     add_subdirectory(tools/tui)
 endif()

@@ -100,8 +100,8 @@ class Game final : public Jettison::Host::Game
 	    const Jettison::Sim::DefinitionRegistry & /*definitions*/) override
 	{
 		m_pIdentities = &World::RegisterWorld(world);
-		Company::RegisterCommands(
-		    Command::RegisterRequests(world, *m_pIdentities), *m_pIdentities, m_content);
+		m_pRequests = &Command::RegisterRequests(world, *m_pIdentities);
+		Company::RegisterCommands(*m_pRequests, *m_pIdentities, m_content);
 	}
 
 
@@ -110,11 +110,17 @@ class Game final : public Jettison::Host::Game
 		World::CreateInitialState(world, *m_pIdentities, m_content);
 	}
 
+	Services WorldServices() const
+	{
+		return {*m_pIdentities, *m_pRequests};
+	}
+
   private:
 	std::string m_scenario;
 	Content::ContentSet m_content;
-	// The world's own service, which outlives every call the session makes here.
+	// The world's own services, which outlive every call the session makes here.
 	World::Identities *m_pIdentities{nullptr};
+	Command::Requests *m_pRequests{nullptr};
 };
 } // namespace
 
@@ -182,6 +188,12 @@ std::unique_ptr<Jettison::Host::Session> Start(const Options &options)
 	return std::make_unique<Jettison::Host::Session>(
 	    Jettison::Host::Options{Mounts(options), kFixedStep, kSeed},
 	    std::make_unique<Game>(options.scenario));
+}
+
+
+Services HostedServices(Jettison::Host::Session &session)
+{
+	return dynamic_cast<const Game &>(session.GetGame()).WorldServices();
 }
 
 

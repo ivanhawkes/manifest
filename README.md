@@ -79,7 +79,8 @@ the VFS loaders, world adapters and scripted scenario in the
 
 - `source/game/<module>/`: game modules, each with `CMakeLists.txt`, `include/manifest/<module>/`, `src/`, and unit `tests/` where applicable.
 - `source/apps/manifest/`: `manifest <options> --check-startup`, the start-up check through Jettison's host, and `manifest-validate <options>`, the content validator; the options are `--content <directory-or-pack> [--overlay <directory-or-pack>]... --scenario <name>`.
-- `source/tools/tui/`: the development console session, FTXUI frontend and console tests.
+- `source/tools/console/`: the development console's commands and their tests, built with the TUI off.
+- `source/tools/tui/`: the FTXUI frontend over that console.
 - `source/test/`: cross-module effects, data and mod-pack suites, plus shared test helpers.
 - `source/external/`: the pinned engine SDK and optional development-only dependencies.
 - `cmake/ManifestModule.cmake`: module target, header, dependency and test rules matching Jettison's module helper.

@@ -14,7 +14,7 @@
 #include "TestHelpers.h"
 
 using Jettison::DevTools::ConsoleLine;
-using Manifest::Tui::ManifestConsole;
+using Manifest::Tools::ManifestConsole;
 
 namespace
 {
@@ -56,7 +56,7 @@ TEST_CASE("Manifest console: help, completion, history and clear use the shell's
 {
 	ManifestConsole session{MANIFEST_MOD_DIRECTORY};
 	auto &console = session.GetConsole();
-	CHECK(console.Complete("s") == std::vector<std::string>{"show", "skills", "status"});
+	CHECK(console.Complete("s") == std::vector<std::string>{"show", "skills", "status", "step"});
 	CHECK(console.CompleteLine("gen") == "generate ");
 	CHECK(console.CompleteLine("generate 2") == "generate 2");
 	CHECK(Execute(session, "help generate").text.find("generate [count] [seed]") != std::string::npos);
@@ -194,4 +194,73 @@ TEST_CASE(
 		CHECK(Execute(session, command).kind == ConsoleLine::Kind::Output);
 		CHECK(session.IsQuitRequested());
 	}
+}
+
+
+TEST_CASE("Manifest console: hosted commands go through admission and queries, apart from the sandbox")
+{
+	ManifestConsole session{MANIFEST_MOD_DIRECTORY};
+	for (const std::string command :
+	     {"observe", "provision Ada Co", "cargo load Ada Ship1 VenueOreHighport ItemCopper 1", "step"})
+	{
+		CAPTURE(command);
+		CHECK(Execute(session, command).kind == ConsoleLine::Kind::Error);
+	}
+	CHECK_FALSE(session.HostedStep());
+	REQUIRE(Execute(session, "load").kind == ConsoleLine::Kind::Output);
+	REQUIRE(Execute(session, "generate 2 0").kind == ConsoleLine::Kind::Output);
+
+	REQUIRE(Execute(session, "host trading").kind == ConsoleLine::Kind::Output);
+	CHECK(session.HostedStep() == 0);
+	MANIFEST_CHECK_CONTAINS(Execute(session, "provision Ada \"Ada Co\"").text, "Host's request 1");
+	MANIFEST_CHECK_CONTAINS(Execute(session, "observe Ada").text, "no company");
+	MANIFEST_CHECK_CONTAINS(
+	    Execute(session, "step").text, "Manifest.Company.Provision: Succeeded at step 0");
+	const std::string adas = Execute(session, "observe Ada").text;
+	MANIFEST_CHECK_CONTAINS(adas, "Company1 'Ada Co': 25000 credits");
+	MANIFEST_CHECK_CONTAINS(adas, "Ship1 HullLoneTraderStarter, docked at VenueOreHighport");
+
+	// The hosted command's own rules answer: the company has no copper at the venue.
+	MANIFEST_CHECK_CONTAINS(
+	    Execute(session, "cargo load Ada Ship1 VenueOreHighport ItemCopper 3").text, "Ada's request 1");
+	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "InsufficientStock at step 1");
+	// A principal the world does not have is refused at admission and queues nothing.
+	CHECK(
+	    Execute(session, "cargo load Bea Ship1 VenueOreHighport ItemCopper 3").text ==
+	    "Refused: NotAuthorised.");
+	CHECK(Execute(session, "step").text == "Hosted world at step 3.");
+	MANIFEST_CHECK_CONTAINS(Execute(session, "observe Bea").text, "no company");
+	MANIFEST_CHECK_CONTAINS(Execute(session, "observe").text, "Company1 'Ada Co'");
+
+	// The sandbox's tick and the hosted step move only their own clocks.
+	REQUIRE(Execute(session, "tick 2").kind == ConsoleLine::Kind::Output);
+	CHECK(session.HostedStep() == 3);
+	CHECK(session.GetSimulation().GetTick() == 2);
+	MANIFEST_CHECK_CONTAINS(Execute(session, "status").text, "hosted: step 3");
+}
+
+TEST_CASE("Manifest console: host replaces the one hosted world, and a failed host keeps it")
+{
+	ManifestConsole session{MANIFEST_MOD_DIRECTORY};
+	CHECK(Execute(session, "host nowhere").kind == ConsoleLine::Kind::Error);
+	CHECK_FALSE(session.HostedStep());
+	REQUIRE(Execute(session, "host trading").kind == ConsoleLine::Kind::Output);
+	REQUIRE(Execute(session, "provision Ada Co").kind == ConsoleLine::Kind::Output);
+	REQUIRE(Execute(session, "step").kind == ConsoleLine::Kind::Output);
+	for (const std::string command :
+	     {"host nowhere", "cargo carry Ada Ship1 VenueOreHighport ItemCopper 1",
+	      "cargo load Ada Ship1 VenueOreHighport ItemCopper lots", "step 0", "observe Ada extra"})
+	{
+		CAPTURE(command);
+		CHECK(Execute(session, command).kind == ConsoleLine::Kind::Error);
+		CHECK(session.HostedStep() == 1);
+	}
+	MANIFEST_CHECK_CONTAINS(Execute(session, "observe Ada").text, "Company1");
+
+	// The replaced world's queued request goes with it: the new one runs nothing.
+	REQUIRE(Execute(session, "provision Bea Co").kind == ConsoleLine::Kind::Output);
+	REQUIRE(Execute(session, "host trading").kind == ConsoleLine::Kind::Output);
+	CHECK(session.HostedStep() == 0);
+	CHECK(Execute(session, "step").text == "Hosted world at step 1.");
+	MANIFEST_CHECK_CONTAINS(Execute(session, "observe").text, "no company");
 }

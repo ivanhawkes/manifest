@@ -1,20 +1,32 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <functional>
+#include <memory>
+#include <optional>
 #include <span>
 #include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 #include <jettison/devtools/Console.h>
+#include <jettison/host/Session.h>
 
+#include <manifest/command/Request.h>
 #include <manifest/content/Content.h>
 #include <manifest/progression/ProgressionManager.h>
 #include <manifest/sim/Simulation.h>
 
-namespace Manifest::Tui
+namespace Manifest::Tools
 {
 // Host-side development commands, registered with the same console as Jettison's shell.
 // Rendering, refresh and transcripts belong to the frontend; no terminal is needed here.
+// Two kinds of command, kept apart: the sandbox's (generate, tick, upgrade and the rest) play the
+// local development simulation, which no player shares; the hosted ones (host, observe, provision,
+// cargo, step) go through the hosted world's admission and queries, as a player's would. There is
+// at most one hosted world, the one host started, and nothing in the sandbox reaches it.
 class ManifestConsole
 {
   public:
@@ -48,6 +60,9 @@ class ManifestConsole
 		return m_quitRequested;
 	}
 
+	// The hosted world's completed steps; none before host.
+	std::optional<std::uint64_t> HostedStep() const;
+
   private:
 	using Arguments = std::span<const std::string>;
 	using Handler = std::function<std::string(Arguments)>;
@@ -68,6 +83,15 @@ class ManifestConsole
 	std::string CommandSkills();
 	std::string CommandUpgrade(const std::string &argument);
 
+	std::string CommandHost(const std::string &scenario);
+	std::string CommandObserve(Arguments arguments);
+	std::string CommandProvision(const std::string &principalId, const std::string &companyName);
+	std::string CommandCargo(Arguments arguments);
+	std::string CommandStep(Arguments arguments);
+	std::string Admit(
+	    const Command::Actor &actor, std::string_view command, std::span<const std::byte> payload);
+	Jettison::Host::Session &Hosted();
+
 	Manifest::Content::ContentSet m_content;
 	Manifest::Core::Simulation m_simulation;
 	Manifest::Core::ProgressionManager m_progression;
@@ -76,6 +100,10 @@ class ManifestConsole
 	bool m_configLoaded{false};
 	bool m_quitRequested{false};
 
+	std::unique_ptr<Jettison::Host::Session> m_pHosted;
+	// Requests admitted here whose results step has not yet printed, oldest first.
+	std::vector<std::pair<Command::Actor, std::uint64_t>> m_unreported;
+
 	Jettison::DevTools::Console m_console;
 };
-} // namespace Manifest::Tui
+} // namespace Manifest::Tools

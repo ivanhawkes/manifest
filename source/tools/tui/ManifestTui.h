@@ -7,7 +7,7 @@
 
 namespace Manifest::Tui
 {
-// FTXUI presentation of the shared console and the development simulation it drives.
+// FTXUI presentation of the shared console, its sandbox and the hosted world it drives.
 class ManifestTui
 {
   public:
@@ -21,7 +21,7 @@ class ManifestTui
 	static std::ofstream OpenSessionLog();
 	void AppendSessionLog(const std::string &text);
 
-	ManifestConsole m_session;
+	Tools::ManifestConsole m_session;
 	std::ofstream m_logFile;
 };
 } // namespace Manifest::Tui
