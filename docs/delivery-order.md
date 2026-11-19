@@ -53,8 +53,9 @@ authoring decisions.
 
 A01 and W01 were built against these plans before C01 settled the planet, region and company
 identities. C01 confirmed that a Jettison frame (`Sim::InFrame`, the star system) and a save's
-details (`SaveInfo::details`) still fit, unchanged. M05 is done (2026-11-18, [session handoff](session-handoff.md#m05-the-editor-examples--2026-11-18)) but for
-the launch from the editor itself, which the user confirms.
+details (`SaveInfo::details`) still fit, unchanged. M05 is done (2026-11-18, [session handoff](session-handoff.md#m05-the-editor-examples--2026-11-18)); its
+launches moved to CodeLLDB under NixOS `nix-ld`, and the user confirmed them from the editor
+(2026-11-19).
 
 ## Priority 0: maintenance before Stage 1
 

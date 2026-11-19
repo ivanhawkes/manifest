@@ -251,11 +251,13 @@ Start the editor from the development shell, so the tasks find `cmake`, `ctest` 
 configure`, then `CMake: build` (the default build task, the `all` target), then `CTest: test`
 (the default test task). Both launches build first.
 
-The debugger is LLDB's own adapter: the **LLDB DAP** extension (`llvm-vs-code-extensions.lldb-dap`)
-running the development shell's `lldb-dap` (LLVM 21, matching the compiler). Set the extension's
-`lldb-dap.executable-path` to `<checkout>/.devenv/profile/bin/lldb-dap` if it does not find it on
-`PATH`. *Simulation unit tests* runs the suite in the debug console; *Development TUI* runs in the
-integrated terminal (`console: integratedTerminal`, lldb-dap 21 and later), which the
+The debugger is **CodeLLDB** (`vadimcn.vscode-lldb`) with the development shell's LLDB 21,
+matching the compiler: set `"lldb.library": "${workspaceFolder}/.devenv/profile/lib/liblldb.so"`
+in the user settings (CodeLLDB expands the variable; LLDB finds its `lldb-server` beside the
+library). On NixOS, CodeLLDB's adapter is a generic Linux binary, so the system needs
+`programs.nix-ld.enable = true`; without it the adapter fails with "Could not start dynamically
+linked executable". *Simulation unit tests* runs the suite in the debug console (`terminal:
+console`); *Development TUI* runs in the integrated terminal (`terminal: integrated`), which the
 full-screen interface needs.
 
 Proposed checks, not present (handoff T8): local Markdown link and heading-anchor integrity across

@@ -3,21 +3,22 @@
     "configurations": [
         {
             "name": "Simulation unit tests",
-            "type": "lldb-dap",
+            "type": "lldb",
             "request": "launch",
             "program": "${workspaceFolder}/build/clang-debug/source/game/sim/manifest_sim_tests",
             "args": [],
             "cwd": "${workspaceFolder}",
+            "terminal": "console",
             "preLaunchTask": "CMake: build"
         },
         {
             "name": "Development TUI",
-            "type": "lldb-dap",
+            "type": "lldb",
             "request": "launch",
             "program": "${workspaceFolder}/build/clang-debug/source/tools/tui/manifest_tui",
             "args": [],
             "cwd": "${workspaceFolder}",
-            "console": "integratedTerminal",
+            "terminal": "integrated",
             "preLaunchTask": "CMake: build"
         }
     ]
