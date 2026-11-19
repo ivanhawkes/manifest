@@ -8,6 +8,7 @@
 #include <optional>
 #include <set>
 #include <sstream>
+#include <tuple>
 #include <utility>
 
 #include <jettison/core/Assert.h>
@@ -101,34 +102,86 @@ bool RestsFirst(const MarketOrderInfo &left, const MarketOrderInfo &right)
 	return left.orderId < right.orderId;
 }
 
-// The units at the best price of one side of a book: the depth a quoter sees, which is
-// the size a marketable order can take before the price moves.
-// The units resting at the best price, and the number of the orders that quote it: the
-// screen that shows a price shows the size of the pile at it in units and in orders, and
-// the orders in the whole book are the pile below the best price, which is a number a
-// screen has no use for.
-unsigned CountAtLevel(
-    const EcsWorld &ecsWorld, const std::vector<EcsWorld::Entity> &orders, Decimal price)
+// An order still in the book: not filled, not retired.
+bool IsLive(const EcsWorld &ecsWorld, EcsWorld::Entity entity)
 {
-	unsigned count = 0;
+	const auto *info = ecsWorld.IsValid(entity) ? ecsWorld.Get<MarketOrderInfo>(entity) : nullptr;
 
-	for (const EcsWorld::Entity entity : orders)
-	{
-		const auto *info = ecsWorld.Get<MarketOrderInfo>(entity);
-
-		if (info != nullptr && info->limitPrice == price)
-		{
-			++count;
-		}
-	}
-
-	return count;
+	return info != nullptr && info->status == OrderStatus::Active && !IsFulfilled(*info);
 }
 
-double DepthAtLevel(
+// Price then time, the rule every book of this shape keeps: the best price first, and
+// inside a price the order that posted first. The order id breaks the last tie, so the
+// book is one order on every platform, and a fill log that says "Order-7 filled first"
+// says it in every run.
+void SortBestFirst(const EcsWorld &ecsWorld, std::vector<EcsWorld::Entity> &orders, OrderSide side)
+{
+	std::sort(
+	    orders.begin(), orders.end(),
+	    [&ecsWorld, side](EcsWorld::Entity left, EcsWorld::Entity right)
+	    {
+		    const auto *a = ecsWorld.Get<MarketOrderInfo>(left);
+		    const auto *b = ecsWorld.Get<MarketOrderInfo>(right);
+
+		    if (a == nullptr || b == nullptr)
+		    {
+			    return false;
+		    }
+
+		    // A sell book runs cheapest first and a buy book richest first, which is one
+		    // ascending sort with the buy side's price turned over.
+		    const Decimal keyA = side == OrderSide::Sell ? a->limitPrice : -a->limitPrice;
+		    const Decimal keyB = side == OrderSide::Sell ? b->limitPrice : -b->limitPrice;
+
+		    if (keyA != keyB)
+		    {
+			    return keyA < keyB;
+		    }
+
+		    if (a->placedTick != b->placedTick)
+		    {
+			    return a->placedTick < b->placedTick;
+		    }
+
+		    return a->orderId < b->orderId;
+	    });
+}
+
+// One venue's book, every good and side, each best first: one pass over the orders, where
+// ActiveOrders is a pass for each good and side.
+using Books = std::map<std::pair<std::string, OrderSide>, std::vector<EcsWorld::Entity>>;
+
+Books BooksAt(const EcsWorld &ecsWorld, const std::string &marketId)
+{
+	Books books;
+
+	for (const EcsWorld::Entity entity : ecsWorld.View<MarketOrderInfo, OrderAt>())
+	{
+		const auto *at = ecsWorld.Get<OrderAt>(entity);
+		const auto *info = ecsWorld.Get<MarketOrderInfo>(entity);
+
+		if (at != nullptr && info != nullptr && at->marketId == marketId &&
+		    info->status == OrderStatus::Active && !IsFulfilled(*info))
+		{
+			books[{info->itemId, info->side}].push_back(entity);
+		}
+	}
+
+	for (auto &[key, orders] : books)
+	{
+		SortBestFirst(ecsWorld, orders, key.second);
+	}
+
+	return books;
+}
+
+// The orders resting at a price, and their units: the screen that shows a price shows
+// the size of the pile at it in units and in orders, and the orders in the whole book are
+// the pile below the best price, which is a number a screen has no use for.
+std::pair<unsigned, double> AtLevel(
     const EcsWorld &ecsWorld, const std::vector<EcsWorld::Entity> &orders, Decimal price)
 {
-	double depth = 0.0;
+	std::pair<unsigned, double> level{0, 0.0};
 
 	for (const EcsWorld::Entity entity : orders)
 	{
@@ -136,11 +189,12 @@ double DepthAtLevel(
 
 		if (info != nullptr && info->limitPrice == price)
 		{
-			depth += OpenQuantity(*info);
+			++level.first;
+			level.second += OpenQuantity(*info);
 		}
 	}
 
-	return depth;
+	return level;
 }
 } // namespace
 
@@ -415,6 +469,37 @@ bool MarketplaceService::PostOrder(
 
 	const std::string marketId = request.marketId;
 
+	// The depth one side of one good's book may hold: a venue with a deck of a certain
+	// size turns a quoter away when the deck is full, and the harbours and the tribunal
+	// are what buy the size. A resting order's limit alone: an order that walks the book
+	// leaves nothing on the deck.
+	const double cap = DepthUnits(ecsWorld, marketId);
+
+	if (cap > 0.0)
+	{
+		double sideDepth = 0.0;
+
+		for (const EcsWorld::Entity entity :
+		     ActiveOrders(ecsWorld, marketId, request.itemId, request.side))
+		{
+			if (const MarketOrderInfo *resting = ecsWorld.Get<MarketOrderInfo>(entity))
+			{
+				sideDepth += OpenQuantity(*resting);
+			}
+		}
+
+		if (sideDepth + request.quantity > cap + quantityEpsilon)
+		{
+			errorMessage = std::format(
+			    "Marketplace '{}': the {} book of '{}' holds {} units and the deck of the venue holds "
+			    "{}, the depth the harbours and the tribunal buy",
+			    marketId, DescribeOrderSide(request.side), request.itemId, FormatNumber(sideDepth),
+			    FormatNumber(cap));
+
+			return false;
+		}
+	}
+
 	if (!CreateOrder(ecsWorld, request, marketId, orderId, errorMessage))
 	{
 		return false;
@@ -423,12 +508,11 @@ bool MarketplaceService::PostOrder(
 	// A post that crosses the book trades at once: the seller who posts at or under the
 	// best bid has sold, and the order that filled is out of the book and in the log.
 	std::vector<TradeFill> fills;
-	std::string matchError;
 
-	// A pair of the book that cannot trade a whole unit is the book's reading, not the
-	// post's failure: the order rests, and the venue's quote table is the number that
-	// says what the book is offering.
-	(void)MatchInto(ecsWorld, marketId, fills, matchError);
+	if (!MatchInto(ecsWorld, marketId, fills, errorMessage))
+	{
+		return false;
+	}
 
 	return RefreshQuotes(ecsWorld, marketId, errorMessage);
 }
@@ -477,48 +561,42 @@ std::vector<TradeFill> MarketplaceService::ExecuteOrder(
 	// behind goes back at the end.
 	OrderRequest resting = request;
 
+	// The other side of the book, best first: the walk takes it in this order, and a fill only
+	// ever spends the order at the front.
+	const std::vector<EcsWorld::Entity> book =
+	    ActiveOrders(ecsWorld, marketId, request.itemId, opposite);
+
 	if (resting.limitPrice <= 0)
 	{
-		// A marketable order names no price, and a resting order has to. The book's
-		// worst quote on its own side is the limit: a buy that walks the asks cannot
-		// pay more than the dearest ask, and the asks that are worse than the limit it
-		// does name are the asks the limit is there to refuse.
-		Decimal worst;
+		// A marketable order names no price, and a resting order has to. The limit is the
+		// price of the order at which the book's depth reaches the quantity: a buy reserves
+		// what the asks it walks cost, not the dearest ask on the book.
+		double depth = 0.0;
 
-		if (request.side == OrderSide::Buy)
+		for (const EcsWorld::Entity entity : book)
 		{
-			const std::vector<EcsWorld::Entity> asks =
-			    ActiveOrders(ecsWorld, marketId, request.itemId, OrderSide::Sell);
+			const MarketOrderInfo *info = ecsWorld.Get<MarketOrderInfo>(entity);
 
-			if (!asks.empty())
+			if (info == nullptr)
 			{
-				const MarketOrderInfo *ask = ecsWorld.Get<MarketOrderInfo>(asks.back());
-				worst = ask != nullptr ? ask->limitPrice : Decimal{};
+				continue;
+			}
+
+			resting.limitPrice = info->limitPrice;
+			depth += OpenQuantity(*info);
+
+			if (depth + quantityEpsilon >= request.quantity)
+			{
+				break;
 			}
 		}
-		else
-		{
-			const std::vector<EcsWorld::Entity> bids =
-			    ActiveOrders(ecsWorld, marketId, request.itemId, OrderSide::Buy);
-
-			if (!bids.empty())
-			{
-				const MarketOrderInfo *bid = ecsWorld.Get<MarketOrderInfo>(bids.back());
-				worst = bid != nullptr ? bid->limitPrice : Decimal{};
-			}
-		}
-
-		// A book with nothing on the other side has nothing to trade, and the limit of
-		// a walk against an empty book is a price no fill can miss.
-		resting.limitPrice =
-		    worst > 0 ? worst : (request.side == OrderSide::Buy ? Decimal::Max() : Decimal{});
 
 		if (resting.limitPrice <= 0)
 		{
 			errorMessage = std::format(
-			    "Marketplace '{}': the book of '{}' has no bids for a sell order to walk, and a "
-			    "marketable sell order has to name a price",
-			    marketId, request.itemId);
+			    "Marketplace '{}': the book of '{}' has no {} for a marketable order to walk, and an "
+			    "order with nothing to walk has to name a price",
+			    marketId, request.itemId, request.side == OrderSide::Buy ? "asks" : "bids");
 
 			return fills;
 		}
@@ -541,6 +619,8 @@ std::vector<TradeFill> MarketplaceService::ExecuteOrder(
 		return fills;
 	}
 
+	std::size_t next = 0;
+
 	while (true)
 	{
 		auto *walking = ecsWorld.Get<MarketOrderInfo>(taker);
@@ -550,21 +630,19 @@ std::vector<TradeFill> MarketplaceService::ExecuteOrder(
 			break;
 		}
 
-		const std::vector<EcsWorld::Entity> book =
-		    ActiveOrders(ecsWorld, marketId, request.itemId, opposite);
+		// Past the makers the last fill completed or retired.
+		while (next < book.size() && !IsLive(ecsWorld, book[next]))
+		{
+			++next;
+		}
 
-		if (book.empty())
+		if (next == book.size())
 		{
 			break;
 		}
 
-		const EcsWorld::Entity maker = book.front();
+		const EcsWorld::Entity maker = book[next];
 		const MarketOrderInfo *makerInfo = ecsWorld.Get<MarketOrderInfo>(maker);
-
-		if (makerInfo == nullptr)
-		{
-			break;
-		}
 
 		// The walk's own limit: the asks above a buy limit, and the bids below a sell
 		// limit, are refused, and the book is sorted best first, so the first refusal
@@ -679,13 +757,11 @@ bool MarketplaceService::CancelOrder(
 	// The cancel lifts a price off the book, and the orders behind it can now meet: the
 	// bid that was third is the bid a resting ask can trade.
 	std::vector<TradeFill> fills;
-	std::string matchError;
 
 	if (!marketId.empty() && HasMarket(ecsWorld, marketId))
 	{
-		(void)MatchInto(ecsWorld, marketId, fills, matchError);
-
-		return RefreshQuotes(ecsWorld, marketId, errorMessage);
+		return MatchInto(ecsWorld, marketId, fills, errorMessage) &&
+		       RefreshQuotes(ecsWorld, marketId, errorMessage);
 	}
 
 	return true;
@@ -760,38 +836,6 @@ bool MarketplaceService::CreateOrder(
 	// order that pays 40 bps, whatever the venue's charges read at the fill.
 	const int feeBps = ListingFeeBps(ecsWorld, marketId);
 
-	// The depth one side of one good's book may hold: a venue with a deck of a certain
-	// size turns a quoter away when the deck is full, and the harbours and the tribunal
-	// are what buy the size.
-	const double cap = DepthUnits(ecsWorld, marketId);
-
-	if (cap > 0.0)
-	{
-		double sideDepth = 0.0;
-
-		for (const EcsWorld::Entity entity :
-		     ActiveOrders(ecsWorld, marketId, request.itemId, request.side))
-		{
-			const MarketOrderInfo *resting = ecsWorld.Get<MarketOrderInfo>(entity);
-
-			if (resting != nullptr)
-			{
-				sideDepth += OpenQuantity(*resting);
-			}
-		}
-
-		if (sideDepth + request.quantity > cap + quantityEpsilon)
-		{
-			errorMessage = std::format(
-			    "Marketplace '{}': the {} book of '{}' holds {} units and the deck of the venue holds "
-			    "{}, the depth the harbours and the tribunal buy",
-			    marketId, DescribeOrderSide(request.side), request.itemId, FormatNumber(sideDepth),
-			    FormatNumber(cap));
-
-			return false;
-		}
-	}
-
 	MarketOrderInfo info;
 	info.itemId = request.itemId;
 	info.side = request.side;
@@ -799,6 +843,7 @@ bool MarketplaceService::CreateOrder(
 	info.quantity = request.quantity;
 	info.filled = 0.0;
 	info.limitPrice = request.limitPrice;
+	info.feeBps = feeBps;
 	info.placedTick = request.tick;
 	// The life of an order is the life the service posting it gives an order at the tick
 	// it lands: the venue's own record keeps the life of the venue as it opened, and the
@@ -921,50 +966,45 @@ bool MarketplaceService::MatchInto(
 		return false;
 	}
 
-	// Every good with a live order on both sides of the book. The set is the order the
-	// goods cross in, and it is the same order on every platform.
-	std::set<std::string> items;
+	// The goods cross in item order, the books' own, the same on every platform.
+	const Books books = BooksAt(ecsWorld, marketId);
 
-	const auto view = ecsWorld.View<MarketOrderInfo, OrderAt>();
-
-	for (const EcsWorld::Entity entity : view)
+	for (const auto &[key, asks] : books)
 	{
-		const OrderAt *at = ecsWorld.Get<OrderAt>(entity);
-		const MarketOrderInfo *info = ecsWorld.Get<MarketOrderInfo>(entity);
+		const auto bidBook = books.find({key.first, OrderSide::Buy});
 
-		if (at == nullptr || info == nullptr || at->marketId != marketId ||
-		    info->status != OrderStatus::Active)
+		if (key.second != OrderSide::Sell || bidBook == books.end())
 		{
 			continue;
 		}
 
-		items.insert(info->itemId);
-	}
+		const std::vector<EcsWorld::Entity> &bids = bidBook->second;
+		std::size_t nextAsk = 0;
+		std::size_t nextBid = 0;
 
-	for (const auto &itemId : items)
-	{
 		// The book of one good, crossed to the end: a fill that leaves both sides
 		// standing lets the next pair meet, and the crossing stops when the best bid
-		// no longer reaches the best ask.
+		// no longer reaches the best ask. A fill only spends the two fronts, so the
+		// sides keep their order and the fronts move past what it completed or retired.
 		while (true)
 		{
-			const std::vector<EcsWorld::Entity> asks =
-			    ActiveOrders(ecsWorld, marketId, itemId, OrderSide::Sell);
-			const std::vector<EcsWorld::Entity> bids =
-			    ActiveOrders(ecsWorld, marketId, itemId, OrderSide::Buy);
+			while (nextAsk < asks.size() && !IsLive(ecsWorld, asks[nextAsk]))
+			{
+				++nextAsk;
+			}
 
-			if (asks.empty() || bids.empty())
+			while (nextBid < bids.size() && !IsLive(ecsWorld, bids[nextBid]))
+			{
+				++nextBid;
+			}
+
+			if (nextAsk == asks.size() || nextBid == bids.size())
 			{
 				break;
 			}
 
-			const MarketOrderInfo *ask = ecsWorld.Get<MarketOrderInfo>(asks.front());
-			const MarketOrderInfo *bid = ecsWorld.Get<MarketOrderInfo>(bids.front());
-
-			if (ask == nullptr || bid == nullptr)
-			{
-				break;
-			}
+			const MarketOrderInfo *ask = ecsWorld.Get<MarketOrderInfo>(asks[nextAsk]);
+			const MarketOrderInfo *bid = ecsWorld.Get<MarketOrderInfo>(bids[nextBid]);
 
 			if (bid->limitPrice < ask->limitPrice)
 			{
@@ -974,17 +1014,24 @@ bool MarketplaceService::MatchInto(
 			// The resting-first rule: the order that reached the book first is the
 			// maker, and its limit price is the price both sides trade at.
 			const bool askRestsFirst = RestsFirst(*ask, *bid);
-			const EcsWorld::Entity maker = askRestsFirst ? asks.front() : bids.front();
-			const EcsWorld::Entity taker = askRestsFirst ? bids.front() : asks.front();
+			const EcsWorld::Entity maker = askRestsFirst ? asks[nextAsk] : bids[nextBid];
+			const EcsWorld::Entity taker = askRestsFirst ? bids[nextBid] : asks[nextAsk];
 
-			if (!FillPair(ecsWorld, marketId, maker, taker, fillLog, errorMessage))
+			std::string fillError;
+
+			if (!FillPair(ecsWorld, marketId, maker, taker, fillLog, fillError))
 			{
-				// The pair cannot trade a whole unit - the trader on one side has run out
-				// of the thing the price is paid in - and the pair is the front of both
-				// books, so nothing behind it can trade either.
-				errorMessage.clear();
+				// Without a message the pair cannot trade a whole unit - a seller at a venue
+				// that spends the stockpile at the fill has run out - and the pair is the
+				// front of both books. With one, settlement failed, and the caller hears it.
+				if (fillError.empty())
+				{
+					break;
+				}
 
-				break;
+				errorMessage = std::move(fillError);
+
+				return false;
 			}
 		}
 	}
@@ -1131,17 +1178,11 @@ bool MarketplaceService::RefreshQuotes(
 
 	record.quotes.clear();
 
-	const auto view = ecsWorld.View<MarketOrderInfo, OrderAt>();
+	Books books = BooksAt(ecsWorld, marketId);
 
-	for (const EcsWorld::Entity entity : view)
+	for (const auto &entry : books)
 	{
-		const OrderAt *at = ecsWorld.Get<OrderAt>(entity);
-		const MarketOrderInfo *info = ecsWorld.Get<MarketOrderInfo>(entity);
-
-		if (at != nullptr && info != nullptr && at->marketId == marketId)
-		{
-			items.insert(info->itemId);
-		}
+		items.insert(entry.first.first);
 	}
 
 	for (const auto &itemId : items)
@@ -1149,18 +1190,15 @@ bool MarketplaceService::RefreshQuotes(
 		MarketQuote quote;
 		quote.itemId = itemId;
 
-		const std::vector<EcsWorld::Entity> asks =
-		    ActiveOrders(ecsWorld, marketId, itemId, OrderSide::Sell);
-		const std::vector<EcsWorld::Entity> bids =
-		    ActiveOrders(ecsWorld, marketId, itemId, OrderSide::Buy);
+		const std::vector<EcsWorld::Entity> &asks = books[{itemId, OrderSide::Sell}];
+		const std::vector<EcsWorld::Entity> &bids = books[{itemId, OrderSide::Buy}];
 
 		if (!asks.empty())
 		{
 			const MarketOrderInfo *best = ecsWorld.Get<MarketOrderInfo>(asks.front());
 
 			quote.bestAsk = best != nullptr ? best->limitPrice : Decimal{};
-			quote.askOrders = CountAtLevel(ecsWorld, asks, quote.bestAsk);
-			quote.askDepth = DepthAtLevel(ecsWorld, asks, quote.bestAsk);
+			std::tie(quote.askOrders, quote.askDepth) = AtLevel(ecsWorld, asks, quote.bestAsk);
 		}
 
 		if (!bids.empty())
@@ -1168,8 +1206,7 @@ bool MarketplaceService::RefreshQuotes(
 			const MarketOrderInfo *best = ecsWorld.Get<MarketOrderInfo>(bids.front());
 
 			quote.bestBid = best != nullptr ? best->limitPrice : Decimal{};
-			quote.bidOrders = CountAtLevel(ecsWorld, bids, quote.bestBid);
-			quote.bidDepth = DepthAtLevel(ecsWorld, bids, quote.bestBid);
+			std::tie(quote.bidOrders, quote.bidDepth) = AtLevel(ecsWorld, bids, quote.bestBid);
 		}
 
 		if (quote.bestAsk > 0 && quote.bestBid > 0 && quote.bestBid <= quote.bestAsk)
@@ -1458,7 +1495,9 @@ unsigned MarketplaceService::AdvanceTick(EcsWorld &ecsWorld, long long tick, std
 {
 	unsigned venues = 0;
 
-	// Validate the complete expiry batch, including refunds shared across venues.
+	// Validate the complete expiry batch, including refunds shared across venues. An expiry
+	// that does not run past the tick the order was posted at is an order posted with no
+	// order life, which rests until it trades, is cancelled, or the venue closes.
 	std::vector<std::string> allExpired;
 	for (const auto entity : ecsWorld.View<MarketOrderInfo, OrderAt>())
 	{
@@ -1481,51 +1520,18 @@ unsigned MarketplaceService::AdvanceTick(EcsWorld &ecsWorld, long long tick, std
 		return 0;
 	}
 
+	// The orders that have outlived their order life leave, and their goods and their
+	// credits go back: the berths they held are the berths this tick's quoters need.
+	for (const auto &orderId : allExpired)
+	{
+		if (!RetireOrder(ecsWorld, orderId, errorMessage))
+		{
+			return 0;
+		}
+	}
+
 	for (const auto &marketId : MarketIds(ecsWorld, {}))
 	{
-		std::vector<std::string> expired;
-
-		const auto view = ecsWorld.View<MarketOrderInfo, OrderAt>();
-
-		for (const EcsWorld::Entity entity : view)
-		{
-			const MarketOrderInfo *info = ecsWorld.Get<MarketOrderInfo>(entity);
-			const OrderAt *at = ecsWorld.Get<OrderAt>(entity);
-
-			if (info == nullptr || at == nullptr || at->marketId != marketId)
-			{
-				continue;
-			}
-
-			// An order leaves the book when the tick reaches the expiry its life gave it.
-			// An expiry that does not run past the tick the order was posted at is an order
-			// posted at a venue with no order life, and the sweep passes it: a venue that
-			// sets no order life is a venue that keeps its book, and the order that rests
-			// without a life rests until it trades, is cancelled, or the venue closes.
-			if (info->status == OrderStatus::Active && info->expiresTick > info->placedTick &&
-			    info->expiresTick <= tick)
-			{
-				const std::string name = ecsWorld.NameOf(entity);
-
-				if (!name.empty())
-				{
-					expired.push_back(name);
-				}
-			}
-		}
-
-		// The orders that have outlived their order life leave, and their goods and
-		// their credits go back: the berths they held are the berths this tick's
-		// quoters need.
-		std::sort(expired.begin(), expired.end());
-		for (const auto &orderId : expired)
-		{
-			if (!RetireOrder(ecsWorld, orderId, errorMessage))
-			{
-				return venues;
-			}
-		}
-
 		if (!RefreshQuotes(ecsWorld, marketId, errorMessage))
 		{
 			return venues;
@@ -1975,41 +1981,7 @@ std::vector<EcsWorld::Entity> MarketplaceService::ActiveOrders(
 		orders.push_back(entity);
 	}
 
-	// Price then time, the rule every book of this shape keeps: the best price first,
-	// and inside a price the order that posted first. The order id breaks the last tie,
-	// so the book is one order on every platform, and a fill log that says "Order-7
-	// filled first" says it in every run.
-	const EcsWorld *world = &ecsWorld;
-
-	std::sort(
-	    orders.begin(), orders.end(),
-	    [world, side](EcsWorld::Entity left, EcsWorld::Entity right)
-	    {
-		    const auto *a = world->Get<MarketOrderInfo>(left);
-		    const auto *b = world->Get<MarketOrderInfo>(right);
-
-		    if (a == nullptr || b == nullptr)
-		    {
-			    return false;
-		    }
-
-		    // A sell book runs cheapest first and a buy book richest first, which is one
-		    // ascending sort with the buy side's price turned over.
-		    const Decimal keyA = side == OrderSide::Sell ? a->limitPrice : -a->limitPrice;
-		    const Decimal keyB = side == OrderSide::Sell ? b->limitPrice : -b->limitPrice;
-
-		    if (keyA != keyB)
-		    {
-			    return keyA < keyB;
-		    }
-
-		    if (a->placedTick != b->placedTick)
-		    {
-			    return a->placedTick < b->placedTick;
-		    }
-
-		    return a->orderId < b->orderId;
-	    });
+	SortBestFirst(ecsWorld, orders, side);
 
 	return orders;
 }
@@ -2142,7 +2114,6 @@ bool MarketplaceService::FillPair(
 	}
 
 	const std::string itemId = maker->itemId;
-	const int feeBps = ListingFeeBps(ecsWorld, marketId);
 
 	double quantity = std::min(OpenQuantity(*maker), OpenQuantity(*taker));
 
@@ -2173,16 +2144,30 @@ bool MarketplaceService::FillPair(
 
 	// The credits: a buy order that posted under a venue that requires funds has the
 	// money in the reservation, and the fill spends the reservation at the price it
-	// trades at, which is never worse than the limit the reservation was priced at. A
-	// venue that allows a buy order the buyer cannot pay - off by default - spends the
-	// treasury at the fill, and takes only what the money buys.
-	if (buyOrder->reservedCredits > 0)
+	// trades at, which is never worse than the limit the reservation was priced at, and
+	// at the fee the order posted at. A venue that allows a buy order the buyer cannot
+	// pay - off by default - spends the treasury at the fill, and takes only what the
+	// money buys.
+	if (m_options.requireFunds)
 	{
-		quantity = std::min(quantity, AffordableQuantity(price, feeBps, buyOrder->reservedCredits));
+		const double affordable =
+		    AffordableQuantity(price, buyOrder->feeBps, buyOrder->reservedCredits);
+
+		// The rounding of many partial fills can spend a reservation before its last
+		// units: what is left of the order cannot pay, so it leaves the book with what it
+		// holds rather than block the orders behind it from meeting the ask.
+		if (affordable <= quantityEpsilon)
+		{
+			const std::string buyOrderId = buyOrder->orderId;
+
+			return RetireOrder(ecsWorld, buyOrderId, errorMessage);
+		}
+
+		quantity = std::min(quantity, affordable);
 	}
 	else if (const Treasury *treasury = ecsWorld.Get<Treasury>(buyerTrader))
 	{
-		quantity = std::min(quantity, AffordableQuantity(price, feeBps, treasury->credits));
+		quantity = std::min(quantity, AffordableQuantity(price, buyOrder->feeBps, treasury->credits));
 	}
 	else
 	{
@@ -2208,21 +2193,24 @@ bool MarketplaceService::FillPair(
 		return false;
 	}
 	const long long gross = *cost;
-	const auto fee = CheckedFeeFor(gross, feeBps);
-	if (!fee)
+	const auto buyerFeeOf = CheckedFeeFor(gross, buyOrder->feeBps);
+	const auto sellerFeeOf = CheckedFeeFor(gross, sellOrder->feeBps);
+	if (!buyerFeeOf || !sellerFeeOf)
 	{
 		errorMessage = "Marketplace: fill fee exceeds the credit range";
 		return false;
 	}
-	const long long makerFee = *fee;
-	const long long takerFee = *fee;
+	const long long buyerFee = *buyerFeeOf;
+	const long long sellerFee = *sellerFeeOf;
+	const long long makerFee = makerSells ? sellerFee : buyerFee;
+	const long long takerFee = makerSells ? buyerFee : sellerFee;
 
 	// Validate both parties, the venue and the eventual refund before settlement writes.
 	auto *buyerTreasury = ecsWorld.Get<Treasury>(buyerTrader);
 	auto *sellerTreasury = ecsWorld.Get<Treasury>(sellerTrader);
 	auto *buyerStock = ecsWorld.Get<Stockpile>(buyerTrader);
 	auto *sellerStock = ecsWorld.Get<Stockpile>(sellerTrader);
-	const __int128 bill = static_cast<__int128>(gross) + takerFee;
+	const __int128 bill = static_cast<__int128>(gross) + buyerFee;
 	const __int128 take = static_cast<__int128>(venue->venueTake) + makerFee + takerFee;
 	const auto fits = [](__int128 value)
 	{ return value >= 0 && value <= std::numeric_limits<long long>::max(); };
@@ -2237,7 +2225,7 @@ bool MarketplaceService::FillPair(
 	const long long fromTreasury = billCredits - fromOrder;
 	const bool selfTrade = buyerTrader == sellerTrader;
 	const __int128 nextBuyer = static_cast<__int128>(buyerTreasury->credits) - fromTreasury;
-	const __int128 proceeds = static_cast<__int128>(gross) - makerFee;
+	const __int128 proceeds = static_cast<__int128>(gross) - sellerFee;
 	const bool completesBuy = OpenQuantity(*buyOrder) - quantity <= quantityEpsilon;
 	const long long refund = completesBuy ? buyOrder->reservedCredits - fromOrder : 0;
 	const __int128 finalBuyer = nextBuyer + refund + (selfTrade ? proceeds : 0);
@@ -2250,25 +2238,19 @@ bool MarketplaceService::FillPair(
 		return false;
 	}
 
-	// Each side pays the fee of its own side of the trade: the resting trader pays the
-	// maker's, the trader that came looking pays the taker's, and the venue is paid by
-	// both, because the berth and the deck are the venue's.
-	// Each side pays the fee of its own side of the trade: the resting trader pays the
-	// maker's, the trader that came looking pays the taker's, and the venue is paid by
-	// both, because the berth and the deck are the venue's. The buyer's money comes out
-	// of the pocket its order holds, and the seller's proceeds go to its treasury.
+	// Each side pays the fee its own order posted at, and the venue is paid by both,
+	// because the berth and the deck are the venue's. The buyer's money comes out of the
+	// pocket its order holds, and the seller's proceeds go to its treasury.
 	if (!SettleParty(
-	        ecsWorld, buyerId, itemId, quantity, gross,
-	        buyerId == makerOwner->civilisationId ? makerFee : takerFee, buyOrder->reservedCredits,
-	        true, errorMessage))
+	        ecsWorld, buyerId, itemId, quantity, gross, buyerFee, buyOrder->reservedCredits, true,
+	        errorMessage))
 	{
 		return false;
 	}
 
 	if (!SettleParty(
-	        ecsWorld, sellerId, itemId, quantity, gross,
-	        sellerId == makerOwner->civilisationId ? makerFee : takerFee, sellOrder->reservedCredits,
-	        false, errorMessage))
+	        ecsWorld, sellerId, itemId, quantity, gross, sellerFee, sellOrder->reservedCredits, false,
+	        errorMessage))
 	{
 		return false;
 	}

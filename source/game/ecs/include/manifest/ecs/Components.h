@@ -286,6 +286,10 @@ struct MarketOrderInfo
 	double reservedGoods{0.0};
 	long long reservedCredits{0};
 
+	// The venue's fee when the order posted, which it pays at every fill: a fee that moves
+	// later would outgrow the reservation built on it.
+	int feeBps{0};
+
 	long long placedTick{0};
 	long long expiresTick{0};
 };

@@ -2,9 +2,8 @@
 
 Manifest is a Jettison mod project. Read `docs/coding-standards.md`,
 `docs/architecture.md` and `docs/build-and-gates.md` before changing it.
-For current verification state, open handoffs and the CI failure analysis, read
-`docs/project-analysis-2026-11-16.md`; for selected decisions and their status, read
-`docs/decision-ledger.md`.
+For the current work, read the [delivery order's status](docs/delivery-order.md#status); for
+selected decisions and their status, read `docs/decision-ledger.md`.
 
 - Jettison's `feature-base` branch is the SDK reference; `main` may lag behind it.
   The sibling checkout is usually `../jettison`. The reproducible SDK commit is in
@@ -18,7 +17,6 @@ For current verification state, open handoffs and the CI failure analysis, read
   It is opt-in with `--tidy`, enabled in CI. Build concurrency is machine-specific;
   follow [D-051](docs/decision-ledger.md#d-051) and
   [the concurrency policy](docs/build-and-gates.md#machine-specific-concurrency).
-  T9's authorised combined local `--tidy` gate has completed; see the verification record below.
 - A mounted content package is not yet playable gameplay. Document the host/script boundary
   and the remaining fixed-point/VFS integration accurately; see `docs/roadmap.md`.
 
@@ -66,15 +64,8 @@ does not restate it.
 - **During refactoring**: Delete or update any adjacent comment whose underlying invariant changed.
 - **During review**: Flag and strip any newly generated comment that restates syntax or schema structure.
 
-## Current verification and CI status (2026-11-16)
+## Verification and CI
 
-Read the current [T1/T9 verification record](docs/history.md#t1t9-local-verification--2026-11-16)
-before building, validating or reporting a gate result. The project analysis retains the
-historical CI diagnosis and the remaining handoffs.
-
-- **The two tidy findings are fixed, and the combined local gate passed.** Presets, suite
-  results, SDK revision, replay hashes and the log path are recorded in the handoff. This
-  is model-library verification; Stage 1 engine-hosted gameplay is still unimplemented.
 - **Local gate results do not establish CI results.** Inspect the exact pushed commit's
   Actions run and logs before reporting its CI status. The pre-fix failure streak in the
   [analysis](docs/project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16) is historical.
@@ -98,8 +89,8 @@ historical CI diagnosis and the remaining handoffs.
   `git ls-remote`, `FETCH_HEAD`, the remote's commit list) before reporting it or writing it into docs;
   see the data-quality note in
   [CI failure analysis](docs/project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16).
-- Planning agents must not reason "CI is green, therefore validated", and must not call the current
-  failures a build regression: they are tidy-only.
+- Planning agents must not reason "CI is green, therefore validated": a run validates the commit
+  it ran on, and only the stages it ran.
 
 ## Models and delegation
 

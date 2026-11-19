@@ -136,6 +136,11 @@ Credits transfer instantly between authorised entity accounts. Commodities follo
 chain: extraction/industry, local haul, station warehouse, ship, destination warehouse and
 local use. Brokers trade real stock using their own funds; their buy/sell spreads and separate
 warehouse handling charges at both ends provide the intended substantial merchant income.
+A market will also sell on [consignment](economy-and-development-plan.md#consignment-storage-selected-2026-11-19):
+a ship unloads into its warehouse and leaves the goods listed, within space caps and at a fee
+by space taken. Eight further [market services](economy-and-development-plan.md#further-market-services-selected-2026-11-19)
+follow it, freight contracts first, and options and futures on its goods are the stretch goal
+after them ([delivery order](delivery-order.md), L16–L25).
 
 Production/extraction capacity caps new output; actual unreserved inventories cap trade.
 Scarcity and demand determine prices, rather than production-based price bands. Auto-trading

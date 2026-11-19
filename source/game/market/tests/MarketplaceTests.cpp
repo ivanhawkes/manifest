@@ -2286,3 +2286,131 @@ TEST_CASE("closing_and_expiry_preflight_combined_reservation_refunds")
 	CHECK_EQ(world.Get<MarketOrderInfo>(second)->reservedCredits, 10);
 	CHECK_EQ(Credits(world, "buyer"), before);
 }
+
+
+TEST_CASE("a_fill_charges_each_side_the_fee_its_order_posted_at")
+{
+	MarketplaceService service;
+	EcsWorld world;
+	std::string error;
+	std::string bid;
+	std::string ask;
+	REQUIRE(AddWorld(world, "buyer", "Buyer", 1004, {}).empty());
+	REQUIRE(AddWorld(world, "seller", "Seller", 0, {{"ore", 100.0}}).empty());
+	REQUIRE(service.Open(world, "buyer", error));
+	REQUIRE(service.PostOrder(
+	    world, Order("buyer", "buyer", "ore", OrderSide::Buy, 100.0, 10_dec, 1), bid, error));
+	CHECK_EQ(Credits(world, "buyer"), 0);
+
+	// The fee rises after the bid rests, as a piracy tier raises the venue's risk. The bid
+	// reserved 40 bps, pays 40 bps, and fills whole; the seller pays the fee it posted at.
+	world.Get<MarketplaceInfo>("buyer")->baseListingFeeBps = 48;
+	REQUIRE(service.PostOrder(
+	    world, Order("buyer", "seller", "ore", OrderSide::Sell, 100.0, 10_dec, 2), ask, error));
+	CHECK_EQ(service.OpenOrderCount(world, "buyer"), 0u);
+	CHECK_EQ(Units(world, "buyer", "ore"), 100.0);
+	CHECK_EQ(Credits(world, "buyer"), 0);
+	CHECK_EQ(Credits(world, "seller"), 995);
+}
+
+
+TEST_CASE("a_buy_order_its_reservation_cannot_pay_leaves_the_book_for_the_bids_behind_it")
+{
+	MarketplaceOptions options;
+	options.listingFeeBps = 0;
+	MarketplaceService service(options);
+	EcsWorld world;
+	std::string error;
+	std::string first;
+	std::string second;
+	std::string ask;
+	REQUIRE(AddWorld(world, "buyer", "Buyer", 20, {}).empty());
+	REQUIRE(AddWorld(world, "seller", "Seller", 0, {{"ore", 1.0}}).empty());
+	REQUIRE(service.Open(world, "buyer", error));
+	REQUIRE(service.PostOrder(
+	    world, Order("buyer", "buyer", "ore", OrderSide::Buy, 1.0, 10_dec, 1), first, error));
+	REQUIRE(service.PostOrder(
+	    world, Order("buyer", "buyer", "ore", OrderSide::Buy, 1.0, 10_dec, 2), second, error));
+	// The first bid's pocket spent, as the rounding of many partial fills can spend it.
+	world.Get<MarketOrderInfo>(first)->reservedCredits = 0;
+
+	REQUIRE(service.PostOrder(
+	    world, Order("buyer", "seller", "ore", OrderSide::Sell, 1.0, 10_dec, 3), ask, error));
+	CHECK_FALSE(world.Has(first));
+	CHECK_FALSE(world.Has(second));
+	CHECK_EQ(service.OpenOrderCount(world, "buyer"), 0u);
+	CHECK_EQ(Credits(world, "seller"), 10);
+	CHECK_EQ(Units(world, "buyer", "ore"), 1.0);
+}
+
+
+TEST_CASE("a_marketable_order_walks_a_full_deck_and_reserves_only_the_asks_it_takes")
+{
+	MarketplaceOptions options;
+	options.listingFeeBps = 0;
+	options.depthUnits = 10.0;
+	MarketplaceService service(options);
+	EcsWorld world;
+	std::string error;
+	std::string orderId;
+	REQUIRE(AddWorld(world, "buyer", "Buyer", 100, {}).empty());
+	REQUIRE(AddWorld(world, "seller", "Seller", 0, {{"ore", 10.0}, {"gem", 2.0}}).empty());
+	REQUIRE(service.Open(world, "buyer", error));
+	// The bid side of ore is full, which turns a resting bid away and not a walk.
+	REQUIRE(service.PostOrder(
+	    world, Order("buyer", "buyer", "ore", OrderSide::Buy, 10.0, 1_dec, 1), orderId, error));
+	CHECK_FALSE(service.PostOrder(
+	    world, Order("buyer", "buyer", "ore", OrderSide::Buy, 1.0, 1_dec, 1), orderId, error));
+	REQUIRE(service.PostOrder(
+	    world, Order("buyer", "seller", "ore", OrderSide::Sell, 5.0, 2_dec, 2), orderId, error));
+
+	std::vector<TradeFill> fills = service.ExecuteOrder(
+	    world, Order("buyer", "buyer", "ore", OrderSide::Buy, 5.0, Decimal{}, 3), error);
+	REQUIRE_EQ(fills.size(), 1u);
+	CHECK_EQ(fills[0].quantity, 5.0);
+
+	// 1 gem at 1 and 1 at 1000: a walk for 1 reserves 1 credit, not the dearest ask's 1000.
+	REQUIRE(service.PostOrder(
+	    world, Order("buyer", "seller", "gem", OrderSide::Sell, 1.0, 1_dec, 4), orderId, error));
+	REQUIRE(service.PostOrder(
+	    world, Order("buyer", "seller", "gem", OrderSide::Sell, 1.0, 1000_dec, 4), orderId, error));
+	const long long before = Credits(world, "buyer");
+	fills = service.ExecuteOrder(
+	    world, Order("buyer", "buyer", "gem", OrderSide::Buy, 1.0, Decimal{}, 5), error);
+	REQUIRE_EQ(fills.size(), 1u);
+	CHECK_EQ(fills[0].unitPrice, 1_dec);
+	CHECK_EQ(Credits(world, "buyer"), before - 1);
+
+	// Nothing on the other side: no walk, and the reason names it.
+	error.clear();
+	CHECK(service
+	          .ExecuteOrder(
+	              world, Order("buyer", "buyer", "tin", OrderSide::Buy, 1.0, Decimal{}, 6), error)
+	          .empty());
+	MANIFEST_CHECK_CONTAINS(error, "no asks");
+}
+
+
+TEST_CASE("a_post_whose_crossing_fails_in_settlement_says_so")
+{
+	MarketplaceOptions options;
+	options.listingFeeBps = 0;
+	MarketplaceService service(options);
+	EcsWorld world;
+	std::string error;
+	std::string bid;
+	std::string ask;
+	REQUIRE(AddWorld(world, "buyer", "Buyer", 100, {}).empty());
+	REQUIRE(AddWorld(world, "seller", "Seller", 0, {{"ore", 1.0}}).empty());
+	REQUIRE(service.Open(world, "buyer", error));
+	REQUIRE(service.PostOrder(
+	    world, Order("buyer", "buyer", "ore", OrderSide::Buy, 1.0, 10_dec, 1), bid, error));
+	// The seller's proceeds would pass the credit range.
+	SetCredits(world, "seller", std::numeric_limits<long long>::max() - 5);
+
+	CHECK_FALSE(service.PostOrder(
+	    world, Order("buyer", "seller", "ore", OrderSide::Sell, 1.0, 10_dec, 2), ask, error));
+	MANIFEST_CHECK_CONTAINS(error, "exceeds");
+	CHECK_EQ(service.OpenOrderCount(world, "buyer"), 2u);
+	CHECK_EQ(Credits(world, "seller"), std::numeric_limits<long long>::max() - 5);
+}

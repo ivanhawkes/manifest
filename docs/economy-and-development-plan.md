@@ -157,9 +157,10 @@ all of them. Buying from a broker changes title to goods already at that warehou
 buyer still needs to load a docked ship. Sending credits cannot relocate those goods.
 Selling at the destination likewise requires goods physically available there.
 
-For the first trading slice, the company carries its own goods in its ship. Third-party
-freight/consignment can be added later using the same ownership/custody distinction. Do not
-force a fake sale whenever a company moves its own goods through a facility.
+For the first trading slice, the company carries its own goods in its ship. [Consignment
+storage](#consignment-storage-selected-2026-11-19) follows it, and third-party freight can be
+added later, both using the same ownership/custody distinction. Do not force a fake sale
+whenever a company moves its own goods through a facility.
 
 ## Physical chain and warehouse operations
 
@@ -237,6 +238,76 @@ Credit movement itself has no distance/transport fee introduced by this requirem
 First public supply contracts also retain accepted-partial-delivery payment. Define whether
 their offer includes handling and which contractual delivery point triggers public ownership
 and payment; bidders must include their assigned costs in the price.
+
+## Consignment storage (selected 2026-11-19)
+
+A ship owner may unload goods into a market's own warehouse and list them for sale there,
+keeping title, so the hold is emptied to go on trading between markets while the goods await a
+better bid. The market is the goods' custodian; a buyer's fill transfers title.
+
+- A consignment listing is a resting sell order backed by the warehoused goods, not the hold.
+  It stays listed until a buyer fills it or its owner withdraws it: no order life expires it.
+  What is unsold is collected onto a docked ship of the owner's.
+- Each market caps the warehouse space it gives to consignment, and each ship the space it may
+  take. A deposit past either cap is refused whole.
+- The market charges a modest storage fee proportional to the space the goods take, while they
+  are stored. It is the market owner's income, apart from a fill's listing fee and a broker's
+  spread ([D-021](decision-ledger.md)).
+- Space is the goods' storage space, from their unit, density and pack factor
+  ([model: units, prices and storage](model.md#units-prices-and-storage)), not their count.
+
+Open before implementation: the fee's rate and cadence, and when it is paid (on deposit, from
+the sale's proceeds, on collection, or accrued against the owner's account); what becomes of
+goods whose fees go unpaid; whether the ship cap is per ship or per owning company, and per
+market or across markets; whether a listing is repriced in place; whether withdrawal or
+collection has a handling charge; where the caps are authored (venue layout, hull) and whether
+effects move them, as `MarketDepth` moves a book's depth; and whether consignment shares the
+warehouse's space with brokers' and facilities' stock. Manifest owns the rules, fees and caps;
+a reusable storage or custody seam it needs is provisioned in Jettison first.
+
+## Options and futures (stretch goal)
+
+A stretch goal after consignment: the market offers derivative contracts on its goods. A future
+is an obligation to deliver or take a quantity at the venue at a set tick and price; an option is
+a right, bought for a premium, to buy (a call) or sell (a put) at a strike price by its expiry.
+Physical delivery would settle through the venue's warehouse, which is why consignment storage
+comes first, and [forward contracts](#further-market-services-selected-2026-11-19) are the same
+promise without an exchange, so they come before it.
+
+Open before it is scheduled: physical or cash settlement; margin and collateral reserved so that a
+promise made many ticks ahead still never fails for want of what it trades, as a fill never does
+today; default and liquidation; who writes contracts (players, brokers, NPCs) and whether the
+venue clears them; the reference price at settlement; and how saves, replay and market
+observations treat open contracts.
+
+## Further market services (selected 2026-11-19)
+
+Services real commodity markets offer, all eight selected by the user on 2026-11-19 after they
+were proposed as candidates. Each still has its rules settled, and its fit with the game's feel
+checked, before its row in the [delivery order](delivery-order.md) (L18–L25) begins. In the
+order they are planned:
+
+1. **Freight contracts.** A trader posts cargo to be carried between venues; ship owners bid to
+   carry it for a fee. Gives a ship work without capital to buy cargo. The third-party freight
+   [custody](#credits-title-and-custody) already allows.
+2. **Warehouse receipts.** Consigned goods carry a tradable title, so they are sold where they
+   lie and the buyer collects them later. Builds on [consignment](#consignment-storage-selected-2026-11-19).
+3. **Paid price reports.** Fresher market information sold over the stale observations players
+   already see; also the reference price contracts would settle against.
+4. **Forward contracts.** A bilateral promise to deliver a quantity at a venue by a tick at a
+   price: futures without an exchange or daily settlement, and a step towards
+   [options and futures](#options-and-futures-stretch-goal).
+5. **Loans against stored goods.** Credits lent against warehoused goods at interest, the goods
+   kept on default. Needs credit and default rules.
+6. **Cargo insurance policies.** The venue's insurance rate as a policy a trader buys, paying
+   claims on cargo lost to piracy.
+7. **Auctions.** For goods left with unpaid storage fees, seized cargo and salvage.
+8. **Escrow and letters of credit.** Trust between players who trade with each other directly,
+   once play is multiplayer.
+
+Considered and set aside for now: quality grades and assays (goods have no quality), swaps and
+other financial products (complexity with nothing for a ship to do), and a central clearing house
+(needed only if futures go ahead).
 
 ## Production caps, inventory and auto-trading
 

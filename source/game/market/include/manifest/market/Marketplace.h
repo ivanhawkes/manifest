@@ -139,13 +139,18 @@ class MarketplaceService
 	// Posts a resting order, and crosses the book it landed on: a seller who posts at
 	// or under the best bid trades against it, the way a real book matches a crossing
 	// order. The order leaves the book when it has filled, so a filled order is not an
-	// answer to "is it in the book" and is an answer to "did it trade".
+	// answer to "is it in the book" and is an answer to "did it trade". False with the
+	// reason when the crossing fails in settlement, the order posted and the pair that
+	// failed left in the book.
 	bool PostOrder(
 	    EcsWorld &world, const OrderRequest &order, std::string &orderId, std::string &errorMessage);
 
 	// A marketable order: it walks the other side of the book, best price first, until
 	// it is filled or the book has nothing left to give it. It leaves nothing resting,
-	// and the fills come back best first.
+	// and the fills come back best first. One with no limit price takes the price at
+	// which the book's depth reaches its quantity, so a buy reserves what the asks it
+	// walks cost; with nothing on the other side it is refused. The venue's depth cap
+	// does not apply to it.
 	std::vector<TradeFill> ExecuteOrder(
 	    EcsWorld &world, const OrderRequest &order, std::string &errorMessage);
 
@@ -358,8 +363,11 @@ class MarketplaceService
 	bool RetireOrder(EcsWorld &world, const std::string &orderId, std::string &errorMessage);
 
 	// One pair of orders meeting: the fill, the settlement, the venue's take, the log.
-	// False, and nothing written, when the pair cannot trade a whole unit. The maker is
-	// the order that was resting, and it sets the price of the fill. The fill spends the
+	// False with no message, and nothing written, when the pair cannot trade a whole unit;
+	// with one when settlement fails. At a venue that requires funds, a buy order whose
+	// reservation pays for nothing more is retired instead, and the answer is true with no
+	// fill. The maker is the order that was resting, and it sets the price of the fill.
+	// Each side pays the fee its own order posted at. The fill spends the
 	// reservations the venue holds - the cargo out of the seller's order, the money out of
 	// the buyer's pocket - and hands the goods over; what is left of either is what the
 	// order gives back when it leaves the book, so the fill never charges a buyer twice.
