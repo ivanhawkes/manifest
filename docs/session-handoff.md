@@ -1,5 +1,12 @@
 # Session handoff
 
+## Astralis at 30 goods — 2026-11-19
+
+[D-067](decision-ledger.md#d-067): the user allowed Astralis 30 goods; the ten added are listed there.
+
+Evidence, on Lythir: `./scripts/ci.sh --werror --asan --tidy` passed 21 of 21 in each of
+`clang-debug`, `clang-release` and `clang-asan`, and tidy clean.
+
 ## Thirty new goods — 2026-11-19
 
 [D-066](decision-ledger.md#d-066): the goods that give the empty crafts, categories and ages a

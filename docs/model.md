@@ -177,7 +177,7 @@ The inputs are read in this order:
 | `ships/hulls.yaml` | The 3 hulls: the long-haul trader, the lone-trader starter and the compact single-seat. |
 | `tuning/balance.yaml` | The balance inputs: cadence, household needs, condition, life support, concessions, procurement, and the bronze project and recipe. |
 | `game-mode/manifest.yaml` | Manifest, the long-term, large-scale mode ([D-061](decision-ledger.md#d-061)): every item and node of the definitions above. |
-| `game-mode/astralis.yaml` | Astralis, the short and fast mode: the 20 goods an industrial-age world trades most ([D-066](decision-ledger.md#d-066)), to keep its play uncluttered. |
+| `game-mode/astralis.yaml` | Astralis, the short and fast mode: the 30 goods an industrial-age world trades most ([D-067](decision-ledger.md#d-067)), to keep its play uncluttered. |
 
 One order is taken from the sources: `base/ages.yaml` fixes the age order, which `build.sh`
 writes into each game mode's `ages`. Each game-mode file lists its own goods and nodes in the
