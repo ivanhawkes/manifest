@@ -7,6 +7,8 @@
 #include <jettison/reflect/Reflect.h>
 #include <jettison/sim/DefinitionRegistry.h>
 
+#include <manifest/effects/ShipEffectEngine.h>
+
 namespace Manifest::Content
 {
 namespace
@@ -60,6 +62,54 @@ void RegisterTypes()
 		    .Value<Core::NodeType::Tech>("Tech")
 		    .Value<Core::NodeType::Skill>("Skill");
 
+		// Every stat, under its enumerator's name: a hull's baseStats are keyed by it.
+		RegisterEnum<Core::EffectStat>("Manifest.EffectStat")
+		    .Value<Core::EffectStat::ShieldFront>("ShieldFront")
+		    .Value<Core::EffectStat::ShieldSide>("ShieldSide")
+		    .Value<Core::EffectStat::ShieldRear>("ShieldRear")
+		    .Value<Core::EffectStat::GunFront>("GunFront")
+		    .Value<Core::EffectStat::GunRear>("GunRear")
+		    .Value<Core::EffectStat::LaserFront>("LaserFront")
+		    .Value<Core::EffectStat::LaserRear>("LaserRear")
+		    .Value<Core::EffectStat::DriveThrust>("DriveThrust")
+		    .Value<Core::EffectStat::ManoeuvreJets>("ManoeuvreJets")
+		    .Value<Core::EffectStat::AttitudeControl>("AttitudeControl")
+		    .Value<Core::EffectStat::SensorLongRange>("SensorLongRange")
+		    .Value<Core::EffectStat::SensorFireControl>("SensorFireControl")
+		    .Value<Core::EffectStat::SensorCommercial>("SensorCommercial")
+		    .Value<Core::EffectStat::NavigationComputer>("NavigationComputer")
+		    .Value<Core::EffectStat::TraderComputer>("TraderComputer")
+		    .Value<Core::EffectStat::CargoVolume>("CargoVolume")
+		    .Value<Core::EffectStat::FuelCapacity>("FuelCapacity")
+		    .Value<Core::EffectStat::SalvageCapacity>("SalvageCapacity")
+		    .Value<Core::EffectStat::LifeSupportDays>("LifeSupportDays")
+		    .Value<Core::EffectStat::StealthRating>("StealthRating")
+		    .Value<Core::EffectStat::EmissionsControl>("EmissionsControl")
+		    .Value<Core::EffectStat::Countermeasures>("Countermeasures")
+		    .Value<Core::EffectStat::CrewTraining>("CrewTraining")
+		    .Value<Core::EffectStat::DamageControl>("DamageControl")
+		    .Value<Core::EffectStat::SparesCapacity>("SparesCapacity")
+		    .Value<Core::EffectStat::YardDockThroughput>("YardDockThroughput")
+		    .Value<Core::EffectStat::YardFitSlots>("YardFitSlots")
+		    .Value<Core::EffectStat::YardModularHullSlots>("YardModularHullSlots")
+		    .Value<Core::EffectStat::YardRefitSlots>("YardRefitSlots")
+		    .Value<Core::EffectStat::RouteRiskPremium>("RouteRiskPremium")
+		    .Value<Core::EffectStat::SurveyRange>("SurveyRange")
+		    .Value<Core::EffectStat::ClaimCount>("ClaimCount")
+		    .Value<Core::EffectStat::RefineryThroughput>("RefineryThroughput")
+		    .Value<Core::EffectStat::ClaimExclusivity>("ClaimExclusivity")
+		    .Value<Core::EffectStat::MarketRiskPremium>("MarketRiskPremium")
+		    .Value<Core::EffectStat::MarketClearance>("MarketClearance")
+		    .Value<Core::EffectStat::MarketInsurance>("MarketInsurance")
+		    .Value<Core::EffectStat::MarketDepth>("MarketDepth")
+		    .Value<Core::EffectStat::MarketSpread>("MarketSpread")
+		    .Value<Core::EffectStat::MarketFenceShare>("MarketFenceShare")
+		    .Value<Core::EffectStat::BodyHabitatCapacity>("BodyHabitatCapacity")
+		    .Value<Core::EffectStat::BodyRecyclingLoop>("BodyRecyclingLoop")
+		    .Value<Core::EffectStat::TerraformAtmosphere>("TerraformAtmosphere")
+		    .Value<Core::EffectStat::TerraformBiosphere>("TerraformBiosphere")
+		    .Value<Core::EffectStat::MedicineCoverage>("MedicineCoverage")
+		    .Value<Core::EffectStat::EducationCoverage>("EducationCoverage");
 		RegisterType<Core::AgeNode>("Manifest.Age", Attribute::Moddable)
 		    .Field<&Core::AgeNode::ageId>("ageId", kDefined)
 		    .Field<&Core::AgeNode::displayName>("displayName", kDefined)
@@ -95,6 +145,15 @@ void RegisterTypes()
 		    .Field<&Core::SkillNode::exclusiveGroupId>("exclusiveGroupId", kDefined)
 		    .Field<&Core::SkillNode::gridX>("gridX", kDefined)
 		    .Field<&Core::SkillNode::gridY>("gridY", kDefined);
+		RegisterType<Core::ShipClassSpec>("Manifest.Hull", Attribute::Moddable)
+		    .Field<&Core::ShipClassSpec::hullId>("hullId", kDefined)
+		    .Field<&Core::ShipClassSpec::className>("className", kDefined)
+		    .Field<&Core::ShipClassSpec::description>("description", kDefined)
+		    .Field<&Core::ShipClassSpec::baseStats>("baseStats", kDefined)
+		    .Field<&Core::ShipClassSpec::fitableEffects>("fitableEffects", kDefined)
+		    .Field<&Core::ShipClassSpec::occupants>("occupants", kDefined)
+		    .Field<&Core::ShipClassSpec::oxygenTanks>("oxygenTanks", kDefined)
+		    .Field<&Core::ShipClassSpec::scrubberCartridges>("scrubberCartridges", kDefined);
 		RegisterType<NamePoolDefinition>("Manifest.NamePool", Attribute::Moddable)
 		    .Field<&NamePoolDefinition::pool>("pool", kDefined)
 		    .Field<&NamePoolDefinition::names>("names", kDefined);
@@ -131,6 +190,9 @@ std::span<const DefinitionType> DefinitionTypes()
 		     entt::resolve<Core::ItemNode>(), &IdOf<Core::ItemNode, &Core::ItemNode::itemId>},
 		    {YamlMigrations{"Manifest.Skill", kVersion1}, "manifest/definitions/skills",
 		     entt::resolve<Core::SkillNode>(), &IdOf<Core::SkillNode, &Core::SkillNode::skillId>},
+		    {YamlMigrations{"Manifest.Hull", kVersion1}, "manifest/definitions/hulls",
+		     entt::resolve<Core::ShipClassSpec>(),
+		     &IdOf<Core::ShipClassSpec, &Core::ShipClassSpec::hullId>},
 		    {YamlMigrations{"Manifest.NamePool", kVersion1}, "manifest/definitions/name-pools",
 		     entt::resolve<NamePoolDefinition>(), &IdOf<NamePoolDefinition, &NamePoolDefinition::pool>},
 		    {YamlMigrations{"Manifest.GameMode", kVersion1}, "manifest/definitions/game-modes",

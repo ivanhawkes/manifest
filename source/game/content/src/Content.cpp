@@ -265,6 +265,36 @@ void CheckNamePools(Checker &checker, const Jettison::Sim::DefinitionRegistry &r
 }
 
 
+void CheckHulls(Checker &checker, const Jettison::Sim::DefinitionRegistry &registry)
+{
+	const Core::EffectCatalogue effects = Core::EffectCatalogue::Default();
+	for (const std::string &name : registry.Names<Core::ShipClassSpec>())
+	{
+		const Core::ShipClassSpec &hull = *registry.Find<Core::ShipClassSpec>(name);
+		At<Core::ShipClassSpec>(checker, name, hull.hullId);
+		checker.Require(!hull.hullId.empty(), "hullId", "is required");
+		checker.Require(!hull.className.empty(), "className", "is required");
+		checker.Require(!hull.baseStats.empty(), "baseStats", "holds none");
+		for (const auto &[stat, value] : hull.baseStats)
+			checker.Require(
+			    std::isfinite(value) && value >= 0.0, "baseStats",
+			    std::format("{} must be finite and not below 0", Core::StatName(stat)));
+		for (const std::string &effect : hull.fitableEffects)
+			checker.Require(
+			    effects.Has(effect), "fitableEffects", std::format("'{}' names no effect", effect));
+		checker.Require(hull.occupants.value_or(1) >= 1, "occupants", "must be at least 1");
+		checker.Require(
+		    hull.scrubberCartridges.value_or(1) >= 1, "scrubberCartridges", "must be at least 1");
+		if (hull.oxygenTanks)
+		{
+			checker.Require(!hull.oxygenTanks->empty(), "oxygenTanks", "holds none");
+			for (const double capacity : *hull.oxygenTanks)
+				checker.Require(Positive(capacity), "oxygenTanks", "a capacity must be above 0");
+		}
+	}
+}
+
+
 // Each selection names a definition of its type, once.
 template <typename T, typename Selection>
 void CheckSelections(
@@ -339,6 +369,7 @@ ContentSet LoadContent(
 	CheckItems(checker, registry);
 	CheckSkills(checker, registry);
 	CheckNamePools(checker, registry);
+	CheckHulls(checker, registry);
 	CheckGameModes(checker, registry);
 
 	const auto *pMode = registry.Find<GameModeDefinition>(gameMode);
@@ -361,6 +392,8 @@ ContentSet LoadContent(
 	content.gameMode = Resolve(registry, *pMode);
 	for (const NamePoolDefinition *pPool : All<NamePoolDefinition>(registry))
 		content.names.AddPool(pPool->pool, pPool->names);
+	for (const Core::ShipClassSpec *pHull : All<Core::ShipClassSpec>(registry))
+		content.hulls.push_back(*pHull);
 	content.identity = BuildContentIdentity(registry);
 	return content;
 }

@@ -1,11 +1,16 @@
 #include "TestHelpers.h"
 
+#include <algorithm>
 #include <map>
 #include <set>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
+#include <jettison/vfs/Mount.h>
+
 #include <manifest/config/SimulationConfig.h>
+#include <manifest/content/Content.h>
 #include <manifest/ecs/Components.h>
 #include <manifest/ecs/EcsWorld.h>
 #include <manifest/effects/CivilisationEffects.h>
@@ -18,6 +23,24 @@
 namespace
 {
 using namespace Manifest::Core;
+
+// The long-haul trader of data/ships/hulls.yaml, read from the staged package.
+const ShipClassSpec &LongHaulTrader()
+{
+	static const ShipClassSpec trader = []
+	{
+		const Jettison::Vfs::Mount source{"manifest", MANIFEST_MOD_DIRECTORY};
+		const Manifest::Content::ContentSet content =
+		    Manifest::Content::LoadContent({&source, 1}, "full");
+		const auto found =
+		    std::ranges::find(content.hulls, std::string{"HullTraderLongHaul"}, &ShipClassSpec::hullId);
+		if (found == content.hulls.end())
+			throw std::runtime_error{"the staged content has no HullTraderLongHaul"};
+		return *found;
+	}();
+	return trader;
+}
+
 
 // The 58 effects the shipped tree asks for: every non-null targetEffectID in
 // data/skill-tree, in the order the files list them. The tree names the effects, the
@@ -178,7 +201,7 @@ TEST_CASE("the_ship_engine_lands_its_effects_on_the_hull")
 	EcsWorld world;
 	std::string errorMessage;
 
-	const ShipClassSpec trader = ShipEffectEngine::LongHaulTrader();
+	const ShipClassSpec trader = LongHaulTrader();
 
 	CHECK(engine.BuildShip(world, "Trader", trader, "Civ-01", errorMessage));
 	CHECK(engine.HasShip(world, "Trader"));
@@ -292,7 +315,7 @@ TEST_CASE("the_hull_refuses_a_system_it_has_no_slot_for")
 	EcsWorld world;
 	std::string errorMessage;
 
-	const ShipClassSpec trader = ShipEffectEngine::LongHaulTrader();
+	const ShipClassSpec trader = LongHaulTrader();
 
 	CHECK(engine.BuildShip(world, "Trader", trader, "Civ-01", errorMessage));
 	CHECK_EQ(trader.fitableEffects.size(), 25u);
@@ -570,8 +593,7 @@ TEST_CASE("an_effect_reads_the_domain_of_the_store_it_lands_on")
 	std::string shipError;
 	std::string civError;
 
-	CHECK(
-	    shipEngine.BuildShip(world, "Trader", ShipEffectEngine::LongHaulTrader(), "Civ-01", shipError));
+	CHECK(shipEngine.BuildShip(world, "Trader", LongHaulTrader(), "Civ-01", shipError));
 
 	CHECK(!civEngine.Apply(
 	    world, "Civ-01", "SkillShipShieldsFront", "ShieldFront", EffectOrigin::Skill, 2, civError));
@@ -1008,8 +1030,7 @@ TEST_CASE("a_tree_walk_lands_every_effect_the_tree_buys")
 	// the split the two engines exist to make. The shield bank is the one system this
 	// tree buys, and the eight nodes that buy a law, a lane, a yard, a survey, a clinic
 	// or nothing are the ones the hull skips.
-	CHECK(shipEngine.BuildShip(
-	    world, "Trader", ShipEffectEngine::LongHaulTrader(), "Civ-01", errorMessage));
+	CHECK(shipEngine.BuildShip(world, "Trader", LongHaulTrader(), "Civ-01", errorMessage));
 	applied = 0u;
 	skipped = 0u;
 
@@ -1026,8 +1047,7 @@ TEST_CASE("a_tree_walk_lands_every_effect_the_tree_buys")
 
 	// A technology reaches every hull of the operator at once, which is why a
 	// civilisation that has bought a technique flies a fleet of it.
-	CHECK(shipEngine.BuildShip(
-	    world, "Trader-2", ShipEffectEngine::LongHaulTrader(), "Civ-01", errorMessage));
+	CHECK(shipEngine.BuildShip(world, "Trader-2", LongHaulTrader(), "Civ-01", errorMessage));
 	CHECK(shipEngine.ApplyProgressionToWorld(
 	    world, progression, "Civ-01", applied, skipped, errorMessage));
 	CHECK_EQ(applied, 2u);
@@ -1181,7 +1201,7 @@ TEST_CASE("an_effect_applies_the_way_its_operator_says")
 	// an operator buys, not about which hulls carry which frames. The 25 ship systems of
 	// the tree are the trader's own slots, and the first block fits them by the names the
 	// shipped catalogue gives them.
-	ShipClassSpec trader = ShipEffectEngine::LongHaulTrader();
+	ShipClassSpec trader = LongHaulTrader();
 
 	trader.fitableEffects.emplace_back("ScreenShare");
 
@@ -1298,7 +1318,7 @@ TEST_CASE("a_skill_bought_twice_costs_once")
 	EcsWorld world;
 	std::string errorMessage;
 
-	const ShipClassSpec trader = ShipEffectEngine::LongHaulTrader();
+	const ShipClassSpec trader = LongHaulTrader();
 
 	CHECK(engine.BuildShip(world, "Trader", trader, "Civ-01", errorMessage));
 	CHECK(engine.BuildShip(world, "Trader-2", trader, "Civ-01", errorMessage));

@@ -2,6 +2,8 @@
 add_executable(manifest_effects_tests EffectsIntegrationTests.cpp)
 target_link_libraries(manifest_effects_tests PRIVATE Manifest::Game manifest_test_helpers doctest::doctest_with_main manifest_warnings)
 target_compile_options(manifest_effects_tests PRIVATE -ffp-contract=off)
+target_compile_definitions(manifest_effects_tests PRIVATE MANIFEST_MOD_DIRECTORY="${MANIFEST_MOD_DIRECTORY}")
+add_dependencies(manifest_effects_tests manifest_mod)
 add_test(NAME effects COMMAND manifest_effects_tests)
 
 add_executable(manifest_data_tests DataTests.cpp)

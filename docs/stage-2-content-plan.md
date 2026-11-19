@@ -118,6 +118,7 @@ References resolve by authored ID through an index built at load.
 | `Manifest.Item` | `definitions/items` | `trade-items/*.yaml`, `item-base` | 97 |
 | `Manifest.Skill` | `definitions/skills` | `skill-tree/*.yaml`, `skill-base` (age gates included) | 85 |
 | `Manifest.NamePool` | `definitions/name-pools` | `universe/solar-system-names.yaml`, one per key | 2 |
+| `Manifest.Hull` | `definitions/hulls` | `ships/hulls.yaml`, `hull-base` (C04) | 3 |
 | `Manifest.GameMode` | `definitions/game-modes` | `game-mode/full.yaml`, `simple.yaml` | 2 |
 | `Manifest.Scenario` | `scenarios` | new, authored by C05 | 0 |
 
@@ -161,6 +162,12 @@ authored value is below one.
 | NamePool | `pool` | string, empty | required, equals the record's name |
 | NamePool | `names` | vector of string, empty | at least one, none empty; order kept |
 | GameMode | `ages`, `items`, `skills` | vectors of `{ageId}`, `{itemId}`, `{skillId}` | each resolves, none twice; order kept |
+| Hull | `hullId`, `className` | string, empty | required |
+| Hull | `description` | string, empty | optional |
+| Hull | `baseStats` | `std::map<EffectStat, double>`, a mapping by stat name | at least one; each finite, not below 0; a stat left out is none |
+| Hull | `fitableEffects` | vector of string, empty | each names an effect; empty is no upgrade |
+| Hull | `occupants`, `scrubberCartridges` | `std::optional<int>`, empty | at least 1; empty is unselected |
+| Hull | `oxygenTanks` | `std::optional<std::vector<double>>`, kilograms a tank | at least one, each above 0; empty is unselected |
 
 Every shipped item carries its physical fields today, so none is optional: test fixtures that omit
 them gain them. Selections are mappings rather than bare strings so that a patch can use
@@ -219,12 +226,19 @@ charge of 41 kg, 16 to the IBC cube. The medical supplies, LPG and both life-sup
 the Industrial Age, which bounds production, not trade: an earlier region imports them. All eight
 are selected in the full mode; the simple mode and the eight-good fixture are unchanged.
 
+The hulls are `Manifest.Hull` definitions (`data/ships/hulls.yaml`), read as
+`Core::ShipClassSpec`, so a hull's `baseStats` is a mapping by stat name, merged by a patch stat by
+stat: the map fields Jettison provisioned for C04. The long-haul trader moved there from code
+unchanged. The lone-trader starter has its 20 m³ hold, one occupant, three 10 kg oxygen tanks and
+one cartridge (D-045, D-050); the compact ship its 4 m³ and one occupant (D-044). Every other stat,
+their fittings and the compact ship's life support are left unset, and the starter's provisioning
+(every tank full, a fresh cartridge) is A04's.
+
 ### Authoring decisions still open
 
 | Decision | Owner, before |
 | --- | --- |
 | Drinking water's item, unit and litre conversion: no water item exists, though `CategoryWater` does | user, before C05 |
-| Hull definitions (T4) | selected 2026-11-19 ([D-059](decision-ledger.md#d-059)); authoring in C04 |
 | Both fixtures' positions, rates, stock, populations, funds and operators | implementer, recorded with C05 |
 | How a player takes a `playerHome` region at allocation | A02 |
 | Trading-bloc schema | when a rule needs it |

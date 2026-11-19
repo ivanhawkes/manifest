@@ -44,8 +44,8 @@ the definitions load through the engine registry beside the legacy loaders, whic
 and the content manifest is defined; no Jettison gap. C03 is done (2026-11-18): the host, the
 console and the data suite load one validated content set through the engine, and the legacy
 loaders and merged documents are retired; no Jettison gap. C04 is in progress: the user selected its
-authoring values on 2026-11-19 ([D-059](decision-ledger.md#d-059)) and its eight items are authored;
-the hull definitions and T4's tuning remain.
+authoring values on 2026-11-19 ([D-059](decision-ledger.md#d-059)); its eight items and three hull
+definitions are authored, the hulls on Jettison's map fields. T4's tuning remains.
 
 - Jettison's G01, a generic rendered shell with the space gameplay moved to its sample, is done
   (2026-11-18, [history](../../jettison/docs/history.md#neutral-sdk-and-manifest-integration)),

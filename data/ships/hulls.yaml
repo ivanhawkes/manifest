@@ -1,0 +1,81 @@
+---
+# The hulls a ship is built on (docs/small-trader-and-docking-plan.md). Each is a hull as built,
+# before any system is fitted:
+#
+#   baseStats          The stats it starts from, by EffectStat name; the ship systems it is fitted
+#                      with and its operator's technology add to them. CargoVolume is cubic metres
+#                      of trade hold, one IBC cube to the cubic metre.
+#   fitableEffects     The effects it has a slot for, by effect id: a system it has no slot for is
+#                      refused.
+#   occupants          The people it carries on a long journey.
+#   oxygenTanks        Its installed operating oxygen bank (D-050), each tank's capacity in
+#                      kilograms. It is outside the trade hold, as the installed scrubber is.
+#   scrubberCartridges The cartridges its installed scrubber holds.
+#
+# A value the design has not selected is left out, not guessed: a stat it does not list is none,
+# no fitableEffects is no upgrade, and occupants, oxygenTanks and scrubberCartridges left out are
+# open (docs/stage-2-content-plan.md, "Item authoring"). The long-haul trader is the hull the ship
+# systems of skill-tree/spaceship.yaml are bought against, its numbers chosen so that the three
+# tiers of a system move it by a half to a third of what it starts at.
+hull-base:
+
+  - hull:
+      hullId: HullTraderLongHaul
+      className: Long-haul trader
+      description: The cargo hauler the trade lanes run on
+      baseStats:
+        ShieldFront: 120
+        ShieldSide: 80
+        ShieldRear: 60
+        GunFront: 24
+        GunRear: 12
+        LaserFront: 12
+        LaserRear: 6
+        DriveThrust: 420
+        ManoeuvreJets: 48
+        AttitudeControl: 10
+        SensorLongRange: 4000
+        SensorFireControl: 800
+        SensorCommercial: 1500
+        NavigationComputer: 2
+        TraderComputer: 1.5
+        CargoVolume: 900
+        FuelCapacity: 60
+        SalvageCapacity: 15
+        LifeSupportDays: 45
+        StealthRating: 0.25
+        EmissionsControl: 0.2
+        Countermeasures: 0.15
+        # Multipliers: a crew that has bought none of these does its base work.
+        CrewTraining: 1
+        DamageControl: 1
+        SparesCapacity: 1
+      fitableEffects: [
+        ShieldFront, ShieldSide, ShieldRear, GunFront, GunRear, LaserFront, LaserRear,
+        EngineThrust, ManoeuvringJets, AttitudeControl, SensorLongRange, SensorFireControl,
+        SensorCommercial, ComputerNavigation, ComputerTrader, CargoHolds, FuelBunkers,
+        SalvageRig, LifeSupport, StealthCoating, EmissionsControl, Countermeasures,
+        CrewTraining, DamageControl, SparesLockers]
+
+  # The lone trader's first ship (D-045, D-050): a 20-IBC hold, one occupant, three 10 kg
+  # oxygen tanks and one scrubber cartridge, provisioned once with every tank full and a fresh
+  # cartridge.
+  - hull:
+      hullId: HullLoneTraderStarter
+      className: Lone-trader starter
+      description: The entry ship of a lone trader
+      baseStats:
+        CargoVolume: 20
+      occupants: 1
+      oxygenTanks: [10, 10, 10]
+      scrubberCartridges: 1
+
+  # The compact single-occupant ship (D-044): four IBC cubes of cargo and a truck-cab cabin. Its
+  # life support and its fittings against the four-IBC limit are open.
+  - hull:
+      hullId: HullCompactSingle
+      className: Compact single-seat
+      description: A one-occupant ship with a tiny long-journey cabin
+      baseStats:
+        CargoVolume: 4
+      occupants: 1

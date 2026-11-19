@@ -284,6 +284,24 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 		    copper, std::format("version: 1\nbasePrice: \"{}\"\n", price),
 		    std::format("basePrice '{}' is not a nonnegative price", price));
 
+	const std::string starter = patch("manifest/definitions/hulls/", "hull-lone-trader-starter");
+	CheckRefused(
+	    starter, "version: 1\nclassName: ''\n",
+	    "Manifest.Hull 'HullLoneTraderStarter': className is required");
+	CheckRefused(starter, "version: 1\nbaseStats: ~\n", "baseStats holds none");
+	CheckRefused(
+	    starter, "version: 1\nbaseStats: {CargoVolume: -1}\n",
+	    "baseStats Cargo Volume must be finite and not below 0");
+	CheckRefused(
+	    starter, "version: 1\nfitableEffects: [Teleport]\n",
+	    "fitableEffects 'Teleport' names no effect");
+	CheckRefused(starter, "version: 1\noccupants: 0\n", "occupants must be at least 1");
+	CheckRefused(
+	    starter, "version: 1\nscrubberCartridges: 0\n", "scrubberCartridges must be at least 1");
+	CheckRefused(starter, "version: 1\noxygenTanks: []\n", "oxygenTanks holds none");
+	CheckRefused(
+	    starter, "version: 1\noxygenTanks: [10, 0]\n", "oxygenTanks a capacity must be above 0");
+
 	const std::string mining = patch(skills, "skill-mining");
 	// Nothing requires publishing, so its tiers are its own rule alone.
 	CheckRefused(
@@ -373,6 +391,30 @@ TEST_CASE(
 	    "manifest/definitions/ages/age-stone.yaml: Manifest.Age 'AgeStone': displayName is required "
 	    "(from replaced, repatched (patch))",
 	    ContentError);
+}
+
+
+TEST_CASE("A hull's stats are a map, patched by stat, and every stat has its name")
+{
+	Overlay overlay;
+	overlay.Write(
+	    "manifest/definitions/hulls/hull-trader-long-haul.patch.yaml",
+	    "version: 1\nbaseStats: {CargoVolume: 1000, GunRear: ~}\n");
+	const ContentSet content = LoadWith(overlay);
+	const auto trader = std::ranges::find(
+	    content.hulls, std::string{"HullTraderLongHaul"}, &Manifest::Core::ShipClassSpec::hullId);
+	REQUIRE(trader != content.hulls.end());
+	CHECK(trader->baseStats.at(Manifest::Core::EffectStat::CargoVolume) == 1000.0);
+	CHECK(trader->baseStats.at(Manifest::Core::EffectStat::ShieldFront) == 120.0);
+	CHECK_FALSE(trader->baseStats.contains(Manifest::Core::EffectStat::GunRear));
+
+	// The registration names each enumerator by hand: one left out could not be authored.
+	RegisterTypes();
+	for (const Manifest::Core::EffectStat stat : Manifest::Core::AllEffectStats())
+	{
+		CAPTURE(Manifest::Core::StatName(stat));
+		CHECK_FALSE(Jettison::Reflect::EnumName(entt::forward_as_meta(stat)).empty());
+	}
 }
 
 

@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -14,8 +15,8 @@
 
 namespace Manifest::Core
 {
-// A class of hull: the stats every ship of it starts with, and the systems it has a
-// slot for.
+// A class of hull, as data/ships/hulls.yaml defines it: the stats every ship of it starts with,
+// the systems it has a slot for, and its life support.
 //
 // The base is the hull that has bought none of the tree: what a long-haul trader is
 // worth before the player spends a single tier on it. The ship systems of
@@ -33,6 +34,11 @@ struct ShipClassSpec
 	// effect refuses the system: a salvage rig cannot be fitted to a hull that has no
 	// rig frame, and the shipyard tree is where the hulls with more slots come from.
 	std::vector<std::string> fitableEffects;
+	// Empty where the design has not selected the value (data/ships/hulls.yaml).
+	std::optional<int> occupants;
+	// The installed operating oxygen bank, each tank's capacity in kilograms (D-050).
+	std::optional<std::vector<double>> oxygenTanks;
+	std::optional<int> scrubberCartridges;
 };
 
 // The engine that puts skill effects and technology effects on ships.
@@ -64,10 +70,6 @@ class ShipEffectEngine
 
 	const EffectCatalogue &Catalogue() const;
 	void SetCatalogue(EffectCatalogue catalogue);
-
-	// The long-haul trader of data/skill-tree/spaceship.yaml: a slot for each of the
-	// 25 ship systems, and the base numbers of a hull that has bought none of them.
-	static ShipClassSpec LongHaulTrader();
 
 	// Builds one ship of a class: the identity, the base stats, the stats as it flies
 	// (a copy of the base), the slots and an empty set of fitted systems. Fails on an

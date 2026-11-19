@@ -221,6 +221,42 @@ TEST_CASE("the_household_and_life_support_goods_are_distinct_full_mode_items")
 	CHECK(cubeMass / cartridge.unitsPerCubicMetre == doctest::Approx(41.0).epsilon(0.01));
 }
 
+// C04's hulls (D-059): the long-haul trader moved to data unchanged, and the two small hulls
+// with only their selected values, the rest left unset.
+TEST_CASE("the_hulls_carry_their_selected_values_and_leave_the_rest_unset")
+{
+	using Manifest::Core::EffectStat;
+	using Manifest::Core::ShipClassSpec;
+	const std::vector<ShipClassSpec> &hulls = Load("full").hulls;
+	const auto find = [&](const std::string &hullId) -> const ShipClassSpec &
+	{
+		const auto found = std::ranges::find(hulls, hullId, &ShipClassSpec::hullId);
+		REQUIRE(found != hulls.end());
+		return *found;
+	};
+
+	const ShipClassSpec &trader = find("HullTraderLongHaul");
+	CHECK(trader.baseStats.size() == 25);
+	CHECK(trader.baseStats.at(EffectStat::CargoVolume) == 900.0);
+	CHECK(trader.baseStats.at(EffectStat::TraderComputer) == 1.5);
+	CHECK(trader.fitableEffects.size() == 25);
+	CHECK_FALSE(trader.occupants.has_value());
+
+	const ShipClassSpec &starter = find("HullLoneTraderStarter");
+	CHECK(starter.baseStats == std::map<EffectStat, double>{{EffectStat::CargoVolume, 20.0}});
+	CHECK(starter.occupants == 1);
+	CHECK(starter.oxygenTanks == std::vector<double>{10.0, 10.0, 10.0});
+	CHECK(starter.scrubberCartridges == 1);
+	CHECK(starter.fitableEffects.empty());
+
+	const ShipClassSpec &compact = find("HullCompactSingle");
+	CHECK(compact.baseStats == std::map<EffectStat, double>{{EffectStat::CargoVolume, 4.0}});
+	CHECK(compact.occupants == 1);
+	CHECK_FALSE(compact.oxygenTanks.has_value());
+	CHECK_FALSE(compact.scrubberCartridges.has_value());
+	CHECK(compact.fitableEffects.empty());
+}
+
 TEST_CASE("every_item_carries_its_age_and_category_link")
 {
 	// Generation reads item.ageId to bound what a world can make and item.categoryId to

@@ -3,11 +3,13 @@
 #include <span>
 #include <stdexcept>
 #include <string_view>
+#include <vector>
 
 #include <jettison/vfs/Mount.h>
 
 #include <manifest/config/SimulationConfig.h>
 #include <manifest/content/ContentIdentity.h>
+#include <manifest/effects/ShipEffectEngine.h>
 #include <manifest/universe/Universe.h>
 
 namespace Jettison::Vfs
@@ -41,6 +43,8 @@ struct ContentSet
 	// The mode's items and skills, in its order.
 	Core::GameModeNode gameMode;
 	Core::UniverseNamePools names;
+	// Every hull, in registry order.
+	std::vector<Core::ShipClassSpec> hulls;
 	// Over every definition loaded, the mode's or not.
 	ContentIdentity identity;
 };

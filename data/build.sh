@@ -8,8 +8,8 @@ mkdir -p "$definitions_dir"
 definitions_dir="$(cd "$definitions_dir" && pwd)"
 cd "$(dirname "$0")"
 
-# The files that define the game: the ages, the categories, every item and every
-# node of the skill tree. Every one of them is a complete YAML document that yq
+# The files that define the game: the ages, the categories, every item, every
+# node of the skill tree and the hulls. Every one of them is a complete YAML document that yq
 # loads on its own, and the files refer to each other by id - the categoryId and
 # ageId of an item names a category and an age, the skillId and itemId of a
 # game-mode file name a node and a good - and never by anchors, so any yq v4 builds
@@ -35,6 +35,7 @@ DEFINITIONS=(
   skill-tree/law.yaml
   skill-tree/trade.yaml
   skill-tree/services.yaml
+  ships/hulls.yaml
 )
 
 # Every document is built in a temporary directory and moved into place at the end, so a failed
@@ -103,6 +104,7 @@ for file in "${DEFINITIONS[@]}"; do
 done
 write_records items itemId '.["item-base"][].item' "${item_files[@]}"
 write_records skills skillId '.["skill-base"][].skill' "${skill_files[@]}"
+write_records hulls hullId '.["hull-base"][].hull' ships/hulls.yaml
 write_records name-pools pool 'to_entries[] | {"pool": .key, "names": .value}' \
   universe/solar-system-names.yaml
 

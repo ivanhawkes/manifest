@@ -158,6 +158,7 @@ The inputs are read in this order:
 | `skill-tree/law.yaml` | The 4 nodes of the warrant, the pardon, the bench and the standing. |
 | `skill-tree/trade.yaml` | The 3 nodes of the docking licence, the cargo insurance and the fence. |
 | `skill-tree/services.yaml` | The 2 nodes of public medicine and education. |
+| `ships/hulls.yaml` | The 3 hulls: the long-haul trader, the lone-trader starter and the compact single-seat. |
 | `game-mode/full.yaml` | The full game mode: the item and node ids selected from the definitions above. |
 | `game-mode/simple.yaml` | The small subset of items used for quick matches and testing. |
 
