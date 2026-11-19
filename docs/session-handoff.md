@@ -1,5 +1,10 @@
 # Session handoff
 
+## Collectibles retired — 2026-11-19
+
+[D-069](decision-ledger.md#d-069): the user retired the empty `CategoryCollectibles`. Committed without the gate,
+at the user's word.
+
 ## Twenty-four more goods, and the humans — 2026-11-19
 
 [D-068](decision-ledger.md#d-068): the 21 goods just outside D-066's 30, natural gas by the new

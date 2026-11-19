@@ -48,11 +48,6 @@ categories:
       type: Chemicals
       description: Chemicals
   - category:
-      categoryId: CategoryCollectibles
-      displayName: Collectibles
-      type: Collectibles
-      description: Collectibles of various kinds
-  - category:
       categoryId: CategoryCommunications
       displayName: Communications
       type: Communications

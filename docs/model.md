@@ -139,7 +139,7 @@ The inputs are read in this order:
 | Source | Contents |
 | --- | --- |
 | `base/ages.yaml` | The 14 ages, in age order. |
-| `trade-items/categories.yaml` | The 44 categories. The goods of the item files are filed under 42 of them; `CategoryCollectibles` and the fallback `CategoryUnknown` hold none. |
+| `trade-items/categories.yaml` | The 43 categories. The goods of the item files are filed under 42 of them; only the fallback `CategoryUnknown` holds none. |
 | `trade-items/chemicals.yaml` | The 10 goods of `CategoryChemicals`, by the tonne but graphene film by area and gunpowder by the kilogram: sodium hydroxide, nitrogen, phosphorus, sulfur, sulfuric acid, chlorine, ammonia, ethylene, graphene, gunpowder. |
 | `trade-items/metals.yaml` | The 17 goods of `CategoryMetals` and brass, bronze and steel of `CategoryAlloys`; the base metals, the alloys and antimony by the tonne, the minor metals and titanium by the kilogram: copper, tin, brass, bronze, nickel, iron, lead, cobalt, lithium, molybdenum, aluminium, potassium, uranium, vanadium, zinc, antimony, neodymium, steel, titanium, copper wire. |
 | `trade-items/precious-metals.yaml` | The 6 goods of `CategoryPreciousMetals`, by the troy ounce: gold, silver, platinum, palladium, rhodium, ruthenium. |
