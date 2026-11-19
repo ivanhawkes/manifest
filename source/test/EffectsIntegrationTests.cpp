@@ -31,7 +31,7 @@ const ShipClassSpec &LongHaulTrader()
 	{
 		const Jettison::Vfs::Mount source{"manifest", MANIFEST_MOD_DIRECTORY};
 		const Manifest::Content::ContentSet content =
-		    Manifest::Content::LoadContent({&source, 1}, "full");
+		    Manifest::Content::LoadContent({&source, 1}, "manifest");
 		const auto found =
 		    std::ranges::find(content.hulls, std::string{"HullTraderLongHaul"}, &ShipClassSpec::hullId);
 		if (found == content.hulls.end())

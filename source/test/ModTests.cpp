@@ -34,5 +34,5 @@ TEST_CASE("Manifest directory and pack expose identical content through the engi
 	CHECK(mod["version"].as<int>() == 1);
 	CHECK(mod["name"].as<std::string>() == "Manifest");
 	CHECK(mod["engine"].as<std::string>() == std::string(Jettison::Core::EngineVersion()));
-	CHECK(pack.Exists("manifest/definitions/game-modes/full.yaml"));
+	CHECK(pack.Exists("manifest/definitions/game-modes/manifest.yaml"));
 }

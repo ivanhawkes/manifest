@@ -17,7 +17,7 @@ using Jettison::DevTools::Console;
 namespace
 {
 // The mode the development commands play.
-constexpr std::string_view kGameMode = "full";
+constexpr std::string_view kGameMode = "manifest";
 
 
 unsigned ParseCount(

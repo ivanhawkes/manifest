@@ -160,8 +160,8 @@ The inputs are read in this order:
 | `skill-tree/services.yaml` | The 2 nodes of public medicine and education. |
 | `ships/hulls.yaml` | The 3 hulls: the long-haul trader, the lone-trader starter and the compact single-seat. |
 | `tuning/balance.yaml` | The balance inputs: cadence, household needs, condition, life support, concessions, procurement, and the bronze project and recipe. |
-| `game-mode/full.yaml` | The full game mode: the item and node ids selected from the definitions above. |
-| `game-mode/simple.yaml` | The small subset of items used for quick matches and testing. |
+| `game-mode/manifest.yaml` | Manifest, the long-term, large-scale mode ([D-061](decision-ledger.md#d-061)): every item and node of the definitions above. |
+| `game-mode/astralis.yaml` | Astralis, the short and fast mode: a smaller list of items, to keep its play uncluttered. |
 
 One order is taken from the sources: `base/ages.yaml` fixes the age order, which `build.sh`
 writes into each game mode's `ages`. Each game-mode file lists its own goods and nodes in the
@@ -182,7 +182,7 @@ Each item writes two references, `categoryId` and `ageId`, and both are plain te
 `base/ages.yaml`. They are the two dials the economy has: `ageId` bounds the goods a
 world can produce, `categoryId` weights the goods a world wants. The content loader refuses an
 item whose references are missing or name nothing, and `DataTests` asserts that every item of the
-full game carries both.
+Manifest mode carries both.
 
 Every id carries the prefix of the kind of thing it names: `Age` for an age, `Category`
 for a category, `Item` for a good and `Skill` for a node of the tree. A reference
@@ -199,10 +199,10 @@ carries the `ageId` of the age it opens - and that no other name is an age, a ca
 good and a node in turn. The ages drop the old `Age` postfix for the prefix, so no id
 ends with the word it starts with.
 
-The full item list in `game-mode/full.yaml` is a selection of the items defined in the
+The full item list in `game-mode/manifest.yaml` is a selection of the items defined in the
 `trade-items/*` files, by id: `- itemId: ItemGold`. After adding, removing or renaming an
-item, add its `- itemId:` reference to `game-mode/full.yaml` (and to
-`game-mode/simple.yaml` if the item belongs in the small game), then run `./build.sh`
+item, add its `- itemId:` reference to `game-mode/manifest.yaml` (and to
+`game-mode/astralis.yaml` if the item belongs in the short game), then run `./build.sh`
 from the **data/** directory. The same is true of the `- skillId:` references of the skill
 tree: the definitions live in the `skill-tree/*` files, the list lives in the two
 `game-mode/*` files, and every node of the tree is in both game modes.
@@ -343,8 +343,8 @@ for good. `ProgressionManager::Validate` rejects a member that requires a rival 
 own group, which is why the warrant and the standing are roots; the fence may ask a
 harbour, because a harbour is not a rival.
 
-The full tree is 85 nodes and 227 tiers, and `game-mode/simple.yaml` selects the same
-skills as `game-mode/full.yaml`: the items are what make the small game small, and a
+The full tree is 85 nodes and 227 tiers, and `game-mode/astralis.yaml` selects the same
+skills as `game-mode/manifest.yaml`: the items are what make the short game small, and a
 short tree would leave the gates, the ship and the standing trees out of the quick
 matches they are meant to test. `DataTests` asserts the scale of it: 14 gates one tier
 deep and 71 `Skill` nodes three tiers deep, 25 ship systems and the 29 standing nodes, each

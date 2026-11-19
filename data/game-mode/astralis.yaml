@@ -1,13 +1,8 @@
 ---
-# Every item and skill in the game. The definitions live in the trade-items/,
-# skill-tree/ and base/ files; this list only names them, by the itemId of a good
-# and the skillId of a node, and build.sh resolves the names into the definitions
-# when it merges.
-#
-# After adding, removing or renaming an item, add its `- itemId:` reference here by
-# hand, and its `- skillId:` reference for a node of the tree: a name with no
-# definition behind it stops the build with the name printed.
-
+# Astralis, the short and fast mode: the whole skill tree and the small subset
+# of the items that keeps a quick match uncluttered. Both are named by itemId and skillId, and
+# build.sh resolves the names into the definitions of the skill-tree/ and
+# trade-items/ files.
 skills:
   - skillId: SkillMining
   - skillId: SkillSmelting
@@ -27,8 +22,11 @@ skills:
   - skillId: SkillPolymers
   - skillId: SkillFuelRefining
 
-  # The age gates: one per age, in age order. Each gate carries the ageId of its
-  # age in base/ages.yaml as its skillId, so a world's age finds its gate in the tree.
+  # The skill list of the small game is the whole tree: the items are what makes it
+  # small, and a short tree would leave the age gates and the ship systems out of the
+  # quick matches they are meant to test.
+  #
+  # The age gates: one per age, in age order.
   - skillId: AgeStone
   - skillId: AgeCopper
   - skillId: AgeBronze
@@ -121,127 +119,27 @@ skills:
 
 items:
 
-  # Chemicals
-  - itemId: ItemSodiumHydroxide
-  - itemId: ItemNitrogen
-  - itemId: ItemPhosphorus
-  - itemId: ItemSulfur
-  - itemId: ItemSulfuricAcid
-  - itemId: ItemAntimony
-  - itemId: ItemChlorine
-  - itemId: ItemAmmonia
-  - itemId: ItemEthylene
-  - itemId: ItemNeodymium
-  - itemId: ItemGraphene
-
   # Metals
-  - itemId: ItemCopper
-  - itemId: ItemTin
   - itemId: ItemGold
-  - itemId: ItemBrass
   - itemId: ItemSilver
-  - itemId: ItemBronze
-  - itemId: ItemNickel
-  - itemId: ItemIron
-  - itemId: ItemLead
-  - itemId: ItemCobalt
-  - itemId: ItemLithium
-  - itemId: ItemMolybdenum
-  - itemId: ItemAluminium
-  - itemId: ItemPalladium
-  - itemId: ItemPlatinum
-  - itemId: ItemPotassium
-  - itemId: ItemRhodium
-  - itemId: ItemRuthenium
-  - itemId: ItemUranium
-  - itemId: ItemVanadium
-  - itemId: ItemZinc
+  - itemId: ItemCopper
 
   # Minerals
   - itemId: ItemSalt
   - itemId: ItemLime
-  - itemId: ItemGraphite
   - itemId: ItemPotash
-  - itemId: ItemNatron
+  
+  # Chemicals
+  - itemId: ItemNitrogen
+  - itemId: ItemPhosphorus
+  - itemId: ItemPotassium
 
-  # Stone Age
-  - itemId: ItemDrinkingWater
-  - itemId: ItemCharcoal
-  - itemId: ItemPottery
-  - itemId: ItemPigments
-  - itemId: ItemSlaves
-  - itemId: ItemArdPlough
-  # Copper Age
-  - itemId: ItemFlour
-  - itemId: ItemBread
-  - itemId: ItemBeer
-  - itemId: ItemWine
-  # Bronze Age
-  - itemId: ItemJewellry
-  # Iron Age
-  - itemId: ItemParchment
-  - itemId: ItemPapyrus
-  - itemId: ItemInk
-  - itemId: ItemVinegar
-  - itemId: ItemShaduf
-  # Classical Age
-  - itemId: ItemMaths
-  - itemId: ItemAntikythera
-  - itemId: ItemAstrolabe
-  - itemId: ItemChemistry
-  - itemId: ItemClock
-  - itemId: ItemCeramics
-  - itemId: ItemBooks
-  - itemId: ItemScrolls
-  - itemId: ItemLeatherhides
+  # Comforts
   - itemId: ItemFurs
   - itemId: ItemGlassware
-  - itemId: ItemCement
-  - itemId: ItemStill
-  - itemId: ItemScrews
-  - itemId: ItemCompass
-  - itemId: ItemCoins
   - itemId: ItemSoap
-  # Medieval Age
-  - itemId: ItemPhysics
-  - itemId: ItemMicroscope
-  # Pre-industrial Age
-  # Industrial Age
-  - itemId: ItemLPG
-  - itemId: ItemBasicMedicalSupplies
-  # Post-industrial Age
-  # Information Age
-  # AI Age
-  # Space Age
-  # Space Colonisation Age
-  # Uncategorised
-  - itemId: ItemHomeAppliances
-  - itemId: ItemElectronics
+  
+  # Medicine
   - itemId: ItemAntibiotics
   - itemId: ItemAnesthetics
   - itemId: ItemAnalgesics
-  - itemId: ItemGems
-  - itemId: ItemDiamonds
-  - itemId: ItemFineArt
-
-  # Seeds
-  - itemId: ItemWheatSeeds
-  - itemId: ItemBarleySeeds
-  - itemId: ItemOatSeeds
-  - itemId: ItemCornSeeds
-  - itemId: ItemRiceSeeds
-  - itemId: ItemSorghumSeeds
-  - itemId: ItemPoppySeeds
-  - itemId: ItemCocoaSeeds
-  - itemId: ItemCocaSeeds
-  - itemId: ItemCanolaSeeds
-
-  # Food grains
-  - itemId: ItemWheat
-  - itemId: ItemBarley
-  - itemId: ItemOats
-  - itemId: ItemRice
-
-  # Life support
-  - itemId: ItemOxygen
-  - itemId: ItemCarbonScrubberCartridge

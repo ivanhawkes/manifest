@@ -32,5 +32,5 @@ expect_refusal "ItemCopper has a null displayName"
 
 fresh_copy "$1"
 sed -i 's/itemId: ItemSilver$/itemId: ItemCOPPER/' "$work/data/trade-items/metals.yaml" \
-  "$work/data/game-mode/full.yaml" "$work/data/game-mode/simple.yaml"
+  "$work/data/game-mode/manifest.yaml" "$work/data/game-mode/astralis.yaml"
 expect_refusal "two items share a record name"

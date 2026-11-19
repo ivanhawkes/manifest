@@ -65,7 +65,7 @@ registry name from the relative filename. Adopt that format for hosted definitio
   as authored. Register `NodeType` with its existing `Tech` and `Skill` names.
 - Each name-pool record carries its existing pool name and ordered list of names.
   Registry filename ordering must not change the pool iteration or name draw order.
-- Game-mode definitions retain ordered item/skill references. Full and simple modes
+- Game-mode definitions retain ordered item/skill references. The Manifest and Astralis modes
   remain available; order of ages, selected items, skills and names is preserved explicitly
   instead of inferred from the registry's sorted names.
 
@@ -119,7 +119,7 @@ References resolve by authored ID through an index built at load.
 | `Manifest.Skill` | `definitions/skills` | `skill-tree/*.yaml`, `skill-base` (age gates included) | 85 |
 | `Manifest.NamePool` | `definitions/name-pools` | `universe/solar-system-names.yaml`, one per key | 2 |
 | `Manifest.Hull` | `definitions/hulls` | `ships/hulls.yaml`, `hull-base` (C04) | 3 |
-| `Manifest.GameMode` | `definitions/game-modes` | `game-mode/full.yaml`, `simple.yaml` | 2 |
+| `Manifest.GameMode` | `definitions/game-modes` | `game-mode/manifest.yaml`, `astralis.yaml` | 2 |
 | `Manifest.Scenario` | `scenarios` | `scenarios/*.yaml`, authored as records (C05) | 2 |
 
 **Built in C02 (2026-11-18).** `Manifest::Content` (`source/game/content`) registers the six types
@@ -244,7 +244,7 @@ Supplies is `CategoryMedicalEquipment`, so the specialised medicines stay alone 
 cartridge are the new `CategoryLifeSupport`; one cartridge is one `Unit`, a fresh 30-occupant-day
 charge of 41 kg, 16 to the IBC cube. The medical supplies, LPG and both life-support goods are of
 the Industrial Age, which bounds production, not trade: an earlier region imports them. All eight
-are selected in the full mode; the simple mode and the eight-good fixture are unchanged.
+are selected in the Manifest mode; the Astralis mode and the eight-good fixture are unchanged.
 
 The hulls are `Manifest.Hull` definitions (`data/ships/hulls.yaml`), read as
 `Core::ShipClassSpec`, so a hull's `baseStats` is a mapping by stat name, merged by a patch stat by
@@ -345,10 +345,10 @@ bounded reusable engine API rather than writing another patch interpreter.
 
 ## Initial scenario
 
-Create a separate scenario; `simple.yaml` currently selects fifteen goods, so it is not
+Create a separate scenario; `astralis.yaml` currently selects fifteen goods, so it is not
 the approved eight-good scenario. Proposed existing IDs: `ItemCopper`, `ItemTin`,
 `ItemGold`, `ItemSalt`, `ItemLime`, `ItemFurs`, `ItemGlassware`, `ItemSoap`.
-These are a proposed test selection, not a change to full/simple modes or base prices.
+These are a proposed test selection, not a change to the Manifest or Astralis modes or base prices.
 
 The scenario defines one system, two distinct civilisation identities and two distinct
 venues, each linked to a civilisation and the system. Include explicit physical
@@ -411,15 +411,15 @@ Use the existing `CategoryFuels`; proposed item ID is `ItemLPG`, not an implemen
 definition. Read-only inspection found no LPG item in the current trade-item definitions.
 
 The user or a user-selected non-OpenAI implementer owns the addition through the ordinary
-definition/registry/packaging/full-mode path. A bounded authoring option is
+definition/registry/packaging/Manifest-mode path. A bounded authoring option is
 `data/trade-items/chemicals.yaml`, already included by `data/build.sh`, plus explicit
-selection in `data/game-mode/full.yaml`. Preserve existing item IDs and the separate
+selection in `data/game-mode/manifest.yaml`. Preserve existing item IDs and the separate
 eight-good fixture. Availability/age, base price, density, packing/storage conversion,
 container handling, production recipes and consumption uses remain open. Kilogram units
 do not determine physical volume or assign LPG as a ship's propulsion fuel.
 
 Implementer evidence: a distinct fuel definition using `Kilogram`, valid references and
-finite authored values, directory/pack and full-mode visibility, separate stock/orders/
+finite authored values, directory/pack and Manifest-mode visibility, separate stock/orders/
 settlement, fractional mass transfers and cargo checks using the selected physical
 conversion. Preserve mass and ownership across transfers and recovery. No commodity
 YAML, build script, fixture, code or test was changed by this planning work.

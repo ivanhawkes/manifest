@@ -162,7 +162,7 @@ TEST_CASE(
 	ConfigDirectory broken;
 	std::filesystem::copy(
 	    MANIFEST_MOD_DIRECTORY, broken.Path(), std::filesystem::copy_options::recursive);
-	std::ofstream{broken.Path() / "manifest/definitions/game-modes/full.yaml", std::ios::trunc}
+	std::ofstream{broken.Path() / "manifest/definitions/game-modes/manifest.yaml", std::ios::trunc}
 	    << "version: 1\nitems: [{itemId: ItemNowhere}]\n";
 	const ConsoleLine failed = Execute(session, std::format("load \"{}\"", broken.Path().string()));
 	CHECK(failed.kind == ConsoleLine::Kind::Error);

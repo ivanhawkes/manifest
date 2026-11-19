@@ -205,7 +205,7 @@ TEST_CASE("A damaged required file in the pack fails start-up as it is read")
 {
 	const Content content;
 	std::vector<char> pack = content.PackBytes();
-	const Stored stored = FindStored(pack, "manifest/definitions/game-modes/full.yaml");
+	const Stored stored = FindStored(pack, "manifest/definitions/game-modes/manifest.yaml");
 	// A stored file has no checksum; a compressed one has its frame's.
 	REQUIRE(stored.method == 1);
 	pack[stored.offset + stored.size / 2] ^= 0x5a;
@@ -257,9 +257,9 @@ TEST_CASE("Content that is missing, cannot be read or breaks a rule fails")
 {
 	{
 		const Content content;
-		content.Remove("manifest/definitions/game-modes/full.yaml");
+		content.Remove("manifest/definitions/game-modes/manifest.yaml");
 		// The scenarios name it first.
-		CheckFails(content.Directory(), Phase::Content, "gameMode 'full' names no game mode");
+		CheckFails(content.Directory(), Phase::Content, "gameMode 'manifest' names no game mode");
 	}
 	{
 		const Content content;
@@ -272,11 +272,11 @@ TEST_CASE("Content that is missing, cannot be read or breaks a rule fails")
 
 	const Content content;
 	const std::filesystem::path file =
-	    content.Directory() / "manifest/definitions/game-modes/full.yaml";
+	    content.Directory() / "manifest/definitions/game-modes/manifest.yaml";
 	std::filesystem::permissions(file, std::filesystem::perms::none);
 	// Root reads it anyway, as a CI container may run the suite.
 	if (std::ifstream{file}.is_open())
 		MESSAGE("running as a user that reads a file without permissions; not checked");
 	else
-		CheckFails(content.Directory(), Phase::Content, "full.yaml");
+		CheckFails(content.Directory(), Phase::Content, "manifest.yaml");
 }

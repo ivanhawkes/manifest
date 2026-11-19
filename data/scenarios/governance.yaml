@@ -6,7 +6,7 @@ version: 1
 # Cassiter and a seeded workshop. Every number is an initial test value recorded with C05, not a
 # balance result. Positions are metres in the system's frame, a station 42,000 km out from its
 # planet; market rates are per simulation day, in the item's unit.
-gameMode: full
+gameMode: manifest
 starterHull: HullLoneTraderStarter
 items:
   - itemId: ItemRice

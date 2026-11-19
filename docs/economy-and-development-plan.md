@@ -337,7 +337,7 @@ The project and batch quantities are starting test values. Work duration, produc
 throughput, workshop construction/operating costs and profitability remain balance/design
 work; the recipe is not evidence of a profitable conversion at existing prices and fees.
 Use the separate governance fixture, retaining the small eight-good trading fixture and
-existing full/simple modes rather than silently inserting bronze into them.
+existing Manifest/Astralis modes rather than silently inserting bronze into them.
 
 Required implementer evidence includes local copper plus physically imported tin, partial
 procurement without premature work, rejection of missing/reserved inputs, facility interruption
@@ -644,7 +644,7 @@ or specialised-medicine demand is selected by this decision.
 
 The user or a user-selected non-OpenAI implementer owns this content addition. A bounded
 authoring path is `data/trade-items/misc.yaml`, which already contains medicine items and
-is included by `data/build.sh`, plus explicit selection in `data/game-mode/full.yaml` and
+is included by `data/build.sh`, plus explicit selection in `data/game-mode/manifest.yaml` and
 the separate governance fixture. `CategoryMedicine` is an existing category available
 for the implementer to assess. Preserve the original eight-good trading fixture. Use
 ordinary Jettison definition/registry/archive and market/inventory/cargo paths; no new
@@ -655,7 +655,7 @@ metre and packing factor remain unselected; daily consumption is selected as 5 k
 
 Required implementer evidence: one distinct basic-supplies ID with valid category/age/unit
 references and finite physical/price fields; unchanged specialised medicine definitions;
-full-mode and directory/pack visibility; separate stock, orders, trades and physical cargo
+Manifest-mode and directory/pack visibility; separate stock, orders, trades and physical cargo
 capacity. Verify 5 kg/day for 1,000 people and 125 kg/day for 25,000 people, including
 fractional 60-second requirements and daily totals. At this rate, actual accessible supplies
 must be consumed once, within household funds, without specialised stock silently substituting or surplus
@@ -687,7 +687,7 @@ work, not automatic consequences of adding a tradable item.
 
 The user or a user-selected non-OpenAI implementer owns the content addition. Suggested
 authoring boundary is a new `data/trade-items/grains.yaml`, included in `data/build.sh`'s
-definition list and selected in `data/game-mode/full.yaml`. Use the existing YAML/archive/
+definition list and selected in `data/game-mode/manifest.yaml`. Use the existing YAML/archive/
 registry and packaging mechanisms. Preserve the tiny eight-good trading fixture; select
 the new essentials explicitly in the separate governance fixture rather than silently
 changing unrelated mode selections. Do not edit generated `data/definitions` records as
@@ -705,7 +705,7 @@ day. Existing `Population` and `Civilisation` still
 use abstract world units; any supported migration needs an explicit conversion to people.
 
 Required implementer evidence: four distinct food IDs and unchanged seeds, valid category/
-age/unit references and finite physical values, full-mode visibility through directory/pack
+age/unit references and finite physical values, Manifest-mode visibility through directory/pack
 loads, independent tradable stock/orders/settlement and physical cargo capacity. At the
 selected daily food rate, one qualifying grain or a measured mixture can satisfy
 the single food need without requiring the other three. Check 100 kg from one grain and

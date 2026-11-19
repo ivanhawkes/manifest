@@ -106,7 +106,7 @@ template <typename T> const T &Get(const Loaded &loaded, std::string_view id)
 
 
 // The content set over the staged package, with the overlay mounted above it.
-ContentSet LoadWith(const Overlay &overlay, std::string_view mode = "full")
+ContentSet LoadWith(const Overlay &overlay, std::string_view mode = "manifest")
 {
 	const std::array<Jettison::Vfs::Mount, 2> sources{
 	    {{"base", kModDirectory}, {"overlay", overlay.Root()}}};
@@ -203,7 +203,7 @@ TEST_CASE(
     "The content set holds each mode in its order, with the defaults one field takes from another")
 {
 	const Loaded loaded{kModDirectory};
-	for (const std::string_view mode : {"full", "simple"})
+	for (const std::string_view mode : {"manifest", "astralis"})
 	{
 		CAPTURE(mode);
 		const Overlay none;
@@ -244,7 +244,7 @@ TEST_CASE(
 	CHECK(content.names.Find("latin") == Get<NamePoolDefinition>(loaded, "latin").names);
 	CHECK(content.identity.manifest == BuildContentIdentity(loaded.registry).manifest);
 
-	// The full mode is every record: the ones no mode selects are counted here too.
+	// The Manifest mode is every record: the ones no mode selects are counted here too.
 	CHECK(loaded.registry.Names<Manifest::Core::ItemNode>().size() == content.gameMode.items.size());
 	CHECK(loaded.registry.Names<Manifest::Core::SkillNode>().size() == content.gameMode.skills.size());
 	CHECK(loaded.registry.Names<Manifest::Core::AgeNode>().size() == content.ages.size());
@@ -373,9 +373,9 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	    "'SkillMining' requires itself (from base, overlay (patch))");
 	// The whole graph holds, but the mode leaves a prerequisite out.
 	CheckRefused(
-	    patch("manifest/definitions/game-modes/", "simple"),
+	    patch("manifest/definitions/game-modes/", "astralis"),
 	    "version: 1\nskills: [{skillId: AgeCopper}]\n",
-	    "manifest/definitions/game-modes/simple.yaml: Manifest.GameMode 'simple': skills ");
+	    "manifest/definitions/game-modes/astralis.yaml: Manifest.GameMode 'astralis': skills ");
 
 	const std::string latin = patch("manifest/definitions/name-pools/", "latin");
 	CheckRefused(latin, "version: 1\nnames: []\n", "Manifest.NamePool 'latin': names holds none");
@@ -391,17 +391,17 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	    "manifest/definitions/name-pools/coptic.yaml", "version: 1\npool: Coptic\nnames: [Abba]\n",
 	    "Manifest.NamePool 'Coptic': pool must be the record's name");
 
-	const std::string simple = patch("manifest/definitions/game-modes/", "simple");
+	const std::string astralis = patch("manifest/definitions/game-modes/", "astralis");
 	CheckRefused(
-	    simple, "version: 1\nitems: !append [{itemId: ItemNowhere}]\n",
-	    "Manifest.GameMode 'simple': items 'ItemNowhere' names nothing");
+	    astralis, "version: 1\nitems: !append [{itemId: ItemNowhere}]\n",
+	    "Manifest.GameMode 'astralis': items 'ItemNowhere' names nothing");
 	CheckRefused(
-	    simple, "version: 1\nitems: !append [{itemId: ItemCopper}]\n",
+	    astralis, "version: 1\nitems: !append [{itemId: ItemCopper}]\n",
 	    "items selects 'ItemCopper' twice");
 	CheckRefused(
-	    simple, "version: 1\nages: [{ageId: AgeNowhere}]\n", "ages 'AgeNowhere' names nothing");
+	    astralis, "version: 1\nages: [{ageId: AgeNowhere}]\n", "ages 'AgeNowhere' names nothing");
 	CheckRefused(
-	    simple, "version: 1\nskills: [{skillId: AgeStone}, {skillId: AgeStone}]\n",
+	    astralis, "version: 1\nskills: [{skillId: AgeStone}, {skillId: AgeStone}]\n",
 	    "skills selects 'AgeStone' twice");
 
 	const Overlay none;
@@ -475,8 +475,8 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	    "manifest/scenarios/governance.yaml: Manifest.Scenario 'governance': gameMode 'hard' names no "
 	    "game mode");
 	CheckRefused(
-	    trading, "version: 1\ngameMode: simple\n",
-	    "items 'ItemTin' is not one of mode 'simple''s items");
+	    trading, "version: 1\ngameMode: astralis\n",
+	    "items 'ItemTin' is not one of mode 'astralis''s items");
 	CheckRefused(
 	    trading, "version: 1\nitems: !append [{itemId: ItemCopper}]\n",
 	    "items selects 'ItemCopper' twice");
@@ -651,7 +651,7 @@ TEST_CASE(
 	     {"replaced", replaced.Root()},
 	     {"repatched", repatched.Root()}}};
 	CHECK_THROWS_WITH_AS(
-	    (void)LoadContent(sources, "full"),
+	    (void)LoadContent(sources, "manifest"),
 	    "manifest/definitions/ages/age-stone.yaml: Manifest.Age 'AgeStone': displayName is required "
 	    "(from replaced, repatched (patch))",
 	    ContentError);
@@ -707,20 +707,20 @@ TEST_CASE("A later layer's whole file replaces a record, and a patch merges into
 	overlay.Write(
 	    "manifest/definitions/items/item-copper.patch.yaml", "version: 1\nbasePrice: \"12.25\"\n");
 	overlay.Write(
-	    "manifest/definitions/game-modes/simple.patch.yaml",
+	    "manifest/definitions/game-modes/astralis.patch.yaml",
 	    "version: 1\nitems: !append [{itemId: ItemAluminium}]\n");
-	const ContentSet full = LoadWith(overlay);
-	CHECK(full.ages.front().displayName == "Flint");
-	CHECK(full.ages.front().description.empty());
+	const ContentSet manifest = LoadWith(overlay);
+	CHECK(manifest.ages.front().displayName == "Flint");
+	CHECK(manifest.ages.front().description.empty());
 	const auto copper = std::find_if(
-	    full.gameMode.items.begin(), full.gameMode.items.end(),
+	    manifest.gameMode.items.begin(), manifest.gameMode.items.end(),
 	    [](const Manifest::Core::ItemNode &item) { return item.itemId == "ItemCopper"; });
-	REQUIRE(copper != full.gameMode.items.end());
+	REQUIRE(copper != manifest.gameMode.items.end());
 	CHECK(copper->basePrice == "12.25");
 	CHECK(copper->displayName == "Copper");
 
-	const ContentSet simple = LoadWith(overlay, "simple");
-	CHECK(simple.gameMode.items.back().itemId == "ItemAluminium");
+	const ContentSet astralis = LoadWith(overlay, "astralis");
+	CHECK(astralis.gameMode.items.back().itemId == "ItemAluminium");
 }
 
 
@@ -851,12 +851,12 @@ TEST_CASE("A changed price, a reordered selection or an unselected definition ch
 	CHECK(price.fingerprint != base.fingerprint);
 
 	const ContentIdentity order = identity(
-	    "manifest/definitions/game-modes/simple.patch.yaml",
+	    "manifest/definitions/game-modes/astralis.patch.yaml",
 	    "version: 1\nitems: [{itemId: ItemSilver}, {itemId: ItemGold}]\n");
 	CHECK(order.manifest != base.manifest);
 	CHECK(
 	    order.manifest != identity(
-	                          "manifest/definitions/game-modes/simple.patch.yaml",
+	                          "manifest/definitions/game-modes/astralis.patch.yaml",
 	                          "version: 1\nitems: [{itemId: ItemGold}, {itemId: ItemSilver}]\n")
 	                          .manifest);
 

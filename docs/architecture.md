@@ -52,8 +52,8 @@ it. `Manifest::Host::Start` mounts one explicit directory or pack read-only and 
 mods or writable overlay, and starts a `Jettison::Host::Session` with an empty world. The engine
 checks the description's format, engine requirement and required packages; Manifest requires a
 `mod.yaml` named `Manifest` with a release and an engine requirement, and loads its definitions
-into the session's registry as one content set (`Manifest::Content::LoadContent`, the full game
-mode until a scenario names one), so a record that is missing, unreadable, damaged or breaks a
+into the session's registry as one content set (`Manifest::Content::LoadContent`, the Manifest
+game mode until a scenario names one), so a record that is missing, unreadable, damaged or breaks a
 rule fails start-up, naming the record, the field and its mounts. The `manifest` executable (`source/apps/manifest/`) is
 `manifest --content <directory-or-pack> --check-startup`: it starts, logs readiness, shuts down
 and exits 0; a failed start-up logs the phase, source and cause and exits 1, a bad command line

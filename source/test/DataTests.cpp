@@ -81,12 +81,12 @@ const Manifest::Content::ContentSet &Load(const std::string &mode)
 
 Manifest::Core::Ages LoadAges()
 {
-	return Load("full").ages;
+	return Load("manifest").ages;
 }
 
 Manifest::Core::Categories LoadCategories()
 {
-	return Load("full").categories;
+	return Load("manifest").categories;
 }
 
 Manifest::Core::GameModeNode LoadGameMode(const std::string &mode)
@@ -139,13 +139,13 @@ TEST_CASE("categories_load_from_the_generated_document")
 
 TEST_CASE("every_item_in_the_full_game_mode_has_a_price")
 {
-	const Manifest::Core::GameModeNode full = LoadGameMode("full");
+	const Manifest::Core::GameModeNode manifest = LoadGameMode("manifest");
 
-	CHECK(full.items.size() >= 80);
+	CHECK(manifest.items.size() >= 80);
 
-	CHECK(!HasDuplicates(Ids(full.items)));
+	CHECK(!HasDuplicates(Ids(manifest.items)));
 
-	for (const auto &item : full.items)
+	for (const auto &item : manifest.items)
 	{
 		CHECK(!item.itemId.empty());
 		CHECK(!item.displayName.empty());
@@ -166,14 +166,14 @@ TEST_CASE("every_item_in_the_full_game_mode_has_a_price")
 // C04's goods (docs/stage-2-content-plan.md): the four food grains beside their seeds, the
 // household's medical supplies beside the specialised medicines, LPG, and the life-support
 // consumables in their own category.
-TEST_CASE("the_household_and_life_support_goods_are_distinct_full_mode_items")
+TEST_CASE("the_household_and_life_support_goods_are_distinct_manifest_mode_items")
 {
 	using Manifest::Core::TradeUnit;
-	const Manifest::Core::GameModeNode full = LoadGameMode("full");
+	const Manifest::Core::GameModeNode manifest = LoadGameMode("manifest");
 	const auto find = [&](const std::string &itemId) -> const Manifest::Core::ItemNode *
 	{
-		const auto found = std::ranges::find(full.items, itemId, &Manifest::Core::ItemNode::itemId);
-		return found == full.items.end() ? nullptr : &*found;
+		const auto found = std::ranges::find(manifest.items, itemId, &Manifest::Core::ItemNode::itemId);
+		return found == manifest.items.end() ? nullptr : &*found;
 	};
 
 	for (const char *grain : {"ItemWheat", "ItemBarley", "ItemOats", "ItemRice"})
@@ -228,7 +228,7 @@ TEST_CASE("the_hulls_carry_their_selected_values_and_leave_the_rest_unset")
 {
 	using Manifest::Core::EffectStat;
 	using Manifest::Core::ShipClassSpec;
-	const std::vector<ShipClassSpec> &hulls = Load("full").hulls;
+	const std::vector<ShipClassSpec> &hulls = Load("manifest").hulls;
 	const auto find = [&](const std::string &hullId) -> const ShipClassSpec &
 	{
 		const auto found = std::ranges::find(hulls, hullId, &ShipClassSpec::hullId);
@@ -264,7 +264,7 @@ TEST_CASE("the_hulls_carry_their_selected_values_and_leave_the_rest_unset")
 TEST_CASE("the_balance_tuning_reproduces_the_plans_worked_examples")
 {
 	using Manifest::Core::TradeUnit;
-	const Manifest::Content::TuningDefinition &tuning = Load("full").tuning;
+	const Manifest::Content::TuningDefinition &tuning = Load("manifest").tuning;
 	const double intervalsPerDay = 86400.0 / tuning.economy.intervalSeconds;
 	CHECK(intervalsPerDay == 1440.0);
 	// A 100-credit wage payment: 90 to households, 10 to the treasury.
@@ -335,7 +335,7 @@ TEST_CASE("every_item_carries_its_age_and_category_link")
 	// with no shortages is a universe with no trade.
 	const Manifest::Core::Ages ages = LoadAges();
 	const Manifest::Core::Categories categories = LoadCategories();
-	const Manifest::Core::GameModeNode full = LoadGameMode("full");
+	const Manifest::Core::GameModeNode manifest = LoadGameMode("manifest");
 
 	std::vector<std::string> ageIds;
 	for (const auto &age : ages)
@@ -349,9 +349,9 @@ TEST_CASE("every_item_carries_its_age_and_category_link")
 		categoryIds.push_back(category.categoryId);
 	}
 
-	CHECK(full.items.size() >= 80);
+	CHECK(manifest.items.size() >= 80);
 
-	for (const auto &item : full.items)
+	for (const auto &item : manifest.items)
 	{
 		CHECK(!item.ageId.empty());
 		CHECK(!item.categoryId.empty());
@@ -371,7 +371,7 @@ TEST_CASE("the_id_of_a_definition_names_the_kind_of_thing_it_is")
 	// with the word it starts with.
 	const Manifest::Core::Ages ages = LoadAges();
 	const Manifest::Core::Categories categories = LoadCategories();
-	const Manifest::Core::GameModeNode full = LoadGameMode("full");
+	const Manifest::Core::GameModeNode manifest = LoadGameMode("manifest");
 
 	std::vector<std::string> ageIds;
 	for (const auto &age : ages)
@@ -391,7 +391,7 @@ TEST_CASE("the_id_of_a_definition_names_the_kind_of_thing_it_is")
 		names.push_back(category.categoryId);
 	}
 
-	const std::vector<std::string> itemIds = Ids(full.items);
+	const std::vector<std::string> itemIds = Ids(manifest.items);
 	for (const std::string &itemId : itemIds)
 	{
 		CHECK(itemId.rfind("Item", 0) == 0);
@@ -399,7 +399,7 @@ TEST_CASE("the_id_of_a_definition_names_the_kind_of_thing_it_is")
 	}
 
 	std::vector<std::string> skillIds;
-	for (const auto &skill : full.skills)
+	for (const auto &skill : manifest.skills)
 	{
 		// The gate of an age carries the ageId of the age it opens, so the gate is the
 		// one name the tree shares with another table, and it is shared by design.
@@ -441,11 +441,11 @@ TEST_CASE("nulls_in_the_skill_data_never_arrive_as_the_word_null")
 	// yaml-cpp renders a null as the scalar text "null". If that ever reaches the
 	// skill tree, every skill lands in an exclusive group named "null" and buying one
 	// skill locks out all the others.
-	const Manifest::Core::GameModeNode full = LoadGameMode("full");
+	const Manifest::Core::GameModeNode manifest = LoadGameMode("manifest");
 
-	CHECK(full.skills.size() >= 85);
+	CHECK(manifest.skills.size() >= 85);
 
-	for (const auto &skill : full.skills)
+	for (const auto &skill : manifest.skills)
 	{
 		CHECK(skill.exclusiveGroupId != "null");
 		CHECK(skill.exclusiveGroupId != "Null");
@@ -483,10 +483,10 @@ TEST_CASE("the_age_gates_are_the_ages")
 	// form the age ladder: each gate requires the gate of the age before it, and the
 	// first gate in age order is the only one with nothing under it.
 	const Manifest::Core::Ages ages = LoadAges();
-	const Manifest::Core::GameModeNode full = LoadGameMode("full");
+	const Manifest::Core::GameModeNode manifest = LoadGameMode("manifest");
 
 	std::map<std::string, Manifest::Core::SkillNode> gates;
-	for (const auto &skill : full.skills)
+	for (const auto &skill : manifest.skills)
 	{
 		if (skill.nodeType == Manifest::Core::NodeType::Tech)
 		{
@@ -536,7 +536,7 @@ TEST_CASE("the_ship_systems_are_worth_the_trip")
 	// better repair party can always fit more of it, and none of them is in an exclusive
 	// group: a trader who can afford a forward and an aft screen fits both, and the tree
 	// has to say so.
-	const Manifest::Core::GameModeNode full = LoadGameMode("full");
+	const Manifest::Core::GameModeNode manifest = LoadGameMode("manifest");
 
 	const std::vector<std::string> shipSystems = {
 	    "SkillShipShieldsFront",    "SkillShipShieldsSide",        "SkillShipShieldsRear",
@@ -551,7 +551,7 @@ TEST_CASE("the_ship_systems_are_worth_the_trip")
 	};
 
 	std::map<std::string, Manifest::Core::SkillNode> ship;
-	for (const auto &skill : full.skills)
+	for (const auto &skill : manifest.skills)
 	{
 		if (skill.skillId.rfind("SkillShip", 0) == 0)
 		{
@@ -588,7 +588,7 @@ TEST_CASE("the_standing_trees_are_in_the_game")
 	// node the tree has, and the links that cross trees - the refinery on the Smelting
 	// craft, the biosphere on the Agriculture craft, the insurance on the tribunal - are
 	// the point of the whole shape: a tree that stands alone is a list, not a tree.
-	const Manifest::Core::GameModeNode full = LoadGameMode("full");
+	const Manifest::Core::GameModeNode manifest = LoadGameMode("manifest");
 
 	const std::vector<std::string> standingTrees = {
 	    "SkillYardDrydock",           "SkillYardOutfitting",     "SkillYardModularHulls",
@@ -604,7 +604,7 @@ TEST_CASE("the_standing_trees_are_in_the_game")
 	};
 
 	std::map<std::string, Manifest::Core::SkillNode> nodes;
-	for (const auto &skill : full.skills)
+	for (const auto &skill : manifest.skills)
 	{
 		nodes[skill.skillId] = skill;
 	}
@@ -658,7 +658,7 @@ TEST_CASE("one_clean_choice_locks_the_rest_of_the_standing")
 	// reason the mechanic exists: an admiralty warrant, a standing among the crews and
 	// a fence are one reputation, spent three ways. Buy one and the other two are shut,
 	// so the tree has to be built, bought from a pool, and read back.
-	const Manifest::Core::GameModeNode full = LoadGameMode("full");
+	const Manifest::Core::GameModeNode manifest = LoadGameMode("manifest");
 
 	const std::vector<std::string> members = {
 	    "SkillLawAdmiraltyWarrant",
@@ -668,7 +668,7 @@ TEST_CASE("one_clean_choice_locks_the_rest_of_the_standing")
 
 	Manifest::Core::ProgressionManager progression;
 	std::string errorMessage;
-	CHECK(progression.Build(full.skills, errorMessage));
+	CHECK(progression.Build(manifest.skills, errorMessage));
 
 	for (const std::string &member : members)
 	{
@@ -712,16 +712,16 @@ TEST_CASE("one_clean_choice_locks_the_rest_of_the_standing")
 
 TEST_CASE("the_skill_tree_is_a_valid_graph")
 {
-	const Manifest::Core::GameModeNode full = LoadGameMode("full");
+	const Manifest::Core::GameModeNode manifest = LoadGameMode("manifest");
 
 	Manifest::Core::ProgressionManager progression;
 	std::string errorMessage;
 
 	// The whole tree must register and validate: known prerequisites, no cycles, no
 	// tier above a prerequisite's reach, no branch locked out by its own rival.
-	CHECK(progression.Build(full.skills, errorMessage));
-	CHECK_EQ(progression.GetRegistry().size(), full.skills.size());
-	CHECK_EQ(progression.NodeIds().size(), full.skills.size());
+	CHECK(progression.Build(manifest.skills, errorMessage));
+	CHECK_EQ(progression.GetRegistry().size(), manifest.skills.size());
+	CHECK_EQ(progression.NodeIds().size(), manifest.skills.size());
 
 	// Tier capacity across the tree: every craft has to be worth researching, and the
 	// total is what the player spends resources against. The age gates are one tier by
@@ -729,7 +729,7 @@ TEST_CASE("the_skill_tree_is_a_valid_graph")
 	int tierCapacity = 0;
 	int crafts = 0;
 	int gates = 0;
-	for (const auto &skill : full.skills)
+	for (const auto &skill : manifest.skills)
 	{
 		const int tiers = progression.GetMaxTiers(skill.skillId);
 		tierCapacity += tiers;
@@ -756,27 +756,27 @@ TEST_CASE("the_skill_tree_is_a_valid_graph")
 
 TEST_CASE("the_simple_game_mode_is_a_smaller_subset_of_the_full_one")
 {
-	const Manifest::Core::GameModeNode full = LoadGameMode("full");
-	const Manifest::Core::GameModeNode simple = LoadGameMode("simple");
+	const Manifest::Core::GameModeNode manifest = LoadGameMode("manifest");
+	const Manifest::Core::GameModeNode astralis = LoadGameMode("astralis");
 
-	CHECK(simple.items.size() >= 12);
-	CHECK(simple.items.size() < full.items.size());
-	CHECK(simple.skills.size() >= 85);
+	CHECK(astralis.items.size() >= 12);
+	CHECK(astralis.items.size() < manifest.items.size());
+	CHECK(astralis.skills.size() >= 85);
 
 	// The small game keeps the whole tree, so a quick match exercises the age gates and
 	// the ship systems, not only the crafts.
-	CHECK_EQ(simple.skills.size(), full.skills.size());
+	CHECK_EQ(astralis.skills.size(), manifest.skills.size());
 
-	const std::vector<std::string> fullIds = Ids(full.items);
-	for (const std::string &id : Ids(simple.items))
+	const std::vector<std::string> manifestIds = Ids(manifest.items);
+	for (const std::string &id : Ids(astralis.items))
 	{
-		CHECK(std::find(fullIds.begin(), fullIds.end(), id) != fullIds.end());
+		CHECK(std::find(manifestIds.begin(), manifestIds.end(), id) != manifestIds.end());
 	}
 
 	const std::vector<std::string> fullSkills = [&]()
 	{
 		std::vector<std::string> ids;
-		for (const auto &skill : full.skills)
+		for (const auto &skill : manifest.skills)
 		{
 			ids.push_back(skill.skillId);
 		}
@@ -784,7 +784,7 @@ TEST_CASE("the_simple_game_mode_is_a_smaller_subset_of_the_full_one")
 		return ids;
 	}();
 
-	for (const auto &skill : simple.skills)
+	for (const auto &skill : astralis.skills)
 	{
 		CHECK(std::find(fullSkills.begin(), fullSkills.end(), skill.skillId) != fullSkills.end());
 	}
@@ -792,7 +792,7 @@ TEST_CASE("the_simple_game_mode_is_a_smaller_subset_of_the_full_one")
 
 TEST_CASE("the_universe_names_load")
 {
-	const Manifest::Core::UniverseNamePools &pools = Load("full").names;
+	const Manifest::Core::UniverseNamePools &pools = Load("manifest").names;
 	CHECK(pools.PoolCount() > std::size_t(0));
 	CHECK(pools.NameCount() > std::size_t(100));
 
@@ -808,9 +808,9 @@ TEST_CASE("the_generated_data_drives_a_universe")
 	// universe out.
 	const Manifest::Core::Ages ages = LoadAges();
 	const Manifest::Core::Categories categories = LoadCategories();
-	const Manifest::Core::GameModeNode full = LoadGameMode("full");
+	const Manifest::Core::GameModeNode manifest = LoadGameMode("manifest");
 
-	const Manifest::Core::UniverseNamePools &pools = Load("full").names;
+	const Manifest::Core::UniverseNamePools &pools = Load("manifest").names;
 	std::string errorMessage;
 
 	Manifest::Core::GenerateOptions options;
@@ -818,7 +818,7 @@ TEST_CASE("the_generated_data_drives_a_universe")
 	options.seed = 1;
 
 	Manifest::Core::Simulation simulation;
-	CHECK(simulation.Generate(ages, categories, full.items, pools, options, errorMessage));
+	CHECK(simulation.Generate(ages, categories, manifest.items, pools, options, errorMessage));
 
 	CHECK_EQ(simulation.GetCivilisations().size(), std::size_t(8));
 	CHECK(simulation.AdvanceTick(errorMessage));
