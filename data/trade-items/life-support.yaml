@@ -14,8 +14,9 @@
 #   basePrice          Market value per unitType, in credits at one credit to one
 #                      US dollar, at 2025 prices.
 #
-# The two consumables of a ship's life support. Oxygen is traded by mass, as the
-# refrigerated liquid in vacuum-jacketed tanks, packed as ItemNitrogen is. A
+# The two consumables of a ship's life support. Oxygen is traded by the kilolitre, as every
+# fluid is, the refrigerated liquid in vacuum-jacketed tanks, packed as ItemNitrogen is; a ship's
+# tanks and its use are kilograms, 1,140 to the kilolitre at its density. A
 # cartridge is the replaceable lithium hydroxide charge of the installed scrubber,
 # rated fresh at 30 occupant-days; the machinery stays aboard. Sixteen cartridges
 # of 41 kg pack an IBC cube.
@@ -28,9 +29,9 @@ item-base:
       ageId: AgeIndustrial
       displayName: Oxygen
       description: Breathing oxygen (refrigerated liquid)
-      unitsPerCubicMetre: 1140
-      basePrice: 0.50
-      unitType: Kilogram
+      unitsPerCubicMetre: 1
+      basePrice: 570
+      unitType: Kilolitre
       density: 1.14
       packFactor: 0.9
 

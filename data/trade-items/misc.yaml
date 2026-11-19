@@ -468,9 +468,9 @@ item-base:
       ageId: AgeIndustrial
       displayName: LPG
       description: Liquefied petroleum gas, propane and butane under pressure
-      unitsPerCubicMetre: 540
-      basePrice: 0.40
-      unitType: Kilogram
+      unitsPerCubicMetre: 1
+      basePrice: 216
+      unitType: Kilolitre
       density: 0.54
       packFactor: 0.45
 

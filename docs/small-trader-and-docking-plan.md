@@ -133,7 +133,7 @@ dimensions. Each is a `Dock::PadClassDefinition` by its kebab-case name (`heavy-
 
 | Class | Rank | Largest hull, L x B x H (m) | Pad, W x L (m) | Docks at |
 | --- | --- | --- | --- | --- |
-| skiff | 0 | set by the compact ship above | 8 x 10 | a standard station |
+| skiff | 0 | 9.8 x 6.4 x 1.8, the lone-trader starter ([D-062](decision-ledger.md#d-062)) | 8 x 10 | a standard station |
 | corvette | 1 | 25 x 20 x 8 | 35 x 40 | a standard station |
 | frigate | 2 | 60 x 30 x 15 | 50 x 90 | a standard station |
 | destroyer | 3 | 140 x 50 x 30 | 80 x 180 | a standard station, the largest it takes |
@@ -154,8 +154,46 @@ in Jettison and in pin `e53681e`). Smaller craft may use it. The engine's layout
 ships express it with no engine edit; the people, what the hangars hold, what resupply and repair
 do and cost, and which systems have a platform are Manifest's, and not yet designed.
 
-Not yet authored: these definitions wait for the hosted content pipeline (C02 to C04) and the
-compact berth (W05).
+Not yet authored: [C09](#shared-ship-and-station-definitions-c09-planned-2026-11-19) authors
+them.
+
+## Shared ship and station definitions (C09, planned 2026-11-19)
+
+Jettison's dock already defines ships and stations as data: `Dock.PadClassDefinition` (rank,
+largest hull, pad size), `Dock.HullDefinition` (size, pad class, cargo hatch, model) and
+`Dock.StationLayout` (decks, piers, pads with features such as `dry-dock`, cargo bays, deck
+traffic), each checked by a free function (`CheckPadClass`, `CheckHull`, `CheckLayout`). The space
+sample adds its own cruise drive and ship-for-sale records. A `Manifest.Hull` carries only stats,
+occupants and life support, and C05's venues list the hulls they dock by hand. Manifest authors
+records of the engine's types, seeded from the sample's values and the table above, and extends
+them; neither game reads the other's files ([D-062](decision-ledger.md#d-062)).
+
+**When: now, as C09, between C05 and C06.** C06 fixes the validator's and host's options over the
+content set, and C07 and C08 close the schema contract and the content identity; merging first
+puts the shared shapes in that contract, with nothing to migrate. Stage 3 (A02 to A04) then
+provisions and loads the starter against its real hull, and W05 docks it on a real pad. Waiting
+for W05 would rewrite C05's venue format and the content identity after C08 closed them.
+
+C09, in order:
+
+1. **Pad classes.** Skiff to cruiser as `Dock.PadClassDefinition` records, the skiff's from
+   D-062 and corvette to cruiser the sample's sizes. Dreadnought and heavy destroyer wait for
+   their proposed sizes to be selected; no hull needs them.
+2. **Hulls.** Each `Manifest.Hull` gains a `Dock.HullDefinition` of the same record name. The
+   lone-trader starter is the skiff, 9.8 x 6.4 x 1.8 m; its hatch and model are C09's. The compact
+   ship is a smaller skiff, its size open until W05; the long-haul trader's size and class need
+   selecting (the sample's 56 x 28 x 14 m frigate transport is the nearest).
+3. **Stations.** A venue names a `Dock.StationLayout` (`layout`) in place of its `hulls` list, the
+   first seeded from the sample's Ostra Highport with skiff pads added. Starting access asks
+   whether the layout has a pad the starter hull fits; `lifeSupportCapacity` stays Manifest's.
+   The dry-dock platform's layout follows when its contents are designed.
+4. **Engine gap.** `Docks::Fits` is a member of a `Docks` attached to a world, so content
+   validation cannot ask it. Jettison provides the same rule as a free function over
+   `PadClasses` beside `CheckHull`, which `Docks::Fits` calls, with an independent consumer's
+   test, and Manifest's pin moves.
+
+Left for when a task needs them: the cruise drive and flight handling (W05), a ship's sale price,
+mass and fitting slots (W08), and station dressing and models (L15).
 
 ## Capability map and demonstrated gap
 

@@ -202,8 +202,8 @@ TEST_CASE("the_household_and_life_support_goods_are_distinct_manifest_mode_items
 	} goods[] = {
 	    {"ItemBasicMedicalSupplies", "CategoryMedicalEquipment", TradeUnit::Kilogram},
 	    {"ItemAntibiotics", "CategoryMedicine", TradeUnit::Kilogram},
-	    {"ItemLPG", "CategoryFuels", TradeUnit::Kilogram},
-	    {"ItemOxygen", "CategoryLifeSupport", TradeUnit::Kilogram},
+	    {"ItemLPG", "CategoryFuels", TradeUnit::Kilolitre},
+	    {"ItemOxygen", "CategoryLifeSupport", TradeUnit::Kilolitre},
 	    {"ItemCarbonScrubberCartridge", "CategoryLifeSupport", TradeUnit::Unit},
 	    {"ItemDrinkingWater", "CategoryWater", TradeUnit::Kilolitre},
 	};

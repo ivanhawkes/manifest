@@ -117,7 +117,7 @@ venues:
       - {itemId: ItemCopper, production: 3000, demand: 0, stock: 30000}
       - {itemId: ItemBasicMedicalSupplies, production: 0, demand: 500, stock: 1000}
       - {itemId: ItemTin, production: 0, demand: 50, stock: 0}
-      - {itemId: ItemOxygen, production: 0, demand: 20, stock: 200}
+      - {itemId: ItemOxygen, production: 0, demand: 0.02, stock: 0.2}
       - {itemId: ItemCarbonScrubberCartridge, production: 0, demand: 1, stock: 8}
   # A private dock, on its owner's terms.
   - venueId: VenueCassiterDock
@@ -133,7 +133,7 @@ venues:
     market:
       - {itemId: ItemTin, production: 400, demand: 0, stock: 4000}
       - {itemId: ItemBasicMedicalSupplies, production: 600, demand: 0, stock: 3000}
-      - {itemId: ItemOxygen, production: 200, demand: 0, stock: 2000}
+      - {itemId: ItemOxygen, production: 0.2, demand: 0, stock: 2}
       - {itemId: ItemCarbonScrubberCartridge, production: 10, demand: 0, stock: 100}
       - {itemId: ItemDrinkingWater, production: 80, demand: 0, stock: 300}
       - {itemId: ItemRice, production: 0, demand: 12500, stock: 20000}

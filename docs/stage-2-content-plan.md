@@ -208,7 +208,8 @@ unselected.
 
 **Built in C05 (2026-11-19).** `ScenarioDefinition` (`Definitions.h`) is the table above with what
 C05's starting-access and project checks need: the root names a `starterHull`; a venue is `public`
-and `operational` or not, lists the `hulls` it docks and has a `lifeSupportCapacity`, ships it can
+and `operational` or not, lists the `hulls` it docks (until [C09](small-trader-and-docking-plan.md#shared-ship-and-station-definitions-c09-planned-2026-11-19)
+gives it a station layout) and has a `lifeSupportCapacity`, ships it can
 keep on working life support; a region lists the `skills` it knows, its seeded `facilities`
 (`{facilityId, kind: Workshop, operational}`) and its public `projects`, each a tuning project.
 `LoadContent` checks every scenario against its own mode, whichever the set is built for, and the
@@ -430,7 +431,7 @@ Add a Life Support category with the following planned items:
 
 | Planned item | Requirement to define |
 | --- | --- |
-| Oxygen | Separate consumable measured and traded in kilograms (`Kilogram`), required at 1 kg per occupant per simulation day while relying on onboard life support. The starter's operating reserve is capped at 30 kg; tank physical volume and other hull capacities remain open. |
+| Oxygen | Separate consumable traded by the kilolitre ([D-060](decision-ledger.md#d-060)) and measured aboard in kilograms, required at 1 kg per occupant per simulation day while relying on onboard life support. The starter's operating reserve is capped at 30 kg; tank physical volume and other hull capacities remain open. |
 | Carbon scrubbers | Replaceable consumable cartridges used by installed life-support machinery. A fresh standard cartridge provides 30 occupant-days. Trade/storage units, physical values and resupply rules remain open. |
 
 The selected distinction is installed machinery versus consumable supplies. Scrubber
@@ -442,8 +443,8 @@ Both consumables belong under Life Support. A fresh standard cartridge is rated 
 occupant-days. Ship endurance, consequences of exhaustion and spent-cartridge handling
 remain open.
 
-The selected oxygen inventory and trading unit is the kilogram, using the existing
-`Kilogram` commodity unit. Preserve fractional quantities under Manifest's float/double
+The oxygen trading unit is the kilolitre ([D-060](decision-ledger.md#d-060), superseding the
+kilogram); aboard, tanks and use are kilograms, converted at the item's density. Preserve fractional quantities under Manifest's float/double
 policy. Oxygen mass is the quoted, transferred and consumed quantity; tank volume, storage
 capacity and physical authoring values are separate choices. Selecting mass units does
 not select tank pressure, storage method, density/packing values, container ownership or
@@ -559,7 +560,7 @@ than resetting them on docking, reconnect or reload. Resolve replacement timing,
 partial cartridges and spent-item handling before implementing those operations. Existing
 life-support skill/effect IDs remain stable; their presence does not implement consumable
 accounting or select these new values.
-Verify the oxygen definition uses `Kilogram`, independent oxygen mass in quotes/stock/
+Verify the oxygen definition uses `Kilolitre`, independent oxygen mass in quotes/stock/
 transfers, fractional quantities and conservation across trade/loading/refill operations
 once those operations are selected. Physical capacity checks must use the authored storage
 conversion, and saved kilograms must retain their meaning across recovery. Selecting
