@@ -672,3 +672,30 @@ The implementer verifies:
 
 No builds, implementation changes or gates were performed for this plan. Proceed with
 stage 1 implementation first; refresh engine API details before starting stage 2.
+
+### Delivered (C08, 2026-11-19)
+
+Stage 2 is closed. The delivered contract is the sections above marked built or defined:
+[the schema contract](#schema-contract-c01-2026-11-18), [layering and the host's
+options](#versions-layering-and-migration), [loading](#atomic-loading-and-validation) and
+[identity](#content-identity). Each check above is held by a test that runs in the gate:
+
+| Check | Held by |
+| --- | --- |
+| Round trips, exact prices, selections in order | `content`: every record reads back as written; a price keeps its text; the content set holds each mode in its order |
+| Full and simple content | `data`: the simple game mode is a smaller subset of the full one |
+| No bespoke YAML reading | No `YAML::Load` in a game loader; the one left reads the pack's `mod.yaml` in the `mod` suite |
+| Directory and pack | `mod` (files), `content` (manifests), the console's two loads, and the build's `manifest_validate_pack`, to the byte for each scenario |
+| Unrelated working directory | `cli_*` and `validate_*` run from an empty directory |
+| Host and validator agree | `host`: `Validate` gives `Start`'s identity and fails with its error text, overlays included |
+| TUI off | Not a gate preset. Checked once for C08: `MANIFEST_BUILD_TUI=OFF`, pinned fetch, 32 of 32 tests, no FTXUI in the build graph |
+| Layering | `content`: replacement, patch merge, `!append`, `!merge=`, null to default, orphan patch, two-version migration, future version, unknown field; `host`: two overlays patching one field, the later mount winning in either order |
+| Duplicates | A record's file is named by its ID, so a duplicate ID is the same file, replaced by layer; a selection, system, region or venue given twice is refused (`content`) |
+| Rollback after a late failure | Console: a game mode failing after the other types read keeps the session, its world and its source; a reload afterwards resets the world |
+| Semantic rejection | `content`: each rule a record or scenario breaks, naming record, field and layers |
+| The scenarios | `content`: the trading and governance fixtures are those their plans describe |
+
+The [stage's exit criterion](development-stages.md#stage-2-validated-content-and-a-small-scenario)
+is met. Final gate: `./scripts/ci.sh --werror --asan --tidy` at Lythir's 24 workers against the
+pinned fetch `30ea3f3`, no sibling checkout. No Jettison change in C08, so the engine's gate stands
+at its last green run (`3413edb`).

@@ -1,0 +1,4 @@
+version: 1
+name: Brass
+release: 0.0.1
+requires: [manifest]

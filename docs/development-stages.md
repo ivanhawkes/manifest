@@ -229,6 +229,8 @@ in stage 2. No sample economy should become active implicitly.
 
 Depends on stage 1. Make packaged content usable by the actual game.
 
+**Done** 2026-11-19, C08 ([delivered](stage-2-content-plan.md#delivered-c08-2026-11-19)).
+
 - Adapt configuration and universe loading to the VFS and definition registry.
 - Define schema versions, layering rules and contextual validation errors.
 - Add a command-line content validator sharing the host's loading rules.

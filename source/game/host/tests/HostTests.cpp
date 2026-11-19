@@ -385,6 +385,20 @@ TEST_CASE("Overlays mount over the package in order, each by its mod.yaml name")
 	    validated.identity.manifest !=
 	    Manifest::Host::Validate(OptionsFor(MANIFEST_MOD_DIRECTORY)).identity.manifest);
 
+	// Two overlays patch copper's price: the later mount's patch applies last, whichever it is.
+	const auto copperPrice = [&](std::vector<std::filesystem::path> order)
+	{
+		const Manifest::Content::ContentSet content =
+		    Manifest::Host::Validate(OptionsFor(MANIFEST_MOD_DIRECTORY, std::move(order)));
+		for (const Manifest::Core::ItemNode &item : content.gameMode.items)
+			if (item.itemId == "ItemCopper")
+				return item.basePrice;
+		FAIL("no ItemCopper");
+		return std::string{};
+	};
+	CHECK(copperPrice({overlays / "copper", overlays / "brass"}) == "11");
+	CHECK(copperPrice({overlays / "brass", overlays / "copper"}) == "10.5");
+
 	// A rule an overlay breaks names the overlay among the layers read.
 	CheckFails(
 	    OptionsFor(MANIFEST_MOD_DIRECTORY, {overlays / "blank-age"}), Phase::Content,

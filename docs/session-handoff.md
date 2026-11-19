@@ -2,8 +2,15 @@
 
 ## Next, on resuming — 2026-11-19
 
-C08, closing Stage 2, as `delivery-order.md` has it; then Codex's cross-review of the stage's
-commits together.
+Codex's cross-review of Stage 2's commits together (C01 to C08), then A02, as `delivery-order.md`
+has it.
+
+## C08: Stage 2 closed — 2026-11-19
+
+[Delivered](stage-2-content-plan.md#delivered-c08-2026-11-19) maps each of the plan's checks to the
+test that holds it. One was missing and is added: two overlays patching copper's price, the later
+mount's patch winning in either order (`host`, overlay `brass`). The TUI-off build is not a gate
+preset; it was built once (`build/tui-off`, pinned fetch) and passed 32 of 32. No Jettison gap.
 
 ## C07: the validation build graph — 2026-11-19
 
