@@ -234,6 +234,17 @@ one cartridge (D-045, D-050); the compact ship its 4 m³ and one occupant (D-044
 their fittings and the compact ship's life support are left unset, and the starter's provisioning
 (every tank full, a fresh cartridge) is A04's.
 
+### Tuning (T4, C04, 2026-11-19)
+
+The balance inputs are one `Manifest.Tuning` record, `manifest/definitions/tuning/balance.yaml`
+(source `data/tuning/balance.yaml`), named by its file and required: the economic cadence and
+wage tax, the household needs, condition rates, onboard life-support consumption, the concession
+term, the performance-security rate, and the bronze project and recipe. The keys are indexed in
+the [ledger](decision-ledger.md#numeric-values). No rule reads them yet; the content suite holds
+each to its range and its references (a need's items in the need's unit, a project's skills,
+inputs and recipe), and the data suite to the plans' worked examples. A need, project or recipe
+patches by its ID (`!merge=needId`). Drinking water's need has no item until one is selected.
+
 ### Authoring decisions still open
 
 | Decision | Owner, before |

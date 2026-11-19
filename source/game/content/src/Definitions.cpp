@@ -164,6 +164,51 @@ void RegisterTypes()
 		    .Field<&ItemSelection::itemId>("itemId", kDefined);
 		RegisterType<SkillSelection>("Manifest.SkillSelection")
 		    .Field<&SkillSelection::skillId>("skillId", kDefined);
+		RegisterType<ItemQuantity>("Manifest.ItemQuantity")
+		    .Field<&ItemQuantity::itemId>("itemId", kDefined)
+		    .Field<&ItemQuantity::quantity>("quantity", kDefined);
+		RegisterType<EconomyTuning>("Manifest.EconomyTuning")
+		    .Field<&EconomyTuning::intervalSeconds>("intervalSeconds", kDefined)
+		    .Field<&EconomyTuning::wageTaxRate>("wageTaxRate", kDefined);
+		RegisterType<NeedDefinition>("Manifest.Need")
+		    .Field<&NeedDefinition::needId>("needId", kDefined)
+		    .Field<&NeedDefinition::weight>("weight", kDefined)
+		    .Field<&NeedDefinition::perThousandPerDay>("perThousandPerDay", kDefined)
+		    .Field<&NeedDefinition::unit>("unit", kDefined)
+		    .Field<&NeedDefinition::items>("items", kDefined);
+		RegisterType<ConditionTuning>("Manifest.ConditionTuning")
+		    .Field<&ConditionTuning::initial>("initial", kDefined)
+		    .Field<&ConditionTuning::healthLossPerHour>("healthLossPerHour", kDefined)
+		    .Field<&ConditionTuning::happinessLossPerHour>("happinessLossPerHour", kDefined)
+		    .Field<&ConditionTuning::healthRecoveryPerHour>("healthRecoveryPerHour", kDefined)
+		    .Field<&ConditionTuning::happinessRecoveryPerHour>("happinessRecoveryPerHour", kDefined)
+		    .Field<&ConditionTuning::workRateFloor>("workRateFloor", kDefined);
+		RegisterType<LifeSupportTuning>("Manifest.LifeSupportTuning")
+		    .Field<&LifeSupportTuning::oxygenKilogramsPerOccupantDay>(
+		        "oxygenKilogramsPerOccupantDay", kDefined)
+		    .Field<&LifeSupportTuning::cartridgeOccupantDays>("cartridgeOccupantDays", kDefined);
+		RegisterType<ConcessionTuning>("Manifest.ConcessionTuning")
+		    .Field<&ConcessionTuning::termHours>("termHours", kDefined);
+		RegisterType<ProcurementTuning>("Manifest.ProcurementTuning")
+		    .Field<&ProcurementTuning::performanceSecurityRate>("performanceSecurityRate", kDefined);
+		RegisterType<ProjectDefinition>("Manifest.Project")
+		    .Field<&ProjectDefinition::projectId>("projectId", kDefined)
+		    .Field<&ProjectDefinition::requiredSkills>("requires", kDefined)
+		    .Field<&ProjectDefinition::inputs>("inputs", kDefined)
+		    .Field<&ProjectDefinition::unlocksRecipe>("unlocksRecipe", kDefined);
+		RegisterType<RecipeDefinition>("Manifest.Recipe")
+		    .Field<&RecipeDefinition::recipeId>("recipeId", kDefined)
+		    .Field<&RecipeDefinition::inputs>("inputs", kDefined)
+		    .Field<&RecipeDefinition::outputs>("outputs", kDefined);
+		RegisterType<TuningDefinition>("Manifest.Tuning", Attribute::Moddable)
+		    .Field<&TuningDefinition::economy>("economy", kDefined)
+		    .Field<&TuningDefinition::needs>("needs", kDefined)
+		    .Field<&TuningDefinition::condition>("condition", kDefined)
+		    .Field<&TuningDefinition::lifeSupport>("lifeSupport", kDefined)
+		    .Field<&TuningDefinition::concessions>("concessions", kDefined)
+		    .Field<&TuningDefinition::procurement>("procurement", kDefined)
+		    .Field<&TuningDefinition::projects>("projects", kDefined)
+		    .Field<&TuningDefinition::recipes>("recipes", kDefined);
 		RegisterType<GameModeDefinition>("Manifest.GameMode", Attribute::Moddable)
 		    .Field<&GameModeDefinition::ages>("ages", kDefined)
 		    .Field<&GameModeDefinition::items>("items", kDefined)
@@ -197,6 +242,8 @@ std::span<const DefinitionType> DefinitionTypes()
 		     entt::resolve<NamePoolDefinition>(), &IdOf<NamePoolDefinition, &NamePoolDefinition::pool>},
 		    {YamlMigrations{"Manifest.GameMode", kVersion1}, "manifest/definitions/game-modes",
 		     entt::resolve<GameModeDefinition>(), nullptr},
+		    {YamlMigrations{"Manifest.Tuning", kVersion1}, "manifest/definitions/tuning",
+		     entt::resolve<TuningDefinition>(), nullptr},
 		};
 	}();
 	return types;

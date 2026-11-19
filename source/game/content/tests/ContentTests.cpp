@@ -302,6 +302,45 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	CheckRefused(
 	    starter, "version: 1\noxygenTanks: [10, 0]\n", "oxygenTanks a capacity must be above 0");
 
+	const std::string balance = "manifest/definitions/tuning/balance.patch.yaml";
+	CheckRefused(
+	    balance, "version: 1\neconomy: {intervalSeconds: 0}\n",
+	    "Manifest.Tuning 'balance': economy.intervalSeconds must be above 0");
+	CheckRefused(
+	    balance, "version: 1\neconomy: {wageTaxRate: 1}\n", "economy.wageTaxRate must be in [0, 1)");
+	CheckRefused(balance, "version: 1\nneeds: []\n", "needs holds none");
+	CheckRefused(
+	    balance, "version: 1\nneeds: !merge=needId\n  - {needId: NeedStapleFood, weight: 0}\n",
+	    "'NeedStapleFood' weight must be above 0");
+	CheckRefused(
+	    balance,
+	    "version: 1\nneeds: !merge=needId\n  - {needId: NeedDrinkingWater, items: [{itemId: "
+	    "ItemBeer}]}\n",
+	    "'NeedDrinkingWater' item 'ItemBeer' is not traded in the need's unit");
+	CheckRefused(
+	    balance,
+	    "version: 1\nneeds: !merge=needId\n  - {needId: NeedStapleFood, items: [{itemId: ItemRice}, "
+	    "{itemId: ItemRice}]}\n",
+	    "'NeedStapleFood' selects 'ItemRice' twice");
+	CheckRefused(
+	    balance, "version: 1\ncondition: {initial: 101}\n", "condition.initial must be in [0, 100]");
+	CheckRefused(
+	    balance, "version: 1\ncondition: {workRateFloor: 2}\n",
+	    "condition.workRateFloor must be in [0, 1]");
+	CheckRefused(
+	    balance, "version: 1\nprocurement: {performanceSecurityRate: -0.1}\n",
+	    "procurement.performanceSecurityRate must be in [0, 1]");
+	CheckRefused(
+	    balance,
+	    "version: 1\nprojects: !merge=projectId\n  - {projectId: ProjectBronzeMetallurgy, "
+	    "unlocksRecipe: RecipeGold}\n",
+	    "'ProjectBronzeMetallurgy' unlocks 'RecipeGold', which names no recipe");
+	CheckRefused(
+	    balance,
+	    "version: 1\nrecipes: !merge=recipeId\n  - {recipeId: RecipeBronze, outputs: [{itemId: "
+	    "ItemBronze, quantity: 0}]}\n",
+	    "'ItemBronze' must be a quantity above 0");
+
 	const std::string mining = patch(skills, "skill-mining");
 	// Nothing requires publishing, so its tiers are its own rule alone.
 	CheckRefused(

@@ -201,7 +201,7 @@ TEST_CASE("the_ship_engine_lands_its_effects_on_the_hull")
 	EcsWorld world;
 	std::string errorMessage;
 
-	const ShipClassSpec trader = LongHaulTrader();
+	const ShipClassSpec &trader = LongHaulTrader();
 
 	CHECK(engine.BuildShip(world, "Trader", trader, "Civ-01", errorMessage));
 	CHECK(engine.HasShip(world, "Trader"));
@@ -315,7 +315,7 @@ TEST_CASE("the_hull_refuses_a_system_it_has_no_slot_for")
 	EcsWorld world;
 	std::string errorMessage;
 
-	const ShipClassSpec trader = LongHaulTrader();
+	const ShipClassSpec &trader = LongHaulTrader();
 
 	CHECK(engine.BuildShip(world, "Trader", trader, "Civ-01", errorMessage));
 	CHECK_EQ(trader.fitableEffects.size(), 25u);
@@ -1318,7 +1318,7 @@ TEST_CASE("a_skill_bought_twice_costs_once")
 	EcsWorld world;
 	std::string errorMessage;
 
-	const ShipClassSpec trader = LongHaulTrader();
+	const ShipClassSpec &trader = LongHaulTrader();
 
 	CHECK(engine.BuildShip(world, "Trader", trader, "Civ-01", errorMessage));
 	CHECK(engine.BuildShip(world, "Trader-2", trader, "Civ-01", errorMessage));

@@ -123,6 +123,12 @@ for mode in game-mode/*.yaml; do
   ' > "$records_dir/game-modes/$(basename "$mode")"
 done
 
+# The balance inputs: one record, named by its file.
+mkdir -p "$records_dir/tuning"
+for tuning in tuning/*.yaml; do
+  yq e '{"version": 1} + . | ... comments=""' "$tuning" > "$records_dir/tuning/$(basename "$tuning")"
+done
+
 # Replaced whole, so a record whose source was removed does not survive from an earlier build.
 rm -rf "$definitions_dir"
 mv "$records_dir" "$definitions_dir"

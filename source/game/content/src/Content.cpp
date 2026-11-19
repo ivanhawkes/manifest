@@ -295,6 +295,145 @@ void CheckHulls(Checker &checker, const Jettison::Sim::DefinitionRegistry &regis
 }
 
 
+bool Fraction(double value)
+{
+	return std::isfinite(value) && value >= 0.0 && value <= 1.0;
+}
+
+
+bool NotNegative(double value)
+{
+	return std::isfinite(value) && value >= 0.0;
+}
+
+
+// Each quantity names an item, and is above 0.
+void CheckQuantities(
+    Checker &checker, const Jettison::Sim::DefinitionRegistry &registry,
+    const std::vector<ItemQuantity> &quantities, std::string_view field)
+{
+	checker.Require(!quantities.empty(), field, "holds none");
+	for (const ItemQuantity &quantity : quantities)
+	{
+		const auto *pItem = registry.Find<Core::ItemNode>(RegistryName(quantity.itemId));
+		checker.Require(
+		    pItem != nullptr && pItem->itemId == quantity.itemId, field,
+		    std::format("'{}' names no item", quantity.itemId));
+		checker.Require(
+		    Positive(quantity.quantity), field,
+		    std::format("'{}' must be a quantity above 0", quantity.itemId));
+	}
+}
+
+
+void CheckTuning(Checker &checker, const Jettison::Sim::DefinitionRegistry &registry)
+{
+	for (const std::string &name : registry.Names<TuningDefinition>())
+	{
+		const TuningDefinition &tuning = *registry.Find<TuningDefinition>(name);
+		At<TuningDefinition>(checker, name, name);
+		checker.Require(
+		    Positive(tuning.economy.intervalSeconds), "economy.intervalSeconds", "must be above 0");
+		checker.Require(
+		    Fraction(tuning.economy.wageTaxRate) && tuning.economy.wageTaxRate < 1.0,
+		    "economy.wageTaxRate", "must be in [0, 1)");
+
+		checker.Require(!tuning.needs.empty(), "needs", "holds none");
+		std::set<std::string, std::less<>> needs;
+		for (const NeedDefinition &need : tuning.needs)
+		{
+			checker.Require(!need.needId.empty(), "needs", "a needId is required");
+			checker.Require(
+			    needs.insert(need.needId).second, "needs",
+			    std::format("'{}' is given twice", need.needId));
+			checker.Require(
+			    Positive(need.weight), "needs",
+			    std::format("'{}' weight must be above 0", need.needId));
+			checker.Require(
+			    Positive(need.perThousandPerDay), "needs",
+			    std::format("'{}' perThousandPerDay must be above 0", need.needId));
+			checker.Require(
+			    need.unit.has_value(), "needs", std::format("'{}' unit is required", need.needId));
+			std::set<std::string, std::less<>> items;
+			for (const ItemSelection &selection : need.items)
+			{
+				const auto *pItem = registry.Find<Core::ItemNode>(RegistryName(selection.itemId));
+				checker.Require(
+				    pItem != nullptr && pItem->itemId == selection.itemId, "needs",
+				    std::format("'{}' item '{}' names nothing", need.needId, selection.itemId));
+				checker.Require(
+				    items.insert(selection.itemId).second, "needs",
+				    std::format("'{}' selects '{}' twice", need.needId, selection.itemId));
+				// Met 1:1 in the need's unit: an item in another needs a declared conversion first.
+				checker.Require(
+				    pItem->unitType == need.unit, "needs",
+				    std::format(
+				        "'{}' item '{}' is not traded in the need's unit", need.needId,
+				        selection.itemId));
+			}
+		}
+
+		const ConditionTuning &condition = tuning.condition;
+		checker.Require(
+		    NotNegative(condition.initial) && condition.initial <= 100.0, "condition.initial",
+		    "must be in [0, 100]");
+		for (const auto &[rate, field] :
+		     {std::pair{condition.healthLossPerHour, "condition.healthLossPerHour"},
+		      {condition.happinessLossPerHour, "condition.happinessLossPerHour"},
+		      {condition.healthRecoveryPerHour, "condition.healthRecoveryPerHour"},
+		      {condition.happinessRecoveryPerHour, "condition.happinessRecoveryPerHour"}})
+			checker.Require(Positive(rate), field, "must be above 0");
+		checker.Require(
+		    Fraction(condition.workRateFloor), "condition.workRateFloor", "must be in [0, 1]");
+
+		checker.Require(
+		    Positive(tuning.lifeSupport.oxygenKilogramsPerOccupantDay),
+		    "lifeSupport.oxygenKilogramsPerOccupantDay", "must be above 0");
+		checker.Require(
+		    Positive(tuning.lifeSupport.cartridgeOccupantDays), "lifeSupport.cartridgeOccupantDays",
+		    "must be above 0");
+		checker.Require(
+		    Positive(tuning.concessions.termHours), "concessions.termHours", "must be above 0");
+		checker.Require(
+		    Fraction(tuning.procurement.performanceSecurityRate), "procurement.performanceSecurityRate",
+		    "must be in [0, 1]");
+
+		std::set<std::string, std::less<>> recipes;
+		for (const RecipeDefinition &recipe : tuning.recipes)
+		{
+			checker.Require(!recipe.recipeId.empty(), "recipes", "a recipeId is required");
+			checker.Require(
+			    recipes.insert(recipe.recipeId).second, "recipes",
+			    std::format("'{}' is given twice", recipe.recipeId));
+			CheckQuantities(checker, registry, recipe.inputs, "recipes");
+			CheckQuantities(checker, registry, recipe.outputs, "recipes");
+		}
+		std::set<std::string, std::less<>> projects;
+		for (const ProjectDefinition &project : tuning.projects)
+		{
+			checker.Require(!project.projectId.empty(), "projects", "a projectId is required");
+			checker.Require(
+			    projects.insert(project.projectId).second, "projects",
+			    std::format("'{}' is given twice", project.projectId));
+			for (const SkillSelection &skill : project.requiredSkills)
+			{
+				const auto *pSkill = registry.Find<Core::SkillNode>(RegistryName(skill.skillId));
+				checker.Require(
+				    pSkill != nullptr && pSkill->skillId == skill.skillId, "projects",
+				    std::format(
+				        "'{}' requires '{}', which names no skill", project.projectId, skill.skillId));
+			}
+			CheckQuantities(checker, registry, project.inputs, "projects");
+			checker.Require(
+			    recipes.contains(project.unlocksRecipe), "projects",
+			    std::format(
+			        "'{}' unlocks '{}', which names no recipe", project.projectId,
+			        project.unlocksRecipe));
+		}
+	}
+}
+
+
 // Each selection names a definition of its type, once.
 template <typename T, typename Selection>
 void CheckSelections(
@@ -370,6 +509,7 @@ ContentSet LoadContent(
 	CheckSkills(checker, registry);
 	CheckNamePools(checker, registry);
 	CheckHulls(checker, registry);
+	CheckTuning(checker, registry);
 	CheckGameModes(checker, registry);
 
 	const auto *pMode = registry.Find<GameModeDefinition>(gameMode);
@@ -392,6 +532,11 @@ ContentSet LoadContent(
 	content.gameMode = Resolve(registry, *pMode);
 	for (const NamePoolDefinition *pPool : All<NamePoolDefinition>(registry))
 		content.names.AddPool(pPool->pool, pPool->names);
+	const auto *pTuning = registry.Find<TuningDefinition>("balance");
+	if (pTuning == nullptr)
+		throw ContentError{std::format(
+		    "{}: there is no balance tuning", TypeOf(entt::resolve<TuningDefinition>()).directory)};
+	content.tuning = *pTuning;
 	for (const Core::ShipClassSpec *pHull : All<Core::ShipClassSpec>(registry))
 		content.hulls.push_back(*pHull);
 	content.identity = BuildContentIdentity(registry);

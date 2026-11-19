@@ -9,6 +9,7 @@
 
 #include <manifest/config/SimulationConfig.h>
 #include <manifest/content/ContentIdentity.h>
+#include <manifest/content/Definitions.h>
 #include <manifest/effects/ShipEffectEngine.h>
 #include <manifest/universe/Universe.h>
 
@@ -45,6 +46,8 @@ struct ContentSet
 	Core::UniverseNamePools names;
 	// Every hull, in registry order.
 	std::vector<Core::ShipClassSpec> hulls;
+	// The balance record, tuning/balance.
+	TuningDefinition tuning;
 	// Over every definition loaded, the mode's or not.
 	ContentIdentity identity;
 };

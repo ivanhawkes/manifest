@@ -43,9 +43,10 @@ no Jettison gap, and its open authoring decisions gate C04 and C05. C02 is done 
 the definitions load through the engine registry beside the legacy loaders, which they reproduce,
 and the content manifest is defined; no Jettison gap. C03 is done (2026-11-18): the host, the
 console and the data suite load one validated content set through the engine, and the legacy
-loaders and merged documents are retired; no Jettison gap. C04 is in progress: the user selected its
-authoring values on 2026-11-19 ([D-059](decision-ledger.md#d-059)); its eight items and three hull
-definitions are authored, the hulls on Jettison's map fields. T4's tuning remains.
+loaders and merged documents are retired; no Jettison gap. C04 is done (2026-11-19): the user selected its
+authoring values ([D-059](decision-ledger.md#d-059)); eight items, three hull definitions on
+Jettison's map fields (pin `4d60ea0`) and T4's balance record are authored and validated. Next: C05,
+which needs the drinking-water item decided first.
 
 - Jettison's G01, a generic rendered shell with the space gameplay moved to its sample, is done
   (2026-11-18, [history](../../jettison/docs/history.md#neutral-sdk-and-manifest-integration)),
@@ -100,7 +101,7 @@ against the delivered Stage 1 SDK before implementation.
 | 13 / C01 | Finalise schema mappings, defaults/null handling, ordered IDs, units, scenario frames and distinct planet/region/government/company relationships. Inventory remaining authoring decisions. **Done 2026-11-18**, [schema contract](stage-2-content-plan.md#schema-contract-c01-2026-11-18). | H07 |
 | 14 / C02 | Add reflected engine-readable definitions, generated record packaging and equivalence checks; define the canonical manifest/fingerprint builder and preserve exact price text and IDs/selections. **Done 2026-11-18**, [session handoff](session-handoff.md#c02-definitions-through-the-engine-registry--2026-11-18). | C01 |
 | 15 / C03 | Add atomic aggregate loading, shared semantic validation, engine layering/migration wiring and failure rollback; compute content identity before publication, migrate callers and retire custom readers after their last caller moves. **Done 2026-11-18**, [session handoff](session-handoff.md#c03-one-validated-content-set--2026-11-18). | C02 |
-| 16 / C04 | T4 and item follow-ups: resolve required physical/storage fields and author tuning, grains, medical supplies, LPG, Life Support and hull definitions through the shared pipeline. Keep unselected values explicit and obtain decisions where required. | C03 |
+| 16 / C04 | T4 and item follow-ups: resolve required physical/storage fields and author tuning, grains, medical supplies, LPG, Life Support and hull definitions through the shared pipeline. Keep unselected values explicit and obtain decisions where required. **Done 2026-11-19**, [item authoring](stage-2-content-plan.md#item-authoring-c04-2026-11-19), [tuning](stage-2-content-plan.md#tuning-t4-c04-2026-11-19). | C03 |
 | 17 / C05 | Author the separate trading and multi-region governance fixtures, including valid starting access/service capacity and required project/production references. | C04 |
 | 18 / C06 | Add the validator CLI through the same loader; verify host agreement, explicit overlays, contextual provenance and failure behavior. | C03, C05 |
 | 19 / C07 | Verify directory/pack content-manifest identity and add the validation build graph: validator → staged directory validation → pack → pack validation. | C06 |

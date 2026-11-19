@@ -74,7 +74,7 @@ changes, add the new row, mark the old one `superseded` and link both ways.
 | D-049 | LPG joins Fuels as a distinct kilogram-traded commodity with storage, production and consumption uses still open, and no ship-fuel role selected | [Stage 2 content plan](stage-2-content-plan.md) | selected; `ItemLPG` authored in C04 ([D-059](#d-059), `data` suite) | Manifest, stage 2 content |
 | <a id="d-050"></a>D-050 | Modular oxygen banks refine D-045: independently refillable/replaceable tanks preserve continuous supply from remaining usable tanks, with proportionally greater storage on larger hulls | [Small-ship plan: modular oxygen storage](small-trader-and-docking-plan.md#modular-oxygen-storage) | selected; deferred, not implemented | Manifest, later; re-entry after stages 1–4 acceptance |
 | <a id="d-058"></a>D-058 | Pad classes are seven historical ship sizes, heavy destroyer to skiff; the classes above destroyer dock only at dry docks, which are resupply platforms in two sizes, every pad of which offers dry dock | [Small-ship plan: ship size classes](small-trader-and-docking-plan.md#ship-size-classes-and-the-resupply-platform) | selected; the two largest sizes proposed; not authored | Manifest, stages 2–4 |
-| <a id="d-059"></a>D-059 | C04 item and hull authoring: the food grains are `CategoryConsumables`, Basic Medical Supplies `CategoryMedicalEquipment`, LPG `CategoryFuels`, and oxygen and the scrubber cartridge a new `CategoryLifeSupport`, the cartridge traded by the piece; the long-haul trader, the lone-trader starter and the compact ship become hull definitions, each unselected value left unset | [Stage 2 content plan: item authoring](stage-2-content-plan.md#item-authoring-c04-2026-11-19) | selected 2026-11-19; items and hulls implemented (`data` and `content` suites) | Manifest, stage 2 content (C04) |
+| <a id="d-059"></a>D-059 | C04 item and hull authoring: the food grains are `CategoryConsumables`, Basic Medical Supplies `CategoryMedicalEquipment`, LPG `CategoryFuels`, and oxygen and the scrubber cartridge a new `CategoryLifeSupport`, the cartridge traded by the piece; the long-haul trader, the lone-trader starter and the compact ship become hull definitions, each unselected value left unset | [Stage 2 content plan: item authoring](stage-2-content-plan.md#item-authoring-c04-2026-11-19) | selected 2026-11-19; implemented (`data` and `content` suites) | Manifest, stage 2 content (C04) |
 
 ## Workflow and verification decisions
 
@@ -90,22 +90,26 @@ changes, add the new row, mark the old one `superseded` and link both ways.
 
 ## Numeric values
 
-Numeric balance inputs are listed by name and canonical location only. They are
-selected-for-implementation values under validation, and task T4 in the
-[project analysis](project-analysis-2026-11-16.md) moves them into authored YAML, after which this
-index points at the data keys instead of prose.
+Numeric balance inputs are listed by name and data key. They are selected-for-implementation values
+under validation; task T4 moved them into authored YAML in C04 (2026-11-19), and the content suite
+holds them to their ranges. The data is the value; the canonical section is its reasoning and its
+worked examples, which the data suite checks against the data.
 
-| Value | Canonical location |
-| --- | --- |
-| Household consumption rates per 1,000 people per simulation day, and the interval formula | [Economy plan: aggregate households](economy-and-development-plan.md#aggregate-households-wages-and-consumer-demand-selected) |
-| Health and happiness decline and recovery rates, cadence and the production work-rate multiplier | [Economy plan: population health and happiness](economy-and-development-plan.md#population-health-happiness-and-production-selected) |
-| Bronze project inputs, batch ratio and wage basis | [Economy plan: first tech example](economy-and-development-plan.md#first-tech-example-bronze-metallurgy-selected) |
-| Frontier concession term and its start, disclosure and renewal rules | [Economy plan: real-time exclusive exploitation](economy-and-development-plan.md#real-time-exclusive-exploitation) |
-| Performance-security rate, forfeiture and mobilisation funds | [Contract plan: performance security](procurement-and-station-contracts-plan.md#performance-security-selected) |
-| Starter ship cargo capacities, life-support provisions and endurance | [Small-ship plan](small-trader-and-docking-plan.md) |
-| Starter oxygen bank layout, per-tank capacity, aggregate capacity and initial fill | [D-050 canonical specification](small-trader-and-docking-plan.md#modular-oxygen-storage), pending T4 authoring |
-| Item base prices, densities, unit types, pack factors | `data/trade-items/*.yaml`, described in [model reference](model.md#units-prices-and-storage) |
-| Marketplace fees, insurance, order lifetimes, price bounds | `MarketplaceOptions` in `source/game/market/include/manifest/market/Marketplace.h` |
+| Value | Data key | Canonical section |
+| --- | --- | --- |
+| Economic cadence and wage-tax withholding | `data/tuning/balance.yaml`: `economy` | [Economy plan: wage-tax withholding](economy-and-development-plan.md#wage-tax-withholding-and-public-revenue-selected) |
+| Household needs, weights and rates per 1,000 people per simulation day | `balance.yaml`: `needs` | [Economy plan: aggregate households](economy-and-development-plan.md#aggregate-households-wages-and-consumer-demand-selected) |
+| Health and happiness rates and the work-rate floor | `balance.yaml`: `condition` | [Economy plan: population health and happiness](economy-and-development-plan.md#population-health-happiness-and-production-selected) |
+| Onboard oxygen and scrubber consumption | `balance.yaml`: `lifeSupport` | [Stage 2 content plan: Life Support](stage-2-content-plan.md#life-support-and-space-exploration-content-follow-up) |
+| Frontier concession term | `balance.yaml`: `concessions` | [Economy plan: real-time exclusive exploitation](economy-and-development-plan.md#real-time-exclusive-exploitation) |
+| Performance-security rate | `balance.yaml`: `procurement` | [Contract plan: performance security](procurement-and-station-contracts-plan.md#performance-security-selected) |
+| Bronze project inputs and batch ratio | `balance.yaml`: `projects`, `recipes` | [Economy plan: first tech example](economy-and-development-plan.md#first-tech-example-bronze-metallurgy-selected) |
+| Hull cargo capacities, occupants, oxygen tanks and cartridges | `data/ships/hulls.yaml` | [Small-ship plan](small-trader-and-docking-plan.md), [D-050](small-trader-and-docking-plan.md#modular-oxygen-storage) |
+| Item base prices, densities, unit types, pack factors | `data/trade-items/*.yaml` | [Model reference](model.md#units-prices-and-storage) |
+| Marketplace fees, insurance, order lifetimes, price bounds | `MarketplaceOptions` in `source/game/market/include/manifest/market/Marketplace.h` | the header |
+
+Still open, so in no file: the drinking-water item, recipe wage bills and work durations, the
+bond's whole-credit rounding, the compact ship's life support, and population sizes.
 
 ## Open questions carried by the plans
 

@@ -257,6 +257,71 @@ TEST_CASE("the_hulls_carry_their_selected_values_and_leave_the_rest_unset")
 	CHECK(compact.fitableEffects.empty());
 }
 
+// T4's balance inputs against the plans' own worked examples (docs/economy-and-development-plan.md,
+// docs/procurement-and-station-contracts-plan.md): the data carries the numbers, the prose the
+// arithmetic.
+TEST_CASE("the_balance_tuning_reproduces_the_plans_worked_examples")
+{
+	using Manifest::Core::TradeUnit;
+	const Manifest::Content::TuningDefinition &tuning = Load("full").tuning;
+	const double intervalsPerDay = 86400.0 / tuning.economy.intervalSeconds;
+	CHECK(intervalsPerDay == 1440.0);
+	// A 100-credit wage payment: 90 to households, 10 to the treasury.
+	CHECK(100.0 * tuning.economy.wageTaxRate == doctest::Approx(10.0));
+
+	REQUIRE(tuning.needs.size() == 3);
+	const auto need = [&](const std::string &needId) -> const Manifest::Content::NeedDefinition &
+	{
+		const auto found =
+		    std::ranges::find(tuning.needs, needId, &Manifest::Content::NeedDefinition::needId);
+		REQUIRE(found != tuning.needs.end());
+		return *found;
+	};
+	const auto daily = [](const Manifest::Content::NeedDefinition &need, double people)
+	{ return need.perThousandPerDay * people / 1000.0; };
+	const auto &food = need("NeedStapleFood");
+	CHECK(daily(food, 25000.0) == doctest::Approx(12500.0));
+	CHECK(daily(food, 25000.0) / intervalsPerDay == doctest::Approx(8.68056).epsilon(1e-5));
+	CHECK(food.unit == TradeUnit::Kilogram);
+	CHECK(food.items.size() == 4);
+	const auto &water = need("NeedDrinkingWater");
+	CHECK(daily(water, 25000.0) == doctest::Approx(75000.0));
+	CHECK(water.unit == TradeUnit::Litre);
+	CHECK(water.items.empty());
+	const auto &medical = need("NeedBasicMedicalSupplies");
+	CHECK(daily(medical, 25000.0) == doctest::Approx(125.0));
+	for (const auto &each : tuning.needs)
+		CHECK(each.weight == 1.0);
+
+	// One simulation hour of complete shortage takes 100/100 to 94/88, and the next hour of full
+	// essentials to 97/94; an interval of complete shortage loses 0.1 and 0.2.
+	const auto &condition = tuning.condition;
+	CHECK(condition.initial - condition.healthLossPerHour + condition.healthRecoveryPerHour == 97.0);
+	CHECK(
+	    condition.initial - condition.happinessLossPerHour + condition.happinessRecoveryPerHour ==
+	    94.0);
+	CHECK(condition.healthLossPerHour / 60.0 == doctest::Approx(0.1));
+	CHECK(condition.happinessLossPerHour / 60.0 == doctest::Approx(0.2));
+	// At health 50 and happiness 50 the work rate is 56.25%, and 25% at 0 and 0.
+	const auto factor = [&](double value)
+	{ return condition.workRateFloor + (1.0 - condition.workRateFloor) * value / 100.0; };
+	CHECK(factor(50.0) * factor(50.0) == doctest::Approx(0.5625));
+	CHECK(factor(0.0) * factor(0.0) == doctest::Approx(0.25));
+
+	// The starter's 30 kg of oxygen and one cartridge cover one occupant for 30 days each.
+	CHECK(30.0 / tuning.lifeSupport.oxygenKilogramsPerOccupantDay == 30.0);
+	CHECK(tuning.lifeSupport.cartridgeOccupantDays == 30.0);
+	CHECK(tuning.concessions.termHours == 72.0);
+	// A 10,000-credit offer locks a 1,000-credit bond.
+	CHECK(10000.0 * tuning.procurement.performanceSecurityRate == doctest::Approx(1000.0));
+
+	REQUIRE(tuning.projects.size() == 1);
+	CHECK(tuning.projects[0].unlocksRecipe == "RecipeBronze");
+	REQUIRE(tuning.recipes.size() == 1);
+	CHECK(tuning.recipes[0].outputs[0].itemId == "ItemBronze");
+	CHECK(tuning.recipes[0].outputs[0].quantity == 10.0);
+}
+
 TEST_CASE("every_item_carries_its_age_and_category_link")
 {
 	// Generation reads item.ageId to bound what a world can make and item.categoryId to

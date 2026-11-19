@@ -1,0 +1,68 @@
+---
+# The balance inputs of the first scenario: initial test values, selected in the plans and not
+# yet validated (docs/decision-ledger.md, "Numeric values"). No rule reads them until Stages 3-4
+# implement it; the content loader holds them to their ranges now. A value the design has not
+# selected is left out.
+
+economy:
+  # Simulation seconds between regular payroll, household purchases and the condition update.
+  intervalSeconds: 60
+  # The share of wages actually paid that is withheld for the regional treasury.
+  wageTaxRate: 0.1
+
+# The household's essential needs, each by the people it feeds: a rate per 1,000 people per
+# simulation day, in its unit, met by any of its items 1:1 in that unit. Weights combine the
+# needs' shortages into one severity; physical quantity and price do not set importance.
+needs:
+  - needId: NeedStapleFood
+    weight: 1
+    perThousandPerDay: 500
+    unit: Kilogram
+    items: [{itemId: ItemRice}, {itemId: ItemWheat}, {itemId: ItemOats}, {itemId: ItemBarley}]
+  # Its item is open: no water item exists yet (before C05).
+  - needId: NeedDrinkingWater
+    weight: 1
+    perThousandPerDay: 3000
+    unit: Litre
+  - needId: NeedBasicMedicalSupplies
+    weight: 1
+    perThousandPerDay: 5
+    unit: Kilogram
+    items: [{itemId: ItemBasicMedicalSupplies}]
+
+# Health and happiness, 0 to 100, in points per simulation hour: a loss scaled by the severity
+# of the shortage, a recovery only when every essential is met. Each condition's factor in the
+# production work rate runs from workRateFloor at 0 to 1 at 100.
+condition:
+  initial: 100
+  healthLossPerHour: 6
+  happinessLossPerHour: 12
+  healthRecoveryPerHour: 3
+  happinessRecoveryPerHour: 6
+  workRateFloor: 0.5
+
+# A ship's onboard life support, while it relies on it.
+lifeSupport:
+  oxygenKilogramsPerOccupantDay: 1
+  cartridgeOccupantDays: 30
+
+concessions:
+  # The frontier concession's exclusive term, in real server-running hours, not simulation time.
+  termHours: 72
+
+procurement:
+  # The performance security a supplier locks at award, as a share of its winning total offer.
+  performanceSecurityRate: 0.1
+
+# The governance scenario's first technology: delivered project inputs, consumed once, unlock
+# the recipe in one region. Work durations and the recipe's wage bill are open.
+projects:
+  - projectId: ProjectBronzeMetallurgy
+    requires: [{skillId: SkillSmelting}]
+    inputs: [{itemId: ItemCopper, quantity: 90}, {itemId: ItemTin, quantity: 10}]
+    unlocksRecipe: RecipeBronze
+
+recipes:
+  - recipeId: RecipeBronze
+    inputs: [{itemId: ItemCopper, quantity: 9}, {itemId: ItemTin, quantity: 1}]
+    outputs: [{itemId: ItemBronze, quantity: 10}]

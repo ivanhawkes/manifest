@@ -1,5 +1,23 @@
 # Session handoff
 
+## C04: items, hulls and the balance record — 2026-11-19
+
+The user selected C04's values ([D-059](decision-ledger.md#d-059)), recorded under
+[item authoring](stage-2-content-plan.md#item-authoring-c04-2026-11-19) and
+[tuning](stage-2-content-plan.md#tuning-t4-c04-2026-11-19). Three commits: the eight goods and
+`CategoryLifeSupport` (`67ed4b0`); the hulls as `Manifest.Hull` definitions with
+`LongHaulTrader()` retired and the pin moved to `4d60ea0` (`fdb90a8`); and T4's `Manifest.Tuning`
+record. One Jettison gap: a reflected map field, for a hull's `baseStats`, provisioned in
+Jettison `4d60ea0` with `std::array` reading fixed (its history, "Content pipeline: map fields").
+The shell files did not change.
+
+Evidence, on Lythir, 24 build and test jobs, 16 tidy: `./scripts/ci.sh --werror --asan --tidy`
+passed 21 of 21 in each of `clang-debug`, `clang-release` and `clang-asan` against the fetched
+pin, and tidy clean once three hull copies in the effects suite became references. `data` checks
+the goods, the three hulls and the balance record against the plans' worked examples; `content`
+refuses each broken hull and tuning rule, patches a hull's stats by stat, and checks that every
+`EffectStat` has a registered name. Before C05: the drinking-water item, unit and conversion.
+
 ## C03: one validated content set — 2026-11-18
 
 The host, the console and the data suite load one content set through

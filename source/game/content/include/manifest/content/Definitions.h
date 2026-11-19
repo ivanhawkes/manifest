@@ -2,6 +2,7 @@
 
 #include <entt/entt.hpp>
 
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -55,6 +56,84 @@ struct GameModeDefinition
 	std::vector<AgeSelection> ages;
 	std::vector<ItemSelection> items;
 	std::vector<SkillSelection> skills;
+};
+
+struct ItemQuantity
+{
+	std::string itemId;
+	// In the item's unit.
+	double quantity{0.0};
+};
+
+// The balance inputs (data/tuning/balance.yaml), named by its file: values no rule reads yet, held to
+// their ranges (docs/stage-2-content-plan.md, "Tuning").
+struct EconomyTuning
+{
+	double intervalSeconds{0.0};
+	double wageTaxRate{0.0};
+};
+
+struct NeedDefinition
+{
+	std::string needId;
+	double weight{0.0};
+	double perThousandPerDay{0.0};
+	std::optional<Core::TradeUnit> unit;
+	// Each in the need's unit; none while the need's item is open.
+	std::vector<ItemSelection> items;
+};
+
+struct ConditionTuning
+{
+	double initial{0.0};
+	double healthLossPerHour{0.0};
+	double happinessLossPerHour{0.0};
+	double healthRecoveryPerHour{0.0};
+	double happinessRecoveryPerHour{0.0};
+	double workRateFloor{0.0};
+};
+
+struct LifeSupportTuning
+{
+	double oxygenKilogramsPerOccupantDay{0.0};
+	double cartridgeOccupantDays{0.0};
+};
+
+struct ConcessionTuning
+{
+	double termHours{0.0};
+};
+
+struct ProcurementTuning
+{
+	double performanceSecurityRate{0.0};
+};
+
+struct ProjectDefinition
+{
+	std::string projectId;
+	std::vector<SkillSelection> requiredSkills;
+	std::vector<ItemQuantity> inputs;
+	std::string unlocksRecipe;
+};
+
+struct RecipeDefinition
+{
+	std::string recipeId;
+	std::vector<ItemQuantity> inputs;
+	std::vector<ItemQuantity> outputs;
+};
+
+struct TuningDefinition
+{
+	EconomyTuning economy;
+	std::vector<NeedDefinition> needs;
+	ConditionTuning condition;
+	LifeSupportTuning lifeSupport;
+	ConcessionTuning concessions;
+	ProcurementTuning procurement;
+	std::vector<ProjectDefinition> projects;
+	std::vector<RecipeDefinition> recipes;
 };
 
 // A type the registry loads, in the order the content manifest lists the types.
