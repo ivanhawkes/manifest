@@ -12,7 +12,7 @@ wages and tracked health/happiness losses that both reduce production. Those dec
 amend the original governed-economy proposals below. The selected economic sequence is
 fixed-step production using prior-step condition and completion settlement, then due regular
 payroll/tax, household purchases/consumption and condition update. Updated condition applies
-from the next fixed step; the full movement/market scheduler graph remains design work.
+from the next fixed step; W02 resolved the full movement/market graph ([the step](#the-step-in-order)).
 The [market-information plan](market-information-plan.md) also supersedes
 global real-time trader knowledge: fleet docking supplies station-specific live data;
 other estimates use dated observations, including one-time starting reports.
@@ -67,39 +67,89 @@ from stage 2, and stage 3's ownership, inventory and command contracts.
 
 ## Fixed-step schedule
 
-Keep Jettison's command-before-systems contract. Let `s` denote the clock step before
-`SimWorld::Step` advances it, and `N` the scenario's positive integer economic cadence.
-The selected economic cadence is 60 simulation seconds, represented by positive integer `N`
-steps under the scenario's fixed timestep. Production work advances every fixed step;
-regular payroll, household purchases/consumption and condition update execute once when
-`(s + 1) % N == 0`. Validate cadence arithmetic and persist its configuration identity and
-position. Author recipe quantities per batch and demand against elapsed simulation time,
-rather than silently treating a production batch as one economic turn.
-Do not use wall time, frame count or rounded elapsed seconds to trigger the economy.
+Resolved in W02 (2026-11-20, [D-086](decision-ledger.md#d-086)). The hosted world steps at
+1/60 simulation second, the step Jettison's docking and physics are tested at; `Start.cpp`'s
+one-second shortcut goes with W05. Let `s` denote the clock step before `SimWorld::Step` advances
+it. The economic cadence `N` is `economy.intervalSeconds` divided by the fixed step, 3,600 steps,
+checked at start-up to be a positive whole number. Production work advances every fixed step;
+regular payroll, household purchases/consumption, condition update and the brokers' requote run
+once when `(s + 1) % N == 0`. The position is the saved clock's step modulo `N`, so no second
+counter is saved; the content fingerprint carries `balance.yaml`, so a save under another cadence
+is refused as other content. Author recipe quantities per batch and demand against elapsed
+simulation time, rather than silently treating a production batch as one economic turn. Do not
+use wall time, frame count or rounded elapsed seconds to trigger the economy.
 
-The host skeleton below remains proposed, with the production/economic subsequence selected:
+### The step, in order
 
-1. Apply admitted commands in stage 3's global sequence order. Successful order commands
-   may reserve and match immediately; cargo commands observe the current docked state.
-2. Expire orders with `s >= expiresStep`, refunding remaining reservations in stable order.
-3. Advance production each fixed step using regional condition from the previous completed
-   step, settling completed batches. On due economic turns, pay accrued regular payroll/tax,
-   then household purchases/consumption (essentials before permitted optional goods), then
-   update regional health/happiness. The new multiplier applies from the next fixed step.
-   Goods and funds retain explicit regional/owner/venue identities and physical access.
-   Pricing and native market-order placement must be integrated without reversing this sequence.
-4. Advance movement/docking through the engine scheduler's required dependencies.
-   Reconcile Manifest travel intents after the relevant engine systems have run.
-5. Refresh authoritative quotes, then update permitted fleet observations and publish
-   actor-filtered live/stale views at the completed step boundary. Newly docked observers
-   receive that step's report; the last departing ship retains the previous report. Follow
-   the selected [observation timing](market-information-plan.md#observation-timing-selected)
-   and simulation-time age rules; do not publish unseen current market rows in an actor's
-   snapshot.
+`SimWorld::Step` applies the queued commands, then runs the simulation phase's systems in the
+scheduler's order. Every edge below is declared, `after` or `before`; none is left to
+registration order, and a test pins `Scheduler().Order(TickPhase::Simulation)`.
 
-Declare dependencies explicitly; do not rely on registration accident. If movement's
-existing graph requires independent systems to interleave differently, preserve these
-observable boundaries and document the resolved graph before implementation.
+| # | Runs | System | Declared order | Writes |
+| --- | --- | --- | --- | --- |
+| 0 | each step | the command phase (`Requests::Execute`) | before every system | per command, [below](#transaction-boundaries) |
+| 1 | each step | `manifest.expiry` | before `manifest.economy` | expired orders, their escrow |
+| 2 | each step; the turn on due steps | `manifest.economy` (W04) | before `spatial` | production, payroll, households, condition |
+| 3 | due steps | `manifest.brokers` | after `manifest.economy`, before `spatial` | each broker's orders, fills |
+| 4 | each step | engine `spatial`, `steering`, `flight`, `physics` | Jettison's own edges | transforms, velocities |
+| 5 | each step | engine `dock` | after `physics`; before `lanes` once W05 provisions the edge | pads, docking, transfers |
+| 6 | each step | engine `lanes`, then `cruise` | Jettison's own edges | lane and cruise state |
+| 7 | each step | `manifest.travel` (W05) | after `dock` and `cruise` | travel intents, `Ship::dockedAt` |
+| 8 | each step | `manifest.observe` (W07) | after `manifest.travel` | quotes, fleet observations |
+
+Jettison's movement systems are registered without its `behaviour` system (no behaviour trees
+until W10), without `gates` (the fixture is one system) and without the sample's traders. `dock`
+and `lanes` both write `Transform` and `InFrame`, and Jettison orders neither before the other, so
+registration order decides theirs today. Manifest cannot add an edge to a system Jettison
+registers: W05 provisions it in Jettison (an ordering between the two, with an independent
+consumer's test), and the hosted registration's `Scheduler::Ambiguities` then holds no pair that
+writes what the other touches. This is the one engine gap W02 names.
+
+- **Commands** apply in stage 3's global sequence order. An order command reserves and matches at
+  once; a cargo command sees `Ship::dockedAt` as the previous step's `manifest.travel` left it; a
+  travel command creates its intent and writes no engine state.
+- **Expiry** retires every order with `s >= expiresStep` and refunds its remaining reservation,
+  in placement order.
+- **Economy** (W04) advances production each fixed step using regional condition from the
+  previous completed step, settling completed batches. On due turns it pays accrued regular
+  payroll/tax, then household purchases/consumption (essentials before permitted optional
+  goods), then updates regional health/happiness; the new multiplier applies from the next fixed
+  step. Goods and funds keep their regional/owner/venue identities and physical access.
+- **Brokers** requote after the turn's economy, so their quotes see its stock and funds
+  ([D-084](decision-ledger.md#d-084)).
+- **Travel** reads the saved engine state the movement systems left (docking, cruising, a pad's
+  occupant), advances each intent one transition, and sends the next engine command through
+  `SimWorld::Apply`, which the engine's systems act on from the next step. It alone writes
+  `Ship::dockedAt`, from an observed docking. Its engine commands are the state's consequence and
+  are not recorded, so a replay sends them again rather than twice.
+- **Observe** (W07) refreshes authoritative quotes, then updates permitted fleet observations and
+  publishes actor-filtered live/stale views at the completed step boundary. Newly docked observers
+  receive that step's report; the last departing ship retains the previous report. Follow the
+  selected [observation timing](market-information-plan.md#observation-timing-selected) and
+  simulation-time age rules; do not publish unseen current market rows in an actor's snapshot.
+
+W03 and W15 register 0, 1, 3 and, with W05, 4 to 7; W04 adds 2 and W07 adds 8, each into the
+edges above. A task that needs another place in the step changes this table first.
+
+### Transaction boundaries
+
+Jettison leaves a world part-way through a step when a command or system throws, and only a load
+recovers it. Every expected failure is therefore a result decided before the first business write,
+and a throw is an invariant breach.
+
+| Unit | Plans before writing | On an expected failure |
+| --- | --- | --- |
+| One admitted command | its reservation, its whole matching pass (at most 64 fills), both sides' fees, venue income, refunds and counters, aggregated by account, venue/item and order, aliases included | refused with no business write; the clock and the ledger's outcome still change |
+| The expiry sweep, one a step | every refund the step's expiries make, combined | none expected: the refunds are already escrowed |
+| One broker's requote, a venue a turn | cancelling its resting orders, their refunds, its new orders and their matching pass | the broker posts what it can fund; a side it cannot fund posts nothing |
+| One travel transition, a ship a step | the intent's next state and the engine command that leads to it | the intent records the refusal (no pad, cruise refused, departure blocked) and waits or fails, the ship's cargo kept |
+| Load, unload, provisioning, the upgrade (W08) | as Stage 3 and W08 define each | refused with no business write |
+
+A command's matching pass settles at most 64 fills. A side of one venue's book for one item holds
+at most 64 resting orders, and an order past that is refused as `BookFull`, so a pass can always
+settle every crossing maker and no remainder rests crossed. Ordinary lack of liquidity is a
+successful partial fill with an active remainder.
+
 Test a batch completing exactly on an economic boundary: completion payroll settles once,
 regular payroll subtracts amounts already paid, households use actual available funds/goods,
 and resulting condition changes cannot rewrite that step's production or earned wages.
@@ -113,10 +163,10 @@ phase may retire/refund it first; the sweep then does nothing. A ship docking du
 the systems phase becomes eligible for cargo commands at the next command boundary.
 New production likewise becomes available to external commands on the following step.
 
-Order placement and fill timestamps use server steps. Convert the configured economic
-order lifetime to checked step counts; do not silently interpret the existing
-`orderLifeTicks` number as physics steps. Lifetime zero retains its existing no-expiry
-meaning. Define and test the exact expiry boundary.
+Order placement and fill timestamps use server steps. A resting order lives one simulation day by
+default ([D-085](decision-ledger.md#d-085)), authored in simulation seconds and converted to steps
+with checked arithmetic; the existing `orderLifeTicks` is not read as steps. Zero keeps its
+no-expiry meaning, and a consignment listing has none. Define and test the exact expiry boundary.
 
 ## Production, demand and native liquidity
 
@@ -125,11 +175,15 @@ available civilisation-owned stock, never a company's purchases or sell escrow. 
 shortage accounting and price rules, with checked finite arithmetic. Record intentional
 production/consumption sources and sinks for invariant tests.
 
-Create a small deterministic native market policy for the two civilisations: bounded
-sell orders from local surplus and bounded buy orders from demand and available funds.
-Use stable venue/item ordering and the same order/reservation path as companies. Specify
-replacement/cancellation cadence so each economic turn cannot accumulate unbounded
-orders. Prices use the existing native price calculations and explicit Decimal rounding.
+The native counterparty is a broker at each venue ([D-084](decision-ledger.md#d-084), W02): a
+trading principal owned by the venue's operator, with its own account and whole-IBC holdings
+there, seeded from the scenario's venue stock and an authored treasury. On each due economic turn
+it cancels its resting orders and posts one bid and one ask per item it trades, around the
+existing native price with an authored spread and explicit Decimal rounding: the ask no more
+than its unreserved holdings, the bid no more than its unreserved funds cover with fees. Its
+orders take the same order/reservation path as a company's, in stable venue/item order, so a turn
+cannot accumulate orders. The treasury and spread are fixture test values W03 authors in
+`balance.yaml`, as C05 authored the fixtures'; until W04, a broker's stock changes only by trade.
 The policy is native for this milestone; Wasm policy integration remains later work.
 
 The policy may trade at a venue but cannot move inventory between venues. Cross-venue
@@ -221,29 +275,30 @@ and remaining service capacity through retry/recovery. Other hull limits, physic
 volume, compartment dimensions, item fields and transfer/replacement procedures
 remain open; separate storage does not grant unlimited reserves or duplicate inventory.
 
-Since [D-078](decision-ledger.md#d-078) (Stage 3) goods are held and moved in whole IBCs, each the
-item's `unitsPerCubicMetre`, so an order trades IBCs or converts at its boundary; what follows
-predates it and is to be reconciled with it before W02 and W05.
-Implement one shared quantity-to-volume conversion using the distinctions in
-[model units](model.md). Proposed rules derived from that contract:
-
-| Unit | Occupied cubic metres for quantity `q` |
-| --- | --- |
-| Kilogram, Gram | `q / (unitsPerCubicMetre * packFactor)`; the authored count is solid material. |
-| Litre, Kilolitre | `q / unitsPerCubicMetre`; authored bulk volume already includes the heap's voids. |
-| Unit, Sheet, SquareMetre | `q / unitsPerCubicMetre`; the authored count is already packed. |
-
-Do not apply `packFactor` twice to volume/piece goods. Verify copper, a bulk mineral
-and glassware against the documented examples, then cover every supported unit. Sum
-occupied volume in stable item order and reject invalid denominators/nonfinite totals.
+Reconciled with [D-078](decision-ledger.md#d-078) in W02 ([D-083](decision-ledger.md#d-083)):
+goods are held, moved and traded in whole IBCs, one cubic metre each, one IBC being the item's
+`unitsPerCubicMetre` in its unit, so the occupied volume of `n` IBCs is `n` cubic metres for
+every unit and no `packFactor` enters capacity. An order's quantity is a whole number of IBCs and
+its limit stays a Decimal price per authored unit. A fill's gross is that price times
+`unitsPerCubicMetre` times the IBCs, converted to whole credits by the
+[market price rules](market-prices.md) (nearest whole-credit gross, ceil fees, ceil buy
+reservations); the double unit count is formed once, at that conversion. A broker's holdings are
+whole IBCs like a company's.
 The initial capacity constraint is `CargoVolume`; do not invent an unauthored payload
 mass limit. If dynamic cargo mass is integrated with physics, derive and test it
 separately without changing the volume contract.
 
 Keep stage 3 load/unload as atomic transfers at a confirmed docked venue. This milestone
-does not simulate deck loading time. Do not convert fractional goods to integer crates
-or make `Dock::Carry` a second inventory owner. Deck transfer animation can follow with
+does not simulate deck loading time. Do not make `Dock::Carry`, which counts crates, a second
+inventory owner. Deck transfer animation can follow with
 an explicit conversion and pending-transfer accounting contract.
+
+Selected in W02 ([D-086](decision-ledger.md#d-086)): one player command, `Travel(ship, venue)`,
+starts a journey, and `manifest.travel` drives it through pad release, departure, cruise, pad
+request and docking ([the step](#the-step-in-order)); the player sends no engine command. The
+first slice charges nothing for travel, docking or handling: a fill's listing fee is the only
+charge until a later task selects the economy plan's handling services. The starter docks at a
+`skiff` pad ([D-058](decision-ledger.md#d-058)).
 
 A travel command creates an owned, saved intent, with states such as departing,
 cruising, approaching, waiting-for-pad, docked or failed. The host resolves stable IDs
@@ -297,6 +352,12 @@ Each slice preserves existing relevant checks before the next expands the integr
 
 The final test must use the public command/query boundary, not direct component edits
 after bootstrap:
+
+Under D-083 the trading fixture's stocks and rates are restated in whole IBCs by W03. A
+25,000-credit start ([D-077](decision-ledger.md#d-077)) buys whole IBCs of furs at Ore and of
+salt, lime, glassware and soap at Brine; one IBC of copper is about 118,500 credits, of tin about
+339,000 and of gold about 2.3 billion, so those stay later goods and W15 trades furs Ore to Brine
+or a Brine good back.
 
 1. Load the validated scenario and provision a company with one docked ship and a
    bounded treasury. Native production/policy supplies genuine local orders.

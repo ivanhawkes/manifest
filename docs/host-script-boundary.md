@@ -88,7 +88,8 @@ every 200 steps; item 4 must specify and test the final cadence and system order
 equating today's development tick with an engine step. Native systems remain responsible for
 production, consumption, expiry and settlement even when no scripts are loaded.
 The subsequent [economy plan](economy-and-development-plan.md) selects 60 simulation seconds
-for regular payroll/household purchasing; the full production/market schedule remains open.
+for regular payroll/household purchasing; W02 fixed the full production/market schedule
+([Stage 4 plan: the step](stage-4-trading-plan.md#the-step-in-order)).
 The [regional correction](regional-economy-and-governance-plan.md) scopes population,
 household/public accounts, needs/condition, development and employer-region tax carry to
 independent regions on a physical planet. Register that state in the same world; scripts

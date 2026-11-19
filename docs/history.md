@@ -100,6 +100,27 @@ cargo's lots are bounded together (`world`), and a ship's cargo against its hull
 `CargoVolume`, whose empty map was taken for none given; a hull the map does not name now carries
 nothing (`company`). Round 7 approved with no finding open.
 
+## W02: the step, settlement and travel choices — 2026-11-20
+
+A planning task, documents only, with no engine edit. Checking the C01 table and `balance.yaml`
+against the plans, as N03's handoff asked, found the trading fixture at odds with whole IBCs
+([D-078](decision-ledger.md#d-078)): its stocks are fractional item units, tin and gold under one
+IBC, and one IBC of copper (about 118,500 credits), tin or gold beyond a 25,000-credit start, which
+D-077's "two tonnes of copper" no longer described. The user selected, each the recommended
+option: orders in whole IBCs priced per authored unit with the fixture restated in IBCs
+([D-083](decision-ledger.md#d-083)); a broker at each venue owned by its operator, requoting each
+economic turn ([D-084](decision-ledger.md#d-084)); a day's order life and a 64-fill pass, held by a
+64-order side ([D-085](decision-ledger.md#d-085)); a 1/60 s step and one travel command, free of
+charges in the first slice ([D-086](decision-ledger.md#d-086)).
+
+The [step](stage-4-trading-plan.md#the-step-in-order) is now a table of declared edges from the
+engine's registrations: `spatial`, `steering`, `flight`, `physics`, then `dock` and `lanes`, then
+`cruise`, with Manifest's expiry, economy and brokers ahead and travel and observation after.
+`dock` and `lanes` both write `Transform` and `InFrame` with no edge between them, and Manifest
+cannot add one to systems Jettison registers: the one engine gap, for W05. Left: the brokers'
+treasuries and spreads (W03's fixture values); the handling, life-support service and payroll
+choices stay with W04, W06 and the economy plan's handling services.
+
 ## N03: several clients, reconnects and bounds — 2026-11-20
 
 On Jettison's `net` as N02 left it (pin `65846bb`), with no engine edit. An actor may hold three

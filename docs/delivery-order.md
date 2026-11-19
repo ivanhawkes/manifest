@@ -37,7 +37,11 @@ N02 provisions. N02 is done (2026-11-20): the [dedicated server](history.md#n02-
 steps the world unattended, admits remote requests and sends filtered snapshots on Jettison's `net`
 (pin `65846bb`), and the TUI's `connect` and `disconnect` play on it. N03 is done (2026-11-20):
 [several clients, reconnects and bounds](history.md#n03-several-clients-reconnects-and-bounds--2026-11-20)
-on the same pin, with no engine edit. Next: W02.
+on the same pin, with no engine edit. W02 is done (2026-11-20): whole-IBC orders, a broker at each
+venue, order life and matching bounds, a 1/60 s step and one travel command
+([D-083](decision-ledger.md#d-083) to [D-086](decision-ledger.md#d-086)), with
+[the step and its transaction boundaries](stage-4-trading-plan.md#the-step-in-order); it names
+one Jettison gap for W05, an order between `dock` and `lanes`. Next: W03.
 
 ## Priority 0: maintenance before Stage 1
 
@@ -135,7 +139,7 @@ Canonical scope: [Stage 4](stage-4-trading-plan.md), with the
 | Order / ID | Task and completion boundary | Must complete first |
 | --- | --- | --- |
 | 31 / W01 | Jettison: split the required generic physics/AI/scene capabilities from optional space adapters; provision needed docking/berth seams and verify independent consumers, then commit/pin. **Done in Jettison 2026-11-18, in pin `fafa758`** (see status). | A07 |
-| 32 / W02 | Resolve outstanding settlement, transport, service and cadence choices; document the actual scheduler graph and transaction boundaries before integration. | W01, C08, A07 |
+| 32 / W02 | Resolve outstanding settlement, transport, service and cadence choices; document the actual scheduler graph and transaction boundaries before integration. **Done 2026-11-20**, [the step](stage-4-trading-plan.md#the-step-in-order) and [D-083](decision-ledger.md#d-083) to [D-086](decision-ledger.md#d-086). | W01, C08, A07 |
 | 33 / W03 | Adapt marketplace reservations, matching, partial settlement, cancellation, expiry and fees to owner/venue accounts with checked atomic writes. | W02 |
 | 34 / W05 | Integrate real departure, cruise, arrival, docking and cargo eligibility; prove starter/compact berth and capacity behavior where selected. | W01, W03, A04 |
 | 35 / W15 | Vertical slice: in the trading fixture, one company ship buys at one venue, departs, cruises, docks and sells at the other through the public commands, on W03's settlement and W05's travel; no production, life support, observations or upgrades yet. Played through the console, it shows the loop end to end before W04 and W06–W08 build around it; W09 later proves the complete fixture. | W03, W05 |
