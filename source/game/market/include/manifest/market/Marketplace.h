@@ -6,7 +6,7 @@
 #include <vector>
 
 #include <manifest/ecs/Components.h>
-#include <manifest/ecs/EcsWorld.h>
+#include <manifest/ecs/EntityStore.h>
 #include <manifest/effects/CivilisationEffects.h>
 #include <manifest/progression/ProgressionManager.h>
 #include <manifest/sim/Simulation.h>
@@ -92,7 +92,7 @@ struct OrderRequest
 // the venue and away from it is the economy model's job, the same job it does today
 // with basePrice and no freight at all.
 //
-// Everything in this class is a system over EcsWorld: the service owns its options and
+// Everything in this class is a system over EntityStore: the service owns its options and
 // nothing else, so two services over one world see the same book, and the book is what
 // a save game writes out.
 class MarketplaceService
@@ -117,23 +117,24 @@ class MarketplaceService
 	// Empty for a body that may host one. Every reason names the missing thing, because
 	// a caller that asks for a market at a star means a station and has written down the
 	// wrong body.
-	static std::string VenueBlockReason(const EcsWorld &world, const std::string &bodyId);
+	static std::string VenueBlockReason(const EntityStore &world, const std::string &bodyId);
 
 	// Opens a marketplace at a body. The venue takes the service's fee, insurance and
 	// order life, and it owns the market: the civilisation of the body it sits on.
-	bool Open(EcsWorld &world, const std::string &bodyId, std::string &errorMessage);
+	bool Open(EntityStore &world, const std::string &bodyId, std::string &errorMessage);
 
 	// Closes one, and every order in its book goes back to the trader that posted it.
-	bool Close(EcsWorld &world, const std::string &bodyId, std::string &errorMessage);
+	bool Close(EntityStore &world, const std::string &bodyId, std::string &errorMessage);
 
-	bool HasMarket(const EcsWorld &world, const std::string &bodyId) const;
+	bool HasMarket(const EntityStore &world, const std::string &bodyId) const;
 
 	// The venue ids of every market, sorted; an empty CivilisationId asks for every
 	// market in the world.
-	std::vector<std::string> MarketIds(const EcsWorld &world, const std::string &civilisationId) const;
-	std::size_t MarketCount(const EcsWorld &world) const;
+	std::vector<std::string> MarketIds(
+	    const EntityStore &world, const std::string &civilisationId) const;
+	std::size_t MarketCount(const EntityStore &world) const;
 
-	const MarketplaceInfo *MarketAt(const EcsWorld &world, const std::string &bodyId) const;
+	const MarketplaceInfo *MarketAt(const EntityStore &world, const std::string &bodyId) const;
 
 	// ─── The book ───
 	// Posts a resting order, and crosses the book it landed on: a seller who posts at
@@ -143,7 +144,7 @@ class MarketplaceService
 	// reason when the crossing fails in settlement, the order posted and the pair that
 	// failed left in the book.
 	bool PostOrder(
-	    EcsWorld &world, const OrderRequest &order, std::string &orderId, std::string &errorMessage);
+	    EntityStore &world, const OrderRequest &order, std::string &orderId, std::string &errorMessage);
 
 	// A marketable order: it walks the other side of the book, best price first, until
 	// it is filled or the book has nothing left to give it. It leaves nothing resting,
@@ -152,7 +153,7 @@ class MarketplaceService
 	// walks cost; with nothing on the other side it is refused. The venue's depth cap
 	// does not apply to it.
 	std::vector<TradeFill> ExecuteOrder(
-	    EcsWorld &world, const OrderRequest &order, std::string &errorMessage);
+	    EntityStore &world, const OrderRequest &order, std::string &errorMessage);
 
 	// Takes a resting order off the book and gives its goods and its credits back to the
 	// trader. The venue does not refuse a cancel of an order that is not there: the target
@@ -164,7 +165,7 @@ class MarketplaceService
 	// with the number and the reason, because the goods the order reserved left the
 	// stockpile in the fill and a refund would pay the trader the cargo twice. An empty id
 	// names no order at all, which is a caller's error and not an order that is gone.
-	bool CancelOrder(EcsWorld &world, const std::string &orderId, std::string &errorMessage);
+	bool CancelOrder(EntityStore &world, const std::string &orderId, std::string &errorMessage);
 
 	// Trades every crossing pair at one venue, best price first, until no bid meets an
 	// ask. A post crosses the book it landed on, and the venue keeps the book crossed
@@ -178,60 +179,60 @@ class MarketplaceService
 	// a book a caller has written by hand, all meet the pass, and the pass is the reason
 	// a caller never reads a book that crosses itself.
 	std::vector<TradeFill> MatchBook(
-	    EcsWorld &world, const std::string &marketId, std::string &errorMessage);
+	    EntityStore &world, const std::string &marketId, std::string &errorMessage);
 
 	// The book of one good at one venue, on one side, best price first and inside a
 	// price by tick then order id. Order ids, so the caller reads the orders with
 	// DescribeOrder or gets them from the world.
 	std::vector<std::string> Book(
-	    const EcsWorld &world, const std::string &marketId, const std::string &itemId,
+	    const EntityStore &world, const std::string &marketId, const std::string &itemId,
 	    OrderSide side) const;
 
 	// The orders of a trader, of a venue, or of both: sorted by id.
 	std::vector<MarketOrderInfo> OrdersOf(
-	    const EcsWorld &world, const std::string &marketId, const std::string &civilisationId) const;
+	    const EntityStore &world, const std::string &marketId, const std::string &civilisationId) const;
 
-	std::size_t OpenOrderCount(const EcsWorld &world, const std::string &marketId) const;
+	std::size_t OpenOrderCount(const EntityStore &world, const std::string &marketId) const;
 
 	// ─── Prices ───
 	// Rebuilds a venue's quote table from its book, and keeps the prices the fills
 	// left behind: the last trade, its tick, the volume ever traded.
-	bool RefreshQuotes(EcsWorld &world, const std::string &marketId, std::string &errorMessage);
+	bool RefreshQuotes(EntityStore &world, const std::string &marketId, std::string &errorMessage);
 
 	// The table as RefreshQuotes left it, one quote per good, sorted by item id. A good
 	// enters the table when it is first quoted and never leaves it: the venue has seen it,
 	// and its row keeps the numbers of the last trade beside a book that has no orders
 	// left in it, which is what a screen shows beside a good that just traded.
-	std::vector<MarketQuote> Quotes(const EcsWorld &world, const std::string &marketId) const;
+	std::vector<MarketQuote> Quotes(const EntityStore &world, const std::string &marketId) const;
 
 	// One good: null when the venue has no quote table, or none for that good.
 	const MarketQuote *QuoteFor(
-	    const EcsWorld &world, const std::string &marketId, const std::string &itemId) const;
+	    const EntityStore &world, const std::string &marketId, const std::string &itemId) const;
 
 	bool BestAsk(
-	    const EcsWorld &world, const std::string &marketId, const std::string &itemId,
+	    const EntityStore &world, const std::string &marketId, const std::string &itemId,
 	    Decimal &price) const;
 	bool BestBid(
-	    const EcsWorld &world, const std::string &marketId, const std::string &itemId,
+	    const EntityStore &world, const std::string &marketId, const std::string &itemId,
 	    Decimal &price) const;
 
 	// The middle of the book, for a good with both sides: false when the book has one
 	// side or none.
 	bool MidPrice(
-	    const EcsWorld &world, const std::string &marketId, const std::string &itemId,
+	    const EntityStore &world, const std::string &marketId, const std::string &itemId,
 	    Decimal &price) const;
 
 	// The gap a round trip costs, in basis points of the mid: 0.0 when the book has
 	// one side.
 	double SpreadBps(
-	    const EcsWorld &world, const std::string &marketId, const std::string &itemId) const;
+	    const EntityStore &world, const std::string &marketId, const std::string &itemId) const;
 
 	// What a venue would trade a good at: the mid when the book has both sides, the
 	// side it has when it has one, the last trade when it has no orders left, 0.0 when
 	// the venue has never seen the good. The reading of a price by a ship, a UI and a
 	// test, which do not care which of the four it came from.
 	Decimal ReferencePrice(
-	    const EcsWorld &world, const std::string &marketId, const std::string &itemId) const;
+	    const EntityStore &world, const std::string &marketId, const std::string &itemId) const;
 
 	// ─── What the effects of the tree move ───
 	// The risk of trading at a venue, in basis points: the market effects of the
@@ -239,27 +240,27 @@ class MarketplaceService
 	// the fences, the ransom exchange - plus the risk of the lanes it sails. Signed:
 	// the law lowers it and the pirates raise it, and a civilisation that has bought
 	// both has paid for the sum.
-	int RiskPremiumBps(const EcsWorld &world, const std::string &marketId) const;
+	int RiskPremiumBps(const EntityStore &world, const std::string &marketId) const;
 
 	// What the venue takes on a fill: the venue's base, plus the risk of trading there,
 	// less the credit the docking licence and the warrant buy - one basis point off the
 	// fee for every two berths a day the licence clears - and never below nothing.
-	int ListingFeeBps(const EcsWorld &world, const std::string &marketId) const;
+	int ListingFeeBps(const EntityStore &world, const std::string &marketId) const;
 
 	// What a cargo carries at a venue: the base premium, moved by the market effects.
-	int InsuranceBps(const EcsWorld &world, const std::string &marketId) const;
+	int InsuranceBps(const EntityStore &world, const std::string &marketId) const;
 
 	// The units one side of the book may hold, the venue's own cap moved by the depth
 	// the tribunal and the harbours buy. 0 is no cap.
-	double DepthUnits(const EcsWorld &world, const std::string &marketId) const;
+	double DepthUnits(const EntityStore &world, const std::string &marketId) const;
 
 	// The market, body and route effects of a civilisation, onto its venues, its worlds
 	// and its lanes, and then every venue's quote table rebuilt, because the clearance
 	// of a venue moves the fee and the fee is the number the UI shows beside the price.
 	bool ApplyProgression(
-	    EcsWorld &world, const ProgressionManager &progression, const CivilisationEffectEngine &effects,
-	    const std::string &civilisationId, unsigned &applied, unsigned &skipped,
-	    std::string &errorMessage);
+	    EntityStore &world, const ProgressionManager &progression,
+	    const CivilisationEffectEngine &effects, const std::string &civilisationId, unsigned &applied,
+	    unsigned &skipped, std::string &errorMessage);
 
 	// ─── Tick ───
 	// One tick at every venue: the orders that have outlived their order life leave the
@@ -271,17 +272,17 @@ class MarketplaceService
 	// it, so the orders that leave on a tick leave a book that needs no trading to be a
 	// book. An order posted at a venue that sets no order life is not swept: it rests
 	// until it trades, is cancelled, or the venue closes.
-	unsigned AdvanceTick(EcsWorld &world, long long tick, std::string &errorMessage);
+	unsigned AdvanceTick(EntityStore &world, long long tick, std::string &errorMessage);
 
 	// The fills of a venue, oldest first, the last marketFillLogSize of them.
-	std::vector<TradeFill> Fills(const EcsWorld &world, const std::string &marketId) const;
+	std::vector<TradeFill> Fills(const EntityStore &world, const std::string &marketId) const;
 
 	// ─── UI ───
 	// A venue as lines: what it is, what it charges, the book of its most traded goods.
-	std::string DescribeMarket(const EcsWorld &world, const std::string &marketId) const;
+	std::string DescribeMarket(const EntityStore &world, const std::string &marketId) const;
 
 	// An order as one line: "Order-7 Buy 40 iron_ore @ 12.5 at Market-Civ-01 for Civ-01, 12 filled".
-	std::string DescribeOrder(const EcsWorld &world, const std::string &orderId) const;
+	std::string DescribeOrder(const EntityStore &world, const std::string &orderId) const;
 
 	// ─── The generated universe, in the store ───
 	// One body per generated world, in the order the simulation lists them: the
@@ -294,21 +295,21 @@ class MarketplaceService
 	// the first, and VenuesOpened counts what opened: a world that may not host a
 	// market leaves the count short, which is the point of the satellite rule.
 	static bool LoadSimulation(
-	    EcsWorld &world, const Simulation &sim, const MarketplaceOptions &options,
+	    EntityStore &world, const Simulation &sim, const MarketplaceOptions &options,
 	    std::size_t &venuesOpened, std::string &errorMessage);
 
 	// A planet as a body, with the identity the venue rule reads. Adds the components a
 	// market settles against - an empty treasury, an empty stockpile - so a world
 	// created here is a world a trader can post against.
 	static bool AddPlanet(
-	    EcsWorld &world, const std::string &bodyId, const std::string &displayName,
+	    EntityStore &world, const std::string &bodyId, const std::string &displayName,
 	    const std::string &systemName, const std::string &civilisationId, const std::string &ageId,
 	    std::string &errorMessage);
 
 	// A satellite in orbit around a planet: the station above a world's gravity well,
 	// and the only kind of satellite a marketplace is opened at.
 	static bool AddSatellite(
-	    EcsWorld &world, const std::string &satelliteId, const std::string &planetBodyId,
+	    EntityStore &world, const std::string &satelliteId, const std::string &planetBodyId,
 	    const std::string &displayName, double radiusKm, double periodDays, std::string &errorMessage);
 
 	// ─── Helpers, public because a caller that posts an order needs the same numbers ───
@@ -326,41 +327,41 @@ class MarketplaceService
 	// caller's, because a resting order crosses its own book and an order that walks the
 	// book walks it a price at a time.
 	bool CreateOrder(
-	    EcsWorld &world, const OrderRequest &order, const std::string &marketId, std::string &orderId,
-	    std::string &errorMessage);
+	    EntityStore &world, const OrderRequest &order, const std::string &marketId,
+	    std::string &orderId, std::string &errorMessage);
 
 	// The crossing pass, writing the fills into the caller's log: a post crosses the book
 	// it landed on, and the pass runs after a cancel, where it finds a book that is
 	// already crossed down and trades nothing, because taking the top of a side away moves
 	// that side's best price away from the other side, not towards it.
 	bool MatchInto(
-	    EcsWorld &world, const std::string &marketId, std::vector<TradeFill> &fillLog,
+	    EntityStore &world, const std::string &marketId, std::vector<TradeFill> &fillLog,
 	    std::string &errorMessage);
 
 	// The venue, with the message every entry point needs when there is none.
 	const MarketplaceInfo *RequireVenue(
-	    const EcsWorld &world, const std::string &marketId, std::string &errorMessage) const;
+	    const EntityStore &world, const std::string &marketId, std::string &errorMessage) const;
 
 	// The trader, with the message every entry point needs when it is not a world of
 	// this store: a trader without a treasury and a stockpile cannot settle.
 	bool RequireTrader(
-	    const EcsWorld &world, const std::string &civilisationId, EcsWorld::Entity &trader,
+	    const EntityStore &world, const std::string &civilisationId, EntityStore::Entity &trader,
 	    std::string &errorMessage) const;
 
 	// The order, with the message every entry point needs when it is not a live order.
 	const MarketOrderInfo *RequireOrder(
-	    const EcsWorld &world, const std::string &orderId, std::string &errorMessage) const;
+	    const EntityStore &world, const std::string &orderId, std::string &errorMessage) const;
 
 	// The live orders of one good on one side of one venue's book, best price first,
 	// and inside a price by tick then order id.
-	std::vector<EcsWorld::Entity> ActiveOrders(
-	    const EcsWorld &world, const std::string &marketId, const std::string &itemId,
+	std::vector<EntityStore::Entity> ActiveOrders(
+	    const EntityStore &world, const std::string &marketId, const std::string &itemId,
 	    OrderSide side) const;
 
 	// An order that has left the book: the goods and the credits it held go back, and
 	// the order is destroyed. The log keeps the fills; a cancel, an expiry and a fill
 	// that completed are not in it, because the log is the trades.
-	bool RetireOrder(EcsWorld &world, const std::string &orderId, std::string &errorMessage);
+	bool RetireOrder(EntityStore &world, const std::string &orderId, std::string &errorMessage);
 
 	// One pair of orders meeting: the fill, the settlement, the venue's take, the log.
 	// False with no message, and nothing written, when the pair cannot trade a whole unit;
@@ -372,8 +373,8 @@ class MarketplaceService
 	// the buyer's pocket - and hands the goods over; what is left of either is what the
 	// order gives back when it leaves the book, so the fill never charges a buyer twice.
 	bool FillPair(
-	    EcsWorld &world, const std::string &marketId, EcsWorld::Entity maker, EcsWorld::Entity taker,
-	    std::vector<TradeFill> &fillLog, std::string &errorMessage);
+	    EntityStore &world, const std::string &marketId, EntityStore::Entity maker,
+	    EntityStore::Entity taker, std::vector<TradeFill> &fillLog, std::string &errorMessage);
 
 	// A trader's side of the settlement: the money, and the goods. The money a buyer pays
 	// comes out of the pocket the venue put it in when the order posted, which is the
@@ -383,8 +384,9 @@ class MarketplaceService
 	// gross less the fee of its side, and the cargo it promised left its stockpile at the
 	// post and is handed over out of the order.
 	bool SettleParty(
-	    EcsWorld &world, const std::string &civilisationId, const std::string &itemId, double quantity,
-	    long long gross, long long fee, long long &orderCredits, bool buys, std::string &errorMessage);
+	    EntityStore &world, const std::string &civilisationId, const std::string &itemId,
+	    double quantity, long long gross, long long fee, long long &orderCredits, bool buys,
+	    std::string &errorMessage);
 
 	MarketplaceOptions m_options;
 };

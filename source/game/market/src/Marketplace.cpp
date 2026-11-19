@@ -53,7 +53,8 @@ std::optional<long long> WholeCost(Decimal price, double quantity, bool roundUp)
 	return static_cast<long long>(whole);
 }
 
-bool CanRefundOrders(const EcsWorld &world, const std::vector<std::string> &orders, std::string &error)
+bool CanRefundOrders(
+    const EntityStore &world, const std::vector<std::string> &orders, std::string &error)
 {
 	std::map<std::string, __int128> creditRefunds;
 	for (const auto &orderId : orders)
@@ -103,9 +104,9 @@ bool RestsFirst(const MarketOrderInfo &left, const MarketOrderInfo &right)
 }
 
 // An order still in the book: not filled, not retired.
-bool IsLive(const EcsWorld &ecsWorld, EcsWorld::Entity entity)
+bool IsLive(const EntityStore &entityStore, EntityStore::Entity entity)
 {
-	const auto *info = ecsWorld.IsValid(entity) ? ecsWorld.Get<MarketOrderInfo>(entity) : nullptr;
+	const auto *info = entityStore.IsValid(entity) ? entityStore.Get<MarketOrderInfo>(entity) : nullptr;
 
 	return info != nullptr && info->status == OrderStatus::Active && !IsFulfilled(*info);
 }
@@ -114,14 +115,15 @@ bool IsLive(const EcsWorld &ecsWorld, EcsWorld::Entity entity)
 // inside a price the order that posted first. The order id breaks the last tie, so the
 // book is one order on every platform, and a fill log that says "Order-7 filled first"
 // says it in every run.
-void SortBestFirst(const EcsWorld &ecsWorld, std::vector<EcsWorld::Entity> &orders, OrderSide side)
+void SortBestFirst(
+    const EntityStore &entityStore, std::vector<EntityStore::Entity> &orders, OrderSide side)
 {
 	std::sort(
 	    orders.begin(), orders.end(),
-	    [&ecsWorld, side](EcsWorld::Entity left, EcsWorld::Entity right)
+	    [&entityStore, side](EntityStore::Entity left, EntityStore::Entity right)
 	    {
-		    const auto *a = ecsWorld.Get<MarketOrderInfo>(left);
-		    const auto *b = ecsWorld.Get<MarketOrderInfo>(right);
+		    const auto *a = entityStore.Get<MarketOrderInfo>(left);
+		    const auto *b = entityStore.Get<MarketOrderInfo>(right);
 
 		    if (a == nullptr || b == nullptr)
 		    {
@@ -149,16 +151,16 @@ void SortBestFirst(const EcsWorld &ecsWorld, std::vector<EcsWorld::Entity> &orde
 
 // One venue's book, every good and side, each best first: one pass over the orders, where
 // ActiveOrders is a pass for each good and side.
-using Books = std::map<std::pair<std::string, OrderSide>, std::vector<EcsWorld::Entity>>;
+using Books = std::map<std::pair<std::string, OrderSide>, std::vector<EntityStore::Entity>>;
 
-Books BooksAt(const EcsWorld &ecsWorld, const std::string &marketId)
+Books BooksAt(const EntityStore &entityStore, const std::string &marketId)
 {
 	Books books;
 
-	for (const EcsWorld::Entity entity : ecsWorld.View<MarketOrderInfo, OrderAt>())
+	for (const EntityStore::Entity entity : entityStore.View<MarketOrderInfo, OrderAt>())
 	{
-		const auto *at = ecsWorld.Get<OrderAt>(entity);
-		const auto *info = ecsWorld.Get<MarketOrderInfo>(entity);
+		const auto *at = entityStore.Get<OrderAt>(entity);
+		const auto *info = entityStore.Get<MarketOrderInfo>(entity);
 
 		if (at != nullptr && info != nullptr && at->marketId == marketId &&
 		    info->status == OrderStatus::Active && !IsFulfilled(*info))
@@ -169,7 +171,7 @@ Books BooksAt(const EcsWorld &ecsWorld, const std::string &marketId)
 
 	for (auto &[key, orders] : books)
 	{
-		SortBestFirst(ecsWorld, orders, key.second);
+		SortBestFirst(entityStore, orders, key.second);
 	}
 
 	return books;
@@ -179,13 +181,13 @@ Books BooksAt(const EcsWorld &ecsWorld, const std::string &marketId)
 // the size of the pile at it in units and in orders, and the orders in the whole book are
 // the pile below the best price, which is a number a screen has no use for.
 std::pair<unsigned, double> AtLevel(
-    const EcsWorld &ecsWorld, const std::vector<EcsWorld::Entity> &orders, Decimal price)
+    const EntityStore &entityStore, const std::vector<EntityStore::Entity> &orders, Decimal price)
 {
 	std::pair<unsigned, double> level{0, 0.0};
 
-	for (const EcsWorld::Entity entity : orders)
+	for (const EntityStore::Entity entity : orders)
 	{
-		const auto *info = ecsWorld.Get<MarketOrderInfo>(entity);
+		const auto *info = entityStore.Get<MarketOrderInfo>(entity);
 
 		if (info != nullptr && info->limitPrice == price)
 		{
@@ -216,7 +218,8 @@ void MarketplaceService::SetOptions(MarketplaceOptions options)
 }
 
 
-std::string MarketplaceService::VenueBlockReason(const EcsWorld &ecsWorld, const std::string &bodyId)
+std::string MarketplaceService::VenueBlockReason(
+    const EntityStore &entityStore, const std::string &bodyId)
 {
 	if (bodyId.empty())
 	{
@@ -224,13 +227,13 @@ std::string MarketplaceService::VenueBlockReason(const EcsWorld &ecsWorld, const
 		       "world";
 	}
 
-	if (!ecsWorld.Has(bodyId))
+	if (!entityStore.Has(bodyId))
 	{
 		return "'" + bodyId +
 		       "' is not an entity of this world: a venue is a body, and a body is an entity";
 	}
 
-	const auto *body = ecsWorld.Get<BodyInfo>(bodyId);
+	const auto *body = entityStore.Get<BodyInfo>(bodyId);
 
 	if (body == nullptr)
 	{
@@ -238,7 +241,7 @@ std::string MarketplaceService::VenueBlockReason(const EcsWorld &ecsWorld, const
 		       "' carries no BodyInfo: a market sits at a planet or at a satellite in orbit around one";
 	}
 
-	if (ecsWorld.HasComponent<MarketplaceInfo>(bodyId))
+	if (entityStore.HasComponent<MarketplaceInfo>(bodyId))
 	{
 		return "'" + bodyId + "' already hosts a marketplace";
 	}
@@ -269,7 +272,7 @@ std::string MarketplaceService::VenueBlockReason(const EcsWorld &ecsWorld, const
 			}
 
 			{
-				const auto *primary = ecsWorld.Get<BodyInfo>(body->primaryBodyId);
+				const auto *primary = entityStore.Get<BodyInfo>(body->primaryBodyId);
 
 				if (primary == nullptr)
 				{
@@ -295,9 +298,10 @@ std::string MarketplaceService::VenueBlockReason(const EcsWorld &ecsWorld, const
 }
 
 
-bool MarketplaceService::Open(EcsWorld &ecsWorld, const std::string &bodyId, std::string &errorMessage)
+bool MarketplaceService::Open(
+    EntityStore &entityStore, const std::string &bodyId, std::string &errorMessage)
 {
-	const std::string reason = VenueBlockReason(ecsWorld, bodyId);
+	const std::string reason = VenueBlockReason(entityStore, bodyId);
 
 	if (!reason.empty())
 	{
@@ -306,7 +310,7 @@ bool MarketplaceService::Open(EcsWorld &ecsWorld, const std::string &bodyId, std
 		return false;
 	}
 
-	const BodyInfo *body = ecsWorld.Get<BodyInfo>(bodyId);
+	const BodyInfo *body = entityStore.Get<BodyInfo>(bodyId);
 
 	MarketplaceInfo venue;
 	venue.marketId = bodyId;
@@ -318,20 +322,21 @@ bool MarketplaceService::Open(EcsWorld &ecsWorld, const std::string &bodyId, std
 	venue.orderLifeTicks = m_options.orderLifeTicks;
 	venue.openedTick = 0;
 
-	ecsWorld.Put<MarketplaceInfo>(bodyId, std::move(venue));
+	entityStore.Put<MarketplaceInfo>(bodyId, std::move(venue));
 
 	// The venue's own record of itself: the quote table, the volume, the prices the
 	// fills left behind, the log. A market that has never traded has a record and no
 	// quotes, which is the reading a UI prints as "nothing traded here yet".
-	ecsWorld.Put<MarketRecord>(bodyId, MarketRecord{});
+	entityStore.Put<MarketRecord>(bodyId, MarketRecord{});
 
 	return true;
 }
 
 
-bool MarketplaceService::Close(EcsWorld &ecsWorld, const std::string &bodyId, std::string &errorMessage)
+bool MarketplaceService::Close(
+    EntityStore &entityStore, const std::string &bodyId, std::string &errorMessage)
 {
-	auto *venue = ecsWorld.Get<MarketplaceInfo>(bodyId);
+	auto *venue = entityStore.Get<MarketplaceInfo>(bodyId);
 
 	if (venue == nullptr)
 	{
@@ -345,15 +350,15 @@ bool MarketplaceService::Close(EcsWorld &ecsWorld, const std::string &bodyId, st
 	// orders it was holding.
 	std::vector<std::string> orders;
 
-	const auto view = ecsWorld.View<MarketOrderInfo, OrderAt>();
+	const auto view = entityStore.View<MarketOrderInfo, OrderAt>();
 
-	for (const EcsWorld::Entity entity : view)
+	for (const EntityStore::Entity entity : view)
 	{
-		const OrderAt *at = ecsWorld.Get<OrderAt>(entity);
+		const OrderAt *at = entityStore.Get<OrderAt>(entity);
 
 		if (at != nullptr && at->marketId == bodyId)
 		{
-			const std::string name = ecsWorld.NameOf(entity);
+			const std::string name = entityStore.NameOf(entity);
 
 			if (!name.empty())
 			{
@@ -363,14 +368,14 @@ bool MarketplaceService::Close(EcsWorld &ecsWorld, const std::string &bodyId, st
 	}
 
 	std::sort(orders.begin(), orders.end());
-	if (!CanRefundOrders(ecsWorld, orders, errorMessage))
+	if (!CanRefundOrders(entityStore, orders, errorMessage))
 	{
 		return false;
 	}
 
 	for (const auto &orderId : orders)
 	{
-		if (!RetireOrder(ecsWorld, orderId, errorMessage))
+		if (!RetireOrder(entityStore, orderId, errorMessage))
 		{
 			return false;
 		}
@@ -379,29 +384,29 @@ bool MarketplaceService::Close(EcsWorld &ecsWorld, const std::string &bodyId, st
 	// The venue closes; the market effects of the civilisation stay bought. The tiers
 	// were paid for, and a venue that reopens reads the same clearance and the same
 	// risk the player bought, so the component is left where it is.
-	ecsWorld.Remove<MarketRecord>(bodyId);
-	ecsWorld.Remove<MarketplaceInfo>(bodyId);
+	entityStore.Remove<MarketRecord>(bodyId);
+	entityStore.Remove<MarketplaceInfo>(bodyId);
 
 	return true;
 }
 
 
-bool MarketplaceService::HasMarket(const EcsWorld &ecsWorld, const std::string &bodyId) const
+bool MarketplaceService::HasMarket(const EntityStore &entityStore, const std::string &bodyId) const
 {
-	return ecsWorld.HasComponent<MarketplaceInfo>(bodyId);
+	return entityStore.HasComponent<MarketplaceInfo>(bodyId);
 }
 
 
 std::vector<std::string> MarketplaceService::MarketIds(
-    const EcsWorld &ecsWorld, const std::string &civilisationId) const
+    const EntityStore &entityStore, const std::string &civilisationId) const
 {
 	std::vector<std::string> markets;
 
-	const auto view = ecsWorld.View<MarketplaceInfo>();
+	const auto view = entityStore.View<MarketplaceInfo>();
 
-	for (const EcsWorld::Entity entity : view)
+	for (const EntityStore::Entity entity : view)
 	{
-		const auto *venue = ecsWorld.Get<MarketplaceInfo>(entity);
+		const auto *venue = entityStore.Get<MarketplaceInfo>(entity);
 
 		if (venue == nullptr || (!civilisationId.empty() && venue->civilisationId != civilisationId))
 		{
@@ -417,23 +422,24 @@ std::vector<std::string> MarketplaceService::MarketIds(
 }
 
 
-std::size_t MarketplaceService::MarketCount(const EcsWorld &ecsWorld) const
+std::size_t MarketplaceService::MarketCount(const EntityStore &entityStore) const
 {
-	return ecsWorld.ComponentCount<MarketplaceInfo>();
+	return entityStore.ComponentCount<MarketplaceInfo>();
 }
 
 
 const MarketplaceInfo *MarketplaceService::MarketAt(
-    const EcsWorld &ecsWorld, const std::string &bodyId) const
+    const EntityStore &entityStore, const std::string &bodyId) const
 {
-	return ecsWorld.Get<MarketplaceInfo>(bodyId);
+	return entityStore.Get<MarketplaceInfo>(bodyId);
 }
 
 
 bool MarketplaceService::PostOrder(
-    EcsWorld &ecsWorld, const OrderRequest &request, std::string &orderId, std::string &errorMessage)
+    EntityStore &entityStore, const OrderRequest &request, std::string &orderId,
+    std::string &errorMessage)
 {
-	const MarketplaceInfo *venue = RequireVenue(ecsWorld, request.marketId, errorMessage);
+	const MarketplaceInfo *venue = RequireVenue(entityStore, request.marketId, errorMessage);
 
 	if (venue == nullptr)
 	{
@@ -473,16 +479,16 @@ bool MarketplaceService::PostOrder(
 	// size turns a quoter away when the deck is full, and the harbours and the tribunal
 	// are what buy the size. A resting order's limit alone: an order that walks the book
 	// leaves nothing on the deck.
-	const double cap = DepthUnits(ecsWorld, marketId);
+	const double cap = DepthUnits(entityStore, marketId);
 
 	if (cap > 0.0)
 	{
 		double sideDepth = 0.0;
 
-		for (const EcsWorld::Entity entity :
-		     ActiveOrders(ecsWorld, marketId, request.itemId, request.side))
+		for (const EntityStore::Entity entity :
+		     ActiveOrders(entityStore, marketId, request.itemId, request.side))
 		{
-			if (const MarketOrderInfo *resting = ecsWorld.Get<MarketOrderInfo>(entity))
+			if (const MarketOrderInfo *resting = entityStore.Get<MarketOrderInfo>(entity))
 			{
 				sideDepth += OpenQuantity(*resting);
 			}
@@ -500,7 +506,7 @@ bool MarketplaceService::PostOrder(
 		}
 	}
 
-	if (!CreateOrder(ecsWorld, request, marketId, orderId, errorMessage))
+	if (!CreateOrder(entityStore, request, marketId, orderId, errorMessage))
 	{
 		return false;
 	}
@@ -509,21 +515,21 @@ bool MarketplaceService::PostOrder(
 	// best bid has sold, and the order that filled is out of the book and in the log.
 	std::vector<TradeFill> fills;
 
-	if (!MatchInto(ecsWorld, marketId, fills, errorMessage))
+	if (!MatchInto(entityStore, marketId, fills, errorMessage))
 	{
 		return false;
 	}
 
-	return RefreshQuotes(ecsWorld, marketId, errorMessage);
+	return RefreshQuotes(entityStore, marketId, errorMessage);
 }
 
 
 std::vector<TradeFill> MarketplaceService::ExecuteOrder(
-    EcsWorld &ecsWorld, const OrderRequest &request, std::string &errorMessage)
+    EntityStore &entityStore, const OrderRequest &request, std::string &errorMessage)
 {
 	std::vector<TradeFill> fills;
 
-	const MarketplaceInfo *venue = RequireVenue(ecsWorld, request.marketId, errorMessage);
+	const MarketplaceInfo *venue = RequireVenue(entityStore, request.marketId, errorMessage);
 
 	if (venue == nullptr)
 	{
@@ -563,8 +569,8 @@ std::vector<TradeFill> MarketplaceService::ExecuteOrder(
 
 	// The other side of the book, best first: the walk takes it in this order, and a fill only
 	// ever spends the order at the front.
-	const std::vector<EcsWorld::Entity> book =
-	    ActiveOrders(ecsWorld, marketId, request.itemId, opposite);
+	const std::vector<EntityStore::Entity> book =
+	    ActiveOrders(entityStore, marketId, request.itemId, opposite);
 
 	if (resting.limitPrice <= 0)
 	{
@@ -573,9 +579,9 @@ std::vector<TradeFill> MarketplaceService::ExecuteOrder(
 		// what the asks it walks cost, not the dearest ask on the book.
 		double depth = 0.0;
 
-		for (const EcsWorld::Entity entity : book)
+		for (const EntityStore::Entity entity : book)
 		{
-			const MarketOrderInfo *info = ecsWorld.Get<MarketOrderInfo>(entity);
+			const MarketOrderInfo *info = entityStore.Get<MarketOrderInfo>(entity);
 
 			if (info == nullptr)
 			{
@@ -604,14 +610,14 @@ std::vector<TradeFill> MarketplaceService::ExecuteOrder(
 
 	std::string takerId;
 
-	if (!CreateOrder(ecsWorld, resting, marketId, takerId, errorMessage))
+	if (!CreateOrder(entityStore, resting, marketId, takerId, errorMessage))
 	{
 		return fills;
 	}
 
-	EcsWorld::Entity taker = ecsWorld.Find(takerId);
+	EntityStore::Entity taker = entityStore.Find(takerId);
 
-	if (!ecsWorld.IsValid(taker))
+	if (!entityStore.IsValid(taker))
 	{
 		errorMessage =
 		    std::format("Marketplace '{}': the order '{}' is gone before it walked", marketId, takerId);
@@ -623,7 +629,7 @@ std::vector<TradeFill> MarketplaceService::ExecuteOrder(
 
 	while (true)
 	{
-		auto *walking = ecsWorld.Get<MarketOrderInfo>(taker);
+		auto *walking = entityStore.Get<MarketOrderInfo>(taker);
 
 		if (walking == nullptr || IsFulfilled(*walking))
 		{
@@ -631,7 +637,7 @@ std::vector<TradeFill> MarketplaceService::ExecuteOrder(
 		}
 
 		// Past the makers the last fill completed or retired.
-		while (next < book.size() && !IsLive(ecsWorld, book[next]))
+		while (next < book.size() && !IsLive(entityStore, book[next]))
 		{
 			++next;
 		}
@@ -641,8 +647,8 @@ std::vector<TradeFill> MarketplaceService::ExecuteOrder(
 			break;
 		}
 
-		const EcsWorld::Entity maker = book[next];
-		const MarketOrderInfo *makerInfo = ecsWorld.Get<MarketOrderInfo>(maker);
+		const EntityStore::Entity maker = book[next];
+		const MarketOrderInfo *makerInfo = entityStore.Get<MarketOrderInfo>(maker);
 
 		// The walk's own limit: the asks above a buy limit, and the bids below a sell
 		// limit, are refused, and the book is sorted best first, so the first refusal
@@ -657,7 +663,7 @@ std::vector<TradeFill> MarketplaceService::ExecuteOrder(
 			break;
 		}
 
-		if (!FillPair(ecsWorld, marketId, maker, taker, fills, errorMessage))
+		if (!FillPair(entityStore, marketId, maker, taker, fills, errorMessage))
 		{
 			// The pair cannot trade a whole unit: the trader on the other side has run
 			// out, so the walk has run out of book.
@@ -666,28 +672,28 @@ std::vector<TradeFill> MarketplaceService::ExecuteOrder(
 
 		// The taker entity can be the one that filled, and a filled order leaves the
 		// book, which destroys it: the walk is over with it.
-		if (!ecsWorld.IsValid(taker))
+		if (!entityStore.IsValid(taker))
 		{
 			break;
 		}
 	}
 
-	if (ecsWorld.IsValid(taker))
+	if (entityStore.IsValid(taker))
 	{
-		if (!RetireOrder(ecsWorld, takerId, errorMessage))
+		if (!RetireOrder(entityStore, takerId, errorMessage))
 		{
 			return fills;
 		}
 	}
 
-	RefreshQuotes(ecsWorld, marketId, errorMessage);
+	RefreshQuotes(entityStore, marketId, errorMessage);
 
 	return fills;
 }
 
 
 bool MarketplaceService::CancelOrder(
-    EcsWorld &ecsWorld, const std::string &orderId, std::string &errorMessage)
+    EntityStore &entityStore, const std::string &orderId, std::string &errorMessage)
 {
 	// An empty id names no order at all, which is a caller's error and not an order that
 	// is gone: the venue answers it with a message, because a cancel posted with no id is
@@ -700,7 +706,7 @@ bool MarketplaceService::CancelOrder(
 		return false;
 	}
 
-	const MarketOrderInfo *info = RequireOrder(ecsWorld, orderId, errorMessage);
+	const MarketOrderInfo *info = RequireOrder(entityStore, orderId, errorMessage);
 
 	if (info == nullptr)
 	{
@@ -712,9 +718,9 @@ bool MarketplaceService::CancelOrder(
 		// the venues have never seen, or one that expired or was cancelled, is gone,
 		// which is the target state of a cancel, and the venue answers that with the
 		// answer that the book is clean.
-		for (const EcsWorld::Entity venueEntity : ecsWorld.View<MarketRecord>())
+		for (const EntityStore::Entity venueEntity : entityStore.View<MarketRecord>())
 		{
-			const MarketRecord *record = ecsWorld.Get<MarketRecord>(venueEntity);
+			const MarketRecord *record = entityStore.Get<MarketRecord>(venueEntity);
 
 			if (record == nullptr)
 			{
@@ -746,10 +752,10 @@ bool MarketplaceService::CancelOrder(
 		return true;
 	}
 
-	const OrderAt *at = ecsWorld.Get<OrderAt>(orderId);
+	const OrderAt *at = entityStore.Get<OrderAt>(orderId);
 	const std::string marketId = at != nullptr ? at->marketId : std::string{};
 
-	if (!RetireOrder(ecsWorld, orderId, errorMessage))
+	if (!RetireOrder(entityStore, orderId, errorMessage))
 	{
 		return false;
 	}
@@ -758,10 +764,10 @@ bool MarketplaceService::CancelOrder(
 	// bid that was third is the bid a resting ask can trade.
 	std::vector<TradeFill> fills;
 
-	if (!marketId.empty() && HasMarket(ecsWorld, marketId))
+	if (!marketId.empty() && HasMarket(entityStore, marketId))
 	{
-		return MatchInto(ecsWorld, marketId, fills, errorMessage) &&
-		       RefreshQuotes(ecsWorld, marketId, errorMessage);
+		return MatchInto(entityStore, marketId, fills, errorMessage) &&
+		       RefreshQuotes(entityStore, marketId, errorMessage);
 	}
 
 	return true;
@@ -769,12 +775,12 @@ bool MarketplaceService::CancelOrder(
 
 
 bool MarketplaceService::CreateOrder(
-    EcsWorld &ecsWorld, const OrderRequest &request, const std::string &marketId, std::string &orderId,
-    std::string &errorMessage)
+    EntityStore &entityStore, const OrderRequest &request, const std::string &marketId,
+    std::string &orderId, std::string &errorMessage)
 {
 	orderId.clear();
 
-	const MarketplaceInfo *venue = RequireVenue(ecsWorld, marketId, errorMessage);
+	const MarketplaceInfo *venue = RequireVenue(entityStore, marketId, errorMessage);
 
 	if (venue == nullptr)
 	{
@@ -824,9 +830,9 @@ bool MarketplaceService::CreateOrder(
 		return false;
 	}
 
-	EcsWorld::Entity trader = EcsWorld::Null;
+	EntityStore::Entity trader = EntityStore::Null;
 
-	if (!RequireTrader(ecsWorld, request.civilisationId, trader, errorMessage))
+	if (!RequireTrader(entityStore, request.civilisationId, trader, errorMessage))
 	{
 		return false;
 	}
@@ -834,7 +840,7 @@ bool MarketplaceService::CreateOrder(
 	// The fee of the moment the order posts: a venue's fee moves with the risk of the
 	// place and the clearance of the licence, and an order that posted at 40 bps is an
 	// order that pays 40 bps, whatever the venue's charges read at the fill.
-	const int feeBps = ListingFeeBps(ecsWorld, marketId);
+	const int feeBps = ListingFeeBps(entityStore, marketId);
 
 	MarketOrderInfo info;
 	info.itemId = request.itemId;
@@ -869,8 +875,8 @@ bool MarketplaceService::CreateOrder(
 	// RequireTrader checked that the trader carries both components, so neither pointer
 	// is null here, and the two pointers are read and written in the same pool for the
 	// whole of the reservation.
-	auto *treasury = ecsWorld.Get<Treasury>(trader);
-	auto *stock = ecsWorld.Get<Stockpile>(trader);
+	auto *treasury = entityStore.Get<Treasury>(trader);
+	auto *stock = entityStore.Get<Stockpile>(trader);
 
 	if (request.side == OrderSide::Sell)
 	{
@@ -924,12 +930,12 @@ bool MarketplaceService::CreateOrder(
 		info.reservedCredits = need;
 	}
 
-	orderId = ecsWorld.NextId("Order");
+	orderId = entityStore.NextId("Order");
 	info.orderId = orderId;
 
-	EcsWorld::Entity order = EcsWorld::Null;
+	EntityStore::Entity order = EntityStore::Null;
 
-	if (!ecsWorld.Create(orderId, order, errorMessage))
+	if (!entityStore.Create(orderId, order, errorMessage))
 	{
 		// The id the world hands out is never one it has handed out before, so the only
 		// way here is the caller's own id in the way, and a reservation that is refused
@@ -947,19 +953,19 @@ bool MarketplaceService::CreateOrder(
 		return false;
 	}
 
-	ecsWorld.Add<MarketOrderInfo>(order, std::move(info));
-	ecsWorld.Add<OrderAt>(order, OrderAt{marketId});
-	ecsWorld.Add<OrderOwner>(order, OrderOwner{request.civilisationId});
+	entityStore.Add<MarketOrderInfo>(order, std::move(info));
+	entityStore.Add<OrderAt>(order, OrderAt{marketId});
+	entityStore.Add<OrderOwner>(order, OrderOwner{request.civilisationId});
 
 	return true;
 }
 
 
 bool MarketplaceService::MatchInto(
-    EcsWorld &ecsWorld, const std::string &marketId, std::vector<TradeFill> &fillLog,
+    EntityStore &entityStore, const std::string &marketId, std::vector<TradeFill> &fillLog,
     std::string &errorMessage)
 {
-	const MarketplaceInfo *venue = RequireVenue(ecsWorld, marketId, errorMessage);
+	const MarketplaceInfo *venue = RequireVenue(entityStore, marketId, errorMessage);
 
 	if (venue == nullptr)
 	{
@@ -967,7 +973,7 @@ bool MarketplaceService::MatchInto(
 	}
 
 	// The goods cross in item order, the books' own, the same on every platform.
-	const Books books = BooksAt(ecsWorld, marketId);
+	const Books books = BooksAt(entityStore, marketId);
 
 	for (const auto &[key, asks] : books)
 	{
@@ -978,7 +984,7 @@ bool MarketplaceService::MatchInto(
 			continue;
 		}
 
-		const std::vector<EcsWorld::Entity> &bids = bidBook->second;
+		const std::vector<EntityStore::Entity> &bids = bidBook->second;
 		std::size_t nextAsk = 0;
 		std::size_t nextBid = 0;
 
@@ -988,12 +994,12 @@ bool MarketplaceService::MatchInto(
 		// sides keep their order and the fronts move past what it completed or retired.
 		while (true)
 		{
-			while (nextAsk < asks.size() && !IsLive(ecsWorld, asks[nextAsk]))
+			while (nextAsk < asks.size() && !IsLive(entityStore, asks[nextAsk]))
 			{
 				++nextAsk;
 			}
 
-			while (nextBid < bids.size() && !IsLive(ecsWorld, bids[nextBid]))
+			while (nextBid < bids.size() && !IsLive(entityStore, bids[nextBid]))
 			{
 				++nextBid;
 			}
@@ -1003,8 +1009,8 @@ bool MarketplaceService::MatchInto(
 				break;
 			}
 
-			const MarketOrderInfo *ask = ecsWorld.Get<MarketOrderInfo>(asks[nextAsk]);
-			const MarketOrderInfo *bid = ecsWorld.Get<MarketOrderInfo>(bids[nextBid]);
+			const MarketOrderInfo *ask = entityStore.Get<MarketOrderInfo>(asks[nextAsk]);
+			const MarketOrderInfo *bid = entityStore.Get<MarketOrderInfo>(bids[nextBid]);
 
 			if (bid->limitPrice < ask->limitPrice)
 			{
@@ -1014,12 +1020,12 @@ bool MarketplaceService::MatchInto(
 			// The resting-first rule: the order that reached the book first is the
 			// maker, and its limit price is the price both sides trade at.
 			const bool askRestsFirst = RestsFirst(*ask, *bid);
-			const EcsWorld::Entity maker = askRestsFirst ? asks[nextAsk] : bids[nextBid];
-			const EcsWorld::Entity taker = askRestsFirst ? bids[nextBid] : asks[nextAsk];
+			const EntityStore::Entity maker = askRestsFirst ? asks[nextAsk] : bids[nextBid];
+			const EntityStore::Entity taker = askRestsFirst ? bids[nextBid] : asks[nextAsk];
 
 			std::string fillError;
 
-			if (!FillPair(ecsWorld, marketId, maker, taker, fillLog, fillError))
+			if (!FillPair(entityStore, marketId, maker, taker, fillLog, fillError))
 			{
 				// Without a message the pair cannot trade a whole unit - a seller at a venue
 				// that spends the stockpile at the fill has run out - and the pair is the
@@ -1041,11 +1047,11 @@ bool MarketplaceService::MatchInto(
 
 
 std::vector<TradeFill> MarketplaceService::MatchBook(
-    EcsWorld &ecsWorld, const std::string &marketId, std::string &errorMessage)
+    EntityStore &entityStore, const std::string &marketId, std::string &errorMessage)
 {
 	std::vector<TradeFill> fills;
 
-	if (!MatchInto(ecsWorld, marketId, fills, errorMessage))
+	if (!MatchInto(entityStore, marketId, fills, errorMessage))
 	{
 		return {};
 	}
@@ -1055,14 +1061,14 @@ std::vector<TradeFill> MarketplaceService::MatchBook(
 
 
 std::vector<std::string> MarketplaceService::Book(
-    const EcsWorld &ecsWorld, const std::string &marketId, const std::string &itemId,
+    const EntityStore &entityStore, const std::string &marketId, const std::string &itemId,
     OrderSide side) const
 {
 	std::vector<std::string> orders;
 
-	for (const EcsWorld::Entity entity : ActiveOrders(ecsWorld, marketId, itemId, side))
+	for (const EntityStore::Entity entity : ActiveOrders(entityStore, marketId, itemId, side))
 	{
-		const std::string name = ecsWorld.NameOf(entity);
+		const std::string name = entityStore.NameOf(entity);
 
 		if (!name.empty())
 		{
@@ -1075,17 +1081,18 @@ std::vector<std::string> MarketplaceService::Book(
 
 
 std::vector<MarketOrderInfo> MarketplaceService::OrdersOf(
-    const EcsWorld &ecsWorld, const std::string &marketId, const std::string &civilisationId) const
+    const EntityStore &entityStore, const std::string &marketId,
+    const std::string &civilisationId) const
 {
 	std::vector<MarketOrderInfo> orders;
 
-	const auto view = ecsWorld.View<MarketOrderInfo, OrderAt, OrderOwner>();
+	const auto view = entityStore.View<MarketOrderInfo, OrderAt, OrderOwner>();
 
-	for (const EcsWorld::Entity entity : view)
+	for (const EntityStore::Entity entity : view)
 	{
-		const auto *info = ecsWorld.Get<MarketOrderInfo>(entity);
-		const auto *at = ecsWorld.Get<OrderAt>(entity);
-		const auto *owner = ecsWorld.Get<OrderOwner>(entity);
+		const auto *info = entityStore.Get<MarketOrderInfo>(entity);
+		const auto *at = entityStore.Get<OrderAt>(entity);
+		const auto *owner = entityStore.Get<OrderOwner>(entity);
 
 		if (info == nullptr || at == nullptr || owner == nullptr)
 		{
@@ -1114,16 +1121,16 @@ std::vector<MarketOrderInfo> MarketplaceService::OrdersOf(
 
 
 std::size_t MarketplaceService::OpenOrderCount(
-    const EcsWorld &ecsWorld, const std::string &marketId) const
+    const EntityStore &entityStore, const std::string &marketId) const
 {
 	std::size_t open = 0;
 
-	const auto view = ecsWorld.View<MarketOrderInfo, OrderAt>();
+	const auto view = entityStore.View<MarketOrderInfo, OrderAt>();
 
-	for (const EcsWorld::Entity entity : view)
+	for (const EntityStore::Entity entity : view)
 	{
-		const auto *info = ecsWorld.Get<MarketOrderInfo>(entity);
-		const auto *at = ecsWorld.Get<OrderAt>(entity);
+		const auto *info = entityStore.Get<MarketOrderInfo>(entity);
+		const auto *at = entityStore.Get<OrderAt>(entity);
 
 		if (info != nullptr && at != nullptr && (marketId.empty() || at->marketId == marketId) &&
 		    info->status == OrderStatus::Active && OpenQuantity(*info) > quantityEpsilon)
@@ -1137,9 +1144,9 @@ std::size_t MarketplaceService::OpenOrderCount(
 
 
 bool MarketplaceService::RefreshQuotes(
-    EcsWorld &ecsWorld, const std::string &marketId, std::string &errorMessage)
+    EntityStore &entityStore, const std::string &marketId, std::string &errorMessage)
 {
-	const MarketplaceInfo *venue = RequireVenue(ecsWorld, marketId, errorMessage);
+	const MarketplaceInfo *venue = RequireVenue(entityStore, marketId, errorMessage);
 
 	if (venue == nullptr)
 	{
@@ -1151,7 +1158,7 @@ bool MarketplaceService::RefreshQuotes(
 	// the book, and a book that changed is a quote table that changed.
 	MarketRecord record;
 
-	const MarketRecord *existing = ecsWorld.Get<MarketRecord>(marketId);
+	const MarketRecord *existing = entityStore.Get<MarketRecord>(marketId);
 
 	if (existing != nullptr)
 	{
@@ -1178,7 +1185,7 @@ bool MarketplaceService::RefreshQuotes(
 
 	record.quotes.clear();
 
-	Books books = BooksAt(ecsWorld, marketId);
+	Books books = BooksAt(entityStore, marketId);
 
 	for (const auto &entry : books)
 	{
@@ -1190,23 +1197,23 @@ bool MarketplaceService::RefreshQuotes(
 		MarketQuote quote;
 		quote.itemId = itemId;
 
-		const std::vector<EcsWorld::Entity> &asks = books[{itemId, OrderSide::Sell}];
-		const std::vector<EcsWorld::Entity> &bids = books[{itemId, OrderSide::Buy}];
+		const std::vector<EntityStore::Entity> &asks = books[{itemId, OrderSide::Sell}];
+		const std::vector<EntityStore::Entity> &bids = books[{itemId, OrderSide::Buy}];
 
 		if (!asks.empty())
 		{
-			const MarketOrderInfo *best = ecsWorld.Get<MarketOrderInfo>(asks.front());
+			const MarketOrderInfo *best = entityStore.Get<MarketOrderInfo>(asks.front());
 
 			quote.bestAsk = best != nullptr ? best->limitPrice : Decimal{};
-			std::tie(quote.askOrders, quote.askDepth) = AtLevel(ecsWorld, asks, quote.bestAsk);
+			std::tie(quote.askOrders, quote.askDepth) = AtLevel(entityStore, asks, quote.bestAsk);
 		}
 
 		if (!bids.empty())
 		{
-			const MarketOrderInfo *best = ecsWorld.Get<MarketOrderInfo>(bids.front());
+			const MarketOrderInfo *best = entityStore.Get<MarketOrderInfo>(bids.front());
 
 			quote.bestBid = best != nullptr ? best->limitPrice : Decimal{};
-			std::tie(quote.bidOrders, quote.bidDepth) = AtLevel(ecsWorld, bids, quote.bestBid);
+			std::tie(quote.bidOrders, quote.bidDepth) = AtLevel(entityStore, bids, quote.bestBid);
 		}
 
 		if (quote.bestAsk > 0 && quote.bestBid > 0 && quote.bestBid <= quote.bestAsk)
@@ -1243,16 +1250,16 @@ bool MarketplaceService::RefreshQuotes(
 		record.quotes[itemId] = quote;
 	}
 
-	return ecsWorld.Put<MarketRecord>(marketId, std::move(record)) != nullptr;
+	return entityStore.Put<MarketRecord>(marketId, std::move(record)) != nullptr;
 }
 
 
 std::vector<MarketQuote> MarketplaceService::Quotes(
-    const EcsWorld &ecsWorld, const std::string &marketId) const
+    const EntityStore &entityStore, const std::string &marketId) const
 {
 	std::vector<MarketQuote> quotes;
 
-	const auto *record = ecsWorld.Get<MarketRecord>(marketId);
+	const auto *record = entityStore.Get<MarketRecord>(marketId);
 
 	if (record == nullptr)
 	{
@@ -1269,9 +1276,9 @@ std::vector<MarketQuote> MarketplaceService::Quotes(
 
 
 const MarketQuote *MarketplaceService::QuoteFor(
-    const EcsWorld &ecsWorld, const std::string &marketId, const std::string &itemId) const
+    const EntityStore &entityStore, const std::string &marketId, const std::string &itemId) const
 {
-	const auto *record = ecsWorld.Get<MarketRecord>(marketId);
+	const auto *record = entityStore.Get<MarketRecord>(marketId);
 
 	if (record == nullptr)
 	{
@@ -1285,10 +1292,10 @@ const MarketQuote *MarketplaceService::QuoteFor(
 
 
 bool MarketplaceService::BestAsk(
-    const EcsWorld &ecsWorld, const std::string &marketId, const std::string &itemId,
+    const EntityStore &entityStore, const std::string &marketId, const std::string &itemId,
     Decimal &price) const
 {
-	const MarketQuote *quote = QuoteFor(ecsWorld, marketId, itemId);
+	const MarketQuote *quote = QuoteFor(entityStore, marketId, itemId);
 
 	if (quote == nullptr || quote->bestAsk <= 0)
 	{
@@ -1302,10 +1309,10 @@ bool MarketplaceService::BestAsk(
 
 
 bool MarketplaceService::BestBid(
-    const EcsWorld &ecsWorld, const std::string &marketId, const std::string &itemId,
+    const EntityStore &entityStore, const std::string &marketId, const std::string &itemId,
     Decimal &price) const
 {
-	const MarketQuote *quote = QuoteFor(ecsWorld, marketId, itemId);
+	const MarketQuote *quote = QuoteFor(entityStore, marketId, itemId);
 
 	if (quote == nullptr || quote->bestBid <= 0)
 	{
@@ -1319,10 +1326,10 @@ bool MarketplaceService::BestBid(
 
 
 bool MarketplaceService::MidPrice(
-    const EcsWorld &ecsWorld, const std::string &marketId, const std::string &itemId,
+    const EntityStore &entityStore, const std::string &marketId, const std::string &itemId,
     Decimal &price) const
 {
-	const MarketQuote *quote = QuoteFor(ecsWorld, marketId, itemId);
+	const MarketQuote *quote = QuoteFor(entityStore, marketId, itemId);
 
 	if (quote == nullptr || quote->mid <= 0)
 	{
@@ -1336,18 +1343,18 @@ bool MarketplaceService::MidPrice(
 
 
 double MarketplaceService::SpreadBps(
-    const EcsWorld &ecsWorld, const std::string &marketId, const std::string &itemId) const
+    const EntityStore &entityStore, const std::string &marketId, const std::string &itemId) const
 {
-	const MarketQuote *quote = QuoteFor(ecsWorld, marketId, itemId);
+	const MarketQuote *quote = QuoteFor(entityStore, marketId, itemId);
 
 	return quote != nullptr ? quote->spreadBps : 0.0;
 }
 
 
 Decimal MarketplaceService::ReferencePrice(
-    const EcsWorld &ecsWorld, const std::string &marketId, const std::string &itemId) const
+    const EntityStore &entityStore, const std::string &marketId, const std::string &itemId) const
 {
-	const MarketQuote *quote = QuoteFor(ecsWorld, marketId, itemId);
+	const MarketQuote *quote = QuoteFor(entityStore, marketId, itemId);
 
 	if (quote == nullptr)
 	{
@@ -1373,9 +1380,10 @@ Decimal MarketplaceService::ReferencePrice(
 }
 
 
-int MarketplaceService::RiskPremiumBps(const EcsWorld &ecsWorld, const std::string &marketId) const
+int MarketplaceService::RiskPremiumBps(
+    const EntityStore &entityStore, const std::string &marketId) const
 {
-	const auto *venue = ecsWorld.Get<MarketplaceInfo>(marketId);
+	const auto *venue = entityStore.Get<MarketplaceInfo>(marketId);
 
 	if (venue == nullptr)
 	{
@@ -1389,14 +1397,14 @@ int MarketplaceService::RiskPremiumBps(const EcsWorld &ecsWorld, const std::stri
 	// that keeps a marketplace from knowing anything about the skill tree.
 	double risk = 0.0;
 
-	if (const auto *effects = ecsWorld.Get<MarketEffects>(marketId))
+	if (const auto *effects = entityStore.Get<MarketEffects>(marketId))
 	{
 		risk += ReadEffectStat(effects->values, EffectStat::MarketRiskPremium);
 	}
 
 	const auto laneId = CivilisationEffectEngine::LaneStoreId(venue->civilisationId);
 
-	if (const auto *lanes = ecsWorld.Get<RouteEffects>(laneId))
+	if (const auto *lanes = entityStore.Get<RouteEffects>(laneId))
 	{
 		risk += ReadEffectStat(lanes->values, EffectStat::RouteRiskPremium);
 	}
@@ -1405,21 +1413,21 @@ int MarketplaceService::RiskPremiumBps(const EcsWorld &ecsWorld, const std::stri
 }
 
 
-int MarketplaceService::ListingFeeBps(const EcsWorld &ecsWorld, const std::string &marketId) const
+int MarketplaceService::ListingFeeBps(const EntityStore &entityStore, const std::string &marketId) const
 {
-	const auto *venue = ecsWorld.Get<MarketplaceInfo>(marketId);
+	const auto *venue = entityStore.Get<MarketplaceInfo>(marketId);
 
 	if (venue == nullptr)
 	{
 		return m_options.listingFeeBps;
 	}
 
-	int fee = venue->baseListingFeeBps + RiskPremiumBps(ecsWorld, marketId);
+	int fee = venue->baseListingFeeBps + RiskPremiumBps(entityStore, marketId);
 
 	// The credit for the berth: one basis point off the fee for every two berths a day
 	// the licence and the warrant clear, because a licence that clears the deck faster
 	// is a deck that fills the same goods at a cheaper berth.
-	if (const auto *effects = ecsWorld.Get<MarketEffects>(marketId))
+	if (const auto *effects = entityStore.Get<MarketEffects>(marketId))
 	{
 		const double clearance = ReadEffectStat(effects->values, EffectStat::MarketClearance);
 
@@ -1430,12 +1438,12 @@ int MarketplaceService::ListingFeeBps(const EcsWorld &ecsWorld, const std::strin
 }
 
 
-int MarketplaceService::InsuranceBps(const EcsWorld &ecsWorld, const std::string &marketId) const
+int MarketplaceService::InsuranceBps(const EntityStore &entityStore, const std::string &marketId) const
 {
-	const auto *venue = ecsWorld.Get<MarketplaceInfo>(marketId);
+	const auto *venue = entityStore.Get<MarketplaceInfo>(marketId);
 	int bps = venue != nullptr ? m_options.insuranceBps : 0;
 
-	if (const auto *effects = ecsWorld.Get<MarketEffects>(marketId))
+	if (const auto *effects = entityStore.Get<MarketEffects>(marketId))
 	{
 		bps += static_cast<int>(ReadEffectStat(effects->values, EffectStat::MarketInsurance));
 	}
@@ -1444,9 +1452,9 @@ int MarketplaceService::InsuranceBps(const EcsWorld &ecsWorld, const std::string
 }
 
 
-double MarketplaceService::DepthUnits(const EcsWorld &ecsWorld, const std::string &marketId) const
+double MarketplaceService::DepthUnits(const EntityStore &entityStore, const std::string &marketId) const
 {
-	const auto *venue = ecsWorld.Get<MarketplaceInfo>(marketId);
+	const auto *venue = entityStore.Get<MarketplaceInfo>(marketId);
 
 	if (venue == nullptr || m_options.depthUnits <= 0.0)
 	{
@@ -1457,7 +1465,7 @@ double MarketplaceService::DepthUnits(const EcsWorld &ecsWorld, const std::strin
 
 	double depth = m_options.depthUnits;
 
-	if (const auto *effects = ecsWorld.Get<MarketEffects>(marketId))
+	if (const auto *effects = entityStore.Get<MarketEffects>(marketId))
 	{
 		depth += ReadEffectStat(effects->values, EffectStat::MarketDepth);
 	}
@@ -1467,11 +1475,12 @@ double MarketplaceService::DepthUnits(const EcsWorld &ecsWorld, const std::strin
 
 
 bool MarketplaceService::ApplyProgression(
-    EcsWorld &ecsWorld, const ProgressionManager &progression, const CivilisationEffectEngine &effects,
-    const std::string &civilisationId, unsigned &applied, unsigned &skipped, std::string &errorMessage)
+    EntityStore &entityStore, const ProgressionManager &progression,
+    const CivilisationEffectEngine &effects, const std::string &civilisationId, unsigned &applied,
+    unsigned &skipped, std::string &errorMessage)
 {
 	if (!effects.ApplyProgression(
-	        ecsWorld, progression, civilisationId, applied, skipped, errorMessage))
+	        entityStore, progression, civilisationId, applied, skipped, errorMessage))
 	{
 		return false;
 	}
@@ -1479,9 +1488,9 @@ bool MarketplaceService::ApplyProgression(
 	// The clearance of a venue moves its fee, and the fee is the number beside the
 	// price in every quote the UI shows, so a tree that has been bought is a set of
 	// venues whose charges have to be re-read.
-	for (const auto &marketId : effects.MarketsOf(ecsWorld, civilisationId))
+	for (const auto &marketId : effects.MarketsOf(entityStore, civilisationId))
 	{
-		if (!RefreshQuotes(ecsWorld, marketId, errorMessage))
+		if (!RefreshQuotes(entityStore, marketId, errorMessage))
 		{
 			return false;
 		}
@@ -1491,7 +1500,8 @@ bool MarketplaceService::ApplyProgression(
 }
 
 
-unsigned MarketplaceService::AdvanceTick(EcsWorld &ecsWorld, long long tick, std::string &errorMessage)
+unsigned MarketplaceService::AdvanceTick(
+    EntityStore &entityStore, long long tick, std::string &errorMessage)
 {
 	unsigned venues = 0;
 
@@ -1499,15 +1509,15 @@ unsigned MarketplaceService::AdvanceTick(EcsWorld &ecsWorld, long long tick, std
 	// that does not run past the tick the order was posted at is an order posted with no
 	// order life, which rests until it trades, is cancelled, or the venue closes.
 	std::vector<std::string> allExpired;
-	for (const auto entity : ecsWorld.View<MarketOrderInfo, OrderAt>())
+	for (const auto entity : entityStore.View<MarketOrderInfo, OrderAt>())
 	{
-		const auto *info = ecsWorld.Get<MarketOrderInfo>(entity);
-		const auto *at = ecsWorld.Get<OrderAt>(entity);
-		if (info != nullptr && at != nullptr && HasMarket(ecsWorld, at->marketId) &&
+		const auto *info = entityStore.Get<MarketOrderInfo>(entity);
+		const auto *at = entityStore.Get<OrderAt>(entity);
+		if (info != nullptr && at != nullptr && HasMarket(entityStore, at->marketId) &&
 		    info->status == OrderStatus::Active && info->expiresTick > info->placedTick &&
 		    info->expiresTick <= tick)
 		{
-			const auto name = ecsWorld.NameOf(entity);
+			const auto name = entityStore.NameOf(entity);
 			if (!name.empty())
 			{
 				allExpired.push_back(name);
@@ -1515,7 +1525,7 @@ unsigned MarketplaceService::AdvanceTick(EcsWorld &ecsWorld, long long tick, std
 		}
 	}
 	std::sort(allExpired.begin(), allExpired.end());
-	if (!CanRefundOrders(ecsWorld, allExpired, errorMessage))
+	if (!CanRefundOrders(entityStore, allExpired, errorMessage))
 	{
 		return 0;
 	}
@@ -1524,15 +1534,15 @@ unsigned MarketplaceService::AdvanceTick(EcsWorld &ecsWorld, long long tick, std
 	// credits go back: the berths they held are the berths this tick's quoters need.
 	for (const auto &orderId : allExpired)
 	{
-		if (!RetireOrder(ecsWorld, orderId, errorMessage))
+		if (!RetireOrder(entityStore, orderId, errorMessage))
 		{
 			return 0;
 		}
 	}
 
-	for (const auto &marketId : MarketIds(ecsWorld, {}))
+	for (const auto &marketId : MarketIds(entityStore, {}))
 	{
-		if (!RefreshQuotes(ecsWorld, marketId, errorMessage))
+		if (!RefreshQuotes(entityStore, marketId, errorMessage))
 		{
 			return venues;
 		}
@@ -1545,11 +1555,11 @@ unsigned MarketplaceService::AdvanceTick(EcsWorld &ecsWorld, long long tick, std
 
 
 std::vector<TradeFill> MarketplaceService::Fills(
-    const EcsWorld &ecsWorld, const std::string &marketId) const
+    const EntityStore &entityStore, const std::string &marketId) const
 {
 	std::vector<TradeFill> fills;
 
-	const auto *record = ecsWorld.Get<MarketRecord>(marketId);
+	const auto *record = entityStore.Get<MarketRecord>(marketId);
 
 	if (record == nullptr)
 	{
@@ -1561,16 +1571,16 @@ std::vector<TradeFill> MarketplaceService::Fills(
 
 
 std::string MarketplaceService::DescribeMarket(
-    const EcsWorld &ecsWorld, const std::string &marketId) const
+    const EntityStore &entityStore, const std::string &marketId) const
 {
-	const auto *venue = ecsWorld.Get<MarketplaceInfo>(marketId);
+	const auto *venue = entityStore.Get<MarketplaceInfo>(marketId);
 
 	if (venue == nullptr)
 	{
 		return "Market '" + marketId + "': the world holds no such venue";
 	}
 
-	const auto *body = ecsWorld.Get<BodyInfo>(marketId);
+	const auto *body = entityStore.Get<BodyInfo>(marketId);
 
 	std::ostringstream out;
 
@@ -1584,14 +1594,14 @@ std::string MarketplaceService::DescribeMarket(
 		out << ", in orbit around " << body->primaryBodyId;
 	}
 
-	out << "\n  Charges " << ListingFeeBps(ecsWorld, venue->marketId) << " bps a side (base "
-	    << venue->baseListingFeeBps << ", risk " << RiskPremiumBps(ecsWorld, venue->marketId)
-	    << "), insurance " << InsuranceBps(ecsWorld, venue->marketId) << " bps, orders rest "
+	out << "\n  Charges " << ListingFeeBps(entityStore, venue->marketId) << " bps a side (base "
+	    << venue->baseListingFeeBps << ", risk " << RiskPremiumBps(entityStore, venue->marketId)
+	    << "), insurance " << InsuranceBps(entityStore, venue->marketId) << " bps, orders rest "
 	    << venue->orderLifeTicks << " ticks, take " << venue->venueTake << " credits\n";
 
-	out << "  " << OpenOrderCount(ecsWorld, venue->marketId) << " open orders, ";
+	out << "  " << OpenOrderCount(entityStore, venue->marketId) << " open orders, ";
 
-	const std::vector<MarketQuote> quotes = Quotes(ecsWorld, venue->marketId);
+	const std::vector<MarketQuote> quotes = Quotes(entityStore, venue->marketId);
 
 	out << quotes.size() << " goods quoted";
 
@@ -1634,9 +1644,9 @@ std::string MarketplaceService::DescribeMarket(
 
 
 std::string MarketplaceService::DescribeOrder(
-    const EcsWorld &ecsWorld, const std::string &orderId) const
+    const EntityStore &entityStore, const std::string &orderId) const
 {
-	const auto *info = ecsWorld.Get<MarketOrderInfo>(orderId);
+	const auto *info = entityStore.Get<MarketOrderInfo>(orderId);
 
 	if (info == nullptr)
 	{
@@ -1645,8 +1655,8 @@ std::string MarketplaceService::DescribeOrder(
 		       "was never posted";
 	}
 
-	const auto *at = ecsWorld.Get<OrderAt>(orderId);
-	const auto *owner = ecsWorld.Get<OrderOwner>(orderId);
+	const auto *at = entityStore.Get<OrderAt>(orderId);
+	const auto *owner = entityStore.Get<OrderOwner>(orderId);
 
 	std::ostringstream out;
 
@@ -1662,17 +1672,17 @@ std::string MarketplaceService::DescribeOrder(
 
 
 bool MarketplaceService::LoadSimulation(
-    EcsWorld &ecsWorld, const Simulation &sim, const MarketplaceOptions &options,
+    EntityStore &entityStore, const Simulation &sim, const MarketplaceOptions &options,
     std::size_t &venuesOpened, std::string &errorMessage)
 {
 	venuesOpened = 0;
 
-	if (ecsWorld.EntityCount() != 0)
+	if (entityStore.EntityCount() != 0)
 	{
 		errorMessage = std::format(
 		    "MarketplaceService: the world holds {} entities: the generated universe loads into a "
 		    "fresh world, because the ids of a second load collide with the first",
-		    std::to_string(ecsWorld.EntityCount()));
+		    std::to_string(entityStore.EntityCount()));
 
 		return false;
 	}
@@ -1689,7 +1699,8 @@ bool MarketplaceService::LoadSimulation(
 	for (const Civilisation &world : sim.GetCivilisations())
 	{
 		if (!AddPlanet(
-		        ecsWorld, world.id, world.name, world.systemName, world.id, world.ageId, errorMessage))
+		        entityStore, world.id, world.name, world.systemName, world.id, world.ageId,
+		        errorMessage))
 		{
 			errorMessage.insert(0, "MarketplaceService: ");
 
@@ -1699,13 +1710,13 @@ bool MarketplaceService::LoadSimulation(
 		// The economy model's own numbers, in the store's own components: the same
 		// stockpile, the same treasury, the same decks, so a market settles against the
 		// world the tick model produced and consumed.
-		ecsWorld.Put<Population>(world.id, Population{world.population, world.population});
-		ecsWorld.Put<Treasury>(world.id, Treasury{world.treasury});
-		ecsWorld.Put<Stockpile>(world.id, Stockpile{world.stockpile});
-		ecsWorld.Put<Production>(world.id, Production{world.production});
-		ecsWorld.Put<Demand>(world.id, Demand{world.demand});
+		entityStore.Put<Population>(world.id, Population{world.population, world.population});
+		entityStore.Put<Treasury>(world.id, Treasury{world.treasury});
+		entityStore.Put<Stockpile>(world.id, Stockpile{world.stockpile});
+		entityStore.Put<Production>(world.id, Production{world.production});
+		entityStore.Put<Demand>(world.id, Demand{world.demand});
 
-		if (!service.Open(ecsWorld, world.id, errorMessage))
+		if (!service.Open(entityStore, world.id, errorMessage))
 		{
 			errorMessage = std::format("MarketplaceService: world '{}': {}", world.id, errorMessage);
 
@@ -1720,7 +1731,7 @@ bool MarketplaceService::LoadSimulation(
 
 
 bool MarketplaceService::AddPlanet(
-    EcsWorld &ecsWorld, const std::string &bodyId, const std::string &displayName,
+    EntityStore &entityStore, const std::string &bodyId, const std::string &displayName,
     const std::string &systemName, const std::string &civilisationId, const std::string &ageId,
     std::string &errorMessage)
 {
@@ -1741,9 +1752,9 @@ bool MarketplaceService::AddPlanet(
 		return false;
 	}
 
-	EcsWorld::Entity body = EcsWorld::Null;
+	EntityStore::Entity body = EntityStore::Null;
 
-	if (!ecsWorld.Create(bodyId, body, errorMessage))
+	if (!entityStore.Create(bodyId, body, errorMessage))
 	{
 		return false;
 	}
@@ -1756,21 +1767,21 @@ bool MarketplaceService::AddPlanet(
 	info.civilisationId = civilisationId;
 	info.ageId = ageId;
 
-	ecsWorld.Add<BodyInfo>(body, std::move(info));
+	entityStore.Add<BodyInfo>(body, std::move(info));
 
 	// A world created here settles: an empty treasury and an empty stockpile are the
 	// facts a market needs to post against, and a body that cannot settle is a body a
 	// trader cannot trade at.
-	ecsWorld.Add<Treasury>(body, Treasury{0});
-	ecsWorld.Add<Stockpile>(body, Stockpile{});
-	ecsWorld.Add<Population>(body, Population{1.0, 1.0});
+	entityStore.Add<Treasury>(body, Treasury{0});
+	entityStore.Add<Stockpile>(body, Stockpile{});
+	entityStore.Add<Population>(body, Population{1.0, 1.0});
 
 	return true;
 }
 
 
 bool MarketplaceService::AddSatellite(
-    EcsWorld &ecsWorld, const std::string &satelliteId, const std::string &planetBodyId,
+    EntityStore &entityStore, const std::string &satelliteId, const std::string &planetBodyId,
     const std::string &displayName, double radiusKm, double periodDays, std::string &errorMessage)
 {
 	if (satelliteId.empty())
@@ -1780,7 +1791,7 @@ bool MarketplaceService::AddSatellite(
 		return false;
 	}
 
-	const BodyInfo *planet = ecsWorld.Get<BodyInfo>(planetBodyId);
+	const BodyInfo *planet = entityStore.Get<BodyInfo>(planetBodyId);
 
 	if (planet == nullptr)
 	{
@@ -1802,9 +1813,9 @@ bool MarketplaceService::AddSatellite(
 		return false;
 	}
 
-	EcsWorld::Entity body = EcsWorld::Null;
+	EntityStore::Entity body = EntityStore::Null;
 
-	if (!ecsWorld.Create(satelliteId, body, errorMessage))
+	if (!entityStore.Create(satelliteId, body, errorMessage))
 	{
 		return false;
 	}
@@ -1821,10 +1832,10 @@ bool MarketplaceService::AddSatellite(
 	// and the take of the station's venue are that civilisation's.
 	info.civilisationId = planet->civilisationId;
 
-	ecsWorld.Add<BodyInfo>(body, std::move(info));
-	ecsWorld.Add<Orbit>(body, Orbit{planet->bodyId, radiusKm, periodDays});
-	ecsWorld.Add<Treasury>(body, Treasury{0});
-	ecsWorld.Add<Stockpile>(body, Stockpile{});
+	entityStore.Add<BodyInfo>(body, std::move(info));
+	entityStore.Add<Orbit>(body, Orbit{planet->bodyId, radiusKm, periodDays});
+	entityStore.Add<Treasury>(body, Treasury{0});
+	entityStore.Add<Stockpile>(body, Stockpile{});
 
 	return true;
 }
@@ -1860,7 +1871,7 @@ double MarketplaceService::AffordableQuantity(Decimal price, int feeBps, long lo
 
 
 const MarketplaceInfo *MarketplaceService::RequireVenue(
-    const EcsWorld &ecsWorld, const std::string &marketId, std::string &errorMessage) const
+    const EntityStore &entityStore, const std::string &marketId, std::string &errorMessage) const
 {
 	if (marketId.empty())
 	{
@@ -1870,7 +1881,7 @@ const MarketplaceInfo *MarketplaceService::RequireVenue(
 		return nullptr;
 	}
 
-	const auto *venue = ecsWorld.Get<MarketplaceInfo>(marketId);
+	const auto *venue = entityStore.Get<MarketplaceInfo>(marketId);
 
 	if (venue == nullptr)
 	{
@@ -1885,12 +1896,12 @@ const MarketplaceInfo *MarketplaceService::RequireVenue(
 
 
 bool MarketplaceService::RequireTrader(
-    const EcsWorld &ecsWorld, const std::string &civilisationId, EcsWorld::Entity &trader,
+    const EntityStore &entityStore, const std::string &civilisationId, EntityStore::Entity &trader,
     std::string &errorMessage) const
 {
-	trader = ecsWorld.Find(civilisationId);
+	trader = entityStore.Find(civilisationId);
 
-	if (!ecsWorld.IsValid(trader))
+	if (!entityStore.IsValid(trader))
 	{
 		errorMessage = std::format(
 		    "Marketplace: '{}' is not an entity of this world: a trader is a world, and a world is a "
@@ -1900,7 +1911,7 @@ bool MarketplaceService::RequireTrader(
 		return false;
 	}
 
-	if (ecsWorld.Get<Treasury>(trader) == nullptr || ecsWorld.Get<Stockpile>(trader) == nullptr)
+	if (entityStore.Get<Treasury>(trader) == nullptr || entityStore.Get<Stockpile>(trader) == nullptr)
 	{
 		errorMessage = std::format(
 		    "Marketplace: '{}' carries no Treasury and Stockpile, and a trader without both cannot "
@@ -1915,7 +1926,7 @@ bool MarketplaceService::RequireTrader(
 
 
 const MarketOrderInfo *MarketplaceService::RequireOrder(
-    const EcsWorld &ecsWorld, const std::string &orderId, std::string &errorMessage) const
+    const EntityStore &entityStore, const std::string &orderId, std::string &errorMessage) const
 {
 	if (orderId.empty())
 	{
@@ -1924,7 +1935,7 @@ const MarketOrderInfo *MarketplaceService::RequireOrder(
 		return nullptr;
 	}
 
-	const auto *info = ecsWorld.Get<MarketOrderInfo>(orderId);
+	const auto *info = entityStore.Get<MarketOrderInfo>(orderId);
 
 	if (info == nullptr)
 	{
@@ -1940,18 +1951,18 @@ const MarketOrderInfo *MarketplaceService::RequireOrder(
 }
 
 
-std::vector<EcsWorld::Entity> MarketplaceService::ActiveOrders(
-    const EcsWorld &ecsWorld, const std::string &marketId, const std::string &itemId,
+std::vector<EntityStore::Entity> MarketplaceService::ActiveOrders(
+    const EntityStore &entityStore, const std::string &marketId, const std::string &itemId,
     OrderSide side) const
 {
-	std::vector<EcsWorld::Entity> orders;
+	std::vector<EntityStore::Entity> orders;
 
-	const auto view = ecsWorld.View<MarketOrderInfo, OrderAt>();
+	const auto view = entityStore.View<MarketOrderInfo, OrderAt>();
 
-	for (const EcsWorld::Entity entity : view)
+	for (const EntityStore::Entity entity : view)
 	{
-		const auto *info = ecsWorld.Get<MarketOrderInfo>(entity);
-		const auto *at = ecsWorld.Get<OrderAt>(entity);
+		const auto *info = entityStore.Get<MarketOrderInfo>(entity);
+		const auto *at = entityStore.Get<OrderAt>(entity);
 
 		if (info == nullptr || at == nullptr)
 		{
@@ -1981,16 +1992,16 @@ std::vector<EcsWorld::Entity> MarketplaceService::ActiveOrders(
 		orders.push_back(entity);
 	}
 
-	SortBestFirst(ecsWorld, orders, side);
+	SortBestFirst(entityStore, orders, side);
 
 	return orders;
 }
 
 
 bool MarketplaceService::RetireOrder(
-    EcsWorld &ecsWorld, const std::string &orderId, std::string &errorMessage)
+    EntityStore &entityStore, const std::string &orderId, std::string &errorMessage)
 {
-	const MarketOrderInfo *info = ecsWorld.Get<MarketOrderInfo>(orderId);
+	const MarketOrderInfo *info = entityStore.Get<MarketOrderInfo>(orderId);
 
 	if (info == nullptr)
 	{
@@ -1998,18 +2009,18 @@ bool MarketplaceService::RetireOrder(
 		return true;
 	}
 
-	const OrderOwner *owner = ecsWorld.Get<OrderOwner>(orderId);
+	const OrderOwner *owner = entityStore.Get<OrderOwner>(orderId);
 
 	// The reservation goes back: what the book held for an order that did not fill is
 	// the trader's again, in full, and the ledger of the fill log is the only record of
 	// what did trade.
 	if (owner != nullptr)
 	{
-		EcsWorld::Entity trader = ecsWorld.Find(owner->civilisationId);
+		EntityStore::Entity trader = entityStore.Find(owner->civilisationId);
 
-		if (ecsWorld.IsValid(trader))
+		if (entityStore.IsValid(trader))
 		{
-			const auto *refundTreasury = ecsWorld.Get<Treasury>(trader);
+			const auto *refundTreasury = entityStore.Get<Treasury>(trader);
 			if (refundTreasury != nullptr &&
 			    static_cast<__int128>(refundTreasury->credits) + info->reservedCredits >
 			        std::numeric_limits<long long>::max())
@@ -2019,7 +2030,7 @@ bool MarketplaceService::RetireOrder(
 			}
 			if (info->reservedCredits > 0)
 			{
-				if (auto *treasury = ecsWorld.Get<Treasury>(trader))
+				if (auto *treasury = entityStore.Get<Treasury>(trader))
 				{
 					treasury->credits += info->reservedCredits;
 				}
@@ -2027,7 +2038,7 @@ bool MarketplaceService::RetireOrder(
 
 			if (info->reservedGoods > quantityEpsilon)
 			{
-				if (auto *stock = ecsWorld.Get<Stockpile>(trader))
+				if (auto *stock = entityStore.Get<Stockpile>(trader))
 				{
 					stock->units[info->itemId] += info->reservedGoods;
 				}
@@ -2035,17 +2046,17 @@ bool MarketplaceService::RetireOrder(
 		}
 	}
 
-	return ecsWorld.Destroy(orderId, errorMessage);
+	return entityStore.Destroy(orderId, errorMessage);
 }
 
 
 bool MarketplaceService::FillPair(
-    EcsWorld &ecsWorld, const std::string &marketId, EcsWorld::Entity makerEntity,
-    EcsWorld::Entity takerEntity, std::vector<TradeFill> &fillLog, std::string &errorMessage)
+    EntityStore &entityStore, const std::string &marketId, EntityStore::Entity makerEntity,
+    EntityStore::Entity takerEntity, std::vector<TradeFill> &fillLog, std::string &errorMessage)
 {
-	auto *venue = ecsWorld.Get<MarketplaceInfo>(marketId);
-	auto *maker = ecsWorld.Get<MarketOrderInfo>(makerEntity);
-	auto *taker = ecsWorld.Get<MarketOrderInfo>(takerEntity);
+	auto *venue = entityStore.Get<MarketplaceInfo>(marketId);
+	auto *maker = entityStore.Get<MarketOrderInfo>(makerEntity);
+	auto *taker = entityStore.Get<MarketOrderInfo>(takerEntity);
 
 	if (venue == nullptr || maker == nullptr || taker == nullptr)
 	{
@@ -2072,8 +2083,8 @@ bool MarketplaceService::FillPair(
 		return false;
 	}
 
-	const OrderOwner *makerOwner = ecsWorld.Get<OrderOwner>(makerEntity);
-	const OrderOwner *takerOwner = ecsWorld.Get<OrderOwner>(takerEntity);
+	const OrderOwner *makerOwner = entityStore.Get<OrderOwner>(makerEntity);
+	const OrderOwner *takerOwner = entityStore.Get<OrderOwner>(takerEntity);
 
 	if (makerOwner == nullptr || takerOwner == nullptr)
 	{
@@ -2095,8 +2106,8 @@ bool MarketplaceService::FillPair(
 	// a lookup on the order answers null for both, and both branches below then set
 	// the quantity to nothing: the pair trades nothing and says nothing, at a venue
 	// that requires funds and stock never noticed, because the reservations cover it.
-	const EcsWorld::Entity sellerTrader = ecsWorld.Find(sellerId);
-	const EcsWorld::Entity buyerTrader = ecsWorld.Find(buyerId);
+	const EntityStore::Entity sellerTrader = entityStore.Find(sellerId);
+	const EntityStore::Entity buyerTrader = entityStore.Find(buyerId);
 
 	MarketOrderInfo *sellOrder = makerSells ? maker : taker;
 	MarketOrderInfo *buyOrder = makerSells ? taker : maker;
@@ -2125,7 +2136,7 @@ bool MarketplaceService::FillPair(
 	{
 		quantity = std::min(quantity, sellOrder->reservedGoods);
 	}
-	else if (const Stockpile *stock = ecsWorld.Get<Stockpile>(sellerTrader))
+	else if (const Stockpile *stock = entityStore.Get<Stockpile>(sellerTrader))
 	{
 		const auto holding = stock->units.find(itemId);
 		const double available = holding != stock->units.end() ? holding->second : 0.0;
@@ -2160,12 +2171,12 @@ bool MarketplaceService::FillPair(
 		{
 			const std::string buyOrderId = buyOrder->orderId;
 
-			return RetireOrder(ecsWorld, buyOrderId, errorMessage);
+			return RetireOrder(entityStore, buyOrderId, errorMessage);
 		}
 
 		quantity = std::min(quantity, affordable);
 	}
-	else if (const Treasury *treasury = ecsWorld.Get<Treasury>(buyerTrader))
+	else if (const Treasury *treasury = entityStore.Get<Treasury>(buyerTrader))
 	{
 		quantity = std::min(quantity, AffordableQuantity(price, buyOrder->feeBps, treasury->credits));
 	}
@@ -2206,10 +2217,10 @@ bool MarketplaceService::FillPair(
 	const long long takerFee = makerSells ? buyerFee : sellerFee;
 
 	// Validate both parties, the venue and the eventual refund before settlement writes.
-	auto *buyerTreasury = ecsWorld.Get<Treasury>(buyerTrader);
-	auto *sellerTreasury = ecsWorld.Get<Treasury>(sellerTrader);
-	auto *buyerStock = ecsWorld.Get<Stockpile>(buyerTrader);
-	auto *sellerStock = ecsWorld.Get<Stockpile>(sellerTrader);
+	auto *buyerTreasury = entityStore.Get<Treasury>(buyerTrader);
+	auto *sellerTreasury = entityStore.Get<Treasury>(sellerTrader);
+	auto *buyerStock = entityStore.Get<Stockpile>(buyerTrader);
+	auto *sellerStock = entityStore.Get<Stockpile>(sellerTrader);
 	const __int128 bill = static_cast<__int128>(gross) + buyerFee;
 	const __int128 take = static_cast<__int128>(venue->venueTake) + makerFee + takerFee;
 	const auto fits = [](__int128 value)
@@ -2242,15 +2253,15 @@ bool MarketplaceService::FillPair(
 	// because the berth and the deck are the venue's. The buyer's money comes out of the
 	// pocket its order holds, and the seller's proceeds go to its treasury.
 	if (!SettleParty(
-	        ecsWorld, buyerId, itemId, quantity, gross, buyerFee, buyOrder->reservedCredits, true,
+	        entityStore, buyerId, itemId, quantity, gross, buyerFee, buyOrder->reservedCredits, true,
 	        errorMessage))
 	{
 		return false;
 	}
 
 	if (!SettleParty(
-	        ecsWorld, sellerId, itemId, quantity, gross, sellerFee, sellOrder->reservedCredits, false,
-	        errorMessage))
+	        entityStore, sellerId, itemId, quantity, gross, sellerFee, sellOrder->reservedCredits,
+	        false, errorMessage))
 	{
 		return false;
 	}
@@ -2259,7 +2270,7 @@ bool MarketplaceService::FillPair(
 	// promises venue, and the goods are taken from where they are.
 	if (sellOrder->reservedGoods <= quantityEpsilon)
 	{
-		if (auto *stock = ecsWorld.Get<Stockpile>(sellerTrader))
+		if (auto *stock = entityStore.Get<Stockpile>(sellerTrader))
 		{
 			stock->units[itemId] -= quantity;
 		}
@@ -2299,7 +2310,7 @@ bool MarketplaceService::FillPair(
 	// the log, oldest last and capped, so a long game does not grow the store for ever.
 	MarketRecord record;
 
-	if (const MarketRecord *existing = ecsWorld.Get<MarketRecord>(marketId); existing != nullptr)
+	if (const MarketRecord *existing = entityStore.Get<MarketRecord>(marketId); existing != nullptr)
 	{
 		record = *existing;
 	}
@@ -2316,29 +2327,29 @@ bool MarketplaceService::FillPair(
 		                                                     record.fills.size() - marketFillLogSize));
 	}
 
-	ecsWorld.Put<MarketRecord>(marketId, std::move(record));
+	entityStore.Put<MarketRecord>(marketId, std::move(record));
 
 	// An order that has filled leaves the book: its entity goes, and the id stays in
 	// the fill log as the number it was posted with.
-	for (const EcsWorld::Entity settled : {makerEntity, takerEntity})
+	for (const EntityStore::Entity settled : {makerEntity, takerEntity})
 	{
-		const MarketOrderInfo *done = ecsWorld.Get<MarketOrderInfo>(settled);
+		const MarketOrderInfo *done = entityStore.Get<MarketOrderInfo>(settled);
 
 		if (done == nullptr || !IsFulfilled(*done))
 		{
 			continue;
 		}
 
-		const std::string name = ecsWorld.NameOf(settled);
+		const std::string name = entityStore.NameOf(settled);
 
 		if (!name.empty())
 		{
 			MarketOrderInfo settledInfo = *done;
 			settledInfo.status = OrderStatus::Filled;
 
-			ecsWorld.Put<MarketOrderInfo>(settled, std::move(settledInfo));
+			entityStore.Put<MarketOrderInfo>(settled, std::move(settledInfo));
 
-			if (!RetireOrder(ecsWorld, name, errorMessage))
+			if (!RetireOrder(entityStore, name, errorMessage))
 			{
 				return false;
 			}
@@ -2350,12 +2361,13 @@ bool MarketplaceService::FillPair(
 
 
 bool MarketplaceService::SettleParty(
-    EcsWorld &ecsWorld, const std::string &civilisationId, const std::string &itemId, double quantity,
-    long long gross, long long fee, long long &orderCredits, bool buys, std::string &errorMessage)
+    EntityStore &entityStore, const std::string &civilisationId, const std::string &itemId,
+    double quantity, long long gross, long long fee, long long &orderCredits, bool buys,
+    std::string &errorMessage)
 {
-	const EcsWorld::Entity trader = ecsWorld.Find(civilisationId);
+	const EntityStore::Entity trader = entityStore.Find(civilisationId);
 
-	if (!ecsWorld.IsValid(trader))
+	if (!entityStore.IsValid(trader))
 	{
 		errorMessage =
 		    std::format("Marketplace: '{}' is not an entity of this world at the fill", civilisationId);
@@ -2363,8 +2375,8 @@ bool MarketplaceService::SettleParty(
 		return false;
 	}
 
-	auto *treasury = ecsWorld.Get<Treasury>(trader);
-	auto *stock = ecsWorld.Get<Stockpile>(trader);
+	auto *treasury = entityStore.Get<Treasury>(trader);
+	auto *stock = entityStore.Get<Stockpile>(trader);
 
 	if (treasury == nullptr || stock == nullptr)
 	{

@@ -34,7 +34,7 @@ struct EntityId
 // The registry is public: a subsystem reads and writes components through the helpers
 // below, and a system that wants a view of several components at once takes
 // `Registry()` and builds it, which is what EnTT is good at.
-class EcsWorld
+class EntityStore
 {
   public:
 	using Entity = entt::entity;
@@ -165,13 +165,14 @@ class EcsWorld
 };
 
 
-template <typename Type, typename... Args> Type *EcsWorld::Add(const std::string &id, Args &&...values)
+template <typename Type, typename... Args>
+Type *EntityStore::Add(const std::string &id, Args &&...values)
 {
 	return Add<Type>(Find(id), std::forward<Args>(values)...);
 }
 
 
-template <typename Type, typename... Args> Type *EcsWorld::Add(Entity target, Args &&...values)
+template <typename Type, typename... Args> Type *EntityStore::Add(Entity target, Args &&...values)
 {
 	if (!IsValid(target))
 	{
@@ -187,13 +188,13 @@ template <typename Type, typename... Args> Type *EcsWorld::Add(Entity target, Ar
 }
 
 
-template <typename Type> Type *EcsWorld::Put(const std::string &id, Type value)
+template <typename Type> Type *EntityStore::Put(const std::string &id, Type value)
 {
 	return Put<Type>(Find(id), std::move(value));
 }
 
 
-template <typename Type> Type *EcsWorld::Put(Entity target, Type value)
+template <typename Type> Type *EntityStore::Put(Entity target, Type value)
 {
 	if (!IsValid(target))
 	{
@@ -204,37 +205,37 @@ template <typename Type> Type *EcsWorld::Put(Entity target, Type value)
 }
 
 
-template <typename Type> const Type *EcsWorld::Get(const std::string &id) const
+template <typename Type> const Type *EntityStore::Get(const std::string &id) const
 {
 	return Get<Type>(Find(id));
 }
 
 
-template <typename Type> const Type *EcsWorld::Get(Entity target) const
+template <typename Type> const Type *EntityStore::Get(Entity target) const
 {
 	return IsValid(target) ? m_registry.try_get<Type>(target) : nullptr;
 }
 
 
-template <typename Type> Type *EcsWorld::Get(const std::string &id)
+template <typename Type> Type *EntityStore::Get(const std::string &id)
 {
 	return Get<Type>(Find(id));
 }
 
 
-template <typename Type> Type *EcsWorld::Get(Entity target)
+template <typename Type> Type *EntityStore::Get(Entity target)
 {
 	return IsValid(target) ? m_registry.try_get<Type>(target) : nullptr;
 }
 
 
-template <typename Type> bool EcsWorld::Remove(const std::string &id)
+template <typename Type> bool EntityStore::Remove(const std::string &id)
 {
 	return Remove<Type>(Find(id));
 }
 
 
-template <typename Type> bool EcsWorld::Remove(Entity target)
+template <typename Type> bool EntityStore::Remove(Entity target)
 {
 	if (!IsValid(target) || !m_registry.all_of<Type>(target))
 	{
@@ -247,13 +248,13 @@ template <typename Type> bool EcsWorld::Remove(Entity target)
 }
 
 
-template <typename... Type> bool EcsWorld::HasComponent(const std::string &id) const
+template <typename... Type> bool EntityStore::HasComponent(const std::string &id) const
 {
 	return HasComponent<Type...>(Find(id));
 }
 
 
-template <typename... Type> bool EcsWorld::HasComponent(Entity target) const
+template <typename... Type> bool EntityStore::HasComponent(Entity target) const
 {
 	return IsValid(target) && m_registry.all_of<Type...>(target);
 }

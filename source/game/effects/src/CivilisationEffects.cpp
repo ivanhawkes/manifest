@@ -47,13 +47,13 @@ std::string CivilisationEffectEngine::YardStoreId(const std::string &civilisatio
 
 
 std::vector<std::string> CivilisationEffectEngine::MarketsOf(
-    const EcsWorld &world, const std::string &civilisationId) const
+    const EntityStore &world, const std::string &civilisationId) const
 {
 	std::vector<std::string> markets;
 
 	const auto view = world.View<MarketplaceInfo>();
 
-	for (const EcsWorld::Entity entity : view)
+	for (const EntityStore::Entity entity : view)
 	{
 		const auto *market = world.Get<MarketplaceInfo>(entity);
 
@@ -72,13 +72,13 @@ std::vector<std::string> CivilisationEffectEngine::MarketsOf(
 
 
 std::vector<std::string> CivilisationEffectEngine::BodiesOf(
-    const EcsWorld &world, const std::string &civilisationId) const
+    const EntityStore &world, const std::string &civilisationId) const
 {
 	std::vector<std::string> bodies;
 
 	const auto view = world.View<BodyInfo>();
 
-	for (const EcsWorld::Entity entity : view)
+	for (const EntityStore::Entity entity : view)
 	{
 		const auto *body = world.Get<BodyInfo>(entity);
 
@@ -97,7 +97,7 @@ std::vector<std::string> CivilisationEffectEngine::BodiesOf(
 
 
 bool CivilisationEffectEngine::Apply(
-    EcsWorld &world, const std::string &civilisationId, const std::string &skillId,
+    EntityStore &world, const std::string &civilisationId, const std::string &skillId,
     const std::string &effectId, EffectOrigin origin, int tier, std::string &errorMessage) const
 {
 	if (civilisationId.empty())
@@ -170,7 +170,7 @@ bool CivilisationEffectEngine::Apply(
 		// each venue reads its own.
 		const std::string sourceId = std::format("{}:{}:{}", civilisationId, store, effectId);
 
-		EcsWorld::Entity source = EcsWorld::Null;
+		EntityStore::Entity source = EntityStore::Null;
 
 		if (world.Has(sourceId))
 		{
@@ -223,8 +223,8 @@ bool CivilisationEffectEngine::Apply(
 
 
 bool CivilisationEffectEngine::ApplySkill(
-    EcsWorld &world, const std::string &civilisationId, const SkillNode &node, int tier, bool &bought,
-    std::string &errorMessage) const
+    EntityStore &world, const std::string &civilisationId, const SkillNode &node, int tier,
+    bool &bought, std::string &errorMessage) const
 {
 	bought = false;
 
@@ -271,7 +271,7 @@ bool CivilisationEffectEngine::ApplySkill(
 
 
 bool CivilisationEffectEngine::ApplyProgression(
-    EcsWorld &world, const ProgressionManager &progression, const std::string &civilisationId,
+    EntityStore &world, const ProgressionManager &progression, const std::string &civilisationId,
     unsigned &applied, unsigned &skipped, std::string &errorMessage) const
 {
 	// The walk writes the caller's two columns: they are set, not added to, and a caller
@@ -332,14 +332,14 @@ bool CivilisationEffectEngine::ApplyProgression(
 
 
 unsigned CivilisationEffectEngine::UnapplySkill(
-    EcsWorld &world, const std::string &skillId, std::string &errorMessage) const
+    EntityStore &world, const std::string &skillId, std::string &errorMessage) const
 {
 	std::vector<std::string> doomed;
 	std::set<std::pair<EffectDomain, std::string>> touched;
 
 	const auto view = world.View<EffectSource, EffectOn>();
 
-	for (const EcsWorld::Entity entity : view)
+	for (const EntityStore::Entity entity : view)
 	{
 		const EffectSource *source = world.Get<EffectSource>(entity);
 		const EffectOn *on = world.Get<EffectOn>(entity);
@@ -382,42 +382,42 @@ unsigned CivilisationEffectEngine::UnapplySkill(
 
 
 std::map<EffectStat, double> CivilisationEffectEngine::MarketStatsOf(
-    const EcsWorld &world, const std::string &venueBodyId) const
+    const EntityStore &world, const std::string &venueBodyId) const
 {
 	return StoreStats<MarketEffects>(world, venueBodyId);
 }
 
 
 std::map<EffectStat, double> CivilisationEffectEngine::BodyStatsOf(
-    const EcsWorld &world, const std::string &bodyId) const
+    const EntityStore &world, const std::string &bodyId) const
 {
 	return StoreStats<BodyEffects>(world, bodyId);
 }
 
 
 std::map<EffectStat, double> CivilisationEffectEngine::RouteStatsOf(
-    const EcsWorld &world, const std::string &civilisationId) const
+    const EntityStore &world, const std::string &civilisationId) const
 {
 	return StoreStats<RouteEffects>(world, LaneStoreId(civilisationId));
 }
 
 
 std::map<EffectStat, double> CivilisationEffectEngine::SurveyStatsOf(
-    const EcsWorld &world, const std::string &civilisationId) const
+    const EntityStore &world, const std::string &civilisationId) const
 {
 	return StoreStats<SurveyEffects>(world, SurveyStoreId(civilisationId));
 }
 
 
 std::map<EffectStat, double> CivilisationEffectEngine::YardStatsOf(
-    const EcsWorld &world, const std::string &civilisationId) const
+    const EntityStore &world, const std::string &civilisationId) const
 {
 	return StoreStats<YardEffects>(world, YardStoreId(civilisationId));
 }
 
 
 double CivilisationEffectEngine::ReadStat(
-    const EcsWorld &world, EffectDomain domain, const std::string &storeId, EffectStat stat) const
+    const EntityStore &world, EffectDomain domain, const std::string &storeId, EffectStat stat) const
 {
 	// The store named by its own id, read as the store's component: the three shared
 	// stores are read through the StatsOf helpers, which spell the store id from the
@@ -445,7 +445,7 @@ double CivilisationEffectEngine::ReadStat(
 
 
 std::string CivilisationEffectEngine::DescribeStore(
-    const EcsWorld &world, EffectDomain domain, const std::string &storeId,
+    const EntityStore &world, EffectDomain domain, const std::string &storeId,
     const std::map<EffectStat, double> &effectStats, const char *noEffectsMessage) const
 {
 	// The sources keyed by effect id, which is the order the modifiers are applied in,
@@ -498,7 +498,7 @@ std::string CivilisationEffectEngine::DescribeStore(
 
 
 std::string CivilisationEffectEngine::DescribeCivilisation(
-    const EcsWorld &world, const std::string &civilisationId) const
+    const EntityStore &world, const std::string &civilisationId) const
 {
 	const std::vector<std::string> markets = MarketsOf(world, civilisationId);
 	const std::vector<std::string> bodies = BodiesOf(world, civilisationId);
@@ -576,7 +576,7 @@ std::string CivilisationEffectEngine::DescribeCivilisation(
 
 
 bool CivilisationEffectEngine::ResolveStores(
-    EcsWorld &world, EffectDomain domain, const std::string &civilisationId,
+    EntityStore &world, EffectDomain domain, const std::string &civilisationId,
     const std::string &effectId, std::vector<std::string> &stores, std::string &errorMessage) const
 {
 	stores.clear();
@@ -664,13 +664,13 @@ bool CivilisationEffectEngine::ResolveStores(
 
 
 std::map<std::string, EffectSource> CivilisationEffectEngine::SourcesOn(
-    const EcsWorld &world, EffectDomain domain, const std::string &storeId) const
+    const EntityStore &world, EffectDomain domain, const std::string &storeId) const
 {
 	std::map<std::string, EffectSource> sources;
 
 	const auto view = world.View<EffectSource, EffectOn>();
 
-	for (const EcsWorld::Entity entity : view)
+	for (const EntityStore::Entity entity : view)
 	{
 		const auto *source = world.Get<EffectSource>(entity);
 		const auto *on = world.Get<EffectOn>(entity);
@@ -688,7 +688,8 @@ std::map<std::string, EffectSource> CivilisationEffectEngine::SourcesOn(
 
 
 bool CivilisationEffectEngine::WriteStore(
-    EcsWorld &world, EffectDomain domain, const std::string &storeId, std::string &errorMessage) const
+    EntityStore &world, EffectDomain domain, const std::string &storeId,
+    std::string &errorMessage) const
 {
 	if (!world.Has(storeId))
 	{

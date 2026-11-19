@@ -69,7 +69,7 @@ allocation, stock, purses, orders and reservations all belong in that saved and 
 An opaque `SaveGame` section alone does not put state in the world's hash. Reserve separate
 game sections for state outside simulation, including the engine's `Script.Store`.
 
-Today's `Simulation` owns civilisations while `EcsWorld` owns another registry populated by
+Today's `Simulation` owns civilisations while `EntityStore` owns another registry populated by
 `MarketplaceService::LoadSimulation`. That is a development workflow, not a live synchronisation
 contract. Roadmap item 4 must adapt these algorithms/components to the host registry/services;
 do not run two authoritative economies or repeatedly copy balances between them. In particular,

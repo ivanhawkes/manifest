@@ -5,7 +5,7 @@
 #include <vector>
 
 #include <manifest/ecs/Components.h>
-#include <manifest/ecs/EcsWorld.h>
+#include <manifest/ecs/EntityStore.h>
 #include <manifest/effects/EffectCatalogue.h>
 #include <manifest/progression/ProgressionManager.h>
 #include <manifest/types/EffectTypes.h>
@@ -45,7 +45,7 @@ struct CivilisationEffectEngine
 	// engines share a catalogue and a caller that hands in the whole tree has to be
 	// told which half it asked for.
 	bool Apply(
-	    EcsWorld &world, const std::string &civilisationId, const std::string &skillId,
+	    EntityStore &world, const std::string &civilisationId, const std::string &skillId,
 	    const std::string &effectId, EffectOrigin origin, int tier, std::string &errorMessage) const;
 
 	// One node of the tree: the node's own targetEffectID and nodeType. A node with no
@@ -53,7 +53,7 @@ struct CivilisationEffectEngine
 	// returns true with Bought false, so a caller can walk the whole tree and the ship
 	// systems go to the ship engine.
 	bool ApplySkill(
-	    EcsWorld &world, const std::string &civilisationId, const SkillNode &node, int tier,
+	    EntityStore &world, const std::string &civilisationId, const SkillNode &node, int tier,
 	    bool &bought, std::string &errorMessage) const;
 
 	// Every node of the tree with a civilisation effect, in sorted skill order. The two
@@ -66,7 +66,7 @@ struct CivilisationEffectEngine
 	// walk of a fleet writes the columns of the fleet, which is the sum of the walks of
 	// its hulls.
 	bool ApplyProgression(
-	    EcsWorld &world, const ProgressionManager &progression, const std::string &civilisationId,
+	    EntityStore &world, const ProgressionManager &progression, const std::string &civilisationId,
 	    unsigned &applied, unsigned &skipped, std::string &errorMessage) const;
 
 	// Takes every source of one skill off every civilisation store it touched, and
@@ -74,7 +74,8 @@ struct CivilisationEffectEngine
 	// counted as the ship engine counts them: a law that is law in two worlds is two
 	// sources, one at each venue the law lands on, and the road that takes the law off
 	// takes both of them and returns 2.
-	unsigned UnapplySkill(EcsWorld &world, const std::string &skillId, std::string &errorMessage) const;
+	unsigned UnapplySkill(
+	    EntityStore &world, const std::string &skillId, std::string &errorMessage) const;
 
 	// The shared stores, one per civilisation, created on the first effect that needs
 	// them.
@@ -83,19 +84,21 @@ struct CivilisationEffectEngine
 	static std::string YardStoreId(const std::string &civilisationId);
 
 	// The stores a civilisation's effects land on, in sorted id order.
-	std::vector<std::string> MarketsOf(const EcsWorld &world, const std::string &civilisationId) const;
-	std::vector<std::string> BodiesOf(const EcsWorld &world, const std::string &civilisationId) const;
+	std::vector<std::string> MarketsOf(
+	    const EntityStore &world, const std::string &civilisationId) const;
+	std::vector<std::string> BodiesOf(
+	    const EntityStore &world, const std::string &civilisationId) const;
 
 	// The stats of one store: empty when the store does not exist.
 	std::map<EffectStat, double> MarketStatsOf(
-	    const EcsWorld &world, const std::string &venueBodyId) const;
-	std::map<EffectStat, double> BodyStatsOf(const EcsWorld &world, const std::string &bodyId) const;
+	    const EntityStore &world, const std::string &venueBodyId) const;
+	std::map<EffectStat, double> BodyStatsOf(const EntityStore &world, const std::string &bodyId) const;
 	std::map<EffectStat, double> RouteStatsOf(
-	    const EcsWorld &world, const std::string &civilisationId) const;
+	    const EntityStore &world, const std::string &civilisationId) const;
 	std::map<EffectStat, double> SurveyStatsOf(
-	    const EcsWorld &world, const std::string &civilisationId) const;
+	    const EntityStore &world, const std::string &civilisationId) const;
 	std::map<EffectStat, double> YardStatsOf(
-	    const EcsWorld &world, const std::string &civilisationId) const;
+	    const EntityStore &world, const std::string &civilisationId) const;
 
 	// One stat of one store, 0.0 when the store has never seen it: the number a
 	// marketplace prices its fee by. The store is named by its own id - the venue's body
@@ -104,7 +107,8 @@ struct CivilisationEffectEngine
 	// civilisation, because the venue of a world is the world, and a caller that has the
 	// store in hand has the id of the store, not the id of the civilisation that owns it.
 	double ReadStat(
-	    const EcsWorld &world, EffectDomain domain, const std::string &storeId, EffectStat stat) const;
+	    const EntityStore &world, EffectDomain domain, const std::string &storeId,
+	    EffectStat stat) const;
 
 	// The effects a civilisation has bought, as lines for the UI: one per store it
 	// owns, each line naming the effects that store flies, the tiers the tree bought of
@@ -112,13 +116,13 @@ struct CivilisationEffectEngine
 	// has never bought a lane, a survey or a yard has no store to read and no line, and
 	// the answer is the empty string: a read-out of a civilisation the world has never
 	// heard of prints nothing.
-	std::string DescribeCivilisation(const EcsWorld &world, const std::string &civilisationId) const;
+	std::string DescribeCivilisation(const EntityStore &world, const std::string &civilisationId) const;
 
   private:
 	// The stats a store carries, keyed by the store's own id. The component is a cache
 	// of the sources, written by WriteStore, so reading a store is reading its cache.
 	template <typename Component>
-	static std::map<EffectStat, double> StoreStats(const EcsWorld &world, const std::string &storeId)
+	static std::map<EffectStat, double> StoreStats(const EntityStore &world, const std::string &storeId)
 	{
 		const auto *effects = world.Get<Component>(storeId);
 
@@ -129,17 +133,17 @@ struct CivilisationEffectEngine
 	// needs when the civilisation owns none of them: an effect cannot land on a venue
 	// that was never opened.
 	bool ResolveStores(
-	    EcsWorld &world, EffectDomain domain, const std::string &civilisationId,
+	    EntityStore &world, EffectDomain domain, const std::string &civilisationId,
 	    const std::string &effectId, std::vector<std::string> &stores, std::string &errorMessage) const;
 
 	// Every source on a store, keyed by effect id, which is the order the modifiers
 	// are applied in.
 	std::map<std::string, EffectSource> SourcesOn(
-	    const EcsWorld &world, EffectDomain domain, const std::string &storeId) const;
+	    const EntityStore &world, EffectDomain domain, const std::string &storeId) const;
 
 	// The store's stats, written from its sources.
 	bool WriteStore(
-	    EcsWorld &world, EffectDomain domain, const std::string &storeId,
+	    EntityStore &world, EffectDomain domain, const std::string &storeId,
 	    std::string &errorMessage) const;
 
 	// One store's read-out: the effects it flies, by the name the catalogue gives them
@@ -147,7 +151,7 @@ struct CivilisationEffectEngine
 	// effect prints the message the caller brings, because "no market effects bought" and
 	// "no route effects bought" are answers a UI shows as they are.
 	std::string DescribeStore(
-	    const EcsWorld &world, EffectDomain domain, const std::string &storeId,
+	    const EntityStore &world, EffectDomain domain, const std::string &storeId,
 	    const std::map<EffectStat, double> &stats, const char *noEffectsMessage) const;
 
 	EffectCatalogue m_catalogue;

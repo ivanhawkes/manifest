@@ -8,7 +8,7 @@
 
 #include <manifest/config/SimulationConfig.h>
 #include <manifest/ecs/Components.h>
-#include <manifest/ecs/EcsWorld.h>
+#include <manifest/ecs/EntityStore.h>
 #include <manifest/effects/CivilisationEffects.h>
 #include <manifest/market/Marketplace.h>
 #include <manifest/progression/ProgressionManager.h>
@@ -22,7 +22,7 @@ using namespace Manifest::Core;
 // A world of the scaffold's own making: the credits and the cargo a market settles
 // against, in the components the market reads.
 std::string AddWorld(
-    EcsWorld &world, const std::string &civilisationId, const std::string &planetName,
+    EntityStore &world, const std::string &civilisationId, const std::string &planetName,
     long long credits, const std::map<std::string, double> &cargo)
 {
 	std::string errorMessage;
@@ -64,7 +64,7 @@ OrderRequest Order(
 	return request;
 }
 
-long long Credits(const EcsWorld &world, const std::string &civilisationId)
+long long Credits(const EntityStore &world, const std::string &civilisationId)
 {
 	const auto *treasury = world.Get<Treasury>(civilisationId);
 
@@ -74,7 +74,7 @@ long long Credits(const EcsWorld &world, const std::string &civilisationId)
 // The credits of a trader, set by the test and not by the book: the ledger of a fill
 // moves the money, and a scenario that follows a fill starts from the pile its numbers
 // read, not from the dregs the fill left behind.
-void SetCredits(EcsWorld &world, const std::string &civilisationId, long long amount)
+void SetCredits(EntityStore &world, const std::string &civilisationId, long long amount)
 {
 	auto *treasury = world.Get<Treasury>(civilisationId);
 
@@ -84,7 +84,7 @@ void SetCredits(EcsWorld &world, const std::string &civilisationId, long long am
 	}
 }
 
-double Units(const EcsWorld &world, const std::string &civilisationId, const std::string &itemId)
+double Units(const EntityStore &world, const std::string &civilisationId, const std::string &itemId)
 {
 	const auto *stock = world.Get<Stockpile>(civilisationId);
 
@@ -142,9 +142,9 @@ ProgressionManager Tree(const std::vector<SkillNode> &nodes, int points)
 TEST_CASE("a_marketplace_sits_at_a_planet_and_at_a_station_in_orbit_above_one")
 {
 	MarketplaceService service;
-	EcsWorld world;
+	EntityStore world;
 	std::string errorMessage;
-	EcsWorld::Entity created = EcsWorld::Null;
+	EntityStore::Entity created = EntityStore::Null;
 
 	CHECK(AddWorld(world, "Civ-01", "Abigail Prime", 1000, {{"iron_ore", 100.0}}).empty());
 	CHECK(service.VenueBlockReason(world, "Civ-01").empty());
@@ -198,7 +198,7 @@ TEST_CASE("a_marketplace_sits_at_a_planet_and_at_a_station_in_orbit_above_one")
 	MANIFEST_CHECK_CONTAINS(errorMessage, "civilisation");
 
 	{
-		EcsWorld::Entity bodyEntity = EcsWorld::Null;
+		EntityStore::Entity bodyEntity = EntityStore::Null;
 
 		CHECK(world.Create("Star-01", bodyEntity, errorMessage));
 		world.Add<BodyInfo>(
@@ -219,7 +219,7 @@ TEST_CASE("a_marketplace_sits_at_a_planet_and_at_a_station_in_orbit_above_one")
 	    MarketplaceService::AddPlanet(
 	        world, "Civ-02", "Beacon Reach", "Beacon Reach System", "Civ-02", "Age02", errorMessage));
 	{
-		EcsWorld::Entity bodyEntity = EcsWorld::Null;
+		EntityStore::Entity bodyEntity = EntityStore::Null;
 
 		CHECK(world.Create("Moon-01", bodyEntity, errorMessage));
 		world.Add<BodyInfo>(
@@ -252,7 +252,7 @@ TEST_CASE("a_marketplace_sits_at_a_planet_and_at_a_station_in_orbit_above_one")
 	// A station above nothing: the ships that put in and pull out of it come up from
 	// nowhere, and a venue that cannot say whose trade it is takes no order.
 	{
-		EcsWorld::Entity bodyEntity = EcsWorld::Null;
+		EntityStore::Entity bodyEntity = EntityStore::Null;
 
 		CHECK(world.Create("Station-01", bodyEntity, errorMessage));
 		world.Add<BodyInfo>(
@@ -310,7 +310,7 @@ TEST_CASE("a_marketplace_sits_at_a_planet_and_at_a_station_in_orbit_above_one")
 TEST_CASE("a_resting_order_holds_the_goods_and_the_credits_it_promises")
 {
 	MarketplaceService service;
-	EcsWorld world;
+	EntityStore world;
 	std::string errorMessage;
 	std::string orderId;
 
@@ -392,7 +392,7 @@ TEST_CASE("a_resting_order_holds_the_goods_and_the_credits_it_promises")
 	// credits out of the buyer's treasury, and a world that carries one of the two cannot
 	// settle, so it cannot post at a venue that settles on the spot.
 	{
-		EcsWorld::Entity trader = EcsWorld::Null;
+		EntityStore::Entity trader = EntityStore::Null;
 
 		CHECK(world.Create("Civ-03", trader, errorMessage));
 		world.Add<Treasury>("Civ-03", Treasury{500});
@@ -473,7 +473,7 @@ TEST_CASE("a_resting_order_holds_the_goods_and_the_credits_it_promises")
 TEST_CASE("a_post_that_crosses_the_book_trades_at_the_price_that_was_resting")
 {
 	MarketplaceService service;
-	EcsWorld world;
+	EntityStore world;
 	std::string errorMessage;
 	std::string orderId;
 
@@ -662,7 +662,7 @@ TEST_CASE("a_post_that_crosses_the_book_trades_at_the_price_that_was_resting")
 TEST_CASE("an_order_that_walks_the_book_pays_the_best_price_first")
 {
 	MarketplaceService service;
-	EcsWorld world;
+	EntityStore world;
 	std::string errorMessage;
 	std::string orderId;
 
@@ -886,7 +886,7 @@ TEST_CASE("an_order_that_walks_the_book_pays_the_best_price_first")
 TEST_CASE("the_book_is_the_book_the_quoters_read")
 {
 	MarketplaceService service;
-	EcsWorld world;
+	EntityStore world;
 	std::string errorMessage;
 	std::string orderId;
 
@@ -1064,7 +1064,7 @@ TEST_CASE("the_deck_of_a_venue_holds_just_so_many_units_of_one_good")
 
 	MarketplaceService service(options);
 	CivilisationEffectEngine effects;
-	EcsWorld world;
+	EntityStore world;
 	std::string errorMessage;
 	std::string orderId;
 
@@ -1157,7 +1157,7 @@ TEST_CASE("a_market_effect_moves_the_charge_of_the_venue_it_lands_on")
 
 	MarketplaceService service(options);
 	CivilisationEffectEngine effects;
-	EcsWorld world;
+	EntityStore world;
 	std::string errorMessage;
 
 	CHECK(AddWorld(world, "Civ-01", "Abigail Prime", 100000, {{"iron_ore", 1000.0}}).empty());
@@ -1331,7 +1331,7 @@ TEST_CASE("an_order_that_outlives_its_life_leaves_the_book")
 {
 	MarketplaceService service;
 	CivilisationEffectEngine effects;
-	EcsWorld world;
+	EntityStore world;
 	std::string errorMessage;
 	std::string orderId;
 
@@ -1501,7 +1501,7 @@ TEST_CASE("the_marketplace_reads_the_tree_of_the_civilisation_that_owns_the_venu
 {
 	CivilisationEffectEngine effects;
 	MarketplaceService service;
-	EcsWorld world;
+	EntityStore world;
 	std::string errorMessage;
 
 	CHECK(AddWorld(world, "Civ-01", "Abigail Prime", 1000, {{"iron_ore", 100.0}}).empty());
@@ -1633,7 +1633,7 @@ TEST_CASE("a_fill_trades_in_whole_units_of_the_price_and_the_fee")
 	options.requireFunds = false;
 
 	MarketplaceService service(options);
-	EcsWorld world;
+	EntityStore world;
 	std::string errorMessage;
 	std::string orderId;
 	Decimal bestAsk;
@@ -1861,7 +1861,7 @@ TEST_CASE("a_marketplace_loads_the_world_the_generator_built")
 	REQUIRE_EQ(worlds.size(), 3u);
 
 	MarketplaceService service;
-	EcsWorld store;
+	EntityStore store;
 	std::size_t venues = 0;
 
 	REQUIRE(MarketplaceService::LoadSimulation(store, sim, MarketplaceOptions{}, venues, errorMessage));
@@ -1975,7 +1975,7 @@ TEST_CASE("a_marketplace_loads_the_world_the_generator_built")
 	CHECK_EQ(venues, 0u);
 
 	Simulation fresh;
-	EcsWorld empty;
+	EntityStore empty;
 
 	CHECK(
 	    !MarketplaceService::LoadSimulation(empty, fresh, MarketplaceOptions{}, venues, errorMessage));
@@ -1986,7 +1986,7 @@ TEST_CASE("a_marketplace_loads_the_world_the_generator_built")
 
 TEST_CASE("the_same_posts_in_the_same_order_give_the_same_fills")
 {
-	auto Run = [](EcsWorld &world, MarketplaceService &service)
+	auto Run = [](EntityStore &world, MarketplaceService &service)
 	{
 		std::string errorMessage;
 		std::string orderId;
@@ -2048,8 +2048,8 @@ TEST_CASE("the_same_posts_in_the_same_order_give_the_same_fills")
 		service.AdvanceTick(world, 40, errorMessage);
 	};
 
-	EcsWorld first;
-	EcsWorld second;
+	EntityStore first;
+	EntityStore second;
 	MarketplaceService serviceFirst;
 	MarketplaceService serviceSecond;
 
@@ -2146,7 +2146,7 @@ TEST_CASE("the_same_posts_in_the_same_order_give_the_same_fills")
 TEST_CASE("market_prices_keep_exact_decimal_levels_and_fill_prices")
 {
 	MarketplaceService service;
-	EcsWorld world;
+	EntityStore world;
 	std::string error;
 	std::string orderId;
 	REQUIRE(AddWorld(world, "seller", "Seller", 1000, {{"ore", 200.0}}).empty());
@@ -2185,7 +2185,7 @@ TEST_CASE("market_rejects_unrepresentable_costs_and_settlement_without_ledger_wr
 	MarketplaceOptions options;
 	options.requireFunds = false;
 	MarketplaceService service(options);
-	EcsWorld world;
+	EntityStore world;
 	std::string error;
 	std::string orderId;
 	REQUIRE(AddWorld(world, "seller", "Seller", std::numeric_limits<long long>::max(), {{"ore", 100.0}})
@@ -2240,7 +2240,7 @@ TEST_CASE("fractional_quantity_reservation_keeps_double_product_rounding")
 	MarketplaceOptions options;
 	options.listingFeeBps = 0;
 	MarketplaceService service(options);
-	EcsWorld world;
+	EntityStore world;
 	std::string error;
 	std::string orderId;
 	REQUIRE(AddWorld(world, "buyer", "Buyer", 10, {}).empty());
@@ -2262,7 +2262,7 @@ TEST_CASE("closing_and_expiry_preflight_combined_reservation_refunds")
 	MarketplaceOptions options;
 	options.listingFeeBps = 0;
 	MarketplaceService service(options);
-	EcsWorld world;
+	EntityStore world;
 	std::string error;
 	std::string first;
 	std::string second;
@@ -2291,7 +2291,7 @@ TEST_CASE("closing_and_expiry_preflight_combined_reservation_refunds")
 TEST_CASE("a_fill_charges_each_side_the_fee_its_order_posted_at")
 {
 	MarketplaceService service;
-	EcsWorld world;
+	EntityStore world;
 	std::string error;
 	std::string bid;
 	std::string ask;
@@ -2319,7 +2319,7 @@ TEST_CASE("a_buy_order_its_reservation_cannot_pay_leaves_the_book_for_the_bids_b
 	MarketplaceOptions options;
 	options.listingFeeBps = 0;
 	MarketplaceService service(options);
-	EcsWorld world;
+	EntityStore world;
 	std::string error;
 	std::string first;
 	std::string second;
@@ -2350,7 +2350,7 @@ TEST_CASE("a_marketable_order_walks_a_full_deck_and_reserves_only_the_asks_it_ta
 	options.listingFeeBps = 0;
 	options.depthUnits = 10.0;
 	MarketplaceService service(options);
-	EcsWorld world;
+	EntityStore world;
 	std::string error;
 	std::string orderId;
 	REQUIRE(AddWorld(world, "buyer", "Buyer", 100, {}).empty());
@@ -2396,7 +2396,7 @@ TEST_CASE("a_post_whose_crossing_fails_in_settlement_says_so")
 	MarketplaceOptions options;
 	options.listingFeeBps = 0;
 	MarketplaceService service(options);
-	EcsWorld world;
+	EntityStore world;
 	std::string error;
 	std::string bid;
 	std::string ask;

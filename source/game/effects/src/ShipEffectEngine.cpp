@@ -46,7 +46,7 @@ void ShipEffectEngine::SetCatalogue(EffectCatalogue catalogue)
 
 
 bool ShipEffectEngine::BuildShip(
-    EcsWorld &world, const std::string &shipId, const ShipClassSpec &hull,
+    EntityStore &world, const std::string &shipId, const ShipClassSpec &hull,
     const std::string &operatorId, std::string &errorMessage)
 {
 	if (shipId.empty())
@@ -74,7 +74,7 @@ bool ShipEffectEngine::BuildShip(
 		return false;
 	}
 
-	EcsWorld::Entity ship = EcsWorld::Null;
+	EntityStore::Entity ship = EntityStore::Null;
 
 	if (!world.Create(shipId, ship, errorMessage))
 	{
@@ -98,14 +98,14 @@ bool ShipEffectEngine::BuildShip(
 }
 
 
-bool ShipEffectEngine::HasShip(const EcsWorld &world, const std::string &shipId) const
+bool ShipEffectEngine::HasShip(const EntityStore &world, const std::string &shipId) const
 {
 	return world.HasComponent<ShipInfo>(shipId);
 }
 
 
 std::vector<std::string> ShipEffectEngine::ShipsOf(
-    const EcsWorld &world, const std::string &operatorId) const
+    const EntityStore &world, const std::string &operatorId) const
 {
 	std::vector<std::string> ships;
 
@@ -114,7 +114,7 @@ std::vector<std::string> ShipEffectEngine::ShipsOf(
 	// tests read.
 	const auto view = world.View<ShipInfo>();
 
-	for (const EcsWorld::Entity entity : view)
+	for (const EntityStore::Entity entity : view)
 	{
 		const auto *info = world.Get<ShipInfo>(entity);
 
@@ -133,10 +133,10 @@ std::vector<std::string> ShipEffectEngine::ShipsOf(
 
 
 bool ShipEffectEngine::Fit(
-    EcsWorld &world, const std::string &shipId, const std::string &skillId, const std::string &effectId,
-    EffectOrigin origin, int tier, std::string &errorMessage)
+    EntityStore &world, const std::string &shipId, const std::string &skillId,
+    const std::string &effectId, EffectOrigin origin, int tier, std::string &errorMessage)
 {
-	EcsWorld::Entity ship = EcsWorld::Null;
+	EntityStore::Entity ship = EntityStore::Null;
 
 	if (!ResolveShip(world, shipId, ship, errorMessage))
 	{
@@ -197,7 +197,7 @@ bool ShipEffectEngine::Fit(
 	}
 
 	const std::string sourceId = SourceIdFor(shipId, effectId);
-	EcsWorld::Entity source = EcsWorld::Null;
+	EntityStore::Entity source = EntityStore::Null;
 
 	if (world.Has(sourceId))
 	{
@@ -276,7 +276,7 @@ bool ShipEffectEngine::Fit(
 
 
 bool ShipEffectEngine::FitSkill(
-    EcsWorld &world, const std::string &shipId, const SkillNode &node, int tier, bool &bought,
+    EntityStore &world, const std::string &shipId, const SkillNode &node, int tier, bool &bought,
     std::string &errorMessage)
 {
 	bought = false;
@@ -326,7 +326,7 @@ bool ShipEffectEngine::FitSkill(
 
 
 bool ShipEffectEngine::ApplyProgression(
-    EcsWorld &world, const ProgressionManager &progression, const std::string &shipId,
+    EntityStore &world, const ProgressionManager &progression, const std::string &shipId,
     unsigned &applied, unsigned &skipped, std::string &errorMessage)
 {
 	// The walk writes the caller's two columns: they are set, not added to, and a caller
@@ -387,7 +387,7 @@ bool ShipEffectEngine::ApplyProgression(
 
 
 bool ShipEffectEngine::ApplyProgressionToWorld(
-    EcsWorld &world, const ProgressionManager &progression, const std::string &operatorId,
+    EntityStore &world, const ProgressionManager &progression, const std::string &operatorId,
     unsigned &applied, unsigned &skipped, std::string &errorMessage)
 {
 	const std::vector<std::string> ships = ShipsOf(world, operatorId);
@@ -425,7 +425,7 @@ bool ShipEffectEngine::ApplyProgressionToWorld(
 
 
 unsigned ShipEffectEngine::UnfitSkill(
-    EcsWorld &world, const std::string &skillId, std::string &errorMessage)
+    EntityStore &world, const std::string &skillId, std::string &errorMessage)
 {
 	// The sources first, the hulls second, the rebuilds last: a skill that reaches a
 	// fleet touches several hulls, and a hull must not be rebuilt while a source of
@@ -435,7 +435,7 @@ unsigned ShipEffectEngine::UnfitSkill(
 
 	const auto view = world.View<EffectSource, EffectOn>();
 
-	for (const EcsWorld::Entity entity : view)
+	for (const EntityStore::Entity entity : view)
 	{
 		const EffectSource *source = world.Get<EffectSource>(entity);
 		const EffectOn *on = world.Get<EffectOn>(entity);
@@ -500,9 +500,10 @@ unsigned ShipEffectEngine::UnfitSkill(
 
 
 bool ShipEffectEngine::UnfitEffect(
-    EcsWorld &world, const std::string &shipId, const std::string &effectId, std::string &errorMessage)
+    EntityStore &world, const std::string &shipId, const std::string &effectId,
+    std::string &errorMessage)
 {
-	EcsWorld::Entity ship = EcsWorld::Null;
+	EntityStore::Entity ship = EntityStore::Null;
 
 	if (!ResolveShip(world, shipId, ship, errorMessage))
 	{
@@ -531,9 +532,10 @@ bool ShipEffectEngine::UnfitEffect(
 }
 
 
-bool ShipEffectEngine::Recompute(EcsWorld &world, const std::string &shipId, std::string &errorMessage)
+bool ShipEffectEngine::Recompute(
+    EntityStore &world, const std::string &shipId, std::string &errorMessage)
 {
-	EcsWorld::Entity ship = EcsWorld::Null;
+	EntityStore::Entity ship = EntityStore::Null;
 
 	if (!ResolveShip(world, shipId, ship, errorMessage))
 	{
@@ -560,7 +562,7 @@ bool ShipEffectEngine::Recompute(EcsWorld &world, const std::string &shipId, std
 
 	const auto view = world.View<EffectSource, EffectOn>();
 
-	for (const EcsWorld::Entity entity : view)
+	for (const EntityStore::Entity entity : view)
 	{
 		const EffectSource *source = world.Get<EffectSource>(entity);
 		const EffectOn *on = world.Get<EffectOn>(entity);
@@ -598,7 +600,7 @@ bool ShipEffectEngine::Recompute(EcsWorld &world, const std::string &shipId, std
 }
 
 
-unsigned ShipEffectEngine::RecomputeAll(EcsWorld &world, std::string &errorMessage)
+unsigned ShipEffectEngine::RecomputeAll(EntityStore &world, std::string &errorMessage)
 {
 	const std::vector<std::string> ships = ShipsOf(world, {});
 	unsigned rebuilt = 0;
@@ -618,7 +620,7 @@ unsigned ShipEffectEngine::RecomputeAll(EcsWorld &world, std::string &errorMessa
 
 
 int ShipEffectEngine::FittedTier(
-    const EcsWorld &world, const std::string &shipId, const std::string &effectId) const
+    const EntityStore &world, const std::string &shipId, const std::string &effectId) const
 {
 	const auto *systems = world.Get<ShipSystems>(shipId);
 
@@ -634,7 +636,7 @@ int ShipEffectEngine::FittedTier(
 
 
 std::vector<std::string> ShipEffectEngine::FittedEffects(
-    const EcsWorld &world, const std::string &shipId) const
+    const EntityStore &world, const std::string &shipId) const
 {
 	std::vector<std::string> effects;
 
@@ -655,13 +657,13 @@ std::vector<std::string> ShipEffectEngine::FittedEffects(
 
 
 std::vector<EffectSource> ShipEffectEngine::SourcesOn(
-    const EcsWorld &world, const std::string &shipId) const
+    const EntityStore &world, const std::string &shipId) const
 {
 	std::map<std::string, EffectSource> ordered;
 
 	const auto view = world.View<EffectSource, EffectOn>();
 
-	for (const EcsWorld::Entity entity : view)
+	for (const EntityStore::Entity entity : view)
 	{
 		const auto *source = world.Get<EffectSource>(entity);
 		const auto *on = world.Get<EffectOn>(entity);
@@ -687,14 +689,14 @@ std::vector<EffectSource> ShipEffectEngine::SourcesOn(
 
 
 double ShipEffectEngine::GetStat(
-    const EcsWorld &world, const std::string &shipId, EffectStat stat) const
+    const EntityStore &world, const std::string &shipId, EffectStat stat) const
 {
 	return ReadEffectStat(StatsOf(world, shipId), stat);
 }
 
 
 std::map<EffectStat, double> ShipEffectEngine::StatsOf(
-    const EcsWorld &world, const std::string &shipId) const
+    const EntityStore &world, const std::string &shipId) const
 {
 	const auto *stats = world.Get<ShipStats>(shipId);
 
@@ -703,7 +705,7 @@ std::map<EffectStat, double> ShipEffectEngine::StatsOf(
 
 
 std::map<EffectStat, double> ShipEffectEngine::BaseStatsOf(
-    const EcsWorld &world, const std::string &shipId) const
+    const EntityStore &world, const std::string &shipId) const
 {
 	const auto *stats = world.Get<ShipBaseStats>(shipId);
 
@@ -711,7 +713,7 @@ std::map<EffectStat, double> ShipEffectEngine::BaseStatsOf(
 }
 
 
-std::string ShipEffectEngine::DescribeShip(const EcsWorld &world, const std::string &shipId) const
+std::string ShipEffectEngine::DescribeShip(const EntityStore &world, const std::string &shipId) const
 {
 	const auto *info = world.Get<ShipInfo>(shipId);
 
@@ -763,7 +765,7 @@ std::string ShipEffectEngine::DescribeShip(const EcsWorld &world, const std::str
 
 
 bool ShipEffectEngine::ResolveShip(
-    const EcsWorld &world, const std::string &shipId, EcsWorld::Entity &ship,
+    const EntityStore &world, const std::string &shipId, EntityStore::Entity &ship,
     std::string &errorMessage) const
 {
 	ship = world.Find(shipId);

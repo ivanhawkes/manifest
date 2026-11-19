@@ -12,7 +12,7 @@
 #include <manifest/config/SimulationConfig.h>
 #include <manifest/content/Content.h>
 #include <manifest/ecs/Components.h>
-#include <manifest/ecs/EcsWorld.h>
+#include <manifest/ecs/EntityStore.h>
 #include <manifest/effects/CivilisationEffects.h>
 #include <manifest/effects/EffectCatalogue.h>
 #include <manifest/effects/ShipEffectEngine.h>
@@ -166,9 +166,9 @@ ProgressionManager Tree(const std::vector<SkillNode> &nodes, int points)
 // A world with one civilisation's planet in it, and the market at that planet that the
 // market effects land on: a venue a world has to open before a law, a licence or a
 // policy can be worth anything.
-EcsWorld OpenWorld(const std::string &id, const std::string &name)
+EntityStore OpenWorld(const std::string &id, const std::string &name)
 {
-	EcsWorld world;
+	EntityStore world;
 	MarketplaceService service;
 	std::string errorMessage;
 
@@ -198,7 +198,7 @@ EffectDefinition Effect(
 TEST_CASE("the_ship_engine_lands_its_effects_on_the_hull")
 {
 	ShipEffectEngine engine;
-	EcsWorld world;
+	EntityStore world;
 	std::string errorMessage;
 
 	const ShipClassSpec &trader = LongHaulTrader();
@@ -209,9 +209,9 @@ TEST_CASE("the_ship_engine_lands_its_effects_on_the_hull")
 	CHECK_EQ(engine.ShipsOf(world, "Civ-02").size(), 0u);
 	CHECK_EQ(engine.ShipsOf(world, "").size(), 1u);
 
-	const EcsWorld::Entity ship = world.Find("Trader");
+	const EntityStore::Entity ship = world.Find("Trader");
 
-	CHECK(ship != EcsWorld::Null);
+	CHECK(ship != EntityStore::Null);
 	CHECK((world.HasComponent<ShipInfo, ShipBaseStats, ShipStats, ShipSlots, ShipSystems>(ship)));
 	CHECK_EQ(world.Get<ShipInfo>(ship)->hullId, std::string("HullTraderLongHaul"));
 	CHECK_EQ(world.Get<ShipInfo>(ship)->operatorId, std::string("Civ-01"));
@@ -287,7 +287,7 @@ TEST_CASE("the_ship_engine_lands_its_effects_on_the_hull")
 	// The same tree on the same hull is the same numbers: the store is the base plus
 	// the sources in sorted effect order, so a fill log, a UI and a test all agree.
 	ShipEffectEngine other;
-	EcsWorld otherWorld;
+	EntityStore otherWorld;
 	std::string otherError;
 
 	CHECK(other.BuildShip(otherWorld, "Trader", trader, "Civ-01", otherError));
@@ -312,7 +312,7 @@ TEST_CASE("the_ship_engine_lands_its_effects_on_the_hull")
 TEST_CASE("the_hull_refuses_a_system_it_has_no_slot_for")
 {
 	ShipEffectEngine engine;
-	EcsWorld world;
+	EntityStore world;
 	std::string errorMessage;
 
 	const ShipClassSpec &trader = LongHaulTrader();
@@ -587,7 +587,7 @@ TEST_CASE("an_effect_reads_the_domain_of_the_store_it_lands_on")
 	// and a shield bank, a gun, a mast and a hold are the hull's. The refusal says
 	// which engine owns the effect, because a game mode that lands a shield stat at a
 	// market has built a rule nothing reads.
-	EcsWorld world = OpenWorld("Civ-01", "Abigail Prime");
+	EntityStore world = OpenWorld("Civ-01", "Abigail Prime");
 	CivilisationEffectEngine civEngine;
 	ShipEffectEngine shipEngine;
 	std::string shipError;
@@ -715,7 +715,7 @@ TEST_CASE("an_effect_reads_the_domain_of_the_store_it_lands_on")
 TEST_CASE("the_civilisation_engine_lands_its_effects_on_the_stores_its_domain_owns")
 {
 	CivilisationEffectEngine engine;
-	EcsWorld world = OpenWorld("Civ-01", "Abigail Prime");
+	EntityStore world = OpenWorld("Civ-01", "Abigail Prime");
 	std::string errorMessage;
 
 	CHECK_EQ(engine.MarketsOf(world, "Civ-01").size(), 1u);
@@ -895,7 +895,7 @@ TEST_CASE("the_civilisation_engine_lands_its_effects_on_the_stores_its_domain_ow
 	// The engine is the only thing that writes the stores: an effect cannot land on a
 	// venue that was never opened, and a civilisation with no stores of that domain is
 	// refused with a message that says so.
-	EcsWorld barren;
+	EntityStore barren;
 	std::string bar;
 
 	CHECK(!engine.Apply(
@@ -926,7 +926,7 @@ TEST_CASE("a_tree_walk_lands_every_effect_the_tree_buys")
 	ProgressionManager progression = Tree(nodes, 60);
 	CivilisationEffectEngine civEngine;
 	ShipEffectEngine shipEngine;
-	EcsWorld world = OpenWorld("Civ-01", "Abigail Prime");
+	EntityStore world = OpenWorld("Civ-01", "Abigail Prime");
 	std::string errorMessage;
 
 	CHECK_EQ(progression.GetResources(), 60);
@@ -1193,7 +1193,7 @@ TEST_CASE("an_effect_applies_the_way_its_operator_says")
 	    errorMessage));
 
 	ShipEffectEngine engine;
-	EcsWorld world;
+	EntityStore world;
 
 	// The hull of the case is the shipped long-haul trader with a slot added for the one
 	// synthetic system of the catalogue of one below: the slot rule is the shipped rule,
@@ -1282,7 +1282,7 @@ TEST_CASE("an_effect_applies_the_way_its_operator_says")
 	    errorMessage));
 
 	CivilisationEffectEngine civEngine;
-	EcsWorld civWorld = OpenWorld("Civ-01", "Abigail Prime");
+	EntityStore civWorld = OpenWorld("Civ-01", "Abigail Prime");
 
 	civEngine.SetCatalogue(civCatalogue);
 	CHECK(civEngine.Apply(
@@ -1315,7 +1315,7 @@ TEST_CASE("an_effect_applies_the_way_its_operator_says")
 TEST_CASE("a_skill_bought_twice_costs_once")
 {
 	ShipEffectEngine engine;
-	EcsWorld world;
+	EntityStore world;
 	std::string errorMessage;
 
 	const ShipClassSpec &trader = LongHaulTrader();
@@ -1390,7 +1390,7 @@ TEST_CASE("a_skill_bought_twice_costs_once")
 	// force, not the number of times they were passed, and a law passed by one skill
 	// and applied twice is the law once.
 	CivilisationEffectEngine civEngine;
-	EcsWorld civWorld = OpenWorld("Civ-01", "Abigail Prime");
+	EntityStore civWorld = OpenWorld("Civ-01", "Abigail Prime");
 
 	CHECK(civEngine.Apply(
 	    civWorld, "Civ-01", "SkillLawAdmiraltyWarrant", "AdmiraltyWarrant", EffectOrigin::Skill, 4,

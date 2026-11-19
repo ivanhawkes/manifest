@@ -55,10 +55,10 @@ The same universe in the ECS store, with a venue at every world that may host on
 order on the book and the quote table the quoters read:
 
 ```cpp
-#include "manifest/ecs/EcsWorld.h"
+#include "manifest/ecs/EntityStore.h"
 #include "manifest/market/Marketplace.h"
 
-Manifest::Core::EcsWorld world;
+Manifest::Core::EntityStore world;
 std::size_t venuesOpened = 0;
 
 // The generated worlds, their treasuries, stockpiles, production decks and demand,
@@ -388,7 +388,7 @@ hole in the data is in the goods, not in the effects.
 
 ### The store, the effects and the marketplace
 
-The economy model generates the worlds; the store keeps the universe. `EcsWorld` is an
+The economy model generates the worlds; the store keeps the universe. `EntityStore` is an
 EnTT registry whose entities carry the string ids the rest of the core uses - `Civ-01`,
 `Ship-01`, `Order-7` - indexed by a `std::map` keyed on the id, so an order that filled
 last tick and a venue opened this tick can never share a number, and a walk of the store

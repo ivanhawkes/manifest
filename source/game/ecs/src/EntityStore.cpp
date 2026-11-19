@@ -1,4 +1,4 @@
-#include <manifest/ecs/EcsWorld.h>
+#include <manifest/ecs/EntityStore.h>
 
 #include <format>
 
@@ -51,7 +51,7 @@ std::pair<std::string, unsigned> NumericSuffix(const std::string &id)
 } // namespace
 
 
-void EcsWorld::SpendNumericSuffix(std::map<std::string, unsigned> &spent, const std::string &id)
+void EntityStore::SpendNumericSuffix(std::map<std::string, unsigned> &spent, const std::string &id)
 {
 	const auto [prefix, number] = NumericSuffix(id);
 
@@ -67,7 +67,7 @@ void EcsWorld::SpendNumericSuffix(std::map<std::string, unsigned> &spent, const 
 		spent[prefix] = number;
 	}
 }
-bool EcsWorld::Create(const std::string &id, std::string &errorMessage)
+bool EntityStore::Create(const std::string &id, std::string &errorMessage)
 {
 	Entity created = Null;
 
@@ -75,19 +75,19 @@ bool EcsWorld::Create(const std::string &id, std::string &errorMessage)
 }
 
 
-bool EcsWorld::Create(const std::string &id, Entity &created, std::string &errorMessage)
+bool EntityStore::Create(const std::string &id, Entity &created, std::string &errorMessage)
 {
 	if (id.empty())
 	{
-		errorMessage =
-		    "EcsWorld: the id is empty; every entity carries the id the rest of the core names it by";
+		errorMessage = "EntityStore: the id is empty; every entity carries the id the rest of the core "
+		               "names it by";
 
 		return false;
 	}
 
 	if (m_entities.find(id) != m_entities.end())
 	{
-		errorMessage = std::format("EcsWorld: the id '{}' is already an entity in this world", id);
+		errorMessage = std::format("EntityStore: the id '{}' is already an entity in this world", id);
 
 		return false;
 	}
@@ -101,7 +101,7 @@ bool EcsWorld::Create(const std::string &id, Entity &created, std::string &error
 }
 
 
-std::string EcsWorld::NextId(const std::string &prefix)
+std::string EntityStore::NextId(const std::string &prefix)
 {
 	// "Order-7", "Ship-12": the count only ever goes up, so an id names the entity it
 	// was handed out to for the life of the world, and a fill log can quote an order
@@ -130,13 +130,13 @@ std::string EcsWorld::NextId(const std::string &prefix)
 }
 
 
-bool EcsWorld::Destroy(const std::string &id, std::string &errorMessage)
+bool EntityStore::Destroy(const std::string &id, std::string &errorMessage)
 {
 	const auto entry = m_entities.find(id);
 
 	if (entry == m_entities.end())
 	{
-		errorMessage = std::format("EcsWorld: the id '{}' is not an entity in this world", id);
+		errorMessage = std::format("EntityStore: the id '{}' is not an entity in this world", id);
 
 		return false;
 	}
@@ -149,11 +149,11 @@ bool EcsWorld::Destroy(const std::string &id, std::string &errorMessage)
 }
 
 
-bool EcsWorld::Destroy(Entity target, std::string &errorMessage)
+bool EntityStore::Destroy(Entity target, std::string &errorMessage)
 {
 	if (!IsValid(target))
 	{
-		errorMessage = "EcsWorld: the entity is not live in this world";
+		errorMessage = "EntityStore: the entity is not live in this world";
 
 		return false;
 	}
@@ -171,7 +171,7 @@ bool EcsWorld::Destroy(Entity target, std::string &errorMessage)
 }
 
 
-void EcsWorld::Clear()
+void EntityStore::Clear()
 {
 	// A copy, not the map itself: a component's on_destroy hook is free to destroy
 	// other entities, and a hook that does that must not invalidate the iteration
@@ -201,19 +201,19 @@ void EcsWorld::Clear()
 }
 
 
-bool EcsWorld::Has(const std::string &id) const
+bool EntityStore::Has(const std::string &id) const
 {
 	return m_entities.find(id) != m_entities.end();
 }
 
 
-bool EcsWorld::IsValid(Entity candidate) const
+bool EntityStore::IsValid(Entity candidate) const
 {
 	return candidate != Null && m_registry.valid(candidate);
 }
 
 
-EcsWorld::Entity EcsWorld::Find(const std::string &id) const
+EntityStore::Entity EntityStore::Find(const std::string &id) const
 {
 	const auto entry = m_entities.find(id);
 
@@ -221,7 +221,7 @@ EcsWorld::Entity EcsWorld::Find(const std::string &id) const
 }
 
 
-std::string EcsWorld::NameOf(Entity named) const
+std::string EntityStore::NameOf(Entity named) const
 {
 	const auto *identity = Get<EntityId>(named);
 
@@ -229,7 +229,7 @@ std::string EcsWorld::NameOf(Entity named) const
 }
 
 
-std::vector<std::string> EcsWorld::Ids() const
+std::vector<std::string> EntityStore::Ids() const
 {
 	std::vector<std::string> ids;
 	ids.reserve(m_entities.size());
@@ -243,19 +243,19 @@ std::vector<std::string> EcsWorld::Ids() const
 }
 
 
-std::size_t EcsWorld::EntityCount() const
+std::size_t EntityStore::EntityCount() const
 {
 	return m_entities.size();
 }
 
 
-entt::registry &EcsWorld::Registry()
+entt::registry &EntityStore::Registry()
 {
 	return m_registry;
 }
 
 
-const entt::registry &EcsWorld::Registry() const
+const entt::registry &EntityStore::Registry() const
 {
 	return m_registry;
 }

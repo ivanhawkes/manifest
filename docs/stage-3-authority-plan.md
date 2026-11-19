@@ -23,7 +23,7 @@ Inspection baseline: Manifest `feature-base` at `0c6e544`, Jettison `feature-bas
 
 ## Findings that determine the migration
 
-- `ecs/EcsWorld.*` owns its own EnTT registry, string-ID index and allocation counters.
+- `ecs/EntityStore.*` owns its own EnTT registry, string-ID index and allocation counters.
   It cannot remain an independently owned authoritative registry alongside `SimWorld`.
 - `ecs/Components.h` associates ships and orders with civilisations. `Stockpile`
   is keyed only by item; it has no venue or company boundary.
@@ -84,7 +84,7 @@ microcredit value, using checked conversion at the boundary. Do not serialise th
 remain checked whole-credit integers. Preserve authored IDs and YAML keys; changing
 runtime ownership fields is not permission to rename content identities.
 
-Replace hosted uses of `EcsWorld` with either a non-owning registry adapter or direct
+Replace hosted uses of `EntityStore` with either a non-owning registry adapter or direct
 engine-world services. Choose one migration approach and document its lifetime. A
 non-owning adapter must reacquire/rebuild derived indexes when the engine replaces
 registry contents during load. Keep a standalone owning wrapper only for isolated

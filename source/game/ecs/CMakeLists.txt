@@ -3,10 +3,10 @@ manifest_add_module(ecs
 		types
 	HEADERS
 		include/manifest/ecs/Components.h
-		include/manifest/ecs/EcsWorld.h
+		include/manifest/ecs/EntityStore.h
 	SOURCES
 		src/Components.cpp
-		src/EcsWorld.cpp
+		src/EntityStore.cpp
 	TESTS
 		tests/EcsTests.cpp
 	PUBLIC_LIBRARIES

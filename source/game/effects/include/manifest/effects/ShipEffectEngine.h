@@ -7,7 +7,7 @@
 #include <vector>
 
 #include <manifest/ecs/Components.h>
-#include <manifest/ecs/EcsWorld.h>
+#include <manifest/ecs/EntityStore.h>
 #include <manifest/effects/EffectCatalogue.h>
 #include <manifest/progression/ProgressionManager.h>
 #include <manifest/types/EffectTypes.h>
@@ -76,14 +76,14 @@ class ShipEffectEngine
 	// empty id, a hull with no base stats, an empty operator, and an id the world
 	// already has.
 	bool BuildShip(
-	    EcsWorld &world, const std::string &shipId, const ShipClassSpec &hull,
+	    EntityStore &world, const std::string &shipId, const ShipClassSpec &hull,
 	    const std::string &operatorId, std::string &errorMessage);
 
-	bool HasShip(const EcsWorld &world, const std::string &shipId) const;
+	bool HasShip(const EntityStore &world, const std::string &shipId) const;
 
 	// Ships of one operator, in sorted id order; an empty OperatorId asks for every
 	// ship in the world.
-	std::vector<std::string> ShipsOf(const EcsWorld &world, const std::string &operatorId) const;
+	std::vector<std::string> ShipsOf(const EntityStore &world, const std::string &operatorId) const;
 
 	// Puts one effect on one ship at a tier. Origin decides the rule, as above. Fails
 	// when the effect is unknown, when it is not of the Ship domain, when Tier is
@@ -99,7 +99,7 @@ class ShipEffectEngine
 	// system spent, because the source is one per effect and the tier that arrives is
 	// the technique's.
 	bool Fit(
-	    EcsWorld &world, const std::string &shipId, const std::string &skillId,
+	    EntityStore &world, const std::string &shipId, const std::string &skillId,
 	    const std::string &effectId, EffectOrigin origin, int tier, std::string &errorMessage);
 
 	// One node of the tree on one ship: the effect is the node's `targetEffectID` and
@@ -108,7 +108,7 @@ class ShipEffectEngine
 	// and an effect of another domain - a yard, a lane, a claim, a market, a habitat -
 	// returns true with Bought false, so a whole tree walks in one loop.
 	bool FitSkill(
-	    EcsWorld &world, const std::string &shipId, const SkillNode &node, int tier, bool &bought,
+	    EntityStore &world, const std::string &shipId, const SkillNode &node, int tier, bool &bought,
 	    std::string &errorMessage);
 
 	// Every node of the tree, onto one ship, in sorted skill order. The two columns add
@@ -119,7 +119,7 @@ class ShipEffectEngine
 	// yet. The walk sets the caller's columns, and a fleet walk writes the columns of the
 	// fleet, which is the sum of the walks of its hulls.
 	bool ApplyProgression(
-	    EcsWorld &world, const ProgressionManager &progression, const std::string &shipId,
+	    EntityStore &world, const ProgressionManager &progression, const std::string &shipId,
 	    unsigned &applied, unsigned &skipped, std::string &errorMessage);
 
 	// The same onto every ship of one operator - the way a technology reaches a fleet.
@@ -128,13 +128,13 @@ class ShipEffectEngine
 	// two hulls and a tree of nine nodes has eighteen node visits, and two hulls of one
 	// tree fly the same systems.
 	bool ApplyProgressionToWorld(
-	    EcsWorld &world, const ProgressionManager &progression, const std::string &operatorId,
+	    EntityStore &world, const ProgressionManager &progression, const std::string &operatorId,
 	    unsigned &applied, unsigned &skipped, std::string &errorMessage);
 
 	// Takes every source of one skill off every ship, and the systems off the hulls:
 	// the respec road, where the tiers go back to the pool. Returns the sources taken
 	// off, and recomputes every ship it touched.
-	unsigned UnfitSkill(EcsWorld &world, const std::string &skillId, std::string &errorMessage);
+	unsigned UnfitSkill(EntityStore &world, const std::string &skillId, std::string &errorMessage);
 
 	// Takes one effect off one ship, and leaves the base.
 	//
@@ -144,46 +144,47 @@ class ShipEffectEngine
 	// systems is not a failure on the road. Taking a system off twice is taking it off
 	// once, and the hull reads the same numbers both times.
 	bool UnfitEffect(
-	    EcsWorld &world, const std::string &shipId, const std::string &effectId,
+	    EntityStore &world, const std::string &shipId, const std::string &effectId,
 	    std::string &errorMessage);
 
 	// The base plus every source on the ship, applied in sorted effect id order: the
 	// order that says the same tree gives the same numbers on every platform, which is
 	// what a fill log, a UI and a test all need.
-	bool Recompute(EcsWorld &world, const std::string &shipId, std::string &errorMessage);
+	bool Recompute(EntityStore &world, const std::string &shipId, std::string &errorMessage);
 
 	// Every ship in the world. Returns how many were rebuilt.
-	unsigned RecomputeAll(EcsWorld &world, std::string &errorMessage);
+	unsigned RecomputeAll(EntityStore &world, std::string &errorMessage);
 
 	// The tier of one system on one ship: 0 when the hull does not carry it. A
 	// technology is knowledge and not a system, so a hull that flies a technique reads
 	// 0 for it and the source of it shows in SourcesOn.
-	int FittedTier(const EcsWorld &world, const std::string &shipId, const std::string &effectId) const;
+	int FittedTier(
+	    const EntityStore &world, const std::string &shipId, const std::string &effectId) const;
 
 	// The systems a hull carries, in sorted effect id order: the systems a slot was
 	// spent on, which are the Skill effects and not the techniques the civilisation
 	// knows.
-	std::vector<std::string> FittedEffects(const EcsWorld &world, const std::string &shipId) const;
+	std::vector<std::string> FittedEffects(const EntityStore &world, const std::string &shipId) const;
 
 	// The sources on a ship, in sorted effect id order: every effect that moves the
 	// hull, the systems in its slots and the technology of its operator alike.
-	std::vector<EffectSource> SourcesOn(const EcsWorld &world, const std::string &shipId) const;
+	std::vector<EffectSource> SourcesOn(const EntityStore &world, const std::string &shipId) const;
 
 	// The stat as the hull flies it: 0.0 when the hull has never had that stat.
-	double GetStat(const EcsWorld &world, const std::string &shipId, EffectStat stat) const;
+	double GetStat(const EntityStore &world, const std::string &shipId, EffectStat stat) const;
 
-	std::map<EffectStat, double> StatsOf(const EcsWorld &world, const std::string &shipId) const;
-	std::map<EffectStat, double> BaseStatsOf(const EcsWorld &world, const std::string &shipId) const;
+	std::map<EffectStat, double> StatsOf(const EntityStore &world, const std::string &shipId) const;
+	std::map<EffectStat, double> BaseStatsOf(const EntityStore &world, const std::string &shipId) const;
 
 	// A hull as lines for the UI: what it is, who flies it, the systems on it by tier,
 	// and the stats it flies them with.
-	std::string DescribeShip(const EcsWorld &world, const std::string &shipId) const;
+	std::string DescribeShip(const EntityStore &world, const std::string &shipId) const;
 
   private:
 	// The ship's entity, with the message every entry point needs when it is not a
 	// ship.
 	bool ResolveShip(
-	    const EcsWorld &world, const std::string &shipId, EcsWorld::Entity &ship,
+	    const EntityStore &world, const std::string &shipId, EntityStore::Entity &ship,
 	    std::string &errorMessage) const;
 
 	// The effect, with the message every entry point needs when the catalogue has it

@@ -6,7 +6,7 @@
 #include <vector>
 
 #include <manifest/ecs/Components.h>
-#include <manifest/ecs/EcsWorld.h>
+#include <manifest/ecs/EntityStore.h>
 
 
 namespace
@@ -34,7 +34,7 @@ struct Station
 
 TEST_CASE("create_names_the_entity_and_the_index_is_sorted")
 {
-	Manifest::Core::EcsWorld world;
+	Manifest::Core::EntityStore world;
 	std::string errorMessage;
 
 	CHECK(world.Create("Civ-02", errorMessage));
@@ -52,14 +52,14 @@ TEST_CASE("create_names_the_entity_and_the_index_is_sorted")
 	CHECK(world.Has("Civ-01"));
 	CHECK(!world.Has("Civ-03"));
 	CHECK(world.IsValid(world.Find("Civ-01")));
-	CHECK(world.Find("Civ-03") == Manifest::Core::EcsWorld::Null);
-	CHECK(world.NameOf(Manifest::Core::EcsWorld::Null).empty());
+	CHECK(world.Find("Civ-03") == Manifest::Core::EntityStore::Null);
+	CHECK(world.NameOf(Manifest::Core::EntityStore::Null).empty());
 }
 
 
 TEST_CASE("create_refuses_an_empty_id_and_a_name_that_is_taken")
 {
-	Manifest::Core::EcsWorld world;
+	Manifest::Core::EntityStore world;
 	std::string errorMessage;
 
 	CHECK(!world.Create("", errorMessage));
@@ -77,7 +77,7 @@ TEST_CASE("create_refuses_an_empty_id_and_a_name_that_is_taken")
 
 TEST_CASE("next_id_counts_up_and_never_gives_a_number_twice")
 {
-	Manifest::Core::EcsWorld world;
+	Manifest::Core::EntityStore world;
 	std::string errorMessage;
 
 	const std::string first = world.NextId("Order");
@@ -100,7 +100,7 @@ TEST_CASE("next_id_counts_up_and_never_gives_a_number_twice")
 
 TEST_CASE("destroy_takes_the_id_and_the_components_with_it")
 {
-	Manifest::Core::EcsWorld world;
+	Manifest::Core::EntityStore world;
 	std::string errorMessage;
 
 	CHECK(world.Create("Order-1", errorMessage));
@@ -117,13 +117,13 @@ TEST_CASE("destroy_takes_the_id_and_the_components_with_it")
 	CHECK(!world.Destroy("Order-1", errorMessage));
 	MANIFEST_CHECK_CONTAINS(errorMessage, "not an entity");
 
-	CHECK(!world.Destroy(Manifest::Core::EcsWorld::Null, errorMessage));
+	CHECK(!world.Destroy(Manifest::Core::EntityStore::Null, errorMessage));
 }
 
 
 TEST_CASE("components_are_added_replaced_and_removed")
 {
-	Manifest::Core::EcsWorld world;
+	Manifest::Core::EntityStore world;
 	std::string errorMessage;
 
 	CHECK(world.Create("Ship-01", errorMessage));
@@ -163,7 +163,7 @@ TEST_CASE("components_are_added_replaced_and_removed")
 
 TEST_CASE("a_view_finds_every_entity_that_carries_the_component")
 {
-	Manifest::Core::EcsWorld world;
+	Manifest::Core::EntityStore world;
 	std::string errorMessage;
 
 	for (const char *id : {"Ship-01", "Ship-02", "Civ-01"})
@@ -192,7 +192,7 @@ TEST_CASE("a_view_finds_every_entity_that_carries_the_component")
 	// one travels with it, because Create gave every entity its EntityId.
 	std::vector<std::string> hulls;
 
-	for (const Manifest::Core::EcsWorld::Entity entity : world.View<ShipInfo>())
+	for (const Manifest::Core::EntityStore::Entity entity : world.View<ShipInfo>())
 	{
 		const ShipInfo *info = world.Get<ShipInfo>(entity);
 
@@ -217,7 +217,7 @@ TEST_CASE("a_view_finds_every_entity_that_carries_the_component")
 
 TEST_CASE("clear_empties_the_world_and_the_id_numbers_stay_spent")
 {
-	Manifest::Core::EcsWorld world;
+	Manifest::Core::EntityStore world;
 	std::string errorMessage;
 
 	for (const char *id : {"Order-1", "Order-2", "Order-3"})
@@ -241,7 +241,7 @@ TEST_CASE("clear_empties_the_world_and_the_id_numbers_stay_spent")
 
 TEST_CASE("the_registry_is_public_because_a_system_wants_a_view_of_several_components")
 {
-	Manifest::Core::EcsWorld world;
+	Manifest::Core::EntityStore world;
 	std::string errorMessage;
 
 	CHECK(world.Create("Order-1", errorMessage));
@@ -250,10 +250,10 @@ TEST_CASE("the_registry_is_public_because_a_system_wants_a_view_of_several_compo
 	world.Add<OrderOwner>("Order-1", OrderOwner{"Civ-01"});
 
 	// A system that reads a book wants the order, its venue and its owner at once, and
-	// that is a view over three components, which EcsWorld does not wrap.
+	// that is a view over three components, which EntityStore does not wrap.
 	std::size_t matched = 0;
 
-	for (const Manifest::Core::EcsWorld::Entity entity :
+	for (const Manifest::Core::EntityStore::Entity entity :
 	     world.Registry().view<MarketOrderInfo, OrderAt, OrderOwner>())
 	{
 		const MarketOrderInfo *order = world.Registry().try_get<MarketOrderInfo>(entity);
@@ -273,12 +273,12 @@ TEST_CASE("the_registry_is_public_because_a_system_wants_a_view_of_several_compo
 
 TEST_CASE("the_component_helpers_work_on_an_entity_a_view_handed_over")
 {
-	Manifest::Core::EcsWorld world;
+	Manifest::Core::EntityStore world;
 	std::string errorMessage;
 
 	CHECK(world.Create("Ship-01", errorMessage));
 
-	for (const Manifest::Core::EcsWorld::Entity entity : world.View<EntityId>())
+	for (const Manifest::Core::EntityStore::Entity entity : world.View<EntityId>())
 	{
 		world.Add<Screen>(entity, Screen{120.0});
 		world.Add<Station>(entity, Station{"Abigail Prime"});
@@ -292,7 +292,7 @@ TEST_CASE("the_component_helpers_work_on_an_entity_a_view_handed_over")
 
 		CHECK_EQ(world.Get<Screen>(world.NameOf(entity))->megawatts, 240.0);
 		CHECK((world.HasComponent<Screen, Station, EntityId>(entity)));
-		CHECK(!world.Remove<Screen>(Manifest::Core::EcsWorld::Null));
+		CHECK(!world.Remove<Screen>(Manifest::Core::EntityStore::Null));
 	}
 
 	CHECK_EQ(world.ComponentCount<Screen>(), 1u);
