@@ -1,6 +1,6 @@
 ---
-# Astralis, the short and fast mode: the whole skill tree and the small subset
-# of the items that keeps a quick match uncluttered. Both are named by itemId and skillId, and
+# Astralis, the short and fast mode: the whole skill tree and the 20 goods an industrial-age world
+# trades most (D-065), which keep a quick match uncluttered. Both are named by itemId and skillId, and
 # build.sh resolves the names into the definitions of the skill-tree/ and
 # trade-items/ files.
 skills:
@@ -120,26 +120,33 @@ skills:
 items:
 
   # Metals
-  - itemId: ItemGold
-  - itemId: ItemSilver
+  - itemId: ItemIron
   - itemId: ItemCopper
+  - itemId: ItemAluminium
+  - itemId: ItemZinc
+  - itemId: ItemLead
+  - itemId: ItemTin
+  - itemId: ItemNickel
+  - itemId: ItemGold
 
-  # Minerals
-  - itemId: ItemSalt
-  - itemId: ItemLime
+  # Food and water
+  - itemId: ItemWheat
+  - itemId: ItemRice
+  - itemId: ItemDrinkingWater
+
+  # Fuel
+  - itemId: ItemLPG
+
+  # Chemicals and fertiliser
+  - itemId: ItemSulfuricAcid
+  - itemId: ItemAmmonia
+  - itemId: ItemSodiumHydroxide
   - itemId: ItemPotash
-  
-  # Chemicals
-  - itemId: ItemNitrogen
-  - itemId: ItemPhosphorus
-  - itemId: ItemPotassium
 
-  # Comforts
-  - itemId: ItemFurs
-  - itemId: ItemGlassware
-  - itemId: ItemSoap
-  
+  # Minerals and building
+  - itemId: ItemSalt
+  - itemId: ItemCement
+
   # Medicine
-  - itemId: ItemAntibiotics
-  - itemId: ItemAnesthetics
+  - itemId: ItemBasicMedicalSupplies
   - itemId: ItemAnalgesics

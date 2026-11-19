@@ -476,7 +476,7 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	    "game mode");
 	CheckRefused(
 	    trading, "version: 1\ngameMode: astralis\n",
-	    "items 'ItemTin' is not one of mode 'astralis''s items");
+	    "items 'ItemLime' is not one of mode 'astralis''s items");
 	CheckRefused(
 	    trading, "version: 1\nitems: !append [{itemId: ItemCopper}]\n",
 	    "items selects 'ItemCopper' twice");
@@ -708,7 +708,7 @@ TEST_CASE("A later layer's whole file replaces a record, and a patch merges into
 	    "manifest/definitions/items/item-copper.patch.yaml", "version: 1\nbasePrice: \"12.25\"\n");
 	overlay.Write(
 	    "manifest/definitions/game-modes/astralis.patch.yaml",
-	    "version: 1\nitems: !append [{itemId: ItemAluminium}]\n");
+	    "version: 1\nitems: !append [{itemId: ItemSilver}]\n");
 	const ContentSet manifest = LoadWith(overlay);
 	CHECK(manifest.ages.front().displayName == "Flint");
 	CHECK(manifest.ages.front().description.empty());
@@ -720,7 +720,7 @@ TEST_CASE("A later layer's whole file replaces a record, and a patch merges into
 	CHECK(copper->displayName == "Copper");
 
 	const ContentSet astralis = LoadWith(overlay, "astralis");
-	CHECK(astralis.gameMode.items.back().itemId == "ItemAluminium");
+	CHECK(astralis.gameMode.items.back().itemId == "ItemSilver");
 }
 
 

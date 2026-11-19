@@ -139,9 +139,9 @@ The inputs are read in this order:
 | Source | Contents |
 | --- | --- |
 | `base/ages.yaml` | The 14 ages, in age order. |
-| `trade-items/categories.yaml` | The 45 categories. The goods of the item files are filed under 27 of them; 18 shelves hold no good at all, and 3 of those - `CategoryPharmaceuticals`, `CategoryPolymers` and `CategoryTextiles` - have a craft node of the same word. |
+| `trade-items/categories.yaml` | The 45 categories. The goods of the item files are filed under 28 of them; 17 shelves hold no good at all, and 3 of those - `CategoryPharmaceuticals`, `CategoryPolymers` and `CategoryTextiles` - have a craft node of the same word. |
 | `trade-items/chemicals.yaml` | The 9 goods of `CategoryChemicals`, by the tonne but graphene film by area: sodium hydroxide, nitrogen, phosphorus, sulfur, sulfuric acid, chlorine, ammonia, ethylene, graphene. |
-| `trade-items/metals.yaml` | The 17 goods of `CategoryMetals`, the base metals and antimony by the tonne, the minor metals by the kilogram: copper, tin, brass, bronze, nickel, iron, lead, cobalt, lithium, molybdenum, aluminium, potassium, uranium, vanadium, zinc, antimony, neodymium. |
+| `trade-items/metals.yaml` | The 15 goods of `CategoryMetals` and brass and bronze of `CategoryAlloys`; the base metals, the alloys and antimony by the tonne, the minor metals by the kilogram: copper, tin, brass, bronze, nickel, iron, lead, cobalt, lithium, molybdenum, aluminium, potassium, uranium, vanadium, zinc, antimony, neodymium. |
 | `trade-items/precious-metals.yaml` | The 6 goods of `CategoryPreciousMetals`, by the troy ounce: gold, silver, platinum, palladium, rhodium, ruthenium. |
 | `trade-items/minerals.yaml` | Salt, lime, graphite and natron of `CategoryMinerals`, and potash of `CategoryFertilisers`, by the tonne. |
 | `trade-items/seeds.yaml` | The 10 goods of `CategorySeeds`, by the tonne: wheat, barley, oat, corn, rice, sorghum, poppy, cocoa, coca and canola. |
@@ -172,7 +172,7 @@ The inputs are read in this order:
 | `ships/hulls.yaml` | The 3 hulls: the long-haul trader, the lone-trader starter and the compact single-seat. |
 | `tuning/balance.yaml` | The balance inputs: cadence, household needs, condition, life support, concessions, procurement, and the bronze project and recipe. |
 | `game-mode/manifest.yaml` | Manifest, the long-term, large-scale mode ([D-061](decision-ledger.md#d-061)): every item and node of the definitions above. |
-| `game-mode/astralis.yaml` | Astralis, the short and fast mode: a smaller list of items, to keep its play uncluttered. |
+| `game-mode/astralis.yaml` | Astralis, the short and fast mode: the 20 goods an industrial-age world trades most ([D-065](decision-ledger.md#d-065)), to keep its play uncluttered. |
 
 One order is taken from the sources: `base/ages.yaml` fixes the age order, which `build.sh`
 writes into each game mode's `ages`. Each game-mode file lists its own goods and nodes in the

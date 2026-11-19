@@ -1,5 +1,15 @@
 # Session handoff
 
+## Astralis's goods and the alloys — 2026-11-19
+
+[D-065](decision-ledger.md#d-065): Astralis's placeholder items are replaced by the 20 goods an
+industrial-age world trades most, all already defined; brass and bronze move to `CategoryAlloys`.
+`content`'s refusal of the trading fixture under Astralis now names lime, the first fixture good
+the mode lacks, and the patch test appends silver, which it also lacks.
+
+Evidence, on Lythir: `./scripts/ci.sh --werror --asan --tidy` passed 21 of 21 in each of
+`clang-debug`, `clang-release` and `clang-asan`, and tidy clean.
+
 ## Units, today's prices and the item files — 2026-11-19
 
 [D-064](decision-ledger.md#d-064): every good trades in its real market's unit, with three new

@@ -37,7 +37,7 @@ item-base:
 
   - item:
       itemId: ItemBrass
-      categoryId: CategoryMetals
+      categoryId: CategoryAlloys
       ageId: AgeClassical
       displayName: Brass
       description: Brass ingots
@@ -49,7 +49,7 @@ item-base:
 
   - item:
       itemId: ItemBronze
-      categoryId: CategoryMetals
+      categoryId: CategoryAlloys
       ageId: AgeBronze
       displayName: Bronze
       description: Bronze ingots
