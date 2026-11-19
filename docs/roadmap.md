@@ -74,7 +74,9 @@ simulation, AI, transit and persistence facilities; provision demonstrated gener
 gaps in Jettison, which owns the low-level networking common to many games while Manifest owns
 the dedicated server and its game rules ([D-057](decision-ledger.md#d-057)). Current snapshots
 and render smoke tests do not establish network replication
-or a true CPU-only server build. Transport, hosting and measured capacity remain open.
+or a true CPU-only server build. Transport, authentication and encoding are selected in the
+[network contract](gameplay-and-server-plan.md#network-contract-n01-2026-11-20); hosting and
+measured capacity remain open.
 
 Proposed sequencing: host/content/command foundations, then a small real TUI connection slice,
 then physical idle trading and recovery, followed by graphical presentation. Preserve durable

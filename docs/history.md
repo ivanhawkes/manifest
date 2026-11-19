@@ -100,6 +100,18 @@ cargo's lots are bounded together (`world`), and a ship's cargo against its hull
 `CargoVolume`, whose empty map was taken for none given; a hull the map does not name now carries
 nothing (`company`). Round 7 approved with no finding open.
 
+## N01: the network contract — 2026-11-20
+
+The user selected the transport, the credential and the encryption plan
+([D-079](decision-ledger.md#d-079) to [D-081](decision-ledger.md#d-081)): ENet over UDP rather than
+TCP, because Manifest will also have variants played as real-time space combat; bearer tokens the
+server CLI issues; plaintext until libsodium encryption, which blocks hosting outside a trusted
+network. The [network contract](gameplay-and-server-plan.md#network-contract-n01-2026-11-20)
+records the handshake, encoding, sessions and snapshots, and maps each mechanic to Jettison's
+provision. Its gaps are the `net` module on ENet, the handshake, bearer tokens, framing and limits,
+and snapshot replication, all for N02. Request admission and unattended stepping need none. No
+code changed.
+
 ## A07: Stage 3 closed — 2026-11-19
 
 **Stage 3 is closed** ([delivered](stage-3-authority-plan.md#delivered-a07-2026-11-19)), each of its

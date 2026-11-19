@@ -128,8 +128,8 @@ a protocol. A retried committed request must not execute twice after reconnect o
 Queries return structured, access-filtered snapshots and reasons. Frontends own text and
 visual formatting. Clients submit intentions and never advance an authoritative economy.
 Begin with full snapshots at a bounded frequency; introduce deltas only when measurements
-justify them. Transport, encoding and authentication mechanism remain design choices for
-the networking milestone, after the command contract works locally. Market snapshots must
+justify them. Transport, encoding and authentication are selected in the
+[network contract](#network-contract-n01-2026-11-20). Market snapshots must
 be actor-specific live/stale/unknown views; a full snapshot means the full permitted view,
 not all current markets. Fleet docking and remembered reports govern both frontends and
 server-side trading decisions. Do not send raw globally shown market components to clients
@@ -137,6 +137,72 @@ and depend on presentation to hide them.
 
 Acceptance includes another player being unable to cancel an order, predictable stale
 request rejection, retry safety and replay of the exact accepted command ordering.
+
+## Network contract (N01, 2026-11-20)
+
+Selected by the user, 2026-11-20 ([D-079](decision-ledger.md#d-079) to
+[D-081](decision-ledger.md#d-081)). The idle game is the first variant to use it. The same stack
+must also carry variants played as real-time space combat, so nothing below assumes idle pacing.
+
+**Transport.** UDP through ENet, in Jettison ([D-057](decision-ledger.md#d-057)). A connection has
+channels: reliable-ordered for the handshake, requests and their results, and
+unreliable-sequenced for snapshots, where the newest supersedes any still in flight. A real-time
+variant adds its inputs on an unreliable-sequenced channel of its own at step rate; the idle game
+sends none.
+
+**Handshake.** The client's hello carries the protocol's name and version and an opaque
+credential. Jettison passes the credential to a verifier Manifest supplies and admits the
+connection only on its answer. Until then the connection carries nothing else, and it is
+dropped if no hello arrives within a bounded time. A refusal names a reason: unknown protocol,
+version mismatch, bad credential or server full. Manifest's verifier resolves the credential to
+an `Actor`, so the host still resolves identity and no payload names it.
+
+**Credentials.** Bearer tokens that the server's CLI issues: random, one per principal, and
+stored as digests only. An administrator's token is a kind of its own and resolves to
+`ActorKind::Administrator`. A principal's identity, what the game lets it do, and admin rights
+stay three separate things: a token names who is connecting, the command rules decide what it may
+do, and only an administrator token grants admin. Revoking a token disconnects its sessions.
+
+**Encryption.** None through N02 and N03, which run on loopback or a LAN. A token sent in
+plaintext can be stolen, so hosting outside a trusted network is blocked until Jettison adds
+libsodium encryption: a key exchange in the handshake with the server's public key pinned by the
+client, then every packet encrypted ([D-081](decision-ledger.md#d-081)). TLS does not run over
+UDP and is not used.
+
+**Encoding.** Each message is a kind (a protocol-defined number) followed by its body in
+Jettison's binary archive, the same canonical bytes a request's payload already uses. A message
+over the protocol's size limit is refused before it is decoded. The protocol version in the hello
+changes whenever a message's shape changes, and the server answers only the versions it
+supports.
+
+**Sessions and requests.** A session is one admitted connection. Reconnecting opens a new session
+for the same actor, and the request ledger's (actor, sequence) makes a retry across reconnects
+safe, as it already does locally. Each session's inbound messages are bounded by Jettison. Past
+the bound the session is disconnected, while `QueueFull` stays the ledger's answer to a well-formed
+request when the world's queue is full. Requests are admitted between steps; the network never
+steps the world, and the world steps with no sessions.
+
+**Snapshots.** Full, actor-filtered snapshots at a bounded rate. Each carries the step it was taken
+at, so a client can order snapshots and a real-time client can interpolate between them. Jettison
+asks Manifest for each session's view, so filtering happens on the server before anything is
+sent. Deltas against a snapshot the client has acknowledged come only when a measurement
+justifies them, probably first in a real-time variant.
+
+| Required mechanic | Jettison provision (N02 unless marked) | Manifest responsibility |
+| --- | --- | --- |
+| Connections over UDP | Gap: a `net` module on ENet, with server and client, channels (reliable-ordered, unreliable-sequenced), connect, disconnect with a reason, timeouts, peer limit, a non-blocking poll, and an ephemeral loopback port for tests | Endpoint configuration and how many sessions the server allows |
+| Authentication handshake | Gap: hello with protocol name, version and opaque credential; a verifier callback; handshake timeout; reasons for refusal; nothing passed before admission | The protocol's name and versions; the verifier, from token to `Actor` |
+| Bearer tokens | Gap: random token generation, its digest, and a constant-time check against a digest (libsodium, added to both identical `devenv.nix` files) | Issuing and revoking tokens in the CLI; storing digests; principal versus administrator |
+| Message framing and limits | Gap: kind plus archive-encoded body; a size limit checked before decoding; bounded per-session inbound queue, with disconnection past it | Message kinds and bodies, and the limits' values |
+| Request admission | None: Manifest's `Command::Requests` and ledger | Mapping messages to requests and results to replies |
+| Snapshot replication | Gap: send the newest snapshot to each admitted session at a bounded rate, its body from a per-session callback | The filtered view and its encoding |
+| Unattended stepping | None: the public host session and `Time::FixedStep` | The dedicated server's loop, configuration, logging and shutdown |
+| Encryption | Later gap, before hosting: libsodium key exchange and per-packet encryption | Key management and pinning in the client |
+| Real-time variants | Later gaps, when a variant needs them: inputs at step rate, deltas against acknowledged snapshots, client prediction (rollback stays out of scope) | The variant's inputs, interest and visibility |
+
+Acceptance for the provision: an independent Jettison consumer connects, is refused (bad token,
+wrong version, flood), reconnects and receives a filtered snapshot over loopback, with no Manifest
+code. Manifest's N02 drives its server the same way through the TUI's `connect` and `disconnect`.
 
 ## Persistence, recovery and content compatibility
 

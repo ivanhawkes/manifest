@@ -30,7 +30,10 @@ Planning-only restrictions on OpenAI implementation remain in force.
 Stages 1 and 2 are done: each finished row is marked **Done** with its date and a link to what it
 built, and how each task went is in [history](history.md). A07 is done (2026-11-19): **Stage 3 is closed**, its checks each held by a gated test
 ([delivered](stage-3-authority-plan.md#delivered-a07-2026-11-19)). Its cross-review's findings are
-fixed on pin `bc4facb` ([history](history.md#stage-3-cross-review--2026-11-19)). Next: N01.
+fixed on pin `bc4facb` ([history](history.md#stage-3-cross-review--2026-11-19)). N01 is done
+(2026-11-20): the [network contract](gameplay-and-server-plan.md#network-contract-n01-2026-11-20)
+selects ENet over UDP, bearer tokens and plaintext until encryption, and names the Jettison gaps
+N02 provisions. Next: N02.
 
 ## Priority 0: maintenance before Stage 1
 
@@ -111,7 +114,7 @@ after minimal authority. It does not wait for Stage 5 or promise durable respons
 
 | Order / ID | Task and completion boundary | Must complete first |
 | --- | --- | --- |
-| 28 / N01 | Select the bounded transport/authentication/protocol contract and map missing reusable SDK facilities; keep principal identity, game authorisation and admin rights distinct. | A07 |
+| 28 / N01 | Select the bounded transport/authentication/protocol contract and map missing reusable SDK facilities; keep principal identity, game authorisation and admin rights distinct. **Done 2026-11-20**, [network contract](gameplay-and-server-plan.md#network-contract-n01-2026-11-20). | A07 |
 | 29 / N02 | Provision demonstrated SDK gaps, then add the headless host loop and real TUI connect/disconnect through the command/query boundary. | N01 |
 | 30 / N03 | Prove initial multi-client/reconnect behavior, filtered snapshots, bounded queues and world progress with zero clients. Only advertise operations already implemented. | N02 |
 
