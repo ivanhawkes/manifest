@@ -331,13 +331,8 @@ the number of registered players or worlds advancing while they are absent.
 
 ## Handoff
 
-The original planning baseline was `feature-scaffold` at `f8014e5`. For the current
-Stage 1 baseline, prerequisites and SDK capability map, use its
-[final planning handoff](stage-1-host-plan.md#baseline-and-prerequisites) and the newest
-[session handoff](session-handoff.md). No Stage 1 implementation or gates have been
-performed by these planning updates. Recheck both repositories before implementation.
-
-Start with Stage 1's maintenance prerequisites, then its delivery slices. At each
-completed roadmap task, follow the session handoff guidance
-in `agent-workflow.md`: recommend continuing, compacting or starting a fresh session,
-and leave concrete state and validation evidence when handing off.
+Stages 1 and 2 are done. The [delivery order](delivery-order.md) names the next task and the
+newest [session handoff](session-handoff.md) the state it starts from; recheck both repositories
+before implementation. At each completed task, follow the session handoff guidance in
+`agent-workflow.md`: recommend continuing, compacting or starting a fresh session, and leave
+concrete state and validation evidence when handing off.

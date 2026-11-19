@@ -4,7 +4,7 @@ The [next development stages](development-stages.md) retain the foundational hos
 ownership, trading and recovery plans. The subsequent networked idle-game and planetary
 development goals below extend that baseline. Networking is a required gameplay boundary;
 the old optional administration-only TUI direction is superseded. The delivery amendments
-are planning proposals, and none of these capabilities is marked implemented yet.
+are planning proposals; what is built is recorded in the [delivery order](delivery-order.md).
 
 Use the [prioritised delivery order](delivery-order.md) for the task queue, explicit
 prerequisites, stage exit gates and deferred-work entry conditions. It incorporates
@@ -33,7 +33,7 @@ The [CI failure analysis](project-analysis-2026-11-16.md#ci-failure-analysis--20
 retains the pre-fix tidy-only failure streak; it is not a current CI status report.
 Tidy now runs after Release and ASan/UBSan (M01). CI gates `feature-base` and its PRs, and
 `scripts/promote.sh` fast-forwards `main` to an exact verified SHA (M02). The SDK pin is
-`4d60ea0` (C04's map fields, after H07's `e53681e`), and CI checks the shell's three files against it (M03, M04). Configuration rejects a
+`30ea3f3` (C06's package rules), and CI checks the shell's three files against it (M03, M04). Configuration rejects a
 partial SDK, naming what is missing (H01). Use the current
 [verification policy](build-and-gates.md#verification-evidence), inspect the exact
 commit's CI run and logs, and report the stages that actually ran. Planning completion

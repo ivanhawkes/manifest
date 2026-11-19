@@ -115,7 +115,7 @@ against the delivered Stage 1 SDK before implementation.
 | 14 / C02 | Add reflected engine-readable definitions, generated record packaging and equivalence checks; define the canonical manifest/fingerprint builder and preserve exact price text and IDs/selections. **Done 2026-11-18**, [session handoff](session-handoff.md#c02-definitions-through-the-engine-registry--2026-11-18). | C01 |
 | 15 / C03 | Add atomic aggregate loading, shared semantic validation, engine layering/migration wiring and failure rollback; compute content identity before publication, migrate callers and retire custom readers after their last caller moves. **Done 2026-11-18**, [session handoff](session-handoff.md#c03-one-validated-content-set--2026-11-18). | C02 |
 | 16 / C04 | T4 and item follow-ups: resolve required physical/storage fields and author tuning, grains, medical supplies, LPG, Life Support and hull definitions through the shared pipeline. Keep unselected values explicit and obtain decisions where required. **Done 2026-11-19**, [item authoring](stage-2-content-plan.md#item-authoring-c04-2026-11-19), [tuning](stage-2-content-plan.md#tuning-t4-c04-2026-11-19). | C03 |
-| 17 / C05 | Author the separate trading and multi-region governance fixtures, including valid starting access/service capacity and required project/production references. | C04 |
+| 17 / C05 | Author the separate trading and multi-region governance fixtures, including valid starting access/service capacity and required project/production references. **Done 2026-11-19**, [scenarios](stage-2-content-plan.md#scenario-and-frames). | C04 |
 | 17b / C09 | Share Jettison's ship and station definitions ([plan](small-trader-and-docking-plan.md#shared-ship-and-station-definitions-c09-done-2026-11-19)): pad classes, a dock hull for each hull with the starter a skiff, venues naming station layouts, and the engine's fit rule without a world. **Done 2026-11-19**, [plan](small-trader-and-docking-plan.md#shared-ship-and-station-definitions-c09-done-2026-11-19). | C05 |
 | 18 / C06 | Add the validator CLI through the same loader; verify host agreement, explicit overlays, contextual provenance and failure behavior. **Done 2026-11-19**, [options](stage-2-content-plan.md#versions-layering-and-migration). | C03, C09 |
 | 19 / C07 | Verify directory/pack content-manifest identity and add the validation build graph: validator → staged directory validation → pack → pack validation. **Done 2026-11-19**, [identity](stage-2-content-plan.md#content-identity). | C06 |
@@ -133,7 +133,7 @@ Canonical scope: [Stage 3](stage-3-authority-plan.md).
 | Order / ID | Task and completion boundary | Must complete first |
 | --- | --- | --- |
 | 21 / A01 | Jettison boundary prerequisite: resolve neutral frame/partition and save-metadata seams needed for hosted state, with compatible fixtures; commit and consume any SDK provision. **Done in Jettison 2026-11-18, in pin `fafa758`**; C01 rechecks the fit (see status). | C08 |
-| 22 / A02 | Add reflected one-world state, distinct accounts/control identities, counters and serialisation; settle the registry-adapter and capacity-conversion owners, then prove index rebuilding. | A01 |
+| 22 / A02 | First refresh the [Stage 3 plan](stage-3-authority-plan.md)'s 2026-11-15 inventory against the Stage 1–2 code, and obtain the user's choice of how a player takes a `playerHome` region at allocation ([open](stage-2-content-plan.md#authoring-decisions-still-open)). Add reflected one-world state, distinct accounts/control identities, counters and serialisation; settle the registry-adapter and capacity-conversion owners, then prove index rebuilding. Commands and queries live in a game module, not `tools/tui`, so A06 moves the console onto them rather than rewriting them. Add the TUI-off build to the gate. | A01 |
 | 23 / A03 | Add trusted admission, fixed-step ordering, bounded retry/history state and structured command results. | A02 |
 | 24 / A04 | Implement retry-safe provisioning and atomic cargo load/unload using validated docked bootstrap state, real account ownership and capacity checks. | A03 |
 | 25 / A05 | Add immutable actor-filtered queries and result snapshots; define the observation boundary before exposing market views. | A04 |
@@ -170,21 +170,23 @@ Canonical scope: [Stage 4](stage-4-trading-plan.md), with the
 | 31 / W01 | Jettison: split the required generic physics/AI/scene capabilities from optional space adapters; provision needed docking/berth seams and verify independent consumers, then commit/pin. **Done in Jettison 2026-11-18, in pin `fafa758`** (see status). | A07 |
 | 32 / W02 | Resolve outstanding settlement, transport, service and cadence choices; document the actual scheduler graph and transaction boundaries before integration. | W01, C08, A07 |
 | 33 / W03 | Adapt marketplace reservations, matching, partial settlement, cancellation, expiry and fees to owner/venue accounts with checked atomic writes. | W02 |
-| 34 / W04 | Integrate local production, finite brokers/demand, regional payroll/tax, essential purchases and health/happiness in the selected fixed-step order; eliminate automatic inter-venue stock transfers. | W03 |
-| 35 / W05 | Integrate real departure, cruise, arrival, docking and cargo eligibility; prove starter/compact berth and capacity behavior where selected. | W01, W03, A04 |
-| 36 / W06 | Implement working station life-support connections, onboard usage and explicit resupply under the resolved physical/accounting rules; preserve one-time starter grants. | W04, W05 |
-| 37 / W07 | Implement live/stale observations, spawn reports for every directly connected station market, report age and actor filtering across queries and trader/script facts. | W03, W05, A05 |
-| 38 / W08 | Implement company-funded cargo upgrades without sharing regional/civilisation funds; prove retry-safe payment/capacity changes. | W03, A04 |
-| 39 / W09 | Prove the complete public-command buy → load → travel → dock → unload → sell → upgrade fixture, including directory/pack and cross-build replay. | W04, W05, W06, W07, W08 |
-| 40 / W10 | Add enabled standing trade policies, autopilot and NPC jobs through the same physical commands and permitted market facts; prove operation without connected clients. | W09, N03 |
-| 41 / W11 | Resolve the clean public-project/tender lifecycle's remaining rounding, deadline, default and regional delivery choices; define saved jobs, rights and reservations. | W10 |
-| 42 / W12 | Implement competitive procurement, partial delivery/payment, performance security and a material-gated regional project through physical fulfilment. | W11 |
-| 43 / W13 | Prove the multi-region idle governance scenario: independent accounts/condition, AI neighbours, one home region per participant, development queues, protected late joining and reconnect continuity. | W12, W10 |
-| 44 / W14 | Close Stage 4: verify trading, market fog, automation and regional development together, in-memory continuation and final repository gates; record the actual schedule and state contracts. | W09, W13 |
+| 34 / W05 | Integrate real departure, cruise, arrival, docking and cargo eligibility; prove starter/compact berth and capacity behavior where selected. | W01, W03, A04 |
+| 35 / W15 | Vertical slice: in the trading fixture, one company ship buys at one venue, departs, cruises, docks and sells at the other through the public commands, on W03's settlement and W05's travel; no production, life support, observations or upgrades yet. Played through the console, it shows the loop end to end before W04 and W06–W08 build around it; W09 later proves the complete fixture. | W03, W05 |
+| 36 / W04 | Integrate local production, finite brokers/demand, regional payroll/tax, essential purchases and health/happiness in the selected fixed-step order; eliminate automatic inter-venue stock transfers. | W03 |
+| 37 / W06 | Implement working station life-support connections, onboard usage and explicit resupply under the resolved physical/accounting rules; preserve one-time starter grants. | W04, W05 |
+| 38 / W07 | Implement live/stale observations, spawn reports for every directly connected station market, report age and actor filtering across queries and trader/script facts. | W03, W05, A05 |
+| 39 / W08 | Implement company-funded cargo upgrades without sharing regional/civilisation funds; prove retry-safe payment/capacity changes. | W03, A04 |
+| 40 / W09 | Prove the complete public-command buy → load → travel → dock → unload → sell → upgrade fixture, including directory/pack and cross-build replay. | W04, W05, W06, W07, W08 |
+| 41 / W10 | Add enabled standing trade policies, autopilot and NPC jobs through the same physical commands and permitted market facts; prove operation without connected clients. | W09, N03 |
+| 42 / W11 | Resolve the clean public-project/tender lifecycle's remaining rounding, deadline, default and regional delivery choices; define saved jobs, rights and reservations. | W10 |
+| 43 / W12 | Implement competitive procurement, partial delivery/payment, performance security and a material-gated regional project through physical fulfilment. | W11 |
+| 44 / W13 | Prove the multi-region idle governance scenario: independent accounts/condition, AI neighbours, one home region per participant, development queues, protected late joining and reconnect continuity. | W12, W10 |
+| 45 / W14 | Close Stage 4: verify trading, market fog, automation and regional development together, in-memory continuation and final repository gates; record the actual schedule and state contracts. | W09, W13 |
 
 W01 is technically independent of N01–N03; its later placement is the default priority,
 not a dependency on transport. Likewise, W05, W07 and W08 can be developed separately
-once their listed prerequisites pass. The final loop must integrate all of them.
+once their listed prerequisites pass. W15, the vertical slice (the user's, 2026-11-19), needs
+only W03 and W05, so W04 follows it. The final loop must integrate all of them.
 Commercial private-port booking/policy changes follow later; the first public project
 uses an accessible public destination and cannot depend on unfinished private ports.
 
@@ -195,15 +197,15 @@ observations, automation and accepted obligations already delivered must be cove
 
 | Order / ID | Task and completion boundary | Must complete first |
 | --- | --- | --- |
-| 45 / R01 | Define the final versioned Manifest save/compatibility section and exact content/state inventory; cover request outcomes, observations, regional rights, cadence and all active jobs. | W14 |
-| 46 / R02 | Prove the required durable I/O, directory creation and world-lock contract; provision any missing reusable primitive in Jettison and consume its committed pin. | R01 |
-| 47 / R03 | Implement ordered immutable step journals/catalogue and acknowledge durable acceptance only after the tested commit boundary, including autonomous empty steps. | R02 |
-| 48 / R04 | Implement boundary snapshots, retention and startup replay into a candidate world; prove crash/fault behavior, compatibility rejection and retry preservation. | R03 |
-| 49 / R05 | Implement bounded shutdown and verified backup/restore with storage/retention limits and interrupted-publication tests. | R04 |
-| 50 / R06 | Select and document the supported runtime distribution contract, dependencies and writable-data locations. | R05 |
-| 51 / R07 | Build and test the relocatable read-only distribution outside both checkouts/development environment; retain graphics-free consumer coverage. | R06 |
-| 52 / R08 | Prove persistent multi-client reconnect/retry and zero-client recovery across trading, region control, projects, observations and automation. | R04, N03, W14 |
-| 53 / R09 | Close Stage 5: consolidate fault/restart, backup, relocation, cross-build replay and final gate evidence; record measured I/O, recovery and storage limits. | R05, R07, R08 |
+| 46 / R01 | Define the final versioned Manifest save/compatibility section and exact content/state inventory; cover request outcomes, observations, regional rights, cadence and all active jobs. | W14 |
+| 47 / R02 | Prove the required durable I/O, directory creation and world-lock contract; provision any missing reusable primitive in Jettison and consume its committed pin. | R01 |
+| 48 / R03 | Implement ordered immutable step journals/catalogue and acknowledge durable acceptance only after the tested commit boundary, including autonomous empty steps. | R02 |
+| 49 / R04 | Implement boundary snapshots, retention and startup replay into a candidate world; prove crash/fault behavior, compatibility rejection and retry preservation. | R03 |
+| 50 / R05 | Implement bounded shutdown and verified backup/restore with storage/retention limits and interrupted-publication tests. | R04 |
+| 51 / R06 | Select and document the supported runtime distribution contract, dependencies and writable-data locations. | R05 |
+| 52 / R07 | Build and test the relocatable read-only distribution outside both checkouts/development environment; retain graphics-free consumer coverage. | R06 |
+| 53 / R08 | Prove persistent multi-client reconnect/retry and zero-client recovery across trading, region control, projects, observations and automation. | R04, N03, W14 |
+| 54 / R09 | Close Stage 5: consolidate fault/restart, backup, relocation, cross-build replay and final gate evidence; record measured I/O, recovery and storage limits. | R05, R07, R08 |
 
 Only after R09 should production deployment readiness be assessed. Authentication and
 network development occur earlier; this resolves the older Stage 5 wording that
@@ -219,21 +221,21 @@ retry coverage in its own delivery, rather than treating Stage 5 as permanently 
 
 | Priority / ID | Workstream | Must complete first / entry condition |
 | --- | --- | --- |
-| 54 / L01 | Deployment hardening, capacity profiling and unattended soak; assess the supported persistent service before public hosting. | R09; select operational platform, security and measured release limits. |
-| 55 / L02 | Simple corruption/bribery after clean tenders, with preserved eligibility, separate expenses and recovery. | W12, R09; settle remaining scoring/cost choices. |
-| 56 / L03 | Eligible AI regional-control acquisition and portfolio policies. | W13, R09; define pricing/transfer rules and prove player/home-region protection. |
-| 57 / L04 | Private-port bookings and owner access/priority policy; Jettison admission/queue provision before Manifest policy. | W05, R09; settle service windows/failure terms and prove grandfathered commitments. |
-| 58 / L05 | Corporate port construction and infrastructure/supply leverage on a static map. | L04, W12; resolve funded site, deadline/salvage and local delivery rules before enabling construction. |
-| 59 / L06 | Resource exploitation and company-controlled colonies with independent regional grants/concession expiry. | L05, W13; resolve extraction, operating and colonial-government rules. |
-| 60 / L07 | Modular oxygen banks and larger-hull scaling under D-050. | W14, R09; D-050's re-entry threshold is stages 1–4, with tank/storage/refill rules resolved before implementation. |
-| 61 / L08 | Prove static multi-system navigation and existing-journey recovery before live expansion. | W05, R09. |
-| 62 / L09 | Resolve expedition funding/equipment, commissioning, protected return and operating-supply rules; provision reusable ungated arrival/topology gaps. | L08; use the [stargate capability map](stargate-expansion-plan.md#capability-map-and-implementer-evidence). |
-| 63 / L10 | Deliver a fixed gate pair to a pre-existing unconnected destination; validate once-only activation, ownership, permits, outages and shutdown-aware progress. | L09; commit/pin the proven SDK provision before Manifest integration. |
-| 64 / L11 | Add incremental rival connections/endpoints in existing systems without breaking incumbent journeys or accepted return rights. | L10; prove incremental registration/publication and recovery before consuming it. |
-| 65 / L12 | Deterministic generated frontier/topology publication during live play. | L11, L06; prove static exploitation first and atomic expansion/recovery without moving established systems. |
-| 66 / L13 | Physical settlement/terraforming scenario in the generated frontier. | L12; select the environmental/settlement contract, without assuming terraforming always precedes habitation. |
-| 67 / L14 | Broader government/media influence and political modelling. | Proven regional/corporate leverage in L03–L06; select a bounded next mechanic before implementation. |
-| 68 / L15 | Graphical client and station cultural/corporate branding/customisation. | Stable shared N02/A05 interfaces and proven trading/recovery; station policy/ownership views use L04–L05 when needed. |
+| 55 / L01 | Deployment hardening, capacity profiling and unattended soak; assess the supported persistent service before public hosting. | R09; select operational platform, security and measured release limits. |
+| 56 / L02 | Simple corruption/bribery after clean tenders, with preserved eligibility, separate expenses and recovery. | W12, R09; settle remaining scoring/cost choices. |
+| 57 / L03 | Eligible AI regional-control acquisition and portfolio policies. | W13, R09; define pricing/transfer rules and prove player/home-region protection. |
+| 58 / L04 | Private-port bookings and owner access/priority policy; Jettison admission/queue provision before Manifest policy. | W05, R09; settle service windows/failure terms and prove grandfathered commitments. |
+| 59 / L05 | Corporate port construction and infrastructure/supply leverage on a static map. | L04, W12; resolve funded site, deadline/salvage and local delivery rules before enabling construction. |
+| 60 / L06 | Resource exploitation and company-controlled colonies with independent regional grants/concession expiry. | L05, W13; resolve extraction, operating and colonial-government rules. |
+| 61 / L07 | Modular oxygen banks and larger-hull scaling under D-050. | W14, R09; D-050's re-entry threshold is stages 1–4, with tank/storage/refill rules resolved before implementation. |
+| 62 / L08 | Prove static multi-system navigation and existing-journey recovery before live expansion. | W05, R09. |
+| 63 / L09 | Resolve expedition funding/equipment, commissioning, protected return and operating-supply rules; provision reusable ungated arrival/topology gaps. | L08; use the [stargate capability map](stargate-expansion-plan.md#capability-map-and-implementer-evidence). |
+| 64 / L10 | Deliver a fixed gate pair to a pre-existing unconnected destination; validate once-only activation, ownership, permits, outages and shutdown-aware progress. | L09; commit/pin the proven SDK provision before Manifest integration. |
+| 65 / L11 | Add incremental rival connections/endpoints in existing systems without breaking incumbent journeys or accepted return rights. | L10; prove incremental registration/publication and recovery before consuming it. |
+| 66 / L12 | Deterministic generated frontier/topology publication during live play. | L11, L06; prove static exploitation first and atomic expansion/recovery without moving established systems. |
+| 67 / L13 | Physical settlement/terraforming scenario in the generated frontier. | L12; select the environmental/settlement contract, without assuming terraforming always precedes habitation. |
+| 68 / L14 | Broader government/media influence and political modelling. | Proven regional/corporate leverage in L03–L06; select a bounded next mechanic before implementation. |
+| 69 / L15 | Graphical client and station cultural/corporate branding/customisation. | Stable shared N02/A05 interfaces and proven trading/recovery; station policy/ownership views use L04–L05 when needed. |
 
 L05 does not require buying the region in L03: existing eligibility permits construction
 for eligible AI/unclaimed regions. L07 is deliberately scheduled after the persistent
