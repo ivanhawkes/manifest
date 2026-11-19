@@ -18,6 +18,14 @@ CTest, and optionally ASan/UBSan build and CTest. `--skip-release` supports a sh
 CI runs the full gate. `CMAKE_BUILD_PARALLEL_LEVEL`, `CTEST_PARALLEL_LEVEL` and
 `MANIFEST_TIDY_JOBS` control concurrency. Clang-format must be version 21.
 
+A gate that passed is not run again on the same inputs, as Jettison's is: a digest of the working
+tree's files (tracked or untracked and not ignored, `*.md` aside), `clang --version`,
+`cmake --version` and the options, kept under `build/gate-passed` when it is the same at the end of
+the run as at the start; `--force` runs it anyway. The engine is in that digest by its pin, so a
+preset configured with `JETTISON_SOURCE_DIR` runs every time and is never kept. `scripts/tidy.py`
+skips a unit that was clean and whose compile command, includes (`ninja -t deps`), clang-tidy and
+`.clang-tidy` are unchanged since, recorded under `<build>/tidy-clean`.
+
 The CTest suites are `types`, `config`, `universe`, `progression`, `sim`, `ecs`, `market`,
 `host`, `content`, `effects`, `data`, `packaging`, `mod` and `sdk_import`, plus `console` when the TUI is enabled. The
 `cli_*` tests run the `manifest` executable from an unrelated directory with no display: both
