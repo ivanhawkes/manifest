@@ -1,0 +1,7 @@
+# The smaller dry dock's, the Jettison sample's size; no standard station has one.
+# A pad class of Jettison's docks (Dock.PadClassDefinition, D-058): metres, the largest hull length
+# by beam by height and the pad width by length.
+version: 1
+rank: 4
+largestHull: [300, 80, 60]
+padSize: [120, 360]

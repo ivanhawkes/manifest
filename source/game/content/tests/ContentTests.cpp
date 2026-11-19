@@ -17,6 +17,7 @@
 #include <utility>
 #include <vector>
 
+#include <jettison/dock/Definitions.h>
 #include <jettison/reflect/Reflect.h>
 #include <jettison/serialise/Archive.h>
 #include <jettison/sim/DefinitionRegistry.h>
@@ -296,6 +297,27 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	    starter, "version: 1\nfitableEffects: [Teleport]\n",
 	    "fitableEffects 'Teleport' names no effect");
 	CheckRefused(starter, "version: 1\noccupants: 0\n", "occupants must be at least 1");
+
+	// Jettison's ship and station records, checked as the engine checks them (D-062).
+	CheckRefused(
+	    "manifest/definitions/dock-hulls/hull-lone-trader-starter.patch.yaml",
+	    "version: 2\nlength: 12\n",
+	    "Dock.HullDefinition 'hull-lone-trader-starter': dock Hull 'hull-lone-trader-starter' is 12 x "
+	    "6.4 x 1.8 m, larger than its pad's largest hull, 9.8 x 6.4 x 1.8 m");
+	CheckRefused(
+	    "manifest/definitions/pads/skiff.patch.yaml", "version: 1\npadSize: [4, 10]\n",
+	    "Dock.PadClassDefinition 'skiff': dock Pad class 'skiff' has a largest hull");
+	CheckRefused(
+	    "manifest/definitions/stations/highport.patch.yaml", "version: 1\nbays: []\npiers: []\n",
+	    "Dock.StationLayout 'highport': dock Station layout 'highport'");
+	CheckRefused(
+	    "manifest/definitions/dock-hulls/hull-nowhere.yaml",
+	    "version: 2\ndisplayName: Nowhere\nlength: 5\nbeam: 3\nheight: 1\npad: skiff\n",
+	    "Dock.HullDefinition 'hull-nowhere': dock is the dock hull of no Manifest.Hull of its name");
+	CheckRefused(
+	    "manifest/definitions/hulls/hull-extra.yaml",
+	    "version: 1\nhullId: HullExtra\nclassName: Extra\nbaseStats: {CargoVolume: 1}\n",
+	    "Manifest.Hull 'HullExtra': dock has no Dock.HullDefinition 'hull-extra'");
 	CheckRefused(
 	    starter, "version: 1\nscrubberCartridges: 0\n", "scrubberCartridges must be at least 1");
 	CheckRefused(starter, "version: 1\noxygenTanks: []\n", "oxygenTanks holds none");
@@ -466,6 +488,39 @@ TEST_CASE("The fixtures are the trading and governance scenarios their plans des
 }
 
 
+TEST_CASE("Each hull docks at the highport on the pads its class and size fit (D-058, D-062)")
+{
+	namespace Dock = Jettison::Dock;
+	const Loaded loaded{kModDirectory};
+	Dock::PadClasses classes;
+	for (const std::string &name : loaded.registry.Names<Dock::PadClassDefinition>())
+		classes.emplace(name, *loaded.registry.Find<Dock::PadClassDefinition>(name));
+	CHECK(classes.size() == 5);
+	const auto hull = [&](std::string_view id) -> const Dock::HullDefinition &
+	{
+		const auto *pHull = loaded.registry.Find<Dock::HullDefinition>(RegistryName(id));
+		REQUIRE_MESSAGE(pHull != nullptr, id);
+		return *pHull;
+	};
+	const Dock::HullDefinition &starter = hull("HullLoneTraderStarter");
+	CHECK(starter.pad == "skiff");
+	CHECK(glm::vec3{starter.length, starter.beam, starter.height} == classes.at("skiff").largestHull);
+	const auto *pLayout = loaded.registry.Find<Dock::StationLayout>("highport");
+	REQUIRE(pLayout != nullptr);
+	const auto pads = [&](const Dock::HullDefinition &docked)
+	{
+		std::size_t count = 0;
+		for (const Dock::PadLayout &pad : pLayout->pads)
+			count += Dock::Fits(classes, docked, pad.padClass) ? 1 : 0;
+		return count;
+	};
+	// Eight skiff pads and twelve destroyer pads; a frigate is given a destroyer's.
+	CHECK(pads(starter) == 20);
+	CHECK(pads(hull("HullCompactSingle")) == 20);
+	CHECK(pads(hull("HullTraderLongHaul")) == 12);
+}
+
+
 TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the entry")
 {
 	const std::string governance = "manifest/scenarios/governance.patch.yaml";
@@ -592,8 +647,7 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	    trading, venue("operatorId: OrganisationNowhere"),
 	    "'VenueBrineHighport' operator 'OrganisationNowhere' names no organisation");
 	CheckRefused(
-	    trading, venue("hulls: [{hullId: HullNowhere}]"),
-	    "'VenueBrineHighport' hull 'HullNowhere' names nothing");
+	    trading, venue("layout: nowhere"), "'VenueBrineHighport' layout 'nowhere' names nothing");
 	CheckRefused(
 	    trading, venue("lifeSupportCapacity: -1"),
 	    "'VenueBrineHighport' lifeSupportCapacity must not be below 0");
@@ -621,8 +675,7 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	// A player's home needs an operational public station that docks the starter, serves the region
 	// and has life support to spare (D-047); each lack alone refuses it.
 	for (const std::string_view lack :
-	     {"public: false", "operational: false", "lifeSupportCapacity: 0",
-	      "hulls: [{hullId: HullCompactSingle}]", "regions: []"})
+	     {"public: false", "operational: false", "lifeSupportCapacity: 0", "regions: []"})
 	{
 		CAPTURE(lack);
 		CheckRefused(
@@ -633,6 +686,17 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 		    "serving it "
 		    "docks 'HullLoneTraderStarter' with life support to spare");
 	}
+	// A layout whose only pad is of a class the starter does not fit, by size though not by rank.
+	CheckRefused(
+	    {{"manifest/definitions/pads/tender.yaml",
+	      "version: 1\nrank: 0\nlargestHull: [5, 3, 1]\npadSize: [4, 6]\n"},
+	     {"manifest/definitions/stations/tender-dock.yaml",
+	      "version: 1\ndisplayName: Tender dock\ndecks: [{centre: [0, 0, 0], size: [40, 10, 40]}]\n"
+	      "pads: [{class: tender, position: [0, 5, 0]}]\n"},
+	     {trading, "version: 1\nvenues: !merge=venueId\n  - {venueId: VenueOreHighport, layout: "
+	               "tender-dock}\n"}},
+	    "regions 'RegionOreHighlands' is a player's home, and no operational public station serving "
+	    "it docks 'HullLoneTraderStarter' with life support to spare");
 }
 
 

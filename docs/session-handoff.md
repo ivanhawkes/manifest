@@ -2,11 +2,27 @@
 
 ## Next, on resuming — 2026-11-19
 
-The user asked, before a break, to retire `CategoryUnknown`, the fallback category. No good is
-filed under it and no code names it (the `"Unknown"` strings in `EffectTypes.cpp` and
+Still open from before C09: the user asked to retire `CategoryUnknown`, the fallback category. No
+good is filed under it and no code names it (the `"Unknown"` strings in `EffectTypes.cpp` and
 `Components.cpp` are enum fallbacks, unrelated); it is the one entry in
 `data/trade-items/categories.yaml`, with its row in `docs/model.md`'s file table. Record it as a
-ledger row beside D-069, gate it and commit. Then C09, as `delivery-order.md` has it.
+ledger row beside D-069, gate it and commit. Then C06, as `delivery-order.md` has it.
+
+## C09: Jettison's ship and station definitions — 2026-11-19
+
+[D-062](decision-ledger.md#d-062), built as the
+[plan](small-trader-and-docking-plan.md#shared-ship-and-station-definitions-c09-done-2026-11-19)
+records. The user selected the long-haul trader as a frigate, the sample's 56 x 28 x 14 m
+transport, and the compact single-seat as a provisional 6 x 4 x 1.8 m skiff until W05, and allowed
+`Jettison::Dock` (with its ai, physics and spatial) into the content module. One Jettison gap: the
+fit rule without a world, `Dock::Fits` over `PadClasses`, provisioned in Jettison `15e2561` (its
+history, "Content pipeline: fit without a world"), and the pin moved to it. The shell files did not
+change.
+
+Evidence, on Lythir: `./scripts/ci.sh --werror --asan --tidy` passed 21 of 21 in each of
+`clang-debug`, `clang-release` and `clang-asan` against the fetched pin, and tidy clean. `content`
+refuses each broken dock record, the missing dock hull either way, an unknown layout and a home
+whose station the starter does not fit, and fits each hull to the highport's pads.
 
 ## Collectibles retired — 2026-11-19
 

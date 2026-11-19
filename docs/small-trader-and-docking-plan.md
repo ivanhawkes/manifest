@@ -154,10 +154,10 @@ in Jettison and in pin `e53681e`). Smaller craft may use it. The engine's layout
 ships express it with no engine edit; the people, what the hangars hold, what resupply and repair
 do and cost, and which systems have a platform are Manifest's, and not yet designed.
 
-Not yet authored: [C09](#shared-ship-and-station-definitions-c09-planned-2026-11-19) authors
-them.
+Authored in [C09](#shared-ship-and-station-definitions-c09-done-2026-11-19), skiff to cruiser; the
+dreadnought, the heavy destroyer and the dry-dock platform's layout are not.
 
-## Shared ship and station definitions (C09, planned 2026-11-19)
+## Shared ship and station definitions (C09, done 2026-11-19)
 
 Jettison's dock already defines ships and stations as data: `Dock.PadClassDefinition` (rank,
 largest hull, pad size), `Dock.HullDefinition` (size, pad class, cargo hatch, model) and
@@ -191,6 +191,25 @@ C09, in order:
    validation cannot ask it. Jettison provides the same rule as a free function over
    `PadClasses` beside `CheckHull`, which `Docks::Fits` calls, with an independent consumer's
    test, and Manifest's pin moves.
+
+**Built in C09 (2026-11-19).** The records are the engine's own, one file each under
+`data/docks/` (`pads`, `hulls`, `stations`), which `data/build.sh` writes as they are into
+`definitions/pads`, `definitions/dock-hulls` and `definitions/stations`; `DefinitionTypes` loads
+them through the engine's formats and migrations, so they are in the content identity, and
+`LoadContent` holds each to `CheckPadClass`, `CheckHull` and `CheckLayout` and every
+`Manifest.Hull` to a `Dock.HullDefinition` of its record name, and the reverse. The classes are
+skiff to cruiser, ranks 0 to 4. The starter is the skiff, its hatch under it 2 m aft of its middle
+and no model until L15; the compact single-seat is a provisional 6 x 4 x 1.8 m skiff (selected
+2026-11-19, until W05); the long-haul trader is a frigate, the sample's 56 x 28 x 14 m transport
+(selected 2026-11-19). The one layout, `highport`, is Ostra Highport's hub and four piers of three
+destroyer pads, without its display wing or dry docks, with eight skiff pads in the gaps between
+them; every venue names it. A venue's `layout` replaces its `hulls`, and a player's home needs a
+venue whose layout has a pad, not for display, that the starter's dock hull fits (`Dock::Fits`,
+Jettison `15e2561`). The content suite refuses an oversized dock hull, a pad class too small for
+its hull, a layout off its structure, a dock hull with no `Manifest.Hull` and the reverse, an
+unknown layout and a home whose station's only pad the starter does not fit, and checks that the
+starter and the compact ship fit all twenty highport pads and the long-haul trader the twelve
+destroyer pads.
 
 Left for when a task needs them: the cruise drive and flight handling (W05), a ship's sale price,
 mass and fitting slots (W08), and station dressing and models (L15).

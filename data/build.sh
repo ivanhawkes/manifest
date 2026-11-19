@@ -125,6 +125,16 @@ write_records hulls hullId '.["hull-base"][].hull' ships/hulls.yaml
 write_records name-pools pool 'to_entries[] | {"pool": .key, "names": .value}' \
   universe/solar-system-names.yaml
 
+# Jettison's ship and station definitions (D-062) are authored as the engine's own records, one
+# file each under docks/, and written as they are with their comments dropped. A dock hull is named
+# by the Manifest.Hull it belongs to.
+for kind in pads:pads hulls:dock-hulls stations:stations; do
+  mkdir -p "$records_dir/${kind#*:}"
+  for record in "docks/${kind%%:*}"/*.yaml; do
+    yq e '... comments=""' "$record" > "$records_dir/${kind#*:}/$(basename "$record")"
+  done
+done
+
 # A game mode is named by its file. The registry lists definitions sorted by name, so the mode
 # carries the age order itself, taken from base/ages.yaml, beside its ordered selections.
 mkdir -p "$records_dir/game-modes"

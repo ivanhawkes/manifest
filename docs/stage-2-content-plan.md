@@ -119,6 +119,9 @@ References resolve by authored ID through an index built at load.
 | `Manifest.Skill` | `definitions/skills` | `skill-tree/*.yaml`, `skill-base` (age gates included) | 85 |
 | `Manifest.NamePool` | `definitions/name-pools` | `universe/solar-system-names.yaml`, one per key | 2 |
 | `Manifest.Hull` | `definitions/hulls` | `ships/hulls.yaml`, `hull-base` (C04) | 3 |
+| `Dock.PadClassDefinition` | `definitions/pads` | `docks/pads/*.yaml`, authored as records (C09) | 5 |
+| `Dock.HullDefinition` | `definitions/dock-hulls` | `docks/hulls/*.yaml`, each named by its `Manifest.Hull` (C09) | 3 |
+| `Dock.StationLayout` | `definitions/stations` | `docks/stations/*.yaml`, authored as records (C09) | 1 |
 | `Manifest.GameMode` | `definitions/game-modes` | `game-mode/manifest.yaml`, `astralis.yaml` | 2 |
 | `Manifest.Scenario` | `scenarios` | `scenarios/*.yaml`, authored as records (C05) | 2 |
 
@@ -208,8 +211,8 @@ unselected.
 
 **Built in C05 (2026-11-19).** `ScenarioDefinition` (`Definitions.h`) is the table above with what
 C05's starting-access and project checks need: the root names a `starterHull`; a venue is `public`
-and `operational` or not, lists the `hulls` it docks (until [C09](small-trader-and-docking-plan.md#shared-ship-and-station-definitions-c09-planned-2026-11-19)
-gives it a station layout) and has a `lifeSupportCapacity`, ships it can
+and `operational` or not, names the station `layout` it docks on (a `hulls` list until
+[C09](small-trader-and-docking-plan.md#shared-ship-and-station-definitions-c09-done-2026-11-19)) and has a `lifeSupportCapacity`, ships it can
 keep on working life support; a region lists the `skills` it knows, its seeded `facilities`
 (`{facilityId, kind: Workshop, operational}`) and its public `projects`, each a tuning project.
 `LoadContent` checks every scenario against its own mode, whichever the set is built for, and the

@@ -176,6 +176,7 @@ The inputs are read in this order:
 | `skill-tree/trade.yaml` | The 3 nodes of the docking licence, the cargo insurance and the fence. |
 | `skill-tree/services.yaml` | The 2 nodes of public medicine and education. |
 | `ships/hulls.yaml` | The 3 hulls: the long-haul trader, the lone-trader starter and the compact single-seat. |
+| `docks/` | Jettison's ship and station records ([D-062](decision-ledger.md#d-062)): the 5 pad classes skiff to cruiser, a dock hull for each of the 3 hulls, and the `highport` station layout. |
 | `tuning/balance.yaml` | The balance inputs: cadence, household needs, condition, life support, concessions, procurement, and the bronze project and recipe. |
 | `game-mode/manifest.yaml` | Manifest, the long-term, large-scale mode ([D-061](decision-ledger.md#d-061)): every item and node of the definitions above. |
 | `game-mode/astralis.yaml` | Astralis, the short and fast mode: the 30 goods an industrial-age world trades most ([D-067](decision-ledger.md#d-067)), to keep its play uncluttered. |

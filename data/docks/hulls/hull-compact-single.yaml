@@ -1,0 +1,9 @@
+# The compact single-seat's hull: a smaller skiff. Provisional: its size is open until W05 docks it
+# on a real pad. A hull of Jettison's docks (Dock.HullDefinition): metres, its nose along -Z.
+version: 2
+displayName: Compact single-seat
+length: 6
+beam: 4
+height: 1.8
+pad: skiff
+hatch: [0, -0.9, 1.2]

@@ -1,0 +1,7 @@
+# A fighter's or a courier's pad, the Jettison sample's size.
+# A pad class of Jettison's docks (Dock.PadClassDefinition, D-058): metres, the largest hull length
+# by beam by height and the pad width by length.
+version: 1
+rank: 1
+largestHull: [25, 20, 8]
+padSize: [35, 40]

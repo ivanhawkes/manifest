@@ -101,7 +101,7 @@ venues:
     operatorId: OrganisationForgeEastCouncil
     public: true
     operational: true
-    hulls: [{hullId: HullLoneTraderStarter}, {hullId: HullCompactSingle}, {hullId: HullTraderLongHaul}]
+    layout: highport
     lifeSupportCapacity: 8
     regions:
       - regionId: RegionForgeNorth
@@ -127,7 +127,7 @@ venues:
     operatorId: OrganisationCassiterMining
     public: false
     operational: true
-    hulls: [{hullId: HullLoneTraderStarter}, {hullId: HullCompactSingle}, {hullId: HullTraderLongHaul}]
+    layout: highport
     lifeSupportCapacity: 4
     regions: [{regionId: RegionCassiterLowlands}]
     market:

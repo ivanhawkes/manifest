@@ -8,7 +8,7 @@ option(SDK_IMPORT_PARTIAL "Provide only Jettison::Math" OFF)
 
 set(provided Jettison::Math)
 if(NOT SDK_IMPORT_PARTIAL)
-    list(APPEND provided Jettison::Core Jettison::Host Jettison::Reflect Jettison::Serialise Jettison::Sim
+    list(APPEND provided Jettison::Core Jettison::Dock Jettison::Host Jettison::Reflect Jettison::Serialise Jettison::Sim
         Jettison::Vfs Jettison::Devtools jettison_warnings
         EnTT::EnTT yaml-cpp::yaml-cpp doctest::doctest doctest::doctest_with_main)
     add_custom_target(jettison_pack)

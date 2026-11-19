@@ -12,6 +12,8 @@
 #include <utility>
 #include <vector>
 
+#include <jettison/dock/Definitions.h>
+#include <jettison/serialise/Archive.h>
 #include <jettison/sim/DefinitionRegistry.h>
 #include <jettison/sim/Snapshot.h>
 #include <jettison/vfs/FileSystem.h>
@@ -305,6 +307,68 @@ void CheckHulls(Checker &checker, const Jettison::Sim::DefinitionRegistry &regis
 }
 
 
+Jettison::Dock::PadClasses PadClassesOf(const Jettison::Sim::DefinitionRegistry &registry)
+{
+	Jettison::Dock::PadClasses classes;
+	for (const std::string &name : registry.Names<Jettison::Dock::PadClassDefinition>())
+		classes.emplace(name, *registry.Find<Jettison::Dock::PadClassDefinition>(name));
+	return classes;
+}
+
+
+// The engine's own check of a record (Dock::CheckHull and the like), whose FormatError names what
+// does not fit, reported against the record as any other broken rule is.
+template <typename Check> void RequireDock(const Checker &checker, Check check)
+{
+	try
+	{
+		check();
+	}
+	catch (const Jettison::Serialise::FormatError &error)
+	{
+		checker.Require(false, "dock", error.what());
+	}
+}
+
+
+// Jettison's ship and station definitions as Manifest authors them (D-062): each checked as the
+// engine checks it, and every Manifest.Hull with the Dock.HullDefinition of its name, so a hull has
+// a size and a pad class, and the reverse.
+void CheckDocks(Checker &checker, const Jettison::Sim::DefinitionRegistry &registry)
+{
+	namespace Dock = Jettison::Dock;
+	const Dock::PadClasses classes = PadClassesOf(registry);
+	for (const auto &[name, padClass] : classes)
+	{
+		At<Dock::PadClassDefinition>(checker, name, name);
+		RequireDock(checker, [&] { Dock::CheckPadClass(name, padClass); });
+	}
+	for (const std::string &name : registry.Names<Dock::HullDefinition>())
+	{
+		At<Dock::HullDefinition>(checker, name, name);
+		RequireDock(
+		    checker,
+		    [&] { Dock::CheckHull(name, *registry.Find<Dock::HullDefinition>(name), classes); });
+		checker.Require(
+		    registry.Find<Core::ShipClassSpec>(name) != nullptr, "dock",
+		    "is the dock hull of no Manifest.Hull of its name");
+	}
+	for (const std::string &name : registry.Names<Dock::StationLayout>())
+	{
+		At<Dock::StationLayout>(checker, name, name);
+		RequireDock(
+		    checker,
+		    [&] { Dock::CheckLayout(name, *registry.Find<Dock::StationLayout>(name), classes); });
+	}
+	for (const std::string &name : registry.Names<Core::ShipClassSpec>())
+	{
+		At<Core::ShipClassSpec>(checker, name, registry.Find<Core::ShipClassSpec>(name)->hullId);
+		checker.Require(
+		    registry.Find<Dock::HullDefinition>(name) != nullptr, "dock",
+		    std::format("has no Dock.HullDefinition '{}'", name));
+	}
+}
+
 bool Fraction(double value)
 {
 	return std::isfinite(value) && value >= 0.0 && value <= 1.0;
@@ -583,6 +647,7 @@ void CheckProjects(
 void CheckScenarios(
     Checker &checker, const Jettison::Sim::DefinitionRegistry &registry, const TuningDefinition &tuning)
 {
+	const Jettison::Dock::PadClasses classes = PadClassesOf(registry);
 	for (const std::string &name : registry.Names<ScenarioDefinition>())
 	{
 		const ScenarioDefinition &scenario = *registry.Find<ScenarioDefinition>(name);
@@ -708,13 +773,9 @@ void CheckScenarios(
 			checker.Require(
 			    organisations.contains(venue.operatorId), "venues",
 			    problem(std::format("operator '{}' names no organisation", venue.operatorId)));
-			for (const HullSelection &hull : venue.hulls)
-			{
-				const auto *pHull = registry.Find<Core::ShipClassSpec>(RegistryName(hull.hullId));
-				checker.Require(
-				    pHull != nullptr && pHull->hullId == hull.hullId, "venues",
-				    problem(std::format("hull '{}' names nothing", hull.hullId)));
-			}
+			checker.Require(
+			    registry.Find<Jettison::Dock::StationLayout>(venue.layout) != nullptr, "venues",
+			    problem(std::format("layout '{}' names nothing", venue.layout)));
 			checker.Require(
 			    venue.lifeSupportCapacity >= 0, "venues",
 			    problem("lifeSupportCapacity must not be below 0"));
@@ -753,7 +814,22 @@ void CheckScenarios(
 		}
 
 		// A new player is allocated a home only with somewhere to dock the starter, deliver to the
-		// region and connect to working life support (D-047).
+		// region and connect to working life support (D-047): a pad of the venue's layout, not for
+		// display, that the starter's dock hull fits.
+		const auto *pStarterDock =
+		    registry.Find<Jettison::Dock::HullDefinition>(RegistryName(scenario.starterHull));
+		const auto docksStarter = [&](const VenueDefinition &venue)
+		{
+			const auto *pLayout = registry.Find<Jettison::Dock::StationLayout>(venue.layout);
+			return pStarterDock != nullptr && pLayout != nullptr &&
+			       std::ranges::any_of(
+			           pLayout->pads,
+			           [&](const Jettison::Dock::PadLayout &pad)
+			           {
+				           return !pad.display &&
+				                  Jettison::Dock::Fits(classes, *pStarterDock, pad.padClass);
+			           });
+		};
 		for (const RegionDefinition &region : scenario.regions)
 		{
 			if (!region.playerHome)
@@ -766,7 +842,7 @@ void CheckScenarios(
 			    [&](const VenueDefinition &venue)
 			    {
 				    return venue.isPublic && venue.operational && venue.lifeSupportCapacity >= 1 &&
-				           Contains(venue.hulls, scenario.starterHull, &HullSelection::hullId) &&
+				           docksStarter(venue) &&
 				           Contains(venue.regions, region.regionId, &RegionSelection::regionId);
 			    });
 			checker.Require(
@@ -794,6 +870,7 @@ ContentSet LoadContent(
 	CheckSkills(checker, registry);
 	CheckNamePools(checker, registry);
 	CheckHulls(checker, registry);
+	CheckDocks(checker, registry);
 	CheckTuning(checker, registry);
 	CheckGameModes(checker, registry);
 	const auto *pTuning = registry.Find<TuningDefinition>("balance");

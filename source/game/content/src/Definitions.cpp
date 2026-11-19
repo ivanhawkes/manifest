@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include <jettison/dock/Definitions.h>
 #include <jettison/reflect/Reflect.h>
 #include <jettison/sim/DefinitionRegistry.h>
 
@@ -47,6 +48,7 @@ void RegisterTypes()
 {
 	static const bool registered = []
 	{
+		Jettison::Dock::RegisterTypes();
 		using namespace Jettison::Reflect;
 		constexpr Attribute kDefined = Attribute::Saved | Attribute::Moddable;
 
@@ -261,8 +263,6 @@ void RegisterTypes()
 		    .Field<&RegionDefinition::projects>("projects", kDefined);
 		RegisterType<RegionSelection>("Manifest.RegionSelection")
 		    .Field<&RegionSelection::regionId>("regionId", kDefined);
-		RegisterType<HullSelection>("Manifest.HullSelection")
-		    .Field<&HullSelection::hullId>("hullId", kDefined);
 		RegisterType<MarketEntry>("Manifest.MarketEntry")
 		    .Field<&MarketEntry::itemId>("itemId", kDefined)
 		    .Field<&MarketEntry::production>("production", kDefined)
@@ -276,7 +276,7 @@ void RegisterTypes()
 		    .Field<&VenueDefinition::operatorId>("operatorId", kDefined)
 		    .Field<&VenueDefinition::isPublic>("public", kDefined)
 		    .Field<&VenueDefinition::operational>("operational", kDefined)
-		    .Field<&VenueDefinition::hulls>("hulls", kDefined)
+		    .Field<&VenueDefinition::layout>("layout", kDefined)
 		    .Field<&VenueDefinition::lifeSupportCapacity>("lifeSupportCapacity", kDefined)
 		    .Field<&VenueDefinition::regions>("regions", kDefined)
 		    .Field<&VenueDefinition::market>("market", kDefined);
@@ -315,6 +315,12 @@ std::span<const DefinitionType> DefinitionTypes()
 		    {YamlMigrations{"Manifest.Hull", kVersion1}, "manifest/definitions/hulls",
 		     entt::resolve<Core::ShipClassSpec>(),
 		     &IdOf<Core::ShipClassSpec, &Core::ShipClassSpec::hullId>},
+		    {YamlMigrations{"Dock.PadClassDefinition", {Jettison::Dock::kDefinitionVersion}},
+		     "manifest/definitions/pads", entt::resolve<Jettison::Dock::PadClassDefinition>(), nullptr},
+		    {Jettison::Dock::HullMigrations(), "manifest/definitions/dock-hulls",
+		     entt::resolve<Jettison::Dock::HullDefinition>(), nullptr},
+		    {YamlMigrations{"Dock.StationLayout", {Jettison::Dock::kDefinitionVersion}},
+		     "manifest/definitions/stations", entt::resolve<Jettison::Dock::StationLayout>(), nullptr},
 		    {YamlMigrations{"Manifest.NamePool", kVersion1}, "manifest/definitions/name-pools",
 		     entt::resolve<NamePoolDefinition>(), &IdOf<NamePoolDefinition, &NamePoolDefinition::pool>},
 		    {YamlMigrations{"Manifest.GameMode", kVersion1}, "manifest/definitions/game-modes",

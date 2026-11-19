@@ -1,0 +1,46 @@
+# A standard station, seeded from the Jettison sample's Ostra Highport without its display wing or
+# dry docks: a 200 m hub with four piers of three destroyer pads, which take a frigate too, and two
+# skiff pads on each pier in the 30 m gaps between them. A station layout of Jettison's docks
+# (Dock.StationLayout), in the station's axes, metres.
+#
+# Each pier is 660 m long, 120 m wide and 20 m deep, its top 10 m above the station's middle; its
+# pads lie along its middle, noses pointing out, so the road runs down the 20 m strip beside them
+# (Dock::Roads) and a skiff pad's apron joins it square across the pier. A cargo bay's door is in
+# the hub's wall at each pier's root.
+version: 1
+displayName: Highport
+reservationSeconds: 300
+traffic: {buggies: 3, cratesPerTrip: 4, speed: 8, working: true}
+decks:
+  - {centre: [0, 0, 0], size: [200, 60, 200]}
+piers:
+  - {centre: [430, 0, 0], size: [660, 20, 120]}
+  - {centre: [-430, 0, 0], size: [660, 20, 120]}
+  - {centre: [0, 0, 430], size: [120, 20, 660]}
+  - {centre: [0, 0, -430], size: [120, 20, 660]}
+pads:
+  - {class: destroyer, position: [220, 10, 0], heading: [1, 0, 0]}
+  - {class: destroyer, position: [430, 10, 0], heading: [1, 0, 0]}
+  - {class: destroyer, position: [640, 10, 0], heading: [1, 0, 0]}
+  - {class: destroyer, position: [-220, 10, 0], heading: [-1, 0, 0]}
+  - {class: destroyer, position: [-430, 10, 0], heading: [-1, 0, 0]}
+  - {class: destroyer, position: [-640, 10, 0], heading: [-1, 0, 0]}
+  - {class: destroyer, position: [0, 10, 220], heading: [0, 0, 1]}
+  - {class: destroyer, position: [0, 10, 430], heading: [0, 0, 1]}
+  - {class: destroyer, position: [0, 10, 640], heading: [0, 0, 1]}
+  - {class: destroyer, position: [0, 10, -220], heading: [0, 0, -1]}
+  - {class: destroyer, position: [0, 10, -430], heading: [0, 0, -1]}
+  - {class: destroyer, position: [0, 10, -640], heading: [0, 0, -1]}
+  - {class: skiff, position: [325, 10, 0], heading: [1, 0, 0]}
+  - {class: skiff, position: [535, 10, 0], heading: [1, 0, 0]}
+  - {class: skiff, position: [-325, 10, 0], heading: [-1, 0, 0]}
+  - {class: skiff, position: [-535, 10, 0], heading: [-1, 0, 0]}
+  - {class: skiff, position: [0, 10, 325], heading: [0, 0, 1]}
+  - {class: skiff, position: [0, 10, 535], heading: [0, 0, 1]}
+  - {class: skiff, position: [0, 10, -325], heading: [0, 0, -1]}
+  - {class: skiff, position: [0, 10, -535], heading: [0, 0, -1]}
+bays:
+  - {position: [100, 10, 0], normal: [1, 0, 0]}
+  - {position: [-100, 10, 0], normal: [-1, 0, 0]}
+  - {position: [0, 10, 100], normal: [0, 0, 1]}
+  - {position: [0, 10, -100], normal: [0, 0, -1]}

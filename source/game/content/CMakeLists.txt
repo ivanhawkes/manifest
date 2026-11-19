@@ -24,11 +24,12 @@ manifest_add_module(content
 		Jettison::Vfs
 	PRIVATE_LIBRARIES
 		Jettison::Core
+		Jettison::Dock
 		Jettison::Reflect
 		Jettison::Sim
 )
 if(TARGET manifest_content_tests)
-	target_link_libraries(manifest_content_tests PRIVATE Jettison::Reflect Jettison::Sim yaml-cpp::yaml-cpp)
+	target_link_libraries(manifest_content_tests PRIVATE Jettison::Dock Jettison::Reflect Jettison::Sim yaml-cpp::yaml-cpp)
 	target_compile_definitions(manifest_content_tests PRIVATE
 		MANIFEST_MOD_DIRECTORY="${MANIFEST_MOD_DIRECTORY}"
 		MANIFEST_MOD_PACK="${PROJECT_BINARY_DIR}/manifest.pack")

@@ -1,0 +1,7 @@
+# The lone-trader starter's class, its largest hull the starter itself (D-062).
+# A pad class of Jettison's docks (Dock.PadClassDefinition, D-058): metres, the largest hull length
+# by beam by height and the pad width by length.
+version: 1
+rank: 0
+largestHull: [9.8, 6.4, 1.8]
+padSize: [8, 10]

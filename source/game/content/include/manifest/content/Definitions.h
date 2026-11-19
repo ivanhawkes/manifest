@@ -224,11 +224,6 @@ struct RegionSelection
 	std::string regionId;
 };
 
-struct HullSelection
-{
-	std::string hullId;
-};
-
 struct MarketEntry
 {
 	std::string itemId;
@@ -249,8 +244,8 @@ struct VenueDefinition
 	// Open to every company on equal terms, as a starting region's station must be.
 	bool isPublic{false};
 	bool operational{false};
-	// The hulls it docks.
-	std::vector<HullSelection> hulls;
+	// The Dock.StationLayout it is built to, by record name: its pads are the hulls it docks.
+	std::string layout;
 	// Ships it can keep connected to working life support at once.
 	int lifeSupportCapacity{0};
 	std::vector<RegionSelection> regions;
