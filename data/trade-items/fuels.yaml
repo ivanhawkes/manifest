@@ -30,4 +30,64 @@ item-base:
       unitType: Tonne
       density: 0.54
       packFactor: 0.45
+
+  - item:
+      itemId: ItemCoal
+      categoryId: CategoryFuels
+      ageId: AgePre-industrial
+      displayName: Coal
+      description: Thermal coal
+      unitsPerCubicMetre: 1.35
+      basePrice: 145
+      unitType: Tonne
+      density: 1.35
+      packFactor: 0.6
+
+  - item:
+      itemId: ItemCoke
+      categoryId: CategoryFuels
+      ageId: AgePre-industrial
+      displayName: Coke
+      description: Metallurgical coke
+      unitsPerCubicMetre: 1.9
+      basePrice: 334
+      unitType: Tonne
+      density: 1.9
+      packFactor: 0.25
+
+  - item:
+      itemId: ItemCrudeOil
+      categoryId: CategoryFuels
+      ageId: AgeIndustrial
+      displayName: Crude Oil
+      description: Crude oil, Brent blend
+      unitsPerCubicMetre: 6.28981
+      basePrice: 92.18
+      unitType: Barrel
+      density: 0.85
+      packFactor: 0.9
+
+  - item:
+      itemId: ItemLiquidHydrogen
+      categoryId: CategoryFuels
+      ageId: AgeSpace
+      displayName: Liquid Hydrogen
+      description: Liquid hydrogen rocket propellant
+      unitsPerCubicMetre: 71
+      basePrice: 6
+      unitType: Kilogram
+      density: 0.071
+      packFactor: 0.9
+
+  - item:
+      itemId: ItemHelium3
+      categoryId: CategoryFuels
+      ageId: AgeSpaceColonisation
+      displayName: Helium-3
+      description: Helium-3 fusion fuel, liquefied
+      unitsPerCubicMetre: 59
+      basePrice: 18600000
+      unitType: Kilogram
+      density: 0.059
+      packFactor: 0.5
 ...

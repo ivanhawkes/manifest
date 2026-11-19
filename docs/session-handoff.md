@@ -1,5 +1,16 @@
 # Session handoff
 
+## Thirty new goods — 2026-11-19
+
+[D-066](decision-ledger.md#d-066): the goods that give the empty crafts, categories and ages a
+product, at the 2026-11-19 quotes where they trade and estimates where they do not (both in [the
+model](model.md#units-prices-and-storage)). Two units join, `CubicMetre` and `Barrel`; five
+files join `build.sh`'s list; Astralis's 20 are re-ranked with the new industrial goods. No test
+named the old list's six.
+
+Evidence, on Lythir: `./scripts/ci.sh --werror --asan --tidy` passed 21 of 21 in each of
+`clang-debug`, `clang-release` and `clang-asan`, and tidy clean.
+
 ## Astralis's goods and the alloys — 2026-11-19
 
 [D-065](decision-ledger.md#d-065): Astralis's placeholder items are replaced by the 20 goods an

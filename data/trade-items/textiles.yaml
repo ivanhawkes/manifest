@@ -1,0 +1,32 @@
+---
+# The fields and their units are defined in docs/model.md, "Units, prices and storage". Each
+# price is the 2026-11-19 spot or contract quote where the good has a market, sourced in the
+# same section, and the first-draft value converted to the unit where it has none.
+#
+# Raw cotton by the tonne at the ICE price, and woven cloth by the square metre.
+item-base:
+
+  - item:
+      itemId: ItemCotton
+      categoryId: CategoryTextiles
+      ageId: AgeCopper
+      displayName: Cotton
+      description: Raw cotton lint, in bales
+      unitsPerCubicMetre: 1.54
+      basePrice: 1653
+      unitType: Tonne
+      density: 1.54
+      packFactor: 0.29
+
+  - item:
+      itemId: ItemCloth
+      categoryId: CategoryTextiles
+      ageId: AgeCopper
+      displayName: Cloth
+      description: Woven wool and linen cloth, half a millimetre thick, in bolts
+      unitsPerCubicMetre: 2000
+      basePrice: 8
+      unitType: SquareMetre
+      density: 0.6
+      packFactor: 0.8
+...

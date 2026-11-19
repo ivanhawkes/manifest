@@ -139,24 +139,29 @@ The inputs are read in this order:
 | Source | Contents |
 | --- | --- |
 | `base/ages.yaml` | The 14 ages, in age order. |
-| `trade-items/categories.yaml` | The 45 categories. The goods of the item files are filed under 28 of them; 17 shelves hold no good at all, and 3 of those - `CategoryPharmaceuticals`, `CategoryPolymers` and `CategoryTextiles` - have a craft node of the same word. |
-| `trade-items/chemicals.yaml` | The 9 goods of `CategoryChemicals`, by the tonne but graphene film by area: sodium hydroxide, nitrogen, phosphorus, sulfur, sulfuric acid, chlorine, ammonia, ethylene, graphene. |
-| `trade-items/metals.yaml` | The 15 goods of `CategoryMetals` and brass and bronze of `CategoryAlloys`; the base metals, the alloys and antimony by the tonne, the minor metals by the kilogram: copper, tin, brass, bronze, nickel, iron, lead, cobalt, lithium, molybdenum, aluminium, potassium, uranium, vanadium, zinc, antimony, neodymium. |
+| `trade-items/categories.yaml` | The 45 categories. The goods of the item files are filed under 37 of them; 8 shelves hold no good at all, and one of those, `CategoryPharmaceuticals`, has a craft node of the same word. |
+| `trade-items/chemicals.yaml` | The 10 goods of `CategoryChemicals`, by the tonne but graphene film by area and gunpowder by the kilogram: sodium hydroxide, nitrogen, phosphorus, sulfur, sulfuric acid, chlorine, ammonia, ethylene, graphene, gunpowder. |
+| `trade-items/metals.yaml` | The 16 goods of `CategoryMetals` and brass, bronze and steel of `CategoryAlloys`; the base metals, the alloys and antimony by the tonne, the minor metals and titanium by the kilogram: copper, tin, brass, bronze, nickel, iron, lead, cobalt, lithium, molybdenum, aluminium, potassium, uranium, vanadium, zinc, antimony, neodymium, steel, titanium. |
 | `trade-items/precious-metals.yaml` | The 6 goods of `CategoryPreciousMetals`, by the troy ounce: gold, silver, platinum, palladium, rhodium, ruthenium. |
-| `trade-items/minerals.yaml` | Salt, lime, graphite and natron of `CategoryMinerals`, and potash of `CategoryFertilisers`, by the tonne. |
+| `trade-items/minerals.yaml` | The 7 goods of `CategoryMinerals`, by the tonne: salt, lime, graphite, natron, and the copper, tin and iron ores. |
+| `trade-items/fertilisers.yaml` | The 3 goods of `CategoryFertilisers`, by the tonne: potash, urea, diammonium phosphate. |
 | `trade-items/seeds.yaml` | The 10 goods of `CategorySeeds`, by the tonne: wheat, barley, oat, corn, rice, sorghum, poppy, cocoa, coca and canola. |
 | `trade-items/grains.yaml` | The 4 food grains of `CategoryConsumables`, by the tonne: wheat, barley, oats and rice. |
 | `trade-items/life-support.yaml` | The 2 goods of `CategoryLifeSupport`: oxygen by the kilogram and the scrubber cartridge by the piece. |
 | `trade-items/food-and-drink.yaml` | Water by the kilolitre, flour by the tonne, bread by the kilogram, and beer, wine and vinegar by the litre. |
-| `trade-items/fuels.yaml` | Charcoal and LPG, by the tonne. |
+| `trade-items/fuels.yaml` | Charcoal, LPG, coal and coke by the tonne, crude oil by the barrel, and liquid hydrogen and helium-3 by the kilogram. |
 | `trade-items/crafts.yaml` | Pottery, ceramics and glassware by the piece, pigments by the kilogram. |
 | `trade-items/valuables.yaml` | Gems and diamonds by the carat; jewellery, coins and fine art by the piece. |
-| `trade-items/writing-and-knowledge.yaml` | Papyrus and parchment by the sheet, ink by the litre, scrolls, books and the knowledge goods of maths, chemistry and physics by the piece. |
-| `trade-items/equipment.yaml` | The farming equipment, the instruments and the still, by the piece. |
-| `trade-items/construction.yaml` | Cement by the tonne, screws by the piece. |
-| `trade-items/animal-products.yaml` | Leather hides and furs, by the piece. |
-| `trade-items/medical.yaml` | Basic medical supplies and the three medicines, by the kilogram. |
+| `trade-items/writing-and-knowledge.yaml` | Papyrus and parchment by the sheet, ink by the litre, paper by the tonne, and scrolls, books and the knowledge goods of maths, chemistry and physics by the piece. |
+| `trade-items/equipment.yaml` | The farming equipment, the instruments, the still, tools, machinery and lenses, by the piece. |
+| `trade-items/construction.yaml` | Timber by the cubic metre, cement by the tonne, and bricks, screws and habitat modules by the piece. |
+| `trade-items/animal-products.yaml` | Live cattle by the tonne of live weight, and leather hides and furs by the piece. |
+| `trade-items/textiles.yaml` | Raw cotton by the tonne and cloth by the square metre. |
+| `trade-items/polymers.yaml` | Polyethylene resin and natural rubber, by the tonne. |
+| `trade-items/medical.yaml` | Basic medical supplies, the three medicines and medicinal herbs, by the kilogram. |
 | `trade-items/household-goods.yaml` | Soap, home appliances and electronics, by the piece. |
+| `trade-items/technology.yaml` | Radios, silicon wafers and AI accelerators, by the piece. |
+| `trade-items/arms.yaml` | Small arms, by the piece. |
 | `trade-items/slaves.yaml` | The one good of `CategorySlaves`, by the person. |
 | `skill-tree/skills.yaml` | The 17 crafts of the economy. |
 | `skill-tree/ages.yaml` | The 14 ages that gate the tree. |
@@ -172,7 +177,7 @@ The inputs are read in this order:
 | `ships/hulls.yaml` | The 3 hulls: the long-haul trader, the lone-trader starter and the compact single-seat. |
 | `tuning/balance.yaml` | The balance inputs: cadence, household needs, condition, life support, concessions, procurement, and the bronze project and recipe. |
 | `game-mode/manifest.yaml` | Manifest, the long-term, large-scale mode ([D-061](decision-ledger.md#d-061)): every item and node of the definitions above. |
-| `game-mode/astralis.yaml` | Astralis, the short and fast mode: the 20 goods an industrial-age world trades most ([D-065](decision-ledger.md#d-065)), to keep its play uncluttered. |
+| `game-mode/astralis.yaml` | Astralis, the short and fast mode: the 20 goods an industrial-age world trades most ([D-066](decision-ledger.md#d-066)), to keep its play uncluttered. |
 
 One order is taken from the sources: `base/ages.yaml` fixes the age order, which `build.sh`
 writes into each game mode's `ages`. Each game-mode file lists its own goods and nodes in the
@@ -522,7 +527,7 @@ against it:
 | Field | Meaning |
 | --- | --- |
 | `density` | Specific gravity of the material against water at sea level, so `1.0` is 1000 kg/m³. The solid value at 20 °C for a metal that is liquid at that temperature. |
-| `unitType` | The unit `basePrice` and `unitsPerCubicMetre` count, the one the good's real market trades it in: `Carat`, `TroyOunce`, `Kilogram`, `Tonne`, `Litre`, `Kilolitre`, `Unit`, `Sheet`, `SquareMetre`. |
+| `unitType` | The unit `basePrice` and `unitsPerCubicMetre` count, the one the good's real market trades it in: `Carat`, `TroyOunce`, `Kilogram`, `Tonne`, `Litre`, `Kilolitre`, `CubicMetre`, `Barrel`, `Unit`, `Sheet`, `SquareMetre`. |
 | `unitsPerCubicMetre` | Units of loose product filling one cubic metre of the material: see the table below. |
 | `packFactor` | The fraction of a cube the product fills, counting packaging, dunnage and the voids between pieces. A hollow blown flask is mostly air, so `ItemGlassware` is `0.05`; stacked `ItemCopper` ingots are `0.85`. |
 | `basePrice` | Market value per `unitType`, in credits at one credit to one US dollar: the spot or contract quote of 2026-11-19 where the good has a market (the sources are below), and the first-draft 2025 value otherwise. Prices drive the model through the ratio of market price to base price, so the currency anchor only sets the relative level of the goods against each other. |
@@ -535,6 +540,8 @@ against it:
 | `Tonne` | `density` | The same mass in tonnes: copper at 8.96 is 8.96. |
 | `Litre` | `1000` | A cubic metre is a thousand litres. |
 | `Kilolitre` | `1` | A kilolitre is exactly a cubic metre: water, the one good a utility meters by volume. |
+| `CubicMetre` | `1` | Timber, which the trade measures as solid volume. |
+| `Barrel` | `1 / 0.158987294928` | Crude oil's 42-gallon barrel, 6.29 to the cubic metre. |
 | `Unit` | tight-nested piece count | How many of the piece nest into a cubic metre: 2000 `ItemBooks`, 40000 pieces of `ItemJewellery`. |
 | `Sheet` | tight-nested sheet count | Sheets stacked to a metre with their interleaves: 50000 sheets of `ItemPapyrus`, 20000 of `ItemParchment`. |
 | `SquareMetre` | `1 / thickness` | Sheet goods sold by area: `ItemGraphene` is film, and at 10 µm it is 100000 m² to the cube. |
@@ -594,6 +601,23 @@ The quotes of 2026-11-19 (the latest each source published, and its date where e
 | Ethylene | 1100 a tonne | CFR Northeast Asia |
 | Yellow phosphorus, natron | 4261, 151 a tonne | Chinese spot, 16 and 5 November (natron as dense soda ash) |
 | Graphite | 323 a tonne | Chinese flake, -194 mesh, 4 September |
+| Crude oil | 92.18 a barrel | ICE Brent, 18 November |
+| Coal, coke | 145, 334 a tonne | Newcastle thermal, 17 November; Chinese metallurgical coke FOB, October |
+| Steel | 845 a tonne | Western European hot-rolled band, SteelBenchmarker, 11 November |
+| Titanium | 6.1 a kilogram | Chinese sponge, 13 October |
+| Copper, tin and iron ores | 3446, 25190, 90.7 a tonne | iron ore 62% Fe, 18 November; the concentrates at the payable LME value of their 27% copper and 60% tin |
+| Timber | 224 a cubic metre | CME lumber, 527.50 per thousand board feet, 17 November |
+| Livestock | 4845 a tonne | CME live cattle, 219.77 a hundredweight, 18 November |
+| Cotton | 1653 a tonne | ICE cotton, 74.97 cents a pound, 18 November |
+| Rubber | 2492 a tonne | SGX TSR20, 249.2 cents a kilogram, 17 November |
+| Plastics | 1269 a tonne | HDPE CFR Southeast Asia, October |
+| Urea, diammonium phosphate | 535, 803 a tonne | Egyptian granular FOB, November; DAP FOB US Gulf, October |
+
+The goods of [D-066](decision-ledger.md#d-066) with no market quote carry estimates of their
+wholesale value: bricks 0.6, cloth 8 a square metre, tools 15, machinery 30000, lenses 150,
+gunpowder 25 a kilogram, paper 950 a tonne, radios 400, silicon wafers 120, AI accelerators
+25000, small arms 600, medicinal herbs 12 a kilogram, liquid hydrogen 6 a kilogram, helium-3
+18.6 million a kilogram (2500 a litre of gas) and a habitat module 50 million.
 
 Every other good has no market quote, and keeps its first-draft price converted to its
 unit: a kilolitre of a heaped good was the cube's heap, so the tonne price is the kilolitre

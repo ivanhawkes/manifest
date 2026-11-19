@@ -101,4 +101,40 @@ item-base:
       unitType: Unit
       density: 3.5
       packFactor: 0.6
+
+  - item:
+      itemId: ItemTools
+      categoryId: CategoryTools
+      ageId: AgeCopper
+      displayName: Tools
+      description: Forged hand tools
+      unitsPerCubicMetre: 300
+      basePrice: 15
+      unitType: Unit
+      density: 7.85
+      packFactor: 0.057
+
+  - item:
+      itemId: ItemMachinery
+      categoryId: CategoryMachinery
+      ageId: AgeIndustrial
+      displayName: Machinery
+      description: Engines, pumps and machine tools
+      unitsPerCubicMetre: 0.5
+      basePrice: 30000
+      unitType: Unit
+      density: 7.0
+      packFactor: 0.107
+
+  - item:
+      itemId: ItemLenses
+      categoryId: CategoryOptics
+      ageId: AgePre-industrial
+      displayName: Lenses
+      description: Ground glass lenses and telescopes
+      unitsPerCubicMetre: 400
+      basePrice: 150
+      unitType: Unit
+      density: 2.5
+      packFactor: 0.08
 ...

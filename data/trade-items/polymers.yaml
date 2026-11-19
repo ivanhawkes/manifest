@@ -1,0 +1,32 @@
+---
+# The fields and their units are defined in docs/model.md, "Units, prices and storage". Each
+# price is the 2026-11-19 spot or contract quote where the good has a market, sourced in the
+# same section, and the first-draft value converted to the unit where it has none.
+#
+# Polyethylene resin and natural rubber, by the tonne.
+item-base:
+
+  - item:
+      itemId: ItemPlastics
+      categoryId: CategoryPolymers
+      ageId: AgePost-industrial
+      displayName: Plastics
+      description: Polyethylene resin pellets
+      unitsPerCubicMetre: 0.95
+      basePrice: 1269
+      unitType: Tonne
+      density: 0.95
+      packFactor: 0.6
+
+  - item:
+      itemId: ItemRubber
+      categoryId: CategoryPolymers
+      ageId: AgeIndustrial
+      displayName: Rubber
+      description: Natural rubber, TSR20, in bales
+      unitsPerCubicMetre: 0.93
+      basePrice: 2492
+      unitType: Tonne
+      density: 0.93
+      packFactor: 0.7
+...

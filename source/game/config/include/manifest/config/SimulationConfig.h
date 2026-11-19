@@ -66,6 +66,8 @@ enum class TradeUnit
 	Tonne,
 	Litre,
 	Kilolitre,
+	CubicMetre,
+	Barrel,
 	Unit,
 	Sheet,
 	SquareMetre

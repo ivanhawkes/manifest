@@ -29,4 +29,40 @@ item-base:
       unitType: Unit
       density: 7.85
       packFactor: 0.06
+
+  - item:
+      itemId: ItemTimber
+      categoryId: CategoryConstructionMaterials
+      ageId: AgeStone
+      displayName: Timber
+      description: Sawn softwood timber
+      unitsPerCubicMetre: 1
+      basePrice: 224
+      unitType: CubicMetre
+      density: 0.5
+      packFactor: 0.75
+
+  - item:
+      itemId: ItemBricks
+      categoryId: CategoryConstructionMaterials
+      ageId: AgeCopper
+      displayName: Bricks
+      description: Fired clay bricks
+      unitsPerCubicMetre: 620
+      basePrice: 0.6
+      unitType: Unit
+      density: 1.9
+      packFactor: 0.89
+
+  - item:
+      itemId: ItemHabitatModule
+      categoryId: CategoryEngineering
+      ageId: AgeSpaceColonisation
+      displayName: Habitat Module
+      description: A pressurised habitat module, fitted out for a crew of six
+      unitsPerCubicMetre: 0.01
+      basePrice: 50000000
+      unitType: Unit
+      density: 2.7
+      packFactor: 0.056
 ...

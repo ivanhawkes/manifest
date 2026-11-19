@@ -1,0 +1,20 @@
+---
+# The fields and their units are defined in docs/model.md, "Units, prices and storage". Each
+# price is the 2026-11-19 spot or contract quote where the good has a market, sourced in the
+# same section, and the first-draft value converted to the unit where it has none.
+#
+# Small arms, counted by the piece.
+item-base:
+
+  - item:
+      itemId: ItemSmallArms
+      categoryId: CategorySmallArms
+      ageId: AgePre-industrial
+      displayName: Small Arms
+      description: Rifles and pistols, crated
+      unitsPerCubicMetre: 60
+      basePrice: 600
+      unitType: Unit
+      density: 7.0
+      packFactor: 0.03
+...

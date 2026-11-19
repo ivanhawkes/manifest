@@ -53,4 +53,16 @@ item-base:
       unitType: Kilogram
       density: 1.14
       packFactor: 0.4
+
+  - item:
+      itemId: ItemMedicinalHerbs
+      categoryId: CategoryMedicine
+      ageId: AgeStone
+      displayName: Medicinal Herbs
+      description: Dried medicinal herbs
+      unitsPerCubicMetre: 800
+      basePrice: 12
+      unitType: Kilogram
+      density: 0.8
+      packFactor: 0.25
 ...

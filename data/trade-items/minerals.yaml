@@ -46,18 +46,6 @@ item-base:
       packFactor: 0.3
 
   - item:
-      itemId: ItemPotash
-      categoryId: CategoryFertilisers
-      ageId: AgeIndustrial
-      displayName: Potash
-      description: Muriate of potash, granular potassium chloride
-      unitsPerCubicMetre: 1.99
-      basePrice: 365
-      unitType: Tonne
-      density: 1.99
-      packFactor: 0.58
-
-  - item:
       itemId: ItemNatron
       categoryId: CategoryMinerals
       ageId: AgeBronze
@@ -68,4 +56,40 @@ item-base:
       unitType: Tonne
       density: 2.54
       packFactor: 0.42
+
+  - item:
+      itemId: ItemCopperOre
+      categoryId: CategoryMinerals
+      ageId: AgeCopper
+      displayName: Copper Ore
+      description: Copper concentrate, 27% copper
+      unitsPerCubicMetre: 4.2
+      basePrice: 3446
+      unitType: Tonne
+      density: 4.2
+      packFactor: 0.45
+
+  - item:
+      itemId: ItemTinOre
+      categoryId: CategoryMinerals
+      ageId: AgeBronze
+      displayName: Tin Ore
+      description: Tin concentrate, 60% tin as cassiterite
+      unitsPerCubicMetre: 6.9
+      basePrice: 25190
+      unitType: Tonne
+      density: 6.9
+      packFactor: 0.4
+
+  - item:
+      itemId: ItemIronOre
+      categoryId: CategoryMinerals
+      ageId: AgeIron
+      displayName: Iron Ore
+      description: Iron ore fines, 62% iron
+      unitsPerCubicMetre: 5.0
+      basePrice: 90.7
+      unitType: Tonne
+      density: 5.0
+      packFactor: 0.48
 ...

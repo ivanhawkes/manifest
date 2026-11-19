@@ -124,4 +124,16 @@ item-base:
       unitType: SquareMetre
       density: 2.27
       packFactor: 0.7
+
+  - item:
+      itemId: ItemGunpowder
+      categoryId: CategoryChemicals
+      ageId: AgeMedieval
+      displayName: Gunpowder
+      description: Black powder, in kegs
+      unitsPerCubicMetre: 1700
+      basePrice: 25
+      unitType: Kilogram
+      density: 1.7
+      packFactor: 0.5
 ...

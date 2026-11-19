@@ -222,4 +222,28 @@ item-base:
       unitType: Kilogram
       density: 7.01
       packFactor: 0.8
+
+  - item:
+      itemId: ItemSteel
+      categoryId: CategoryAlloys
+      ageId: AgeIndustrial
+      displayName: Steel
+      description: Hot-rolled steel coil
+      unitsPerCubicMetre: 7.85
+      basePrice: 845
+      unitType: Tonne
+      density: 7.85
+      packFactor: 0.85
+
+  - item:
+      itemId: ItemTitanium
+      categoryId: CategoryMetals
+      ageId: AgePost-industrial
+      displayName: Titanium
+      description: Titanium sponge
+      unitsPerCubicMetre: 4510
+      basePrice: 6.1
+      unitType: Kilogram
+      density: 4.51
+      packFactor: 0.35
 ...

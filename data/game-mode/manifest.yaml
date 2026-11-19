@@ -131,6 +131,7 @@ items:
   - itemId: ItemAmmonia
   - itemId: ItemEthylene
   - itemId: ItemGraphene
+  - itemId: ItemGunpowder
 
   # Metals
   - itemId: ItemCopper
@@ -150,6 +151,8 @@ items:
   - itemId: ItemZinc
   - itemId: ItemAntimony
   - itemId: ItemNeodymium
+  - itemId: ItemSteel
+  - itemId: ItemTitanium
 
   # Precious metals
   - itemId: ItemGold
@@ -165,6 +168,11 @@ items:
   - itemId: ItemGraphite
   - itemId: ItemPotash
   - itemId: ItemNatron
+  - itemId: ItemCopperOre
+  - itemId: ItemTinOre
+  - itemId: ItemIronOre
+  - itemId: ItemUrea
+  - itemId: ItemDAP
 
   # Stone Age
   - itemId: ItemDrinkingWater
@@ -175,6 +183,9 @@ items:
   - itemId: ItemLeatherhides
   - itemId: ItemFurs
   - itemId: ItemGems
+  - itemId: ItemTimber
+  - itemId: ItemLivestock
+  - itemId: ItemMedicinalHerbs
   # Copper Age
   - itemId: ItemArdPlough
   - itemId: ItemFlour
@@ -182,6 +193,10 @@ items:
   - itemId: ItemBeer
   - itemId: ItemWine
   - itemId: ItemVinegar
+  - itemId: ItemBricks
+  - itemId: ItemCotton
+  - itemId: ItemCloth
+  - itemId: ItemTools
   # Bronze Age
   - itemId: ItemJewellery
   - itemId: ItemPapyrus
@@ -207,23 +222,38 @@ items:
   - itemId: ItemChemistry
   - itemId: ItemClock
   - itemId: ItemCompass
+  - itemId: ItemPaper
   # Pre-industrial Age
   - itemId: ItemScrews
   - itemId: ItemPhysics
   - itemId: ItemMicroscope
+  - itemId: ItemCoal
+  - itemId: ItemCoke
+  - itemId: ItemLenses
+  - itemId: ItemSmallArms
   # Industrial Age
   - itemId: ItemLPG
   - itemId: ItemBasicMedicalSupplies
   - itemId: ItemAnesthetics
   - itemId: ItemAnalgesics
+  - itemId: ItemCrudeOil
+  - itemId: ItemMachinery
+  - itemId: ItemRubber
+  - itemId: ItemRadio
   # Post-industrial Age
   - itemId: ItemHomeAppliances
   - itemId: ItemAntibiotics
+  - itemId: ItemPlastics
   # Information Age
   - itemId: ItemElectronics
+  - itemId: ItemSiliconWafers
   # AI Age
+  - itemId: ItemProcessors
   # Space Age
+  - itemId: ItemLiquidHydrogen
   # Space Colonisation Age
+  - itemId: ItemHelium3
+  - itemId: ItemHabitatModule
 
   # Seeds
   - itemId: ItemWheatSeeds

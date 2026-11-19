@@ -102,4 +102,16 @@ item-base:
       unitType: Unit
       density: 0.95
       packFactor: 0.85
+
+  - item:
+      itemId: ItemPaper
+      categoryId: CategoryWriting
+      ageId: AgeMedieval
+      displayName: Paper
+      description: Uncoated paper, in reams and reels
+      unitsPerCubicMetre: 0.8
+      basePrice: 950
+      unitType: Tonne
+      density: 0.8
+      packFactor: 0.85
 ...

@@ -35,6 +35,11 @@ DEFINITIONS=(
   trade-items/medical.yaml
   trade-items/household-goods.yaml
   trade-items/slaves.yaml
+  trade-items/textiles.yaml
+  trade-items/polymers.yaml
+  trade-items/technology.yaml
+  trade-items/arms.yaml
+  trade-items/fertilisers.yaml
   skill-tree/skills.yaml
   skill-tree/ages.yaml
   skill-tree/spaceship.yaml
