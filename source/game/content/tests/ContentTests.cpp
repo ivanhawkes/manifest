@@ -661,7 +661,11 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	    {{trading,
 	      "version: 1\nsystems: !append [{systemId: SystemFar}]\nvenues: !merge=venueId\n  - {venueId: "
 	      "VenueBrineHighport, systemId: SystemFar, planetId: ''}\n"}},
-	    "'VenueBrineHighport' region 'RegionBrineCoast' is in another system");
+	    "'VenueBrineHighport' region 'RegionBrineCoast' is not on its planet");
+	// A port serves the regions of its own planet, not another in its system.
+	CheckRefused(
+	    trading, venue("planetId: PlanetOre"),
+	    "'VenueBrineHighport' region 'RegionBrineCoast' is not on its planet");
 	CheckRefused(
 	    trading, venue("market: [{itemId: ItemBread}]"),
 	    "'VenueBrineHighport' market item 'ItemBread' is not a scenario item");

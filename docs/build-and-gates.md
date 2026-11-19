@@ -19,8 +19,9 @@ CI runs the full gate. `CMAKE_BUILD_PARALLEL_LEVEL`, `CTEST_PARALLEL_LEVEL` and
 `MANIFEST_TIDY_JOBS` control concurrency. Clang-format must be version 21.
 
 A gate that passed is not run again on the same inputs, as Jettison's is: a digest of the working
-tree's files (tracked or untracked and not ignored, `*.md` aside), `clang --version`,
-`cmake --version` and the options, kept under `build/gate-passed` when it is the same at the end of
+tree's files (tracked or untracked and not ignored, `*.md` aside), the versions of clang,
+clang-format, clang-tidy and cmake, and the options (the presets set every build option a stage
+reads, so no cached setting escapes the digest), kept under `build/gate-passed` when it is the same at the end of
 the run as at the start; `--force` runs it anyway. The engine is in that digest by its pin, so a
 preset configured with `JETTISON_SOURCE_DIR` runs every time and is never kept. `scripts/tidy.py`
 skips a unit that was clean and whose compile command, includes (`ninja -t deps`), clang-tidy and
@@ -55,6 +56,10 @@ workflow. Run it without a terminal using `ctest --preset clang-debug -R '^conso
 `MANIFEST_BUILD_TUI=OFF` omits the terminal, console tooling and FTXUI.
 `BUILD_TESTING=OFF` or `MANIFEST_BUILD_TESTS=OFF`
 omits the suites. Manifest tests and the TUI default to off when a host consumes the project.
+The presets set both to on, so the gate builds that configuration only. The TUI-off build, the
+shape a game server ships, is not yet a gate stage: it was checked by hand for H07 and C08
+(`cmake --preset clang-debug -B build/tui-off -DMANIFEST_BUILD_TUI=OFF`, then build and `ctest`).
+Adding it to the gate is open.
 `MANIFEST_WERROR=ON` makes project warnings fatal. `MANIFEST_CCACHE=OFF` and
 `JETTISON_CCACHE=OFF` disable compiler caches. C++ module scanning is disabled because this
 project uses headers, keeping compile commands directly usable by clangd and clang-tidy.

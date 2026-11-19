@@ -31,6 +31,7 @@ fi
 # tracked or untracked and not ignored, *.md aside (no stage reads them), the toolchain and the
 # options, read through a scratch copy of the index. The engine is in it by its pin; a preset built
 # against a local engine (JETTISON_SOURCE_DIR) is not, so such a gate always runs and is not kept.
+# The presets set every option a stage depends on, so a build's cache cannot hold one the key misses.
 gate_key() {
   local index tree
   if grep -qs '^JETTISON_SOURCE_DIR:PATH=.' build/clang-{debug,release,asan}/CMakeCache.txt; then
@@ -45,6 +46,8 @@ gate_key() {
   {
     git ls-tree -r "$tree" | grep -v '\.md$'
     clang --version
+    clang-format --version
+    clang-tidy --version
     cmake --version
     echo "$werror $asan $release $tidy"
   } | sha256sum | cut -d' ' -f1
@@ -60,7 +63,7 @@ build_and_test() {
   local preset="$1"
   cmake --preset "$preset" -DMANIFEST_WERROR="$werror"
   cmake --build --preset "$preset"
-  ctest --preset "$preset"
+  ctest --preset "$preset" --no-tests=error
 }
 build_and_test clang-debug
 if "$release"; then

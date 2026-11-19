@@ -791,8 +791,8 @@ void CheckScenarios(
 				const auto region = std::ranges::find(
 				    scenario.regions, selection.regionId, &RegionDefinition::regionId);
 				checker.Require(
-				    systemOf(region->planetId) == venue.systemId, "venues",
-				    problem(std::format("region '{}' is in another system", selection.regionId)));
+				    region->planetId == venue.planetId, "venues",
+				    problem(std::format("region '{}' is not on its planet", selection.regionId)));
 			}
 			std::set<std::string, std::less<>> goods;
 			for (const MarketEntry &entry : venue.market)

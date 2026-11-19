@@ -2,8 +2,25 @@
 
 ## Next, on resuming — 2026-11-19
 
-Codex's cross-review of Stage 2's commits together (C01 to C08), then A02, as `delivery-order.md`
-has it.
+The planning fixes the user approved on 2026-11-19 (an early Stage 4 vertical slice, the logs moved
+out of the planning documents into history), then A02, as `delivery-order.md` has it.
+
+## Stage 2 cross-review — 2026-11-19
+
+Codex reviewed `aa56443..f715040` in two rounds (`build/reviews/stage-2`). Three findings, each fixed:
+
+- **F1:** D-064 moved copper, tin and bronze to the tonne but left `RecipeBronze` at 9 + 1 → 10,
+  a thousand times the selected 9 kg + 1 kg → 10 kg. Now `0.009 + 0.001 → 0.01`; the `data` suite
+  checks every project and recipe quantity in kilograms.
+- **F2:** served regions needed only the venue's system; the regional plan has a port serve its own
+  planet's regions. `Content.cpp` now requires the venue's planet, and the C01 row says so.
+- **F3:** the gate's skip key could not see cached build options or the formatter and tidy versions.
+  The presets now set every option a stage reads (`BUILD_TESTING` included, round 2), the key holds
+  `clang-format` and `clang-tidy`'s versions, and CTest fails a run that finds no tests. Jettison's
+  gate had the same key and is fixed alike.
+
+Round 2 resolved F1 and F2 and left F3 open on `BUILD_TESTING` alone, fixed after it; the two rounds
+being spent, no third ran.
 
 ## C08: Stage 2 closed — 2026-11-19
 

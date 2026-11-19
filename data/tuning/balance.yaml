@@ -57,6 +57,7 @@ procurement:
 
 # The governance scenario's first technology: delivered project inputs, consumed once, unlock
 # the recipe in one region. Work durations and the recipe's wage bill are open.
+# Quantities are in each item's trading unit, tonnes for these metals.
 projects:
   - projectId: ProjectBronzeMetallurgy
     requires: [{skillId: SkillSmelting}]
@@ -65,5 +66,5 @@ projects:
 
 recipes:
   - recipeId: RecipeBronze
-    inputs: [{itemId: ItemCopper, quantity: 9}, {itemId: ItemTin, quantity: 1}]
-    outputs: [{itemId: ItemBronze, quantity: 10}]
+    inputs: [{itemId: ItemCopper, quantity: 0.009}, {itemId: ItemTin, quantity: 0.001}]
+    outputs: [{itemId: ItemBronze, quantity: 0.01}]

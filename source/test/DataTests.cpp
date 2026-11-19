@@ -5,6 +5,7 @@
 #include <map>
 #include <regex>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <jettison/vfs/Mount.h>
@@ -318,11 +319,23 @@ TEST_CASE("the_balance_tuning_reproduces_the_plans_worked_examples")
 	// A 10,000-credit offer locks a 1,000-credit bond.
 	CHECK(10000.0 * tuning.procurement.performanceSecurityRate == doctest::Approx(1000.0));
 
+	// The Bronze project takes 90 kg of copper and 10 kg of tin, and each batch after it 9 kg and
+	// 1 kg into 10 kg of bronze, in the metals' unit, the tonne.
+	const auto kilograms = [](const auto &quantities)
+	{
+		std::vector<std::pair<std::string, double>> result;
+		result.reserve(quantities.size());
+		for (const auto &entry : quantities)
+			result.emplace_back(entry.itemId, entry.quantity * 1000.0);
+		return result;
+	};
+	using Kilograms = std::vector<std::pair<std::string, double>>;
 	REQUIRE(tuning.projects.size() == 1);
 	CHECK(tuning.projects[0].unlocksRecipe == "RecipeBronze");
+	CHECK(kilograms(tuning.projects[0].inputs) == Kilograms{{"ItemCopper", 90.0}, {"ItemTin", 10.0}});
 	REQUIRE(tuning.recipes.size() == 1);
-	CHECK(tuning.recipes[0].outputs[0].itemId == "ItemBronze");
-	CHECK(tuning.recipes[0].outputs[0].quantity == 10.0);
+	CHECK(kilograms(tuning.recipes[0].inputs) == Kilograms{{"ItemCopper", 9.0}, {"ItemTin", 1.0}});
+	CHECK(kilograms(tuning.recipes[0].outputs) == Kilograms{{"ItemBronze", 10.0}});
 }
 
 TEST_CASE("every_item_carries_its_age_and_category_link")
