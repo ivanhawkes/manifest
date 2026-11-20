@@ -3,7 +3,7 @@
 ## Next, on resuming — 2026-11-20 (after W03)
 
 W03 is done: the hosted book settles orders on owner and venue accounts, each venue's broker
-quoting each turn, and goods are counted in totes, an eighth of an IBC
+quoting each turn, and goods are counted in totes, an eighth of a cubic metre
 ([D-087](decision-ledger.md#d-087); [delivered](stage-4-trading-plan.md#delivered-w03-2026-11-20),
 [history](history.md#w03-the-hosted-book-on-owner-and-venue-accounts--2026-11-20)). Next: W05, on a
 new pin that takes Jettison's dock-before-lanes edge (`bc5dc1a`), with the 1/60 s step

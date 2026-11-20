@@ -79,12 +79,9 @@ void CreateInitialState(
 		const entt::entity broker = CreateOrRefuse(world, identities, Kind::Broker, venue.venueId);
 		registry.emplace<Broker>(broker, venue.operatorId);
 		Stock &stock = registry.emplace<Stock>(broker);
-		// Content holds the stock to a whole number of totes a warehouse holds.
 		for (const Content::MarketEntry &entry : venue.market)
-			if (const auto totes =
-			        static_cast<std::uint64_t>(entry.stock * static_cast<double>(Core::kTotesPerIbc));
-			    totes > 0)
-				stock.holdings.push_back({venue.venueId, entry.itemId, totes, 0});
+			if (entry.stock > 0)
+				stock.holdings.push_back({venue.venueId, entry.itemId, entry.stock, 0});
 		std::ranges::sort(stock.holdings, {}, &Holding::itemId);
 		CreateAccount(
 		    world, identities, Kind::BrokerAccount, venue.venueId, content.tuning.brokers.treasury);

@@ -220,7 +220,7 @@ TEST_CASE("the_ship_engine_lands_its_effects_on_the_hull")
 	// the hull of the README, and the systems read the same numbers the engine writes.
 	MANIFEST_CHECK_NEAR(trader.baseStats.at(EffectStat::ShieldFront), 120.0, 1e-9);
 	MANIFEST_CHECK_NEAR(engine.GetStat(world, "Trader", EffectStat::ShieldFront), 120.0, 1e-9);
-	MANIFEST_CHECK_NEAR(engine.GetStat(world, "Trader", EffectStat::CargoVolume), 900.0, 1e-9);
+	MANIFEST_CHECK_NEAR(engine.GetStat(world, "Trader", EffectStat::CargoVolume), 7200.0, 1e-9);
 	MANIFEST_CHECK_NEAR(engine.GetStat(world, "Trader", EffectStat::SalvageCapacity), 15.0, 1e-9);
 	CHECK_EQ(engine.StatsOf(world, "Trader").size(), engine.BaseStatsOf(world, "Trader").size());
 
@@ -700,7 +700,7 @@ TEST_CASE("an_effect_reads_the_domain_of_the_store_it_lands_on")
 	CHECK_EQ(std::string(StatUnit(EffectStat::MarketRiskPremium)), std::string("bps"));
 	CHECK_EQ(std::string(StatUnit(EffectStat::RouteRiskPremium)), std::string("bps"));
 	CHECK_EQ(std::string(StatUnit(EffectStat::SensorLongRange)), std::string("km"));
-	CHECK_EQ(std::string(StatUnit(EffectStat::CargoVolume)), std::string("m3"));
+	CHECK_EQ(std::string(StatUnit(EffectStat::CargoVolume)), std::string("totes"));
 	CHECK_EQ(std::string(StatUnit(EffectStat::SurveyRange)), std::string("AU"));
 	CHECK_EQ(std::string(StatUnit(EffectStat::BodyHabitatCapacity)), std::string("world units"));
 	CHECK_EQ(std::string(DescribeEffectDomain(EffectDomain::Market)), std::string("Market"));
@@ -1174,7 +1174,7 @@ TEST_CASE("an_effect_applies_the_way_its_operator_says")
 	const std::string described = DescribeEffectStats(stats);
 
 	MANIFEST_CHECK_CONTAINS(described, "Cargo Volume");
-	MANIFEST_CHECK_CONTAINS(described, "m3");
+	MANIFEST_CHECK_CONTAINS(described, "totes");
 	MANIFEST_CHECK_CONTAINS(described, "Crew Training");
 	CHECK(described.find("Shield Front") == std::string::npos);
 	CHECK(DescribeEffectStats(std::map<EffectStat, double>{}).empty());

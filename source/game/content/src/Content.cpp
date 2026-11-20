@@ -43,14 +43,6 @@ bool Contains(const Range &range, const Value &value, Projection projection)
 }
 
 
-// A count of IBCs that is a whole number of totes, from none up to the most given in totes.
-bool WholeTotes(double ibcs, std::uint64_t most)
-{
-	const double totes = ibcs * static_cast<double>(Core::kTotesPerIbc);
-	return totes >= 0.0 && totes <= static_cast<double>(most) && std::trunc(totes) == totes;
-}
-
-
 bool Positive(double value)
 {
 	return std::isfinite(value) && value > 0.0;
@@ -302,10 +294,11 @@ void CheckHulls(Checker &checker, const Jettison::Sim::DefinitionRegistry &regis
 		if (const auto volume = hull.baseStats.find(Core::EffectStat::CargoVolume);
 		    volume != hull.baseStats.end())
 			checker.Require(
-			    WholeTotes(volume->second, Core::kMaxHoldTotes), "baseStats",
+			    volume->second <= static_cast<double>(Core::kMaxHoldTotes) &&
+			        std::trunc(volume->second) == volume->second,
+			    "baseStats",
 			    std::format(
-			        "CargoVolume must be a whole number of totes up to {} IBCs",
-			        Core::kMaxHoldTotes / Core::kTotesPerIbc));
+			        "CargoVolume must be a whole number of totes up to {}", Core::kMaxHoldTotes));
 		for (const std::string &effect : hull.fitableEffects)
 			checker.Require(
 			    effects.Has(effect), "fitableEffects", std::format("'{}' names no effect", effect));
@@ -868,12 +861,11 @@ void CheckScenarios(
 				    problem(
 				        std::format("market '{}' rates must be finite and not below 0", entry.itemId)));
 				checker.Require(
-				    WholeTotes(entry.stock, Core::kMaxWarehouseTotes), "venues",
+				    entry.stock <= Core::kMaxWarehouseTotes, "venues",
 				    problem(
 				        std::format(
-				            "market '{}' stock must be a whole number of totes up to {} "
-				            "IBCs",
-				            entry.itemId, Core::kMaxWarehouseTotes / Core::kTotesPerIbc)));
+				            "market '{}' stock is more than a warehouse holds, {} totes", entry.itemId,
+				            Core::kMaxWarehouseTotes)));
 			}
 		}
 

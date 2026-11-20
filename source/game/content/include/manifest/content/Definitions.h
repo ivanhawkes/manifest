@@ -258,8 +258,8 @@ struct MarketEntry
 	std::string itemId;
 	double production{0.0};
 	double demand{0.0};
-	// IBCs, a whole number of totes (D-087), at most a warehouse's: its broker's at the start.
-	double stock{0.0};
+	// Totes (D-087), at most kMaxWarehouseTotes: its broker's at the start.
+	std::uint64_t stock{0};
 };
 
 // A station or port, delivering physically to the regions it serves.

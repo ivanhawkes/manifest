@@ -112,9 +112,14 @@ evidence](stage-4-trading-plan.md#delivered-w03-2026-11-20)).
 Mid-task the user asked to plan for eighth-size IBCs, 500 mm a side, so traders buy expensive goods
 in smaller amounts, and then to name them: they are totes ([D-087](decision-ledger.md#d-087)), for
 every good, and every count of goods is now in totes, Stage 3's holdings, holds and limits included,
-since no save is durable before Stage 5. The `company` suite's pinned hash moved, the world now
+since no save is durable before Stage 5; at the user's word content authors a hull's `CargoVolume`
+and a venue's `stock` in totes as well, the cargo-hold upgrade adding 2,400 a tier. Every quantity the code, the data and
+the current plans gave in IBCs is now in totes; the IBC remains only as the cubic metre container
+the item fields are defined against, and in the records of D-078 and D-083, which D-087 supersedes. The governance fixture's
+stocks are restated from item units to totes. The `company`
+suite's pinned hash moved, the world now
 holding brokers, venue accounts and the order and broker components. Left: the trade views and
-console commands (W07, W15) and the governance fixture's stocks in totes.
+console commands (W07, W15).
 
 ## W02: the step, settlement and travel choices — 2026-11-20
 

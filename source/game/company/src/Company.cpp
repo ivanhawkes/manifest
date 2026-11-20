@@ -223,13 +223,12 @@ void RegisterCommands(
 		if (const auto volume = hull.baseStats.find(Core::EffectStat::CargoVolume);
 		    volume != hull.baseStats.end())
 		{
-			// Cubic metres, so totes exactly; NaN fails the last comparison.
-			const double totes = volume->second * static_cast<double>(Core::kTotesPerIbc);
+			// NaN fails the last comparison.
+			const double totes = volume->second;
 			if (totes < 0.0 || totes > static_cast<double>(Core::kMaxHoldTotes) ||
 			    std::trunc(totes) != totes)
 				throw std::invalid_argument{std::format(
-				    "hull '{}' has a CargoVolume of {}, not a whole number of totes up "
-				    "to {} totes",
+				    "hull '{}' has a CargoVolume of {}, not a whole number of totes up to {}",
 				    hull.hullId, volume->second, Core::kMaxHoldTotes)};
 			rules->holds.emplace(hull.hullId, static_cast<std::uint64_t>(totes));
 		}

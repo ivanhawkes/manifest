@@ -49,7 +49,7 @@ lifeSupport:
 
 company:
   # A new player's trading company's account, in whole credits (D-077): about a full hold of grain
-  # in the starter; whole IBCs of furs, salt, lime, glassware or soap, not of copper (D-083).
+  # in the starter; totes of furs, salt, lime, glassware, soap or copper (D-087).
   startingCredits: 25000
 
 market:

@@ -276,7 +276,7 @@ TEST_CASE("A rejected move writes nothing")
 	    // 200 available and 5 reserved: the reserved do not load.
 	    {true, copper(203), Result::InsufficientStock},
 	    {true, copper(huge), Result::InsufficientStock},
-	    // The starter holds 20 IBCs, 160 totes, one of them tin.
+	    // The starter holds 160 totes, one of them tin.
 	    {true, copper(160), Result::CapacityExceeded},
 	    {false, copper(1), Result::InsufficientStock},
 	    {false, {"Ship1", "VenueOreHighport", "ItemTin", 2}, Result::InsufficientStock},
@@ -308,9 +308,8 @@ TEST_CASE("A rejected move writes nothing")
 TEST_CASE("The commands refuse a hull whose hold is not a whole number of totes up to the largest")
 {
 	for (const double volume :
-	     {0x1p64,
-	      static_cast<double>(Manifest::Core::kMaxHoldTotes + Manifest::Core::kTotesPerIbc) / 8.0,
-	      20.0625, -1.0, std::numeric_limits<double>::quiet_NaN()})
+	     {0x1p64, static_cast<double>(Manifest::Core::kMaxHoldTotes) + 1.0, 160.5, -1.0,
+	      std::numeric_limits<double>::quiet_NaN()})
 	{
 		CAPTURE(volume);
 		Manifest::Content::ContentSet content = Scenario("trading");
@@ -583,5 +582,5 @@ TEST_CASE("A save with work pending, and a replay from the start, carry the comp
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves only
 	// with what a save holds or the engine's save format, and a change that moves it says so.
-	CHECK(hosted.world.StateHash() == 0xb0f0e0af264cae5eULL);
+	CHECK(hosted.world.StateHash() == 0xf1fc7aa932f63cf4ULL);
 }

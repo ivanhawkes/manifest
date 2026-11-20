@@ -525,7 +525,8 @@ both refuse invalid, negative or oversized prices (`Simulation::IsValidBasePrice
 [decimal representation](market-prices.md); quantities, physical metadata and effect stats
 retain their existing types. The storage cube is the
 IBC cube, the one cubic metre intermediate bulk container, and the fields are defined
-against it:
+against it; goods are held, moved and traded in totes, an eighth of it
+([D-087](decision-ledger.md#d-087)):
 
 | Field | Meaning |
 | --- | --- |

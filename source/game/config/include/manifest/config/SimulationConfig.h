@@ -123,7 +123,7 @@ inline constexpr std::uint64_t kTotesPerIbc = 8;
 inline constexpr std::uint64_t kMaxHoldTotes = 11'520'000 * kTotesPerIbc;
 
 // The most one owner holds of one item at one venue's warehouse: a hundred of the largest holds.
-// Even in gold's troy ounces, 621,152 to the IBC, that many is below 2^53 units.
+// Even in gold's troy ounces, 77,644 to the tote, that many is below 2^53 units.
 inline constexpr std::uint64_t kMaxWarehouseTotes = 100 * kMaxHoldTotes;
 
 struct SkillNode

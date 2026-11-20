@@ -15,7 +15,7 @@ not select a real-world map, political classification or authored region list.
 
 The first playable governance scenario must demonstrate multiple regions on one planet.
 A player initially controls one region's public budget and development alongside their
-separate trading company and 20-IBC starter ship. AI governs other regions. Several players
+separate trading company and 160-tote starter ship. AI governs other regions. Several players
 can therefore have home regions on the same planet. One region is an initial entitlement,
 not ownership or government control of the whole planet. Preserve the tiny two-venue
 trading fixture separately; it cannot establish regional governance isolation by itself.

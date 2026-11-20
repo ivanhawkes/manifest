@@ -7,9 +7,10 @@ No code, content assets, SDK pin or environment changed; no builds or gameplay c
 
 ## Selected ship roles and cargo capacities
 
-The starter ship is the entry point for a lone trader and has a cargo hold of 20 IBC units
-(20 m³ under the existing unit contract). It is distinct from the new compact four-IBC
-ship below. Twenty IBC units is the selected starting hold capacity; upgrade rules and
+The starter ship is the entry point for a lone trader and has a cargo hold of 160 totes
+(20 m³, a tote being an eighth of a cubic metre, [D-087](decision-ledger.md#d-087)). It is
+distinct from the new compact 32-tote ship below. 160 totes is the selected starting hold
+capacity; upgrade rules and
 other starter specifications remain open.
 
 The subsequently selected initial starter supply is 30 kg of oxygen and one fresh
@@ -21,7 +22,7 @@ that service. These are initial onboarding stocks, not refills on reconnect, doc
 ownership transfer or recovery. Preserve actual remaining supplies thereafter.
 
 The selected starter storage rule places operating oxygen and the installed cartridge in
-dedicated life-support space outside the 20-IBC trade cargo hold. Supplies carried for
+dedicated life-support space outside the 160-tote trade cargo hold. Supplies carried for
 trade or as loose spares occupy cargo space under the ordinary packed-volume rules.
 The hull must physically accommodate both spaces without counting the same stock twice.
 Moving goods from cargo into operating reserves must conserve actual stock and capacity;
@@ -35,7 +36,7 @@ provision, upgrades and other journey limits remain open. This decision does not
 the compact ship's oxygen capacity or initial reserves.
 
 The compact ship's primary purpose is unspecified, and trade is not its primary
-requirement. It can carry some cargo, up to four IBC units, but is not the lone-trader
+requirement. It can carry some cargo, up to 32 totes, but is not the lone-trader
 starter. Do not assign it a scout, courier or other specialised role without a later
 product decision.
 
@@ -101,10 +102,10 @@ for its sole occupant, rather than a large crew compartment. Exact interior arra
 dimensions and journey endurance remain to be designed. This requirement does not itself
 select individual crew simulation or a walkable interior.
 
-The ship carries at most four IBC units of cargo. Manifest's existing [unit contract](model.md)
-defines an IBC cube as one cubic metre, so its cargo capacity is 4 m³. Cabin, life-support,
+The ship carries at most 32 totes of cargo, 4 m³: a tote is an eighth of the [unit
+contract](model.md)'s one-cubic-metre IBC cube ([D-087](decision-ledger.md#d-087)). Cabin, life-support,
 propulsion and other ship equipment need their own space outside that usable cargo volume.
-Cargo mass depends on the goods; four IBC units do not mean four tonnes or four units of
+Cargo mass depends on the goods; 32 totes do not mean four tonnes or four units of
 every commodity. Preserve fractional commodity quantities and the shared packed-volume
 conversion in the [physical trading plan](stage-4-trading-plan.md#cargo-capacity-and-physical-travel).
 Literal indivisible container objects are not selected by this requirement.
@@ -115,11 +116,11 @@ large pad. An oversized hull must not be admitted to the smaller berth. Existing
 access, booking and ownership rules still apply; the berth is not a separate market merely
 because it has a new size.
 
-The four-IBC limit is a defining requirement of this class. Existing cargo effects must
+The 32-tote limit is a defining requirement of this class. Existing cargo effects must
 not silently turn it into a larger freighter; resolve allowable fittings/upgrades against
 that limit before implementation. The class can provide the normal fleet market observation
 when docked, with no additional remote-data privilege. Its price and whether it is
-especially cheap to operate have not been selected. The 20-IBC starter's berth requirements
+especially cheap to operate have not been selected. The 160-tote starter's berth requirements
 must be resolved from its own hull dimensions; cargo capacity alone does not establish
 that it fits the compact ship's dock.
 
@@ -227,16 +228,16 @@ Evidence: `source/game/effects/include/manifest/effects/ShipEffectEngine.h`,
 `source/game/effects/src/ShipEffectEngine.cpp`,
 `source/game/ecs/include/manifest/ecs/Components.h`; pinned Jettison
 `source/engine/dock/include/jettison/dock/Definitions.h` and `Docks.h`.
-The generic engine change must not hard-code Manifest's four-IBC rule or cabin design.
+The generic engine change must not hard-code Manifest's 32-tote rule or cabin design.
 Commit any required engine provision before updating Manifest's immutable SDK pin and
 matching environment. No SDK change has been made by this planning work.
 
 ## Implementer handoff and acceptance evidence
 
 1. Select hull dimensions around the single-occupant long-journey accommodation, equipment
-   and four-IBC cargo space; select compatible berth dimensions and safety clearances.
+   and 32-tote cargo space; select compatible berth dimensions and safety clearances.
    Define endurance, fittings, price and operating costs separately. Define the lone-trader
-   starter with its 20-IBC hold and resolve its own hull dimensions, berth fit and upgrades.
+   starter with its 160-tote hold and resolve its own hull dimensions, berth fit and upgrades.
    The compact ship's primary purpose remains unspecified.
 2. Done in Jettison (W01, 2026-11-18): pad classes are data. A hull uses a larger compatible
    berth by rank (`Docks::Fits`). Manifest decides which of its classes a station offers.
@@ -247,7 +248,7 @@ matching environment. No SDK change has been made by this planning work.
    loads and packing conversions without duplicated cargo or credit changes on rejection.
    Show that fittings/technology cannot silently exceed the class limit. Cabin/equipment
    accommodation must not consume the same space counted as usable cargo. Separately show
-   a new lone trader receiving the 20-IBC starter, legal starter loads totalling 20 m³ and
+   a new lone trader receiving the 160-tote starter, legal starter loads totalling 20 m³ and
    rejection above its current capacity. Verify that onboarding selects the starter hull,
    not the compact hull or existing 900 m³ long-haul default.
    Verify initial starter oxygen of 30 kg and one fresh installed cartridge with 30

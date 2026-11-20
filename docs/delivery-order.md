@@ -44,7 +44,7 @@ venue, order life and matching bounds, a 1/60 s step and one travel command
 one Jettison gap for W05, an order between `dock` and `lanes`. W03 is done (2026-11-20): the
 [hosted book](stage-4-trading-plan.md#delivered-w03-2026-11-20) settles orders on owner and venue
 accounts with each venue's broker, on the same pin with no engine edit, and goods are counted in
-totes, an eighth of an IBC ([D-087](decision-ledger.md#d-087)). Next: W05.
+totes, an eighth of a cubic metre ([D-087](decision-ledger.md#d-087)). Next: W05.
 
 ## Priority 0: maintenance before Stage 1
 

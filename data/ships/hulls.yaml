@@ -3,8 +3,8 @@
 # before any system is fitted:
 #
 #   baseStats          The stats it starts from, by EffectStat name; the ship systems it is fitted
-#                      with and its operator's technology add to them. CargoVolume is cubic metres
-#                      of trade hold, one IBC cube to the cubic metre.
+#                      with and its operator's technology add to them. CargoVolume is the trade
+#                      hold in totes, eight to the cubic metre IBC (D-087).
 #   fitableEffects     The effects it has a slot for, by effect id: a system it has no slot for is
 #                      refused.
 #   occupants          The people it carries on a long journey.
@@ -39,7 +39,7 @@ hull-base:
         SensorCommercial: 1500
         NavigationComputer: 2
         TraderComputer: 1.5
-        CargoVolume: 900
+        CargoVolume: 7200
         FuelCapacity: 60
         SalvageCapacity: 15
         LifeSupportDays: 45
@@ -57,25 +57,25 @@ hull-base:
         SalvageRig, LifeSupport, StealthCoating, EmissionsControl, Countermeasures,
         CrewTraining, DamageControl, SparesLockers]
 
-  # The lone trader's first ship (D-045, D-050): a 20-IBC hold, one occupant, three 10 kg
-  # oxygen tanks and one scrubber cartridge, provisioned once with every tank full and a fresh
+  # The lone trader's first ship (D-045, D-050): a 160-tote hold, one occupant, three
+  # 10 kg oxygen tanks and one scrubber cartridge, provisioned once with every tank full and a fresh
   # cartridge.
   - hull:
       hullId: HullLoneTraderStarter
       className: Lone-trader starter
       description: The entry ship of a lone trader
       baseStats:
-        CargoVolume: 20
+        CargoVolume: 160
       occupants: 1
       oxygenTanks: [10, 10, 10]
       scrubberCartridges: 1
 
-  # The compact single-occupant ship (D-044): four IBC cubes of cargo and a truck-cab cabin. Its
-  # life support and its fittings against the four-IBC limit are open.
+  # The compact single-occupant ship (D-044): 32 totes of cargo and a truck-cab cabin. Its
+  # life support and its fittings against the 32-tote limit are open.
   - hull:
       hullId: HullCompactSingle
       className: Compact single-seat
       description: A one-occupant ship with a tiny long-journey cabin
       baseStats:
-        CargoVolume: 4
+        CargoVolume: 32
       occupants: 1

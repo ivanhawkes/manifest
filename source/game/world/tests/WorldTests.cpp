@@ -66,7 +66,7 @@ TEST_CASE(
 	// Two a region, and a venue's broker's and its own.
 	CHECK(registry.view<const Account>().size() == 8);
 
-	// Ore's broker holds the venue's stock in totes, 2.625 IBCs of furs, with the authored treasury.
+	// Ore's broker holds the venue's stock, 21 totes of furs, with the authored treasury.
 	const entt::entity broker = hosted.identities.Find(Kind::Broker, "VenueOreHighport");
 	REQUIRE(broker != entt::null);
 	CHECK(registry.get<Broker>(broker).operatorId == "OrganisationAnvilPortAuthority");

@@ -186,9 +186,9 @@ population-scaled rates per 1,000 people per simulation day ([D-022](decision-le
 A good's quantity is a double in its `unitType`; its packed volume and mass follow
 `unitsPerCubicMetre`, `density` and `packFactor` as the field notes in `data/trade-items/` define
 them, never the trading unit alone. Since [D-078](decision-ledger.md#d-078) and
-[D-083](decision-ledger.md#d-083), goods held, moved or traded are counted in totes, eighths of an IBC
-([D-087](decision-ledger.md#d-087)), so a venue's market `stock` is IBCs, a whole number of totes
-(W03); rates stay doubles in the unit, per day. Prices are
+[D-083](decision-ledger.md#d-083), goods held, moved or traded are counted in totes, an eighth of a cubic metre each
+([D-087](decision-ledger.md#d-087)), so a venue's market `stock` and a hull's `CargoVolume` are whole totes (W03); rates stay doubles
+in the unit, per day. Prices are
 Decimal text, ledgers whole credits (int64).
 Positions are metres, `glm::dvec3`, in a system's frame.
 
@@ -250,7 +250,7 @@ seeds ([D-064](decision-ledger.md#d-064)), and keep their seed's kernel density 
 Supplies is `CategoryMedicalEquipment`, so the specialised medicines stay alone in
 `CategoryMedicine`. LPG is `CategoryFuels`. Oxygen, as the refrigerated liquid, and the scrubber
 cartridge are the new `CategoryLifeSupport`; one cartridge is one `Unit`, a fresh 30-occupant-day
-charge of 41 kg, 16 to the IBC cube. The medical supplies, LPG and both life-support goods are of
+charge of 41 kg, 16 to the cubic metre, two to the tote. The medical supplies, LPG and both life-support goods are of
 the Industrial Age, which bounds production, not trade: an earlier region imports them. All eight
 are selected in the Manifest mode; the Astralis mode and the eight-good fixture are unchanged.
 
@@ -518,7 +518,7 @@ spawn/allocation operation, so the new ship starts under station support. Initia
 supplies are selected below; numeric berth fees, station provisioning and later service
 outages remain open.
 
-The 20-IBC starter begins with 30 kg of oxygen and one fresh installed standard scrubber
+The 160-tote starter begins with 30 kg of oxygen and one fresh installed standard scrubber
 cartridge with 30 occupant-days of capacity. At one occupant, each provides 30 simulation
 days of onboard life support under the selected rates. Treat these as explicit initial
 onboarding stocks, granted once; reconnect, docking, recovery or acquisition cannot
@@ -534,7 +534,7 @@ per-tank validation; cargo oxygen cannot increase installed capacity. This defer
 requirement does not enter the first playable loop's critical path.
 
 The starter's operating oxygen and installed cartridge occupy dedicated life-support
-space outside the 20-IBC trade hold. Supplies carried for trade or as loose spares count
+space outside the 160-tote trade hold. Supplies carried for trade or as loose spares count
 toward cargo capacity using their authored packed volume. Keep explicit stock locations;
 service storage is not a second copy of cargo inventory. The hull must accommodate both
 spaces. Transfers/replacement must debit actual source goods once and obey the eventually
@@ -606,7 +606,7 @@ unit, initial oxygen rate, occupant-day accounting, 30-occupant-day standard car
 connected station service pausing onboard depletion.
 Installed/spare capacity, storage values and survival mechanics remain unselected. Apply
 the eventual requirements to the relevant ship classes, including the long-journey compact
-ship, without silently taking its four-IBC cargo allocation for cabin/equipment needs.
+ship, without silently taking its 32-tote cargo allocation for cabin/equipment needs.
 
 Read-only inspection found no Life Support category, oxygen item or carbon-scrubber item
 in the current trade-item definitions. Category/item IDs and authored fields remain to be

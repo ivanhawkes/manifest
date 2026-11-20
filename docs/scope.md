@@ -54,7 +54,7 @@ delivery connection and continuing basic docking/trading/delivery access corpora
 cannot revoke. Charges and finite capacity/goods/funds still apply; private-port policies remain.
 New players spawn connected to working station life support, requiring an available
 connection at allocation. The starter receives 30 kg oxygen and one fresh installed
-30-occupant-day cartridge once, in dedicated life-support space outside its 20-IBC trade
+30-occupant-day cartridge once, in dedicated life-support space outside its 160-tote trade
 hold. Trade supplies and loose spares use cargo space; dimensions and later outages remain open.
 Exact colony powers, detailed shared-port transport and starter fees/capacity/funds remain planning work.
 Stations should express

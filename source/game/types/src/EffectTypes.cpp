@@ -38,7 +38,7 @@ constexpr std::array<StatInfo, 46> statTable{
     StatInfo{EffectStat::SensorCommercial, "Sensor Commercial", "km", EffectDomain::Ship},
     StatInfo{EffectStat::NavigationComputer, "Navigation Computer", "GFLOP/s", EffectDomain::Ship},
     StatInfo{EffectStat::TraderComputer, "Trader Computer", "GFLOP/s", EffectDomain::Ship},
-    StatInfo{EffectStat::CargoVolume, "Cargo Volume", "m3", EffectDomain::Ship},
+    StatInfo{EffectStat::CargoVolume, "Cargo Volume", "totes", EffectDomain::Ship},
     StatInfo{EffectStat::FuelCapacity, "Fuel Capacity", "t", EffectDomain::Ship},
     StatInfo{EffectStat::SalvageCapacity, "Salvage Capacity", "t", EffectDomain::Ship},
     StatInfo{EffectStat::LifeSupportDays, "Life Support", "crew-days", EffectDomain::Ship},

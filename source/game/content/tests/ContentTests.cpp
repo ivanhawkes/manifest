@@ -297,10 +297,10 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	    starter, "version: 1\nbaseStats: {CargoVolume: -1}\n",
 	    "baseStats Cargo Volume must be finite and not below 0");
 	// A hold is whole totes, none bigger than the largest hull class's envelope.
-	for (const std::string_view volume : {"18446744073709551616", "11520001", "20.0625"})
+	for (const std::string_view volume : {"18446744073709551616", "92160001", "160.5"})
 		CheckRefused(
 		    starter, std::format("version: 1\nbaseStats: {{CargoVolume: {}}}\n", volume),
-		    "CargoVolume must be a whole number of totes up to 11520000 IBCs");
+		    "CargoVolume must be a whole number of totes up to 92160000");
 	CheckRefused(
 	    starter, "version: 1\nfitableEffects: [Teleport]\n",
 	    "fitableEffects 'Teleport' names no effect");
@@ -698,13 +698,9 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	    trading, venue("market: [{itemId: ItemSalt, production: -1}]"),
 	    "'VenueBrineHighport' market 'ItemSalt' rates must be finite and not below 0");
 	CheckRefused(
-	    trading, venue("market: [{itemId: ItemSalt, stock: 1152000001}]"),
-	    "'VenueBrineHighport' market 'ItemSalt' stock must be a whole number of totes up to "
-	    "1152000000 IBCs");
-	CheckRefused(
-	    trading, venue("market: [{itemId: ItemSalt, stock: 0.1}]"),
-	    "'VenueBrineHighport' market 'ItemSalt' stock must be a whole number of totes up to "
-	    "1152000000 IBCs");
+	    trading, venue("market: [{itemId: ItemSalt, stock: 9216000001}]"),
+	    "'VenueBrineHighport' market 'ItemSalt' stock is more than a warehouse holds, 9216000000 "
+	    "totes");
 
 	// A player's home needs an operational public station that docks the starter, serves the region
 	// and has life support to spare (D-047); each lack alone refuses it.
@@ -981,7 +977,7 @@ TEST_CASE("A selected scenario's homes provision at the first station that docks
 }
 
 
-TEST_CASE("An IBC holds an item's units per cubic metre, a finite amount above 0 in every unit")
+TEST_CASE("A cubic metre holds an item's units per cubic metre, a finite amount above 0 in every unit")
 {
 	const Overlay none;
 	const ContentSet content = LoadWith(none);
@@ -994,7 +990,7 @@ TEST_CASE("An IBC holds an item's units per cubic metre, a finite amount above 0
 		CHECK(item.unitsPerCubicMetre > 0.0);
 	}
 	CHECK(units.size() >= 5);
-	// Copper by the tonne, 8.96 to the IBC: the starter's 20 IBCs hold 179.2 t.
+	// Copper by the tonne, 8.96 to the cubic metre: the starter's 160 totes hold 179.2 t.
 	const auto copper = std::ranges::find(
 	    content.gameMode.items, std::string{"ItemCopper"}, &Manifest::Core::ItemNode::itemId);
 	REQUIRE(copper != content.gameMode.items.end());

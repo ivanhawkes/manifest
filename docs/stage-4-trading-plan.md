@@ -176,7 +176,7 @@ shortage accounting and price rules, with checked finite arithmetic. Record inte
 production/consumption sources and sinks for invariant tests.
 
 The native counterparty is a broker at each venue ([D-084](decision-ledger.md#d-084), W02): a
-trading principal owned by the venue's operator, with its own account and whole-IBC holdings
+trading principal owned by the venue's operator, with its own account and holdings in totes
 there, seeded from the scenario's venue stock and an authored treasury. On each due economic turn
 it cancels its resting orders and posts one bid and one ask per item it trades, around the
 existing native price with an authored spread and explicit Decimal rounding: the ask no more
@@ -257,9 +257,9 @@ orders and assume their original escrow still guarantees settlement.
 ## Cargo capacity and physical travel
 
 The subsequent [small-ship plan](small-trader-and-docking-plan.md) requires a compact
-single-occupant long-journey hull with four IBC units (4 m³) of usable cargo space and a
+single-occupant long-journey hull with 32 totes (4 m³) of usable cargo space and a
 matching small berth. Its primary role remains unspecified, with trade secondary. The
-separate lone-trader starter has a 20-IBC (20 m³) hold. Preserve distinct capacities in
+separate lone-trader starter has a 160-tote (20 m³) hold. Preserve distinct capacities in
 onboarding and load validation, and the compact class's limit across effects.
 The pinned SDK's fixed smallest pad does not provide the required smaller berth; provision
 the reusable engine capability before consuming it here. Dimensions, endurance, starter
@@ -275,15 +275,16 @@ and remaining service capacity through retry/recovery. Other hull limits, physic
 volume, compartment dimensions, item fields and transfer/replacement procedures
 remain open; separate storage does not grant unlimited reserves or duplicate inventory.
 
-Reconciled with [D-078](decision-ledger.md#d-078) in W02 ([D-083](decision-ledger.md#d-083)):
-goods are held, moved and traded in whole IBCs, one cubic metre each, one IBC being the item's
-`unitsPerCubicMetre` in its unit, so the occupied volume of `n` IBCs is `n` cubic metres for
-every unit and no `packFactor` enters capacity. An order's quantity is a whole number of IBCs and
+Reconciled with [D-078](decision-ledger.md#d-078) in W02 ([D-083](decision-ledger.md#d-083)) and
+counted in totes since W03 ([D-087](decision-ledger.md#d-087)): goods are held, moved and traded in
+whole totes, an eighth of a cubic metre each, one tote being an eighth of the item's
+`unitsPerCubicMetre` in its unit, so the occupied volume of `n` totes is `n / 8` cubic metres for
+every unit and no `packFactor` enters capacity. An order's quantity is a whole number of totes and
 its limit stays a Decimal price per authored unit. A fill's gross is that price times
-`unitsPerCubicMetre` times the IBCs, converted to whole credits by the
+`unitsPerCubicMetre / 8` times the totes, converted to whole credits by the
 [market price rules](market-prices.md) (nearest whole-credit gross, ceil fees, ceil buy
 reservations); the double unit count is formed once, at that conversion. A broker's holdings are
-whole IBCs like a company's.
+totes like a company's.
 The initial capacity constraint is `CargoVolume`; do not invent an unauthored payload
 mass limit. If dynamic cargo mass is integrated with physics, derive and test it
 separately without changing the volume contract.
@@ -328,7 +329,7 @@ fails with its current state instead of hanging.
 ## First company purchase
 
 Use `SkillShipCargoHolds`/`CargoHolds` as the initial upgrade, targeting an owned ship.
-The existing effect adds 300 cubic metres per tier; reuse its stat recomputation rather
+The existing effect adds 2,400 totes (300 cubic metres) per tier; reuse its stat recomputation rather
 than incrementing a cached capacity repeatedly. Company-owned progression records the
 purchase, scoped to its target ship, separately from civilisation technology.
 
@@ -401,8 +402,9 @@ graphical presentation or public hosting readiness.
 ## Delivered: W03, 2026-11-20
 
 The `trade` module settles the hosted book on owner/venue accounts; Stage 3's goods are counted in
-totes ([D-087](decision-ledger.md#d-087), the user's choice during W03), so nothing below is whole
-IBCs. What it chose where the contract above left room:
+totes ([D-087](decision-ledger.md#d-087), the user's choice during W03), and content authors a
+hull's `CargoVolume` and a venue's `stock` in totes as well. What it chose where the contract above
+left room:
 
 - **State.** `World::Order` (`Order<n>`, n its time priority) on its own entity names its owner, a
   `Company` or a venue's `Broker`, its venue, item, side, Decimal limit as raw microcredits, totes
@@ -449,9 +451,9 @@ first quotes and their requote at step 59 replacing every order, none piling up;
 order life not a whole number of steps refused at start; and a save with an open order continuing as
 its world, a holding reserving more than its sell orders, or an order of an unknown owner, refused.
 
-Left: market views in the snapshot, and the console's and TUI's trade commands (W07, W15); the
-governance fixture's stocks, still whole IBCs, not restated in totes; immediate-or-cancel, which
-the acceptance scenario has not needed; and a broker's demand beyond its funds, a W04 question.
+The governance fixture's stocks are restated in totes too. Left: market views in the snapshot, and
+the console's and TUI's trade commands (W07, W15); immediate-or-cancel, which the acceptance
+scenario has not needed; and a broker's demand beyond its funds, a W04 question.
 
 ## Handoff to stage 5
 

@@ -110,9 +110,9 @@ clamping of arithmetic residue, if needed, must have one documented rule and tes
 never use a tolerance to permit a material overdraft.
 
 Use the existing content units and packing semantics for capacity. Settled in A02, and since
-[D-078](decision-ledger.md#d-078) counted in whole IBCs: a hold carries IBCs of one cubic metre,
-each full, which is `ItemNode::unitsPerCubicMetre` of the item in its unit (that figure already
-folds in the unit, density and packing), and a hull holds the whole cubic metres of its
+[D-087](decision-ledger.md#d-087) counted in whole totes: a hold carries totes of an eighth of a
+cubic metre, each full, which is an eighth of `ItemNode::unitsPerCubicMetre` of the item in its unit
+(that figure already folds in the unit, density and packing), and a hull holds the totes of its
 `CargoVolume`. Do not treat every item unit as one cubic metre. Derived occupied capacity is
 rebuilt from authoritative cargo and validated definitions; cargo and a second mutable capacity
 counter must not drift apart.
@@ -217,20 +217,20 @@ with life support that serves it and has a pad the starter fits, which the conte
 so a retry under a new sequence mints nothing; with no home free it is `NoHomeRegion`. A ship's dock
 is its `Ship::dockedAt`, a venue's ID, which only provisioning sets: the engine's `Dock::Docking`
 needs physics and a station body, which W05 brings. `Manifest.Company.Load` and `Unload`, a player's,
-move a whole number of IBCs ([D-078](decision-ledger.md#d-078)) between the company's `Stock` (a
-sorted `Holding` per venue and item, its available and reserved IBCs) and the ship's `Cargo` (a
-sorted `Lot` per item, its IBCs), naming the venue the sender believes the ship is at. Every count is
+move a whole number of totes ([D-087](decision-ledger.md#d-087)) between the company's `Stock` (a
+sorted `Holding` per venue and item, its available and reserved totes) and the ship's `Cargo` (a
+sorted `Lot` per item, its totes), naming the venue the sender believes the ship is at. Every count is
 an integer, so a move conserves exactly and no residue rule is needed. Every check runs before any
-write, with the plan's codes: `InvalidQuantity` for no IBCs, and `CapacityExceeded` for a load past
+write, with the plan's codes: `InvalidQuantity` for no totes, and `CapacityExceeded` for a load past
 the hull's hold or an unload past the warehouse's limit. Both limits are `Core` constants: a hold
-carries at most `kMaxHoldIbcs`, 11,520,000, the largest hull class's envelope (the heavy
+carries at most `kMaxHoldTotes`, 92,160,000, the largest hull class's envelope (the heavy
 destroyer's 600 x 160 x 120 m, [ship size classes](small-trader-and-docking-plan.md#ship-size-classes-and-the-resupply-platform));
-a warehouse holds at most `kMaxWarehouseIbcs`, a hundred of those, of one item for one owner at one
-venue. A hull's `CargoVolume` must be a whole number of IBCs up to `kMaxHoldIbcs`: content refuses
+a warehouse holds at most `kMaxWarehouseTotes`, a hundred of those, of one item for one owner at one
+venue. A hull's `CargoVolume` must be a whole number of totes up to `kMaxHoldTotes`: content refuses
 one that is not, and so does registering the commands, should a set arrive some other way. A load
 refuses a save whose stock or cargo is out of order, held twice, empty or over its limit, or whose
 ship carries more than its hull's hold, which registering the commands gives the world's
-`Identities` from the same IBC counts the commands use. Inventory comes from fixtures alone; nothing a
+`Identities` from the same tote counts the commands use. Inventory comes from fixtures alone; nothing a
 player sends makes it. Life-support connections at the home station are not counted (W06).
 
 ## Stage 3 executable scope
@@ -352,7 +352,7 @@ above is held by a test that runs in the gate:
 | Two regions of one planet | `company`: the governance scenario's two homes go to two players' polities, each region with its own public and household accounts. Project permissions wait for projects (W11, W12) |
 | No action before its step, conflicts in order | `command`: two grants for one balance; `company`: two loads for one holding and two provisionings for one home in one step, the second refused by what the first did |
 | Rejection atomicity | `company`: every refused move leaves the player's view as it was, and a refused provisioning spends no ID; `command`: a refused admission consumes no sequence |
-| Conservation | `company`: loads and unloads move whole IBCs between that venue and that hold, credits untouched; a hold carries them up to its hull's, a warehouse up to its limit, and a hull over the largest is refused by content and by the commands |
+| Conservation | `company`: loads and unloads move whole totes between that venue and that hold, credits untouched; a hold carries them up to its hull's, a warehouse up to its limit, and a hull over the largest is refused by content and by the commands |
 | Retries | `command`: pending and completed retries, conflicts, gaps, bounds and pruning; `company`: a provisioning and a load retried run once |
 | Save, load and replay | `company`: a save with a request pending and a replay from the start reach the hosted world's hash, views and outcomes, pinned to one hash in every gate build (Debug, Release, sanitised, TUI off); `command` and `world`: the ledger and lookups rebuilt, a broken save refused, a queue that is not the ledger's pending requests in order, an unreadable payload and a save over the limits among them; a retry answered after a restart that registers another version of its command. The world holds no credentials (none exist before N01) and no console state |
 | Queries | `query`: a player sees only their company, the host every one, and observing changes nothing |

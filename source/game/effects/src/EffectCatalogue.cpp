@@ -109,7 +109,7 @@ std::vector<EffectDefinition> ShipEffectDefinitions()
 	        {Add(EffectStat::TraderComputer, 1.2)}),
 	    MakeEffect(
 	        "CargoHolds", ship, "Cargo Holds", "The size of a run",
-	        {Add(EffectStat::CargoVolume, 300.0)}),
+	        {Add(EffectStat::CargoVolume, 2400.0)}),
 	    MakeEffect(
 	        "FuelBunkers", ship, "Fuel Bunkers", "The range of a run, and the fuel the drive burns",
 	        {Add(EffectStat::FuelCapacity, 18.0)}),
