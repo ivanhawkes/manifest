@@ -97,8 +97,15 @@ TEST_CASE("A player sees their own company as it was at the completed step, and 
 	REQUIRE(hosted.Run(kAda, Company::kLoad, move) == Result::Succeeded);
 
 	const std::uint64_t hash = hosted.world.StateHash();
-	const Snapshot loaded = hosted.Observe(kAda);
+	Snapshot loaded = hosted.Observe(kAda);
 	CHECK(hosted.world.StateHash() == hash);
+	// Ada's starting report of Brine, the other station of her system, from the step she spawned in.
+	REQUIRE(loaded.markets.size() == 1);
+	CHECK(loaded.markets[0].report.venueId == "VenueBrineHighport");
+	CHECK(loaded.markets[0].report.source == World::Source::Starting);
+	CHECK(loaded.markets[0].report.observed == 0);
+	CHECK_FALSE(loaded.markets[0].live);
+	loaded.markets.clear();
 	CHECK(
 	    loaded == Snapshot{
 	                  2,
@@ -158,4 +165,31 @@ TEST_CASE("Each player sees only their own company and results, and the host see
 	// Bea's load was her first request: Ada's ledger has no such result.
 	CHECK(hosted.requests.Outcome(kBea, 1));
 	CHECK_FALSE(hosted.requests.Outcome(kAda, 1));
+}
+
+
+TEST_CASE("A player's markets are their own reports, live only as observed at the snapshot's step")
+{
+	Hosted hosted{"trading"};
+	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
+	REQUIRE(hosted.Provision("Bea") == Result::Succeeded);
+	World::Reports &adas =
+	    hosted.world.Registry().get<World::Reports>(hosted.identities.Find(Kind::Principal, "Ada"));
+	const std::uint64_t step = hosted.world.Clock().Step();
+	adas.reports = {
+	    {"VenueBrineHighport", World::Source::Docked, step - 1, 0, {}},
+	    {"VenueOreHighport", World::Source::Docked, step, 0, {{"ItemFurs", 5, 1, 7, 2, 0, 0, 0}}}};
+
+	const Snapshot seen = hosted.Observe(kAda);
+	REQUIRE(seen.markets.size() == 2);
+	CHECK_FALSE(seen.markets[0].live);
+	CHECK(seen.markets[1] == MarketView{adas.reports[1], true});
+
+	// Bea's are her own starting report alone; the host, with no fleet, has none.
+	const Snapshot beas = hosted.Observe(kBea);
+	REQUIRE(beas.markets.size() == 1);
+	CHECK(beas.markets[0].report.source == World::Source::Starting);
+	CHECK(beas.markets[0].report.observed == 1);
+	CHECK(hosted.Observe(kHost).markets.empty());
+	CHECK(hosted.Observe({ActorKind::Principal, "Cy"}).markets.empty());
 }

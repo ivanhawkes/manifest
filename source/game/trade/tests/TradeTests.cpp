@@ -1,5 +1,6 @@
 #include "TestHelpers.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <limits>
 #include <map>
@@ -531,6 +532,9 @@ TEST_CASE("An order life or a turn that is not whole steps refuses to start")
 	CHECK_THROWS_WITH_AS(
 	    Register(world, requests, identities, content), doctest::Contains("orderLifeSeconds"),
 	    std::invalid_argument);
+	CHECK_THROWS_WITH_AS(
+	    SalesWindowSteps(world, content), doctest::Contains("salesWindowSeconds"),
+	    std::invalid_argument);
 }
 
 
@@ -568,4 +572,255 @@ TEST_CASE("A save with an open order loads and carries on as the world it came f
 	    loaded.world.Load(hosted.world.Save()), doctest::Contains("names an owner or venue"),
 	    Jettison::Serialise::FormatError);
 	CHECK(loaded.Now() != Business{});
+}
+
+
+// ─── Observation (W07) ───
+
+namespace
+{
+const Actor kHost{ActorKind::Administrator, "Host"};
+constexpr std::string_view kBrine = "VenueBrineHighport";
+
+
+const Manifest::Content::VenueDefinition &Venue(std::string_view venueId)
+{
+	const Manifest::Content::ScenarioDefinition &scenario = Trading().scenarios.at(Trading().scenario);
+	const auto venue =
+	    std::ranges::find(scenario.venues, venueId, &Manifest::Content::VenueDefinition::venueId);
+	REQUIRE(venue != scenario.venues.end());
+	return *venue;
+}
+
+
+// A new player, provisioned by the host in a step of its own: Company<n>, its Ship<n> docked at Ore.
+void Provision(Hosted &hosted, const std::string &principal)
+{
+	REQUIRE(
+	    hosted
+	        .Admit(
+	            kHost, Manifest::Company::kProvision,
+	            Manifest::Company::Provision{principal, principal, principal})
+	        .status == Receipt::Status::Queued);
+	hosted.world.Step();
+}
+
+
+// Where a ship's journey would leave it: docked at the venue, or at none.
+void Dock(Hosted &hosted, std::string_view ship, std::string_view venue)
+{
+	hosted.world.Registry()
+	    .get<World::Ship>(hosted.identities.Find(Kind::Ship, std::string{ship}))
+	    .dockedAt = venue;
+}
+
+
+const World::Reports &ReportsOf(const Hosted &hosted, std::string_view principal)
+{
+	const entt::entity entity = hosted.identities.Find(Kind::Principal, std::string{principal});
+	REQUIRE(entity != entt::null);
+	return hosted.world.Registry().get<const World::Reports>(entity);
+}
+
+
+World::Report ReportOf(const Hosted &hosted, std::string_view principal, std::string_view venue)
+{
+	const std::vector<World::Report> &reports = ReportsOf(hosted, principal).reports;
+	const auto report = std::ranges::find(reports, venue, &World::Report::venueId);
+	REQUIRE(report != reports.end());
+	return *report;
+}
+
+
+World::Line LineOf(const World::Report &report, std::string_view item)
+{
+	const auto line = std::ranges::find(report.lines, item, &World::Line::itemId);
+	REQUIRE(line != report.lines.end());
+	return *line;
+}
+
+
+// The venue's report as the world holds it now, observed at the step.
+World::Report Current(const Hosted &hosted, std::string_view venue, std::uint64_t observed)
+{
+	return Capture(
+	    hosted.world.Registry(), hosted.identities, Venue(venue), observed,
+	    SalesWindowSteps(hosted.world, Trading()));
+}
+} // namespace
+
+
+TEST_CASE("A new player sees their own station live, and the rest of their system as it was at spawn")
+{
+	Hosted hosted{true};
+	Provision(hosted, "Cai");
+	REQUIRE(hosted.world.Clock().Step() == 1);
+
+	// Docked at Ore, observed as the step ended; Brine a starting report from the step's start.
+	CHECK(ReportOf(hosted, "Cai", kOre) == Current(hosted, kOre, 1));
+	World::Report spawn = Current(hosted, kBrine, 0);
+	spawn.source = World::Source::Starting;
+	const World::Report brine = ReportOf(hosted, "Cai", kBrine);
+	CHECK(brine == spawn);
+	CHECK(ReportsOf(hosted, "Cai").reports.size() == 2);
+	CHECK(LineOf(brine, "ItemSalt").ask > 0);
+	CHECK(LineOf(brine, "ItemSalt").sold == 0);
+	CHECK(LineOf(brine, "ItemSalt").lastPrice == 0);
+
+	// A trade at Brine, unseen: the report and its observation stay as they were.
+	const World::Line salt = LineOf(brine, "ItemSalt");
+	REQUIRE(hosted.Place(kAda, Side::Buy, 1, salt.ask, "ItemSalt", kBrine) == Result::Succeeded);
+	const std::uint64_t traded = hosted.world.Clock().Step() - 1;
+	CHECK(ReportOf(hosted, "Cai", kBrine) == brine);
+	CHECK(ReportOf(hosted, "Cai", kOre).observed == hosted.world.Clock().Step());
+
+	// Docked at Brine it is live there, the trade in it once; Ore stays as it was when the ship left.
+	Dock(hosted, "Ship1", kBrine);
+	const std::uint64_t left = hosted.world.Clock().Step();
+	hosted.world.Step();
+	const World::Report live = ReportOf(hosted, "Cai", kBrine);
+	CHECK(live.source == World::Source::Docked);
+	CHECK(live.observed == hosted.world.Clock().Step());
+	CHECK(LineOf(live, "ItemSalt").sold == 1);
+	CHECK(LineOf(live, "ItemSalt").lastPrice == salt.ask);
+	CHECK(LineOf(live, "ItemSalt").lastStep == traded);
+	const World::Report ore = ReportOf(hosted, "Cai", kOre);
+	CHECK(ore.observed == left);
+	REQUIRE(hosted.Place(kAda, Side::Buy, 1, LineOf(ore, "ItemFurs").ask) == Result::Succeeded);
+	CHECK(ReportOf(hosted, "Cai", kOre) == ore);
+	CHECK(LineOf(Current(hosted, kOre, 0), "ItemFurs").sold == 1);
+}
+
+
+TEST_CASE("A fleet's second ship keeps a station live; as the last leaves, the step's trades go unseen")
+{
+	Hosted hosted{true};
+	Provision(hosted, "Cai");
+	Provision(hosted, "Dee");
+	entt::registry &registry = hosted.world.Registry();
+	const entt::entity second = hosted.identities.Create(registry, Kind::Ship, "ShipX");
+	registry.emplace<World::Ship>(
+	    second, "Company1", Trading().scenarios.at(Trading().scenario).starterHull, std::string{kOre});
+
+	Dock(hosted, "Ship1", "");
+	hosted.world.Step();
+	CHECK(ReportOf(hosted, "Cai", kOre).observed == hosted.world.Clock().Step());
+
+	// The last of Cai's ships leaves in the step Ada buys there.
+	const World::Report before = ReportOf(hosted, "Cai", kOre);
+	Dock(hosted, "ShipX", "");
+	REQUIRE(hosted.Place(kAda, Side::Buy, 2, LineOf(before, "ItemFurs").ask) == Result::Succeeded);
+	CHECK(ReportOf(hosted, "Cai", kOre) == before);
+	const World::Report dees = ReportOf(hosted, "Dee", kOre);
+	CHECK(dees.observed == hosted.world.Clock().Step());
+	CHECK(LineOf(dees, "ItemFurs").sold == 2);
+	CHECK(dees != ReportOf(hosted, "Cai", kOre));
+}
+
+
+TEST_CASE("A report's sales are its window's fills, each once, and a frozen report keeps its window")
+{
+	Hosted hosted{true};
+	Provision(hosted, "Cai");
+	Provision(hosted, "Dee");
+	const std::uint64_t window = SalesWindowSteps(hosted.world, Trading());
+	REQUIRE(window == 3600);
+
+	const World::Report quoted = ReportOf(hosted, "Dee", kOre);
+	const std::int64_t furs = LineOf(quoted, "ItemFurs").ask;
+	REQUIRE(hosted.Place(kAda, Side::Buy, 2, furs) == Result::Succeeded);
+	const std::uint64_t first = hosted.world.Clock().Step() - 1;
+	REQUIRE(hosted.Place(kAda, Side::Buy, 1, furs) == Result::Succeeded);
+	REQUIRE(
+	    hosted.Place(kAda, Side::Buy, 1, LineOf(quoted, "ItemCopper").ask, "ItemCopper") ==
+	    Result::Succeeded);
+	const std::uint64_t last = hosted.world.Clock().Step() - 1;
+
+	// The buyer's and the seller's side of a fill are one sale.
+	World::Report dees = ReportOf(hosted, "Dee", kOre);
+	CHECK(LineOf(dees, "ItemFurs").sold == 3);
+	CHECK(LineOf(dees, "ItemCopper").sold == 1);
+	CHECK(LineOf(dees, "ItemTin").sold == 0);
+	CHECK(dees.since == 0);
+
+	// Cai's ship leaves, and Cai's report stops with it.
+	Dock(hosted, "Ship1", "");
+	hosted.world.Step();
+	const World::Report frozen = ReportOf(hosted, "Cai", kOre);
+
+	// The window moves past the first fill, then past every fill, the last sale kept.
+	while (hosted.world.Clock().Step() < first + window + 1)
+		hosted.world.Step();
+	dees = ReportOf(hosted, "Dee", kOre);
+	CHECK(dees.since == first + 1);
+	CHECK(LineOf(dees, "ItemFurs").sold == 1);
+	while (hosted.world.Clock().Step() < last + window + 1)
+		hosted.world.Step();
+	dees = ReportOf(hosted, "Dee", kOre);
+	CHECK(LineOf(dees, "ItemFurs").sold == 0);
+	CHECK(LineOf(dees, "ItemFurs").lastStep == last - 1);
+	CHECK(LineOf(dees, "ItemFurs").lastPrice == furs);
+	CHECK(LineOf(dees, "ItemCopper").lastStep == last);
+
+	CHECK(ReportOf(hosted, "Cai", kOre) == frozen);
+	CHECK(LineOf(frozen, "ItemFurs").sold == 3);
+}
+
+
+TEST_CASE("A new player's starting reports are of their own system and the ones directly connected")
+{
+	Manifest::Content::ScenarioDefinition scenario;
+	scenario.systems = {
+	    {"SystemA", "A", {{"SystemB"}}},
+	    {"SystemB", "B", {{"SystemD"}}},
+	    {"SystemC", "C", {{"SystemA"}}},
+	    {"SystemD", "D", {}}};
+	for (const auto &[venue, system] :
+	     {std::pair{"VenueA1", "SystemA"},
+	      {"VenueB1", "SystemB"},
+	      {"VenueA2", "SystemA"},
+	      {"VenueC1", "SystemC"},
+	      {"VenueD1", "SystemD"}})
+	{
+		Manifest::Content::VenueDefinition &added = scenario.venues.emplace_back();
+		added.venueId = venue;
+		added.systemId = system;
+	}
+	CHECK(
+	    StartingVenues(scenario, "VenueA1") ==
+	    std::vector<std::string>{"VenueB1", "VenueA2", "VenueC1"});
+	CHECK(StartingVenues(scenario, "VenueC1") == std::vector<std::string>{"VenueA1", "VenueA2"});
+	CHECK(StartingVenues(scenario, "VenueD1") == std::vector<std::string>{"VenueB1"});
+	CHECK(StartingVenues(scenario, "VenueNowhere").empty());
+}
+
+
+TEST_CASE("A save keeps each player's reports and each market's sales, and refuses a report of nowhere")
+{
+	Hosted hosted{true};
+	Provision(hosted, "Cai");
+	REQUIRE(
+	    hosted.Place(kAda, Side::Buy, 1, LineOf(ReportOf(hosted, "Cai", kOre), "ItemFurs").ask) ==
+	    Result::Succeeded);
+	Dock(hosted, "Ship1", "");
+	hosted.world.Step();
+	const std::vector<std::byte> save = hosted.world.Save();
+
+	Hosted loaded;
+	loaded.world.Load(save);
+	CHECK(ReportsOf(loaded, "Cai") == ReportsOf(hosted, "Cai"));
+	CHECK(Current(loaded, kOre, 0) == Current(hosted, kOre, 0));
+	Dock(loaded, "Ship1", kOre);
+	Dock(hosted, "Ship1", kOre);
+	loaded.world.Step();
+	hosted.world.Step();
+	CHECK(loaded.world.StateHash() == hosted.world.StateHash());
+	CHECK(LineOf(ReportOf(loaded, "Cai", kOre), "ItemFurs").sold == 1);
+
+	entt::registry &registry = hosted.world.Registry();
+	registry.get<World::Reports>(hosted.identities.Find(Kind::Principal, "Cai")).reports[0].venueId =
+	    "VenueNowhere";
+	CHECK_THROWS_WITH_AS(
+	    loaded.world.Load(hosted.world.Save()), doctest::Contains("a venue the world does not hold"),
+	    Jettison::Serialise::FormatError);
 }

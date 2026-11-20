@@ -100,6 +100,17 @@ cargo's lots are bounded together (`world`), and a ship's cargo against its hull
 `CargoVolume`, whose empty map was taken for none given; a hull the map does not name now carries
 nothing (`company`). Round 7 approved with no finding open.
 
+## W07: live and stale market observations — 2026-11-20
+
+On pin `54fb871`, with no engine edit. `manifest.observe` runs after travel: each player's report of
+a venue their fleet is docked at is refreshed as the step ends, from the completed book and the
+market's sales over the hour, and stays as it was once the last ship leaves; provisioning gives
+starting reports ([what it chose and its evidence](stage-4-trading-plan.md#delivered-w07-2026-11-20)).
+The plans' two readings of the starting grant disagreed, the market plan's neighbouring systems against
+Stage 4's other station stale at bootstrap, and no scenario named a connection; the user chose both,
+an authored connection list, and no reports for the host ([D-095](decision-ledger.md#d-095)). The
+`trade` module now sits under `company`, whose provisioning seeds the reports.
+
 ## W06: station life support and resupply — 2026-11-20
 
 On pin `54fb871`, with no engine edit. `manifest.lifeSupport` runs after travel: a ship is

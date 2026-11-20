@@ -46,6 +46,8 @@ Identities &RegisterWorld(Jettison::Sim::SimWorld &world)
 	world.RegisterComponent<Order>();
 	world.RegisterComponent<Production>();
 	world.RegisterComponent<Pantry>();
+	world.RegisterComponent<Sales>();
+	world.RegisterComponent<Reports>();
 	auto identities = std::make_unique<Identities>();
 	Identities &added = *identities;
 	world.AddService("Manifest.Identities", std::move(identities));
@@ -99,6 +101,7 @@ void CreateInitialState(
 		CreateAccount(
 		    world, identities, Kind::BrokerAccount, venue.venueId, content.tuning.brokers.treasury);
 		CreateAccount(world, identities, Kind::VenueAccount, venue.venueId, 0);
+		registry.emplace<Sales>(CreateOrRefuse(world, identities, Kind::Market, venue.venueId));
 	}
 }
 } // namespace Manifest::World

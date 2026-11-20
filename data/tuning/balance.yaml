@@ -67,6 +67,9 @@ market:
   listingFeeBps: 40
   # A resting order's life: one simulation day (D-085).
   orderLifeSeconds: 86400
+  # A market report's sales volume is over the hour before it was observed, an initial balance setting
+  # (docs/market-information-plan.md, "Sales reporting").
+  salesWindowSeconds: 3600
 
 brokers:
   # Each venue's broker (D-084), initial test values (W03): its account at the start, in whole

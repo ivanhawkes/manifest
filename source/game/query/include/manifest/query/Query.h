@@ -52,16 +52,28 @@ struct CompanyView
 	bool operator==(const CompanyView &) const = default;
 };
 
+// A player's report of a venue's market: live while a ship of their fleet is docked there, so
+// observed at the snapshot's own step, and otherwise stale, its age the steps since it was observed.
+struct MarketView
+{
+	World::Report report;
+	bool live{false};
+
+	bool operator==(const MarketView &) const = default;
+};
+
 // What an actor may see of the hosted world, copied out at a completed step: nothing in it refers
-// back into the world, so a later step changes the next snapshot and never this one. It holds no
-// market beyond the company's own orders: market views wait for the fleet-observation filter
-// (docs/market-information-plan.md), and no other company's stock, credits or orders are in it.
+// back into the world, so a later step changes the next snapshot and never this one. Its markets are
+// the player's own reports alone (docs/market-information-plan.md): a venue it has none of is unknown
+// to them, and no other company's stock, credits or orders are in it.
 struct Snapshot
 {
 	// The clock's step: how many steps have completed.
 	std::uint64_t step{0};
 	// By ID: a player's own company, none before provisioning; every company for the Administrator.
 	std::vector<CompanyView> companies;
+	// By venue ID, a player's; none for the Administrator, which has no fleet to observe with.
+	std::vector<MarketView> markets{};
 
 	bool operator==(const Snapshot &) const = default;
 };

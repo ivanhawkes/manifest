@@ -20,6 +20,7 @@
 
 #include <manifest/company/Company.h>
 #include <manifest/host/Start.h>
+#include <manifest/trade/Trade.h>
 #include <manifest/travel/Travel.h>
 #include <manifest/world/State.h>
 
@@ -231,7 +232,7 @@ TEST_CASE(
 	    std::vector<std::string>{
 	        "manifest.expiry", "manifest.economy", "manifest.brokers", "spatial", "steering", "flight",
 	        "physics", "dock", "lanes", "cruise", std::string{Travel::kSystem},
-	        std::string{Company::kLifeSupportSystem}});
+	        std::string{Company::kLifeSupportSystem}, std::string{Manifest::Trade::kObserve}});
 	CHECK(scheduler.Ambiguities(Jettison::Ecs::TickPhase::Simulation).empty());
 }
 

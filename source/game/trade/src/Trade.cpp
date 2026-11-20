@@ -21,6 +21,7 @@
 
 #include <manifest/sim/Simulation.h>
 #include <manifest/trade/Economy.h>
+#include <manifest/travel/Travel.h>
 #include <manifest/types/Decimal.h>
 
 namespace Manifest::Trade
@@ -87,6 +88,9 @@ struct Rules
 	std::vector<std::string> venueOrder;
 	std::uint64_t lifeSteps{0};
 	std::uint64_t turnSteps{0};
+	std::uint64_t windowSteps{0};
+	// The scenario's venues, by ID, for the reports of their markets.
+	std::map<std::string, const Content::VenueDefinition *, std::less<>> definitions;
 	int feeBps{0};
 	int spreadBps{0};
 
@@ -197,6 +201,7 @@ std::shared_ptr<const Rules> MakeRules(
 	{
 		Venue &hosted = rules->venues[venue.venueId];
 		rules->venueOrder.push_back(venue.venueId);
+		rules->definitions.emplace(venue.venueId, &venue);
 		for (const Content::MarketEntry &entry : venue.market)
 		{
 			const double made = supply[entry.itemId];
@@ -223,6 +228,7 @@ std::shared_ptr<const Rules> MakeRules(
 		    content.tuning.economy.intervalSeconds, world.FixedStep())};
 	rules->lifeSteps = *life;
 	rules->turnSteps = *turn;
+	rules->windowSteps = SalesWindowSteps(world, content);
 	rules->feeBps = content.tuning.market.listingFeeBps;
 	rules->spreadBps = content.tuning.brokers.spreadBps;
 	return rules;
@@ -388,6 +394,34 @@ bool Crosses(const World::Order &taker, const World::Order &maker)
 }
 
 
+// A matching pass's fills in the venue's Sales: their totes in the step's entry for the item, and the
+// last one's price as the item's last sale. What is older than any window still to be reported drops.
+void Record(
+    entt::registry &registry, const Rules &rules, const std::string &venueId, const std::string &itemId,
+    std::uint64_t step, std::uint64_t totes, std::int64_t price)
+{
+	const entt::entity market = rules.identities.Find(Kind::Market, venueId);
+	JETTISON_VERIFY(market != entt::null);
+	World::Sales &sales = registry.get<World::Sales>(market);
+	// No report yet to be observed, at this step or after it, has a window reaching back so far.
+	std::erase_if(
+	    sales.recent,
+	    [&](const World::Sold &recent) { return recent.step + rules.windowSteps < step; });
+	const auto at = std::ranges::lower_bound(
+	    sales.recent, std::tie(step, itemId), std::less<>{},
+	    [](const World::Sold &recent) { return std::tie(recent.step, recent.itemId); });
+	if (at != sales.recent.end() && at->step == step && at->itemId == itemId)
+		at->totes += totes;
+	else
+		sales.recent.insert(at, {step, itemId, totes});
+	const auto last = std::ranges::lower_bound(sales.last, itemId, {}, &World::LastSale::itemId);
+	if (last != sales.last.end() && last->itemId == itemId)
+		*last = {itemId, step, price};
+	else
+		sales.last.insert(last, {itemId, step, price});
+}
+
+
 // The order reserved, then matched against the book, the whole planned in one ledger and written only
 // when every check holds; what is left rests under a new ID.
 Result Post(SimWorld &world, const Rules &rules, World::Order order)
@@ -460,6 +494,8 @@ Result Post(SimWorld &world, const Rules &rules, World::Order order)
 	    });
 
 	std::size_t fills = 0;
+	std::uint64_t traded = 0;
+	std::int64_t lastPrice = 0;
 	for (const auto &[entity, resting] : makers)
 	{
 		if (order.remaining == 0 || fills == kMaxFills)
@@ -494,6 +530,8 @@ Result Post(SimWorld &world, const Rules &rules, World::Order order)
 		if (maker.remaining == 0 && !Retire(ledger, entity, maker))
 			return Result::InvalidQuantity;
 		++fills;
+		traded += totes;
+		lastPrice = maker.limit;
 	}
 
 	if (order.remaining == 0)
@@ -506,6 +544,8 @@ Result Post(SimWorld &world, const Rules &rules, World::Order order)
 		return Result::BookFull;
 
 	ledger.Commit();
+	if (traded > 0)
+		Record(registry, rules, order.venueId, order.itemId, step, traded, lastPrice);
 	if (order.remaining > 0)
 	{
 		std::optional<std::string> id = rules.identities.Issue(Kind::Order);
@@ -1064,7 +1104,173 @@ void Step(SimWorld &world, const Rules &rules)
 	Sell(world, rules);
 	Households(world, rules);
 }
+
+
+// ─── Observation ───
+// docs/market-information-plan.md, "Selected information rules".
+
+const Content::VenueDefinition &DefinitionOf(const Rules &rules, std::string_view venueId)
+{
+	const auto definition = rules.definitions.find(venueId);
+	JETTISON_VERIFY(definition != rules.definitions.end());
+	return *definition->second;
+}
+
+
+// The report in the player's reports, in place of the one of its venue they had.
+void Remember(World::Reports &reports, World::Report report)
+{
+	const auto at =
+	    std::ranges::lower_bound(reports.reports, report.venueId, {}, &World::Report::venueId);
+	if (at != reports.reports.end() && at->venueId == report.venueId)
+		*at = std::move(report);
+	else
+		reports.reports.insert(at, std::move(report));
+}
+
+
+void Observe(SimWorld &world, const Rules &rules)
+{
+	entt::registry &registry = world.Registry();
+	const std::uint64_t observed = world.Clock().Step() + 1;
+	// Each venue a fleet is docked at, and the principals whose fleets they are.
+	std::map<std::string, std::set<std::string>, std::less<>> covered;
+	for (const auto [entity, ship] : registry.view<const World::Ship>().each())
+	{
+		if (ship.dockedAt.empty())
+			continue;
+		const entt::entity company = rules.identities.Find(Kind::Company, ship.companyId);
+		JETTISON_VERIFY(company != entt::null);
+		covered[ship.dockedAt].insert(registry.get<const World::Company>(company).principalId);
+	}
+	// shortcut: each covered venue's report is made afresh every step, a scan of the book each; a
+	// cheaper refresh (only what changed) when the long step (L26) is profiled and shows it.
+	for (const auto &[venueId, principals] : covered)
+	{
+		const World::Report report = Capture(
+		    registry, rules.identities, DefinitionOf(rules, venueId), observed, rules.windowSteps);
+		for (const std::string &principalId : principals)
+		{
+			const entt::entity principal = rules.identities.Find(Kind::Principal, principalId);
+			JETTISON_VERIFY(principal != entt::null);
+			Remember(registry.get_or_emplace<World::Reports>(principal), report);
+		}
+	}
+}
 } // namespace
+
+
+std::uint64_t SalesWindowSteps(const SimWorld &world, const Content::ContentSet &content)
+{
+	const double seconds = content.tuning.market.salesWindowSeconds;
+	const std::optional<std::uint64_t> window = WholeSteps(seconds, world.FixedStep());
+	if (!window || *window == 0)
+		throw std::invalid_argument{std::format(
+		    "market.salesWindowSeconds, {}, is not a whole number of {} s steps above 0", seconds,
+		    world.FixedStep())};
+	return *window;
+}
+
+
+std::vector<std::string> StartingVenues(
+    const Content::ScenarioDefinition &scenario, std::string_view venueId)
+{
+	const auto starter =
+	    std::ranges::find(scenario.venues, venueId, &Content::VenueDefinition::venueId);
+	if (starter == scenario.venues.end())
+		return {};
+	const std::string &home = starter->systemId;
+	const auto connects = [](const Content::SystemDefinition &system, std::string_view to)
+	{
+		return std::ranges::find(system.connections, to, &Content::SystemSelection::systemId) !=
+		       system.connections.end();
+	};
+	std::set<std::string, std::less<>> systems{home};
+	for (const Content::SystemDefinition &system : scenario.systems)
+		if (system.systemId == home)
+			for (const Content::SystemSelection &connection : system.connections)
+				systems.insert(connection.systemId);
+		else if (connects(system, home))
+			systems.insert(system.systemId);
+
+	std::vector<std::string> venues;
+	for (const Content::VenueDefinition &venue : scenario.venues)
+		if (venue.venueId != venueId && systems.contains(venue.systemId))
+			venues.push_back(venue.venueId);
+	return venues;
+}
+
+
+World::Report Capture(
+    const entt::registry &registry, const World::Identities &identities,
+    const Content::VenueDefinition &venue, std::uint64_t observed, std::uint64_t windowSteps)
+{
+	World::Report report{
+	    venue.venueId,
+	    World::Source::Docked,
+	    observed,
+	    observed > windowSteps ? observed - windowSteps : 0,
+	    {}};
+	report.lines.reserve(venue.market.size());
+	for (const Content::MarketEntry &entry : venue.market)
+		report.lines.push_back({.itemId = entry.itemId});
+	const auto lineOf = [&](std::string_view itemId) -> World::Line *
+	{
+		const auto line = std::ranges::find(report.lines, itemId, &World::Line::itemId);
+		return line == report.lines.end() ? nullptr : &*line;
+	};
+
+	for (const auto [entity, order] : registry.view<const World::Order>().each())
+	{
+		World::Line *pLine = order.venueId == venue.venueId ? lineOf(order.itemId) : nullptr;
+		// An order that no longer matches after the observed step is not in the book it shows.
+		if (!pLine || (order.expiresStep != 0 && order.expiresStep <= observed))
+			continue;
+		const bool buy = order.side == Side::Buy;
+		std::int64_t &best = buy ? pLine->bid : pLine->ask;
+		std::uint64_t &totes = buy ? pLine->bidTotes : pLine->askTotes;
+		if (best == 0 || (buy ? order.limit > best : order.limit < best))
+		{
+			best = order.limit;
+			totes = order.remaining;
+		}
+		else if (order.limit == best)
+			totes += order.remaining;
+	}
+
+	const entt::entity market = identities.Find(Kind::Market, venue.venueId);
+	JETTISON_VERIFY(market != entt::null);
+	const World::Sales &sales = registry.get<const World::Sales>(market);
+	for (const World::Sold &sold : sales.recent)
+		if (World::Line *pLine = sold.step >= report.since ? lineOf(sold.itemId) : nullptr)
+			pLine->sold += sold.totes;
+	for (const World::LastSale &last : sales.last)
+		if (World::Line *pLine = lineOf(last.itemId))
+		{
+			pLine->lastStep = last.step;
+			pLine->lastPrice = last.price;
+		}
+	return report;
+}
+
+
+void Seed(
+    SimWorld &world, const World::Identities &identities, const Content::ContentSet &content,
+    entt::entity principal, std::uint64_t windowSteps)
+{
+	const Content::ScenarioDefinition &scenario = content.scenarios.at(content.scenario);
+	entt::registry &registry = world.Registry();
+	World::Reports &reports = registry.get_or_emplace<World::Reports>(principal);
+	for (const std::string &venueId : StartingVenues(scenario, scenario.starterVenue))
+	{
+		World::Report report = Capture(
+		    registry, identities,
+		    *std::ranges::find(scenario.venues, venueId, &Content::VenueDefinition::venueId),
+		    world.Clock().Step(), windowSteps);
+		report.source = World::Source::Starting;
+		Remember(reports, std::move(report));
+	}
+}
 
 
 void RegisterTypes()
@@ -1102,8 +1308,9 @@ void Register(
 	    { return Cancelled(on, *rules, actor, cancel); });
 
 	using Jettison::Ecs::Access;
-	const Access writes = Access::Of<World::Order>()
-	                          .Writing<World::Order, World::Account, World::Stock, World::Identity>();
+	const Access writes =
+	    Access::Of<World::Order>()
+	        .Writing<World::Order, World::Account, World::Stock, World::Identity, World::Sales>();
 	// Ahead of the movement Travel::Register attaches (docs/stage-4-trading-plan.md, "The step, in
 	// order").
 	const std::vector<std::string> beforeMovement{
@@ -1121,7 +1328,7 @@ void Register(
 	     .access = Access::Of<World::Order>()
 	                   .Writing<
 	                       World::Order, World::Account, World::Stock, World::Identity,
-	                       World::Production, World::Pantry, World::Region>(),
+	                       World::Production, World::Pantry, World::Region, World::Sales>(),
 	     .after = {std::string{kExpiry}},
 	     .run = [rules, &world](entt::registry &, double) { Step(world, *rules); },
 	     .before = beforeMovement});
@@ -1137,6 +1344,14 @@ void Register(
 			     Requote(world, *rules);
 	     },
 	     .before = beforeMovement});
+	world.RegisterSystem(
+	    {.name = std::string{kObserve},
+	     .phase = Jettison::Ecs::TickPhase::Simulation,
+	     .access =
+	         Access::Of<World::Ship, World::Company, World::Order, World::Sales, World::Identity>()
+	             .Writing<World::Reports>(),
+	     .after = {std::string{Travel::kSystem}},
+	     .run = [rules, &world](entt::registry &, double) { Observe(world, *rules); }});
 }
 
 

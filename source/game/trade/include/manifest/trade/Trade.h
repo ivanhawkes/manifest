@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include <jettison/sim/SimWorld.h>
 
@@ -56,16 +57,48 @@ inline constexpr std::size_t kMaxRestingOrders = 64;
 // The systems, by the names the step's table gives them.
 inline constexpr std::string_view kExpiry = "manifest.expiry";
 inline constexpr std::string_view kBrokers = "manifest.brokers";
+// After manifest.travel, at the completed step's boundary, it refreshes each player's report of every
+// venue a ship of their fleet is docked at (Ship::dockedAt), observed at the step the clock reaches as
+// the step ends; a report no ship refreshes stays as it was (docs/market-information-plan.md,
+// "Observation timing").
+inline constexpr std::string_view kObserve = "manifest.observe";
 
 // The payloads, with Reflect. Safe to call again.
 void RegisterTypes();
 
+// The content's sales window in the world's steps. Throws std::invalid_argument for one that is not
+// a whole number of them above 0.
+std::uint64_t SalesWindowSteps(
+    const Jettison::Sim::SimWorld &world, const Content::ContentSet &content);
+
+// The venues a new player starting at the venue is given starting reports of (D-095): every other
+// venue of its system and every venue of a system directly connected to it, either way, in the
+// scenario's order. None beyond those: a neighbour's neighbour stays unknown.
+std::vector<std::string> StartingVenues(
+    const Content::ScenarioDefinition &scenario, std::string_view venueId);
+
+// The report of the venue's market as the world holds it now, observed at the step: the venue's goods
+// in its market's order, each its best bid and ask that still match after that step, the totes sold
+// since the window began and its last sale. The world must hold the venue's Market.
+World::Report Capture(
+    const entt::registry &registry, const World::Identities &identities,
+    const Content::VenueDefinition &venue, std::uint64_t observed, std::uint64_t windowSteps);
+
+// Gives the principal, provisioned this step, their starting reports (StartingVenues of the scenario's
+// starter venue), each observed at the clock's step, as their markets stand at their spawn, and stale
+// from the first, since a starting report has no feed. Once, as the principal is made: nothing else
+// reseeds them.
+void Seed(
+    Jettison::Sim::SimWorld &world, const World::Identities &identities,
+    const Content::ContentSet &content, entt::entity principal, std::uint64_t windowSteps);
+
 // Registers the commands with the requests and the systems with the world: each step the expiry
 // sweep, retiring in placement order every order whose expiresStep has come, then the regional economy
 // (kEconomy, manifest/trade/Economy.h), then on the last step of each economic turn every broker's
-// requote (Quote), all ahead of the movement Travel::Register attaches, which must be attached. The
-// identities and the content must outlive the world. Throws std::invalid_argument for a content set
-// with no scenario selected, or an order life or economic interval that is not a whole number of the
+// requote (Quote), all ahead of the movement Travel::Register attaches, which must be attached, and
+// after it the observation (kObserve). Every fill is recorded in its venue's Sales. The identities and
+// the content must outlive the world. Throws std::invalid_argument for a content set with no scenario
+// selected, or an order life, economic interval or sales window that is not a whole number of the
 // world's steps.
 void Register(
     Jettison::Sim::SimWorld &world, Command::Requests &requests, World::Identities &identities,

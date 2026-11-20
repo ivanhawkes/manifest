@@ -32,7 +32,9 @@ enum class Kind
 	// the households' money is the region's HouseholdAccount.
 	Employer,
 	EmployerAccount,
-	Household
+	Household,
+	// A venue's market, by the venue's ID: its Sales (W07).
+	Market
 };
 
 // The account of an owner of goods: a Company's, a Broker's, an Employer's or a Household's.
@@ -299,6 +301,86 @@ struct LifeSupport
 	bool operator==(const LifeSupport &) const = default;
 };
 
+// The totes of an item a venue's book filled in one step, buyer and seller counted once.
+struct Sold
+{
+	std::uint64_t step{0};
+	std::string itemId;
+	std::uint64_t totes{0};
+
+	bool operator==(const Sold &) const = default;
+};
+
+// An item's latest fill at a venue: the step it settled in and its price, a Core::Decimal's raw
+// microcredits per the item's unit.
+struct LastSale
+{
+	std::string itemId;
+	std::uint64_t step{0};
+	std::int64_t price{0};
+
+	bool operator==(const LastSale &) const = default;
+};
+
+// What a venue's market has sold (docs/market-information-plan.md, "Sales reporting"), on its Market:
+// the fills of at least the last sales window, by step then item, oldest first, and each item's last
+// sale, by item, however long ago.
+struct Sales
+{
+	std::vector<Sold> recent;
+	std::vector<LastSale> last;
+
+	bool operator==(const Sales &) const = default;
+};
+
+// How a player came by a market report: a ship of theirs docked there, or their starting reports.
+enum class Source
+{
+	Docked,
+	Starting
+};
+
+// One good of a market report: the best resting bid and ask, a Core::Decimal's raw microcredits per
+// the item's unit and the totes resting at that price, 0 and 0 for none; the totes sold over the
+// report's window; and the good's last sale, its step and price, 0 and 0 for none.
+struct Line
+{
+	std::string itemId;
+	std::int64_t bid{0};
+	std::uint64_t bidTotes{0};
+	std::int64_t ask{0};
+	std::uint64_t askTotes{0};
+	std::uint64_t sold{0};
+	std::uint64_t lastStep{0};
+	std::int64_t lastPrice{0};
+
+	bool operator==(const Line &) const = default;
+};
+
+// What a player last saw of a venue's market (docs/market-information-plan.md): at the completed step
+// it was observed at, the clock's step then; its sales window, from the step since to the observation,
+// shorter for a market younger than the window; and its goods in the market's order. It is live while
+// a ship of the player's fleet stays docked there, and otherwise as it was when the last one left.
+struct Report
+{
+	std::string venueId;
+	Source source{Source::Docked};
+	std::uint64_t observed{0};
+	std::uint64_t since{0};
+	std::vector<Line> lines;
+
+	bool operator==(const Report &) const = default;
+};
+
+// A player's market reports, on their Principal, by venue ID: theirs, not a ship's, so they outlive
+// the fleet that observed them. A venue with none is unknown to them.
+struct Reports
+{
+	std::vector<Report> reports;
+
+	bool operator==(const Reports &) const = default;
+};
+
 // Why a Stock or a Cargo breaks the rules above, for a load to refuse: none when it keeps them.
 std::optional<std::string> Broken(const Stock &stock);
 
@@ -311,6 +393,10 @@ std::optional<std::string> Broken(const Production &production);
 std::optional<std::string> Broken(const Pantry &pantry);
 
 std::optional<std::string> Broken(const LifeSupport &lifeSupport);
+
+std::optional<std::string> Broken(const Sales &sales);
+
+std::optional<std::string> Broken(const Reports &reports);
 
 // The components and their service's record, with Reflect. Safe to call again.
 void RegisterTypes();

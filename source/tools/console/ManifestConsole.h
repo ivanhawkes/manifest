@@ -28,10 +28,10 @@ namespace Manifest::Tools
 // Two kinds of command, kept apart: the sandbox's (generate, tick, upgrade and the rest) play the
 // local development simulation, which no player shares; the hosted ones (host, observe, provision,
 // cargo, trade, cancel, travel, step) go through the hosted world's admission and queries, as a
-// player's would, and book shows a venue's orders as the host sees them, a development view until
-// market views (W07). There is at most one hosted world, the one host started, and nothing in the
-// sandbox reaches it. Connected to a server (connect), observe and the players' requests go to it
-// instead, as the token's actor.
+// player's would, and book shows a venue's orders as the host sees them, a development view, where a
+// player's observe shows only their own market reports (W07). There is at most one hosted world, the
+// one host started, and nothing in the sandbox reaches it. Connected to a server (connect), observe and
+// the players' requests go to it instead, as the token's actor.
 class ManifestConsole
 {
   public:

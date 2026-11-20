@@ -95,7 +95,7 @@ registration order, and a test pins `Scheduler().Order(TickPhase::Simulation)`.
 | 6 | each step | engine `lanes`, then `cruise` | Jettison's own edges | lane and cruise state |
 | 7 | each step | `manifest.travel` (W05) | after `dock` and `cruise` | travel intents, `Ship::dockedAt` |
 | 7a | each step | `manifest.lifeSupport` (W06) | after `manifest.travel` | connections, onboard oxygen and cartridges |
-| 8 | each step | `manifest.observe` (W07) | after `manifest.travel` | quotes, fleet observations |
+| 8 | each step | `manifest.observe` (W07) | after `manifest.travel` | players' market reports |
 
 Jettison's movement systems are registered without its `behaviour` system (no behaviour trees
 until W10), without `gates` (the fixture is one system) and without the sample's traders. Jettison
@@ -720,6 +720,62 @@ outages, which wait for stations that stop; exhaustion's consequences; a tank ex
 refilled (D-050's exchange procedure), and spent cartridges kept; a berth fee, which includes the
 connection when travel is charged for; and the trading fixture's venues selling oxygen and cartridges,
 which only the governance fixture's do, for W09's whole fixture.
+
+## Delivered: W07, 2026-11-20
+
+Live and stale market observations, `manifest.observe`, on pin `54fb871` with no engine edit. What it
+chose where the plans left room ([D-095](decision-ledger.md#d-095), the user's choices):
+
+- **State.** Each venue has a `Market` entity, by its ID, whose saved `Sales` hold the totes each
+  matching pass filled, by step and item, for at least the last sales window, and each item's last sale,
+  its step and price, however long ago. Each principal's saved `Reports` hold their reports, by venue:
+  how it was come by (`Docked` or `Starting`), the step it was observed at, the step its sales window
+  began and, in the market's order, each good's best resting bid and ask with the totes at that price,
+  the totes sold over the window and the last sale. A venue with no report is unknown. A save is
+  refused for sales or reports out of order, a report of a venue the world does not hold, or a price
+  and its totes that disagree.
+- **Sales.** Every fill counts once, buyer and seller together, a broker's, an employer's and a
+  household's as a company's, recorded after the pass commits; a cancelled or unfilled order adds
+  none. The window is `market.salesWindowSeconds`, 3,600 s, a whole number of steps: the fills of the
+  steps from `observed` less the window up to `observed`, shorter for a market younger than that.
+- **Observation**, after `manifest.travel`: each ship docked at a venue (`Ship::dockedAt`) covers it
+  for its company's principal, and each covered venue's report is taken once and given to each of them,
+  observed at the step the clock reaches as the step ends, from that step's completed book; an order
+  that no longer matches after it is left out. A report no ship covers stays as it was, so the last
+  ship to leave freezes it at the step before it left, its window and sales with it, and another of the
+  fleet still docked keeps it live. Coverage follows the ship's company at the boundary, a client's
+  connection no part of it.
+- **Starting reports** (D-095). Provisioning gives the new principal a `Starting` report of every other
+  venue of the starter venue's system and every venue of a system directly connected to it, observed
+  at the clock's step as the command runs; the starter venue is live from that step's end. A
+  scenario's system names its direct connections, `connections: [{systemId}]`, each way, refused
+  for a system the scenario lacks, itself or one named twice. Only provisioning seeds them, once.
+- **Snapshot and console.** A player's snapshot carries their reports as `markets`, each live when
+  docked and observed at the snapshot's own step, its age otherwise the steps since; the
+  Administrator's carries none (D-095), so the protocol is version 4. The console's `observe` lists
+  them, live, or stale with their age and a starting report marked, in simulation minutes, and the
+  slice now buys at the ask Ada's live report of Ore shows and sells at the bid her live report of
+  Brine shows. `book` stays the host's development view.
+
+Evidence, in the `trade` suite: a new player's report of Ore live as the world holds it, and Brine's
+the starting report of its spawn step; a trade at Brine leaving that report as it was while Ore stays
+live; docked at Brine, the report live with the trade counted once and its last sale, and Ore frozen at
+the step the ship left, a later trade there unseen; a second ship of the fleet keeping a station live,
+and the last one's departure step's trade unseen by its player and seen by another player docked
+there; a window's sales, by good, dropping each fill as the window passes it and keeping the last
+sale, and a frozen report keeping its own; the starting venues over a four-system graph, a
+neighbour's neighbour left out; and a save carrying the reports and sales on, refused for a report of
+no venue. In the `query` suite, a player's markets their own alone, live only at the snapshot's step,
+and none for the host; in the `content` suite, the connections and the window refused; in the
+`console` suite, the slice played from the reports; in the `travel` suite, the step's order with
+`manifest.observe` last. The `company` suite's pinned hash moved for the markets and reports a save
+now holds.
+
+Left: trader and script facts, which the hosted world does not have until W10's standing policies and
+NPC jobs and the scripts after them, which are to read these reports and nothing else; the
+development sandbox's `prices` and `plan`, which stay privileged and apart from the hosted world;
+ship transfers, which do not exist yet; and each covered venue's report rebuilt every step from the
+book, to profile with the long step ([L26](delivery-order.md#later-priorities-and-re-entry-conditions)).
 
 ## Handoff to stage 5
 

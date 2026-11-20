@@ -354,6 +354,9 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	    balance, "version: 1\nmarket: {orderLifeSeconds: -1}\n",
 	    "market.orderLifeSeconds must be finite and not below 0");
 	CheckRefused(
+	    balance, "version: 1\nmarket: {salesWindowSeconds: 0}\n",
+	    "market.salesWindowSeconds must be above 0");
+	CheckRefused(
 	    balance, "version: 1\nbrokers: {treasury: -1}\n", "brokers.treasury must not be below 0");
 	CheckRefused(
 	    balance, "version: 1\nbrokers: {spreadBps: 20000}\n",
@@ -678,6 +681,16 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	CheckRefused(
 	    trading, "version: 1\nsystems: !append [{systemId: SystemFar}]\n",
 	    "systems 'SystemFar' has no Celestial.StarSystem 'system-far' that resolves");
+	CheckRefused(
+	    trading,
+	    "version: 1\nsystems: !merge=systemId\n  - {systemId: SystemAnvil, connections: [{systemId: "
+	    "SystemFar}]}\n",
+	    "systems 'SystemAnvil' connects to 'SystemFar', which is no other system of the scenario");
+	CheckRefused(
+	    trading,
+	    "version: 1\nsystems: !merge=systemId\n  - {systemId: SystemAnvil, connections: [{systemId: "
+	    "SystemAnvil}]}\n",
+	    "systems 'SystemAnvil' connects to 'SystemAnvil', which is no other system of the scenario");
 	CheckRefused(
 	    "manifest/definitions/systems/system-anvil.patch.yaml",
 	    "version: 1\nbodies: !merge=name\n  - {name: VenueBrineHighport, parent: PlanetNowhere}\n",

@@ -31,7 +31,8 @@ std::string_view IssuedPrefix(Kind kind)
 		case Kind::HouseholdAccount:
 		case Kind::Employer:
 		case Kind::EmployerAccount:
-		case Kind::Household: break;
+		case Kind::Household:
+		case Kind::Market: break;
 	}
 	return {};
 }
@@ -111,6 +112,19 @@ std::function<void()> Identities::Load(
 	for (const auto [entity, pantry] : loaded.view<const Pantry>().each())
 		if (const std::optional<std::string> problem = Broken(pantry))
 			reader.Fail(*problem);
+	for (const auto [entity, sales] : loaded.view<const Sales>().each())
+		if (const std::optional<std::string> problem = Broken(sales))
+			reader.Fail(*problem);
+	for (const auto [entity, reports] : loaded.view<const Reports>().each())
+	{
+		if (const std::optional<std::string> problem = Broken(reports))
+			reader.Fail(*problem);
+		for (const Report &report : reports.reports)
+			if (!index.contains({Kind::Market, report.venueId}))
+				reader.Fail(
+				    std::format(
+				        "a market report is of '{}', a venue the world does not hold", report.venueId));
+	}
 	// Every reserved tote backs the sell orders of its owner there, and the reverse.
 	std::map<std::tuple<Kind, std::string, std::string, std::string>, std::uint64_t> reserved;
 	for (const auto [entity, order] : loaded.view<const Order>().each())

@@ -578,6 +578,8 @@ void CheckTuning(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 		checker.Require(
 		    NotNegative(tuning.market.orderLifeSeconds), "market.orderLifeSeconds",
 		    "must be finite and not below 0");
+		checker.Require(
+		    Positive(tuning.market.salesWindowSeconds), "market.salesWindowSeconds", "must be above 0");
 		checker.Require(tuning.brokers.treasury >= 0, "brokers.treasury", "must not be below 0");
 		checker.Require(
 		    tuning.brokers.spreadBps >= 0 && tuning.brokers.spreadBps < 20000, "brokers.spreadBps",
@@ -796,6 +798,22 @@ void CheckScenarios(
 			checker.Require(
 			    frames.insert(Jettison::Sim::FrameId(system)).second, "systems",
 			    std::format("'{}' has another system's frame ID", system));
+		for (const SystemDefinition &system : scenario.systems)
+		{
+			std::set<std::string, std::less<>> connected;
+			for (const SystemSelection &connection : system.connections)
+			{
+				checker.Require(
+				    systems.contains(connection.systemId) && connection.systemId != system.systemId,
+				    "systems",
+				    std::format(
+				        "'{}' connects to '{}', which is no other system of the scenario",
+				        system.systemId, connection.systemId));
+				checker.Require(
+				    connected.insert(connection.systemId).second, "systems",
+				    std::format("'{}' connects to '{}' twice", system.systemId, connection.systemId));
+			}
+		}
 
 		std::map<std::string, Jettison::Celestial::StarSystem, std::less<>> bodies;
 		for (const SystemDefinition &system : scenario.systems)

@@ -29,7 +29,8 @@ Kind AccountOf(Kind owner)
 		case Kind::BrokerAccount:
 		case Kind::VenueAccount:
 		case Kind::Order:
-		case Kind::EmployerAccount: break;
+		case Kind::EmployerAccount:
+		case Kind::Market: break;
 	}
 	return Kind::CompanyAccount;
 }
@@ -153,6 +154,48 @@ std::optional<std::string> Broken(const LifeSupport &lifeSupport)
 }
 
 
+std::optional<std::string> Broken(const Sales &sales)
+{
+	for (std::size_t at = 0; at < sales.recent.size(); ++at)
+	{
+		const Sold &sold = sales.recent[at];
+		if (sold.itemId.empty() || sold.totes == 0)
+			return "a sale names no item or sold no tote";
+		if (at > 0 && std::tie(sales.recent[at - 1].step, sales.recent[at - 1].itemId) >=
+		                  std::tie(sold.step, sold.itemId))
+			return "the recent sales are out of order or listed twice";
+	}
+	for (std::size_t at = 0; at < sales.last.size(); ++at)
+	{
+		const LastSale &last = sales.last[at];
+		if (last.itemId.empty() || last.price <= 0)
+			return "a last sale names no item or price";
+		if (at > 0 && sales.last[at - 1].itemId >= last.itemId)
+			return "the last sales are out of order or listed twice";
+	}
+	return std::nullopt;
+}
+
+
+std::optional<std::string> Broken(const Reports &reports)
+{
+	for (std::size_t at = 0; at < reports.reports.size(); ++at)
+	{
+		const Report &report = reports.reports[at];
+		if (report.venueId.empty() || report.since > report.observed)
+			return "a market report names no venue, or its window starts after it was observed";
+		if (at > 0 && reports.reports[at - 1].venueId >= report.venueId)
+			return "the market reports are out of order or held twice";
+		for (const Line &line : report.lines)
+			if (line.itemId.empty() || line.bid < 0 || line.ask < 0 || line.lastPrice < 0 ||
+			    (line.bid == 0) != (line.bidTotes == 0) || (line.ask == 0) != (line.askTotes == 0) ||
+			    line.lastStep > report.observed)
+				return std::format("the report of '{}' has a good of no item or price", report.venueId);
+	}
+	return std::nullopt;
+}
+
+
 void RegisterTypes()
 {
 	static const bool registered = []
@@ -176,7 +219,8 @@ void RegisterTypes()
 		    .Value<Kind::Order>("Order")
 		    .Value<Kind::Employer>("Employer")
 		    .Value<Kind::EmployerAccount>("EmployerAccount")
-		    .Value<Kind::Household>("Household");
+		    .Value<Kind::Household>("Household")
+		    .Value<Kind::Market>("Market");
 		RegisterType<Identity>("Manifest.World.Identity")
 		    .Field<&Identity::kind>("kind", kSaved)
 		    .Field<&Identity::id>("id", kSaved);
@@ -273,6 +317,36 @@ void RegisterTypes()
 		    .Field<&Pantry::unmet>("unmet", kSaved)
 		    .Field<&Pantry::severity>("severity", kSaved)
 		    .Field<&Pantry::shortIntervals>("shortIntervals", kSaved);
+		RegisterType<Sold>("Manifest.World.Sold")
+		    .Field<&Sold::step>("step", kSaved)
+		    .Field<&Sold::itemId>("itemId", kSaved)
+		    .Field<&Sold::totes>("totes", kSaved);
+		RegisterType<LastSale>("Manifest.World.LastSale")
+		    .Field<&LastSale::itemId>("itemId", kSaved)
+		    .Field<&LastSale::step>("step", kSaved)
+		    .Field<&LastSale::price>("price", kSaved);
+		RegisterType<Sales>("Manifest.World.Sales")
+		    .Field<&Sales::recent>("recent", kSaved)
+		    .Field<&Sales::last>("last", kSaved);
+		RegisterEnum<Source>("Manifest.World.Source")
+		    .Value<Source::Docked>("Docked")
+		    .Value<Source::Starting>("Starting");
+		RegisterType<Line>("Manifest.World.Line")
+		    .Field<&Line::itemId>("itemId", kSaved)
+		    .Field<&Line::bid>("bid", kSaved)
+		    .Field<&Line::bidTotes>("bidTotes", kSaved)
+		    .Field<&Line::ask>("ask", kSaved)
+		    .Field<&Line::askTotes>("askTotes", kSaved)
+		    .Field<&Line::sold>("sold", kSaved)
+		    .Field<&Line::lastStep>("lastStep", kSaved)
+		    .Field<&Line::lastPrice>("lastPrice", kSaved);
+		RegisterType<Report>("Manifest.World.Report")
+		    .Field<&Report::venueId>("venueId", kSaved)
+		    .Field<&Report::source>("source", kSaved)
+		    .Field<&Report::observed>("observed", kSaved)
+		    .Field<&Report::since>("since", kSaved)
+		    .Field<&Report::lines>("lines", kSaved);
+		RegisterType<Reports>("Manifest.World.Reports").Field<&Reports::reports>("reports", kSaved);
 		RegisterType<IdentityCounters>("Manifest.World.IdentityCounters")
 		    .Field<&IdentityCounters::issued>("issued", kSaved);
 		return true;

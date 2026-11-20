@@ -400,6 +400,17 @@ std::string BestPrice(const std::string &book, std::string_view side)
 	const std::size_t at = book.find(" at ", line) + 4;
 	return book.substr(at, book.find(',', at) - at);
 }
+// The best price on a side of a good in the player's report of a venue, as observe shows it.
+std::string Reported(
+    const std::string &view, std::string_view venue, std::string_view item, std::string_view side)
+{
+	const std::size_t report = view.find(std::format("\n  {}: ", venue));
+	REQUIRE(report != std::string::npos);
+	const std::size_t line = view.find(std::format("\n    {}: ", item), report);
+	REQUIRE(line != std::string::npos);
+	const std::size_t at = view.find(std::format(" {} ", side), line) + side.size() + 2;
+	return view.substr(at, view.find(' ', at) - at);
+}
 } // namespace
 
 TEST_CASE("Manifest console: the vertical slice, furs bought at Ore, flown to Brine and sold there")
@@ -420,10 +431,22 @@ TEST_CASE("Manifest console: the vertical slice, furs bought at Ore, flown to Br
 	    ConsoleLine::Kind::Error);
 	CHECK(session.HostedStep() == 1);
 
-	// Bought at the broker's ask, then loaded: the goods are the company's at Ore, then the ship's.
+	// Ada's markets: Ore live where her ship is docked, Brine her starting report.
+	const std::string spawned = Execute(session, "observe Ada").text;
+	MANIFEST_CHECK_CONTAINS(spawned, "markets (any other is unknown):");
+	MANIFEST_CHECK_CONTAINS(spawned, "\n  VenueOreHighport: live");
+	MANIFEST_CHECK_CONTAINS(
+	    spawned, "VenueBrineHighport: stale starting report, observed 0.0 simulation minutes ago");
+	CHECK(Execute(session, "observe").text.find("markets") == std::string::npos);
+
+	// Bought at the ask her live report shows, the broker's, then loaded: the goods are the
+	// company's at Ore, then the ship's.
 	const std::string ore = Execute(session, "book VenueOreHighport ItemFurs").text;
 	MANIFEST_CHECK_CONTAINS(ore, "by Broker VenueOreHighport");
-	Execute(session, "trade buy Ada VenueOreHighport ItemFurs 2 " + BestPrice(ore, "ask"));
+	CHECK(Reported(spawned, "VenueOreHighport", "ItemFurs", "ask") == BestPrice(ore, "ask"));
+	Execute(
+	    session, "trade buy Ada VenueOreHighport ItemFurs 2 " +
+	                 Reported(spawned, "VenueOreHighport", "ItemFurs", "ask"));
 	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Trade.Place: Succeeded");
 	const std::string bought = Execute(session, "observe Ada").text;
 	MANIFEST_CHECK_CONTAINS(bought, "Company1 'Ada Co': 24691 credits");
@@ -450,16 +473,21 @@ TEST_CASE("Manifest console: the vertical slice, furs bought at Ore, flown to Br
 	    Execute(session, "observe Ada").text,
 	    "Ship1 HullLoneTraderStarter, docked at VenueBrineHighport\n");
 
-	// Unloaded and sold at the broker's bid.
+	// Unloaded and sold at the bid her report of Brine, live now, shows; Ore's is stale.
 	Execute(session, "cargo unload Ada Ship1 VenueBrineHighport ItemFurs 2");
 	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Company.Unload: Succeeded");
-	const std::string brine = Execute(session, "book VenueBrineHighport ItemFurs").text;
-	Execute(session, "trade sell Ada VenueBrineHighport ItemFurs 2 " + BestPrice(brine, "bid"));
+	const std::string arrived = Execute(session, "observe Ada").text;
+	MANIFEST_CHECK_CONTAINS(arrived, "VenueBrineHighport: live");
+	MANIFEST_CHECK_CONTAINS(arrived, "VenueOreHighport: stale, observed");
+	Execute(
+	    session, "trade sell Ada VenueBrineHighport ItemFurs 2 " +
+	                 Reported(arrived, "VenueBrineHighport", "ItemFurs", "bid"));
 	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Trade.Place: Succeeded");
 	const std::string sold = Execute(session, "observe Ada").text;
 	MANIFEST_CHECK_CONTAINS(sold, "Company1 'Ada Co': 29590 credits");
-	CHECK(sold.find("ItemFurs") == std::string::npos);
-
+	CHECK(sold.substr(0, sold.find("\nmarkets")).find("ItemFurs") == std::string::npos);
+	MANIFEST_CHECK_CONTAINS(sold, "ItemFurs: bid");
+	MANIFEST_CHECK_CONTAINS(sold, "totes sold, last sold at");
 	// A bid under the market rests in the player's view until its cancel.
 	Execute(session, "trade buy Ada VenueBrineHighport ItemFurs 1 1");
 	Execute(session, "step");

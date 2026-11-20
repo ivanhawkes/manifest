@@ -208,7 +208,8 @@ void RegisterTypes()
 		    .Field<&CompanyTuning::startingCredits>("startingCredits", kDefined);
 		RegisterType<MarketTuning>("Manifest.MarketTuning")
 		    .Field<&MarketTuning::listingFeeBps>("listingFeeBps", kDefined)
-		    .Field<&MarketTuning::orderLifeSeconds>("orderLifeSeconds", kDefined);
+		    .Field<&MarketTuning::orderLifeSeconds>("orderLifeSeconds", kDefined)
+		    .Field<&MarketTuning::salesWindowSeconds>("salesWindowSeconds", kDefined);
 		RegisterType<BrokerTuning>("Manifest.BrokerTuning")
 		    .Field<&BrokerTuning::treasury>("treasury", kDefined)
 		    .Field<&BrokerTuning::spreadBps>("spreadBps", kDefined);
@@ -251,9 +252,12 @@ void RegisterTypes()
 		    .Value<OrganisationKind::Polity>("Polity")
 		    .Value<OrganisationKind::Corporation>("Corporation");
 		RegisterEnum<FacilityKind>("Manifest.FacilityKind").Value<FacilityKind::Workshop>("Workshop");
+		RegisterType<SystemSelection>("Manifest.SystemSelection")
+		    .Field<&SystemSelection::systemId>("systemId", kDefined);
 		RegisterType<SystemDefinition>("Manifest.System")
 		    .Field<&SystemDefinition::systemId>("systemId", kDefined)
-		    .Field<&SystemDefinition::displayName>("displayName", kDefined);
+		    .Field<&SystemDefinition::displayName>("displayName", kDefined)
+		    .Field<&SystemDefinition::connections>("connections", kDefined);
 		RegisterType<PlanetDefinition>("Manifest.Planet")
 		    .Field<&PlanetDefinition::planetId>("planetId", kDefined)
 		    .Field<&PlanetDefinition::systemId>("systemId", kDefined)

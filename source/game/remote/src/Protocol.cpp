@@ -45,9 +45,13 @@ void RegisterTypes()
 		    .Field<&Query::CompanyView::holdings>("holdings", kSaved)
 		    .Field<&Query::CompanyView::ships>("ships", kSaved)
 		    .Field<&Query::CompanyView::orders>("orders", kSaved);
+		RegisterType<Query::MarketView>("Manifest.Query.MarketView")
+		    .Field<&Query::MarketView::report>("report", kSaved)
+		    .Field<&Query::MarketView::live>("live", kSaved);
 		RegisterType<Query::Snapshot>("Manifest.Query.Snapshot")
 		    .Field<&Query::Snapshot::step>("step", kSaved)
-		    .Field<&Query::Snapshot::companies>("companies", kSaved);
+		    .Field<&Query::Snapshot::companies>("companies", kSaved)
+		    .Field<&Query::Snapshot::markets>("markets", kSaved);
 		RegisterType<Welcome>("Manifest.Remote.Welcome")
 		    .Field<&Welcome::actorKind>("actorKind", kSaved)
 		    .Field<&Welcome::actorId>("actorId", kSaved)

@@ -203,7 +203,7 @@ save identity, stable.
 | List | Fields | Rules |
 | --- | --- | --- |
 | (root) | `gameMode`, `items: [{itemId}]` | the mode resolves; items are a subset of its items, order kept |
-| `systems` | `systemId`, `displayName` | each a Jettison frame, `Sim::FrameId(systemId)`, its bodies the `Celestial.StarSystem` of that name ([D-088](decision-ledger.md#d-088), W05); two IDs with one frame ID are refused |
+| `systems` | `systemId`, `displayName`, `connections: [{systemId}]` (optional) | each a Jettison frame, `Sim::FrameId(systemId)`, its bodies the `Celestial.StarSystem` of that name ([D-088](decision-ledger.md#d-088), W05); two IDs with one frame ID are refused; a connection is another of the scenario's systems, each way, named once ([D-095](decision-ledger.md#d-095), W07) |
 | `planets` | `planetId`, `systemId`, `displayName` | a physical body, its system's planet or moon of that name; no population or account of its own |
 | `civilisations` | `civilisationId`, `displayName`, `ageId` | cultural and technology identity only |
 | `organisations` | `organisationId`, `kind` (`Polity` or `Corporation`), `displayName` | owns accounts and assets from Stage 3 |

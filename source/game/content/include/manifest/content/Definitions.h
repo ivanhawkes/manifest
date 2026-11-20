@@ -139,6 +139,9 @@ struct MarketTuning
 	int listingFeeBps{0};
 	// A resting order's life, in simulation seconds, a whole number of fixed steps; 0 is none.
 	double orderLifeSeconds{0.0};
+	// The span a market report's sales volume is over, in simulation seconds, a whole number of fixed
+	// steps above 0 (docs/market-information-plan.md, "Sales reporting").
+	double salesWindowSeconds{0.0};
 };
 
 // Each venue's broker (D-084): what its account starts with, and how far apart it quotes.
@@ -206,12 +209,21 @@ enum class FacilityKind
 	Workshop
 };
 
+// A system another names, as its direct connection.
+struct SystemSelection
+{
+	std::string systemId;
+};
+
 // A star system: a Jettison frame, Sim::FrameId(systemId), its bodies in the Celestial.StarSystem of
 // that name (definitions/systems).
 struct SystemDefinition
 {
 	std::string systemId;
 	std::string displayName;
+	// The scenario's systems it is directly connected to, each way: a system it names names it back
+	// without saying so (D-095). A new player's starting reports are of these systems' stations.
+	std::vector<SystemSelection> connections{};
 };
 
 // A physical body, with no population or account of its own: its regions hold those. Its system's

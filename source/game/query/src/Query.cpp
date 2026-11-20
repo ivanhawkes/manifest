@@ -60,6 +60,15 @@ Snapshot Observe(
 		std::ranges::sort(
 		    company.orders, {}, [](const OrderView &view) { return view.order.sequence; });
 	}
+
+	const entt::entity principal = actor.kind == Command::ActorKind::Principal
+	                                   ? identities.Find(World::Kind::Principal, actor.id)
+	                                   : entt::null;
+	if (const auto *pReports =
+	        principal == entt::null ? nullptr : registry.try_get<World::Reports>(principal))
+		for (const World::Report &report : pReports->reports)
+			snapshot.markets.push_back(
+			    {report, report.source == World::Source::Docked && report.observed == snapshot.step});
 	return snapshot;
 }
 } // namespace Manifest::Query

@@ -118,6 +118,45 @@ std::string Describe(const World::Journey &journey, std::uint64_t step)
 }
 
 
+// A span of steps in simulation minutes, the unit a report's age is shown in.
+std::string Minutes(std::uint64_t steps)
+{
+	return std::format("{:.1f} simulation minutes", static_cast<double>(steps) * kStepSeconds / 60.0);
+}
+
+
+// A side of a report's book: its best price and the totes resting at it.
+std::string BookSide(std::string_view side, std::int64_t price, std::uint64_t totes)
+{
+	return price == 0 ? std::format("no {}", side)
+	                  : std::format("{} {} ({} totes)", side, Price(price), totes);
+}
+
+
+std::string Describe(const Query::MarketView &market, std::uint64_t step)
+{
+	const World::Report &report = market.report;
+	std::string text = std::format(
+	    "\n  {}: {}, sales over the {} before", report.venueId,
+	    market.live ? std::string{"live"}
+	                : std::format(
+	                      "stale{}, observed {} ago",
+	                      report.source == World::Source::Starting ? " starting report" : "",
+	                      Minutes(step - report.observed)),
+	    Minutes(report.observed - report.since));
+	for (const World::Line &line : report.lines)
+		text += std::format(
+		    "\n    {}: {}, {}, {} totes sold, {}", line.itemId,
+		    BookSide("bid", line.bid, line.bidTotes), BookSide("ask", line.ask, line.askTotes),
+		    line.sold,
+		    line.lastPrice == 0 ? std::string{"never sold"}
+		                        : std::format(
+		                              "last sold at {} {} before", Price(line.lastPrice),
+		                              Minutes(report.observed - line.lastStep)));
+	return text;
+}
+
+
 // The administrator, as the trusted harness makes it; a principal's ID never names it.
 const Command::Actor kHost{Command::ActorKind::Administrator, "Host"};
 
@@ -164,6 +203,10 @@ std::string Describe(const Query::Snapshot &snapshot, std::string_view as)
 			     << order.itemId << " at " << order.venueId << ", " << order.remaining << " of "
 			     << order.totes << " totes left at " << Price(order.limit);
 	}
+	if (!snapshot.markets.empty())
+		view << "\nmarkets (any other is unknown):";
+	for (const Query::MarketView &market : snapshot.markets)
+		view << Describe(market, snapshot.step);
 	return view.str();
 }
 } // namespace

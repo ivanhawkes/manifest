@@ -18,6 +18,7 @@
 #include <jettison/reflect/Reflect.h>
 #include <jettison/sim/SimWorld.h>
 
+#include <manifest/trade/Trade.h>
 #include <manifest/world/State.h>
 
 namespace Manifest::Company
@@ -48,6 +49,7 @@ struct Rules
 	std::map<std::string, int, std::less<>> connections;
 	double oxygenPerTote{0.0};
 	double cartridgesPerTote{0.0};
+	std::uint64_t windowSteps{0};
 };
 
 
@@ -97,8 +99,10 @@ Result Provisioned(SimWorld &world, Rules &rules, const Provision &provision)
 
 	const std::string companyId = Issued(identities, Kind::Company);
 	const std::string shipId = Issued(identities, Kind::Ship);
-	registry.emplace<World::Principal>(
-	    Created(world, identities, Kind::Principal, provision.principalId), provision.displayName);
+	const entt::entity principal = Created(world, identities, Kind::Principal, provision.principalId);
+	registry.emplace<World::Principal>(principal, provision.displayName);
+	registry.emplace<World::Reports>(principal);
+	Trade::Seed(world, identities, rules.content, principal, rules.windowSteps);
 	const entt::entity company = Created(world, identities, Kind::Company, companyId);
 	registry.emplace<World::Company>(company, provision.principalId, provision.companyName);
 	registry.emplace<World::Stock>(company);
@@ -405,6 +409,7 @@ void RegisterCommands(
 	if (selected == content.scenarios.end())
 		throw std::invalid_argument{"the content set has no scenario selected"};
 	auto rules = std::make_shared<Rules>(identities, fleet, content, selected->second);
+	rules->windowSteps = Trade::SalesWindowSteps(world, content);
 	for (const Content::ItemSelection &selection : selected->second.items)
 	{
 		const auto item =

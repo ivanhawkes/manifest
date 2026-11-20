@@ -17,7 +17,8 @@ namespace Manifest::Remote
 inline constexpr std::string_view kProtocol = "manifest";
 // 2: a snapshot holds its ships' journeys and its company's orders (W15).
 // 3: and its ships' life support and opened totes (W06).
-inline constexpr std::uint32_t kVersion = 3;
+// 4: and its player's market reports (W07).
+inline constexpr std::uint32_t kVersion = 4;
 
 enum class Kind : Jettison::Net::MessageKind
 {

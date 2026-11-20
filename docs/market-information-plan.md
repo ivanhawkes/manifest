@@ -5,7 +5,9 @@ Selected product rules, 2026-11-15. Extends the [economy plan](economy-and-devel
 [physical trading plan](stage-4-trading-plan.md). These are requirements, not implemented
 capabilities. Inspection used Manifest `feature-base` at `4e78dbb`, with planning edits,
 and public Jettison interfaces at SDK pin `f850920`. No code, assets, SDK pin or environment
-changed, and no builds or gameplay checks ran.
+changed, and no builds or gameplay checks ran. W07 implemented the observation, starting-report and
+sales rules and the query filter ([delivered](stage-4-trading-plan.md#delivered-w07-2026-11-20)); the
+auto-trader rules below wait for W10.
 
 The [regional correction](regional-economy-and-governance-plan.md) separates multiple regional
 economies/governments from physical planets and station markets. Regional control, corporate

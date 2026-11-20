@@ -8,6 +8,7 @@ manifest_add_module(trade
 		world
 		command
 		sim
+		travel
 		types
 	HEADERS
 		include/manifest/trade/Economy.h
