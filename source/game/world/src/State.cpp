@@ -1,5 +1,6 @@
 #include <manifest/world/State.h>
 
+#include <cmath>
 #include <format>
 #include <tuple>
 
@@ -9,6 +10,30 @@
 
 namespace Manifest::World
 {
+
+Kind AccountOf(Kind owner)
+{
+	switch (owner)
+	{
+		case Kind::Broker: return Kind::BrokerAccount;
+		case Kind::Employer: return Kind::EmployerAccount;
+		case Kind::Household: return Kind::HouseholdAccount;
+		case Kind::Company:
+		case Kind::Principal:
+		case Kind::Organisation:
+		case Kind::Region:
+		case Kind::CompanyAccount:
+		case Kind::PublicAccount:
+		case Kind::HouseholdAccount:
+		case Kind::Ship:
+		case Kind::BrokerAccount:
+		case Kind::VenueAccount:
+		case Kind::Order:
+		case Kind::EmployerAccount: break;
+	}
+	return Kind::CompanyAccount;
+}
+
 
 std::optional<std::string> Broken(const Stock &stock)
 {
@@ -52,7 +77,8 @@ std::optional<std::string> Broken(const Cargo &cargo)
 
 std::optional<std::string> Broken(const Order &order)
 {
-	if ((order.ownerKind != Kind::Company && order.ownerKind != Kind::Broker) ||
+	if ((order.ownerKind != Kind::Company && order.ownerKind != Kind::Broker &&
+	     order.ownerKind != Kind::Employer && order.ownerKind != Kind::Household) ||
 	    order.ownerId.empty() || order.venueId.empty() || order.itemId.empty())
 		return "an order names no company or broker, venue or item";
 	if (order.limit <= 0 || order.feeBps < 0 || order.feeBps > 10'000 || order.sequence == 0)
@@ -61,6 +87,46 @@ std::optional<std::string> Broken(const Order &order)
 		return std::format("order {} has nothing left or more than it was placed for", order.sequence);
 	if (order.escrow < 0 || (order.side == Side::Sell && order.escrow != 0))
 		return std::format("order {} holds escrow it cannot", order.sequence);
+	return std::nullopt;
+}
+
+
+std::optional<std::string> Broken(const Production &production)
+{
+	if (production.taxCarry < 0)
+		return "a production's tax carry is below 0";
+	for (std::size_t at = 0; at < production.batches.size(); ++at)
+	{
+		const Batch &batch = production.batches[at];
+		if (batch.venueId.empty() || batch.itemId.empty() || batch.totes == 0 ||
+		    batch.totes > Core::kMaxWarehouseTotes)
+			return "a batch names no venue or item, or makes no tote or more than a warehouse holds";
+		if (!std::isfinite(batch.duration) || batch.duration <= 0.0 || !std::isfinite(batch.progress) ||
+		    batch.progress < 0.0 || batch.progress > batch.duration)
+			return std::format(
+			    "the batch of '{}' at '{}' has no duration or progress past it", batch.itemId,
+			    batch.venueId);
+		if (batch.wages < 0 || batch.paid < 0 || batch.paid > batch.wages)
+			return std::format(
+			    "the batch of '{}' at '{}' has paid more than its wages", batch.itemId, batch.venueId);
+		if (at > 0 && std::tie(production.batches[at - 1].venueId, production.batches[at - 1].itemId) >=
+		                  std::tie(batch.venueId, batch.itemId))
+			return "the batches are out of order or under way twice";
+	}
+	return std::nullopt;
+}
+
+
+std::optional<std::string> Broken(const Pantry &pantry)
+{
+	for (const Opened &opened : pantry.opened)
+		if (opened.itemId.empty() || !std::isfinite(opened.quantity) || opened.quantity <= 0.0)
+			return "an opened tote names no item or holds nothing";
+	for (const Unmet &unmet : pantry.unmet)
+		if (unmet.needId.empty() || !std::isfinite(unmet.quantity) || unmet.quantity < 0.0)
+			return "an unmet need names no need or is below 0";
+	if (!std::isfinite(pantry.severity) || pantry.severity < 0.0 || pantry.severity > 1.0)
+		return "a pantry's severity is not in [0, 1]";
 	return std::nullopt;
 }
 
@@ -85,7 +151,10 @@ void RegisterTypes()
 		    .Value<Kind::Broker>("Broker")
 		    .Value<Kind::BrokerAccount>("BrokerAccount")
 		    .Value<Kind::VenueAccount>("VenueAccount")
-		    .Value<Kind::Order>("Order");
+		    .Value<Kind::Order>("Order")
+		    .Value<Kind::Employer>("Employer")
+		    .Value<Kind::EmployerAccount>("EmployerAccount")
+		    .Value<Kind::Household>("Household");
 		RegisterType<Identity>("Manifest.World.Identity")
 		    .Field<&Identity::kind>("kind", kSaved)
 		    .Field<&Identity::id>("id", kSaved);
@@ -154,6 +223,28 @@ void RegisterTypes()
 		    .Field<&Order::sequence>("sequence", kSaved)
 		    .Field<&Order::expiresStep>("expiresStep", kSaved)
 		    .Field<&Order::request>("request", kSaved);
+		RegisterType<Batch>("Manifest.World.Batch")
+		    .Field<&Batch::venueId>("venueId", kSaved)
+		    .Field<&Batch::itemId>("itemId", kSaved)
+		    .Field<&Batch::totes>("totes", kSaved)
+		    .Field<&Batch::duration>("duration", kSaved)
+		    .Field<&Batch::progress>("progress", kSaved)
+		    .Field<&Batch::wages>("wages", kSaved)
+		    .Field<&Batch::paid>("paid", kSaved);
+		RegisterType<Production>("Manifest.World.Production")
+		    .Field<&Production::batches>("batches", kSaved)
+		    .Field<&Production::taxCarry>("taxCarry", kSaved);
+		RegisterType<Opened>("Manifest.World.Opened")
+		    .Field<&Opened::itemId>("itemId", kSaved)
+		    .Field<&Opened::quantity>("quantity", kSaved);
+		RegisterType<Unmet>("Manifest.World.Unmet")
+		    .Field<&Unmet::needId>("needId", kSaved)
+		    .Field<&Unmet::quantity>("quantity", kSaved);
+		RegisterType<Pantry>("Manifest.World.Pantry")
+		    .Field<&Pantry::opened>("opened", kSaved)
+		    .Field<&Pantry::unmet>("unmet", kSaved)
+		    .Field<&Pantry::severity>("severity", kSaved)
+		    .Field<&Pantry::shortIntervals>("shortIntervals", kSaved);
 		RegisterType<IdentityCounters>("Manifest.World.IdentityCounters")
 		    .Field<&IdentityCounters::issued>("issued", kSaved);
 		return true;

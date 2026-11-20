@@ -17,6 +17,7 @@
 #include <jettison/vfs/FileSystem.h>
 
 #include <manifest/company/Company.h>
+#include <manifest/trade/Economy.h>
 #include <manifest/trade/Trade.h>
 #include <manifest/travel/Travel.h>
 #include <manifest/world/World.h>
@@ -35,6 +36,8 @@ namespace World = Manifest::World;
 
 namespace
 {
+// The trading scenario with its economy taken out (EconomyTests.cpp has it), so that a case sees only
+// the orders it places: no employer makes anything and no region's households want anything.
 const Manifest::Content::ContentSet &Trading()
 {
 	static const Manifest::Content::ContentSet loaded = []
@@ -42,7 +45,15 @@ const Manifest::Content::ContentSet &Trading()
 		Jettison::Vfs::FileSystem files;
 		files.AddMount({"manifest", MANIFEST_MOD_DIRECTORY});
 		Jettison::Sim::DefinitionRegistry definitions{files};
-		return Manifest::Content::LoadScenario(files, definitions, "trading");
+		Manifest::Content::ContentSet set =
+		    Manifest::Content::LoadScenario(files, definitions, "trading");
+		Manifest::Content::ScenarioDefinition &scenario = set.scenarios.at(set.scenario);
+		for (Manifest::Content::RegionDefinition &region : scenario.regions)
+			region.population = 0.0;
+		for (Manifest::Content::VenueDefinition &venue : scenario.venues)
+			for (Manifest::Content::MarketEntry &entry : venue.market)
+				entry.regionId.clear();
+		return set;
 	}();
 	return loaded;
 }
@@ -384,7 +395,7 @@ TEST_CASE("A refused order writes nothing a trade would")
 		std::string_view venue;
 		Result expected;
 	} refused[]{
-	    {Side::Buy, 1, Credits(100), "ItemRice", kOre, Result::UnknownTarget},
+	    {Side::Buy, 1, Credits(100), "ItemBronze", kOre, Result::UnknownTarget},
 	    {Side::Buy, 1, Credits(100), kFurs, "VenueNowhere", Result::UnknownTarget},
 	    {Side::Buy, 0, Credits(100), kFurs, kOre, Result::InvalidQuantity},
 	    {Side::Buy, Manifest::Core::kMaxWarehouseTotes + 1, Credits(100), kFurs, kOre,
@@ -475,8 +486,9 @@ TEST_CASE(
 	CHECK(ask->totes == 21);
 	CHECK(ask->limit == 8'183'941);
 	CHECK(hosted.Held(Kind::Broker, kOre).reserved == 21);
-	// An ask and a bid for each of its eight goods, gold's bid beyond its share of the funds.
-	CHECK(ore == 15);
+	// An ask and a bid for each of its fourteen goods, the essentials among them, gold's bid beyond
+	// its share of the funds.
+	CHECK(ore == 27);
 
 	// Ada lifts two totes of the ask: 18.75 furs a tote at 8.183941, 307 credits, 2 in fees.
 	REQUIRE(hosted.Place(kAda, Side::Buy, 2, Credits(9)) == Result::Succeeded);
@@ -496,14 +508,16 @@ TEST_CASE(
 }
 
 
-TEST_CASE("The step runs the expiry sweep, then the brokers, ahead of the movement")
+TEST_CASE("The step runs the expiry sweep, the economy, then the brokers, ahead of the movement")
 {
 	Hosted hosted;
 	std::vector<std::string> order =
 	    hosted.world.Scheduler().Order(Jettison::Ecs::TickPhase::Simulation);
-	REQUIRE(order.size() > 2);
-	order.resize(3);
-	CHECK(order == std::vector<std::string>{std::string{kExpiry}, std::string{kBrokers}, "spatial"});
+	REQUIRE(order.size() > 3);
+	order.resize(4);
+	CHECK(
+	    order == std::vector<std::string>{
+	                 std::string{kExpiry}, std::string{kEconomy}, std::string{kBrokers}, "spatial"});
 }
 
 

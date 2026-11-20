@@ -42,6 +42,13 @@ condition:
   happinessRecoveryPerHour: 6
   workRateFloor: 0.5
 
+# A region's employer works each market row it makes in batches of whole totes, each about a day of the
+# row's rate (the user's choice, W04), its gross wage bill a share of the output's value at its base
+# price, reserved as the batch starts and paid as the work is done.
+production:
+  batchSeconds: 86400
+  wageShare: 0.3
+
 # A ship's onboard life support, while it relies on it.
 lifeSupport:
   oxygenKilogramsPerOccupantDay: 1

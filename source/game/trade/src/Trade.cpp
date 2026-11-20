@@ -20,6 +20,7 @@
 #include <jettison/spatial/SystemIndices.h>
 
 #include <manifest/sim/Simulation.h>
+#include <manifest/trade/Economy.h>
 #include <manifest/types/Decimal.h>
 
 namespace Manifest::Trade
@@ -43,6 +44,38 @@ struct Venue
 };
 
 
+// A market row a region's employer makes, or its households want, in the item's unit per day.
+struct Row
+{
+	std::string venueId;
+	std::string itemId;
+	double perDay{0.0};
+};
+
+
+// A region's part in the economy, from its venues' markets.
+struct Economy
+{
+	std::string regionId;
+	// Where its households buy and keep their goods: the first venue serving it; empty for none.
+	std::string venueId;
+	// In (venue, item) order, as its employer's batches are.
+	std::vector<Row> made;
+	// Its households' optional goods at its venue, in the market's order.
+	std::vector<Row> wanted;
+};
+
+
+struct Need
+{
+	std::string needId;
+	double weight{0.0};
+	double perThousandPerDay{0.0};
+	// Those the scenario trades, in the need's order.
+	std::vector<std::string> items;
+};
+
+
 // What the commands and systems run on, worked out once from the content.
 struct Rules
 {
@@ -56,6 +89,17 @@ struct Rules
 	std::uint64_t turnSteps{0};
 	int feeBps{0};
 	int spreadBps{0};
+
+	// The regions in the scenario's order, and the needs in the tuning's.
+	std::vector<Economy> economies;
+	std::vector<Need> needs;
+	// Each scenario item's base price, raw microcredits per its unit.
+	std::map<std::string, std::int64_t, std::less<>> basePrices;
+	double intervalSeconds{0.0};
+	// The gross paid for each credit withheld; 0 withholds none.
+	std::int64_t perTaxCredit{0};
+	Content::ProductionTuning production;
+	Content::ConditionTuning condition;
 };
 
 
@@ -89,7 +133,54 @@ std::shared_ptr<const Rules> MakeRules(
 		items.emplace(selection.itemId, &*item);
 		rules->unitsPerTote.emplace(
 		    selection.itemId, item->unitsPerCubicMetre / static_cast<double>(Core::kTotesPerIbc));
+		rules->basePrices.emplace(selection.itemId, Core::Simulation::BasePrice(*item).Raw());
 	}
+
+	for (const Content::RegionDefinition &region : scenario.regions)
+	{
+		Economy &economy = rules->economies.emplace_back();
+		economy.regionId = region.regionId;
+		for (const Content::VenueDefinition &venue : scenario.venues)
+		{
+			const bool serves = std::ranges::find(
+			                        venue.regions, region.regionId,
+			                        &Content::RegionSelection::regionId) != venue.regions.end();
+			if (serves && economy.venueId.empty())
+				economy.venueId = venue.venueId;
+			for (const Content::MarketEntry &entry : venue.market)
+				if (entry.regionId == region.regionId && entry.production > 0.0)
+					economy.made.push_back({venue.venueId, entry.itemId, entry.production});
+		}
+		std::ranges::sort(
+		    economy.made, {}, [](const Row &row) { return std::tie(row.venueId, row.itemId); });
+		const auto home =
+		    std::ranges::find(scenario.venues, economy.venueId, &Content::VenueDefinition::venueId);
+		if (home != scenario.venues.end())
+			for (const Content::MarketEntry &entry : home->market)
+				// A need's good is wanted by its need, its row's demand only pricing it.
+				if (entry.regionId == region.regionId && entry.demand > 0.0 &&
+				    std::ranges::none_of(
+				        content.tuning.needs,
+				        [&](const Content::NeedDefinition &need)
+				        {
+					        return std::ranges::find(
+					                   need.items, entry.itemId, &Content::ItemSelection::itemId) !=
+					               need.items.end();
+				        }))
+					economy.wanted.push_back({home->venueId, entry.itemId, entry.demand});
+	}
+	for (const Content::NeedDefinition &need : content.tuning.needs)
+	{
+		Need &rule = rules->needs.emplace_back(need.needId, need.weight, need.perThousandPerDay);
+		for (const Content::ItemSelection &item : need.items)
+			if (items.contains(item.itemId))
+				rule.items.push_back(item.itemId);
+	}
+	rules->intervalSeconds = content.tuning.economy.intervalSeconds;
+	if (content.tuning.economy.wageTaxRate > 0.0)
+		rules->perTaxCredit = std::llround(1.0 / content.tuning.economy.wageTaxRate);
+	rules->production = content.tuning.production;
+	rules->condition = content.tuning.condition;
 
 	// The legacy model's prices (Simulation::GetLocalPrice), over the scenario's venues as its
 	// economies: the whole market's scarcity, then each venue's own making and needing.
@@ -175,12 +266,6 @@ std::optional<std::int64_t> PerTote(std::int64_t limit, double unitsPerTote, int
 	if (!fee || *cost > kMaxCredits - *fee)
 		return std::nullopt;
 	return *cost + *fee;
-}
-
-
-Kind AccountKind(Kind owner)
-{
-	return owner == Kind::Broker ? Kind::BrokerAccount : Kind::CompanyAccount;
 }
 
 
@@ -288,7 +373,7 @@ class Ledger
 		holding.reserved -= order.remaining;
 		holding.available += order.remaining;
 	}
-	else if (!ledger.Credit(AccountKind(order.ownerKind), order.ownerId, order.escrow))
+	else if (!ledger.Credit(World::AccountOf(order.ownerKind), order.ownerId, order.escrow))
 		return false;
 	order.remaining = 0;
 	order.escrow = 0;
@@ -332,7 +417,7 @@ Result Post(SimWorld &world, const Rules &rules, World::Order order)
 		    order.totes > static_cast<std::uint64_t>(kMaxCredits / std::max<std::int64_t>(*perTote, 1)))
 			return Result::InvalidPrice;
 		const std::int64_t reservation = *perTote * static_cast<std::int64_t>(order.totes);
-		World::Account &account = ledger.Account(AccountKind(order.ownerKind), order.ownerId);
+		World::Account &account = ledger.Account(World::AccountOf(order.ownerKind), order.ownerId);
 		if (account.balance < reservation)
 			return Result::InsufficientFunds;
 		account.balance -= reservation;
@@ -391,7 +476,7 @@ Result Post(SimWorld &world, const Rules &rules, World::Order order)
 			return Result::InvalidPrice;
 		JETTISON_VERIFY(*gross <= buy.escrow && *buyerFee <= buy.escrow - *gross);
 		buy.escrow -= *gross + *buyerFee;
-		if (!ledger.Credit(AccountKind(sell.ownerKind), sell.ownerId, *gross - *sellerFee) ||
+		if (!ledger.Credit(World::AccountOf(sell.ownerKind), sell.ownerId, *gross - *sellerFee) ||
 		    !ledger.Credit(Kind::VenueAccount, order.venueId, *buyerFee) ||
 		    !ledger.Credit(Kind::VenueAccount, order.venueId, *sellerFee))
 			return Result::InvalidQuantity;
@@ -413,7 +498,7 @@ Result Post(SimWorld &world, const Rules &rules, World::Order order)
 
 	if (order.remaining == 0)
 	{
-		if (!ledger.Credit(AccountKind(order.ownerKind), order.ownerId, order.escrow))
+		if (!ledger.Credit(World::AccountOf(order.ownerKind), order.ownerId, order.escrow))
 			return Result::InvalidQuantity;
 		order.escrow = 0;
 	}
@@ -519,6 +604,32 @@ void Expire(SimWorld &world, const Rules &rules)
 }
 
 
+// A broker's bid and ask about a native price: half the spread either side, the ask rounded up and the
+// bid down.
+std::pair<std::int64_t, std::int64_t> Around(Decimal native, int spreadBps)
+{
+	const __int128 mid = native.Raw();
+	return {
+	    static_cast<std::int64_t>(mid * (20'000 - spreadBps) / 20'000),
+	    static_cast<std::int64_t>((mid * (20'000 + spreadBps) + 19'999) / 20'000)};
+}
+
+
+// The bid and ask a venue's broker quotes the item at; none for a good its market does not price.
+std::optional<std::pair<std::int64_t, std::int64_t>> Quotes(
+    const Rules &rules, const std::string &venueId, const std::string &itemId)
+{
+	const auto venue = rules.venues.find(venueId);
+	if (venue == rules.venues.end())
+		return std::nullopt;
+	const auto quote =
+	    std::ranges::find(venue->second.quotes, itemId, &std::pair<std::string, Decimal>::first);
+	if (quote == venue->second.quotes.end() || quote->second <= Decimal{})
+		return std::nullopt;
+	return Around(quote->second, rules.spreadBps);
+}
+
+
 void Requote(SimWorld &world, const Rules &rules)
 {
 	entt::registry &registry = world.Registry();
@@ -540,10 +651,7 @@ void Requote(SimWorld &world, const Rules &rules)
 		{
 			if (native <= Decimal{})
 				continue;
-			const __int128 mid = native.Raw();
-			const auto ask =
-			    static_cast<std::int64_t>((mid * (20'000 + rules.spreadBps) + 19'999) / 20'000);
-			const auto bid = static_cast<std::int64_t>(mid * (20'000 - rules.spreadBps) / 20'000);
+			const auto [bid, ask] = Around(native, rules.spreadBps);
 			World::Order order;
 			order.ownerKind = Kind::Broker;
 			order.ownerId = venueId;
@@ -579,6 +687,382 @@ void Requote(SimWorld &world, const Rules &rules)
 			}
 		}
 	}
+}
+
+
+// ─── The regional economy ───
+// docs/economy-and-development-plan.md, "Aggregate households, wages and consumer demand" and what
+// follows it; docs/stage-4-trading-plan.md, "The step, in order".
+
+entt::entity Require(const Rules &rules, Kind kind, const std::string &id)
+{
+	const entt::entity entity = rules.identities.Find(kind, id);
+	JETTISON_VERIFY(entity != entt::null);
+	return entity;
+}
+
+
+// The totes of the item the owner has free at the venue.
+std::uint64_t Available(
+    const entt::registry &registry, entt::entity owner, const std::string &venueId,
+    const std::string &itemId)
+{
+	for (const World::Holding &holding : registry.get<const World::Stock>(owner).holdings)
+		if (holding.venueId == venueId && holding.itemId == itemId)
+			return holding.available;
+	return 0;
+}
+
+
+// A gross payment of the region's employer's wages: the households' share to their account and the
+// withheld credits to the treasury, the carry moved on. The employer's account paid it as the batch
+// was reserved.
+void Pay(
+    Ledger &ledger, const Rules &rules, const std::string &regionId, World::Production &production,
+    std::int64_t gross)
+{
+	if (gross <= 0)
+		return;
+	const Withholding withheld = Withhold(gross, production.taxCarry, rules.perTaxCredit);
+	production.taxCarry = withheld.carry;
+	if (!ledger.Credit(Kind::HouseholdAccount, regionId, withheld.households) ||
+	    !ledger.Credit(Kind::PublicAccount, regionId, withheld.treasury))
+		throw std::overflow_error{std::format("'{}''s wages exceed its accounts", regionId)};
+}
+
+
+// A new batch of the row, its wages reserved from the employer's account: none when it cannot fund
+// them. About batchSeconds of the row's rate, in whole totes, at least one.
+std::optional<World::Batch> Start(
+    Ledger &ledger, const Rules &rules, const std::string &regionId, const Row &row)
+{
+	const double unitsPerTote = rules.unitsPerTote.at(row.itemId);
+	const double perDayTotes = row.perDay / unitsPerTote;
+	const double totes =
+	    std::max(1.0, std::round(perDayTotes * rules.production.batchSeconds / 86'400.0));
+	if (!std::isfinite(totes) || totes > static_cast<double>(Core::kMaxWarehouseTotes))
+		return std::nullopt;
+	World::Batch batch;
+	batch.venueId = row.venueId;
+	batch.itemId = row.itemId;
+	batch.totes = static_cast<std::uint64_t>(totes);
+	batch.duration = totes * 86'400.0 / perDayTotes;
+	const std::optional<std::int64_t> wages =
+	    Cost(rules.basePrices.at(row.itemId), rules.production.wageShare * totes * unitsPerTote, false);
+	if (!wages)
+		return std::nullopt;
+	batch.wages = *wages;
+	World::Account &account = ledger.Account(Kind::EmployerAccount, regionId);
+	if (account.balance < batch.wages)
+		return std::nullopt;
+	account.balance -= batch.wages;
+	return batch;
+}
+
+
+// Each employer's batches worked for a step at its region's rate; a finished batch's totes go into the
+// employer's holding at its venue and the rest of its wages are paid, and the next starts with the
+// work left. A finished batch with no room in the warehouse waits, finished, for room.
+void Produce(SimWorld &world, const Rules &rules)
+{
+	entt::registry &registry = world.Registry();
+	for (const Economy &economy : rules.economies)
+	{
+		if (economy.made.empty())
+			continue;
+		const World::Region &region =
+		    registry.get<const World::Region>(Require(rules, Kind::Region, economy.regionId));
+		const double rate = WorkRate(region.health, region.happiness, rules.condition.workRateFloor);
+		const entt::entity employer = Require(rules, Kind::Employer, economy.regionId);
+		World::Production production = registry.get<const World::Production>(employer);
+		Ledger ledger{registry, rules.identities};
+		for (const Row &row : economy.made)
+		{
+			const auto key = std::tie(row.venueId, row.itemId);
+			const auto find = [&]
+			{
+				return std::ranges::find_if(
+				    production.batches, [&](const World::Batch &batch)
+				    { return std::tie(batch.venueId, batch.itemId) == key; });
+			};
+			double work = world.FixedStep() * rate;
+			while (true)
+			{
+				auto batch = find();
+				if (batch == production.batches.end())
+				{
+					std::optional<World::Batch> started = Start(ledger, rules, economy.regionId, row);
+					if (!started)
+						break;
+					const auto at = std::ranges::lower_bound(
+					    production.batches, key, std::less<>{},
+					    [](const World::Batch &held) { return std::tie(held.venueId, held.itemId); });
+					batch = production.batches.insert(at, *std::move(started));
+				}
+				const double left = batch->duration - batch->progress;
+				if (work < left)
+				{
+					batch->progress += work;
+					break;
+				}
+				batch->progress = batch->duration;
+				work -= left;
+				World::Holding &holding =
+				    ledger.Holding(Kind::Employer, economy.regionId, row.venueId, row.itemId);
+				if (holding.available + holding.reserved > Core::kMaxWarehouseTotes - batch->totes)
+					break;
+				holding.available += batch->totes;
+				Pay(ledger, rules, economy.regionId, production, batch->wages - batch->paid);
+				production.batches.erase(batch);
+				if (work <= 0.0)
+					break;
+			}
+		}
+		ledger.Commit();
+		registry.replace<World::Production>(employer, std::move(production));
+	}
+}
+
+
+// The wages each batch has earned and not yet been paid, rounded down.
+void Payroll(SimWorld &world, const Rules &rules)
+{
+	entt::registry &registry = world.Registry();
+	for (const Economy &economy : rules.economies)
+	{
+		const entt::entity employer = Require(rules, Kind::Employer, economy.regionId);
+		World::Production production = registry.get<const World::Production>(employer);
+		if (production.batches.empty())
+			continue;
+		Ledger ledger{registry, rules.identities};
+		for (World::Batch &batch : production.batches)
+		{
+			const std::int64_t earned = Earned(batch.wages, batch.progress, batch.duration);
+			if (earned > batch.paid)
+			{
+				Pay(ledger, rules, economy.regionId, production, earned - batch.paid);
+				batch.paid = earned;
+			}
+		}
+		ledger.Commit();
+		registry.replace<World::Production>(employer, std::move(production));
+	}
+}
+
+
+// The owner's resting orders, cancelled in placement order.
+void CancelAll(SimWorld &world, const Rules &rules, Kind kind, const std::string &id)
+{
+	std::vector<std::pair<std::uint64_t, entt::entity>> resting;
+	for (const auto [entity, order] : world.Registry().view<const World::Order>().each())
+		if (order.ownerKind == kind && order.ownerId == id)
+			resting.emplace_back(order.sequence, entity);
+	RetireAll(world.Registry(), rules.identities, std::move(resting));
+}
+
+
+// Each employer offers everything it has made at its broker's bid, its last turn's offers cancelled.
+void Sell(SimWorld &world, const Rules &rules)
+{
+	entt::registry &registry = world.Registry();
+	for (const Economy &economy : rules.economies)
+	{
+		if (economy.made.empty())
+			continue;
+		CancelAll(world, rules, Kind::Employer, economy.regionId);
+		const std::vector<World::Holding> holdings =
+		    registry.get<const World::Stock>(Require(rules, Kind::Employer, economy.regionId)).holdings;
+		for (const World::Holding &holding : holdings)
+		{
+			const auto quotes = Quotes(rules, holding.venueId, holding.itemId);
+			if (holding.available == 0 || !quotes || quotes->first <= 0)
+				continue;
+			World::Order order;
+			order.ownerKind = Kind::Employer;
+			order.ownerId = economy.regionId;
+			order.venueId = holding.venueId;
+			order.itemId = holding.itemId;
+			order.side = Side::Sell;
+			order.limit = quotes->first;
+			order.totes = holding.available;
+			(void)Post(world, rules, std::move(order));
+		}
+	}
+}
+
+
+// The households buy at the broker's ask, cheapest of the items first, whole totes enough for the
+// shortfall in the items' unit, within their funds and their warehouse's room; what does not fill at
+// once is cancelled, so their bids never rest.
+void Buy(
+    SimWorld &world, const Rules &rules, const Economy &economy, std::span<const std::string> items,
+    double shortfall)
+{
+	entt::registry &registry = world.Registry();
+	const entt::entity household = Require(rules, Kind::Household, economy.regionId);
+	const entt::entity account = Require(rules, Kind::HouseholdAccount, economy.regionId);
+	std::vector<std::pair<std::int64_t, std::string>> asks;
+	for (const std::string &itemId : items)
+		if (const auto quotes = Quotes(rules, economy.venueId, itemId))
+			asks.emplace_back(quotes->second, itemId);
+	std::ranges::stable_sort(asks, {}, &std::pair<std::int64_t, std::string>::first);
+	for (const auto &[ask, itemId] : asks)
+	{
+		if (shortfall <= 0.0)
+			break;
+		const double unitsPerTote = rules.unitsPerTote.at(itemId);
+		const std::optional<std::int64_t> perTote = PerTote(ask, unitsPerTote, rules.feeBps);
+		if (!perTote)
+			continue;
+		const std::int64_t balance = registry.get<const World::Account>(account).balance;
+		const std::uint64_t held = Available(registry, household, economy.venueId, itemId);
+		const double wanted = std::ceil(shortfall / unitsPerTote);
+		const std::uint64_t affordable =
+		    *perTote > 0 ? static_cast<std::uint64_t>(balance / *perTote) : Core::kMaxWarehouseTotes;
+		const std::uint64_t totes = std::min(
+		    {static_cast<std::uint64_t>(
+		         std::min(wanted, static_cast<double>(Core::kMaxWarehouseTotes))),
+		     affordable, Core::kMaxWarehouseTotes - held});
+		if (totes == 0)
+			continue;
+		World::Order order;
+		order.ownerKind = Kind::Household;
+		order.ownerId = economy.regionId;
+		order.venueId = economy.venueId;
+		order.itemId = itemId;
+		order.side = Side::Buy;
+		order.limit = ask;
+		order.totes = totes;
+		(void)Post(world, rules, std::move(order));
+		CancelAll(world, rules, Kind::Household, economy.regionId);
+		const std::uint64_t bought = Available(registry, household, economy.venueId, itemId) - held;
+		shortfall -= static_cast<double>(bought) * unitsPerTote;
+	}
+}
+
+
+// What the households consume of the quantity, in the items' unit, from what is opened and then whole
+// totes opened in turn, in the items' order: all of it when they hold enough, exactly.
+double Consume(
+    Ledger &ledger, World::Pantry &pantry, const Rules &rules, const Economy &economy,
+    std::span<const std::string> items, double quantity)
+{
+	double left = quantity;
+	for (const std::string &itemId : items)
+	{
+		auto opened = std::ranges::find(pantry.opened, itemId, &World::Opened::itemId);
+		World::Holding &holding =
+		    ledger.Holding(Kind::Household, economy.regionId, economy.venueId, itemId);
+		while (left > 0.0)
+		{
+			if (opened == pantry.opened.end() || opened->quantity <= 0.0)
+			{
+				if (holding.available == 0)
+					break;
+				--holding.available;
+				if (opened == pantry.opened.end())
+					opened = pantry.opened.insert(
+					    std::ranges::lower_bound(pantry.opened, itemId, {}, &World::Opened::itemId),
+					    {itemId, 0.0});
+				opened->quantity += rules.unitsPerTote.at(itemId);
+			}
+			const double taken = std::min(left, opened->quantity);
+			opened->quantity -= taken;
+			left -= taken;
+		}
+	}
+	std::erase_if(pantry.opened, [](const World::Opened &opened) { return opened.quantity <= 0.0; });
+	return left <= 0.0 ? quantity : quantity - left;
+}
+
+
+// Each region's households' interval: every need's fresh requirement, scaled by the population and the
+// interval, bought and consumed in the needs' order; then, every need met, the optional goods; then
+// the region's health and happiness, from the interval's severity, which the work rate reads from the
+// next step.
+void Households(SimWorld &world, const Rules &rules)
+{
+	entt::registry &registry = world.Registry();
+	for (const Economy &economy : rules.economies)
+	{
+		const entt::entity regionEntity = Require(rules, Kind::Region, economy.regionId);
+		const double population = registry.get<const World::Region>(regionEntity).population;
+		const entt::entity household = Require(rules, Kind::Household, economy.regionId);
+		std::vector<NeedMet> met;
+		World::Pantry pantry = registry.get<const World::Pantry>(household);
+		if (population > 0.0 && !economy.venueId.empty())
+		{
+			const double days = rules.intervalSeconds / 86'400.0;
+			const auto have = [&](std::span<const std::string> items)
+			{
+				double held = 0.0;
+				for (const std::string &itemId : items)
+				{
+					const auto opened =
+					    std::ranges::find(pantry.opened, itemId, &World::Opened::itemId);
+					held +=
+					    (opened == pantry.opened.end() ? 0.0 : opened->quantity) +
+					    static_cast<double>(Available(registry, household, economy.venueId, itemId)) *
+					        rules.unitsPerTote.at(itemId);
+				}
+				return held;
+			};
+			const auto consume = [&](std::span<const std::string> items, double required)
+			{
+				if (const double held = have(items); held < required)
+					Buy(world, rules, economy, items, required - held);
+				Ledger ledger{registry, rules.identities};
+				const double consumed = Consume(ledger, pantry, rules, economy, items, required);
+				ledger.Commit();
+				return consumed;
+			};
+			for (const Need &need : rules.needs)
+			{
+				const double required = need.perThousandPerDay * population / 1'000.0 * days;
+				const double consumed = consume(need.items, required);
+				met.push_back({need.weight, required, consumed});
+				if (consumed < required)
+				{
+					auto unmet = std::ranges::find(pantry.unmet, need.needId, &World::Unmet::needId);
+					if (unmet == pantry.unmet.end())
+						unmet = pantry.unmet.insert(
+						    std::ranges::lower_bound(
+						        pantry.unmet, need.needId, {}, &World::Unmet::needId),
+						    {need.needId, 0.0});
+					unmet->quantity += required - consumed;
+				}
+			}
+			if (std::ranges::all_of(
+			        met, [](const NeedMet &need) { return need.satisfied >= need.required; }))
+				for (const Row &row : economy.wanted)
+					(void)consume(std::span{&row.itemId, 1}, row.perDay * days);
+		}
+		pantry.severity = Severity(met);
+		if (pantry.severity > 0.0)
+			++pantry.shortIntervals;
+		registry.replace<World::Pantry>(household, std::move(pantry));
+
+		World::Region region = registry.get<const World::Region>(regionEntity);
+		const Condition condition = Updated(
+		    {region.health, region.happiness}, Severity(met), rules.intervalSeconds / 3'600.0,
+		    rules.condition);
+		region.health = condition.health;
+		region.happiness = condition.happiness;
+		registry.replace<World::Region>(regionEntity, std::move(region));
+	}
+}
+
+
+// The step's economy: production, then on the turn's last step the payroll, the employers' sales,
+// the households' interval and the condition, in that order.
+void Step(SimWorld &world, const Rules &rules)
+{
+	Produce(world, rules);
+	if ((world.Clock().Step() + 1) % rules.turnSteps != 0)
+		return;
+	Payroll(world, rules);
+	Sell(world, rules);
+	Households(world, rules);
 }
 } // namespace
 
@@ -632,11 +1116,20 @@ void Register(
 	     .run = [rules, &world](entt::registry &, double) { Expire(world, *rules); },
 	     .before = beforeMovement});
 	world.RegisterSystem(
+	    {.name = std::string{kEconomy},
+	     .phase = Jettison::Ecs::TickPhase::Simulation,
+	     .access = Access::Of<World::Order>()
+	                   .Writing<
+	                       World::Order, World::Account, World::Stock, World::Identity,
+	                       World::Production, World::Pantry, World::Region>(),
+	     .after = {std::string{kExpiry}},
+	     .run = [rules, &world](entt::registry &, double) { Step(world, *rules); },
+	     .before = beforeMovement});
+	world.RegisterSystem(
 	    {.name = std::string{kBrokers},
 	     .phase = Jettison::Ecs::TickPhase::Simulation,
 	     .access = writes,
-	     // W04 orders it after manifest.economy, once that system is registered.
-	     .after = {std::string{kExpiry}},
+	     .after = {std::string{kExpiry}, std::string{kEconomy}},
 	     .run =
 	         [rules, &world](entt::registry &, double)
 	     {

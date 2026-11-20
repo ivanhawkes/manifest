@@ -43,6 +43,8 @@ Identities &RegisterWorld(Jettison::Sim::SimWorld &world)
 	world.RegisterComponent<Cargo>();
 	world.RegisterComponent<Broker>();
 	world.RegisterComponent<Order>();
+	world.RegisterComponent<Production>();
+	world.RegisterComponent<Pantry>();
 	auto identities = std::make_unique<Identities>();
 	Identities &added = *identities;
 	world.AddService("Manifest.Identities", std::move(identities));
@@ -74,6 +76,15 @@ void CreateInitialState(
 		CreateAccount(world, identities, Kind::PublicAccount, region.regionId, region.publicFunds);
 		CreateAccount(
 		    world, identities, Kind::HouseholdAccount, region.regionId, region.householdFunds);
+		const entt::entity household =
+		    CreateOrRefuse(world, identities, Kind::Household, region.regionId);
+		registry.emplace<Stock>(household);
+		registry.emplace<Pantry>(household);
+		const entt::entity employer =
+		    CreateOrRefuse(world, identities, Kind::Employer, region.regionId);
+		registry.emplace<Stock>(employer);
+		registry.emplace<Production>(employer);
+		CreateAccount(world, identities, Kind::EmployerAccount, region.regionId, region.employerFunds);
 	}
 	for (const Content::VenueDefinition &venue : scenario.venues)
 	{

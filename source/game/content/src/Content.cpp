@@ -490,6 +490,13 @@ void CheckTuning(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 		checker.Require(
 		    Fraction(tuning.economy.wageTaxRate) && tuning.economy.wageTaxRate < 1.0,
 		    "economy.wageTaxRate", "must be in [0, 1)");
+		// A credit is withheld for each whole 1 / rate of gross paid, carried between payments.
+		checker.Require(
+		    tuning.economy.wageTaxRate <= 0.0 ||
+		        std::abs(
+		            1.0 / tuning.economy.wageTaxRate - std::round(1.0 / tuning.economy.wageTaxRate)) <
+		            1e-9,
+		    "economy.wageTaxRate", "must be 0 or one credit in a whole number of credits");
 
 		checker.Require(!tuning.needs.empty(), "needs", "holds none");
 		std::set<std::string, std::less<>> needs;
@@ -538,6 +545,11 @@ void CheckTuning(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 			checker.Require(Positive(rate), field, "must be above 0");
 		checker.Require(
 		    Fraction(condition.workRateFloor), "condition.workRateFloor", "must be in [0, 1]");
+		checker.Require(
+		    Positive(tuning.production.batchSeconds), "production.batchSeconds", "must be above 0");
+		checker.Require(
+		    Fraction(tuning.production.wageShare) && tuning.production.wageShare < 1.0,
+		    "production.wageShare", "must be in [0, 1)");
 
 		checker.Require(
 		    Positive(tuning.lifeSupport.oxygenKilogramsPerOccupantDay),
@@ -855,8 +867,8 @@ void CheckScenarios(
 			    NotNegative(region.population), "regions",
 			    problem("population must be finite and not below 0"));
 			checker.Require(
-			    region.householdFunds >= 0 && region.publicFunds >= 0, "regions",
-			    problem("funds must not be below 0"));
+			    region.householdFunds >= 0 && region.publicFunds >= 0 && region.employerFunds >= 0,
+			    "regions", problem("funds must not be below 0"));
 			for (const double condition : {region.health, region.happiness})
 				checker.Require(
 				    NotNegative(condition) && condition <= 100.0, "regions",
@@ -943,6 +955,15 @@ void CheckScenarios(
 				    problem(
 				        std::format("market '{}' rates must be finite and not below 0", entry.itemId)));
 				checker.Require(
+				    entry.regionId.empty() || served.contains(entry.regionId), "venues",
+				    problem(
+				        std::format(
+				            "market '{}' region '{}' is not one it serves", entry.itemId,
+				            entry.regionId)));
+				checker.Require(
+				    entry.production <= 0.0 || !entry.regionId.empty(), "venues",
+				    problem(std::format("market '{}' production names no region", entry.itemId)));
+				checker.Require(
 				    entry.stock <= Core::kMaxWarehouseTotes, "venues",
 				    problem(
 				        std::format(
@@ -950,6 +971,17 @@ void CheckScenarios(
 				            Core::kMaxWarehouseTotes)));
 			}
 		}
+
+		// Every region trades every essential at each venue serving it, at the least.
+		for (const VenueDefinition &venue : scenario.venues)
+			if (!venue.regions.empty())
+				for (const NeedDefinition &need : tuning.needs)
+					for (const ItemSelection &selection : need.items)
+						checker.Require(
+						    Contains(venue.market, selection.itemId, &MarketEntry::itemId), "venues",
+						    std::format(
+						        "'{}' serves a region but trades no '{}', which '{}' needs",
+						        venue.venueId, selection.itemId, need.needId));
 
 		const auto starter =
 		    std::ranges::find(scenario.venues, scenario.starterVenue, &VenueDefinition::venueId);

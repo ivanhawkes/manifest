@@ -27,8 +27,16 @@ enum class Kind
 	BrokerAccount,
 	// What a venue takes in fees, by the venue's ID: its one credited balance.
 	VenueAccount,
-	Order
+	Order,
+	// A region's employer and its account, and its households' goods, each by the region's ID (W04):
+	// the households' money is the region's HouseholdAccount.
+	Employer,
+	EmployerAccount,
+	Household
 };
+
+// The account of an owner of goods: a Company's, a Broker's, an Employer's or a Household's.
+Kind AccountOf(Kind owner);
 
 // Every hosted entity has one, given when it is created and never changed (Identities::Create).
 struct Identity
@@ -214,12 +222,76 @@ struct Order
 	bool operator==(const Order &) const = default;
 };
 
+// A batch of an employer's production (docs/economy-and-development-plan.md, "Production-batch payroll
+// funding"): whole totes of one good made at a venue over its duration of work, its gross wage bill
+// reserved from the employer's account as it started and paid as the work is done.
+struct Batch
+{
+	std::string venueId;
+	std::string itemId;
+	std::uint64_t totes{0};
+	// Simulation seconds of work at the full rate, and those done, the rate scaled by its region's
+	// condition (WorkRate).
+	double duration{0.0};
+	double progress{0.0};
+	// Whole credits: the gross bill, and what of it has been paid. The rest is reserved.
+	std::int64_t wages{0};
+	std::int64_t paid{0};
+
+	bool operator==(const Batch &) const = default;
+};
+
+// An employer's batches under way, at most one a market row it makes, in (venue, item) order; and its
+// withholding's carry, the gross paid toward the next withheld credit, shared by its batches.
+struct Production
+{
+	std::vector<Batch> batches;
+	std::int64_t taxCarry{0};
+
+	bool operator==(const Production &) const = default;
+};
+
+// What is left of a tote the households have opened, in the item's unit.
+struct Opened
+{
+	std::string itemId;
+	double quantity{0.0};
+
+	bool operator==(const Opened &) const = default;
+};
+
+// What a need has gone without, in the need's unit, over every interval.
+struct Unmet
+{
+	std::string needId;
+	double quantity{0.0};
+
+	bool operator==(const Unmet &) const = default;
+};
+
+// A region's households' goods beyond whole totes, and their shortages: the opened totes by item, each
+// above 0; each need's unmet total; the last interval's severity, 0 to 1; and the intervals a need went
+// short in.
+struct Pantry
+{
+	std::vector<Opened> opened;
+	std::vector<Unmet> unmet;
+	double severity{0.0};
+	std::uint64_t shortIntervals{0};
+
+	bool operator==(const Pantry &) const = default;
+};
+
 // Why a Stock or a Cargo breaks the rules above, for a load to refuse: none when it keeps them.
 std::optional<std::string> Broken(const Stock &stock);
 
 std::optional<std::string> Broken(const Cargo &cargo);
 
 std::optional<std::string> Broken(const Order &order);
+
+std::optional<std::string> Broken(const Production &production);
+
+std::optional<std::string> Broken(const Pantry &pantry);
 
 // The components and their service's record, with Reflect. Safe to call again.
 void RegisterTypes();

@@ -100,6 +100,17 @@ cargo's lots are bounded together (`world`), and a ship's cargo against its hull
 `CargoVolume`, whose empty map was taken for none given; a hull the map does not name now carries
 nothing (`company`). Round 7 approved with no finding open.
 
+## W04: the regional economy — 2026-11-20
+
+On pin `54fb871`, with no engine edit. `manifest.economy` runs between the expiry sweep and the
+brokers: each region's employer works its batches every step, and on a turn's last step pays the
+wages earned, sells to its broker, and its households buy and consume, their shortages moving health
+and happiness ([what it chose and its evidence](stage-4-trading-plan.md#delivered-w04-2026-11-20)).
+The user chose a regional employer per region, day-long batches with a wage share, households buying
+whole totes through the book, and every region trading the essentials, which the trading fixture
+lacked ([D-092](decision-ledger.md#d-092)). A content check first refused a need's good with demand
+on a region's row; the demand prices it instead, the need doing the wanting.
+
 ## W15: the vertical slice through the console — 2026-11-20
 
 On pin `54fb871`, with no engine edit. The console sends the trade, cancel and travel commands, shows

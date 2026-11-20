@@ -1,6 +1,7 @@
 # The hosted market: orders reserving against owners' accounts and holdings at a venue, matched and
 # settled in one planned write, their expiry, and each venue's broker (docs/stage-4-trading-plan.md,
-# "Order and settlement contract").
+# "Order and settlement contract"), and the regional economy that makes, pays for and consumes goods
+# through it (W04).
 manifest_add_module(trade
 	DEPENDS
 		content
@@ -9,10 +10,13 @@ manifest_add_module(trade
 		sim
 		types
 	HEADERS
+		include/manifest/trade/Economy.h
 		include/manifest/trade/Trade.h
 	SOURCES
+		src/Economy.cpp
 		src/Trade.cpp
 	TESTS
+		tests/EconomyTests.cpp
 		tests/TradeTests.cpp
 	PUBLIC_LIBRARIES
 		Jettison::Sim

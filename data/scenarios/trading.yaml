@@ -6,7 +6,10 @@ version: 1
 # balance result. Where the bodies and stations are is the system's record
 # (systems/system-anvil.yaml); market rates are per simulation day, in the item's unit
 # (docs/model.md), and stock is in totes, eight to the IBC (D-087): the earlier quantities to the
-# nearest tote, at least one.
+# nearest tote, at least one. Each region trades the essentials at its venue (W04): Ore grows rice and
+# oats, Brine wheat and barley and makes the medical supplies, and each draws its own water; an
+# essential's demand is its region's need, which sets its price. A row's region is the employer that
+# makes it, and the households that want it when no need names it.
 gameMode: manifest
 starterHull: HullLoneTraderStarter
 starterVenue: VenueOreHighport
@@ -19,6 +22,12 @@ items:
   - itemId: ItemFurs
   - itemId: ItemGlassware
   - itemId: ItemSoap
+  - itemId: ItemRice
+  - itemId: ItemWheat
+  - itemId: ItemOats
+  - itemId: ItemBarley
+  - itemId: ItemDrinkingWater
+  - itemId: ItemBasicMedicalSupplies
 
 systems:
   - {systemId: SystemAnvil, displayName: Anvil}
@@ -44,6 +53,7 @@ regions:
     population: 25000
     householdFunds: 5000000
     publicFunds: 1000000
+    employerFunds: 1000000
     health: 100
     happiness: 100
   - regionId: RegionBrineCoast
@@ -53,6 +63,7 @@ regions:
     population: 25000
     householdFunds: 5000000
     publicFunds: 1000000
+    employerFunds: 1000000
     health: 100
     happiness: 100
 
@@ -67,14 +78,20 @@ venues:
     lifeSupportCapacity: 4
     regions: [{regionId: RegionOreHighlands}]
     market:
-      - {itemId: ItemCopper, production: 2, demand: 0, stock: 18}
-      - {itemId: ItemTin, production: 0.3, demand: 0, stock: 3}
-      - {itemId: ItemGold, production: 64.3, demand: 0, stock: 1}
-      - {itemId: ItemFurs, production: 40, demand: 0, stock: 21}
-      - {itemId: ItemSalt, production: 0, demand: 3.56, stock: 22}
+      - {itemId: ItemCopper, regionId: RegionOreHighlands, production: 2, demand: 0, stock: 18}
+      - {itemId: ItemTin, regionId: RegionOreHighlands, production: 0.3, demand: 0, stock: 3}
+      - {itemId: ItemGold, regionId: RegionOreHighlands, production: 64.3, demand: 0, stock: 1}
+      - {itemId: ItemFurs, regionId: RegionOreHighlands, production: 40, demand: 0, stock: 21}
+      - {itemId: ItemSalt, regionId: RegionOreHighlands, production: 0, demand: 3.56, stock: 22}
       - {itemId: ItemLime, production: 0, demand: 5.18, stock: 12}
-      - {itemId: ItemGlassware, production: 0, demand: 200, stock: 6}
-      - {itemId: ItemSoap, production: 0, demand: 1500, stock: 2}
+      - {itemId: ItemGlassware, regionId: RegionOreHighlands, production: 0, demand: 200, stock: 6}
+      - {itemId: ItemSoap, regionId: RegionOreHighlands, production: 0, demand: 1500, stock: 2}
+      - {itemId: ItemRice, regionId: RegionOreHighlands, production: 9, demand: 3.125, stock: 100}
+      - {itemId: ItemOats, regionId: RegionOreHighlands, production: 6, demand: 3.125, stock: 80}
+      - {itemId: ItemWheat, production: 0, demand: 3.125, stock: 10}
+      - {itemId: ItemBarley, production: 0, demand: 3.125, stock: 10}
+      - {itemId: ItemDrinkingWater, regionId: RegionOreHighlands, production: 80, demand: 75, stock: 1200}
+      - {itemId: ItemBasicMedicalSupplies, production: 0, demand: 125, stock: 8}
   - venueId: VenueBrineHighport
     systemId: SystemAnvil
     planetId: PlanetBrine
@@ -85,11 +102,18 @@ venues:
     lifeSupportCapacity: 4
     regions: [{regionId: RegionBrineCoast}]
     market:
-      - {itemId: ItemSalt, production: 4.75, demand: 0, stock: 176}
-      - {itemId: ItemLime, production: 6.21, demand: 0, stock: 149}
-      - {itemId: ItemGlassware, production: 250, demand: 0, stock: 50}
-      - {itemId: ItemSoap, production: 2000, demand: 0, stock: 18}
+      - {itemId: ItemSalt, regionId: RegionBrineCoast, production: 4.75, demand: 0, stock: 176}
+      - {itemId: ItemLime, regionId: RegionBrineCoast, production: 6.21, demand: 0, stock: 149}
+      - {itemId: ItemGlassware, regionId: RegionBrineCoast, production: 250, demand: 0, stock: 50}
+      - {itemId: ItemSoap, regionId: RegionBrineCoast, production: 2000, demand: 0, stock: 18}
       - {itemId: ItemCopper, production: 0, demand: 1.5, stock: 2}
       - {itemId: ItemTin, production: 0, demand: 0.25, stock: 1}
       - {itemId: ItemGold, production: 0, demand: 48.2, stock: 1}
-      - {itemId: ItemFurs, production: 0, demand: 30, stock: 2}
+      - {itemId: ItemFurs, regionId: RegionBrineCoast, production: 0, demand: 30, stock: 2}
+      - {itemId: ItemWheat, regionId: RegionBrineCoast, production: 9, demand: 3.125, stock: 100}
+      - {itemId: ItemBarley, regionId: RegionBrineCoast, production: 6, demand: 3.125, stock: 80}
+      - {itemId: ItemRice, production: 0, demand: 3.125, stock: 10}
+      - {itemId: ItemOats, production: 0, demand: 3.125, stock: 10}
+      - {itemId: ItemDrinkingWater, regionId: RegionBrineCoast, production: 80, demand: 75, stock: 1200}
+      - {itemId: ItemBasicMedicalSupplies, regionId: RegionBrineCoast, production: 250, demand: 125,
+         stock: 16}

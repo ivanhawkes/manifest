@@ -213,8 +213,8 @@ TEST_CASE(
 	CHECK(
 	    scheduler.Order(Jettison::Ecs::TickPhase::Simulation) ==
 	    std::vector<std::string>{
-	        "manifest.expiry", "manifest.brokers", "spatial", "steering", "flight", "physics", "dock",
-	        "lanes", "cruise", std::string{Travel::kSystem}});
+	        "manifest.expiry", "manifest.economy", "manifest.brokers", "spatial", "steering", "flight",
+	        "physics", "dock", "lanes", "cruise", std::string{Travel::kSystem}});
 	CHECK(scheduler.Ambiguities(Jettison::Ecs::TickPhase::Simulation).empty());
 }
 

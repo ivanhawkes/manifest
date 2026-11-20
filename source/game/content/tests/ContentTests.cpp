@@ -378,6 +378,14 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	    balance, "version: 1\ncondition: {workRateFloor: 2}\n",
 	    "condition.workRateFloor must be in [0, 1]");
 	CheckRefused(
+	    balance, "version: 1\neconomy: {wageTaxRate: 0.3}\n",
+	    "economy.wageTaxRate must be 0 or one credit in a whole number of credits");
+	CheckRefused(
+	    balance, "version: 1\nproduction: {batchSeconds: 0}\n",
+	    "production.batchSeconds must be above 0");
+	CheckRefused(
+	    balance, "version: 1\nproduction: {wageShare: 1}\n", "production.wageShare must be in [0, 1)");
+	CheckRefused(
 	    balance, "version: 1\nprocurement: {performanceSecurityRate: -0.1}\n",
 	    "procurement.performanceSecurityRate must be in [0, 1]");
 	CheckRefused(
@@ -468,9 +476,10 @@ TEST_CASE("The fixtures are the trading and governance scenarios their plans des
 	REQUIRE(content.scenarios.size() == 2);
 
 	// One system, two planets each with a region of its own civilisation and a public station, and
-	// eight goods (docs/stage-2-content-plan.md, "Initial scenario").
+	// eight goods (docs/stage-2-content-plan.md, "Initial scenario"), with the essentials every region
+	// trades (W04).
 	const ScenarioDefinition &trading = content.scenarios.at("trading");
-	CHECK(trading.items.size() == 8);
+	CHECK(trading.items.size() == 14);
 	CHECK(trading.systems.size() == 1);
 	CHECK(trading.planets.size() == 2);
 	CHECK(trading.civilisations.size() == 2);
@@ -478,9 +487,28 @@ TEST_CASE("The fixtures are the trading and governance scenarios their plans des
 	CHECK(trading.regions[0].civilisationId != trading.regions[1].civilisationId);
 	CHECK(trading.venues.size() == 2);
 	// Complementary: each good is made at one station and wanted at the other.
+	const auto needed = [&](const std::string &itemId)
+	{
+		return std::ranges::any_of(
+		    content.tuning.needs,
+		    [&](const NeedDefinition &need)
+		    {
+			    return std::ranges::find(need.items, itemId, &ItemSelection::itemId) !=
+			           need.items.end();
+		    });
+	};
 	for (const ItemSelection &item : trading.items)
 	{
 		CAPTURE(item.itemId);
+		// Each venue trades an essential, which each region needs.
+		if (needed(item.itemId))
+		{
+			for (const VenueDefinition &venue : trading.venues)
+				CHECK(
+				    std::ranges::find(venue.market, item.itemId, &MarketEntry::itemId) !=
+				    venue.market.end());
+			continue;
+		}
 		int made = 0;
 		int wanted = 0;
 		for (const VenueDefinition &venue : trading.venues)
@@ -684,6 +712,23 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	    "'RegionBrineCoast' governor 'OrganisationNowhere' names no organisation");
 	CheckRefused(trading, region("population: -1"), "'RegionBrineCoast' population must be finite");
 	CheckRefused(trading, region("publicFunds: -1"), "'RegionBrineCoast' funds must not be below 0");
+	CheckRefused(trading, region("employerFunds: -1"), "'RegionBrineCoast' funds must not be below 0");
+	const auto ore = [](std::string_view market)
+	{
+		return std::format(
+		    "version: 1\nvenues: !merge=venueId\n  - venueId: VenueOreHighport\n    market: {}\n",
+		    market);
+	};
+	CheckRefused(
+	    trading, ore("!merge=itemId\n      - {itemId: ItemCopper, regionId: ''}"),
+	    "'VenueOreHighport' market 'ItemCopper' production names no region");
+	CheckRefused(
+	    trading, ore("!merge=itemId\n      - {itemId: ItemCopper, regionId: RegionBrineCoast}"),
+	    "'VenueOreHighport' market 'ItemCopper' region 'RegionBrineCoast' is not one it serves");
+	// Every region trades the essentials, at the least (W04).
+	CheckRefused(
+	    trading, ore("[{itemId: ItemCopper, regionId: RegionOreHighlands, production: 2, stock: 1}]"),
+	    "'VenueOreHighport' serves a region but trades no 'ItemRice', which 'NeedStapleFood' needs");
 	CheckRefused(
 	    trading, region("health: 101"), "'RegionBrineCoast' health and happiness must be in [0, 100]");
 	CheckRefused(

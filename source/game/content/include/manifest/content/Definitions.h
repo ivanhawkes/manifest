@@ -105,6 +105,15 @@ struct ConditionTuning
 	double workRateFloor{0.0};
 };
 
+// A region's employer's production (W04): each market row it makes is worked in batches of whole totes,
+// each about batchSeconds of the row's rate, whose gross wage bill is wageShare of the output's value
+// at its base price, reserved as the batch starts.
+struct ProductionTuning
+{
+	double batchSeconds{0.0};
+	double wageShare{0.0};
+};
+
 struct LifeSupportTuning
 {
 	double oxygenKilogramsPerOccupantDay{0.0};
@@ -167,6 +176,7 @@ struct TuningDefinition
 	EconomyTuning economy;
 	std::vector<NeedDefinition> needs;
 	ConditionTuning condition;
+	ProductionTuning production;
 	LifeSupportTuning lifeSupport;
 	CompanyTuning company;
 	MarketTuning market;
@@ -249,6 +259,8 @@ struct RegionDefinition
 	// Whole credits.
 	std::int64_t householdFunds{0};
 	std::int64_t publicFunds{0};
+	// What its employer starts with, to fund its batches' wages.
+	std::int64_t employerFunds{0};
 	double health{0.0};
 	double happiness{0.0};
 	// What the region knows.
@@ -266,6 +278,9 @@ struct RegionSelection
 struct MarketEntry
 {
 	std::string itemId;
+	// One of the venue's regions: its employer makes the production, and its households want the demand
+	// of a good no need names as an optional good. Empty for a row that only sets the native price.
+	std::string regionId;
 	double production{0.0};
 	double demand{0.0};
 	// Totes (D-087), at most kMaxWarehouseTotes: its broker's at the start.

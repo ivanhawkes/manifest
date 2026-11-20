@@ -7,7 +7,8 @@ version: 1
 # balance result. Where the bodies and stations are is the system's record
 # (systems/system-crucible.yaml); market rates are per simulation day, in the item's unit
 # (docs/model.md), and stock is in totes (D-087): the earlier quantities in the unit to the nearest
-# tote, at least one.
+# tote, at least one. Each region trades the essentials at its venue (W04); a row's region is the
+# employer that makes it.
 gameMode: manifest
 starterHull: HullLoneTraderStarter
 starterVenue: VenueForgeHighport
@@ -50,6 +51,7 @@ regions:
     population: 25000
     householdFunds: 5000000
     publicFunds: 1000000
+    employerFunds: 1000000
     health: 100
     happiness: 100
   - regionId: RegionForgeSouth
@@ -59,6 +61,7 @@ regions:
     population: 25000
     householdFunds: 5000000
     publicFunds: 1000000
+    employerFunds: 1000000
     health: 100
     happiness: 100
   # The AI neighbours. Forge East knows smelting and has the workshop the Bronze project needs.
@@ -69,6 +72,7 @@ regions:
     population: 25000
     householdFunds: 5000000
     publicFunds: 1000000
+    employerFunds: 1000000
     health: 100
     happiness: 100
     skills: [{skillId: SkillSmelting}]
@@ -81,6 +85,7 @@ regions:
     population: 25000
     householdFunds: 5000000
     publicFunds: 1000000
+    employerFunds: 1000000
     health: 100
     happiness: 100
   - regionId: RegionCassiterLowlands
@@ -90,6 +95,7 @@ regions:
     population: 25000
     householdFunds: 8000000
     publicFunds: 2000000
+    employerFunds: 1000000
     health: 100
     happiness: 100
 
@@ -109,12 +115,12 @@ venues:
       - regionId: RegionForgeEast
       - regionId: RegionForgeWest
     market:
-      - {itemId: ItemRice, production: 15, demand: 0, stock: 331}
-      - {itemId: ItemWheat, production: 20, demand: 0, stock: 504}
-      - {itemId: ItemOats, production: 8, demand: 0, stock: 197}
-      - {itemId: ItemBarley, production: 9, demand: 0, stock: 215}
-      - {itemId: ItemDrinkingWater, production: 320, demand: 0, stock: 8000}
-      - {itemId: ItemCopper, production: 3, demand: 0, stock: 27}
+      - {itemId: ItemRice, regionId: RegionForgeNorth, production: 15, demand: 0, stock: 331}
+      - {itemId: ItemWheat, regionId: RegionForgeSouth, production: 20, demand: 0, stock: 504}
+      - {itemId: ItemOats, regionId: RegionForgeEast, production: 8, demand: 0, stock: 197}
+      - {itemId: ItemBarley, regionId: RegionForgeWest, production: 9, demand: 0, stock: 215}
+      - {itemId: ItemDrinkingWater, regionId: RegionForgeSouth, production: 320, demand: 0, stock: 8000}
+      - {itemId: ItemCopper, regionId: RegionForgeEast, production: 3, demand: 0, stock: 27}
       - {itemId: ItemBasicMedicalSupplies, production: 0, demand: 500, stock: 8}
       - {itemId: ItemTin, production: 0, demand: 0.05, stock: 0}
       - {itemId: ItemOxygen, production: 0, demand: 22.8, stock: 2}
@@ -130,10 +136,13 @@ venues:
     lifeSupportCapacity: 4
     regions: [{regionId: RegionCassiterLowlands}]
     market:
-      - {itemId: ItemTin, production: 0.4, demand: 0, stock: 4}
-      - {itemId: ItemBasicMedicalSupplies, production: 600, demand: 0, stock: 24}
-      - {itemId: ItemOxygen, production: 228, demand: 0, stock: 16}
-      - {itemId: ItemCarbonScrubberCartridge, production: 10, demand: 0, stock: 50}
-      - {itemId: ItemDrinkingWater, production: 80, demand: 0, stock: 2400}
+      - {itemId: ItemTin, regionId: RegionCassiterLowlands, production: 0.4, demand: 0, stock: 4}
+      - {itemId: ItemBasicMedicalSupplies, regionId: RegionCassiterLowlands, production: 600, demand: 0, stock: 24}
+      - {itemId: ItemOxygen, regionId: RegionCassiterLowlands, production: 228, demand: 0, stock: 16}
+      - {itemId: ItemCarbonScrubberCartridge, regionId: RegionCassiterLowlands, production: 10, demand: 0, stock: 50}
+      - {itemId: ItemDrinkingWater, regionId: RegionCassiterLowlands, production: 80, demand: 0, stock: 2400}
       - {itemId: ItemRice, production: 0, demand: 12.5, stock: 110}
       - {itemId: ItemCopper, production: 0, demand: 0.5, stock: 1}
+      - {itemId: ItemWheat, production: 0, demand: 0, stock: 10}
+      - {itemId: ItemOats, production: 0, demand: 0, stock: 10}
+      - {itemId: ItemBarley, production: 0, demand: 0, stock: 10}

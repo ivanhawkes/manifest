@@ -61,11 +61,12 @@ inline constexpr std::string_view kBrokers = "manifest.brokers";
 void RegisterTypes();
 
 // Registers the commands with the requests and the systems with the world: each step the expiry
-// sweep, retiring in placement order every order whose expiresStep has come, then on the last step of
-// each economic turn every broker's requote (Quote), both ahead of the movement Travel::Register
-// attaches, which must be attached. The identities and the content must outlive the world. Throws
-// std::invalid_argument for a content set with no scenario selected, or an order life or economic
-// interval that is not a whole number of the world's steps.
+// sweep, retiring in placement order every order whose expiresStep has come, then the regional economy
+// (kEconomy, manifest/trade/Economy.h), then on the last step of each economic turn every broker's
+// requote (Quote), all ahead of the movement Travel::Register attaches, which must be attached. The
+// identities and the content must outlive the world. Throws std::invalid_argument for a content set
+// with no scenario selected, or an order life or economic interval that is not a whole number of the
+// world's steps.
 void Register(
     Jettison::Sim::SimWorld &world, Command::Requests &requests, World::Identities &identities,
     const Content::ContentSet &content);

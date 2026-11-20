@@ -595,6 +595,77 @@ Left: market views for a player (W07); the long step, which blocks the console w
 costs minutes of a release build ([L26](delivery-order.md#later-priorities-and-re-entry-conditions)); and the slice's whole fixture, with production, life support, observations and the upgrade
 (W09).
 
+## Delivered: W04, 2026-11-20
+
+The regional economy, `manifest.economy`, on pin `54fb871` with no engine edit. What it chose where
+the plans left room ([D-092](decision-ledger.md#d-092), the user's choices):
+
+- **Content.** A market row names its `regionId`, one of the venue's regions: that region's employer
+  makes its `production`, which needs one, and its households want its `demand` as an optional good
+  when no need names the good; a need's good's demand only prices it. A region has `employerFunds`,
+  and `balance.yaml` a `production` section: batches of about a day (`batchSeconds`, 86,400) whose
+  gross wage bill is `wageShare`, 0.3, of the output's value at base price. Every venue serving a
+  region trades every need's goods, at the least (the user's rule): the trading fixture gains the six
+  essentials, Ore growing rice and oats and Brine wheat and barley and making the medical supplies,
+  each drawing its own water; its consumer goods (Ore's salt, glassware and soap, Brine's furs) are
+  its households' optional goods. The governance fixture's Cassiter dock gains the three grains it
+  lacked, and each Forge row a region's employer. `wageTaxRate` must be one credit in a whole number,
+  so a carry withholds exactly.
+- **State.** Each region has an `Employer` with its `EmployerAccount` and its `Production` (a batch
+  under way for each row it makes, and the withholding's carry), and a `Household` with a `Stock` and
+  a `Pantry` (what is left of opened totes, each need's unmet total, the last severity and the short
+  intervals); the households' money stays the region's `HouseholdAccount`. A save is refused for a
+  batch past its duration or paid past its wages, or a pantry out of range.
+- **Production**, each step, region by region in the scenario's order. A batch is whole totes, about
+  `batchSeconds` of the row's rate and at least one, its duration what the rate takes; its wages are
+  reserved as it starts, and an employer that cannot fund them starts none. It works at the region's
+  rate, `(0.5 + health / 200) × (0.5 + happiness / 200)`, from the condition the step before left. A
+  finished batch's totes go to the employer's holding at its venue and the rest of its wages are paid,
+  and the next starts with the work left over; one with no room in the warehouse waits, finished.
+- **The turn**, on its last step: the wages each batch has earned, rounded down, paid less what was;
+  each payment split by the employer's carry, a credit withheld for every ten of gross, to the
+  region's treasury and the rest to its households. Then each employer cancels last turn's offers and
+  offers all it holds at its broker's bid. Then each region's households, at the first venue serving
+  it, take each need in the tuning's order: its fresh requirement (the rate per 1,000 people per day,
+  for the population and the 60 s), bought in whole totes at the brokers' asks, the cheapest of its
+  goods first, within their funds, any remainder cancelled at once so no household bid rests; then
+  consumed exactly from opened totes and whole ones opened in turn; a shortfall added to the need's
+  unmet total, with no catch-up after. Every need met, each optional good is bought and consumed
+  likewise. The severity moves health and happiness ([the rates](economy-and-development-plan.md#population-health-happiness-and-production-selected)),
+  which the work rate reads from the next step; then the brokers requote.
+- **Finite brokers and demand.** A broker still bids only what its funds cover (W03), and its stock now
+  moves with employers' sales and households' purchases as well as players' trades; no account is
+  refilled. Nothing moves goods between venues: the hosted world never calls `Simulation::AdvanceTick`.
+
+Evidence, in the `trade` suite's `EconomyTests.cpp`: the work-rate table (100%, 75%, 56.25%, 25%) and
+each condition's monotonic effect; severity's 25% two-need case, a third with medical supplies
+missing, a surplus that cannot make up for it, a need with nothing required left out, and the weights
+setting importance; 100/100 to 94/88 in an hour short of everything and to 97/94 in an hour supplied,
+a partial shortage in proportion and both bounds; the 100/90/10 split, ten one-credit payments
+withholding one, and cumulative wages rounded down to the whole bill at the end. On the hosted fixture,
+one employer's batch of medical supplies reserving its 469 credits, paying 46 at the first turn (4
+withheld, 6 carried) and 469 in all at 600 s (46 withheld, 9 carried) and selling its tote to the
+broker, the next batch starting on the next step; at half the rate the same batch taking 1,200 s for
+the same wages; an employer short of its wages starting none; Ore's households buying a tote of
+medical supplies, of water and of one grain only, the cheapest, consuming the interval's need of
+each, buying their optional salt, and resting no bid; with Ore's medical supplies gone, a severity of a
+third, the interval's 125/1,440 kg recorded, health and happiness down by 6 and 12 points an hour
+times a third, no salt bought, Brine untouched, and the next interval adding a fresh minute's
+shortfall only; and a save part-way through a batch and a turn stepping on hash for hash, a batch
+paid past its wages refused. In the `content` suite, the refusals of a production row with no region,
+a region its venue does not serve, a venue serving a region with no market for an essential, the
+production tuning out of range and a withholding rate that is not one in a whole number. The W03
+`trade` cases run with the economy taken out, as W15's ran with the cruise; the `company` suite's
+pinned hash moved for the save's new entities and goods.
+
+Left: a batch interrupted or cancelled, which waits for facilities that stop (the Bronze recipe's
+batch with inputs is W12's); work and residence in different regions; a player's view of a region's
+condition and shortages; the economy's workload measured at scale, and 1,440 intervals' totals run
+rather than reasoned; a tote of drinking water costs a quarter of a credit at base price, so a fill of
+one rounds to nothing under the [market price rules](market-prices.md), which the balance work may
+want to revisit; and the governance fixture's oxygen, cartridge and tin demand, a ship's and a
+workshop's, which W06 and W12 give their consumers.
+
 ## Handoff to stage 5
 
 Carry forward the exact scheduler order, command/result schema, content manifest,

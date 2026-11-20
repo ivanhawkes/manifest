@@ -277,7 +277,7 @@ TEST_CASE("A rejected move writes nothing")
 	    {true, {"Ship9", "VenueOreHighport", "ItemCopper", 1}, Result::UnknownTarget},
 	    {true, copper(1, "VenueBrineHighport"), Result::WrongVenue},
 	    {true, {"Ship1", "VenueBrineHighport", "ItemSalt", 1}, Result::WrongVenue},
-	    {true, {"Ship1", "VenueOreHighport", "ItemRice", 1}, Result::UnknownTarget},
+	    {true, {"Ship1", "VenueOreHighport", "ItemBronze", 1}, Result::UnknownTarget},
 	    {true, copper(0), Result::InvalidQuantity},
 	    // 200 available and 5 reserved: the reserved do not load.
 	    {true, copper(203), Result::InsufficientStock},
@@ -587,5 +587,5 @@ TEST_CASE("A save with work pending, and a replay from the start, carry the comp
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves only
 	// with what a save holds or the engine's save format, and a change that moves it says so.
-	CHECK(hosted.world.StateHash() == 0x07eac95f9b50807dULL);
+	CHECK(hosted.world.StateHash() == 0xbb4806c02aa7da17ULL);
 }
