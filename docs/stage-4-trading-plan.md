@@ -506,6 +506,34 @@ Left: the journey in a player's snapshot and the console's and TUI's travel comm
 console steps at most 1,000 at a time, under a minute); a journey across systems, which waits for
 gates; the handling services' charges; and long-haul timing, with W15's two-planet trade.
 
+## Delivered: W17, 2026-11-20
+
+The Manifest mode's cruise is limited by acceleration ([D-090](decision-ledger.md#d-090)), on
+Jettison's `Space::CruiseProfile` (pin `54fb871`), which a drive may give in place of its power law:
+
+- **Content.** A game mode's optional `cruise` (`Manifest.CruiseModel`) gives a `manned` and an
+  `unmanned` profile, each checked as Jettison checks one. The Manifest mode's are 2 g for at most
+  4 hours, 2 at each end, and 1 g between, and 12 g throughout; Astralis gives none, so its drives
+  keep D-088's power law. As the content set is built, each hull's drive takes the mode's profile:
+  unmanned for a hull whose `occupants` is 0, which content now accepts, and manned otherwise, the
+  long-haul trader's open occupants included (the user's choice). Travel is unchanged: it gives a ship
+  its hull's drive from the set.
+- **The cruise.** Jettison times it by the profile's closed form and places the ship along its course
+  as the profile covers it, in whole steps no step of which passes the boost.
+
+Evidence: in the `content` suite, every hull's drive in the Manifest mode at the manned profile, a
+crewless hull at 12 g, Astralis's drives as authored with no profile, a trip between two highports
+across one planet's 42,000 km orbit at 2 g throughout, and a bad profile refused naming the mode; in
+the `travel` suite, the starter from Ore to Brine, 396 million km, in 4.49 days, the least whole steps
+its profile covers, at 2 g ten seconds out, and along its course 2 g to two hours, 1 g after and 2 g
+slowing in the last two; and a world saved mid-cruise on the profile flying on step for step with the
+one saved. The W05 journeys run on the power law, the fixture clearing the ship's profile, so each
+takes minutes; the `company` suite's pinned hash moved for the profile on its ship's saved drive, and
+holds with the mode's cruise taken out.
+
+Left: a local trip in play waits for venues round one planet; long-haul play in the mode needs
+stargates or moongates (L16), and the TUI and console show a journey's days (W15).
+
 ## Handoff to stage 5
 
 Carry forward the exact scheduler order, command/result schema, content manifest,

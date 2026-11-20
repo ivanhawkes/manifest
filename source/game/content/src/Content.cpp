@@ -307,7 +307,7 @@ void CheckHulls(Checker &checker, const Jettison::Sim::DefinitionRegistry &regis
 		for (const std::string &effect : hull.fitableEffects)
 			checker.Require(
 			    effects.Has(effect), "fitableEffects", std::format("'{}' names no effect", effect));
-		checker.Require(hull.occupants.value_or(1) >= 1, "occupants", "must be at least 1");
+		checker.Require(hull.occupants.value_or(0) >= 0, "occupants", "must not be negative");
 		checker.Require(
 		    hull.scrubberCartridges.value_or(1) >= 1, "scrubberCartridges", "must be at least 1");
 		if (hull.oxygenTanks)
@@ -665,6 +665,19 @@ void CheckGameModes(Checker &checker, const Jettison::Sim::DefinitionRegistry &r
 		CheckSelections(
 		    checker, registry, mode.skills, &SkillSelection::skillId, &Core::SkillNode::skillId,
 		    "skills");
+
+		if (mode.cruise)
+			for (const auto &[crew, profile] :
+			     {std::pair{"manned", mode.cruise->manned},
+			      std::pair{"unmanned", mode.cruise->unmanned}})
+				RequireDock(
+				    checker,
+				    [&]
+				    {
+					    Jettison::Space::CheckCruiseDrive(
+					        std::format("{} {}", name, crew),
+					        Jettison::Space::CruiseDrive{.profile = profile});
+				    });
 
 		// The tree a mode selects must be one the game can play: prerequisites inside it, no cycle,
 		// no branch out of reach.
@@ -1033,7 +1046,16 @@ ContentSet Build(
 	for (const std::string &name : registry.Names<Jettison::Dock::HullDefinition>())
 		content.dockHulls.emplace(name, *registry.Find<Jettison::Dock::HullDefinition>(name));
 	for (const std::string &name : registry.Names<Jettison::Space::CruiseDrive>())
-		content.drives.emplace(name, *registry.Find<Jettison::Space::CruiseDrive>(name));
+	{
+		Jettison::Space::CruiseDrive &drive =
+		    content.drives.emplace(name, *registry.Find<Jettison::Space::CruiseDrive>(name))
+		        .first->second;
+		// The checks hold each drive to a hull of its name.
+		if (pMode->cruise)
+			drive.profile = registry.Find<Core::ShipClassSpec>(name)->occupants == 0
+			                    ? pMode->cruise->unmanned
+			                    : pMode->cruise->manned;
+	}
 	for (const std::string &name : registry.Names<Jettison::Dock::StationLayout>())
 		content.layouts.emplace(name, *registry.Find<Jettison::Dock::StationLayout>(name));
 	content.scenario = scenario;

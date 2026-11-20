@@ -10,6 +10,7 @@
 #include <vector>
 
 #include <jettison/serialise/Migration.h>
+#include <jettison/space/Cruise.h>
 
 #include <manifest/config/SimulationConfig.h>
 
@@ -50,13 +51,23 @@ struct SkillSelection
 	std::string skillId;
 };
 
+// A cruise limited by acceleration (D-090): the profile of a hull that carries people, its occupants
+// given or left out, and of one whose occupants are 0.
+struct CruiseModel
+{
+	Jettison::Space::CruiseProfile manned;
+	Jettison::Space::CruiseProfile unmanned;
+};
+
 // A game mode has no ID field: it is named by its file. Each list is in the order the game uses,
-// which the registry's sorted names would not give.
+// which the registry's sorted names would not give. A mode with no cruise keeps each hull's drive as
+// authored, the time-compressed power law (D-088); one with a cruise gives each drive its profile.
 struct GameModeDefinition
 {
 	std::vector<AgeSelection> ages;
 	std::vector<ItemSelection> items;
 	std::vector<SkillSelection> skills;
+	std::optional<CruiseModel> cruise;
 };
 
 struct ItemQuantity

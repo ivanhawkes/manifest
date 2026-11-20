@@ -8,6 +8,14 @@
 # hand, and its `- skillId:` reference for a node of the tree: a name with no
 # definition behind it stops the build with the name printed.
 
+# A cruise limited by acceleration (D-090), turning at the midpoint, the mode being played over days
+# and weeks: a hull that carries people boosts at 2 g for at most 4 hours of the trip, 2 speeding up
+# and 2 slowing down, and holds 1 g between; one with no occupants holds 12 g throughout. In m/s² and
+# seconds; the numbers are for later review.
+cruise:
+  manned: {boostAcceleration: 19.6133, boostSeconds: 14400, sustainedAcceleration: 9.80665}
+  unmanned: {boostAcceleration: 117.6798, boostSeconds: 0, sustainedAcceleration: 117.6798}
+
 skills:
   - skillId: SkillMining
   - skillId: SkillSmelting

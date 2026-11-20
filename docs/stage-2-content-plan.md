@@ -165,11 +165,13 @@ authored value is below one.
 | NamePool | `pool` | string, empty | required, equals the record's name |
 | NamePool | `names` | vector of string, empty | at least one, none empty; order kept |
 | GameMode | `ages`, `items`, `skills` | vectors of `{ageId}`, `{itemId}`, `{skillId}` | each resolves, none twice; order kept |
+| GameMode | `cruise` | `std::optional<CruiseModel>`: `manned` and `unmanned`, each a Jettison `Ai.CruiseProfile` | each checked as Jettison's `CheckCruiseDrive` checks a profile; empty keeps each drive's power law (W17, [D-090](decision-ledger.md#d-090)) |
 | Hull | `hullId`, `className` | string, empty | required |
 | Hull | `description` | string, empty | optional |
 | Hull | `baseStats` | `std::map<EffectStat, double>`, a mapping by stat name | at least one; each finite, not below 0; a stat left out is none |
 | Hull | `fitableEffects` | vector of string, empty | each names an effect; empty is no upgrade |
-| Hull | `occupants`, `scrubberCartridges` | `std::optional<int>`, empty | at least 1; empty is unselected |
+| Hull | `occupants` | `std::optional<int>`, empty | not negative, 0 a hull with no one aboard (W17); empty is unselected, and cruises manned |
+| Hull | `scrubberCartridges` | `std::optional<int>`, empty | at least 1; empty is unselected |
 | Hull | `oxygenTanks` | `std::optional<std::vector<double>>`, kilograms a tank | at least one, each above 0; empty is unselected |
 
 Every shipped item carries its physical fields today, so none is optional: test fixtures that omit

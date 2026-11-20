@@ -232,10 +232,14 @@ void RegisterTypes()
 		    .Field<&TuningDefinition::procurement>("procurement", kDefined)
 		    .Field<&TuningDefinition::projects>("projects", kDefined)
 		    .Field<&TuningDefinition::recipes>("recipes", kDefined);
+		RegisterType<CruiseModel>("Manifest.CruiseModel")
+		    .Field<&CruiseModel::manned>("manned", kDefined)
+		    .Field<&CruiseModel::unmanned>("unmanned", kDefined);
 		RegisterType<GameModeDefinition>("Manifest.GameMode", Attribute::Moddable)
 		    .Field<&GameModeDefinition::ages>("ages", kDefined)
 		    .Field<&GameModeDefinition::items>("items", kDefined)
-		    .Field<&GameModeDefinition::skills>("skills", kDefined);
+		    .Field<&GameModeDefinition::skills>("skills", kDefined)
+		    .Field<&GameModeDefinition::cruise>("cruise", kDefined);
 
 		RegisterEnum<OrganisationKind>("Manifest.OrganisationKind")
 		    .Value<OrganisationKind::Polity>("Polity")

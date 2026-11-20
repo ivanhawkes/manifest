@@ -148,6 +148,7 @@ for mode in game-mode/*.yaml; do
        "ages": [$ages.ages[].age | {"ageId": .ageId}],
        "items": $mode.items,
        "skills": $mode.skills}
+    | (select($mode.cruise != null) | .cruise = $mode.cruise) // .
     | ... comments=""
   ' > "$records_dir/game-modes/$(basename "$mode")"
 done

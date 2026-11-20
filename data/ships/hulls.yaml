@@ -7,7 +7,8 @@
 #                      hold in totes, eight to the cubic metre IBC (D-087).
 #   fitableEffects     The effects it has a slot for, by effect id: a system it has no slot for is
 #                      refused.
-#   occupants          The people it carries on a long journey.
+#   occupants          The people it carries on a long journey; 0 for none, which a game mode
+#                      with a cruise limit flies at its unmanned profile (D-090).
 #   oxygenTanks        Its installed operating oxygen bank (D-050), each tank's capacity in
 #                      kilograms. It is outside the trade hold, as the installed scrubber is.
 #   scrubberCartridges The cartridges its installed scrubber holds.

@@ -100,6 +100,16 @@ cargo's lots are bounded together (`world`), and a ship's cargo against its hull
 `CargoVolume`, whose empty map was taken for none given; a hull the map does not name now carries
 nothing (`company`). Round 7 approved with no finding open.
 
+## W17: the cruise by acceleration — 2026-11-20
+
+On pin `54fb871`, with one engine provision, `Space::CruiseProfile`: a drive's boost, its time and a
+sustained acceleration in place of the power law. The Manifest mode gives every hull a manned or an
+unmanned profile by its occupants and Astralis keeps its drives
+([what it chose and its evidence](stage-4-trading-plan.md#delivered-w17-2026-11-20)). In the engine,
+a slow ship chasing a station round its planet need not settle in the cruise's eight solve rounds, so
+a profiled cruise searches for the fewest whole steps that cover its course. The user chose that a
+hull with its occupants left out, the long-haul trader, cruises manned.
+
 ## W05: ships travel between venues through the engine — 2026-11-20
 
 On pin `377bd8d`, with two engine provisions: `Space::ClearOf`, and a cruise or lane letting a steered

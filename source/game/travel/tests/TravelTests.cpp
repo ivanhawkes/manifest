@@ -1,5 +1,6 @@
 #include "TestHelpers.h"
 
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -15,6 +16,7 @@
 #include <jettison/serialise/Archive.h>
 #include <jettison/sim/SimWorld.h>
 #include <jettison/sim/Snapshot.h>
+#include <jettison/space/Cruise.h>
 
 #include <manifest/company/Company.h>
 #include <manifest/host/Start.h>
@@ -32,6 +34,7 @@ using Manifest::World::Kind;
 using Manifest::World::Leg;
 namespace Company = Manifest::Company;
 namespace Dock = Jettison::Dock;
+namespace Space = Jettison::Space;
 namespace Travel = Manifest::Travel;
 namespace World = Manifest::World;
 
@@ -43,9 +46,22 @@ const Actor kBea{ActorKind::Principal, "Bea"};
 constexpr std::string_view kOre = "VenueOreHighport";
 constexpr std::string_view kBrine = "VenueBrineHighport";
 
-// Steps at 1/60 s: a journey from Ore to Brine is a few minutes of cruise and a minute or so at each
-// end, so this bounds one with room to spare, failing with its leg rather than hanging.
-constexpr std::uint64_t kJourneySteps = 60 * 60 * 12;
+// Steps at 1/60 s: a journey from Ore to Brine on the power law is a few minutes of cruise and a
+// minute or so at each end, so this bounds one with room to spare, failing with its leg rather than
+// hanging.
+constexpr std::uint64_t kJourneySteps = std::uint64_t{60} * 60 * 12;
+constexpr double kStep = 1.0 / 60.0;
+constexpr double kGravity = 9.80665;
+constexpr double kDay = 86400.0;
+
+// What a ship's drive cruises by: the Manifest mode's profile for its hull, as content gives it, or
+// the drive's power law, the time-compressed cruise Astralis keeps (D-088), so that a journey from
+// Ore to Brine through every leg is minutes rather than the profile's four and a half days.
+enum class Cruise
+{
+	Profiled,
+	Compressed,
+};
 
 
 // The trading scenario as the host starts it, with Ada provisioned: her company's ship on a pad at
@@ -58,12 +74,15 @@ struct Hosted
 	const Travel::Fleet *fleet{&services.fleet};
 
 	// From the staged directory, or another source of the same content, such as its pack.
-	explicit Hosted(const std::string &content = MANIFEST_MOD_DIRECTORY)
+	explicit Hosted(
+	    const std::string &content = MANIFEST_MOD_DIRECTORY, Cruise cruise = Cruise::Compressed)
 	    : session{Manifest::Host::Start({content, {}, "trading"})}
 	{
 		REQUIRE(
 		    Run(kHost, Company::kProvision, Company::kVersion,
 		        Company::Provision{"Ada", "Ada", "Ada Co"}) == Result::Succeeded);
+		if (cruise == Cruise::Compressed)
+			world.Registry().get<Space::CruiseDrive>(Ship()).profile.reset();
 	}
 
 	template <typename T>
@@ -304,6 +323,86 @@ TEST_CASE("A world saved mid-cruise arrives as the one saved does, sending nothi
 	CHECK(loaded.world.Clock().Step() == hosted.world.Clock().Step());
 	CHECK(loaded.world.StateHash() == hosted.world.StateHash());
 	CHECK(loaded.Record().dockedAt == kBrine);
+}
+
+
+TEST_CASE("On the Manifest mode's manned profile, Ore to Brine is days, at 2 g and then 1 g (D-090)")
+{
+	Hosted hosted{MANIFEST_MOD_DIRECTORY, Cruise::Profiled};
+	entt::registry &registry = hosted.world.Registry();
+	const Space::CruiseDrive drive = registry.get<Space::CruiseDrive>(hosted.Ship());
+	REQUIRE(drive.profile);
+	CHECK(drive.profile->boostAcceleration == doctest::Approx(2.0 * kGravity));
+	CHECK(drive.profile->boostSeconds == doctest::Approx(4.0 * 3600.0));
+	CHECK(drive.profile->sustainedAcceleration == doctest::Approx(kGravity));
+
+	REQUIRE(hosted.Go(kAda, kBrine) == Result::Succeeded);
+	for (std::uint64_t step = 0; step < kJourneySteps && hosted.Journey().leg != Leg::Cruising; ++step)
+		hosted.Step();
+	REQUIRE(hosted.Journey().leg == Leg::Cruising);
+	const Space::Cruising cruising = registry.get<Space::Cruising>(hosted.Ship());
+	CHECK(cruising.profile == drive.profile);
+	double metres = 0.0;
+	for (std::size_t point = 1; point < cruising.course.size(); ++point)
+		metres += glm::distance(cruising.course[point], cruising.course[point - 1]);
+	const double seconds = static_cast<double>(cruising.arrivalStep - cruising.departureStep) * kStep;
+	const double least = Space::CruiseSeconds(drive, metres);
+	MESSAGE("Ore to Brine: " << metres / 1.0e9 << " million km in " << seconds / kDay << " days");
+	CHECK(seconds >= least);
+	CHECK(seconds < least + (4.0 * kStep));
+	CHECK(seconds > 4.0 * kDay);
+	CHECK(seconds < 5.0 * kDay);
+
+	// Its first ten seconds out at 2 g, the star it is carried by still.
+	const auto place = [&] { return registry.get<Jettison::Sim::Transform>(hosted.Ship()).position; };
+	REQUIRE(cruising.carrier == "StarAnvil");
+	for (int step = 0; step < 600; ++step)
+		hosted.Step();
+	const glm::dvec3 before = place();
+	hosted.Step();
+	const glm::dvec3 now = place();
+	hosted.Step();
+	const glm::dvec3 after = place();
+	CHECK(glm::distance(now, after) / kStep == doctest::Approx(2.0 * kGravity * 10.0).epsilon(0.01));
+	CHECK(
+	    glm::length(after - (2.0 * now) + before) / (kStep * kStep) ==
+	    doctest::Approx(2.0 * kGravity).epsilon(0.01));
+
+	// And along its course, as the engine places it, 2 g until two hours out and 1 g after.
+	const auto acceleration = [&](double at)
+	{
+		const auto covered = [&](double time)
+		{ return Space::CruiseCovered(*drive.profile, metres, time * least / seconds); };
+		return (covered(at + 1.0) - (2.0 * covered(at)) + covered(at - 1.0));
+	};
+	CHECK(acceleration(7190.0) == doctest::Approx(2.0 * kGravity).epsilon(1.0e-3));
+	CHECK(acceleration(7210.0) == doctest::Approx(kGravity).epsilon(1.0e-3));
+	CHECK(acceleration(seconds / 3.0) == doctest::Approx(kGravity).epsilon(1.0e-3));
+	CHECK(acceleration(seconds - 3600.0) == doctest::Approx(-2.0 * kGravity).epsilon(1.0e-3));
+}
+
+
+TEST_CASE("A world saved mid-cruise on the manned profile flies on as the one saved does")
+{
+	Hosted hosted{MANIFEST_MOD_DIRECTORY, Cruise::Profiled};
+	REQUIRE(hosted.Go(kAda, kBrine) == Result::Succeeded);
+	while (hosted.Journey().leg != Leg::Cruising)
+		hosted.Step();
+	for (int step = 0; step < 600; ++step)
+		hosted.Step();
+	const std::vector<std::byte> saved = hosted.world.Save();
+
+	Hosted loaded{MANIFEST_MOD_DIRECTORY, Cruise::Profiled};
+	loaded.world.Load(saved);
+	REQUIRE(loaded.Journey().leg == Leg::Cruising);
+	for (int step = 0; step < 6000; ++step)
+	{
+		hosted.Step();
+		loaded.Step();
+	}
+	const auto &flown = hosted.world.Registry().get<Space::Cruising>(hosted.Ship());
+	CHECK(loaded.world.Registry().get<Space::Cruising>(loaded.Ship()) == flown);
+	CHECK(loaded.world.StateHash() == hosted.world.StateHash());
 }
 
 
