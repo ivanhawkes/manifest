@@ -37,9 +37,11 @@ Snapshot Observe(
 		if (owner != snapshot.companies.end() && owner->companyId == ship.companyId)
 		{
 			const auto *pJourney = registry.try_get<World::Journey>(entity);
+			const World::Cargo &cargo = registry.get<World::Cargo>(entity);
 			owner->ships.push_back(
-			    {identity.id, ship.hullId, ship.dockedAt, registry.get<World::Cargo>(entity).lots,
-			     pJourney ? std::optional{*pJourney} : std::nullopt});
+			    {identity.id, ship.hullId, ship.dockedAt, cargo.lots,
+			     pJourney ? std::optional{*pJourney} : std::nullopt, cargo.opened,
+			     registry.get<World::LifeSupport>(entity)});
 		}
 	}
 	for (const auto &[entity, identity, order] :

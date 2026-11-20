@@ -94,7 +94,7 @@ struct Hosted
 	{
 		const Manifest::Travel::Fleet &fleet =
 		    Manifest::Travel::Register(world, requests, identities, Trading());
-		Manifest::Company::RegisterCommands(requests, identities, fleet, Trading());
+		Manifest::Company::RegisterCommands(world, requests, identities, fleet, Trading());
 		Register(world, requests, identities, Trading());
 		World::CreateInitialState(world, identities, Trading());
 		Manifest::Travel::OpenStations(world, fleet);

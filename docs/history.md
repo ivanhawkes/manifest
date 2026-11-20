@@ -100,6 +100,16 @@ cargo's lots are bounded together (`world`), and a ship's cargo against its hull
 `CargoVolume`, whose empty map was taken for none given; a hull the map does not name now carries
 nothing (`company`). Round 7 approved with no finding open.
 
+## W06: station life support and resupply — 2026-11-20
+
+On pin `54fb871`, with no engine edit. `manifest.lifeSupport` runs after travel: a ship is
+connected to its venue's life support as it docks while a connection is free, lets go as it leaves,
+and off it draws its own tanks and cartridges in order; `Refill` and `Replace` resupply it from its
+hold ([what it chose and its evidence](stage-4-trading-plan.md#delivered-w06-2026-11-20)). The plans
+left the connection, the resupply's source, an opened tote and a replaced cartridge open; the user
+chose the connection on docking, the hold, the opened tote kept aboard and the old cartridge thrown
+away ([D-094](decision-ledger.md#d-094)). The goods are named by the tuning, so no code names an item.
+
 ## W04: the regional economy — 2026-11-20
 
 On pin `54fb871`, with no engine edit. `manifest.economy` runs between the expiry sweep and the

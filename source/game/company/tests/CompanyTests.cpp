@@ -60,13 +60,18 @@ const Actor kBea{ActorKind::Principal, "Bea"};
 // as fixture bootstrap.
 struct Hosted
 {
-	explicit Hosted(const std::string &scenario = "trading")
-	    : content{Scenario(scenario)}, identities{(RegisterTypes(), World::RegisterWorld(world))},
+	explicit Hosted(const std::string &scenario = "trading") : Hosted{Scenario(scenario)}
+	{
+	}
+
+	// On content a test has changed, which must outlive it.
+	explicit Hosted(const Manifest::Content::ContentSet &set)
+	    : content{set}, identities{(RegisterTypes(), World::RegisterWorld(world))},
 	      requests{Manifest::Command::RegisterRequests(world, identities)}
 	{
 		const Manifest::Travel::Fleet &fleet =
 		    Manifest::Travel::Register(world, requests, identities, content);
-		RegisterCommands(requests, identities, fleet, content);
+		RegisterCommands(world, requests, identities, fleet, content);
 		World::CreateInitialState(world, identities, content);
 		Manifest::Travel::OpenStations(world, fleet);
 	}
@@ -135,6 +140,26 @@ struct Hosted
 		return world.Registry().get<World::Stock>(Find(Kind::Company, companyId));
 	}
 
+	World::LifeSupport &Support(const std::string &shipId)
+	{
+		return world.Registry().get<World::LifeSupport>(Find(Kind::Ship, shipId));
+	}
+
+	World::Cargo &Hold(const std::string &shipId)
+	{
+		return world.Registry().get<World::Cargo>(Find(Kind::Ship, shipId));
+	}
+
+	World::Ship &Record(const std::string &shipId)
+	{
+		return world.Registry().get<World::Ship>(Find(Kind::Ship, shipId));
+	}
+
+	Result Service(const Actor &actor, std::string_view command, const std::string &shipId)
+	{
+		return Run(actor, command, Manifest::Company::Service{shipId});
+	}
+
 	const Manifest::Content::ContentSet &content;
 	SimWorld world{1.0, 0};
 	World::Identities &identities;
@@ -178,10 +203,16 @@ TEST_CASE("Provisioning gives a player a company, its credits and a ship docked 
 	Hosted hosted;
 	CHECK(hosted.Observe(kAda).companies.empty());
 	CHECK(hosted.Provision("Ada") == Result::Succeeded);
+	// Its tanks full and its cartridge fresh, once (D-045, D-050), and connected to Ore's life support.
+	const World::LifeSupport granted{{10.0, 10.0, 10.0}, {30.0}, "VenueOreHighport"};
 	CHECK(
 	    hosted.Seen(kAda) ==
 	    CompanyView{
-	        "Company1", "Co", 25000, {}, {{"Ship1", "HullLoneTraderStarter", "VenueOreHighport", {}}}});
+	        "Company1",
+	        "Co",
+	        25000,
+	        {},
+	        {{"Ship1", "HullLoneTraderStarter", "VenueOreHighport", {}, {}, {}, granted}}});
 
 	// What the snapshot leaves out: the principal. No polity is made and no region governed (D-089).
 	const entt::registry &registry = hosted.world.Registry();
@@ -196,15 +227,199 @@ TEST_CASE("Provisioning gives a player a company, its credits and a ship docked 
 	CHECK(hosted.Run(kHost, kProvision, Provision{"", "", ""}) == Result::MalformedPayload);
 	CHECK(registry.view<const World::Identity>().size() == entities);
 
-	// Every player starts at the one venue until its pads that fit the starter are taken, and the
-	// rejection spends no ID.
+	// Every player starts at the one venue, connected, until its life support's four connections are
+	// taken (D-047), and the rejection spends no ID.
 	int players = 1;
 	while (hosted.Provision(std::format("Player{}", players)) == Result::Succeeded)
 		++players;
-	CHECK(players > 2);
-	CHECK(hosted.Provision(std::format("Player{}", players)) == Result::NoPadFree);
+	CHECK(players == 4);
+	CHECK(hosted.Provision(std::format("Player{}", players)) == Result::NoServiceFree);
 	CHECK(hosted.Observe(kHost).companies.size() == static_cast<std::size_t>(players));
 	CHECK(hosted.identities.Issue(Kind::Company) == std::format("Company{}", players + 1));
+
+	// With connections to spare, until its pads that fit the starter are taken.
+	Manifest::Content::ContentSet roomy = Scenario("trading");
+	roomy.scenarios.at("trading").venues[0].lifeSupportCapacity = 1000;
+	Hosted padded{roomy};
+	players = 0;
+	while (padded.Provision(std::format("Player{}", players)) == Result::Succeeded)
+		++players;
+	CHECK(players > 4);
+	CHECK(padded.Provision(std::format("Player{}", players)) == Result::NoPadFree);
+}
+
+
+TEST_CASE("A ship on station life support uses none of its own, and off it draws its own in order")
+{
+	Hosted hosted;
+	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
+	const World::LifeSupport granted = hosted.Support("Ship1");
+	for (int step = 0; step < 10; ++step)
+		hosted.world.Step();
+	CHECK(hosted.Support("Ship1") == granted);
+	// A retried provisioning is refused and restores nothing.
+	hosted.Support("Ship1").tanks[0] = 5.0;
+	CHECK(hosted.Provision("Ada") == Result::AlreadyProvisioned);
+	CHECK(hosted.Support("Ship1").tanks[0] == 5.0);
+	hosted.Support("Ship1").tanks[0] = 10.0;
+
+	// Fixture bootstrap: Ada's ship off its pad, as travel leaves it when it lets go.
+	hosted.Record("Ship1").dockedAt.clear();
+	// An hour of 1 s steps at one occupant: 1/24 kg of oxygen and 1/24 of an occupant-day.
+	for (int step = 0; step < 3600; ++step)
+		hosted.world.Step();
+	const World::LifeSupport &used = hosted.Support("Ship1");
+	CHECK(used.connectedTo.empty());
+	CHECK(used.tanks[0] == doctest::Approx(10.0 - 1.0 / 24.0).epsilon(1e-12));
+	CHECK(used.tanks[1] == 10.0);
+	CHECK(used.tanks[2] == 10.0);
+	CHECK(used.cartridges[0] == doctest::Approx(30.0 - 1.0 / 24.0).epsilon(1e-12));
+
+	// The first tank's last drop, then the second's; never below nothing, and an exhausted
+	// cartridge stays at 0.
+	hosted.Support("Ship1").tanks = {0.25 / 86400.0, 10.0, 10.0};
+	hosted.Support("Ship1").cartridges = {0.5 / 86400.0};
+	hosted.world.Step();
+	CHECK(hosted.Support("Ship1").tanks[0] == 0.0);
+	CHECK(hosted.Support("Ship1").tanks[1] == doctest::Approx(10.0 - 0.75 / 86400.0).epsilon(1e-15));
+	CHECK(hosted.Support("Ship1").cartridges[0] == 0.0);
+	hosted.world.Step();
+	CHECK(hosted.Support("Ship1").cartridges[0] == 0.0);
+}
+
+
+TEST_CASE("A ship docked with every connection taken draws its own until one is let go")
+{
+	Hosted hosted;
+	for (const std::string principal : {"Ada", "Bea", "Cy", "Di"})
+		REQUIRE(hosted.Provision(principal) == Result::Succeeded);
+	// Fixture bootstrap, as travel's undocking and docking would leave them: Ada's ship leaves, Eve
+	// takes the connection it let go of, and Ada's docks again, at a venue with none free.
+	hosted.Record("Ship1").dockedAt.clear();
+	hosted.world.Step();
+	CHECK(hosted.Support("Ship1").connectedTo.empty());
+	REQUIRE(hosted.Provision("Eve") == Result::Succeeded);
+	CHECK(hosted.Support("Ship5").connectedTo == "VenueOreHighport");
+	hosted.Record("Ship1").dockedAt = "VenueOreHighport";
+	const double before = hosted.Support("Ship1").tanks[0];
+	hosted.world.Step();
+	CHECK(hosted.Support("Ship1").connectedTo.empty());
+	CHECK(hosted.Support("Ship1").tanks[0] < before);
+
+	// Bea's ship leaves: in the same step Ada's is connected, and draws nothing.
+	hosted.Record("Ship2").dockedAt.clear();
+	const World::LifeSupport waiting = hosted.Support("Ship1");
+	hosted.world.Step();
+	CHECK(hosted.Support("Ship2").connectedTo.empty());
+	CHECK(hosted.Support("Ship1").connectedTo == "VenueOreHighport");
+	CHECK(hosted.Support("Ship1").tanks == waiting.tanks);
+	CHECK(hosted.Support("Ship1").cartridges == waiting.cartridges);
+}
+
+
+TEST_CASE("Refill and Replace take the life-support goods from the hold, opening a tote at a time")
+{
+	// Governance's highport trades both goods, which a ship could unload there.
+	Hosted hosted{"governance"};
+	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
+	REQUIRE(hosted.Provision("Bea") == Result::Succeeded);
+	CHECK(hosted.Service(kAda, kRefill, "Ship1") == Result::CapacityExceeded);
+	// Fixture bootstrap: tanks used to 2, 10 and 0 kg and a cartridge to 12 occupant-days. Docked and
+	// connected, the ship uses none of them while the commands run.
+	hosted.Support("Ship1").tanks = {2.0, 10.0, 0.0};
+	hosted.Support("Ship1").cartridges = {12.0};
+	const World::LifeSupport used = hosted.Support("Ship1");
+
+	// What is refused writes nothing.
+	CHECK(hosted.Service(kAda, kRefill, "Ship9") == Result::UnknownTarget);
+	CHECK(hosted.Service(kBea, kRefill, "Ship1") == Result::NotAuthorised);
+	CHECK(hosted.Service(kAda, kRefill, "Ship1") == Result::InsufficientStock);
+	CHECK(hosted.Service(kAda, kReplace, "Ship1") == Result::InsufficientStock);
+	World::LifeSupport &support = hosted.Support("Ship1");
+	CHECK(support == used);
+
+	// Fixture bootstrap: a tote each of oxygen (142.5 kg) and of cartridges (two) aboard.
+	hosted.Hold("Ship1").lots = {{"ItemCarbonScrubberCartridge", 1}, {"ItemOxygen", 1}};
+	CHECK(hosted.Service(kAda, kRefill, "Ship1") == Result::Succeeded);
+	CHECK(support.tanks == std::vector<double>{10.0, 10.0, 10.0});
+	CHECK(hosted.Hold("Ship1").lots == std::vector<World::Lot>{{"ItemCarbonScrubberCartridge", 1}});
+	CHECK(hosted.Hold("Ship1").opened == std::vector<World::Opened>{{"ItemOxygen", 124.5}});
+	CHECK(hosted.Service(kAda, kRefill, "Ship1") == Result::CapacityExceeded);
+	// The opened tote is drawn on first; it is no tote to unload.
+	support.tanks[1] = 9.0;
+	CHECK(hosted.Service(kAda, kRefill, "Ship1") == Result::Succeeded);
+	CHECK(hosted.Hold("Ship1").opened == std::vector<World::Opened>{{"ItemOxygen", 123.5}});
+	CHECK(
+	    hosted.Unload(kAda, Move{"Ship1", "VenueForgeHighport", "ItemOxygen", 1}) ==
+	    Result::InsufficientStock);
+
+	// A fresh cartridge in place of the used one, which is thrown away; then the tote's second.
+	CHECK(hosted.Service(kAda, kReplace, "Ship1") == Result::Succeeded);
+	CHECK(support.cartridges == std::vector<double>{30.0});
+	CHECK(hosted.Hold("Ship1").lots.empty());
+	CHECK(
+	    hosted.Hold("Ship1").opened ==
+	    std::vector<World::Opened>{{"ItemCarbonScrubberCartridge", 1.0}, {"ItemOxygen", 123.5}});
+	CHECK(hosted.Service(kAda, kReplace, "Ship1") == Result::Succeeded);
+	CHECK(hosted.Hold("Ship1").opened == std::vector<World::Opened>{{"ItemOxygen", 123.5}});
+	CHECK(hosted.Service(kAda, kReplace, "Ship1") == Result::InsufficientStock);
+
+	// The opened tote still takes its tote of the 160-tote hold.
+	hosted.Stock("Company1").holdings = {{"VenueForgeHighport", "ItemCopper", 160, 0}};
+	const Move copper{"Ship1", "VenueForgeHighport", "ItemCopper", 160};
+	CHECK(hosted.Load(kAda, copper) == Result::CapacityExceeded);
+	CHECK(
+	    hosted.Load(kAda, Move{"Ship1", "VenueForgeHighport", "ItemCopper", 159}) == Result::Succeeded);
+
+	// Anywhere: the hold is aboard. Fixture bootstrap: the ship off its pad, its last tank used.
+	hosted.Record("Ship1").dockedAt.clear();
+	support.tanks[2] = 0.0;
+	CHECK(hosted.Service(kAda, kRefill, "Ship1") == Result::Succeeded);
+	CHECK(support.tanks[2] == 10.0);
+	CHECK(hosted.Hold("Ship1").opened == std::vector<World::Opened>{{"ItemOxygen", 113.5}});
+}
+
+
+TEST_CASE("A save whose life support its hull cannot hold, or connected to no venue, does not load")
+{
+	Hosted hosted;
+	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
+	World::LifeSupport &support = hosted.Support("Ship1");
+	const World::LifeSupport granted = support;
+	support.tanks[1] = 10.5;
+	const std::vector<std::byte> overfull = hosted.world.Save();
+	support = granted;
+	support.cartridges.push_back(30.0);
+	const std::vector<std::byte> extra = hosted.world.Save();
+	support = granted;
+	support.tanks[0] = -1.0;
+	const std::vector<std::byte> negative = hosted.world.Save();
+	support = granted;
+	support.connectedTo = "VenueNowhere";
+	const std::vector<std::byte> nowhere = hosted.world.Save();
+	support = granted;
+	World::Cargo &cargo = hosted.Hold("Ship1");
+	cargo.lots = {{"ItemCopper", 160}};
+	cargo.opened = {{"ItemOxygen", 1.0}};
+	const std::vector<std::byte> crowded = hosted.world.Save();
+	cargo.lots = {{"ItemCopper", 159}};
+	const std::vector<std::byte> full = hosted.world.Save();
+
+	Hosted loaded;
+	for (const auto &[save, problem] :
+	     {std::pair{&overfull, "holds tanks or cartridges"},
+	      {&extra, "holds tanks or cartridges"},
+	      {&negative, "less than nothing"},
+	      {&nowhere, "a venue the world does not hold"},
+	      {&crowded, "more than its hold"}})
+	{
+		CAPTURE(problem);
+		CHECK_THROWS_WITH_AS(
+		    loaded.world.Load(*save), doctest::Contains(problem), Jettison::Serialise::FormatError);
+	}
+	loaded.world.Load(full);
+	CHECK(loaded.Hold("Ship1").opened == std::vector<World::Opened>{{"ItemOxygen", 1.0}});
+	CHECK(loaded.Support("Ship1") == granted);
 }
 
 
@@ -307,7 +522,9 @@ TEST_CASE("A rejected move writes nothing")
 	const CompanyView undocked = hosted.Seen(kAda);
 	CHECK(hosted.Load(kAda, copper(1)) == Result::NotDocked);
 	CHECK(hosted.Unload(kAda, {"Ship1", "VenueOreHighport", "ItemTin", 1}) == Result::NotDocked);
-	CHECK(hosted.Seen(kAda) == undocked);
+	// Off its pad it draws on its own life support, which the moves leave alone.
+	CHECK(hosted.Seen(kAda).holdings == undocked.holdings);
+	CHECK(hosted.Seen(kAda).ships[0].cargo == undocked.ships[0].cargo);
 }
 
 
@@ -327,7 +544,8 @@ TEST_CASE("The commands refuse a hull whose hold is not a whole number of totes 
 		Manifest::Command::Requests &requests = Manifest::Command::RegisterRequests(world, identities);
 		const Manifest::Travel::Fleet &fleet =
 		    Manifest::Travel::Register(world, requests, identities, content);
-		CHECK_THROWS_AS(RegisterCommands(requests, identities, fleet, content), std::invalid_argument);
+		CHECK_THROWS_AS(
+		    RegisterCommands(world, requests, identities, fleet, content), std::invalid_argument);
 	}
 }
 
@@ -359,7 +577,7 @@ TEST_CASE("A save whose ship carries more than its hull's hold does not load")
 	World::Identities &identities = World::RegisterWorld(world);
 	Manifest::Command::Requests &requests = Manifest::Command::RegisterRequests(world, identities);
 	RegisterCommands(
-	    requests, identities, Manifest::Travel::Register(world, requests, identities, holdless),
+	    world, requests, identities, Manifest::Travel::Register(world, requests, identities, holdless),
 	    holdless);
 	CHECK_THROWS_WITH_AS(
 	    world.Load(full), doctest::Contains("more than its hold"), Jettison::Serialise::FormatError);
@@ -587,5 +805,5 @@ TEST_CASE("A save with work pending, and a replay from the start, carry the comp
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves only
 	// with what a save holds or the engine's save format, and a change that moves it says so.
-	CHECK(hosted.world.StateHash() == 0xbb4806c02aa7da17ULL);
+	CHECK(hosted.world.StateHash() == 0x2d8611ddc9105ed8ULL);
 }

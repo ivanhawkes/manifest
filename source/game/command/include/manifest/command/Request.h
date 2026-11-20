@@ -43,7 +43,9 @@ enum class Result
 	NoPadFree,
 	// Travel for a ship whose journey is still under way, or to the venue it is docked at.
 	Travelling,
-	AlreadyThere
+	AlreadyThere,
+	// Provisioning at a starter venue whose life support has no connection free (D-047).
+	NoServiceFree
 };
 
 enum class ActorKind

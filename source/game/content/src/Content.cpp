@@ -12,6 +12,7 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -557,6 +558,18 @@ void CheckTuning(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 		checker.Require(
 		    Positive(tuning.lifeSupport.cartridgeOccupantDays), "lifeSupport.cartridgeOccupantDays",
 		    "must be above 0");
+		for (const auto &[itemId, unit, field] :
+		     {std::tuple{
+		          tuning.lifeSupport.oxygenItemId, Core::TradeUnit::Kilogram,
+		          "lifeSupport.oxygenItemId"},
+		      {tuning.lifeSupport.cartridgeItemId, Core::TradeUnit::Unit,
+		       "lifeSupport.cartridgeItemId"}})
+		{
+			const auto *pItem = registry.Find<Core::ItemNode>(RegistryName(itemId));
+			checker.Require(
+			    pItem != nullptr && pItem->itemId == itemId && pItem->unitType == unit, field,
+			    std::format("'{}' names no item traded in its unit", itemId));
+		}
 		checker.Require(
 		    tuning.company.startingCredits > 0, "company.startingCredits", "must be above 0");
 		checker.Require(

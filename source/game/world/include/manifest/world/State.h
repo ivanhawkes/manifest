@@ -163,6 +163,16 @@ struct Stock
 	bool operator==(const Stock &) const = default;
 };
 
+// What is left of an opened tote, in the item's unit: the households', or a ship's for its life
+// support.
+struct Opened
+{
+	std::string itemId;
+	double quantity{0.0};
+
+	bool operator==(const Opened &) const = default;
+};
+
 // The totes of one item in a ship's hold, at most kMaxHoldTotes.
 struct Lot
 {
@@ -172,10 +182,13 @@ struct Lot
 	bool operator==(const Lot &) const = default;
 };
 
-// What a ship carries, by item, each lot above 0. Its owner's, at no venue.
+// What a ship carries, by item, each lot above 0, and the totes opened for its life support (D-094),
+// by item, at most one an item, each still taking its whole tote of the hold until it is used up and
+// none sold or unloaded. Its owner's, at no venue.
 struct Cargo
 {
 	std::vector<Lot> lots;
+	std::vector<Opened> opened{};
 
 	bool operator==(const Cargo &) const = default;
 };
@@ -251,15 +264,6 @@ struct Production
 	bool operator==(const Production &) const = default;
 };
 
-// What is left of a tote the households have opened, in the item's unit.
-struct Opened
-{
-	std::string itemId;
-	double quantity{0.0};
-
-	bool operator==(const Opened &) const = default;
-};
-
 // What a need has gone without, in the need's unit, over every interval.
 struct Unmet
 {
@@ -282,6 +286,19 @@ struct Pantry
 	bool operator==(const Pantry &) const = default;
 };
 
+// A ship's own life support (D-045, D-046, D-094): the oxygen left in each tank, in kilograms, and the
+// occupant-days left in each installed scrubber cartridge, in its hull's order; and the venue whose
+// station life support it is connected to, empty while it draws on its own. Provisioning fills it once;
+// only Refill and Replace add to it.
+struct LifeSupport
+{
+	std::vector<double> tanks;
+	std::vector<double> cartridges;
+	std::string connectedTo;
+
+	bool operator==(const LifeSupport &) const = default;
+};
+
 // Why a Stock or a Cargo breaks the rules above, for a load to refuse: none when it keeps them.
 std::optional<std::string> Broken(const Stock &stock);
 
@@ -292,6 +309,8 @@ std::optional<std::string> Broken(const Order &order);
 std::optional<std::string> Broken(const Production &production);
 
 std::optional<std::string> Broken(const Pantry &pantry);
+
+std::optional<std::string> Broken(const LifeSupport &lifeSupport);
 
 // The components and their service's record, with Reflect. Safe to call again.
 void RegisterTypes();

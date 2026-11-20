@@ -186,8 +186,14 @@ TEST_CASE("A ship travels from Ore to Brine through the engine's departure, crui
 	CHECK(hosted.Journey().leg == Leg::Departing);
 	CHECK(registry.get<Dock::Docking>(hosted.Ship()).stage == Dock::Stage::Leaving);
 	CHECK(hosted.Record().dockedAt.empty());
+	// Off its pad, it lets go of Ore's life support and draws on its own (D-046).
+	const auto &support = [&]() -> const World::LifeSupport &
+	{ return registry.get<World::LifeSupport>(hosted.Ship()); };
+	CHECK(support().connectedTo.empty());
+	CHECK(support().tanks[0] < 10.0);
 	CHECK(hosted.Load(kOre) == Result::NotDocked);
 	CHECK(hosted.Go(kAda, kBrine) == Result::Travelling);
+	const std::uint64_t left = hosted.world.Clock().Step();
 
 	const std::vector<Leg> legs = hosted.RunJourney();
 	CHECK(
@@ -196,6 +202,16 @@ TEST_CASE("A ship travels from Ore to Brine through the engine's departure, crui
 	CHECK(hosted.Journey().failure == Failure::None);
 	CHECK(hosted.Record().dockedAt == kBrine);
 	CHECK(registry.get<World::Cargo>(hosted.Ship()) == cargo);
+	// Docked, it is connected at Brine in the same step, having drawn a kilogram a day for the steps
+	// since it let go, from its first tank, and an occupant-day a day from its cartridge.
+	CHECK(support().connectedTo == kBrine);
+	const double days = static_cast<double>(hosted.world.Clock().Step() - left + 1) * kStep / kDay;
+	CHECK(support().tanks[0] == doctest::Approx(10.0 - days).epsilon(1e-6));
+	CHECK(support().tanks[1] == 10.0);
+	CHECK(support().cartridges[0] == doctest::Approx(30.0 - days).epsilon(1e-6));
+	const World::LifeSupport arrived = support();
+	hosted.Step();
+	CHECK(support() == arrived);
 	CHECK(hosted.Load(kOre) == Result::WrongVenue);
 	CHECK(
 	    hosted.Run(
@@ -214,7 +230,8 @@ TEST_CASE(
 	    scheduler.Order(Jettison::Ecs::TickPhase::Simulation) ==
 	    std::vector<std::string>{
 	        "manifest.expiry", "manifest.economy", "manifest.brokers", "spatial", "steering", "flight",
-	        "physics", "dock", "lanes", "cruise", std::string{Travel::kSystem}});
+	        "physics", "dock", "lanes", "cruise", std::string{Travel::kSystem},
+	        std::string{Company::kLifeSupportSystem}});
 	CHECK(scheduler.Ambiguities(Jettison::Ecs::TickPhase::Simulation).empty());
 }
 

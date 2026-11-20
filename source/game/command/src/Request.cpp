@@ -37,7 +37,8 @@ void RegisterTypes()
 		    .Value<Result::BookFull>("BookFull")
 		    .Value<Result::NoPadFree>("NoPadFree")
 		    .Value<Result::Travelling>("Travelling")
-		    .Value<Result::AlreadyThere>("AlreadyThere");
+		    .Value<Result::AlreadyThere>("AlreadyThere")
+		    .Value<Result::NoServiceFree>("NoServiceFree");
 		RegisterEnum<ActorKind>("Manifest.Command.ActorKind")
 		    .Value<ActorKind::Principal>("Principal")
 		    .Value<ActorKind::Administrator>("Administrator");

@@ -150,6 +150,7 @@ std::function<void()> Identities::Load(
 			std::uint64_t carried = 0;
 			for (const Lot &lot : cargo.lots)
 				carried += lot.totes;
+			carried += cargo.opened.size();
 			const auto hold = m_holds->find(ship.hullId);
 			if (carried > (hold == m_holds->end() ? 0 : hold->second))
 				reader.Fail(
@@ -157,6 +158,33 @@ std::function<void()> Identities::Load(
 				        "a ship of hull '{}' carries {} totes, more than its hold", ship.hullId,
 				        carried));
 		}
+	for (const auto [entity, ship, lifeSupport] : loaded.view<const Ship, const LifeSupport>().each())
+	{
+		if (const std::optional<std::string> problem = Broken(lifeSupport))
+			reader.Fail(*problem);
+		if (!lifeSupport.connectedTo.empty() &&
+		    !index.contains({Kind::Broker, lifeSupport.connectedTo}))
+			reader.Fail(
+			    std::format(
+			        "a ship is connected to '{}', a venue the world does not hold",
+			        lifeSupport.connectedTo));
+		if (!m_installed)
+			continue;
+		const auto installed = m_installed->find(ship.hullId);
+		const Installed none;
+		const Installed &hull = installed == m_installed->end() ? none : installed->second;
+		bool over = lifeSupport.tanks.size() != hull.tanks.size() ||
+		            lifeSupport.cartridges.size() != hull.cartridges;
+		for (std::size_t tank = 0; !over && tank < hull.tanks.size(); ++tank)
+			over = lifeSupport.tanks[tank] > hull.tanks[tank];
+		for (const double cartridge : lifeSupport.cartridges)
+			over = over || cartridge > m_freshCartridge;
+		if (over)
+			reader.Fail(
+			    std::format(
+			        "a ship of hull '{}' holds tanks or cartridges its hull does not, or more in them",
+			        ship.hullId));
+	}
 	return [this, counters = std::move(counters), index = std::move(index)]() mutable
 	{
 		m_counters = std::move(counters);

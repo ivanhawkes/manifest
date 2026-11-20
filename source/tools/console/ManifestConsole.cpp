@@ -143,6 +143,21 @@ std::string Describe(const Query::Snapshot &snapshot, std::string_view as)
 			     << (ship.journey ? Describe(*ship.journey, snapshot.step) : "");
 			for (const World::Lot &lot : ship.cargo)
 				view << "\n    " << lot.itemId << " " << lot.totes << " totes";
+			for (const World::Opened &opened : ship.opened)
+				view << "\n    " << opened.itemId << " " << std::format("{:.3f}", opened.quantity)
+				     << " left in an opened tote";
+			const World::LifeSupport &lifeSupport = ship.lifeSupport;
+			double oxygen = 0.0;
+			for (const double tank : lifeSupport.tanks)
+				oxygen += tank;
+			view << std::format(
+			    "\n    life support: {:.3f} kg of oxygen in {} tanks, cartridges of", oxygen,
+			    lifeSupport.tanks.size());
+			for (const double cartridge : lifeSupport.cartridges)
+				view << std::format(" {:.3f}", cartridge);
+			view << " occupant-days, "
+			     << (lifeSupport.connectedTo.empty() ? std::string{"on its own"}
+			                                         : "connected at " + lifeSupport.connectedTo);
 		}
 		for (const auto &[orderId, order] : company.orders)
 			view << "\n  " << orderId << ": " << (order.side == World::Side::Buy ? "buy " : "sell ")
@@ -235,6 +250,11 @@ void ManifestConsole::RegisterCommands()
 	    "travel [principal] <ship> <venue>: queues a player's journey; the principal only when not "
 	    "connected",
 	    2, 3, [this](Arguments arguments) { return CommandTravel(arguments); });
+	RegisterCommand(
+	    "service",
+	    "service refill|replace [principal] <ship>: queues a player's oxygen refill or cartridge "
+	    "replacement from the ship's hold; the principal only when not connected",
+	    2, 3, [this](Arguments arguments) { return CommandService(arguments); });
 	RegisterCommand(
 	    "book", "book <venue> [item]: the resting orders at a venue, as the host sees them", 1, 2,
 	    [this](Arguments arguments) { return CommandBook(arguments); });
@@ -727,6 +747,22 @@ std::string ManifestConsole::CommandTravel(Arguments arguments)
 	const std::vector<std::byte> payload = BinaryArchive::Write(
 	    Travel::Travel{operands[0], operands[1]}, Jettison::Serialise::FormatVersion{Travel::kVersion});
 	return Queue(arguments, 0, Travel::kTravel, Travel::kVersion, payload);
+}
+
+
+std::string ManifestConsole::CommandService(Arguments arguments)
+{
+	if (arguments[0] != "refill" && arguments[0] != "replace")
+		throw std::runtime_error{std::format("expected refill or replace, got '{}'", arguments[0])};
+	const Arguments operands = Operands(
+	    arguments, 1, 1,
+	    m_pRemote ? "service refill|replace <ship>" : "service refill|replace <principal> <ship>");
+	using Jettison::Serialise::BinaryArchive;
+	const std::vector<std::byte> payload = BinaryArchive::Write(
+	    Company::Service{operands[0]}, Jettison::Serialise::FormatVersion{Company::kVersion});
+	return Queue(
+	    arguments, 1, arguments[0] == "refill" ? Company::kRefill : Company::kReplace,
+	    Company::kVersion, payload);
 }
 
 

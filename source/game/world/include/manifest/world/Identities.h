@@ -9,6 +9,7 @@
 #include <span>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <jettison/sim/SimWorld.h>
 
@@ -16,6 +17,14 @@
 
 namespace Manifest::World
 {
+// What a hull's life support holds (D-050): each oxygen tank's capacity in kilograms, and how many
+// scrubber cartridges are installed.
+struct Installed
+{
+	std::vector<double> tanks;
+	std::size_t cartridges{0};
+};
+
 // The saved part of Identities: how many IDs each issued kind has handed out.
 struct IdentityCounters
 {
@@ -61,11 +70,22 @@ class Identities final : public Jettison::Sim::WorldService
 		m_holds = std::move(holds);
 	}
 
+	// What each hull's life support holds, by hull ID, and a fresh cartridge's occupant-days, which
+	// Load holds each ship's LifeSupport to; a hull it does not name holds none. Unset, a load checks
+	// only that each reserve is a number of at least 0.
+	void SetLifeSupport(std::map<std::string, Installed, std::less<>> installed, double freshCartridge)
+	{
+		m_installed = std::move(installed);
+		m_freshCartridge = freshCartridge;
+	}
+
 	void Save(Jettison::Serialise::BinaryWriter &writer) const override;
 
 	// Fails the save for two entities of one kind and ID, an empty ID, a Stock, Cargo, Order,
 	// Production or Pantry that breaks its rules (Broken), a holding's reserved totes that are not its
-	// owner's sell orders' there, or, once SetHolds has run, a ship carrying more than its hull's hold.
+	// owner's sell orders' there, a LifeSupport of no number or less than nothing, or connected to no
+	// venue, or, once SetHolds has run, a ship carrying more than its hull's hold, lots and opened
+	// totes together, and once SetLifeSupport has, more in a tank or a cartridge than its hull's holds.
 	std::function<void()> Load(
 	    Jettison::Serialise::BinaryReader &reader, const entt::registry &loaded,
 	    std::span<const entt::meta_any> queued) override;
@@ -74,5 +94,7 @@ class Identities final : public Jettison::Sim::WorldService
 	std::map<std::pair<Kind, std::string>, entt::entity> m_index;
 	IdentityCounters m_counters;
 	std::optional<std::map<std::string, std::uint64_t, std::less<>>> m_holds;
+	std::optional<std::map<std::string, Installed, std::less<>>> m_installed;
+	double m_freshCartridge{0.0};
 };
 } // namespace Manifest::World

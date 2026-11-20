@@ -22,6 +22,9 @@ struct ShipView
 	std::vector<World::Lot> cargo;
 	// Its latest journey, under way or ended; none before its first.
 	std::optional<World::Journey> journey{};
+	// The totes opened for its life support, and its tanks, cartridges and connection (D-094).
+	std::vector<World::Opened> opened{};
+	World::LifeSupport lifeSupport{};
 
 	bool operator==(const ShipView &) const = default;
 };

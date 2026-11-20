@@ -62,7 +62,9 @@ TEST_CASE("Manifest console: help, completion, history and clear use the shell's
 {
 	ManifestConsole session{MANIFEST_MOD_DIRECTORY};
 	auto &console = session.GetConsole();
-	CHECK(console.Complete("s") == std::vector<std::string>{"show", "skills", "status", "step"});
+	CHECK(
+	    console.Complete("s") ==
+	    std::vector<std::string>{"service", "show", "skills", "status", "step"});
 	CHECK(console.CompleteLine("gen") == "generate ");
 	CHECK(console.CompleteLine("generate 2") == "generate 2");
 	CHECK(Execute(session, "help generate").text.find("generate [count] [seed]") != std::string::npos);
@@ -473,4 +475,28 @@ TEST_CASE("Manifest console: the vertical slice, furs bought at Ore, flown to Br
 	const std::string cancelled = Execute(session, "observe Ada").text;
 	MANIFEST_CHECK_CONTAINS(cancelled, "29590 credits");
 	CHECK(cancelled.find("Order") == std::string::npos);
+}
+
+
+TEST_CASE("Manifest console: a ship's life support in the view, and its resupply sent as service")
+{
+	const CompressedContent content;
+	ManifestConsole session{content.Path()};
+	REQUIRE(Execute(session, "host trading").kind == ConsoleLine::Kind::Output);
+	REQUIRE(Execute(session, "provision Ada \"Ada Co\"").kind == ConsoleLine::Kind::Output);
+	Execute(session, "step");
+	MANIFEST_CHECK_CONTAINS(
+	    Execute(session, "observe Ada").text,
+	    "life support: 30.000 kg of oxygen in 3 tanks, cartridges of 30.000 occupant-days, "
+	    "connected at VenueOreHighport");
+	for (const std::string command : {"service fill Ada Ship1", "service refill", "service refill Ada"})
+	{
+		CAPTURE(command);
+		CHECK(Execute(session, command).kind == ConsoleLine::Kind::Error);
+	}
+	Execute(session, "service refill Ada Ship1");
+	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Company.Refill: CapacityExceeded");
+	Execute(session, "service replace Ada Ship1");
+	MANIFEST_CHECK_CONTAINS(
+	    Execute(session, "step").text, "Manifest.Company.Replace: InsufficientStock");
 }

@@ -47,7 +47,7 @@ struct Hosted
 		content = Manifest::Content::LoadScenario(files, definitions, scenario);
 		const Manifest::Travel::Fleet &fleet =
 		    Manifest::Travel::Register(world, requests, identities, content);
-		Company::RegisterCommands(requests, identities, fleet, content);
+		Company::RegisterCommands(world, requests, identities, fleet, content);
 		World::CreateInitialState(world, identities, content);
 		Manifest::Travel::OpenStations(world, fleet);
 	}
@@ -100,14 +100,19 @@ TEST_CASE("A player sees their own company as it was at the completed step, and 
 	const Snapshot loaded = hosted.Observe(kAda);
 	CHECK(hosted.world.StateHash() == hash);
 	CHECK(
-	    loaded ==
-	    Snapshot{
-	        2,
-	        {{"Company1",
-	          "Co",
-	          25000,
-	          {{"VenueOreHighport", "ItemCopper", 0, 2}},
-	          {{"Ship1", "HullLoneTraderStarter", "VenueOreHighport", {{"ItemCopper", 3}}}}}}});
+	    loaded == Snapshot{
+	                  2,
+	                  {{"Company1",
+	                    "Co",
+	                    25000,
+	                    {{"VenueOreHighport", "ItemCopper", 0, 2}},
+	                    {{"Ship1",
+	                      "HullLoneTraderStarter",
+	                      "VenueOreHighport",
+	                      {{"ItemCopper", 3}},
+	                      {},
+	                      {},
+	                      {{10.0, 10.0, 10.0}, {30.0}, "VenueOreHighport"}}}}}});
 
 	REQUIRE(hosted.Run(kAda, Company::kUnload, move) == Result::Succeeded);
 	CHECK(loaded.companies[0].ships[0].cargo[0].totes == 3);

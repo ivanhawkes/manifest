@@ -94,6 +94,7 @@ registration order, and a test pins `Scheduler().Order(TickPhase::Simulation)`.
 | 5 | each step | engine `dock` | after `physics`; before `lanes` (Jettison `bc5dc1a`) | pads, docking, transfers |
 | 6 | each step | engine `lanes`, then `cruise` | Jettison's own edges | lane and cruise state |
 | 7 | each step | `manifest.travel` (W05) | after `dock` and `cruise` | travel intents, `Ship::dockedAt` |
+| 7a | each step | `manifest.lifeSupport` (W06) | after `manifest.travel` | connections, onboard oxygen and cartridges |
 | 8 | each step | `manifest.observe` (W07) | after `manifest.travel` | quotes, fleet observations |
 
 Jettison's movement systems are registered without its `behaviour` system (no behaviour trees
@@ -125,8 +126,8 @@ the `travel` suite pins the order and the empty ambiguities.
   selected [observation timing](market-information-plan.md#observation-timing-selected) and
   simulation-time age rules; do not publish unseen current market rows in an actor's snapshot.
 
-W03 and W15 register 0, 1, 3 and, with W05, 4 to 7; W04 adds 2 and W07 adds 8, each into the
-edges above. A task that needs another place in the step changes this table first.
+W03 and W15 register 0, 1, 3 and, with W05, 4 to 7; W04 adds 2, W06 7a and W07 adds 8, each into
+the edges above. A task that needs another place in the step changes this table first.
 
 ### Transaction boundaries
 
@@ -140,7 +141,7 @@ and a throw is an invariant breach.
 | The expiry sweep, one a step | every refund the step's expiries make, combined | none expected: the refunds are already escrowed |
 | One broker's requote, a venue a turn | cancelling its resting orders, their refunds, its new orders and their matching pass | the broker posts what it can fund; a side it cannot fund posts nothing |
 | One travel transition, a ship a step | the intent's next state and the engine command that leads to it | the intent records the refusal (no pad, cruise refused, departure blocked) and waits or fails, the ship's cargo kept |
-| Load, unload, provisioning, the upgrade (W08) | as Stage 3 and W08 define each | refused with no business write |
+| Load, unload, refill, replace, provisioning, the upgrade (W08) | as Stage 3, W06 and W08 define each | refused with no business write |
 
 A command's matching pass settles at most 64 fills. A side of one venue's book for one item holds
 at most 64 resting orders, and an order past that is refused as `BookFull`, so a pass can always
@@ -663,6 +664,62 @@ batch with inputs is W12's); work and residence in different regions; a player's
 condition and shortages; the economy's workload measured at scale, and 1,440 intervals' totals run
 rather than reasoned; and the governance fixture's oxygen, cartridge and tin demand, a ship's and a
 workshop's, which W06 and W12 give their consumers.
+
+## Delivered: W06, 2026-11-20
+
+Station life support, onboard use and resupply, `manifest.lifeSupport`, on pin `54fb871` with no
+engine edit. What it chose where the plans left room ([D-094](decision-ledger.md#d-094), the user's
+choices):
+
+- **State.** Each ship has a saved `LifeSupport`: the oxygen left in each tank, in its hull's order
+  (D-050's per-tank record), the occupant-days left in each installed cartridge, and the venue it is
+  connected to. A ship's `Cargo` holds the totes opened for it beside its lots, at most one an item,
+  each still taking its tote of the hold. A save is refused for a reserve below 0 or not a number, a
+  tank or cartridge its hull does not have or holding more than it does, a connection to no venue, or
+  a hold over its hull's, opened totes counted.
+- **Connections**, each step after `manifest.travel`, ship by ship in entity order: a ship no longer
+  docked where it is connected lets go, then a docked ship is connected while its venue has one of its
+  `lifeSupportCapacity` free, so a ship docked at a full venue waits on its own supplies, and one
+  freed by a departure is taken in the same step. A connected ship uses none of its own (D-046).
+- **Onboard use.** An unconnected ship draws its hull's `occupants` times the step over a day, at
+  `oxygenKilogramsPerOccupantDay`, from its tanks in order, and the same occupant-days from its
+  cartridges in order, never more than is left: an empty tank or cartridge stays at 0, and exhaustion
+  has no consequence yet. A hull with no occupants uses none.
+- **Provisioning** gives the starter its tanks full and its cartridge fresh, once, connected at the
+  starter venue, and is refused `NoServiceFree` when the venue has no connection free (D-047). No
+  docking, connection, retry or load restores either.
+- **Resupply**, the players' `Refill` and `Replace` of a ship, wherever it is: the goods are the
+  hold's, the tuning's `oxygenItemId` and `cartridgeItemId`, bought through the book and loaded.
+  Refill fills the tanks in order from the opened tote first, then whole totes opened one at a time,
+  142.5 kg each; what the last has left stays opened. Replace installs a fresh cartridge in place of
+  the one with the least left, thrown away with it, from an opened tote's whole pieces first. Each is
+  refused, writing nothing, for an unknown ship, another company's, tanks already full or a hull with
+  none to fill or replace (`CapacityExceeded`), and nothing aboard to give (`InsufficientStock`).
+- **Snapshot and console.** A ship's view carries its life support and opened totes, so the protocol
+  is version 3. The console's `observe` shows a ship's oxygen, cartridges and connection, and
+  `service refill|replace [principal] <ship>` sends the commands.
+
+Evidence, in the `company` suite: the starter granted 10, 10 and 10 kg and a 30-occupant-day cartridge,
+connected at Ore, a retried provisioning restoring nothing, and Ore's four connections refusing a fifth
+player `NoServiceFree` while a venue with connections to spare refuses at `NoPadFree`; ten connected
+steps using nothing, then an hour of 1 s steps undocked using 1/24 kg from the first tank alone and
+1/24 of an occupant-day, and a tank's last drop and an exhausted cartridge never below 0; a ship docked
+at a full venue drawing its own until a departure frees a connection, taken in that step with nothing
+drawn; Refill filling 2, 10 and 0 kg from a tote and leaving 124.5 kg opened, then drawing on the opened
+tote first, undocked too, the opened tote no tote to unload and still a tote of the hold, and Replace
+installing a fresh cartridge from a tote of two, then the second, then refused; each refusal writing
+nothing; and the saves refused. In the `travel` suite, a journey from Ore to Brine letting go of Ore's
+connection as it leaves its pad, drawing a kilogram and an occupant-day a day until it docks, and
+connected at Brine in that step, after which it draws nothing; and the step's order with
+`manifest.lifeSupport` last. In the `content` suite, the tuning's items refused naming nothing or in
+another unit; in the `query` and `console` suites the view and the command. The `company` suite's
+pinned hash moved for the save's new component.
+
+Left: the station's own oxygen and its resupply, which a connection does not draw on, and service
+outages, which wait for stations that stop; exhaustion's consequences; a tank exchanged rather than
+refilled (D-050's exchange procedure), and spent cartridges kept; a berth fee, which includes the
+connection when travel is charged for; and the trading fixture's venues selling oxygen and cartridges,
+which only the governance fixture's do, for W09's whole fixture.
 
 ## Handoff to stage 5
 

@@ -10,8 +10,11 @@
 #include <optional>
 #include <stdexcept>
 #include <tuple>
+#include <variant>
+#include <vector>
 
 #include <jettison/core/Assert.h>
+#include <jettison/ecs/Scheduler.h>
 #include <jettison/reflect/Reflect.h>
 #include <jettison/sim/SimWorld.h>
 
@@ -27,8 +30,12 @@ using Jettison::Sim::SimWorld;
 using World::Kind;
 
 
-// What the commands run on: the fleet ships are parked through, and the scenario's items and the totes
-// each hull holds, looked up once.
+constexpr double kSecondsPerDay = 86400.0;
+
+
+// What the commands and the system run on: the fleet ships are parked through, and the scenario's
+// items, the totes each hull holds, the hulls, each venue's life-support connections and how much of
+// the life-support goods a tote holds, looked up once.
 struct Rules
 {
 	World::Identities &identities;
@@ -37,7 +44,21 @@ struct Rules
 	const Content::ScenarioDefinition &scenario;
 	std::map<std::string, const Core::ItemNode *, std::less<>> items;
 	std::map<std::string, std::uint64_t, std::less<>> holds;
+	std::map<std::string, const Core::ShipClassSpec *, std::less<>> hulls;
+	std::map<std::string, int, std::less<>> connections;
+	double oxygenPerTote{0.0};
+	double cartridgesPerTote{0.0};
 };
+
+
+// The ships connected to the venue's life support.
+int Connected(const entt::registry &registry, std::string_view venueId)
+{
+	int connected = 0;
+	for (const auto [entity, lifeSupport] : registry.view<const World::LifeSupport>().each())
+		connected += lifeSupport.connectedTo == venueId ? 1 : 0;
+	return connected;
+}
 
 
 // A new ID of the kind. An exhausted counter stops the step: no rejection can give back the IDs
@@ -71,6 +92,8 @@ Result Provisioned(SimWorld &world, Rules &rules, const Provision &provision)
 	const entt::entity pad = rules.fleet.FreePad(registry, venueId, rules.scenario.starterHull);
 	if (pad == entt::null)
 		return Result::NoPadFree;
+	if (Connected(registry, venueId) >= rules.connections.at(venueId))
+		return Result::NoServiceFree;
 
 	const std::string companyId = Issued(identities, Kind::Company);
 	const std::string shipId = Issued(identities, Kind::Ship);
@@ -85,6 +108,13 @@ Result Provisioned(SimWorld &world, Rules &rules, const Provision &provision)
 	const entt::entity ship = Created(world, identities, Kind::Ship, shipId);
 	registry.emplace<World::Ship>(ship, companyId, rules.scenario.starterHull, venueId);
 	registry.emplace<World::Cargo>(ship);
+	const Core::ShipClassSpec &hull = *rules.hulls.at(rules.scenario.starterHull);
+	registry.emplace<World::LifeSupport>(
+	    ship, hull.oxygenTanks.value_or(std::vector<double>{}),
+	    std::vector<double>(
+	        static_cast<std::size_t>(hull.scrubberCartridges.value_or(0)),
+	        rules.content.tuning.lifeSupport.cartridgeOccupantDays),
+	    venueId);
 	rules.fleet.Park(world, ship, pad, rules.scenario.starterHull, companyId);
 	return Result::Succeeded;
 }
@@ -96,17 +126,31 @@ auto HoldingKey(const World::Holding &holding)
 }
 
 
-Result Moved(SimWorld &world, const Rules &rules, const Actor &actor, const Move &move, bool aboard)
+// The sender's company's ship, or why a command on it is refused.
+std::variant<entt::entity, Result> Owned(
+    const entt::registry &registry, const Rules &rules, const Actor &actor, const std::string &shipId)
 {
-	entt::registry &registry = world.Registry();
-	const entt::entity shipEntity = rules.identities.Find(Kind::Ship, move.shipId);
-	if (shipEntity == entt::null)
+	const entt::entity ship = rules.identities.Find(Kind::Ship, shipId);
+	if (ship == entt::null)
 		return Result::UnknownTarget;
-	const World::Ship &ship = registry.get<World::Ship>(shipEntity);
-	const entt::entity company = rules.identities.Find(Kind::Company, ship.companyId);
+	const entt::entity company =
+	    rules.identities.Find(Kind::Company, registry.get<World::Ship>(ship).companyId);
 	JETTISON_VERIFY(company != entt::null);
 	if (registry.get<World::Company>(company).principalId != actor.id)
 		return Result::NotAuthorised;
+	return ship;
+}
+
+
+Result Moved(SimWorld &world, const Rules &rules, const Actor &actor, const Move &move, bool aboard)
+{
+	entt::registry &registry = world.Registry();
+	const auto owned = Owned(registry, rules, actor, move.shipId);
+	if (const Result *refused = std::get_if<Result>(&owned))
+		return *refused;
+	const entt::entity shipEntity = std::get<entt::entity>(owned);
+	const World::Ship &ship = registry.get<World::Ship>(shipEntity);
+	const entt::entity company = rules.identities.Find(Kind::Company, ship.companyId);
 	if (ship.dockedAt.empty())
 		return Result::NotDocked;
 	if (ship.dockedAt != move.venueId)
@@ -136,6 +180,7 @@ Result Moved(SimWorld &world, const Rules &rules, const Actor &actor, const Move
 		std::uint64_t free = hold == rules.holds.end() ? 0 : hold->second;
 		for (const World::Lot &aboardLot : cargo.lots)
 			free -= std::min(free, aboardLot.totes);
+		free -= std::min<std::uint64_t>(free, cargo.opened.size());
 		if (move.totes > free)
 			return Result::CapacityExceeded;
 
@@ -170,6 +215,162 @@ Result Moved(SimWorld &world, const Rules &rules, const Actor &actor, const Move
 		stock.holdings.insert(holding, {move.venueId, move.itemId, move.totes, 0});
 	return Result::Succeeded;
 }
+
+
+// How much of the item is aboard, in its unit: its opened tote's and its whole totes'.
+double Aboard(const World::Cargo &cargo, std::string_view itemId, double perTote)
+{
+	double aboard = 0.0;
+	if (const auto opened = std::ranges::find(cargo.opened, itemId, &World::Opened::itemId);
+	    opened != cargo.opened.end())
+		aboard = opened->quantity;
+	if (const auto lot = std::ranges::find(cargo.lots, itemId, &World::Lot::itemId);
+	    lot != cargo.lots.end())
+		aboard += static_cast<double>(lot->totes) * perTote;
+	return aboard;
+}
+
+
+// Takes the quantity of the item from the hold, at most Aboard's: its opened tote's first, then whole
+// totes opened one at a time. What the last tote opened has left stays opened, unless it is below
+// `least`, which is thrown away.
+void Take(World::Cargo &cargo, const std::string &itemId, double perTote, double quantity, double least)
+{
+	const auto opened =
+	    std::ranges::lower_bound(cargo.opened, itemId, std::less<>{}, &World::Opened::itemId);
+	const bool wasOpened = opened != cargo.opened.end() && opened->itemId == itemId;
+	double left = wasOpened ? opened->quantity : 0.0;
+	const auto lot = std::ranges::find(cargo.lots, itemId, &World::Lot::itemId);
+	while (left < quantity && lot != cargo.lots.end() && lot->totes > 0)
+	{
+		--lot->totes;
+		left += perTote;
+	}
+	if (lot != cargo.lots.end() && lot->totes == 0)
+		cargo.lots.erase(lot);
+	left = std::max(0.0, left - quantity);
+	if (left > 0.0 && left >= least)
+	{
+		if (wasOpened)
+			opened->quantity = left;
+		else
+			cargo.opened.insert(opened, {itemId, left});
+	}
+	else if (wasOpened)
+		cargo.opened.erase(opened);
+}
+
+
+Result Refilled(SimWorld &world, const Rules &rules, const Actor &actor, const Service &service)
+{
+	entt::registry &registry = world.Registry();
+	const auto owned = Owned(registry, rules, actor, service.shipId);
+	if (const Result *refused = std::get_if<Result>(&owned))
+		return *refused;
+	const entt::entity ship = std::get<entt::entity>(owned);
+	World::LifeSupport &lifeSupport = registry.get<World::LifeSupport>(ship);
+	const std::vector<double> capacities = rules.hulls.at(registry.get<World::Ship>(ship).hullId)
+	                                           ->oxygenTanks.value_or(std::vector<double>{});
+	JETTISON_VERIFY(capacities.size() == lifeSupport.tanks.size());
+	double room = 0.0;
+	for (std::size_t tank = 0; tank < capacities.size(); ++tank)
+		room += capacities[tank] - lifeSupport.tanks[tank];
+	if (room <= 0.0)
+		return Result::CapacityExceeded;
+	World::Cargo &cargo = registry.get<World::Cargo>(ship);
+	const std::string &oxygen = rules.content.tuning.lifeSupport.oxygenItemId;
+	const double aboard = Aboard(cargo, oxygen, rules.oxygenPerTote);
+	if (aboard <= 0.0)
+		return Result::InsufficientStock;
+
+	double given = std::min(room, aboard);
+	Take(cargo, oxygen, rules.oxygenPerTote, given, 0.0);
+	for (std::size_t tank = 0; tank < capacities.size() && given > 0.0; ++tank)
+	{
+		const double space = capacities[tank] - lifeSupport.tanks[tank];
+		const double poured = std::min(space, given);
+		lifeSupport.tanks[tank] = poured == space ? capacities[tank] : lifeSupport.tanks[tank] + poured;
+		given -= poured;
+	}
+	return Result::Succeeded;
+}
+
+
+Result Replaced(SimWorld &world, const Rules &rules, const Actor &actor, const Service &service)
+{
+	entt::registry &registry = world.Registry();
+	const auto owned = Owned(registry, rules, actor, service.shipId);
+	if (const Result *refused = std::get_if<Result>(&owned))
+		return *refused;
+	const entt::entity ship = std::get<entt::entity>(owned);
+	World::LifeSupport &lifeSupport = registry.get<World::LifeSupport>(ship);
+	if (lifeSupport.cartridges.empty())
+		return Result::CapacityExceeded;
+	World::Cargo &cargo = registry.get<World::Cargo>(ship);
+	const std::string &cartridge = rules.content.tuning.lifeSupport.cartridgeItemId;
+	if (Aboard(cargo, cartridge, rules.cartridgesPerTote) < 1.0)
+		return Result::InsufficientStock;
+
+	// A piece is a whole cartridge: less than one left of a tote is none.
+	Take(cargo, cartridge, rules.cartridgesPerTote, 1.0, 1.0);
+	*std::ranges::min_element(lifeSupport.cartridges) =
+	    rules.content.tuning.lifeSupport.cartridgeOccupantDays;
+	return Result::Succeeded;
+}
+
+
+// Draws the need from the reserve's tanks or cartridges in order, never more than they hold.
+void Draw(std::vector<double> &reserve, double need)
+{
+	for (double &left : reserve)
+	{
+		const double drawn = std::min(left, need);
+		left -= drawn;
+		need -= drawn;
+		if (need <= 0.0)
+			return;
+	}
+}
+
+
+// One step of every ship's life support (kLifeSupportSystem), in entity order.
+void Breathe(entt::registry &registry, const Rules &rules, double step)
+{
+	std::vector<entt::entity> ships;
+	for (const auto [ship, lifeSupport] : registry.view<const World::LifeSupport>().each())
+		ships.push_back(ship);
+	std::ranges::sort(ships, {}, [](entt::entity ship) { return entt::to_integral(ship); });
+
+	std::map<std::string, int, std::less<>> connected;
+	for (const entt::entity ship : ships)
+	{
+		World::LifeSupport &lifeSupport = registry.get<World::LifeSupport>(ship);
+		if (lifeSupport.connectedTo.empty())
+			continue;
+		if (registry.get<const World::Ship>(ship).dockedAt == lifeSupport.connectedTo)
+			++connected[lifeSupport.connectedTo];
+		else
+			lifeSupport.connectedTo.clear();
+	}
+	const Content::LifeSupportTuning &tuning = rules.content.tuning.lifeSupport;
+	for (const entt::entity ship : ships)
+	{
+		World::LifeSupport &lifeSupport = registry.get<World::LifeSupport>(ship);
+		const World::Ship &record = registry.get<const World::Ship>(ship);
+		if (lifeSupport.connectedTo.empty() && !record.dockedAt.empty())
+			if (int &taken = connected[record.dockedAt]; taken < rules.connections.at(record.dockedAt))
+			{
+				lifeSupport.connectedTo = record.dockedAt;
+				++taken;
+			}
+		if (!lifeSupport.connectedTo.empty())
+			continue;
+		const double occupantDays =
+		    rules.hulls.at(record.hullId)->occupants.value_or(0) * step / kSecondsPerDay;
+		Draw(lifeSupport.tanks, occupantDays * tuning.oxygenKilogramsPerOccupantDay);
+		Draw(lifeSupport.cartridges, occupantDays);
+	}
+}
 } // namespace
 
 
@@ -189,6 +390,7 @@ void RegisterTypes()
 		    .Field<&Move::venueId>("venueId", kSaved)
 		    .Field<&Move::itemId>("itemId", kSaved)
 		    .Field<&Move::totes>("totes", kSaved);
+		RegisterType<Service>("Manifest.Company.Service").Field<&Service::shipId>("shipId", kSaved);
 		return true;
 	}();
 	(void)registered;
@@ -196,8 +398,8 @@ void RegisterTypes()
 
 
 void RegisterCommands(
-    Command::Requests &requests, World::Identities &identities, const Travel::Fleet &fleet,
-    const Content::ContentSet &content)
+    SimWorld &world, Command::Requests &requests, World::Identities &identities,
+    const Travel::Fleet &fleet, const Content::ContentSet &content)
 {
 	const auto selected = content.scenarios.find(content.scenario);
 	if (selected == content.scenarios.end())
@@ -226,17 +428,56 @@ void RegisterCommands(
 		}
 	identities.SetHolds(rules->holds);
 
+	std::map<std::string, World::Installed, std::less<>> installed;
+	for (const Core::ShipClassSpec &hull : content.hulls)
+	{
+		rules->hulls.emplace(hull.hullId, &hull);
+		installed.emplace(
+		    hull.hullId, World::Installed{
+		                     hull.oxygenTanks.value_or(std::vector<double>{}),
+		                     static_cast<std::size_t>(hull.scrubberCartridges.value_or(0))});
+	}
+	const Content::LifeSupportTuning &lifeSupport = content.tuning.lifeSupport;
+	identities.SetLifeSupport(std::move(installed), lifeSupport.cartridgeOccupantDays);
+	for (const Content::VenueDefinition &venue : selected->second.venues)
+		rules->connections.emplace(venue.venueId, venue.lifeSupportCapacity);
+	// Content holds both to items of the game mode traded in their units.
+	const auto perTote = [&content](const std::string &itemId)
+	{
+		const auto item = std::ranges::find(content.gameMode.items, itemId, &Core::ItemNode::itemId);
+		JETTISON_VERIFY(item != content.gameMode.items.end());
+		return item->unitsPerCubicMetre / static_cast<double>(Core::kTotesPerIbc);
+	};
+	rules->oxygenPerTote = perTote(lifeSupport.oxygenItemId);
+	rules->cartridgesPerTote = perTote(lifeSupport.cartridgeItemId);
+
 	requests.Register<Provision>(
 	    std::string{kProvision}, kVersion, Command::ActorKind::Administrator,
-	    [rules](SimWorld &world, const Actor & /*actor*/, const Provision &provision)
-	    { return Provisioned(world, *rules, provision); });
+	    [rules](SimWorld &target, const Actor & /*actor*/, const Provision &provision)
+	    { return Provisioned(target, *rules, provision); });
 	requests.Register<Move>(
 	    std::string{kLoad}, kVersion, Command::ActorKind::Principal,
-	    [rules](SimWorld &world, const Actor &actor, const Move &move)
-	    { return Moved(world, *rules, actor, move, true); });
+	    [rules](SimWorld &target, const Actor &actor, const Move &move)
+	    { return Moved(target, *rules, actor, move, true); });
 	requests.Register<Move>(
 	    std::string{kUnload}, kVersion, Command::ActorKind::Principal,
-	    [rules](SimWorld &world, const Actor &actor, const Move &move)
-	    { return Moved(world, *rules, actor, move, false); });
+	    [rules](SimWorld &target, const Actor &actor, const Move &move)
+	    { return Moved(target, *rules, actor, move, false); });
+	requests.Register<Service>(
+	    std::string{kRefill}, kVersion, Command::ActorKind::Principal,
+	    [rules](SimWorld &target, const Actor &actor, const Service &service)
+	    { return Refilled(target, *rules, actor, service); });
+	requests.Register<Service>(
+	    std::string{kReplace}, kVersion, Command::ActorKind::Principal,
+	    [rules](SimWorld &target, const Actor &actor, const Service &service)
+	    { return Replaced(target, *rules, actor, service); });
+
+	world.RegisterSystem(
+	    {.name = std::string{kLifeSupportSystem},
+	     .phase = Jettison::Ecs::TickPhase::Simulation,
+	     .access =
+	         Jettison::Ecs::Access::Of<World::LifeSupport, World::Ship>().Writing<World::LifeSupport>(),
+	     .after = {std::string{Travel::kSystem}},
+	     .run = [rules](entt::registry &registry, double step) { Breathe(registry, *rules, step); }});
 }
 } // namespace Manifest::Company

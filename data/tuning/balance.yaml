@@ -53,6 +53,9 @@ production:
 lifeSupport:
   oxygenKilogramsPerOccupantDay: 1
   cartridgeOccupantDays: 30
+  # What Refill and Replace take from a ship's hold (D-094).
+  oxygenItemId: ItemOxygen
+  cartridgeItemId: ItemCarbonScrubberCartridge
 
 company:
   # A new player's trading company's account, in whole credits (D-077): about a full hold of grain

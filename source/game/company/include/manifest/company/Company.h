@@ -13,9 +13,11 @@ namespace Manifest::Company
 {
 // The administrative command that provisions a player (D-089): their Principal, a company with the
 // configured starting credits, and one ship of the scenario's starter hull, parked on a pad of its
-// starter venue (Travel::Fleet::Park) with an empty hold; no region or polity. Rejected
+// starter venue (Travel::Fleet::Park) with an empty hold, every oxygen tank full and every cartridge
+// fresh, once, and connected to the venue's life support (D-047); no region or polity. Rejected
 // AlreadyProvisioned for a principal the world has, NoPadFree with no free pad there the starter
-// fits, and MalformedPayload for an empty principal ID.
+// fits, NoServiceFree with no life-support connection free there, and MalformedPayload for an empty
+// principal ID.
 struct Provision
 {
 	std::string principalId;
@@ -29,8 +31,9 @@ struct Provision
 // ship (UnknownTarget), that the sender's company owns it (NotAuthorised), that it is docked
 // (NotDocked) at the venue (WrongVenue), the scenario's item (UnknownTarget), a count above 0
 // (InvalidQuantity), enough available to move, reserved goods not counted (InsufficientStock), and
-// room for them: the hull's hold on loading, the warehouse's kMaxWarehouseTotes on unloading, less
-// what the company's resting buy orders there may still fill (CapacityExceeded).
+// room for them: the hull's hold, its opened totes taking a tote each, on loading, the warehouse's
+// kMaxWarehouseTotes on unloading, less what the company's resting buy orders there may still fill
+// (CapacityExceeded).
 struct Move
 {
 	std::string shipId;
@@ -39,18 +42,39 @@ struct Move
 	std::uint64_t totes{0};
 };
 
+// The players' commands that resupply their company's ship's life support from its own hold, wherever
+// it is (D-094). Refill fills its oxygen tanks, in order, from the tuning's oxygen item: an opened
+// tote's first, then whole totes opened one at a time, what a tote has left kept opened in the hold.
+// Replace takes one cartridge the same way and installs it fresh in place of the installed one with
+// the least left, which is thrown away with what it had. Each checks before it writes: the ship
+// (UnknownTarget), that the sender's company owns it (NotAuthorised), a hull with tanks to fill, not
+// full, or cartridges to replace (CapacityExceeded), and the goods aboard (InsufficientStock).
+struct Service
+{
+	std::string shipId;
+};
+
 inline constexpr std::string_view kProvision = "Manifest.Company.Provision";
 inline constexpr std::string_view kLoad = "Manifest.Company.Load";
 inline constexpr std::string_view kUnload = "Manifest.Company.Unload";
+inline constexpr std::string_view kRefill = "Manifest.Company.Refill";
+inline constexpr std::string_view kReplace = "Manifest.Company.Replace";
+
+// The system, by the name the step's table gives it: after manifest.travel, it lets go of the
+// life-support connection of each ship no longer docked at its venue, connects each docked ship while
+// the venue has a connection free (Content::VenueDefinition::lifeSupportCapacity), in entity order,
+// and draws each unconnected ship's step of use from its own tanks and cartridges, in order: the
+// tuning's rates times its hull's occupants, never more than is left (D-046, D-094).
+inline constexpr std::string_view kLifeSupportSystem = "manifest.lifeSupport";
 inline constexpr std::uint32_t kVersion = 1;
 
 // The payloads, with Reflect, and the command types. Safe to call again.
 void RegisterTypes();
 
-// Registers the commands with the requests. The identities, the fleet and the content, whose
-// scenario they run on, must outlive the world. Throws std::invalid_argument for a content set with
-// no scenario selected.
+// Registers the commands with the requests, and the life-support system after manifest.travel. The
+// identities, the fleet and the content, whose scenario they run on, must outlive the world. Throws
+// std::invalid_argument for a content set with no scenario selected.
 void RegisterCommands(
-    Command::Requests &requests, World::Identities &identities, const Travel::Fleet &fleet,
-    const Content::ContentSet &content);
+    Jettison::Sim::SimWorld &world, Command::Requests &requests, World::Identities &identities,
+    const Travel::Fleet &fleet, const Content::ContentSet &content);
 } // namespace Manifest::Company

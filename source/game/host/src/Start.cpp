@@ -106,7 +106,7 @@ class Game final : public Jettison::Host::Game
 		m_pIdentities = &World::RegisterWorld(world);
 		m_pRequests = &Command::RegisterRequests(world, *m_pIdentities);
 		m_pFleet = &Travel::Register(world, *m_pRequests, *m_pIdentities, m_content);
-		Company::RegisterCommands(*m_pRequests, *m_pIdentities, *m_pFleet, m_content);
+		Company::RegisterCommands(world, *m_pRequests, *m_pIdentities, *m_pFleet, m_content);
 		Trade::Register(world, *m_pRequests, *m_pIdentities, m_content);
 	}
 

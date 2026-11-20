@@ -386,6 +386,16 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	CheckRefused(
 	    balance, "version: 1\nproduction: {wageShare: 1}\n", "production.wageShare must be in [0, 1)");
 	CheckRefused(
+	    balance, "version: 1\nlifeSupport: {oxygenItemId: ItemNothing}\n",
+	    "'ItemNothing' names no item traded in its unit");
+	// Water is by the kilolitre, and a tank holds kilograms.
+	CheckRefused(
+	    balance, "version: 1\nlifeSupport: {oxygenItemId: ItemDrinkingWater}\n",
+	    "'ItemDrinkingWater' names no item traded in its unit");
+	CheckRefused(
+	    balance, "version: 1\nlifeSupport: {cartridgeItemId: ItemOxygen}\n",
+	    "'ItemOxygen' names no item traded in its unit");
+	CheckRefused(
 	    balance, "version: 1\nprocurement: {performanceSecurityRate: -0.1}\n",
 	    "procurement.performanceSecurityRate must be in [0, 1]");
 	CheckRefused(

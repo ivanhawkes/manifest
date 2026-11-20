@@ -118,6 +118,10 @@ struct LifeSupportTuning
 {
 	double oxygenKilogramsPerOccupantDay{0.0};
 	double cartridgeOccupantDays{0.0};
+	// The goods a ship's tanks are refilled with, by the kilogram, and its scrubber's cartridges, by
+	// the piece (D-094).
+	std::string oxygenItemId;
+	std::string cartridgeItemId;
 };
 
 // A player's trading company as provisioning creates it.

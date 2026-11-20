@@ -201,7 +201,9 @@ void RegisterTypes()
 		RegisterType<LifeSupportTuning>("Manifest.LifeSupportTuning")
 		    .Field<&LifeSupportTuning::oxygenKilogramsPerOccupantDay>(
 		        "oxygenKilogramsPerOccupantDay", kDefined)
-		    .Field<&LifeSupportTuning::cartridgeOccupantDays>("cartridgeOccupantDays", kDefined);
+		    .Field<&LifeSupportTuning::cartridgeOccupantDays>("cartridgeOccupantDays", kDefined)
+		    .Field<&LifeSupportTuning::oxygenItemId>("oxygenItemId", kDefined)
+		    .Field<&LifeSupportTuning::cartridgeItemId>("cartridgeItemId", kDefined);
 		RegisterType<CompanyTuning>("Manifest.CompanyTuning")
 		    .Field<&CompanyTuning::startingCredits>("startingCredits", kDefined);
 		RegisterType<MarketTuning>("Manifest.MarketTuning")

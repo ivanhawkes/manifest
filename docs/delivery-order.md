@@ -63,7 +63,11 @@ W04 is done (2026-11-20): the [regional economy](stage-4-trading-plan.md#deliver
 each region's employer making its goods in batches whose wages it reserves and pays, selling them to
 its broker, and its households buying their essentials and then their optional goods through the
 book, their shortages moving health and happiness and so the work rate, on the same pin with no
-engine edit; every region trades the essentials ([D-092](decision-ledger.md#d-092)). Next: W06.
+engine edit; every region trades the essentials ([D-092](decision-ledger.md#d-092)). W06 is done
+(2026-11-20): [station life support](stage-4-trading-plan.md#delivered-w06-2026-11-20), a ship
+connected as it docks while its venue has a connection free and drawing its own oxygen and cartridges
+off it, refilled and replaced from its own hold ([D-094](decision-ledger.md#d-094)), a new player
+spawning connected, on the same pin with no engine edit. Next: W07.
 
 ## Priority 0: maintenance before Stage 1
 
@@ -168,7 +172,7 @@ Canonical scope: [Stage 4](stage-4-trading-plan.md), with the
 | 34b / W16 | Onboarding by [D-089](decision-ledger.md#d-089): provisioning gives a company, the starting credits and the starter ship parked at a neutral public spaceport the scenario names, with no home region or polity; retire `playerHome` allocation, `NoHomeRegion` and the home-venue rule, and move W13's home regions to founding by acquisition. Founding a homeworld is its own later task under the acquisition rules. **Done 2026-11-20**, [history](history.md#w16-onboarding-at-a-neutral-spaceport--2026-11-20). | W05 |
 | 35 / W15 | Vertical slice: in the trading fixture, one company ship buys at one venue, departs, cruises, docks and sells at the other through the public commands, on W03's settlement and W05's travel; no production, life support, observations or upgrades yet. Played through the console, it shows the loop end to end before W04 and W06–W08 build around it; W09 later proves the complete fixture. **Done 2026-11-20**, [delivered](stage-4-trading-plan.md#delivered-w15-2026-11-20). | W03, W05 |
 | 36 / W04 | Integrate local production, finite brokers/demand, regional payroll/tax, essential purchases and health/happiness in the selected fixed-step order; eliminate automatic inter-venue stock transfers. **Done 2026-11-20**, [delivered](stage-4-trading-plan.md#delivered-w04-2026-11-20), every region trading the essentials ([D-092](decision-ledger.md#d-092)). | W03 |
-| 37 / W06 | Implement working station life-support connections, onboard usage and explicit resupply under the resolved physical/accounting rules; preserve one-time starter grants. | W04, W05 |
+| 37 / W06 | Implement working station life-support connections, onboard usage and explicit resupply under the resolved physical/accounting rules; preserve one-time starter grants. **Done 2026-11-20**, [delivered](stage-4-trading-plan.md#delivered-w06-2026-11-20), on the user's choices ([D-094](decision-ledger.md#d-094)). | W04, W05 |
 | 38 / W07 | Implement live/stale observations, spawn reports for every directly connected station market, report age and actor filtering across queries and trader/script facts. | W03, W05, A05 |
 | 39 / W08 | Implement company-funded cargo upgrades without sharing regional/civilisation funds; prove retry-safe payment/capacity changes. | W03, A04 |
 | 40 / W09 | Prove the complete public-command buy → load → travel → dock → unload → sell → upgrade fixture, including directory/pack and cross-build replay. | W04, W05, W06, W07, W08 |

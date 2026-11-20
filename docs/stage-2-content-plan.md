@@ -566,8 +566,9 @@ resuming from retained reserves. Split elapsed intervals at authoritative connec
 service transitions so neither supply is double-debited or silently skipped. Connection,
 docking, reconnect and recovery cannot refill tanks or restore cartridges. Explicit
 resupply must conserve actual stock and ownership separately. Persist connection/service
-state for replay; transition ordering, service accounting and exhaustion behaviour need
-resolution before implementation. No free refill or station resource model is selected.
+state for replay; transition ordering and service accounting are resolved by
+[D-094](decision-ledger.md#d-094) (W06), and exhaustion behaviour is still open. No free refill or
+station resource model is selected.
 Verify the berth charge includes connected life-support service without a separate ongoing
 life-support charge. Refills and replacement cartridges must have distinct authorised
 purchase/resupply accounting and cannot be delivered or billed merely because a ship
@@ -578,8 +579,8 @@ Implementer evidence must distinguish machinery, oxygen inventory and cartridges
 capacity. Replacement must debit an actual accessible fresh cartridge once and apply its
 declared capacity without duplicating inventory, removing the machinery or replenishing
 oxygen. Preserve remaining supplies/capacity across save/replay and ship transfers rather
-than resetting them on docking, reconnect or reload. Resolve replacement timing, access,
-partial cartridges and spent-item handling before implementing those operations. Existing
+than resetting them on docking, reconnect or reload. Replacement timing, access, partial
+cartridges and spent-item handling are [D-094](decision-ledger.md#d-094)'s (W06). Existing
 life-support skill/effect IDs remain stable; their presence does not implement consumable
 accounting or select these new values.
 Verify the oxygen definition uses `Kilogram`, independent oxygen mass in quotes/stock/

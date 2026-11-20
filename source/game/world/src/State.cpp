@@ -71,6 +71,18 @@ std::optional<std::string> Broken(const Cargo &cargo)
 		if (at > 0 && cargo.lots[at - 1].itemId >= lot.itemId)
 			return "the lots are out of order or held twice";
 	}
+	for (std::size_t at = 0; at < cargo.opened.size(); ++at)
+	{
+		const Opened &opened = cargo.opened[at];
+		if (opened.itemId.empty() || !std::isfinite(opened.quantity) || opened.quantity <= 0.0)
+			return "an opened tote names no item or holds nothing";
+		if (carried == Core::kMaxHoldTotes)
+			return std::format(
+			    "the lots and opened totes are over a hold's {} totes", Core::kMaxHoldTotes);
+		++carried;
+		if (at > 0 && cargo.opened[at - 1].itemId >= opened.itemId)
+			return "the opened totes are out of order or opened twice";
+	}
 	return std::nullopt;
 }
 
@@ -127,6 +139,16 @@ std::optional<std::string> Broken(const Pantry &pantry)
 			return "an unmet need names no need or is below 0";
 	if (!std::isfinite(pantry.severity) || pantry.severity < 0.0 || pantry.severity > 1.0)
 		return "a pantry's severity is not in [0, 1]";
+	return std::nullopt;
+}
+
+
+std::optional<std::string> Broken(const LifeSupport &lifeSupport)
+{
+	for (const std::vector<double> *const reserve : {&lifeSupport.tanks, &lifeSupport.cartridges})
+		for (const double left : *reserve)
+			if (!std::isfinite(left) || left < 0.0)
+				return "a tank or a cartridge holds less than nothing, or no number";
 	return std::nullopt;
 }
 
@@ -206,7 +228,16 @@ void RegisterTypes()
 		RegisterType<Lot>("Manifest.World.Lot")
 		    .Field<&Lot::itemId>("itemId", kSaved)
 		    .Field<&Lot::totes>("totes", kSaved);
-		RegisterType<Cargo>("Manifest.World.Cargo").Field<&Cargo::lots>("lots", kSaved);
+		RegisterType<Opened>("Manifest.World.Opened")
+		    .Field<&Opened::itemId>("itemId", kSaved)
+		    .Field<&Opened::quantity>("quantity", kSaved);
+		RegisterType<Cargo>("Manifest.World.Cargo")
+		    .Field<&Cargo::lots>("lots", kSaved)
+		    .Field<&Cargo::opened>("opened", kSaved);
+		RegisterType<LifeSupport>("Manifest.World.LifeSupport")
+		    .Field<&LifeSupport::tanks>("tanks", kSaved)
+		    .Field<&LifeSupport::cartridges>("cartridges", kSaved)
+		    .Field<&LifeSupport::connectedTo>("connectedTo", kSaved);
 		RegisterType<Broker>("Manifest.World.Broker").Field<&Broker::operatorId>("operatorId", kSaved);
 		RegisterEnum<Side>("Manifest.World.Side").Value<Side::Buy>("Buy").Value<Side::Sell>("Sell");
 		RegisterType<Order>("Manifest.World.Order")
@@ -234,9 +265,6 @@ void RegisterTypes()
 		RegisterType<Production>("Manifest.World.Production")
 		    .Field<&Production::batches>("batches", kSaved)
 		    .Field<&Production::taxCarry>("taxCarry", kSaved);
-		RegisterType<Opened>("Manifest.World.Opened")
-		    .Field<&Opened::itemId>("itemId", kSaved)
-		    .Field<&Opened::quantity>("quantity", kSaved);
 		RegisterType<Unmet>("Manifest.World.Unmet")
 		    .Field<&Unmet::needId>("needId", kSaved)
 		    .Field<&Unmet::quantity>("quantity", kSaved);
