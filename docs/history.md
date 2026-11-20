@@ -100,6 +100,16 @@ cargo's lots are bounded together (`world`), and a ship's cargo against its hull
 `CargoVolume`, whose empty map was taken for none given; a hull the map does not name now carries
 nothing (`company`). Round 7 approved with no finding open.
 
+## L26: the console's long step — 2026-11-20
+
+On pin `9e0274f`, with one engine provision. `step` runs a slice at a time beside the frontend,
+with its progress in the TUI and `stop` to end it
+([what it chose and its evidence](stage-4-trading-plan.md#delivered-l26-2026-11-20)). Profiled, a
+cruising step was 26 µs, nearly half of it Jettison evaluating a station's orbit once for each
+entity on its rails; placed once a body there, it is 13 µs, and `step-budget` fails a release
+build's step above half as much again. Asked whether Manifest's systems could run less often for the
+same results, the profile said they are under 5% of a step: what costs is the engine's movement.
+
 ## W08: company-funded cargo upgrades — 2026-11-20
 
 On pin `54fb871`, with no engine edit. `Upgrade` buys a tier of an offer, a new versioned

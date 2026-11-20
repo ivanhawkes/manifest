@@ -75,7 +75,10 @@ systems directly connected to it ([D-095](decision-ledger.md#d-095)), on the sam
 edit. W08 is done (2026-11-20): [company-funded cargo upgrades](stage-4-trading-plan.md#delivered-w08-2026-11-20),
 a tier of cargo holds bought with the company's own credits for its docked ship, once, its hold
 computed from its hull and its systems, and a hull's authored mass ([D-096](decision-ledger.md#d-096)),
-on the same pin with no engine edit. Next: W09.
+on the same pin with no engine edit. L26 is done (2026-11-20):
+[the console's long step](stage-4-trading-plan.md#delivered-l26-2026-11-20) is taken a slice at a
+time and stoppable, and a rails body placed once a step in Jettison halved a cruising step, on pin
+`9e0274f`. Next: W09.
 
 ## Priority 0: maintenance before Stage 1
 
@@ -253,7 +256,8 @@ retry coverage in its own delivery, rather than treating Stage 5 as permanently 
 | 76 / L23 | Cargo insurance policies, with claims paid on cargo lost to piracy ([plan](economy-and-development-plan.md#further-market-services-selected-2026-11-19)). | W09 and a cargo-loss mechanic; settle premiums, cover and claims. |
 | 77 / L24 | Auctions for goods left with unpaid storage fees, seized cargo and salvage ([plan](economy-and-development-plan.md#further-market-services-selected-2026-11-19)). | L16; settle the auction form and what is sold. |
 | 78 / L25 | Escrow and letters of credit for players trading with each other directly ([plan](economy-and-development-plan.md#further-market-services-selected-2026-11-19)). | N03 and direct player trading; settle the terms first. |
-| 80 / L26 | The console's long step ([W15](stage-4-trading-plan.md#delivered-w15-2026-11-20), the user's, 2026-11-20): `step 5d` blocks the console and the TUI until it ends, with no progress and no way to stop it, and Ore to Brine on the manned profile costs 9 min 35 s of a release build (about 25 µs a step). Step beside the frontend, showing progress and stoppable, and profile where a step's time goes; a reusable cost found in Jettison's systems is provisioned there. | Before the next task that plays a long journey through the console, at the latest W09's fixture. |
+| 80 / L26 | The console's long step ([W15](stage-4-trading-plan.md#delivered-w15-2026-11-20), the user's, 2026-11-20): `step 5d` blocks the console and the TUI until it ends, with no progress and no way to stop it, and Ore to Brine on the manned profile costs 9 min 35 s of a release build (about 25 µs a step). Step beside the frontend, showing progress and stoppable, and profile where a step's time goes; a reusable cost found in Jettison's systems is provisioned there. | Before the next task that plays a long journey through the console, at the latest W09's fixture. **Done 2026-11-20**, [delivered](stage-4-trading-plan.md#delivered-l26-2026-11-20). |
+| 81 / L27 | A fast-forward over quiet steps ([L26](stage-4-trading-plan.md#delivered-l26-2026-11-20), the user's, 2026-11-20): a cruising step is 13 µs, nearly all of it Jettison's movement and under 5% Manifest's systems, so running Manifest's own less often saves little. Jettison provisions the world going straight to the next step any system must run at while nothing but motion by formula is under way, to the same bits as stepping there ([Jettison's roadmap](../../jettison/docs/roadmap.md#first-what-saves-and-the-simulations-interface-hold)); Manifest's systems then say when they next must run (a batch due, an order lapsing, a journey ending), and its console and server use it. | Decided before W10, whose traders and NPC jobs add work to every step. |
 | 79 / L17 | Stretch goal: options and futures on a market's goods ([plan](economy-and-development-plan.md#options-and-futures-stretch-goal), [D-073](decision-ledger.md#d-073)). | L16, L21, R09; select settlement, margin and default rules before scheduling. |
 
 L05 does not require buying the region in L03: existing eligibility permits construction

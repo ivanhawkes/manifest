@@ -57,6 +57,10 @@ build tree. Running `bash data/build.sh` manually writes to the source-tree `dat
 The console suite checks command registration, quoted paths and names, completion and history,
 typed errors, numeric bounds, configuration reloads and the load/generate/tick/trade-planning
 workflow. Run it without a terminal using `ctest --preset clang-debug -R '^console$'`.
+`step-budget` runs one of its cases alone (`RUN_SERIAL`): a cruising hosted step, timed in an
+optimised build without sanitisers and not on CI, fails above half as much again as the figure
+measured on Lythir ([L26](stage-4-trading-plan.md#delivered-l26-2026-11-20)). A change that makes the
+step dearer on purpose measures it again and moves the figure.
 
 `MANIFEST_BUILD_TUI=OFF` omits the terminal and FTXUI; an SDK without presentation also omits the
 development console, which is built on the engine's.

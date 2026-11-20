@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -27,7 +28,7 @@ namespace Manifest::Tools
 // Rendering, refresh and transcripts belong to the frontend; no terminal is needed here.
 // Two kinds of command, kept apart: the sandbox's (generate, tick, upgrade and the rest) play the
 // local development simulation, which no player shares; the hosted ones (host, observe, provision,
-// cargo, trade, cancel, travel, step) go through the hosted world's admission and queries, as a
+// cargo, trade, cancel, travel, step, stop) go through the hosted world's admission and queries, as a
 // player's would, and book shows a venue's orders as the host sees them, a development view, where a
 // player's observe shows only their own market reports (W07). There is at most one hosted world, the
 // one host started, and nothing in the sandbox reaches it. Connected to a server (connect), observe and
@@ -74,12 +75,27 @@ class ManifestConsole
 		return m_pRemote.get();
 	}
 
-	// What the server sent since the last call, as lines for the frontend to print: the welcome,
-	// each request's receipt and outcome, and why the connection closed. Never blocks.
+	// The run of steps under way (step), as the steps it has taken and the steps it asked for.
+	std::optional<std::pair<std::uint64_t, std::uint64_t>> Stepping() const;
+
+	// What happened since the last call, as lines for the frontend to print: a run of steps carried
+	// on for at most a slice and its report once it ends, then what the server sent, the welcome,
+	// each request's receipt and outcome, and why the connection closed. A frontend calls it often
+	// while a run is under way; it waits for nothing.
 	std::vector<std::string> Poll();
 
   private:
 	using Arguments = std::span<const std::string>;
+
+	// A run of steps, taken a slice at a time so that the frontend reads its input between them.
+	struct Run
+	{
+		std::uint64_t steps{};
+		std::uint64_t taken{};
+		// The ships on a journey since the run began; the first whose journey ends ends the run.
+		std::vector<entt::entity> underWay;
+		entt::entity ended{entt::null};
+	};
 	using Handler = std::function<std::string(Arguments)>;
 
 	void RegisterCommands();
@@ -109,6 +125,11 @@ class ManifestConsole
 	std::string CommandFit(Arguments arguments);
 	std::string CommandBook(Arguments arguments);
 	std::string CommandStep(Arguments arguments);
+	std::string CommandStop();
+	// Steps the run for at most the budget; true once it is over.
+	bool Advance(std::chrono::milliseconds budget);
+	// What the run did, and the requests it ran; the run is over.
+	std::string StepReport(bool stopped);
 	std::string CommandConnect(const std::string &endpoint, const std::string &token);
 	std::string CommandDisconnect();
 	std::string Admit(
@@ -136,6 +157,7 @@ class ManifestConsole
 	std::unique_ptr<Jettison::Host::Session> m_pHosted;
 	// Requests admitted here whose results step has not yet printed, oldest first.
 	std::vector<std::pair<Command::Actor, std::uint64_t>> m_unreported;
+	std::optional<Run> m_run;
 
 	std::unique_ptr<Remote::Client> m_pRemote;
 	std::string m_remoteEndpoint;

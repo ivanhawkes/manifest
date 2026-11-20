@@ -71,6 +71,8 @@ constexpr double kStepSeconds = 1.0 / 60.0;
 constexpr double kDaySeconds = 86400.0;
 // The longest step asks for, in simulation seconds: a cruise between worlds takes days (D-090).
 constexpr double kMostSeconds = 60 * kDaySeconds;
+// How long a run of steps holds the frontend at a time: its input is read between slices.
+constexpr std::chrono::milliseconds kSlice{50};
 
 double Days(std::uint64_t steps)
 {
@@ -313,8 +315,12 @@ void ManifestConsole::RegisterCommands()
 	RegisterCommand(
 	    "step",
 	    "step [count|time]: advances the hosted world, by steps or a time such as 6h or 4d, stopping "
-	    "when a journey ends, and reports what ran (default 1)",
+	    "when a journey ends, and reports what ran (default 1); a long run goes on beside the "
+	    "console until it ends or stop",
 	    0, 1, [this](Arguments arguments) { return CommandStep(arguments); });
+	RegisterCommand(
+	    "stop", "stop: ends the run of steps under way at the step it has reached, and reports it", 0,
+	    0, [this](Arguments) { return CommandStop(); });
 	RegisterCommand(
 	    "connect", "connect <host:port> <token>: plays on a server as the token's actor", 2, 2,
 	    [this](Arguments arguments) { return CommandConnect(arguments[0], arguments[1]); });
@@ -653,6 +659,8 @@ Jettison::Host::Session &ManifestConsole::Hosted()
 
 std::string ManifestConsole::CommandHost(const std::string &scenario)
 {
+	if (m_run)
+		throw std::runtime_error{"Stepping: stop first."};
 	// A failed start keeps the hosted world there was; the replaced one shuts down with its requests.
 	std::unique_ptr<Jettison::Host::Session> hosted = Host::Start({m_contentSource, {}, scenario});
 	m_pHosted = std::move(hosted);
@@ -874,29 +882,71 @@ std::string ManifestConsole::CommandBook(Arguments arguments)
 
 std::string ManifestConsole::CommandStep(Arguments arguments)
 {
-	Jettison::Host::Session &hosted = Hosted();
+	if (m_pRemote)
+		throw std::runtime_error{"Connected: the server steps its own world; disconnect first."};
+	if (m_run)
+		throw std::runtime_error{"Already stepping: stop first."};
 	const std::uint64_t steps = ParseSteps(arguments);
-	Jettison::Sim::SimWorld &world = hosted.World();
-	// A ship whose journey ends stops the stepping, at the step it ended.
-	std::vector<entt::entity> underWay;
-	entt::entity ended = entt::null;
-	for (std::uint64_t index = 0; index < steps && ended == entt::null; ++index)
+	(void)Hosted();
+	const std::uint64_t from = *HostedStep();
+	m_run = Run{};
+	m_run->steps = steps;
+	try
+	{
+		if (Advance(kSlice))
+			return StepReport(false);
+	}
+	catch (const std::exception &)
+	{
+		m_run.reset();
+		throw;
+	}
+	return std::format(
+	    "Stepping from step {} to step {}, or until a journey ends: stop ends it sooner.", from,
+	    from + steps);
+}
+
+
+std::string ManifestConsole::CommandStop()
+{
+	if (!m_run)
+		throw std::runtime_error{"Not stepping."};
+	return StepReport(true);
+}
+
+
+bool ManifestConsole::Advance(std::chrono::milliseconds budget)
+{
+	Jettison::Sim::SimWorld &world = Hosted().World();
+	Run &run = *m_run;
+	const auto until = std::chrono::steady_clock::now() + budget;
+	while (run.taken < run.steps && run.ended == entt::null && std::chrono::steady_clock::now() < until)
 	{
 		world.Step();
+		++run.taken;
 		// What the engine raises is presentation's; the console reports from the world instead.
 		(void)world.Events().Take();
 		for (const auto &[entity, journey] : world.Registry().view<const World::Journey>().each())
 		{
-			const bool known = std::ranges::find(underWay, entity) != underWay.end();
+			const bool known = std::ranges::find(run.underWay, entity) != run.underWay.end();
 			if (!journey.Ended() && !known)
-				underWay.push_back(entity);
+				run.underWay.push_back(entity);
 			else if (journey.Ended() && known)
-				ended = entity;
+				run.ended = entity;
 		}
 	}
+	return run.taken == run.steps || run.ended != entt::null;
+}
 
+
+std::string ManifestConsole::StepReport(bool stopped)
+{
+	Jettison::Host::Session &hosted = Hosted();
+	Jettison::Sim::SimWorld &world = hosted.World();
+	const entt::entity ended = std::exchange(m_run, std::nullopt)->ended;
 	const Command::Requests &requests = Host::HostedServices(hosted).requests;
-	std::string report = std::format("Hosted world at step {}.", *HostedStep());
+	std::string report =
+	    std::format("{} world at step {}.", stopped ? "Stopped: hosted" : "Hosted", *HostedStep());
 	if (ended != entt::null)
 	{
 		const auto &journey = world.Registry().get<World::Journey>(ended);
@@ -921,8 +971,18 @@ std::string ManifestConsole::CommandStep(Arguments arguments)
 }
 
 
+std::optional<std::pair<std::uint64_t, std::uint64_t>> ManifestConsole::Stepping() const
+{
+	if (!m_run)
+		return std::nullopt;
+	return std::pair{m_run->taken, m_run->steps};
+}
+
+
 std::string ManifestConsole::CommandConnect(const std::string &endpoint, const std::string &token)
 {
+	if (m_run)
+		throw std::runtime_error{"Stepping: stop first."};
 	const std::size_t colon = endpoint.rfind(':');
 	if (colon == std::string::npos || colon == 0)
 		throw std::runtime_error{std::format("expected host:port, got '{}'", endpoint)};
@@ -952,6 +1012,20 @@ std::string ManifestConsole::CommandDisconnect()
 std::vector<std::string> ManifestConsole::Poll()
 {
 	std::vector<std::string> lines;
+	if (m_run)
+	{
+		try
+		{
+			if (Advance(kSlice))
+				lines.push_back(StepReport(false));
+		}
+		catch (const std::exception &error)
+		{
+			// As a step the command ran would: the error, the world where the step left it.
+			m_run.reset();
+			lines.push_back(std::format("Stepping ended at step {}: {}", *HostedStep(), error.what()));
+		}
+	}
 	if (!m_pRemote)
 		return lines;
 	const bool welcomed = m_pRemote->Welcomed().has_value();

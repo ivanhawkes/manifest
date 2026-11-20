@@ -830,6 +830,41 @@ observations (W09); the long-haul trader's tiers and every other offer, which no
 a hull's systems refitted or taken off, which no command does; and what a hull's systems add to its
 mass.
 
+## Delivered: L26, 2026-11-20
+
+The console's long step, on pin `9e0274f` with one engine provision:
+
+- **Beside the frontend.** `step` takes its run a slice at a time, at most 50 ms, so a short step
+  reports at once as before and a long one answers with where it goes and carries on from the
+  frontend's `Poll`, which the TUI calls again at once while a run is under way; the console reads
+  its input between slices, and a request queued then runs at the run's next step. `stop` ends the
+  run at the step it reached, with the same report (`Stopped: hosted world at step N.`). The TUI's
+  pane shows the run's progress. `step` is refused while connected, since the server steps its own
+  world and no client steps it, an administrator included, and while a run is under way; `host`
+  and `connect` are refused while one is.
+- **Where a step's time went.** Profiled (`perf`, a release build with frame pointers) over three
+  hours of Ore to Brine's cruise on the manned profile: 26 µs a step, about 45% of it Jettison
+  evaluating orbits, since physics placed each pad, deck and buggy on a station's rails by the
+  station's whole orbit chain; Manifest's systems together were under 5%, the trade's 1.7%. The
+  engine now places a rails body once a step for everything on it, to the same bits
+  ([Jettison's history](../../jettison/docs/history.md#neutral-sdk-and-manifest-integration)): 13 µs
+  a step, Ore to Brine about 4 min 50 s. What is left is the engine's movement, spread over Jolt's
+  update of each frame's world, the docks, the spatial index and the cruise.
+- **The budget.** `step-budget`, a ctest of its own run serially, times a cruising step in an
+  optimised build without sanitisers, the best of five batches of 20,000, and fails above half as
+  much again as the 13.2 µs measured on Lythir; it does not time on CI, whose machines are not
+  Lythir's, nor in a debug or sanitised build.
+
+Evidence, in the `console` suite: sixty days asked for answer at once with the run under way; the
+world steps between polls; observe and a queued load run mid-run, the load's outcome in the report
+`stop` prints; `step`, `host` and `connect` refused while stepping and `stop` with nothing
+running; and connected as the administrator, `step` refused. The vertical slice's `step 1d` runs
+through the same slices. Every pinned hash held across the pin.
+
+Left: an admin's control of a server's time (a pause or a scale), which no message carries; and
+the step's remaining cost, the engine's movement, which a fast-forward over quiet steps would cut
+rather than any rate of Manifest's own.
+
 ## Handoff to stage 5
 
 Carry forward the exact scheduler order, command/result schema, content manifest,

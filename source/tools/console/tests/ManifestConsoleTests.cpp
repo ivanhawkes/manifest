@@ -2,10 +2,13 @@
 
 #include <doctest/doctest.h>
 
+#include <algorithm>
 #include <chrono>
+#include <cstdlib>
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <limits>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -24,9 +27,13 @@ using Manifest::Tools::ManifestConsole;
 
 namespace
 {
+// A run of steps the command started is carried to its end, as a frontend polling would.
 ConsoleLine Execute(ManifestConsole &session, std::string_view command)
 {
 	session.GetConsole().Execute(command);
+	while (session.Stepping())
+		for (std::string &line : session.Poll())
+			session.GetConsole().Print(std::move(line));
 	const auto lines = session.GetConsole().Lines();
 	REQUIRE_FALSE(lines.empty());
 	return lines.back();
@@ -64,7 +71,7 @@ TEST_CASE("Manifest console: help, completion, history and clear use the shell's
 	auto &console = session.GetConsole();
 	CHECK(
 	    console.Complete("s") ==
-	    std::vector<std::string>{"service", "show", "skills", "status", "step"});
+	    std::vector<std::string>{"service", "show", "skills", "status", "step", "stop"});
 	CHECK(console.CompleteLine("gen") == "generate ");
 	CHECK(console.CompleteLine("generate 2") == "generate 2");
 	CHECK(Execute(session, "help generate").text.find("generate [count] [seed]") != std::string::npos);
@@ -274,6 +281,50 @@ TEST_CASE("Manifest console: host replaces the one hosted world, and a failed ho
 }
 
 
+TEST_CASE("Manifest console: a long step goes on beside the console, which stop ends")
+{
+	ManifestConsole session{MANIFEST_MOD_DIRECTORY};
+	REQUIRE(Execute(session, "host trading").kind == ConsoleLine::Kind::Output);
+	REQUIRE(Execute(session, "provision Ada \"Ada Co\"").kind == ConsoleLine::Kind::Output);
+	Execute(session, "step");
+	CHECK(Execute(session, "stop").kind == ConsoleLine::Kind::Error);
+	// A line as a frontend runs it, the run it starts left to go on.
+	const auto run = [&](std::string_view command)
+	{
+		session.GetConsole().Execute(command);
+		return session.GetConsole().Lines().back();
+	};
+
+	// Sixty days are far more than a slice: the command answers at once and the run goes on.
+	CHECK(run("step 60d").text.starts_with("Stepping from step 1 to step 311040001"));
+	REQUIRE(session.Stepping());
+	CHECK(session.Stepping()->second == 311040000);
+	(void)session.Poll();
+	const std::uint64_t taken = session.Stepping()->first;
+	CHECK(taken > 0);
+	CHECK(session.HostedStep() == 1 + taken);
+
+	// The console takes commands between slices; a request queued now runs in the next slice.
+	MANIFEST_CHECK_CONTAINS(run("observe Ada").text, "Company1 'Ada Co'");
+	run("cargo load Ada Ship1 VenueOreHighport ItemCopper 1");
+	(void)session.Poll();
+	for (const std::string command : {"step", "host trading", "connect 127.0.0.1:1 token"})
+	{
+		CAPTURE(command);
+		CHECK(run(command).kind == ConsoleLine::Kind::Error);
+	}
+	const ConsoleLine stopped = run("stop");
+	CHECK(stopped.text.starts_with(
+	    std::format("Stopped: hosted world at step {}.", *session.HostedStep())));
+	MANIFEST_CHECK_CONTAINS(stopped.text, "Manifest.Company.Load: InsufficientStock");
+	CHECK_FALSE(session.Stepping());
+	CHECK(run("stop").kind == ConsoleLine::Kind::Error);
+	CHECK(
+	    Execute(session, "step").text ==
+	    std::format("Hosted world at step {}.", *session.HostedStep()));
+}
+
+
 TEST_CASE("Manifest console: connect plays on a server as the token's actor, and disconnect leaves it")
 {
 	const std::string adminToken = Jettison::Net::GenerateToken();
@@ -314,6 +365,8 @@ TEST_CASE("Manifest console: connect plays on a server as the token's actor, and
 
 	Execute(session, "connect " + endpoint + " " + adminToken);
 	CHECK(await("Connected") == "Connected to " + endpoint + " as Operator; your next request is 1.");
+	// The server steps its own world: no one connected steps it, an administrator included.
+	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "the server steps its own world");
 	CHECK(Execute(session, "provision Ada \"Ada Freight\"").text == "Sent request 1 to the server.");
 	CHECK(await("queued").starts_with("Request 1 queued in order 1"));
 	CHECK(await("Request 1:", true) == "Request 1: Succeeded at step 0.");
@@ -549,4 +602,49 @@ TEST_CASE("Manifest console: a ship's hold and systems in the view, and an upgra
 	MANIFEST_CHECK_CONTAINS(
 	    Execute(session, "step").text, "Manifest.Company.Upgrade: InsufficientFunds");
 	MANIFEST_CHECK_CONTAINS(Execute(session, "observe Ada").text, "Company1 'Ada Co': 25000 credits");
+}
+
+
+namespace
+{
+#if defined(NDEBUG) && !__has_feature(address_sanitizer)
+constexpr bool kOptimised = true;
+#else
+constexpr bool kOptimised = false;
+#endif
+// A hosted step's time as Ore to Brine cruises on the manned profile, in microseconds: the best of
+// the batches below in Lythir's release build, measured 2026-11-20 on pin `9e0274f` (L26).
+constexpr double kStepMicroseconds = 13.2;
+} // namespace
+
+// A step dearer than half as much again as it was fails. Timed only in an optimised build without
+// sanitisers, alone (its ctest runs serially), and not on CI, whose machines are not Lythir.
+TEST_CASE("Manifest console: a hosted step within its time budget" * doctest::skip())
+{
+	if (!kOptimised || std::getenv("CI") != nullptr)
+	{
+		MESSAGE("untimed: not an optimised build without sanitisers, or on CI");
+		return;
+	}
+	ManifestConsole session{MANIFEST_MOD_DIRECTORY};
+	REQUIRE(Execute(session, "host trading").kind == ConsoleLine::Kind::Output);
+	REQUIRE(Execute(session, "provision Ada \"Ada Co\"").kind == ConsoleLine::Kind::Output);
+	Execute(session, "step");
+	Execute(session, "travel Ada Ship1 VenueBrineHighport");
+	Execute(session, "step 2m");
+	MANIFEST_CHECK_CONTAINS(Execute(session, "observe Ada").text, "Cruising to VenueBrineHighport");
+
+	constexpr int kBatches = 5;
+	constexpr std::uint64_t kBatch = 20000;
+	double best = std::numeric_limits<double>::infinity();
+	for (int batch = 0; batch < kBatches; ++batch)
+	{
+		const auto start = std::chrono::steady_clock::now();
+		Execute(session, std::format("step {}", kBatch));
+		const std::chrono::duration<double, std::micro> taken =
+		    std::chrono::steady_clock::now() - start;
+		best = std::min(best, taken.count() / static_cast<double>(kBatch));
+	}
+	MESSAGE(std::format("{:.2f} microseconds a hosted step, against {:.2f}", best, kStepMicroseconds));
+	CHECK(best <= 1.5 * kStepMicroseconds);
 }

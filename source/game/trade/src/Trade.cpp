@@ -1144,7 +1144,8 @@ void Observe(SimWorld &world, const Rules &rules)
 		covered[ship.dockedAt].insert(registry.get<const World::Company>(company).principalId);
 	}
 	// shortcut: each covered venue's report is made afresh every step, a scan of the book each; a
-	// cheaper refresh (only what changed) when the long step (L26) is profiled and shows it.
+	// cheaper refresh (only what changed) when a profile shows it: at L26 all of Manifest's systems
+	// together were under 5% of a cruising step.
 	for (const auto &[venueId, principals] : covered)
 	{
 		const World::Report report = Capture(

@@ -17,4 +17,7 @@ if(MANIFEST_BUILD_TESTS AND BUILD_TESTING)
     add_dependencies(manifest_console_tests manifest_validate_pack)
     set_target_properties(manifest_console_tests PROPERTIES FOLDER "Test")
     add_test(NAME console COMMAND manifest_console_tests)
+    # Timed, so alone: nothing else in the gate shares the machine while it runs.
+    add_test(NAME step-budget COMMAND manifest_console_tests --no-skip "-tc=*within its time budget")
+    set_tests_properties(step-budget PROPERTIES RUN_SERIAL TRUE)
 endif()

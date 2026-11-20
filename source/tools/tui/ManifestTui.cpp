@@ -183,6 +183,9 @@ void ManifestTui::Run()
 		    {
 			    for (const std::string &line : m_session.Poll())
 				    print(line);
+			    // A run of steps goes on a slice an event, the input read between them.
+			    if (m_session.Stepping())
+				    screen.PostEvent(Event::Custom);
 			    return false;
 		    }
 		    if (event == Event::CtrlD)
@@ -291,6 +294,7 @@ void ManifestTui::Run()
 		    }
 		    const auto &simulation = m_session.GetSimulation();
 		    const auto hostedStep = m_session.HostedStep();
+		    const auto stepping = m_session.Stepping();
 		    const Remote::Client *pRemote = m_session.Connected();
 		    std::string remote = "not connected";
 		    if (pRemote && pRemote->Welcomed())
@@ -326,6 +330,16 @@ void ManifestTui::Run()
 		             hbox(
 		                 {text("  "),
 		                  text(hostedStep ? std::to_string(*hostedStep) : "not hosted") | Mocha::Text}),
+		             stepping ? hbox(
+		                            {text("  stepping: "),
+		                             text(
+		                                 std::format(
+		                                     "{:.1f}% of {}",
+		                                     100.0 * static_cast<double>(stepping->first) /
+		                                         static_cast<double>(stepping->second),
+		                                     stepping->second)) |
+		                                 Mocha::Yellow})
+		                      : emptyElement(),
 		             separatorDashed() | Mocha::Surface0,
 		             text(" server ") | bold | center | Mocha::Peach,
 		             hbox({text("  "), text(remote) | Mocha::Text}),
