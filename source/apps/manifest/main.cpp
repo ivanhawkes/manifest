@@ -106,8 +106,10 @@ void RunServer(Jettison::Host::Session &session, const Serve &serve)
 		const double elapsed = std::chrono::duration<double>(now - last).count();
 		last = now;
 		const int count = steps.Accumulate(world.Clock().ScaledDelta(elapsed));
-		for (int step = 0; step < count; ++step)
-			world.Step();
+		// The steps the time makes, quiet ones passed over at once (Jettison::Sim::Quiet).
+		const std::uint64_t target = world.Clock().Step() + static_cast<std::uint64_t>(count);
+		while (world.Clock().Step() < target)
+			world.FastForward(target);
 		// What the engine raises is presentation's, and a dedicated server presents none of it.
 		(void)world.Events().Take();
 		if (count > 0)

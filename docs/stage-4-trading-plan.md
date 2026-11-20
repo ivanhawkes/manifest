@@ -910,6 +910,38 @@ Left: trader and script facts read from the reports alone, which W10's standing 
 bring; durable recovery, which is Stage 5's; and the manned profile's 4.49-day journey in the fixture,
 which a release build steps in minutes (W15) and the suite does not.
 
+## Delivered: L27, 2026-11-20
+
+A fast-forward over quiet steps, on pin `892b7b3` with its engine provision
+([Jettison's architecture](../../jettison/docs/architecture.md#quiet-steps)):
+
+- **The engine's.** `SimWorld::FastForward` passes over the steps before the soonest any system has
+  to run in, to the same bits as stepping them, each system saying when (`Sim::Quiet`); a system that
+  says nothing runs every step. Physics, the docks, steering, cruising and lanes, which Travel attaches,
+  have theirs; a kinematic body with nothing dynamic in its world is put where it is, asleep.
+- **Manifest's.** Each of its six systems says when it next has to run, changing no rule: expiry at an
+  order's lapse; the economy at its turn's last step, or sooner a batch finishing, one that can start
+  or a finished one with room, its skip adding each batch's work once a passed step, the same addition
+  `Produce` makes; the brokers at the turn's last step; observation the next step while any fleet is
+  docked and never otherwise; travel the step its ship's cruise arrives in, never while it waits on the
+  docks, and the next for any other leg; life support the next while a connection would be made or
+  lost, its skip drawing each passed step's air and cartridges as `Breathe` does.
+- **Used.** The console's `step` and the server's loop fast-forward to the step they were stepping
+  to, the console still stopping at a journey's end.
+
+Evidence. The `fixture` suite runs its cruise fast-forwarded beside one stepped, the bid resting,
+batches finishing and the crew breathing: the same bytes at each of 4,031 stops, 19,042 cruising steps
+in 17 calls and the arrival's 4,014 one at a time. `step-budget` now times Ore to Brine on the manned
+profile through the console: 2.37 s, the best of three in a release build, where stepping took 4 min
+50 s, and it fails above half as much again. The `company` and `fixture` pins moved with the
+engine's bodies at rest, not with Manifest's quiets, which leave both the same: the fixture's whole
+loop, every command's step and result, the ledger, the holdings, each batch's progress and the tanks
+to the bit, and the ship's place, is the same on the old pin and the new.
+
+Left: observation reports each docked fleet's venues afresh every step, so no step is passed over
+while a fleet is docked, which W10's fleets will be; a live report that does not change each step
+lets them be.
+
 ## Handoff to stage 5
 
 Carry forward the exact scheduler order, command/result schema, content manifest,

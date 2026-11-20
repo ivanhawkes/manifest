@@ -563,7 +563,7 @@ TEST_CASE("The trading fixture's loop, saved in flight with a bid resting and re
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves with
 	// what a save holds, the fixture's content or stream, or the engine's movement or save format.
-	CHECK(hosted.world.StateHash() == 0xec41a7e39b116ea0ULL);
+	CHECK(hosted.world.StateHash() == 0xe1147c98e9de9a34ULL);
 }
 
 
@@ -588,4 +588,39 @@ TEST_CASE("The trading fixture's loop from the pack is the one from the director
 	CHECK(pack.trace == directory.trace);
 	CHECK(pack.world.Clock().Step() == directory.world.Clock().Step());
 	CHECK(pack.world.StateHash() == directory.world.StateHash());
+}
+
+
+TEST_CASE("The trading fixture's cruise fast-forwarded is the one stepped, at every stop")
+{
+	Hosted forwarded{MANIFEST_MOD_DIRECTORY};
+	Hosted stepped{MANIFEST_MOD_DIRECTORY};
+	for (Hosted *hosted : {&forwarded, &stepped})
+	{
+		hosted->Bootstrap();
+		ToCruise(*hosted);
+	}
+	REQUIRE(forwarded.world.Save() == stepped.world.Save());
+
+	// The cruise passed over between what wakes a system (its arrival, a batch finishing, the bid's
+	// lapse, a turn), the economy working and the crew breathing throughout, then docking stepped; and
+	// each stop the world stepping reaches.
+	const std::uint64_t end = forwarded.world.Clock().Step() + kJourneySteps;
+	std::uint64_t calls = 0;
+	while (!forwarded.Ship1().journey->Ended() && forwarded.world.Clock().Step() < end)
+	{
+		forwarded.world.FastForward(end);
+		(void)forwarded.world.Events().Take();
+		++calls;
+		while (stepped.world.Clock().Step() < forwarded.world.Clock().Step())
+		{
+			stepped.world.Step();
+			(void)stepped.world.Events().Take();
+		}
+		REQUIRE(forwarded.world.Save() == stepped.world.Save());
+	}
+	REQUIRE(forwarded.Ship1().journey->leg == Leg::Arrived);
+	const std::uint64_t steps = forwarded.world.Clock().Step() - (end - kJourneySteps);
+	MESSAGE(steps << " steps to Brine in " << calls << " calls");
+	CHECK(calls * 4 < steps);
 }

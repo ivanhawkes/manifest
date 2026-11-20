@@ -922,8 +922,8 @@ bool ManifestConsole::Advance(std::chrono::milliseconds budget)
 	const auto until = std::chrono::steady_clock::now() + budget;
 	while (run.taken < run.steps && run.ended == entt::null && std::chrono::steady_clock::now() < until)
 	{
-		world.Step();
-		++run.taken;
+		// Quiet steps passed over at once (Jettison::Sim::Quiet), to the state stepping leaves.
+		run.taken += world.FastForward(world.Clock().Step() + (run.steps - run.taken));
 		// What the engine raises is presentation's; the console reports from the world instead.
 		(void)world.Events().Take();
 		for (const auto &[entity, journey] : world.Registry().view<const World::Journey>().each())

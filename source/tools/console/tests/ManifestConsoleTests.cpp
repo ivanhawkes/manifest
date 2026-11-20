@@ -612,39 +612,34 @@ constexpr bool kOptimised = true;
 #else
 constexpr bool kOptimised = false;
 #endif
-// A hosted step's time as Ore to Brine cruises on the manned profile, in microseconds: the best of
-// the batches below in Lythir's release build, measured 2026-11-20 on pin `9e0274f` (L26).
-constexpr double kStepMicroseconds = 13.2;
+// Ore to Brine on the manned profile through the console's long step, its quiet steps passed over
+// (Jettison::Sim::Quiet), in seconds: the best of three in Lythir's release build, measured 2026-11-20
+// (L27). Stepped, it took 4 min 50 s.
+constexpr double kJourneySeconds = 2.37;
 } // namespace
 
-// A step dearer than half as much again as it was fails. Timed only in an optimised build without
+// A journey dearer than half as much again as it was fails. Timed only in an optimised build without
 // sanitisers, alone (its ctest runs serially), and not on CI, whose machines are not Lythir.
-TEST_CASE("Manifest console: a hosted step within its time budget" * doctest::skip())
+TEST_CASE("Manifest console: Ore to Brine within its time budget" * doctest::skip())
 {
 	if (!kOptimised || std::getenv("CI") != nullptr)
 	{
 		MESSAGE("untimed: not an optimised build without sanitisers, or on CI");
 		return;
 	}
-	ManifestConsole session{MANIFEST_MOD_DIRECTORY};
-	REQUIRE(Execute(session, "host trading").kind == ConsoleLine::Kind::Output);
-	REQUIRE(Execute(session, "provision Ada \"Ada Co\"").kind == ConsoleLine::Kind::Output);
-	Execute(session, "step");
-	Execute(session, "travel Ada Ship1 VenueBrineHighport");
-	Execute(session, "step 2m");
-	MANIFEST_CHECK_CONTAINS(Execute(session, "observe Ada").text, "Cruising to VenueBrineHighport");
-
-	constexpr int kBatches = 5;
-	constexpr std::uint64_t kBatch = 20000;
 	double best = std::numeric_limits<double>::infinity();
-	for (int batch = 0; batch < kBatches; ++batch)
+	for (int run = 0; run < 3; ++run)
 	{
+		ManifestConsole session{MANIFEST_MOD_DIRECTORY};
+		REQUIRE(Execute(session, "host trading").kind == ConsoleLine::Kind::Output);
+		REQUIRE(Execute(session, "provision Ada \"Ada Co\"").kind == ConsoleLine::Kind::Output);
+		Execute(session, "step");
+		Execute(session, "travel Ada Ship1 VenueBrineHighport");
 		const auto start = std::chrono::steady_clock::now();
-		Execute(session, std::format("step {}", kBatch));
-		const std::chrono::duration<double, std::micro> taken =
-		    std::chrono::steady_clock::now() - start;
-		best = std::min(best, taken.count() / static_cast<double>(kBatch));
+		MANIFEST_CHECK_CONTAINS(Execute(session, "step 5d").text, "Arrived");
+		const std::chrono::duration<double> taken = std::chrono::steady_clock::now() - start;
+		best = std::min(best, taken.count());
 	}
-	MESSAGE(std::format("{:.2f} microseconds a hosted step, against {:.2f}", best, kStepMicroseconds));
-	CHECK(best <= 1.5 * kStepMicroseconds);
+	MESSAGE(std::format("{:.2f} s from Ore to Brine, against {:.2f}", best, kJourneySeconds));
+	CHECK(best <= 1.5 * kJourneySeconds);
 }

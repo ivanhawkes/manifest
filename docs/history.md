@@ -100,6 +100,17 @@ cargo's lots are bounded together (`world`), and a ship's cargo against its hull
 `CargoVolume`, whose empty map was taken for none given; a hull the map does not name now carries
 nothing (`company`). Round 7 approved with no finding open.
 
+## L27: a fast-forward over quiet steps — 2026-11-20
+
+On pin `892b7b3`, with its engine provision. Each of Manifest's systems says when it next has to
+run, and the console's `step` and the server pass over the steps between, to the same bits as
+stepping them ([what it chose and its evidence](stage-4-trading-plan.md#delivered-l27-2026-11-20)):
+Ore to Brine on the manned profile is 2.37 s, from 4 min 50 s. The plan had named life support and
+observation as what writes every step; the economy's production does too, every batch's work added
+each step, and like life support's air it is passed over by making the same addition once a step,
+which keeps every rule and every bit. Observation is not yet: no step is passed over while a fleet is
+docked.
+
 ## W09: the complete trading fixture — 2026-11-20
 
 On pin `9e0274f`, with no engine edit. The `fixture` suite plays one command stream on the trading

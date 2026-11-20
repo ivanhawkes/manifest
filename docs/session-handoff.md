@@ -1,11 +1,11 @@
 # Session handoff
 
-## Next, on resuming — 2026-11-20 (after W09)
+## Next, on resuming — 2026-11-20 (after L27)
 
-W09 is done: [the slice's whole fixture](stage-4-trading-plan.md#delivered-w09-2026-11-20), the
-`fixture` suite, on pin `9e0274f` with no engine edit. Next: W10, standing trade policies,
-autopilot and NPC jobs. Before it, Jettison's roadmap queues a fast-forward over quiet steps, which
-changes what each system tells the step and is to be decided before W10 adds its work to every step.
+L27 is done: [a fast-forward over quiet steps](stage-4-trading-plan.md#delivered-l27-2026-11-20),
+on pin `892b7b3`. Next: W10, standing trade policies, autopilot and NPC jobs. Its fleets docked at
+once will stop every step being passed over until observation's live reports stop changing each
+step; and each system W10 adds needs its own quiet (`Jettison::Sim::Quiet`), or none is passed over.
 The planning documents' home-region allocation (scope, the roadmap's region supply and D-076) waits
 for W13 to restate it as founding.
 

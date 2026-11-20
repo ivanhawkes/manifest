@@ -222,6 +222,37 @@ void Advance(SimWorld &world, const Rules &rules, entt::entity ship)
 }
 
 
+// The first step a journey under way has to advance in (Jettison::Sim::Quiet): the step its cruise
+// arrives in, as the cruise's system runs before this one; none while its ship waits on the docks;
+// the next for any other leg.
+std::uint64_t AdvanceNext(const SimWorld &world, const Rules &rules)
+{
+	const entt::registry &registry = world.Registry();
+	const std::uint64_t now = world.Clock().Step();
+	std::uint64_t next = std::numeric_limits<std::uint64_t>::max();
+	for (const auto [ship, journey] : registry.view<const World::Journey>().each())
+	{
+		if (journey.Ended())
+			continue;
+		if (journey.leg == Leg::Cruising)
+		{
+			const auto *cruising = registry.try_get<Space::Cruising>(ship);
+			if (!cruising)
+				return now;
+			next = std::min(
+			    next, cruising->arrivalStep - std::min<std::uint64_t>(cruising->arrivalStep, 1));
+			continue;
+		}
+		const auto *docking = registry.try_get<Dock::Docking>(ship);
+		if (journey.leg != Leg::Arriving || !docking ||
+		    docking->station != rules.fleet.StationOf(registry, journey.venueId) ||
+		    docking->stage == Dock::Stage::Docked)
+			return now;
+	}
+	return next;
+}
+
+
 // Every journey under way, one transition each, in entity order.
 void AdvanceAll(SimWorld &world, const Rules &rules)
 {
@@ -376,7 +407,8 @@ Fleet &Register(
 	                 Physics::LocalFrame, Physics::OnRails>(),
 	     .after =
 	         {std::string{Dock::Docks::kSystemName}, std::string{Space::CruiseTravel::kSystemName}},
-	     .run = [rules, &world](entt::registry &, double) { AdvanceAll(world, *rules); }});
+	     .run = [rules, &world](entt::registry &, double) { AdvanceAll(world, *rules); }},
+	    {.next = [rules](const SimWorld &target) { return AdvanceNext(target, *rules); }});
 	return rules->fleet;
 }
 

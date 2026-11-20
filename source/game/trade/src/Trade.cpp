@@ -771,10 +771,9 @@ void Pay(
 }
 
 
-// A new batch of the row, its wages reserved from the employer's account: none when it cannot fund
-// them. About batchSeconds of the row's rate, in whole totes, at least one.
-std::optional<World::Batch> Start(
-    Ledger &ledger, const Rules &rules, const std::string &regionId, const Row &row)
+// A new batch of the row, not yet funded: none when it cannot be one. About batchSeconds of the
+// row's rate, in whole totes, at least one.
+std::optional<World::Batch> Plan(const Rules &rules, const Row &row)
 {
 	const double unitsPerTote = rules.unitsPerTote.at(row.itemId);
 	const double perDayTotes = row.perDay / unitsPerTote;
@@ -792,10 +791,22 @@ std::optional<World::Batch> Start(
 	if (!wages)
 		return std::nullopt;
 	batch.wages = *wages;
-	World::Account &account = ledger.Account(Kind::EmployerAccount, regionId);
-	if (account.balance < batch.wages)
+	return batch;
+}
+
+
+// A new batch of the row, its wages reserved from the employer's account: none when it cannot fund
+// them.
+std::optional<World::Batch> Start(
+    Ledger &ledger, const Rules &rules, const std::string &regionId, const Row &row)
+{
+	std::optional<World::Batch> batch = Plan(rules, row);
+	if (!batch)
 		return std::nullopt;
-	account.balance -= batch.wages;
+	World::Account &account = ledger.Account(Kind::EmployerAccount, regionId);
+	if (account.balance < batch->wages)
+		return std::nullopt;
+	account.balance -= batch->wages;
 	return batch;
 }
 
@@ -1106,6 +1117,110 @@ void Step(SimWorld &world, const Rules &rules)
 }
 
 
+// The last step of the turn the step is in, when the payroll, sales and brokers run.
+std::uint64_t TurnEnd(std::uint64_t step, std::uint64_t turnSteps)
+{
+	return step + (turnSteps - 1 - step % turnSteps);
+}
+
+
+// What each step of the economy works on, by its employer: each row's batch under way, and the work
+// a step adds to it, which the turn's condition alone changes.
+template <typename Visit> void EachUnderWay(const SimWorld &world, const Rules &rules, Visit visit)
+{
+	const entt::registry &registry = world.Registry();
+	for (const Economy &economy : rules.economies)
+	{
+		if (economy.made.empty())
+			continue;
+		const World::Region &region =
+		    registry.get<const World::Region>(Require(rules, Kind::Region, economy.regionId));
+		const double work = world.FixedStep() *
+		                    WorkRate(region.health, region.happiness, rules.condition.workRateFloor);
+		visit(economy, Require(rules, Kind::Employer, economy.regionId), work);
+	}
+}
+
+
+// The first step the economy has to run in (Jettison::Sim::Quiet): the turn's last, or sooner a batch
+// finishing, a batch that can start, or a finished one with room for its totes. Until then a step
+// only adds each batch's work to it, the same addition every step.
+std::uint64_t EconomyNext(const SimWorld &world, const Rules &rules)
+{
+	const entt::registry &registry = world.Registry();
+	const std::uint64_t now = world.Clock().Step();
+	std::uint64_t next = TurnEnd(now, rules.turnSteps);
+	bool due = false;
+	EachUnderWay(
+	    world, rules,
+	    [&](const Economy &economy, entt::entity employer, double work)
+	    {
+		    const World::Production &production = registry.get<const World::Production>(employer);
+		    for (const Row &row : economy.made)
+		    {
+			    if (due)
+				    return;
+			    const auto batch = std::ranges::find_if(
+			        production.batches, [&](const World::Batch &held)
+			        { return held.venueId == row.venueId && held.itemId == row.itemId; });
+			    if (batch == production.batches.end())
+			    {
+				    const std::optional<World::Batch> planned = Plan(rules, row);
+				    due =
+				        planned && registry.get<const World::Account>(
+				                               Require(rules, Kind::EmployerAccount, economy.regionId))
+				                           .balance >= planned->wages;
+				    continue;
+			    }
+			    if (batch->progress >= batch->duration)
+			    {
+				    // Finished and waiting for room, which only a turn's sales or a trade makes.
+				    const auto &holdings = registry.get<const World::Stock>(employer).holdings;
+				    const auto held = std::ranges::find_if(
+				        holdings, [&](const World::Holding &holding)
+				        { return holding.venueId == row.venueId && holding.itemId == row.itemId; });
+				    const std::uint64_t stocked =
+				        held == holdings.end() ? 0 : held->available + held->reserved;
+				    due = stocked <= Core::kMaxWarehouseTotes - batch->totes;
+				    continue;
+			    }
+			    double progress = batch->progress;
+			    for (std::uint64_t step = now; step < next; ++step)
+			    {
+				    if (!(work < batch->duration - progress))
+				    {
+					    next = step;
+					    break;
+				    }
+				    progress += work;
+			    }
+		    }
+	    });
+	return due ? now : next;
+}
+
+
+// The work the steps passed over added to each batch under way, one addition a step, as Produce
+// adds it.
+void EconomySkip(SimWorld &world, const Rules &rules, std::uint64_t passed)
+{
+	entt::registry &registry = world.Registry();
+	EachUnderWay(
+	    world, rules,
+	    [&](const Economy &economy, entt::entity employer, double work)
+	    {
+		    std::vector<World::Batch> &batches = registry.get<World::Production>(employer).batches;
+		    for (const Row &row : economy.made)
+			    if (const auto batch = std::ranges::find_if(
+			            batches, [&](const World::Batch &held)
+			            { return held.venueId == row.venueId && held.itemId == row.itemId; });
+			        batch != batches.end() && batch->progress < batch->duration)
+				    for (std::uint64_t step = 0; step < passed; ++step)
+					    batch->progress += work;
+	    });
+}
+
+
 // ─── Observation ───
 // docs/market-information-plan.md, "Selected information rules".
 
@@ -1322,7 +1437,16 @@ void Register(
 	     .access = writes,
 	     .after = {},
 	     .run = [rules, &world](entt::registry &, double) { Expire(world, *rules); },
-	     .before = beforeMovement});
+	     .before = beforeMovement},
+	    // An order lapses in the step its expiry begins.
+	    {.next = [](const SimWorld &target)
+	     {
+		     std::uint64_t next = std::numeric_limits<std::uint64_t>::max();
+		     for (const auto [entity, order] : target.Registry().view<const World::Order>().each())
+			     if (order.expiresStep != 0)
+				     next = std::min(next, order.expiresStep);
+		     return next;
+	     }});
 	world.RegisterSystem(
 	    {.name = std::string{kEconomy},
 	     .phase = Jettison::Ecs::TickPhase::Simulation,
@@ -1332,7 +1456,10 @@ void Register(
 	                       World::Production, World::Pantry, World::Region, World::Sales>(),
 	     .after = {std::string{kExpiry}},
 	     .run = [rules, &world](entt::registry &, double) { Step(world, *rules); },
-	     .before = beforeMovement});
+	     .before = beforeMovement},
+	    {.next = [rules](const SimWorld &target) { return EconomyNext(target, *rules); },
+	     .skip = [rules](SimWorld &target, std::uint64_t passed, double)
+	     { EconomySkip(target, *rules, passed); }});
 	world.RegisterSystem(
 	    {.name = std::string{kBrokers},
 	     .phase = Jettison::Ecs::TickPhase::Simulation,
@@ -1344,7 +1471,9 @@ void Register(
 		     if ((world.Clock().Step() + 1) % rules->turnSteps == 0)
 			     Requote(world, *rules);
 	     },
-	     .before = beforeMovement});
+	     .before = beforeMovement},
+	    {.next = [rules](const SimWorld &target)
+	     { return TurnEnd(target.Clock().Step(), rules->turnSteps); }});
 	world.RegisterSystem(
 	    {.name = std::string{kObserve},
 	     .phase = Jettison::Ecs::TickPhase::Simulation,
@@ -1352,7 +1481,17 @@ void Register(
 	         Access::Of<World::Ship, World::Company, World::Order, World::Sales, World::Identity>()
 	             .Writing<World::Reports>(),
 	     .after = {std::string{Travel::kSystem}},
-	     .run = [rules, &world](entt::registry &, double) { Observe(world, *rules); }});
+	     .run = [rules, &world](entt::registry &, double) { Observe(world, *rules); }},
+	    // shortcut: a docked fleet's venue is reported afresh every step, so no step is passed over
+	    // while one is docked; a live report that does not change each step, when W10's fleets are
+	    // docked at once.
+	    {.next = [](const SimWorld &target)
+	     {
+		     for (const auto [entity, ship] : target.Registry().view<const World::Ship>().each())
+			     if (!ship.dockedAt.empty())
+				     return target.Clock().Step();
+		     return std::numeric_limits<std::uint64_t>::max();
+	     }});
 }
 
 

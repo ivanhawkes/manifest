@@ -511,6 +511,50 @@ void Breathe(entt::registry &registry, const Rules &rules, double step)
 		Draw(lifeSupport.cartridges, occupantDays);
 	}
 }
+
+
+// The first step life support has to run in (Jettison::Sim::Quiet): the next, while a connection
+// would be lost or made, as Breathe makes them; otherwise never, each step only drawing.
+std::uint64_t BreatheNext(const SimWorld &world, const Rules &rules)
+{
+	const entt::registry &registry = world.Registry();
+	std::map<std::string, int, std::less<>> connected;
+	for (const auto [ship, lifeSupport, record] :
+	     registry.view<const World::LifeSupport, const World::Ship>().each())
+	{
+		if (lifeSupport.connectedTo.empty())
+			continue;
+		if (record.dockedAt != lifeSupport.connectedTo)
+			return world.Clock().Step();
+		++connected[lifeSupport.connectedTo];
+	}
+	for (const auto [ship, lifeSupport, record] :
+	     registry.view<const World::LifeSupport, const World::Ship>().each())
+		if (lifeSupport.connectedTo.empty() && !record.dockedAt.empty() &&
+		    connected[record.dockedAt] < rules.connections.at(record.dockedAt))
+			return world.Clock().Step();
+	return std::numeric_limits<std::uint64_t>::max();
+}
+
+
+// What every step passed over drew, each a Draw, as Breathe draws it.
+void BreatheSkip(entt::registry &registry, const Rules &rules, double step, std::uint64_t passed)
+{
+	const Content::LifeSupportTuning &tuning = rules.content.tuning.lifeSupport;
+	for (const auto [ship, lifeSupport, record] :
+	     registry.view<World::LifeSupport, const World::Ship>().each())
+	{
+		if (!lifeSupport.connectedTo.empty())
+			continue;
+		const double occupantDays =
+		    rules.hulls.at(record.hullId)->occupants.value_or(0) * step / kSecondsPerDay;
+		for (std::uint64_t each = 0; each < passed; ++each)
+		{
+			Draw(lifeSupport.tanks, occupantDays * tuning.oxygenKilogramsPerOccupantDay);
+			Draw(lifeSupport.cartridges, occupantDays);
+		}
+	}
+}
 } // namespace
 
 
@@ -626,6 +670,9 @@ void RegisterCommands(
 	     .access =
 	         Jettison::Ecs::Access::Of<World::LifeSupport, World::Ship>().Writing<World::LifeSupport>(),
 	     .after = {std::string{Travel::kSystem}},
-	     .run = [rules](entt::registry &registry, double step) { Breathe(registry, *rules, step); }});
+	     .run = [rules](entt::registry &registry, double step) { Breathe(registry, *rules, step); }},
+	    {.next = [rules](const SimWorld &target) { return BreatheNext(target, *rules); },
+	     .skip = [rules](SimWorld &target, std::uint64_t passed, double)
+	     { BreatheSkip(target.Registry(), *rules, target.FixedStep(), passed); }});
 }
 } // namespace Manifest::Company
