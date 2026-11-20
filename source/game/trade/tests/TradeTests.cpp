@@ -18,6 +18,7 @@
 
 #include <manifest/company/Company.h>
 #include <manifest/trade/Trade.h>
+#include <manifest/travel/Travel.h>
 #include <manifest/world/World.h>
 
 using namespace Manifest::Trade;
@@ -80,9 +81,12 @@ struct Hosted
 	          Manifest::Company::RegisterTypes(), RegisterTypes(), World::RegisterWorld(world))},
 	      requests{Manifest::Command::RegisterRequests(world, identities)}
 	{
-		Manifest::Company::RegisterCommands(requests, identities, Trading());
+		const Manifest::Travel::Fleet &fleet =
+		    Manifest::Travel::Register(world, requests, identities, Trading());
+		Manifest::Company::RegisterCommands(requests, identities, fleet, Trading());
 		Register(world, requests, identities, Trading());
 		World::CreateInitialState(world, identities, Trading());
+		Manifest::Travel::OpenStations(world, fleet);
 		AddCompany("Ada", "CompanyA");
 		AddCompany("Bea", "CompanyB");
 		if (quoted)
@@ -492,11 +496,14 @@ TEST_CASE(
 }
 
 
-TEST_CASE("The step runs the expiry sweep, then the brokers")
+TEST_CASE("The step runs the expiry sweep, then the brokers, ahead of the movement")
 {
 	Hosted hosted;
-	const auto order = hosted.world.Scheduler().Order(Jettison::Ecs::TickPhase::Simulation);
-	CHECK(order == std::vector<std::string>{std::string{kExpiry}, std::string{kBrokers}});
+	std::vector<std::string> order =
+	    hosted.world.Scheduler().Order(Jettison::Ecs::TickPhase::Simulation);
+	REQUIRE(order.size() > 2);
+	order.resize(3);
+	CHECK(order == std::vector<std::string>{std::string{kExpiry}, std::string{kBrokers}, "spatial"});
 }
 
 

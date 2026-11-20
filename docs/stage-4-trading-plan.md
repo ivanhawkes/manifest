@@ -68,8 +68,7 @@ from stage 2, and stage 3's ownership, inventory and command contracts.
 ## Fixed-step schedule
 
 Resolved in W02 (2026-11-20, [D-086](decision-ledger.md#d-086)). The hosted world steps at
-1/60 simulation second, the step Jettison's docking and physics are tested at; `Start.cpp`'s
-one-second shortcut goes with W05. Let `s` denote the clock step before `SimWorld::Step` advances
+1/60 simulation second, the step Jettison's docking and physics are tested at, since W05. Let `s` denote the clock step before `SimWorld::Step` advances
 it. The economic cadence `N` is `economy.intervalSeconds` divided by the fixed step, 3,600 steps,
 checked at start-up to be a positive whole number. Production work advances every fixed step;
 regular payroll, household purchases/consumption, condition update and the brokers' requote run
@@ -92,18 +91,16 @@ registration order, and a test pins `Scheduler().Order(TickPhase::Simulation)`.
 | 2 | each step; the turn on due steps | `manifest.economy` (W04) | before `spatial` | production, payroll, households, condition |
 | 3 | due steps | `manifest.brokers` | after `manifest.economy`, before `spatial` | each broker's orders, fills |
 | 4 | each step | engine `spatial`, `steering`, `flight`, `physics` | Jettison's own edges | transforms, velocities |
-| 5 | each step | engine `dock` | after `physics`; before `lanes` once W05 provisions the edge | pads, docking, transfers |
+| 5 | each step | engine `dock` | after `physics`; before `lanes` (Jettison `bc5dc1a`) | pads, docking, transfers |
 | 6 | each step | engine `lanes`, then `cruise` | Jettison's own edges | lane and cruise state |
 | 7 | each step | `manifest.travel` (W05) | after `dock` and `cruise` | travel intents, `Ship::dockedAt` |
 | 8 | each step | `manifest.observe` (W07) | after `manifest.travel` | quotes, fleet observations |
 
 Jettison's movement systems are registered without its `behaviour` system (no behaviour trees
-until W10), without `gates` (the fixture is one system) and without the sample's traders. `dock`
-and `lanes` both write `Transform` and `InFrame`, and Jettison orders neither before the other, so
-registration order decides theirs today. Manifest cannot add an edge to a system Jettison
-registers: W05 provisions it in Jettison (an ordering between the two, with an independent
-consumer's test), and the hosted registration's `Scheduler::Ambiguities` then holds no pair that
-writes what the other touches. This is the one engine gap W02 names.
+until W10), without `gates` (the fixture is one system) and without the sample's traders. Jettison
+orders `lanes` after `dock` when both are attached (`bc5dc1a`, the one engine gap W02 named), and
+the hosted registration's `Scheduler::Ambiguities` holds no pair that writes what the other touches;
+the `travel` suite pins the order and the empty ambiguities.
 
 - **Commands** apply in stage 3's global sequence order. An order command reserves and matches at
   once; a cargo command sees `Ship::dockedAt` as the previous step's `manifest.travel` left it; a
@@ -454,6 +451,60 @@ its world, a holding reserving more than its sell orders, or an order of an unkn
 The governance fixture's stocks are restated in totes too. Left: market views in the snapshot, and
 the console's and TUI's trade commands (W07, W15); immediate-or-cancel, which the acceptance
 scenario has not needed; and a broker's demand beyond its funds, a W04 question.
+
+## Delivered: W05, 2026-11-20
+
+A new `travel` module, below `company`, puts the hosted world's ships in space. What it chose where
+the contract above left room:
+
+- **Content** ([D-088](decision-ledger.md#d-088)). Each scenario system is a `Celestial.StarSystem`
+  record named by its ID (`data/systems/`): a Sun-like star, the planets on their orbits and each
+  venue a `Station` body of its ID orbiting its planet 42,000 km out, a highport's radius 763 m; the
+  venue names its layout, the body none. `position` left the scenario. Each hull has an
+  `Ai.CruiseDrive` of its record name (`data/docks/drives/`). Content refuses a system with no record
+  or one that does not resolve, a planet or venue its system has no body of, a station not orbiting
+  its venue's planet or naming a layout, and a hull without a drive and the reverse. The content set
+  carries the pad classes, dock hulls, drives, layouts and the scenario's resolved systems, so a world
+  is composed from it alone.
+- **Composition.** `Travel::Register` attaches physics, the spatial index, steering, the docks, the
+  lanes and cruising, defines the content's docks and systems in them, and registers
+  `Manifest.Travel.Travel` and `manifest.travel`; `OpenStations` builds each venue's station on its
+  body's rails in the initial state. The host's step is 1/60 s, and the market's systems run before
+  `spatial`.
+- **Ships.** Provisioning parks the starter on the smallest free pad its dock hull fits, the lowest
+  numbered of those (a skiff pad), as a dynamic body of its hull with its drive, refusing `NoPadFree`
+  before anything is written. Its engine controller is a player's, slot n of its `Company<n>`
+  (`ControllerOf`), never reused. `travel` sends every engine command as that controller. shortcut:
+  every ship weighs 20 t, which only collisions feel; W08 authors a hull's mass.
+- **The journey.** `World::Journey` on the ship (saved): the venue, the leg (`Departing`,
+  `Clearing`, `Cruising`, `Arriving`, then `Arrived` or `Failed`), why it failed, and the step it
+  started. `Travel` refuses `UnknownTarget`, `NotAuthorised`, `Travelling` while one is under way
+  and `AlreadyThere` at the ship's own dock, and writes only the journey. Each step `manifest.travel`
+  takes each journey in entity order one transition on from the engine's saved state: `ReleasePad`,
+  clearing `Ship::dockedAt` once the pad lets go (`DepartureRefused` if not); the flight out of the
+  station's reach (Jettison's `Space::ClearOf`); `Cruise` (`CruiseRefused`); on arrival
+  `RequestPad` (`PadRefused`), a queue waited out in place; and `Ship::dockedAt` set as the docks
+  clamp it (`PadLost` if the pad or place goes). A ship already near its destination asks for a pad
+  at once. Nothing it sends is recorded, so a replay sends it again from the same state.
+- **Engine provisions**, both in Jettison with their own suites' evidence: `Space::ClearOf`, the
+  flight out of a station's reach that the sample's traders flew in their own code; and a cruise or
+  a lane letting a steered ship's controls go with its destination, without which a ship queued on
+  arrival flew on at steering's last demand.
+
+Evidence, in the `travel` suite, on the hosted trading scenario: the starter parked docked on pad 13,
+a skiff pad, commanded by `Company1`'s controller; Ore to Brine through every leg in about 28,000
+steps, its cargo kept, a load refused `NotDocked` in transit and `WrongVenue` after, the unload
+accepted at Brine and a second journey there refused `AlreadyThere`; each refusal writing no
+journey; a departure refused while crates cross the deck, the ship kept docked; at a station with all
+twenty pads held, a ship waiting still in its queue, unable to unload, then docking when one frees;
+a world saved mid-cruise arriving at the same step with the same hash as the one saved; the compact
+single-seat given a skiff pad and the long-haul trader a destroyer pad; the same journey from the pack
+and the directory, hash for hash; and the step's order with no ambiguities. The `company` suite's
+pinned hash moved, ships now bodies on pads.
+
+Left: the journey in a player's snapshot and the console's and TUI's travel command (W15, whose
+console steps at most 1,000 at a time, under a minute); a journey across systems, which waits for
+gates; the handling services' charges; and long-haul timing, with W15's two-planet trade.
 
 ## Handoff to stage 5
 

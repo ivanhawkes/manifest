@@ -108,6 +108,8 @@ void RunServer(Jettison::Host::Session &session, const Serve &serve)
 		const int count = steps.Accumulate(world.Clock().ScaledDelta(elapsed));
 		for (int step = 0; step < count; ++step)
 			world.Step();
+		// What the engine raises is presentation's, and a dedicated server presents none of it.
+		(void)world.Events().Take();
 		if (count > 0)
 			server.Publish();
 	}

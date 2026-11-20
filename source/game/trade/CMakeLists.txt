@@ -19,9 +19,10 @@ manifest_add_module(trade
 	PRIVATE_LIBRARIES
 		Jettison::Core
 		Jettison::Reflect
+		Jettison::Spatial
 )
 if(TARGET manifest_trade_tests)
-	target_link_libraries(manifest_trade_tests PRIVATE manifest_company Jettison::Vfs)
+	target_link_libraries(manifest_trade_tests PRIVATE manifest_company manifest_travel Jettison::Vfs)
 	target_compile_definitions(manifest_trade_tests PRIVATE MANIFEST_MOD_DIRECTORY="${MANIFEST_MOD_DIRECTORY}")
 	add_dependencies(manifest_trade_tests manifest_validate_pack)
 endif()

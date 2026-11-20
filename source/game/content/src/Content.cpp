@@ -6,16 +6,21 @@
 #include <cstdint>
 #include <format>
 #include <functional>
+#include <initializer_list>
+#include <map>
+#include <optional>
 #include <set>
 #include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include <jettison/celestial/StarSystem.h>
 #include <jettison/dock/Definitions.h>
 #include <jettison/serialise/Archive.h>
 #include <jettison/sim/DefinitionRegistry.h>
 #include <jettison/sim/Snapshot.h>
+#include <jettison/space/Cruise.h>
 #include <jettison/vfs/FileSystem.h>
 
 #include <manifest/content/Definitions.h>
@@ -372,9 +377,10 @@ template <typename Check> void RequireDock(const Checker &checker, Check check)
 }
 
 
-// Jettison's ship and station definitions as Manifest authors them (D-062): each checked as the
-// engine checks it, and every Manifest.Hull with the Dock.HullDefinition of its name, so a hull has
-// a size and a pad class, and the reverse.
+// Jettison's ship, station and star-system definitions as Manifest authors them (D-062): each checked
+// as the engine checks it (a system as Resolve does), every Manifest.Hull with the Dock.HullDefinition
+// and the Ai.CruiseDrive of its name, so a hull has a size, a pad class and a drive, and the reverse,
+// and each system named by its record.
 void CheckDocks(Checker &checker, const Jettison::Sim::DefinitionRegistry &registry)
 {
 	namespace Dock = Jettison::Dock;
@@ -401,13 +407,60 @@ void CheckDocks(Checker &checker, const Jettison::Sim::DefinitionRegistry &regis
 		    checker,
 		    [&] { Dock::CheckLayout(name, *registry.Find<Dock::StationLayout>(name), classes); });
 	}
+	for (const std::string &name : registry.Names<Jettison::Space::CruiseDrive>())
+	{
+		At<Jettison::Space::CruiseDrive>(checker, name, name);
+		RequireDock(
+		    checker,
+		    [&]
+		    {
+			    Jettison::Space::CheckCruiseDrive(
+			        name, *registry.Find<Jettison::Space::CruiseDrive>(name));
+		    });
+		checker.Require(
+		    registry.Find<Core::ShipClassSpec>(name) != nullptr, "dock",
+		    "is the drive of no Manifest.Hull of its name");
+	}
 	for (const std::string &name : registry.Names<Core::ShipClassSpec>())
 	{
 		At<Core::ShipClassSpec>(checker, name, registry.Find<Core::ShipClassSpec>(name)->hullId);
 		checker.Require(
 		    registry.Find<Dock::HullDefinition>(name) != nullptr, "dock",
 		    std::format("has no Dock.HullDefinition '{}'", name));
+		checker.Require(
+		    registry.Find<Jettison::Space::CruiseDrive>(name) != nullptr, "dock",
+		    std::format("has no Ai.CruiseDrive '{}'", name));
 	}
+	for (const std::string &name : registry.Names<Jettison::Celestial::StarSystem>())
+	{
+		Jettison::Celestial::StarSystem system = *registry.Find<Jettison::Celestial::StarSystem>(name);
+		At<Jettison::Celestial::StarSystem>(checker, name, system.name);
+		checker.Require(
+		    RegistryName(system.name) == name, "name",
+		    std::format("'{}' is not the system of the record's name", system.name));
+		RequireDock(checker, [&] { Jettison::Celestial::Resolve(system); });
+	}
+}
+
+
+// A scenario's system as its record has it, resolved; null for one with no record, or one that does
+// not resolve.
+std::optional<Jettison::Celestial::StarSystem> ResolvedSystem(
+    const Jettison::Sim::DefinitionRegistry &registry, std::string_view systemId)
+{
+	const auto *pSystem = registry.Find<Jettison::Celestial::StarSystem>(RegistryName(systemId));
+	if (pSystem == nullptr || pSystem->name != systemId)
+		return std::nullopt;
+	Jettison::Celestial::StarSystem system = *pSystem;
+	try
+	{
+		Jettison::Celestial::Resolve(system);
+	}
+	catch (const Jettison::Serialise::FormatError &)
+	{
+		return std::nullopt;
+	}
+	return system;
 }
 
 bool Fraction(double value)
@@ -638,12 +691,6 @@ std::set<std::string, std::less<>> ListIds(
 }
 
 
-bool Finite(const glm::dvec3 &position)
-{
-	return std::isfinite(position.x) && std::isfinite(position.y) && std::isfinite(position.z);
-}
-
-
 // A region's projects: known prerequisites, an operational workshop, and inputs some venue makes.
 void CheckProjects(
     const Checker &checker, const ScenarioDefinition &scenario, const TuningDefinition &tuning,
@@ -727,6 +774,33 @@ void CheckScenarios(
 			    frames.insert(Jettison::Sim::FrameId(system)).second, "systems",
 			    std::format("'{}' has another system's frame ID", system));
 
+		std::map<std::string, Jettison::Celestial::StarSystem, std::less<>> bodies;
+		for (const SystemDefinition &system : scenario.systems)
+		{
+			std::optional<Jettison::Celestial::StarSystem> resolved =
+			    ResolvedSystem(registry, system.systemId);
+			checker.Require(
+			    resolved.has_value(), "systems",
+			    std::format(
+			        "'{}' has no Celestial.StarSystem '{}' that resolves", system.systemId,
+			        RegistryName(system.systemId)));
+			if (resolved)
+				bodies.emplace(system.systemId, *std::move(resolved));
+		}
+		// The body of that name and kind in the system, or null.
+		const auto bodyOf = [&](std::string_view systemId, std::string_view name,
+		                        std::initializer_list<Jettison::Celestial::BodyKind> kinds)
+		    -> const Jettison::Celestial::Body *
+		{
+			const auto system = bodies.find(systemId);
+			if (system == bodies.end())
+				return nullptr;
+			const int index = system->second.Find(name);
+			const Jettison::Celestial::Body *pBody =
+			    index < 0 ? nullptr : &system->second.bodies[static_cast<std::size_t>(index)];
+			return pBody && std::ranges::find(kinds, pBody->kind) != kinds.end() ? pBody : nullptr;
+		};
+
 		const auto planets = ListIds(checker, scenario.planets, &PlanetDefinition::planetId, "planets");
 		for (const PlanetDefinition &planet : scenario.planets)
 		{
@@ -734,8 +808,13 @@ void CheckScenarios(
 			    systems.contains(planet.systemId), "planets",
 			    std::format("'{}' system '{}' names nothing", planet.planetId, planet.systemId));
 			checker.Require(
-			    Finite(planet.position), "planets",
-			    std::format("'{}' position must be finite", planet.planetId));
+			    !bodies.contains(planet.systemId) ||
+			        bodyOf(
+			            planet.systemId, planet.planetId,
+			            {Jettison::Celestial::BodyKind::Planet, Jettison::Celestial::BodyKind::Moon}),
+			    "planets",
+			    std::format(
+			        "'{}' is no planet or moon of system '{}'", planet.planetId, planet.systemId));
 		}
 		const auto systemOf = [&](std::string_view planetId)
 		{
@@ -822,7 +901,17 @@ void CheckScenarios(
 			    venue.planetId.empty() ||
 			        (planets.contains(venue.planetId) && systemOf(venue.planetId) == venue.systemId),
 			    "venues", problem(std::format("planet '{}' is not in its system", venue.planetId)));
-			checker.Require(Finite(venue.position), "venues", problem("position must be finite"));
+			const Jettison::Celestial::Body *pStation =
+			    bodyOf(venue.systemId, venue.venueId, {Jettison::Celestial::BodyKind::Station});
+			checker.Require(
+			    !bodies.contains(venue.systemId) || pStation != nullptr, "venues",
+			    problem(std::format("is no station of system '{}'", venue.systemId)));
+			checker.Require(
+			    !pStation || venue.planetId.empty() || pStation->parent == venue.planetId, "venues",
+			    problem(std::format("station does not orbit its planet '{}'", venue.planetId)));
+			checker.Require(
+			    !pStation || pStation->layout.empty(), "venues",
+			    problem("station names a layout of its own; the venue names it"));
 			checker.Require(
 			    organisations.contains(venue.operatorId), "venues",
 			    problem(std::format("operator '{}' names no organisation", venue.operatorId)));
@@ -940,9 +1029,19 @@ ContentSet Build(
 		content.scenarios.emplace(name, *registry.Find<ScenarioDefinition>(name));
 	for (const Core::ShipClassSpec *pHull : All<Core::ShipClassSpec>(registry))
 		content.hulls.push_back(*pHull);
+	content.padClasses = PadClassesOf(registry);
+	for (const std::string &name : registry.Names<Jettison::Dock::HullDefinition>())
+		content.dockHulls.emplace(name, *registry.Find<Jettison::Dock::HullDefinition>(name));
+	for (const std::string &name : registry.Names<Jettison::Space::CruiseDrive>())
+		content.drives.emplace(name, *registry.Find<Jettison::Space::CruiseDrive>(name));
+	for (const std::string &name : registry.Names<Jettison::Dock::StationLayout>())
+		content.layouts.emplace(name, *registry.Find<Jettison::Dock::StationLayout>(name));
 	content.scenario = scenario;
 	if (const auto selected = content.scenarios.find(scenario); selected != content.scenarios.end())
 	{
+		// The scenario checks hold each to resolving.
+		for (const SystemDefinition &system : selected->second.systems)
+			content.systems.push_back(*ResolvedSystem(registry, system.systemId));
 		// The scenario checks hold every home to having one.
 		const Jettison::Dock::PadClasses classes = PadClassesOf(registry);
 		for (const RegionDefinition &region : selected->second.regions)

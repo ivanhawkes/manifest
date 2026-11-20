@@ -1,7 +1,6 @@
 #pragma once
 
 #include <entt/entt.hpp>
-#include <glm/vec3.hpp>
 
 #include <cstdint>
 #include <optional>
@@ -182,20 +181,21 @@ enum class FacilityKind
 	Workshop
 };
 
-// A star system: a Jettison frame, Sim::FrameId(systemId).
+// A star system: a Jettison frame, Sim::FrameId(systemId), its bodies in the Celestial.StarSystem of
+// that name (definitions/systems).
 struct SystemDefinition
 {
 	std::string systemId;
 	std::string displayName;
 };
 
-// A physical body, with no population or account of its own: its regions hold those.
+// A physical body, with no population or account of its own: its regions hold those. Its system's
+// body of that name says where it is.
 struct PlanetDefinition
 {
 	std::string planetId;
 	std::string systemId;
 	std::string displayName;
-	glm::dvec3 position{0.0};
 };
 
 // Cultural and technology identity only.
@@ -262,14 +262,14 @@ struct MarketEntry
 	std::uint64_t stock{0};
 };
 
-// A station or port, delivering physically to the regions it serves.
+// A station or port, delivering physically to the regions it serves: its system's Station body of
+// that name, orbiting its planet when it names one.
 struct VenueDefinition
 {
 	std::string venueId;
 	std::string systemId;
 	// The planet it serves from; empty for one in open space.
 	std::string planetId;
-	glm::dvec3 position{0.0};
 	std::string operatorId;
 	// Open to every company on equal terms, as a starting region's station must be.
 	bool isPublic{false};

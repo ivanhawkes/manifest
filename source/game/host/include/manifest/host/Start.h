@@ -13,6 +13,7 @@
 
 #include <manifest/command/Requests.h>
 #include <manifest/content/Content.h>
+#include <manifest/travel/Travel.h>
 #include <manifest/world/Identities.h>
 
 namespace Manifest::Host
@@ -45,8 +46,9 @@ std::vector<Jettison::Vfs::Mount> Mounts(const Options &options);
 // must be the Manifest package: a mod.yaml naming it, with its release and engine requirement
 // given. Every package's engine requirement and required packages are satisfied, and the
 // definitions are loaded and checked as one content set for the scenario
-// (Manifest::Content::LoadScenario). The world it starts holds the scenario's state
-// (Manifest::World::CreateInitialState) and the brokers' first quotes (Manifest::Trade::Quote). Throws
+// (Manifest::Content::LoadScenario). The world it starts steps at 1/60 s (D-086) and holds the
+// scenario's state (Manifest::World::CreateInitialState), its stations (Manifest::Travel::OpenStations)
+// and the brokers' first quotes (Manifest::Trade::Quote). Throws
 // Jettison::Host::StartupError naming the phase, the source and the cause, having released everything
 // it acquired.
 std::unique_ptr<Jettison::Host::Session> Start(const Options &options);
@@ -57,6 +59,7 @@ struct Services
 {
 	World::Identities &identities;
 	Command::Requests &requests;
+	const Travel::Fleet &fleet;
 };
 Services HostedServices(Jettison::Host::Session &session);
 

@@ -6,15 +6,17 @@
 
 #include <manifest/command/Requests.h>
 #include <manifest/content/Content.h>
+#include <manifest/travel/Travel.h>
 #include <manifest/world/Identities.h>
 
 namespace Manifest::Company
 {
 // The administrative command that provisions a player: their Principal, a company with the
 // configured starting credits, the first free player's home region, governed by a new Polity
-// organisation of theirs, and one ship of the scenario's starter hull, docked at that region's home
-// venue with an empty hold. Rejected AlreadyProvisioned for a principal the world has, NoHomeRegion
-// with none free, and MalformedPayload for an empty principal ID.
+// organisation of theirs, and one ship of the scenario's starter hull, parked on a pad of that
+// region's home venue (Travel::Fleet::Park) with an empty hold. Rejected AlreadyProvisioned for a
+// principal the world has, NoHomeRegion with none free, NoPadFree with no free pad there the starter
+// fits, and MalformedPayload for an empty principal ID.
 struct Provision
 {
 	std::string principalId;
@@ -46,9 +48,10 @@ inline constexpr std::uint32_t kVersion = 1;
 // The payloads, with Reflect, and the command types. Safe to call again.
 void RegisterTypes();
 
-// Registers the commands with the requests. The identities and the content, whose scenario they
-// run on, must outlive the world. Throws std::invalid_argument for a content set with no scenario
-// selected.
+// Registers the commands with the requests. The identities, the fleet and the content, whose
+// scenario they run on, must outlive the world. Throws std::invalid_argument for a content set with
+// no scenario selected.
 void RegisterCommands(
-    Command::Requests &requests, World::Identities &identities, const Content::ContentSet &content);
+    Command::Requests &requests, World::Identities &identities, const Travel::Fleet &fleet,
+    const Content::ContentSet &content);
 } // namespace Manifest::Company

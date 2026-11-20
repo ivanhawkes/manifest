@@ -1,7 +1,7 @@
 # Jettison feature-base, pinned rather than following main or a moving branch.
 # Updating this commit and the development shell is one SDK change. Fetch the engine
 # first: EnTT, yaml-cpp and doctest must be its targets, never second copies here.
-set(MANIFEST_JETTISON_REVISION 65846bbc8a231a00e2dcba558444ab124d9fc519)
+set(MANIFEST_JETTISON_REVISION 377bd8df05f00fbf93a3f7296a570018ff83f048)
 set(JETTISON_SOURCE_DIR "" CACHE PATH "Use a local Jettison checkout instead of the pinned revision")
 if(NOT TARGET Jettison::Math)
     if(JETTISON_SOURCE_DIR)
@@ -22,8 +22,9 @@ endif()
 
 # Everything Manifest takes from the SDK, however it arrived: a parent's partial SDK fails here,
 # naming what is missing, instead of at whichever target first links it.
-set(manifest_sdk_required Jettison::Core Jettison::Dock Jettison::Host Jettison::Math Jettison::Net
-    Jettison::Reflect Jettison::Serialise Jettison::Sim Jettison::Time Jettison::Vfs jettison_warnings
+set(manifest_sdk_required Jettison::Ai Jettison::Celestial Jettison::Core Jettison::Dock Jettison::Host
+    Jettison::Math Jettison::Net Jettison::Physics Jettison::Reflect Jettison::Serialise Jettison::Sim
+    Jettison::Space Jettison::Spatial Jettison::Time Jettison::Vfs jettison_warnings
     jettison_pack EnTT::EnTT yaml-cpp::yaml-cpp)
 if(MANIFEST_BUILD_TESTS AND BUILD_TESTING)
     list(APPEND manifest_sdk_required doctest::doctest doctest::doctest_with_main)

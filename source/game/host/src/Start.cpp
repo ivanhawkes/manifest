@@ -17,6 +17,7 @@
 #include <manifest/command/Requests.h>
 #include <manifest/company/Company.h>
 #include <manifest/trade/Trade.h>
+#include <manifest/travel/Travel.h>
 #include <manifest/world/World.h>
 
 namespace Manifest::Host
@@ -34,9 +35,9 @@ constexpr std::string_view kPackageName = "Manifest";
 // The package's mount, which an overlay's requires names.
 constexpr std::string_view kPackageMount = "manifest";
 
-// shortcut: one-second steps and seed 0 while no system steps the world; A03 selects the cadence and
-// a scenario its seed.
-constexpr double kFixedStep = 1.0;
+// The step Jettison's docking and physics are tested at (D-086). shortcut: seed 0, nothing drawing on
+// the world's generator yet; a scenario gives its seed once something does.
+constexpr double kFixedStep = 1.0 / 60.0;
 constexpr std::uint64_t kSeed = 0;
 
 
@@ -84,6 +85,7 @@ class Game final : public Jettison::Host::Game
 
 	void RegisterTypes() override
 	{
+		Travel::RegisterTypes();
 		Company::RegisterTypes();
 		Trade::RegisterTypes();
 	}
@@ -103,7 +105,8 @@ class Game final : public Jettison::Host::Game
 	{
 		m_pIdentities = &World::RegisterWorld(world);
 		m_pRequests = &Command::RegisterRequests(world, *m_pIdentities);
-		Company::RegisterCommands(*m_pRequests, *m_pIdentities, m_content);
+		m_pFleet = &Travel::Register(world, *m_pRequests, *m_pIdentities, m_content);
+		Company::RegisterCommands(*m_pRequests, *m_pIdentities, *m_pFleet, m_content);
 		Trade::Register(world, *m_pRequests, *m_pIdentities, m_content);
 	}
 
@@ -111,12 +114,13 @@ class Game final : public Jettison::Host::Game
 	void CreateInitialState(Jettison::Sim::SimWorld &world) override
 	{
 		World::CreateInitialState(world, *m_pIdentities, m_content);
+		Travel::OpenStations(world, *m_pFleet);
 		Trade::Quote(world, *m_pIdentities, m_content);
 	}
 
 	Services WorldServices() const
 	{
-		return {*m_pIdentities, *m_pRequests};
+		return {*m_pIdentities, *m_pRequests, *m_pFleet};
 	}
 
   private:
@@ -125,6 +129,7 @@ class Game final : public Jettison::Host::Game
 	// The world's own services, which outlive every call the session makes here.
 	World::Identities *m_pIdentities{nullptr};
 	Command::Requests *m_pRequests{nullptr};
+	Travel::Fleet *m_pFleet{nullptr};
 };
 } // namespace
 

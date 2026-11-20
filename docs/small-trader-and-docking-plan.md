@@ -212,8 +212,9 @@ unknown layout and a home whose station's only pad the starter does not fit, and
 starter and the compact ship fit all twenty highport pads and the long-haul trader the twelve
 destroyer pads.
 
-Left for when a task needs them: the cruise drive and flight handling (W05), a ship's sale price,
-mass and fitting slots (W08), and station dressing and models (L15).
+Left for when a task needs them: a ship's sale price, mass and fitting slots (W08), and station
+dressing and models (L15). W05 gave each hull a cruise drive ([D-088](decision-ledger.md#d-088)) and
+the engine's default flight handling; the compact hull's size stays provisional.
 
 ## Capability map and demonstrated gap
 

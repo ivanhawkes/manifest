@@ -1,0 +1,35 @@
+# The governance fixture's system (data/scenarios/governance.yaml), a star system of Jettison's
+# (Celestial.StarSystem), as the trading fixture's (system-anvil.yaml) is: a Sun-like star, Forge an
+# Earth-like planet and Cassiter a smaller one across the system, and a station 42,000 km out from
+# each, named by its venue's ID. Initial test values, not a balance result.
+version: 1
+name: SystemCrucible
+bodies:
+  - name: StarCrucible
+    kind: Star
+    radius: 6.957e8
+    gravitationalParameter: 1.32712440018e20
+  - name: PlanetForge
+    kind: Planet
+    parent: StarCrucible
+    radius: 6.371e6
+    gravitationalParameter: 3.986004418e14
+    orbit: {semiMajorAxis: 1.2e11, eccentricity: 0.01}
+    rotation: {period: 86164.0905, axialTilt: 0.4091}
+  - name: VenueForgeHighport
+    kind: Station
+    parent: PlanetForge
+    radius: 763
+    orbit: {semiMajorAxis: 4.2e7}
+  - name: PlanetCassiter
+    kind: Planet
+    parent: StarCrucible
+    radius: 3.3895e6
+    gravitationalParameter: 4.282837e13
+    orbit: {semiMajorAxis: 1.63e11, eccentricity: 0.05, meanAnomalyAtEpoch: 2.96}
+    rotation: {period: 88642.66, axialTilt: 0.4396}
+  - name: VenueCassiterDock
+    kind: Station
+    parent: PlanetCassiter
+    radius: 763
+    orbit: {semiMajorAxis: 4.2e7}

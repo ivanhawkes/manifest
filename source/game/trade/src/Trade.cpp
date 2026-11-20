@@ -17,6 +17,7 @@
 #include <jettison/core/Assert.h>
 #include <jettison/ecs/Scheduler.h>
 #include <jettison/reflect/Reflect.h>
+#include <jettison/spatial/SystemIndices.h>
 
 #include <manifest/sim/Simulation.h>
 #include <manifest/types/Decimal.h>
@@ -619,23 +620,30 @@ void Register(
 	using Jettison::Ecs::Access;
 	const Access writes = Access::Of<World::Order>()
 	                          .Writing<World::Order, World::Account, World::Stock, World::Identity>();
+	// Ahead of the movement Travel::Register attaches (docs/stage-4-trading-plan.md, "The step, in
+	// order").
+	const std::vector<std::string> beforeMovement{
+	    std::string{Jettison::Spatial::SystemIndices::kSystemName}};
 	world.RegisterSystem(
 	    {.name = std::string{kExpiry},
 	     .phase = Jettison::Ecs::TickPhase::Simulation,
 	     .access = writes,
 	     .after = {},
-	     .run = [rules, &world](entt::registry &, double) { Expire(world, *rules); }});
+	     .run = [rules, &world](entt::registry &, double) { Expire(world, *rules); },
+	     .before = beforeMovement});
 	world.RegisterSystem(
 	    {.name = std::string{kBrokers},
 	     .phase = Jettison::Ecs::TickPhase::Simulation,
 	     .access = writes,
 	     // W04 orders it after manifest.economy, once that system is registered.
 	     .after = {std::string{kExpiry}},
-	     .run = [rules, &world](entt::registry &, double)
+	     .run =
+	         [rules, &world](entt::registry &, double)
 	     {
 		     if ((world.Clock().Step() + 1) % rules->turnSteps == 0)
 			     Requote(world, *rules);
-	     }});
+	     },
+	     .before = beforeMovement});
 }
 
 

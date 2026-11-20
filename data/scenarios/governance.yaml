@@ -4,9 +4,10 @@ version: 1
 # public highport; and a Cassiter region across the system that sells tin and the industrial goods
 # Forge cannot make. Forge East works the Bronze project (D-029) with local copper, tin from
 # Cassiter and a seeded workshop. Every number is an initial test value recorded with C05, not a
-# balance result. Positions are metres in the system's frame, a station 42,000 km out from its
-# planet; market rates are per simulation day, in the item's unit (docs/model.md), and stock is in
-# totes (D-087): the earlier quantities in the unit to the nearest tote, at least one.
+# balance result. Where the bodies and stations are is the system's record
+# (systems/system-crucible.yaml); market rates are per simulation day, in the item's unit
+# (docs/model.md), and stock is in totes (D-087): the earlier quantities in the unit to the nearest
+# tote, at least one.
 gameMode: manifest
 starterHull: HullLoneTraderStarter
 items:
@@ -26,8 +27,8 @@ systems:
   - {systemId: SystemCrucible, displayName: Crucible}
 
 planets:
-  - {planetId: PlanetForge, systemId: SystemCrucible, displayName: Forge, position: [1.2e11, 0, 0]}
-  - {planetId: PlanetCassiter, systemId: SystemCrucible, displayName: Cassiter, position: [-1.6e11, 0, 3.0e10]}
+  - {planetId: PlanetForge, systemId: SystemCrucible, displayName: Forge}
+  - {planetId: PlanetCassiter, systemId: SystemCrucible, displayName: Cassiter}
 
 civilisations:
   - {civilisationId: CivilisationForge, displayName: Forge, ageId: AgeCopper}
@@ -98,7 +99,6 @@ venues:
   - venueId: VenueForgeHighport
     systemId: SystemCrucible
     planetId: PlanetForge
-    position: [1.20042e11, 0, 0]
     operatorId: OrganisationForgeEastCouncil
     public: true
     operational: true
@@ -124,7 +124,6 @@ venues:
   - venueId: VenueCassiterDock
     systemId: SystemCrucible
     planetId: PlanetCassiter
-    position: [-1.59958e11, 0, 3.0e10]
     operatorId: OrganisationCassiterMining
     public: false
     operational: true

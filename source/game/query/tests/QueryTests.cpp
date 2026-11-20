@@ -14,6 +14,7 @@
 
 #include <manifest/company/Company.h>
 #include <manifest/query/Query.h>
+#include <manifest/travel/Travel.h>
 #include <manifest/world/World.h>
 
 using namespace Manifest::Query;
@@ -44,8 +45,11 @@ struct Hosted
 		files.AddMount({"manifest", MANIFEST_MOD_DIRECTORY});
 		Jettison::Sim::DefinitionRegistry definitions{files};
 		content = Manifest::Content::LoadScenario(files, definitions, scenario);
-		Company::RegisterCommands(requests, identities, content);
+		const Manifest::Travel::Fleet &fleet =
+		    Manifest::Travel::Register(world, requests, identities, content);
+		Company::RegisterCommands(requests, identities, fleet, content);
 		World::CreateInitialState(world, identities, content);
+		Manifest::Travel::OpenStations(world, fleet);
 	}
 
 	template <typename T> Result Run(const Actor &actor, std::string_view command, const T &payload)

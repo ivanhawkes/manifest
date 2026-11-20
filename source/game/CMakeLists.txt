@@ -10,6 +10,7 @@ add_subdirectory(market)
 add_subdirectory(content)
 add_subdirectory(world)
 add_subdirectory(command)
+add_subdirectory(travel)
 add_subdirectory(company)
 add_subdirectory(trade)
 add_subdirectory(query)
@@ -21,7 +22,7 @@ add_library(Manifest::Game ALIAS manifest_game)
 add_library(Manifest::Core ALIAS manifest_game)
 target_link_libraries(manifest_game INTERFACE
     Manifest::Types Manifest::Config Manifest::Universe Manifest::Progression
-    Manifest::Sim Manifest::Ecs Manifest::Effects Manifest::Market Manifest::Content Manifest::World Manifest::Command Manifest::Company Manifest::Trade Manifest::Query)
+    Manifest::Sim Manifest::Ecs Manifest::Effects Manifest::Market Manifest::Content Manifest::World Manifest::Command Manifest::Travel Manifest::Company Manifest::Trade Manifest::Query)
 
 add_subdirectory(host)
 

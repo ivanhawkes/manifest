@@ -4,9 +4,12 @@
 #include <string>
 #include <vector>
 
+#include <jettison/celestial/StarSystem.h>
 #include <jettison/dock/Definitions.h>
 #include <jettison/reflect/Reflect.h>
 #include <jettison/sim/DefinitionRegistry.h>
+#include <jettison/space/Cruise.h>
+#include <jettison/space/Types.h>
 
 #include <manifest/effects/ShipEffectEngine.h>
 
@@ -49,6 +52,8 @@ void RegisterTypes()
 	static const bool registered = []
 	{
 		Jettison::Dock::RegisterTypes();
+		Jettison::Celestial::RegisterTypes();
+		Jettison::Space::RegisterTypes();
 		using namespace Jettison::Reflect;
 		constexpr Attribute kDefined = Attribute::Saved | Attribute::Moddable;
 
@@ -242,8 +247,7 @@ void RegisterTypes()
 		RegisterType<PlanetDefinition>("Manifest.Planet")
 		    .Field<&PlanetDefinition::planetId>("planetId", kDefined)
 		    .Field<&PlanetDefinition::systemId>("systemId", kDefined)
-		    .Field<&PlanetDefinition::displayName>("displayName", kDefined)
-		    .Field<&PlanetDefinition::position>("position", kDefined);
+		    .Field<&PlanetDefinition::displayName>("displayName", kDefined);
 		RegisterType<CivilisationDefinition>("Manifest.Civilisation")
 		    .Field<&CivilisationDefinition::civilisationId>("civilisationId", kDefined)
 		    .Field<&CivilisationDefinition::displayName>("displayName", kDefined)
@@ -283,7 +287,6 @@ void RegisterTypes()
 		    .Field<&VenueDefinition::venueId>("venueId", kDefined)
 		    .Field<&VenueDefinition::systemId>("systemId", kDefined)
 		    .Field<&VenueDefinition::planetId>("planetId", kDefined)
-		    .Field<&VenueDefinition::position>("position", kDefined)
 		    .Field<&VenueDefinition::operatorId>("operatorId", kDefined)
 		    .Field<&VenueDefinition::isPublic>("public", kDefined)
 		    .Field<&VenueDefinition::operational>("operational", kDefined)
@@ -332,6 +335,10 @@ std::span<const DefinitionType> DefinitionTypes()
 		     entt::resolve<Jettison::Dock::HullDefinition>(), nullptr},
 		    {YamlMigrations{"Dock.StationLayout", {Jettison::Dock::kDefinitionVersion}},
 		     "manifest/definitions/stations", entt::resolve<Jettison::Dock::StationLayout>(), nullptr},
+		    {YamlMigrations{"Ai.CruiseDrive", kVersion1}, "manifest/definitions/drives",
+		     entt::resolve<Jettison::Space::CruiseDrive>(), nullptr},
+		    {YamlMigrations{"Celestial.StarSystem", {Jettison::Celestial::kStarSystemFormatVersion}},
+		     "manifest/definitions/systems", entt::resolve<Jettison::Celestial::StarSystem>(), nullptr},
 		    {YamlMigrations{"Manifest.NamePool", kVersion1}, "manifest/definitions/name-pools",
 		     entt::resolve<NamePoolDefinition>(), &IdOf<NamePoolDefinition, &NamePoolDefinition::pool>},
 		    {YamlMigrations{"Manifest.GameMode", kVersion1}, "manifest/definitions/game-modes",

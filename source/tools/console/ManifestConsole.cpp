@@ -585,6 +585,8 @@ std::string ManifestConsole::CommandStep(Arguments arguments)
 	const unsigned steps = ParseCount(arguments, 0, 1, 1, 1000);
 	for (unsigned index = 0; index < steps; ++index)
 		hosted.World().Step();
+	// What the engine raises is presentation's; the console reports from the world instead.
+	(void)hosted.World().Events().Take();
 
 	const Command::Requests &requests = Host::HostedServices(hosted).requests;
 	std::string report = std::format("Hosted world at step {}.", *HostedStep());

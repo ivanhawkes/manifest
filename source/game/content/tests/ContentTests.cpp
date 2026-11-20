@@ -566,8 +566,33 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	    "planets 'PlanetOre' system 'SystemNowhere' names nothing");
 	CheckRefused(
 	    trading,
-	    "version: 1\nplanets: !merge=planetId\n  - {planetId: PlanetOre, position: [.nan, 0, 0]}\n",
-	    "planets 'PlanetOre' position must be finite");
+	    "version: 1\nplanets: !append [{planetId: PlanetNowhere, systemId: SystemAnvil, displayName: "
+	    "Nowhere}]\n",
+	    "planets 'PlanetNowhere' is no planet or moon of system 'SystemAnvil'");
+	CheckRefused(
+	    trading,
+	    "version: 1\nplanets: !merge=planetId\n  - {planetId: PlanetOre, systemId: SystemAnvil}\n"
+	    "venues: !append [{venueId: StarAnvil, systemId: SystemAnvil, operatorId: "
+	    "OrganisationAnvilPortAuthority, layout: highport}]\n",
+	    "venues 'StarAnvil' is no station of system 'SystemAnvil'");
+	CheckRefused(
+	    trading, "version: 1\nsystems: !append [{systemId: SystemFar}]\n",
+	    "systems 'SystemFar' has no Celestial.StarSystem 'system-far' that resolves");
+	CheckRefused(
+	    "manifest/definitions/systems/system-anvil.patch.yaml",
+	    "version: 1\nbodies: !merge=name\n  - {name: VenueBrineHighport, parent: PlanetNowhere}\n",
+	    "VenueBrineHighport");
+	CheckRefused(
+	    "manifest/definitions/systems/system-anvil.patch.yaml",
+	    "version: 1\nbodies: !merge=name\n  - {name: VenueBrineHighport, parent: PlanetOre}\n",
+	    "'VenueBrineHighport' station does not orbit its planet 'PlanetBrine'");
+	CheckRefused(
+	    "manifest/definitions/systems/system-anvil.patch.yaml",
+	    "version: 1\nbodies: !merge=name\n  - {name: VenueBrineHighport, layout: highport}\n",
+	    "'VenueBrineHighport' station names a layout of its own; the venue names it");
+	CheckRefused(
+	    "manifest/definitions/drives/hull-compact-single.patch.yaml", "version: 1\nexponent: 2\n",
+	    "hull-compact-single");
 	CheckRefused(
 	    trading,
 	    "version: 1\ncivilisations: !merge=civilisationId\n  - {civilisationId: CivilisationOre, "
@@ -645,6 +670,14 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	    trading, "version: 1\nstarterHull: ''\n",
 	    "starterHull is required: 'RegionOreHighlands' is a player's home");
 
+	const std::string farSystem = "manifest/definitions/systems/system-far.yaml";
+	// A second system of the trading scenario's, a planet and a station in it.
+	const std::string far =
+	    "version: 1\nname: SystemFar\nbodies:\n  - {name: StarFar, kind: Star, radius: 7e8, "
+	    "gravitationalParameter: 1.3e20}\n  - {name: PlanetFar, kind: Planet, parent: StarFar, radius: "
+	    "6e6, gravitationalParameter: 4e14, orbit: {semiMajorAxis: 1e11}}\n  - {name: "
+	    "VenueBrineHighport, kind: Station, parent: PlanetFar, radius: 763, orbit: {semiMajorAxis: "
+	    "4.2e7}}\n";
 	const auto venue = [](std::string_view fields)
 	{
 		return std::format(
@@ -661,10 +694,9 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	      "version: 1\nsystems: !append [{systemId: SystemFar}]\nplanets: !append [{planetId: "
 	      "PlanetFar, "
 	      "systemId: SystemFar}]\nvenues: !merge=venueId\n  - {venueId: VenueBrineHighport, planetId: "
-	      "PlanetFar}\n"}},
+	      "PlanetFar}\n"},
+	     {farSystem, far}},
 	    "'VenueBrineHighport' planet 'PlanetFar' is not in its system");
-	CheckRefused(
-	    trading, venue("position: [0, .inf, 0]"), "'VenueBrineHighport' position must be finite");
 	CheckRefused(
 	    trading, venue("operatorId: OrganisationNowhere"),
 	    "'VenueBrineHighport' operator 'OrganisationNowhere' names no organisation");
@@ -682,11 +714,14 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	CheckRefused(
 	    {{trading,
 	      "version: 1\nsystems: !append [{systemId: SystemFar}]\nvenues: !merge=venueId\n  - {venueId: "
-	      "VenueBrineHighport, systemId: SystemFar, planetId: ''}\n"}},
+	      "VenueBrineHighport, systemId: SystemFar, planetId: ''}\n"},
+	     {farSystem, far}},
 	    "'VenueBrineHighport' region 'RegionBrineCoast' is not on its planet");
 	// A port serves the regions of its own planet, not another in its system.
 	CheckRefused(
-	    trading, venue("planetId: PlanetOre"),
+	    {{trading, venue("planetId: PlanetOre")},
+	     {"manifest/definitions/systems/system-anvil.patch.yaml",
+	      "version: 1\nbodies: !merge=name\n  - {name: VenueBrineHighport, parent: PlanetOre}\n"}},
 	    "'VenueBrineHighport' region 'RegionBrineCoast' is not on its planet");
 	CheckRefused(
 	    trading, venue("market: [{itemId: ItemBread}]"),

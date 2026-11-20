@@ -3,9 +3,10 @@ version: 1
 # two planets, a region and a public station on each, with complementary markets, so a ship buys
 # where a good is made and sells where it is wanted. Metals and furs come from Ore, salt, lime,
 # glassware and soap from Brine. Every number is an initial test value recorded with C05, not a
-# balance result. Positions are metres in the system's frame, a station 42,000 km out from its
-# planet; market rates are per simulation day, in the item's unit (docs/model.md), and stock is in
-# totes, eight to the IBC (D-087): the earlier quantities to the nearest tote, at least one.
+# balance result. Where the bodies and stations are is the system's record
+# (systems/system-anvil.yaml); market rates are per simulation day, in the item's unit
+# (docs/model.md), and stock is in totes, eight to the IBC (D-087): the earlier quantities to the
+# nearest tote, at least one.
 gameMode: manifest
 starterHull: HullLoneTraderStarter
 items:
@@ -22,8 +23,8 @@ systems:
   - {systemId: SystemAnvil, displayName: Anvil}
 
 planets:
-  - {planetId: PlanetOre, systemId: SystemAnvil, displayName: Ore, position: [1.496e11, 0, 0]}
-  - {planetId: PlanetBrine, systemId: SystemAnvil, displayName: Brine, position: [-2.279e11, 0, 0]}
+  - {planetId: PlanetOre, systemId: SystemAnvil, displayName: Ore}
+  - {planetId: PlanetBrine, systemId: SystemAnvil, displayName: Brine}
 
 civilisations:
   - {civilisationId: CivilisationOre, displayName: Ore, ageId: AgeClassical}
@@ -59,7 +60,6 @@ venues:
   - venueId: VenueOreHighport
     systemId: SystemAnvil
     planetId: PlanetOre
-    position: [1.49642e11, 0, 0]
     operatorId: OrganisationAnvilPortAuthority
     public: true
     operational: true
@@ -78,7 +78,6 @@ venues:
   - venueId: VenueBrineHighport
     systemId: SystemAnvil
     planetId: PlanetBrine
-    position: [-2.27858e11, 0, 0]
     operatorId: OrganisationAnvilPortAuthority
     public: true
     operational: true

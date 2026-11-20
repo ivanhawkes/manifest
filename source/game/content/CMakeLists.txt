@@ -20,11 +20,13 @@ manifest_add_module(content
 		tests/ContentTests.cpp
 	PUBLIC_LIBRARIES
 		EnTT::EnTT
+		Jettison::Celestial
+		Jettison::Dock
 		Jettison::Serialise
+		Jettison::Space
 		Jettison::Vfs
 	PRIVATE_LIBRARIES
 		Jettison::Core
-		Jettison::Dock
 		Jettison::Reflect
 		Jettison::Sim
 )

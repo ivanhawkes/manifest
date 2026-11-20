@@ -201,12 +201,12 @@ save identity, stable.
 | List | Fields | Rules |
 | --- | --- | --- |
 | (root) | `gameMode`, `items: [{itemId}]` | the mode resolves; items are a subset of its items, order kept |
-| `systems` | `systemId`, `displayName` | each a Jettison frame, `Sim::FrameId(systemId)`; two IDs with one frame ID are refused |
-| `planets` | `planetId`, `systemId`, `displayName`, `position` | a physical body; no population or account of its own |
+| `systems` | `systemId`, `displayName` | each a Jettison frame, `Sim::FrameId(systemId)`, its bodies the `Celestial.StarSystem` of that name ([D-088](decision-ledger.md#d-088), W05); two IDs with one frame ID are refused |
+| `planets` | `planetId`, `systemId`, `displayName` | a physical body, its system's planet or moon of that name; no population or account of its own |
 | `civilisations` | `civilisationId`, `displayName`, `ageId` | cultural and technology identity only |
 | `organisations` | `organisationId`, `kind` (`Polity` or `Corporation`), `displayName` | owns accounts and assets from Stage 3 |
 | `regions` | `regionId`, `planetId`, `civilisationId`, `governorId`, `playerHome`, `population`, `householdFunds`, `publicFunds`, `health`, `happiness` | the one population owner; `governorId` names an organisation, empty only when `playerHome`; population finite and nonnegative; funds whole credits; condition 0–100 |
-| `venues` | `venueId`, `systemId`, `planetId` (optional), `position`, `operatorId`, `regions: [{regionId}]`, `market: [{itemId, production, demand, stock}]` | a named planet is in the venue's system; served regions are on that planet ([shared ports](regional-economy-and-governance-plan.md#control-construction-and-discovery-boundaries)), so a venue with no planet serves none; market items are scenario items; quantities finite and nonnegative, rates per simulation day |
+| `venues` | `venueId`, `systemId`, `planetId` (optional), `operatorId`, `regions: [{regionId}]`, `market: [{itemId, production, demand, stock}]` | its system's station of that name, orbiting its named planet, which is in the venue's system; served regions are on that planet ([shared ports](regional-economy-and-governance-plan.md#control-construction-and-discovery-boundaries)), so a venue with no planet serves none; market items are scenario items; quantities finite and nonnegative, rates per simulation day |
 
 The eight-good trading fixture is then one system, two planets, two regions (one civilisation each)
 and two venues each serving one region; the governance fixture puts several regions on one planet.

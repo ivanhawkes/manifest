@@ -125,12 +125,14 @@ write_records hulls hullId '.["hull-base"][].hull' ships/hulls.yaml
 write_records name-pools pool 'to_entries[] | {"pool": .key, "names": .value}' \
   universe/solar-system-names.yaml
 
-# Jettison's ship and station definitions (D-062) are authored as the engine's own records, one
-# file each under docks/, and written as they are with their comments dropped. A dock hull is named
-# by the Manifest.Hull it belongs to.
-for kind in pads:pads hulls:dock-hulls stations:stations; do
+# Jettison's ship, station and star-system definitions (D-062) are authored as the engine's own
+# records, one file each under docks/ and systems/, and written as they are with their comments
+# dropped. A dock hull and a drive are named by the Manifest.Hull they belong to, a system by its
+# scenario ID.
+for kind in docks/pads:pads docks/hulls:dock-hulls docks/stations:stations docks/drives:drives \
+  systems:systems; do
   mkdir -p "$records_dir/${kind#*:}"
-  for record in "docks/${kind%%:*}"/*.yaml; do
+  for record in "${kind%%:*}"/*.yaml; do
     yq e '... comments=""' "$record" > "$records_dir/${kind#*:}/$(basename "$record")"
   done
 done

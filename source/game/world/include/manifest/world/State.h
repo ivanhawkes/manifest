@@ -78,7 +78,8 @@ struct Account
 };
 
 // A company's ship: its hull, a Manifest.Hull by ID, and the venue it is docked at, empty when it
-// is not. Stage 3 seeds the dock at provisioning; no command sets it.
+// is not: set where provisioning parks it, cleared as a journey leaves its pad and set as one docks
+// (Journey), and by nothing else.
 struct Ship
 {
 	std::string companyId;
@@ -86,6 +87,52 @@ struct Ship
 	std::string dockedAt;
 
 	bool operator==(const Ship &) const = default;
+};
+
+// How far a ship's journey has got (docs/stage-4-trading-plan.md, "Cargo capacity and physical
+// travel"). Arrived and Failed are where it ends; each other leg is waited out on the engine's state.
+enum class Leg
+{
+	// Its pad being let go of, or its place in a queue given up.
+	Departing,
+	// Flown out of the reach of the station it left, where a cruise does not engage.
+	Clearing,
+	Cruising,
+	// Its pad asked for at the destination: waiting in its queue, or flown in and coming down.
+	Arriving,
+	Arrived,
+	Failed
+};
+
+// Why a journey failed, its ship left where it is and its cargo aboard.
+enum class Failure
+{
+	None,
+	// The pad would not let the ship go.
+	DepartureRefused,
+	CruiseRefused,
+	// The destination station had no pad the hull fits, or refused the ship.
+	PadRefused,
+	// The pad given, or the place in the queue, was lost before the ship docked.
+	PadLost
+};
+
+// A ship's journey to a venue, from the Travel command that started it, on the ship's entity. One is
+// under way until its leg is Arrived or Failed, which a new journey replaces.
+struct Journey
+{
+	std::string venueId;
+	Leg leg{Leg::Departing};
+	Failure failure{Failure::None};
+	// The clock's step the command ran at the start of.
+	std::uint64_t started{0};
+
+	bool operator==(const Journey &) const = default;
+
+	bool Ended() const
+	{
+		return leg == Leg::Arrived || leg == Leg::Failed;
+	}
 };
 
 // An owner's goods at one venue's warehouse, in totes (D-087), their total at most kMaxWarehouseTotes.

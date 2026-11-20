@@ -8,6 +8,9 @@
 #include <string_view>
 #include <vector>
 
+#include <jettison/celestial/StarSystem.h>
+#include <jettison/dock/Definitions.h>
+#include <jettison/space/Cruise.h>
 #include <jettison/vfs/Mount.h>
 
 #include <manifest/config/SimulationConfig.h>
@@ -49,12 +52,20 @@ struct ContentSet
 	Core::UniverseNamePools names;
 	// Every hull, in registry order.
 	std::vector<Core::ShipClassSpec> hulls;
+	// Jettison's docks as authored (D-062), by record name: the pad classes, each hull's dock hull and
+	// cruise drive, by its Manifest.Hull's record name, and the station layouts.
+	Jettison::Dock::PadClasses padClasses;
+	std::map<std::string, Jettison::Dock::HullDefinition, std::less<>> dockHulls;
+	std::map<std::string, Jettison::Space::CruiseDrive, std::less<>> drives;
+	std::map<std::string, Jettison::Dock::StationLayout, std::less<>> layouts;
 	// The balance record, tuning/balance.
 	TuningDefinition tuning;
 	// Every scenario by its name, checked against its own game mode, which need not be this set's.
 	std::map<std::string, ScenarioDefinition, std::less<>> scenarios;
 	// The scenario selected, by its name; empty for a set selected by game mode alone.
 	std::string scenario;
+	// The scenario's star systems, resolved, in its order; none with no scenario selected.
+	std::vector<Jettison::Celestial::StarSystem> systems;
 	// The venue each of its player's home regions provisions a new player's ship at, by region ID.
 	std::map<std::string, std::string, std::less<>> homeVenues;
 	// Over every definition loaded, the mode's or not, and the scenario selected.

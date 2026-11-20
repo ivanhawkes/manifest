@@ -100,6 +100,20 @@ cargo's lots are bounded together (`world`), and a ship's cargo against its hull
 `CargoVolume`, whose empty map was taken for none given; a hull the map does not name now carries
 nothing (`company`). Round 7 approved with no finding open.
 
+## W05: ships travel between venues through the engine — 2026-11-20
+
+On pin `377bd8d`, with two engine provisions: `Space::ClearOf`, and a cruise or lane letting a steered
+ship's controls go with its destination. A new `travel` module puts the hosted world in space, parks
+a new ship on a real pad and drives a saved journey through Jettison's pad release, flight out,
+cruise and pad request ([what it chose and its evidence](stage-4-trading-plan.md#delivered-w05-2026-11-20)).
+
+The user chose the star systems as engine records and the sample's shuttle timing
+([D-088](decision-ledger.md#d-088)), and said long hauls will be tuned later, early play perhaps
+between stations round one planet or its moons. A trace of a ship waiting in a full station's queue
+found it flying at the station at 86 m/s: the cruise kept the demand steering left from the flight
+out, which the engine now lets go. The user also set new onboarding mid-task
+([D-089](decision-ledger.md#d-089)), queued as W16 rather than folded in.
+
 ## W03: the hosted book on owner and venue accounts — 2026-11-20
 
 On pin `65846bb`, with no engine edit; the dock-before-lanes edge W05 needs is in Jettison's

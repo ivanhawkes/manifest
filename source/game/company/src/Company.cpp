@@ -27,10 +27,12 @@ using Jettison::Sim::SimWorld;
 using World::Kind;
 
 
-// What the commands run on: the scenario's items and the totes each hull holds, looked up once.
+// What the commands run on: the fleet ships are parked through, and the scenario's items and the totes
+// each hull holds, looked up once.
 struct Rules
 {
 	World::Identities &identities;
+	const Travel::Fleet &fleet;
 	const Content::ContentSet &content;
 	const Content::ScenarioDefinition &scenario;
 	std::map<std::string, const Core::ItemNode *, std::less<>> items;
@@ -75,6 +77,10 @@ Result Provisioned(SimWorld &world, Rules &rules, const Provision &provision)
 	    });
 	if (home == rules.scenario.regions.end())
 		return Result::NoHomeRegion;
+	const std::string &venueId = rules.content.homeVenues.at(home->regionId);
+	const entt::entity pad = rules.fleet.FreePad(registry, venueId, rules.scenario.starterHull);
+	if (pad == entt::null)
+		return Result::NoPadFree;
 
 	const std::string companyId = Issued(identities, Kind::Company);
 	const std::string polityId = Issued(identities, Kind::Organisation);
@@ -92,9 +98,9 @@ Result Provisioned(SimWorld &world, Rules &rules, const Provision &provision)
 	    provision.displayName, provision.principalId);
 	registry.get<World::Region>(identities.Find(Kind::Region, home->regionId)).governorId = polityId;
 	const entt::entity ship = Created(world, identities, Kind::Ship, shipId);
-	registry.emplace<World::Ship>(
-	    ship, companyId, rules.scenario.starterHull, rules.content.homeVenues.at(home->regionId));
+	registry.emplace<World::Ship>(ship, companyId, rules.scenario.starterHull, venueId);
 	registry.emplace<World::Cargo>(ship);
+	rules.fleet.Park(world, ship, pad, rules.scenario.starterHull, companyId);
 	return Result::Succeeded;
 }
 
@@ -205,12 +211,13 @@ void RegisterTypes()
 
 
 void RegisterCommands(
-    Command::Requests &requests, World::Identities &identities, const Content::ContentSet &content)
+    Command::Requests &requests, World::Identities &identities, const Travel::Fleet &fleet,
+    const Content::ContentSet &content)
 {
 	const auto selected = content.scenarios.find(content.scenario);
 	if (selected == content.scenarios.end())
 		throw std::invalid_argument{"the content set has no scenario selected"};
-	auto rules = std::make_shared<Rules>(identities, content, selected->second);
+	auto rules = std::make_shared<Rules>(identities, fleet, content, selected->second);
 	for (const Content::ItemSelection &selection : selected->second.items)
 	{
 		const auto item =

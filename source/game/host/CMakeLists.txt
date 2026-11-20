@@ -5,6 +5,7 @@ manifest_add_module(host
 		content
 		world
 		command
+		travel
 		company
 		trade
 	HEADERS

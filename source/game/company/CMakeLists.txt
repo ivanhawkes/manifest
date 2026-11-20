@@ -5,6 +5,7 @@ manifest_add_module(company
 		content
 		world
 		command
+		travel
 	HEADERS
 		include/manifest/company/Company.h
 	SOURCES

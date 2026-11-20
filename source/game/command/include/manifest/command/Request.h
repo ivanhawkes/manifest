@@ -39,7 +39,12 @@ enum class Result
 	// An order's limit not above 0, or one whose cost the ledger cannot hold.
 	InvalidPrice,
 	// The side of the venue's book an order would rest on holds kMaxRestingOrders.
-	BookFull
+	BookFull,
+	// Provisioning at a home venue with no free pad the starter hull fits.
+	NoPadFree,
+	// Travel for a ship whose journey is still under way, or to the venue it is docked at.
+	Travelling,
+	AlreadyThere
 };
 
 enum class ActorKind

@@ -16,6 +16,7 @@
 
 #include <manifest/company/Company.h>
 #include <manifest/query/Query.h>
+#include <manifest/travel/Travel.h>
 #include <manifest/world/World.h>
 
 using namespace Manifest::Company;
@@ -62,8 +63,11 @@ struct Hosted
 	    : content{Scenario(scenario)}, identities{(RegisterTypes(), World::RegisterWorld(world))},
 	      requests{Manifest::Command::RegisterRequests(world, identities)}
 	{
-		RegisterCommands(requests, identities, content);
+		const Manifest::Travel::Fleet &fleet =
+		    Manifest::Travel::Register(world, requests, identities, content);
+		RegisterCommands(requests, identities, fleet, content);
 		World::CreateInitialState(world, identities, content);
+		Manifest::Travel::OpenStations(world, fleet);
 	}
 
 	// The request admitted as the actor's next.
@@ -319,7 +323,9 @@ TEST_CASE("The commands refuse a hull whose hold is not a whole number of totes 
 		SimWorld world{1.0, 0};
 		World::Identities &identities = World::RegisterWorld(world);
 		Manifest::Command::Requests &requests = Manifest::Command::RegisterRequests(world, identities);
-		CHECK_THROWS_AS(RegisterCommands(requests, identities, content), std::invalid_argument);
+		const Manifest::Travel::Fleet &fleet =
+		    Manifest::Travel::Register(world, requests, identities, content);
+		CHECK_THROWS_AS(RegisterCommands(requests, identities, fleet, content), std::invalid_argument);
 	}
 }
 
@@ -350,7 +356,9 @@ TEST_CASE("A save whose ship carries more than its hull's hold does not load")
 	SimWorld world{1.0, 0};
 	World::Identities &identities = World::RegisterWorld(world);
 	Manifest::Command::Requests &requests = Manifest::Command::RegisterRequests(world, identities);
-	RegisterCommands(requests, identities, holdless);
+	RegisterCommands(
+	    requests, identities, Manifest::Travel::Register(world, requests, identities, holdless),
+	    holdless);
 	CHECK_THROWS_WITH_AS(
 	    world.Load(full), doctest::Contains("more than its hold"), Jettison::Serialise::FormatError);
 }
@@ -582,5 +590,5 @@ TEST_CASE("A save with work pending, and a replay from the start, carry the comp
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves only
 	// with what a save holds or the engine's save format, and a change that moves it says so.
-	CHECK(hosted.world.StateHash() == 0xf1fc7aa932f63cf4ULL);
+	CHECK(hosted.world.StateHash() == 0x76bcb0cdd3a4a9acULL);
 }
