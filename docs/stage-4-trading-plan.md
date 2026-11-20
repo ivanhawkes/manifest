@@ -591,8 +591,8 @@ error that steps nothing; and connected, a trade sent without a principal rests 
 snapshot of her. Played on the manned profile in a release build, the same commands reach the same
 credits after 4.49 days. The `company`, `query` and `remote` suites hold.
 
-Left: market views for a player (W07); a step that runs on beside the console, which blocks while it
-steps; and the slice's whole fixture, with production, life support, observations and the upgrade
+Left: market views for a player (W07); the long step, which blocks the console while it runs and
+costs minutes of a release build ([L26](delivery-order.md#later-priorities-and-re-entry-conditions)); and the slice's whole fixture, with production, life support, observations and the upgrade
 (W09).
 
 ## Handoff to stage 5
