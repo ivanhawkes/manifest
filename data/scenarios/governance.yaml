@@ -1,6 +1,6 @@
 version: 1
 # The multi-region governance fixture (docs/regional-economy-and-governance-plan.md): four regions on
-# Forge, each its own economy, two of them players' homes and two AI neighbours, all served by one
+# Forge, each its own economy, two of them ungoverned and two AI neighbours, all served by one
 # public highport; and a Cassiter region across the system that sells tin and the industrial goods
 # Forge cannot make. Forge East works the Bronze project (D-029) with local copper, tin from
 # Cassiter and a seeded workshop. Every number is an initial test value recorded with C05, not a
@@ -10,6 +10,7 @@ version: 1
 # tote, at least one.
 gameMode: manifest
 starterHull: HullLoneTraderStarter
+starterVenue: VenueForgeHighport
 items:
   - itemId: ItemRice
   - itemId: ItemWheat
@@ -41,12 +42,11 @@ organisations:
   - {organisationId: OrganisationCassiterMining, kind: Corporation, displayName: Cassiter Mining}
 
 regions:
-  # The players' homes, ungoverned until each is allocated.
+  # Ungoverned, for players to found homeworlds in later (D-089).
   - regionId: RegionForgeNorth
     planetId: PlanetForge
     civilisationId: CivilisationForge
     governorId: ""
-    playerHome: true
     population: 25000
     householdFunds: 5000000
     publicFunds: 1000000
@@ -56,7 +56,6 @@ regions:
     planetId: PlanetForge
     civilisationId: CivilisationForge
     governorId: ""
-    playerHome: true
     population: 25000
     householdFunds: 5000000
     publicFunds: 1000000

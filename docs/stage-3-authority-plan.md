@@ -71,7 +71,8 @@ organisation for that player and sets the region's `governorId` to it; the regio
 ungoverned `playerHome` region in the world's region order: authored order in a scenario,
 generation order on a server, whose supply of free regions is the
 [roadmap's](roadmap.md#region-supply). The player's trading company stays a separate
-organisation ([D-075](decision-ledger.md#d-075)).
+organisation ([D-075](decision-ledger.md#d-075)). Retired in W16 by
+[D-089](decision-ledger.md#d-089): a new player is given no region.
 
 Prefer separate reflected inventory/cargo balance records or components to opaque
 maps hidden inside public components. If a service retains maps internally, serialise
@@ -214,7 +215,9 @@ ungoverned home ([D-075](decision-ledger.md#d-075)), and one `Ship` issued `Ship
 scenario's starter hull, docked at the region's home venue: the first public, operational station
 with life support that serves it and has a pad the starter fits, which the content set records
 (`ContentSet::homeVenues`) by the check C09 made. A principal the world has is `AlreadyProvisioned`,
-so a retry under a new sequence mints nothing; with no home free it is `NoHomeRegion`. A ship's dock
+so a retry under a new sequence mints nothing; with no home free it is `NoHomeRegion`. W16 replaced
+the polity and home venue with the scenario's starter venue
+([delivered](stage-4-trading-plan.md#delivered-w16-2026-11-20)). A ship's dock
 is its `Ship::dockedAt`, a venue's ID, which only provisioning sets: the engine's `Dock::Docking`
 needs physics and a station body, which W05 brings. `Manifest.Company.Load` and `Unload`, a player's,
 move a whole number of totes ([D-087](decision-ledger.md#d-087)) between the company's `Stock` (a

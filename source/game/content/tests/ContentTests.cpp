@@ -494,15 +494,15 @@ TEST_CASE("The fixtures are the trading and governance scenarios their plans des
 		CHECK(wanted == 1);
 	}
 
-	// Several independently governed regions on one planet: a home for each player and AI
-	// neighbours, served by one station, and the Bronze project's region.
+	// Several independent regions on one planet: two ungoverned and two AI neighbours, served by one
+	// station, and the Bronze project's region.
 	const ScenarioDefinition &governance = content.scenarios.at("governance");
-	int homes = 0;
+	int ungoverned = 0;
 	int neighbours = 0;
 	for (const RegionDefinition &region : governance.regions)
 		if (region.planetId == "PlanetForge")
-			(region.playerHome ? homes : neighbours) += 1;
-	CHECK(homes == 2);
+			(region.governorId.empty() ? ungoverned : neighbours) += 1;
+	CHECK(ungoverned == 2);
 	CHECK(neighbours == 2);
 	const auto forge =
 	    std::ranges::find(governance.venues, "VenueForgeHighport", &VenueDefinition::venueId);
@@ -680,8 +680,8 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	    trading, region("civilisationId: CivilisationNowhere"),
 	    "'RegionBrineCoast' civilisation 'CivilisationNowhere' names nothing");
 	CheckRefused(
-	    trading, region("governorId: ''"),
-	    "'RegionBrineCoast' governor '' names no organisation, and only a player's home has none");
+	    trading, region("governorId: OrganisationNowhere"),
+	    "'RegionBrineCoast' governor 'OrganisationNowhere' names no organisation");
 	CheckRefused(trading, region("population: -1"), "'RegionBrineCoast' population must be finite");
 	CheckRefused(trading, region("publicFunds: -1"), "'RegionBrineCoast' funds must not be below 0");
 	CheckRefused(
@@ -728,9 +728,11 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 
 	CheckRefused(
 	    trading, "version: 1\nstarterHull: HullNowhere\n", "starterHull 'HullNowhere' names no hull");
+	CheckRefused(trading, "version: 1\nstarterHull: ''\n", "starterHull is required");
 	CheckRefused(
-	    trading, "version: 1\nstarterHull: ''\n",
-	    "starterHull is required: 'RegionOreHighlands' is a player's home");
+	    trading, "version: 1\nstarterVenue: VenueNowhere\n",
+	    "starterVenue 'VenueNowhere' names none of the scenario's venues");
+
 
 	const std::string farSystem = "manifest/definitions/systems/system-far.yaml";
 	// A second system of the trading scenario's, a planet and a station in it.
@@ -799,19 +801,21 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	    "'VenueBrineHighport' market 'ItemSalt' stock is more than a warehouse holds, 9216000000 "
 	    "totes");
 
-	// A player's home needs an operational public station that docks the starter, serves the region
-	// and has life support to spare (D-047); each lack alone refuses it.
+	// The starter venue must be an operational public station that docks the starter and has life
+	// support to spare (D-047, D-089); each lack alone refuses it. Its operator is one of the
+	// scenario's organisations, none a player's, so it is neutral.
+	constexpr std::string_view kNotStarter =
+	    "starterVenue 'VenueOreHighport' must be an operational public station that docks "
+	    "'HullLoneTraderStarter' with life support to spare";
 	for (const std::string_view lack :
-	     {"public: false", "operational: false", "lifeSupportCapacity: 0", "regions: []"})
+	     {"public: false", "operational: false", "lifeSupportCapacity: 0"})
 	{
 		CAPTURE(lack);
 		CheckRefused(
 		    trading,
 		    std::format(
 		        "version: 1\nvenues: !merge=venueId\n  - {{venueId: VenueOreHighport, {}}}\n", lack),
-		    "regions 'RegionOreHighlands' is a player's home, and no operational public station "
-		    "serving it "
-		    "docks 'HullLoneTraderStarter' with life support to spare");
+		    kNotStarter);
 	}
 	// A layout whose only pad is of a class the starter does not fit, by size though not by rank.
 	CheckRefused(
@@ -822,8 +826,7 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	      "pads: [{class: tender, position: [0, 5, 0]}]\n"},
 	     {trading, "version: 1\nvenues: !merge=venueId\n  - {venueId: VenueOreHighport, layout: "
 	               "tender-dock}\n"}},
-	    "regions 'RegionOreHighlands' is a player's home, and no operational public station serving "
-	    "it docks 'HullLoneTraderStarter' with life support to spare");
+	    kNotStarter);
 }
 
 
@@ -1055,22 +1058,6 @@ TEST_CASE("A changed price, a reordered selection or an unselected definition ch
 	    "manifest/definitions/ages/age-golden.yaml",
 	    "version: 1\nageId: AgeGolden\ndisplayName: Golden\n");
 	CHECK(added.manifest != base.manifest);
-}
-
-
-TEST_CASE("A selected scenario's homes provision at the first station that docks the starter")
-{
-	Jettison::Vfs::FileSystem files;
-	files.AddMount({"base", kModDirectory});
-	Jettison::Sim::DefinitionRegistry definitions{files};
-	const ContentSet trading = LoadScenario(files, definitions, "trading");
-	CHECK(trading.tuning.company.startingCredits == 25000);
-	CHECK(
-	    trading.homeVenues ==
-	    std::map<std::string, std::string, std::less<>>{{"RegionOreHighlands", "VenueOreHighport"}});
-
-	const Overlay none;
-	CHECK(LoadWith(none).homeVenues.empty());
 }
 
 

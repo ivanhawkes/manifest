@@ -11,11 +11,10 @@
 
 namespace Manifest::Company
 {
-// The administrative command that provisions a player: their Principal, a company with the
-// configured starting credits, the first free player's home region, governed by a new Polity
-// organisation of theirs, and one ship of the scenario's starter hull, parked on a pad of that
-// region's home venue (Travel::Fleet::Park) with an empty hold. Rejected AlreadyProvisioned for a
-// principal the world has, NoHomeRegion with none free, NoPadFree with no free pad there the starter
+// The administrative command that provisions a player (D-089): their Principal, a company with the
+// configured starting credits, and one ship of the scenario's starter hull, parked on a pad of its
+// starter venue (Travel::Fleet::Park) with an empty hold; no region or polity. Rejected
+// AlreadyProvisioned for a principal the world has, NoPadFree with no free pad there the starter
 // fits, and MalformedPayload for an empty principal ID.
 struct Provision
 {

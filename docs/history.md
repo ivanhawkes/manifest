@@ -100,6 +100,12 @@ cargo's lots are bounded together (`world`), and a ship's cargo against its hull
 `CargoVolume`, whose empty map was taken for none given; a hull the map does not name now carries
 nothing (`company`). Round 7 approved with no finding open.
 
+## W16: onboarding at a neutral spaceport — 2026-11-20
+
+On pin `54fb871`, with no engine edit: Jettison's `Fleet::Park` already places a docked ship. A
+scenario names its starter venue, and provisioning parks the starter there with no home region or
+polity ([what it changed and its evidence](stage-4-trading-plan.md#delivered-w16-2026-11-20)).
+
 ## W17: the cruise by acceleration — 2026-11-20
 
 On pin `54fb871`, with one engine provision, `Space::CruiseProfile`: a drive's boost, its time and a

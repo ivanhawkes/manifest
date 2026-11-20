@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <limits>
 #include <map>
 #include <stdexcept>
@@ -172,7 +173,7 @@ void Seed(Hosted &hosted)
 } // namespace
 
 
-TEST_CASE("Provisioning gives a player a company, its credits, a home and a docked ship, once")
+TEST_CASE("Provisioning gives a player a company, its credits and a ship docked at the starter venue")
 {
 	Hosted hosted;
 	CHECK(hosted.Observe(kAda).companies.empty());
@@ -182,27 +183,28 @@ TEST_CASE("Provisioning gives a player a company, its credits, a home and a dock
 	    CompanyView{
 	        "Company1", "Co", 25000, {}, {{"Ship1", "HullLoneTraderStarter", "VenueOreHighport", {}}}});
 
-	// What the snapshot leaves out: the principal, and the polity governing the player's home.
+	// What the snapshot leaves out: the principal. No polity is made and no region governed (D-089).
 	const entt::registry &registry = hosted.world.Registry();
 	CHECK(registry.get<World::Principal>(hosted.Find(Kind::Principal, "Ada")).displayName == "Ada");
-	const auto &polity =
-	    registry.get<World::Organisation>(hosted.Find(Kind::Organisation, "Organisation1"));
-	CHECK(polity.kind == Manifest::Content::OrganisationKind::Polity);
-	CHECK(polity.principalId == "Ada");
-	CHECK(
-	    registry.get<World::Region>(hosted.Find(Kind::Region, "RegionOreHighlands")).governorId ==
-	    "Organisation1");
+	CHECK(hosted.identities.Find(Kind::Organisation, "Organisation1") == entt::null);
+	CHECK(registry.get<World::Region>(hosted.Find(Kind::Region, "RegionOreHighlands"))
+	          .governorId.empty());
 
 	// Again under a new sequence, it makes nothing: the ledger answers a retry, this the principal.
 	const std::size_t entities = registry.view<const World::Identity>().size();
 	CHECK(hosted.Provision("Ada") == Result::AlreadyProvisioned);
-	// The only home is taken, and the rejection spends no ID.
-	CHECK(hosted.Provision("Bea") == Result::NoHomeRegion);
 	CHECK(hosted.Run(kHost, kProvision, Provision{"", "", ""}) == Result::MalformedPayload);
-	CHECK(hosted.Observe(kBea).companies.empty());
-	CHECK(hosted.Observe(kHost).companies.size() == 1);
 	CHECK(registry.view<const World::Identity>().size() == entities);
-	CHECK(hosted.identities.Issue(Kind::Company) == "Company2");
+
+	// Every player starts at the one venue until its pads that fit the starter are taken, and the
+	// rejection spends no ID.
+	int players = 1;
+	while (hosted.Provision(std::format("Player{}", players)) == Result::Succeeded)
+		++players;
+	CHECK(players > 2);
+	CHECK(hosted.Provision(std::format("Player{}", players)) == Result::NoPadFree);
+	CHECK(hosted.Observe(kHost).companies.size() == static_cast<std::size_t>(players));
+	CHECK(hosted.identities.Issue(Kind::Company) == std::format("Company{}", players + 1));
 }
 
 
@@ -406,18 +408,13 @@ TEST_CASE("A hold carries whole totes, up to its hull's")
 }
 
 
-TEST_CASE("Two players take the governance scenario's homes, and neither moves the other's goods")
+TEST_CASE(
+    "Two players start at the governance scenario's highport, and neither moves the other's goods")
 {
 	Hosted hosted{"governance"};
 	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
 	REQUIRE(hosted.Provision("Bea") == Result::Succeeded);
 	const entt::registry &registry = hosted.world.Registry();
-	CHECK(
-	    registry.get<World::Region>(hosted.Find(Kind::Region, "RegionForgeNorth")).governorId ==
-	    "Organisation1");
-	CHECK(
-	    registry.get<World::Region>(hosted.Find(Kind::Region, "RegionForgeSouth")).governorId ==
-	    "Organisation2");
 	// Two regions of one planet, each with its own two accounts: a player governs one, not the planet.
 	CHECK(
 	    registry.get<World::Region>(hosted.Find(Kind::Region, "RegionForgeNorth")).planetId ==
@@ -453,7 +450,7 @@ TEST_CASE("Requests run in their step in admission order, the later seeing what 
 	const Move six{"Ship1", "VenueForgeHighport", "ItemCopper", 6};
 	const Receipt first = hosted.Admit(kAda, kLoad, six);
 	const Receipt second = hosted.Admit(kAda, kLoad, six);
-	// Two players for the one home left, in one step.
+	// Two players provisioned in one step.
 	const Receipt bea = hosted.Admit(kHost, kProvision, Provision{"Bea", "Bea", "Co"});
 	const Receipt cy = hosted.Admit(kHost, kProvision, Provision{"Cy", "Cy", "Co"});
 	CHECK(second.order == first.order + 1);
@@ -468,9 +465,9 @@ TEST_CASE("Requests run in their step in admission order, the later seeing what 
 	CHECK(AtVenue(hosted.Seen(kAda), "VenueForgeHighport", "ItemCopper") == 4);
 	CHECK(Aboard(hosted.Seen(kAda), "Ship1", "ItemCopper") == 6);
 	CHECK(hosted.Outcome(kHost, 2) == Result::Succeeded);
-	CHECK(hosted.Outcome(kHost, 3) == Result::NoHomeRegion);
+	CHECK(hosted.Outcome(kHost, 3) == Result::Succeeded);
 	CHECK(hosted.Seen(kBea).companyId == "Company2");
-	CHECK(hosted.Observe({ActorKind::Principal, "Cy"}).companies.empty());
+	CHECK(hosted.Seen({ActorKind::Principal, "Cy"}).companyId == "Company3");
 }
 
 
@@ -590,5 +587,5 @@ TEST_CASE("A save with work pending, and a replay from the start, carry the comp
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves only
 	// with what a save holds or the engine's save format, and a change that moves it says so.
-	CHECK(hosted.world.StateHash() == 0xb64c7ddc9b331e6fULL);
+	CHECK(hosted.world.StateHash() == 0x07eac95f9b50807dULL);
 }

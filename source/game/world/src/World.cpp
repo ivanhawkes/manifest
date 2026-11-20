@@ -69,8 +69,8 @@ void CreateInitialState(
 	{
 		registry.emplace<Region>(
 		    CreateOrRefuse(world, identities, Kind::Region, region.regionId), region.planetId,
-		    region.civilisationId, region.governorId, region.playerHome, region.population,
-		    region.health, region.happiness);
+		    region.civilisationId, region.governorId, region.population, region.health,
+		    region.happiness);
 		CreateAccount(world, identities, Kind::PublicAccount, region.regionId, region.publicFunds);
 		CreateAccount(
 		    world, identities, Kind::HouseholdAccount, region.regionId, region.householdFunds);

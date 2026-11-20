@@ -534,6 +534,33 @@ holds with the mode's cruise taken out.
 Left: a local trip in play waits for venues round one planet; long-haul play in the mode needs
 stargates or moongates (L16), and the TUI and console show a journey's days (W15).
 
+## Delivered: W16, 2026-11-20
+
+Onboarding by [D-089](decision-ledger.md#d-089), with no engine edit:
+
+- **Content.** A scenario names its `starterVenue`, one of its venues, beside its `starterHull`, both
+  now required: the venue must be public and operational, have life support, and have a pad, not for
+  display, that the starter's dock hull fits (D-047). Its operator is one of the scenario's
+  organisations, none a player's, so it is neutral. `playerHome` and `ContentSet::homeVenues` are
+  gone, and any region may be ungoverned (`governorId` empty), as the fixtures' former homes are,
+  left for founding by acquisition later.
+- **Provisioning.** `Manifest.Company.Provision` makes the principal, the company and its credits,
+  and parks the starter on a free pad of the starter venue; it makes no polity and governs no region.
+  `NoHomeRegion` is retired: every player starts at the one venue until its pads that fit the
+  starter are taken, then `NoPadFree`. A saved `Region` no longer holds `playerHome`.
+
+Evidence: in the `content` suite, the starter venue refused naming no venue, and for each lack (not
+public, not operational, no life support, no pad the starter fits), an empty `starterHull` refused,
+and an ungoverned region accepted and a governor naming nothing refused; in the `company` suite, a
+player provisioned at Ore Highport with no organisation issued and the region ungoverned, players
+provisioned there until `NoPadFree`, which spends no ID, and three players in one step at the
+governance highport. The `company` suite's pinned hash moved for the save holding no polity and no
+`playerHome`.
+
+Left: founding a homeworld and its polity, under the acquisition rules, is its own later task; the
+planning documents' home-region allocation (scope, roadmap's region supply, D-076, and the regional
+plan's onboarding) is W13's to restate as founding.
+
 ## Handoff to stage 5
 
 Carry forward the exact scheduler order, command/result schema, content manifest,

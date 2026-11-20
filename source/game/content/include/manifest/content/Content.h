@@ -66,8 +66,6 @@ struct ContentSet
 	std::string scenario;
 	// The scenario's star systems, resolved, in its order; none with no scenario selected.
 	std::vector<Jettison::Celestial::StarSystem> systems;
-	// The venue each of its player's home regions provisions a new player's ship at, by region ID.
-	std::map<std::string, std::string, std::less<>> homeVenues;
 	// Over every definition loaded, the mode's or not, and the scenario selected.
 	ContentIdentity identity;
 };

@@ -52,7 +52,11 @@ selected new onboarding during it ([D-089](decision-ledger.md#d-089)), and after
 by acceleration ([D-090](decision-ledger.md#d-090)). W17 is done (2026-11-20): the Manifest mode
 [cruises by acceleration](stage-4-trading-plan.md#delivered-w17-2026-11-20), manned or unmanned by a
 hull's occupants, Astralis on its drives' power law, on pin `54fb871` with Jettison's cruise profile.
-Next: W16, then W15.
+W16 is done (2026-11-20): a new player
+[starts at the scenario's starter venue](stage-4-trading-plan.md#delivered-w16-2026-11-20), a neutral
+public spaceport, with no home region or polity ([D-089](decision-ledger.md#d-089)), on the same pin
+with no engine edit.
+Next: W15.
 
 ## Priority 0: maintenance before Stage 1
 
@@ -154,7 +158,7 @@ Canonical scope: [Stage 4](stage-4-trading-plan.md), with the
 | 33 / W03 | Adapt marketplace reservations, matching, partial settlement, cancellation, expiry and fees to owner/venue accounts with checked atomic writes. **Done 2026-11-20**, [delivered](stage-4-trading-plan.md#delivered-w03-2026-11-20), goods in totes ([D-087](decision-ledger.md#d-087)). | W02 |
 | 34 / W05 | Integrate real departure, cruise, arrival, docking and cargo eligibility; prove starter/compact berth and capacity behavior where selected. **Done 2026-11-20**, [delivered](stage-4-trading-plan.md#delivered-w05-2026-11-20), the star systems and drives ([D-088](decision-ledger.md#d-088)). | W01, W03, A04 |
 | 34a / W17 | Cruise by acceleration ([D-090](decision-ledger.md#d-090)): Jettison provisions a `CruiseDrive` acceleration profile (a boost for a time split across both ends, a sustained rate between) with its time and placement, a drive without one cruising as now; the game mode chooses its cruise model, the Manifest mode authoring a manned and an unmanned profile, given by a hull's occupants, and Astralis keeping its time-compressed drives. Prove local trips at 2 g, a long one switching to 1 g after two hours, an unmanned one at 12 g, Astralis's cruise unchanged, and a save mid-cruise. **Done 2026-11-20**, [delivered](stage-4-trading-plan.md#delivered-w17-2026-11-20), on pin `54fb871`. | W05 |
-| 34b / W16 | Onboarding by [D-089](decision-ledger.md#d-089): provisioning gives a company, the starting credits and the starter ship parked at a neutral public spaceport the scenario names, with no home region or polity; retire `playerHome` allocation, `NoHomeRegion` and the home-venue rule, and move W13's home regions to founding by acquisition. Founding a homeworld is its own later task under the acquisition rules. | W05 |
+| 34b / W16 | Onboarding by [D-089](decision-ledger.md#d-089): provisioning gives a company, the starting credits and the starter ship parked at a neutral public spaceport the scenario names, with no home region or polity; retire `playerHome` allocation, `NoHomeRegion` and the home-venue rule, and move W13's home regions to founding by acquisition. Founding a homeworld is its own later task under the acquisition rules. **Done 2026-11-20**, [history](history.md#w16-onboarding-at-a-neutral-spaceport--2026-11-20). | W05 |
 | 35 / W15 | Vertical slice: in the trading fixture, one company ship buys at one venue, departs, cruises, docks and sells at the other through the public commands, on W03's settlement and W05's travel; no production, life support, observations or upgrades yet. Played through the console, it shows the loop end to end before W04 and W06–W08 build around it; W09 later proves the complete fixture. | W03, W05 |
 | 36 / W04 | Integrate local production, finite brokers/demand, regional payroll/tax, essential purchases and health/happiness in the selected fixed-step order; eliminate automatic inter-venue stock transfers. | W03 |
 | 37 / W06 | Implement working station life-support connections, onboard usage and explicit resupply under the resolved physical/accounting rules; preserve one-time starter grants. | W04, W05 |
@@ -164,7 +168,7 @@ Canonical scope: [Stage 4](stage-4-trading-plan.md), with the
 | 41 / W10 | Add enabled standing trade policies, autopilot and NPC jobs through the same physical commands and permitted market facts; prove operation without connected clients. | W09, N03 |
 | 42 / W11 | Resolve the clean public-project/tender lifecycle's remaining rounding, deadline, default and regional delivery choices; define saved jobs, rights and reservations. | W10 |
 | 43 / W12 | Implement competitive procurement, partial delivery/payment, performance security and a material-gated regional project through physical fulfilment. | W11 |
-| 44 / W13 | Prove the multi-region idle governance scenario: independent accounts/condition, AI neighbours, one home region per participant, development queues, protected late joining and reconnect continuity. | W12, W10 |
+| 44 / W13 | Prove the multi-region idle governance scenario: independent accounts/condition, AI neighbours, a homeworld region per participant founded by acquisition ([D-089](decision-ledger.md#d-089)), development queues, protected late joining and reconnect continuity. | W12, W10 |
 | 45 / W14 | Close Stage 4: verify trading, market fog, automation and regional development together, in-memory continuation and final repository gates; record the actual schedule and state contracts. | W09, W13 |
 
 W01 is technically independent of N01–N03; its later placement is the default priority,

@@ -243,9 +243,8 @@ struct RegionDefinition
 	std::string regionId;
 	std::string planetId;
 	std::string civilisationId;
-	// An organisation; empty only for a player's home, which no one governs until it is allocated.
+	// An organisation; empty for one no one governs yet.
 	std::string governorId;
-	bool playerHome{false};
 	double population{0.0};
 	// Whole credits.
 	std::int64_t householdFunds{0};
@@ -282,7 +281,7 @@ struct VenueDefinition
 	// The planet it serves from; empty for one in open space.
 	std::string planetId;
 	std::string operatorId;
-	// Open to every company on equal terms, as a starting region's station must be.
+	// Open to every company on equal terms, as the scenario's starter venue must be.
 	bool isPublic{false};
 	bool operational{false};
 	// The Dock.StationLayout it is built to, by record name: its pads are the hulls it docks.
@@ -296,8 +295,10 @@ struct VenueDefinition
 struct ScenarioDefinition
 {
 	std::string gameMode;
-	// The hull a new player starts in: a player's home needs a station that docks it.
+	// The hull a new player starts in, parked at the starter venue, a neutral public spaceport the
+	// scenario's venues name (D-089).
 	std::string starterHull;
+	std::string starterVenue;
 	// A subset of the mode's items, in its order.
 	std::vector<ItemSelection> items;
 	std::vector<SystemDefinition> systems;

@@ -83,11 +83,10 @@ TEST_CASE(
 	    registry.get<Account>(hosted.identities.Find(Kind::VenueAccount, "VenueOreHighport")).balance ==
 	    0);
 
-	const entt::entity home = hosted.identities.Find(Kind::Region, "RegionOreHighlands");
-	REQUIRE(home != entt::null);
-	CHECK(registry.get<Region>(home).playerHome);
-	CHECK(registry.get<Region>(home).governorId.empty());
-	CHECK(registry.get<Region>(home).population == 25000.0);
+	const entt::entity highlands = hosted.identities.Find(Kind::Region, "RegionOreHighlands");
+	REQUIRE(highlands != entt::null);
+	CHECK(registry.get<Region>(highlands).governorId.empty());
+	CHECK(registry.get<Region>(highlands).population == 25000.0);
 	const entt::entity council = hosted.identities.Find(Kind::Organisation, "OrganisationBrineCouncil");
 	REQUIRE(council != entt::null);
 	CHECK(registry.get<Organisation>(council).principalId.empty());

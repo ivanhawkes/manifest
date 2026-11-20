@@ -9,6 +9,7 @@ version: 1
 # nearest tote, at least one.
 gameMode: manifest
 starterHull: HullLoneTraderStarter
+starterVenue: VenueOreHighport
 items:
   - itemId: ItemCopper
   - itemId: ItemTin
@@ -35,12 +36,11 @@ organisations:
   - {organisationId: OrganisationBrineCouncil, kind: Polity, displayName: Brine Council}
 
 regions:
-  # The player's home, ungoverned until it is allocated.
+  # Ungoverned, for a player to found a homeworld in later (D-089).
   - regionId: RegionOreHighlands
     planetId: PlanetOre
     civilisationId: CivilisationOre
     governorId: ""
-    playerHome: true
     population: 25000
     householdFunds: 5000000
     publicFunds: 1000000

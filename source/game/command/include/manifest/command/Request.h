@@ -26,9 +26,8 @@ enum class Result
 	// When it runs, from its command's rules.
 	UnknownTarget,
 	InsufficientFunds,
-	// Provisioning a principal that already has a company, or with no home region free.
+	// Provisioning a principal that already has a company.
 	AlreadyProvisioned,
-	NoHomeRegion,
 	NotDocked,
 	WrongVenue,
 	// Too little available at the venue, or aboard, for the quantity.
@@ -40,7 +39,7 @@ enum class Result
 	InvalidPrice,
 	// The side of the venue's book an order would rest on holds kMaxRestingOrders.
 	BookFull,
-	// Provisioning at a home venue with no free pad the starter hull fits.
+	// Provisioning at a starter venue with no free pad the starter hull fits.
 	NoPadFree,
 	// Travel for a ship whose journey is still under way, or to the venue it is docked at.
 	Travelling,

@@ -207,7 +207,7 @@ save identity, stable.
 | `planets` | `planetId`, `systemId`, `displayName` | a physical body, its system's planet or moon of that name; no population or account of its own |
 | `civilisations` | `civilisationId`, `displayName`, `ageId` | cultural and technology identity only |
 | `organisations` | `organisationId`, `kind` (`Polity` or `Corporation`), `displayName` | owns accounts and assets from Stage 3 |
-| `regions` | `regionId`, `planetId`, `civilisationId`, `governorId`, `playerHome`, `population`, `householdFunds`, `publicFunds`, `health`, `happiness` | the one population owner; `governorId` names an organisation, empty only when `playerHome`; population finite and nonnegative; funds whole credits; condition 0–100 |
+| `regions` | `regionId`, `planetId`, `civilisationId`, `governorId`, `population`, `householdFunds`, `publicFunds`, `health`, `happiness` | the one population owner; `governorId` names an organisation, or is empty for an ungoverned region; population finite and nonnegative; funds whole credits; condition 0–100 |
 | `venues` | `venueId`, `systemId`, `planetId` (optional), `operatorId`, `regions: [{regionId}]`, `market: [{itemId, production, demand, stock}]` | its system's station of that name, orbiting its named planet, which is in the venue's system; served regions are on that planet ([shared ports](regional-economy-and-governance-plan.md#control-construction-and-discovery-boundaries)), so a venue with no planet serves none; market items are scenario items; quantities finite and nonnegative, rates per simulation day |
 
 The eight-good trading fixture is then one system, two planets, two regions (one civilisation each)
@@ -222,16 +222,16 @@ and `operational` or not, names the station `layout` it docks on (a `hulls` list
 keep on working life support; a region lists the `skills` it knows, its seeded `facilities`
 (`{facilityId, kind: Workshop, operational}`) and its public `projects`, each a tuning project.
 `LoadContent` checks every scenario against its own mode, whichever the set is built for, and the
-set holds them all by name. Beyond the table's rules: a player's home is served by an operational
-public venue that docks the starter hull with life-support capacity of at least 1 (D-047); a
+set holds them all by name. Beyond the table's rules: a scenario's `starterVenue` is an operational
+public venue that docks its `starterHull` with life-support capacity of at least 1 (D-047, D-089); a
 region's project needs its prerequisites known, an operational workshop, and every project and
 recipe input produced by some venue of the scenario. Two fixtures, staged as they are authored at
 `manifest/scenarios/`, their values recorded with them ([ledger](decision-ledger.md#numeric-values)):
 
 - `trading`: the eight goods in system Anvil, Ore and Brine each a region of its own civilisation
-  with a public highport, each good made at one and wanted at the other. Ore's region is a
-  player's home, Brine's governed by its council.
-- `governance`: four regions on Forge, two players' homes and two AI neighbours, all served by one
+  with a public highport, each good made at one and wanted at the other. Ore's region is
+  ungoverned, Brine's governed by its council; a new player starts at Ore's highport.
+- `governance`: four regions on Forge, two ungoverned and two AI neighbours, all served by one
   public highport; Cassiter, an Industrial region across the system, sells tin, basic medical
   supplies and the life-support goods from a corporation's private dock. Forge East knows smelting,
   has the seeded workshop and works the Bronze project on local copper and Cassiter's tin.

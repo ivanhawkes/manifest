@@ -62,9 +62,8 @@ struct Region
 {
 	std::string planetId;
 	std::string civilisationId;
-	// An Organisation; empty only for a player's home not yet allocated.
+	// An Organisation; empty for one no one governs yet.
 	std::string governorId;
-	bool playerHome{false};
 	double population{0.0};
 	double health{0.0};
 	double happiness{0.0};

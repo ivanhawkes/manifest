@@ -102,7 +102,6 @@ void RegisterTypes()
 		    .Field<&Region::planetId>("planetId", kSaved)
 		    .Field<&Region::civilisationId>("civilisationId", kSaved)
 		    .Field<&Region::governorId>("governorId", kSaved)
-		    .Field<&Region::playerHome>("playerHome", kSaved)
 		    .Field<&Region::population>("population", kSaved)
 		    .Field<&Region::health>("health", kSaved)
 		    .Field<&Region::happiness>("happiness", kSaved);

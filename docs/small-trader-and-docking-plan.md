@@ -204,8 +204,8 @@ and no model until L15; the compact single-seat is a provisional 6 x 4 x 1.8 m s
 2026-11-19, until W05); the long-haul trader is a frigate, the sample's 56 x 28 x 14 m transport
 (selected 2026-11-19). The one layout, `highport`, is Ostra Highport's hub and four piers of three
 destroyer pads, without its display wing or dry docks, with eight skiff pads in the gaps between
-them; every venue names it. A venue's `layout` replaces its `hulls`, and a player's home needs a
-venue whose layout has a pad, not for display, that the starter's dock hull fits (`Dock::Fits`,
+them; every venue names it. A venue's `layout` replaces its `hulls`, and a scenario's starter venue
+(W16; a player's home until then) needs a layout with a pad, not for display, that the starter's dock hull fits (`Dock::Fits`,
 Jettison `15e2561`). The content suite refuses an oversized dock hull, a pad class too small for
 its hull, a layout off its structure, a dock hull with no `Manifest.Hull` and the reverse, an
 unknown layout and a home whose station's only pad the starter does not fit, and checks that the

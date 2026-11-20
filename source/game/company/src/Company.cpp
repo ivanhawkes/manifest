@@ -67,23 +67,12 @@ Result Provisioned(SimWorld &world, Rules &rules, const Provision &provision)
 	if (identities.Find(Kind::Principal, provision.principalId) != entt::null)
 		return Result::AlreadyProvisioned;
 	entt::registry &registry = world.Registry();
-	const auto home = std::ranges::find_if(
-	    rules.scenario.regions,
-	    [&](const Content::RegionDefinition &region)
-	    {
-		    const entt::entity entity = identities.Find(Kind::Region, region.regionId);
-		    return region.playerHome && entity != entt::null &&
-		           registry.get<World::Region>(entity).governorId.empty();
-	    });
-	if (home == rules.scenario.regions.end())
-		return Result::NoHomeRegion;
-	const std::string &venueId = rules.content.homeVenues.at(home->regionId);
+	const std::string &venueId = rules.scenario.starterVenue;
 	const entt::entity pad = rules.fleet.FreePad(registry, venueId, rules.scenario.starterHull);
 	if (pad == entt::null)
 		return Result::NoPadFree;
 
 	const std::string companyId = Issued(identities, Kind::Company);
-	const std::string polityId = Issued(identities, Kind::Organisation);
 	const std::string shipId = Issued(identities, Kind::Ship);
 	registry.emplace<World::Principal>(
 	    Created(world, identities, Kind::Principal, provision.principalId), provision.displayName);
@@ -93,10 +82,6 @@ Result Provisioned(SimWorld &world, Rules &rules, const Provision &provision)
 	registry.emplace<World::Account>(
 	    Created(world, identities, Kind::CompanyAccount, companyId),
 	    rules.content.tuning.company.startingCredits);
-	registry.emplace<World::Organisation>(
-	    Created(world, identities, Kind::Organisation, polityId), Content::OrganisationKind::Polity,
-	    provision.displayName, provision.principalId);
-	registry.get<World::Region>(identities.Find(Kind::Region, home->regionId)).governorId = polityId;
 	const entt::entity ship = Created(world, identities, Kind::Ship, shipId);
 	registry.emplace<World::Ship>(ship, companyId, rules.scenario.starterHull, venueId);
 	registry.emplace<World::Cargo>(ship);
