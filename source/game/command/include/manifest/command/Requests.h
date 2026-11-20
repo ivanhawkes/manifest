@@ -90,6 +90,12 @@ class Requests final : public Jettison::Sim::WorldService
 	    Jettison::Sim::SimWorld &world, const Actor &actor, std::uint64_t sequence,
 	    const std::string &command, std::uint32_t version, std::span<const std::byte> payload);
 
+	// The sequence of the request whose handler is running, for a handler to record; 0 outside one.
+	std::uint64_t Running() const
+	{
+		return m_running;
+	}
+
 	// The sequence an actor submits next, advertised on reconnect: 1 for one never seen.
 	std::uint64_t NextSequence(const Actor &actor) const;
 
@@ -128,6 +134,7 @@ class Requests final : public Jettison::Sim::WorldService
 	std::map<std::string, Handler> m_handlers;
 	std::uint64_t m_order{0};
 	std::map<Key, ActorLedger> m_actors;
+	std::uint64_t m_running{0};
 };
 
 // Registers the Request command on the world and adds the Requests service, which the world owns

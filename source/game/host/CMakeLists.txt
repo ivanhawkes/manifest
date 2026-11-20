@@ -6,6 +6,7 @@ manifest_add_module(host
 		world
 		command
 		company
+		trade
 	HEADERS
 		include/manifest/host/Start.h
 	SOURCES

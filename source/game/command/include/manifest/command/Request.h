@@ -35,7 +35,11 @@ enum class Result
 	InsufficientStock,
 	CapacityExceeded,
 	// Not finite, not above 0, or one whose arithmetic would not be.
-	InvalidQuantity
+	InvalidQuantity,
+	// An order's limit not above 0, or one whose cost the ledger cannot hold.
+	InvalidPrice,
+	// The side of the venue's book an order would rest on holds kMaxRestingOrders.
+	BookFull
 };
 
 enum class ActorKind

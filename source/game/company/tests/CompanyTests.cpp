@@ -137,7 +137,7 @@ struct Hosted
 };
 
 
-// The company's available IBCs of the item at the venue, 0 where it holds none.
+// The company's available totes of the item at the venue, 0 where it holds none.
 std::uint64_t AtVenue(const CompanyView &company, std::string_view venueId, std::string_view itemId)
 {
 	for (const World::Holding &holding : company.holdings)
@@ -147,14 +147,14 @@ std::uint64_t AtVenue(const CompanyView &company, std::string_view venueId, std:
 }
 
 
-// The IBCs of the item aboard the company's ship, 0 where it carries none.
+// The totes of the item aboard the company's ship, 0 where it carries none.
 std::uint64_t Aboard(const CompanyView &company, std::string_view shipId, std::string_view itemId)
 {
 	for (const Manifest::Query::ShipView &ship : company.ships)
 		if (ship.shipId == shipId)
 			for (const World::Lot &lot : ship.cargo)
 				if (lot.itemId == itemId)
-					return lot.containers;
+					return lot.totes;
 	return 0;
 }
 
@@ -163,7 +163,7 @@ std::uint64_t Aboard(const CompanyView &company, std::string_view shipId, std::s
 void Seed(Hosted &hosted)
 {
 	hosted.Stock("Company1").holdings = {{"VenueForgeHighport", "ItemCopper", 10, 0}};
-	hosted.Stock("Company2").holdings = {{"VenueForgeHighport", "ItemTin", 3, 1}};
+	hosted.Stock("Company2").holdings = {{"VenueForgeHighport", "ItemTin", 3, 0}};
 }
 } // namespace
 
@@ -216,8 +216,8 @@ TEST_CASE("Loading and unloading conserve the goods between the venue and the ho
 	Hosted hosted;
 	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
 	hosted.Stock("Company1").holdings = {{"VenueOreHighport", "ItemCopper", 10, 0}};
-	auto move = [](std::uint64_t containers)
-	{ return Move{"Ship1", "VenueOreHighport", "ItemCopper", containers}; };
+	auto move = [](std::uint64_t totes)
+	{ return Move{"Ship1", "VenueOreHighport", "ItemCopper", totes}; };
 	auto split = [&](std::uint64_t atVenue, std::uint64_t aboard)
 	{
 		const CompanyView ada = hosted.Seen(kAda);
@@ -254,13 +254,13 @@ TEST_CASE("A rejected move writes nothing")
 	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
 	hosted.Stock("Company1").holdings = {
 	    {"VenueBrineHighport", "ItemSalt", 50, 0},
-	    {"VenueOreHighport", "ItemCopper", 100, 5},
+	    {"VenueOreHighport", "ItemCopper", 200, 5},
 	    {"VenueOreHighport", "ItemTin", 1, 0}};
 	REQUIRE(hosted.Load(kAda, {"Ship1", "VenueOreHighport", "ItemTin", 1}) == Result::Succeeded);
 	const CompanyView before = hosted.Seen(kAda);
 
-	auto copper = [](std::uint64_t containers, std::string venue = "VenueOreHighport")
-	{ return Move{"Ship1", std::move(venue), "ItemCopper", containers}; };
+	auto copper = [](std::uint64_t totes, std::string venue = "VenueOreHighport")
+	{ return Move{"Ship1", std::move(venue), "ItemCopper", totes}; };
 	const std::uint64_t huge = std::numeric_limits<std::uint64_t>::max();
 	const struct
 	{
@@ -273,11 +273,11 @@ TEST_CASE("A rejected move writes nothing")
 	    {true, {"Ship1", "VenueBrineHighport", "ItemSalt", 1}, Result::WrongVenue},
 	    {true, {"Ship1", "VenueOreHighport", "ItemRice", 1}, Result::UnknownTarget},
 	    {true, copper(0), Result::InvalidQuantity},
-	    // 100 available and 5 reserved: the reserved do not load.
-	    {true, copper(103), Result::InsufficientStock},
+	    // 200 available and 5 reserved: the reserved do not load.
+	    {true, copper(203), Result::InsufficientStock},
 	    {true, copper(huge), Result::InsufficientStock},
-	    // The starter holds 20 IBCs, one of them tin.
-	    {true, copper(20), Result::CapacityExceeded},
+	    // The starter holds 20 IBCs, 160 totes, one of them tin.
+	    {true, copper(160), Result::CapacityExceeded},
 	    {false, copper(1), Result::InsufficientStock},
 	    {false, {"Ship1", "VenueOreHighport", "ItemTin", 2}, Result::InsufficientStock},
 	    {false, {"Ship1", "VenueOreHighport", "ItemTin", huge}, Result::InsufficientStock},
@@ -285,7 +285,7 @@ TEST_CASE("A rejected move writes nothing")
 	for (const auto &[aboard, move, expected] : rejected)
 	{
 		CAPTURE(move.itemId);
-		CAPTURE(move.containers);
+		CAPTURE(move.totes);
 		CHECK((aboard ? hosted.Load(kAda, move) : hosted.Unload(kAda, move)) == expected);
 		CHECK(hosted.Seen(kAda) == before);
 	}
@@ -305,11 +305,12 @@ TEST_CASE("A rejected move writes nothing")
 }
 
 
-TEST_CASE("The commands refuse a hull whose hold is not a whole number of IBCs up to the largest")
+TEST_CASE("The commands refuse a hull whose hold is not a whole number of totes up to the largest")
 {
 	for (const double volume :
-	     {0x1p64, static_cast<double>(Manifest::Core::kMaxHoldIbcs) + 1.0, 20.5, -1.0,
-	      std::numeric_limits<double>::quiet_NaN()})
+	     {0x1p64,
+	      static_cast<double>(Manifest::Core::kMaxHoldTotes + Manifest::Core::kTotesPerIbc) / 8.0,
+	      20.0625, -1.0, std::numeric_limits<double>::quiet_NaN()})
 	{
 		CAPTURE(volume);
 		Manifest::Content::ContentSet content = Scenario("trading");
@@ -329,9 +330,9 @@ TEST_CASE("A save whose ship carries more than its hull's hold does not load")
 	Hosted hosted;
 	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
 	World::Cargo &cargo = hosted.world.Registry().get<World::Cargo>(hosted.Find(Kind::Ship, "Ship1"));
-	cargo.lots = {{"ItemCopper", 15}, {"ItemTin", 6}};
+	cargo.lots = {{"ItemCopper", 150}, {"ItemTin", 11}};
 	const std::vector<std::byte> over = hosted.world.Save();
-	cargo.lots = {{"ItemCopper", 15}, {"ItemTin", 5}};
+	cargo.lots = {{"ItemCopper", 150}, {"ItemTin", 10}};
 	const std::vector<std::byte> full = hosted.world.Save();
 
 	Hosted loaded;
@@ -341,7 +342,7 @@ TEST_CASE("A save whose ship carries more than its hull's hold does not load")
 	    Jettison::Serialise::FormatError);
 	CHECK(loaded.world.StateHash() == before);
 	loaded.world.Load(full);
-	CHECK(Aboard(loaded.Seen(kAda), "Ship1", "ItemTin") == 5);
+	CHECK(Aboard(loaded.Seen(kAda), "Ship1", "ItemTin") == 10);
 
 	// A hull with no CargoVolume carries nothing, though no hull has a hold to name.
 	Manifest::Content::ContentSet holdless = Scenario("trading");
@@ -365,36 +366,36 @@ TEST_CASE("A warehouse holds at most its limit of one item for one owner")
 	REQUIRE(hosted.Load(kAda, one) == Result::Succeeded);
 	// Full with what is available and what is reserved together.
 	hosted.Stock("Company1").holdings = {
-	    {"VenueOreHighport", "ItemCopper", Manifest::Core::kMaxWarehouseIbcs - 1, 1}};
+	    {"VenueOreHighport", "ItemCopper", Manifest::Core::kMaxWarehouseTotes - 1, 1}};
 	const CompanyView full = hosted.Seen(kAda);
 	CHECK(hosted.Unload(kAda, one) == Result::CapacityExceeded);
 	CHECK(hosted.Seen(kAda) == full);
 	hosted.Stock("Company1").holdings = {
-	    {"VenueOreHighport", "ItemCopper", Manifest::Core::kMaxWarehouseIbcs - 2, 1}};
+	    {"VenueOreHighport", "ItemCopper", Manifest::Core::kMaxWarehouseTotes - 2, 1}};
 	CHECK(hosted.Unload(kAda, one) == Result::Succeeded);
 	CHECK(
 	    AtVenue(hosted.Seen(kAda), "VenueOreHighport", "ItemCopper") ==
-	    Manifest::Core::kMaxWarehouseIbcs - 1);
+	    Manifest::Core::kMaxWarehouseTotes - 1);
 }
 
 
-TEST_CASE("A hold carries whole IBCs, up to its hull's")
+TEST_CASE("A hold carries whole totes, up to its hull's")
 {
 	Hosted hosted;
 	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
 	hosted.Stock("Company1").holdings = {
 	    {"VenueOreHighport", "ItemCopper", 1000, 0}, {"VenueOreHighport", "ItemTin", 1000, 0}};
-	auto move = [](std::string item, std::uint64_t containers)
-	{ return Move{"Ship1", "VenueOreHighport", std::move(item), containers}; };
-	REQUIRE(hosted.Load(kAda, move("ItemCopper", 15)) == Result::Succeeded);
-	REQUIRE(hosted.Load(kAda, move("ItemTin", 5)) == Result::Succeeded);
+	auto move = [](std::string item, std::uint64_t totes)
+	{ return Move{"Ship1", "VenueOreHighport", std::move(item), totes}; };
+	REQUIRE(hosted.Load(kAda, move("ItemCopper", 150)) == Result::Succeeded);
+	REQUIRE(hosted.Load(kAda, move("ItemTin", 10)) == Result::Succeeded);
 	const CompanyView full = hosted.Seen(kAda);
 	CHECK(hosted.Load(kAda, move("ItemCopper", 1)) == Result::CapacityExceeded);
 	CHECK(hosted.Load(kAda, move("ItemTin", 1)) == Result::CapacityExceeded);
 	CHECK(hosted.Seen(kAda) == full);
 	REQUIRE(hosted.Unload(kAda, move("ItemTin", 1)) == Result::Succeeded);
 	CHECK(hosted.Load(kAda, move("ItemCopper", 1)) == Result::Succeeded);
-	CHECK(Aboard(hosted.Seen(kAda), "Ship1", "ItemCopper") == 16);
+	CHECK(Aboard(hosted.Seen(kAda), "Ship1", "ItemCopper") == 151);
 }
 
 
@@ -554,7 +555,7 @@ TEST_CASE("A save with work pending, and a replay from the start, carry the comp
 	CHECK(Aboard(adas, "Ship1", "ItemCopper") == 3);
 	CHECK(
 	    hosted.Seen(kBea).holdings ==
-	    std::vector<World::Holding>{{"VenueForgeHighport", "ItemTin", 3, 1}});
+	    std::vector<World::Holding>{{"VenueForgeHighport", "ItemTin", 3, 0}});
 
 	Hosted loaded{"governance"};
 	loaded.world.Load(save);
@@ -582,5 +583,5 @@ TEST_CASE("A save with work pending, and a replay from the start, carry the comp
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves only
 	// with what a save holds or the engine's save format, and a change that moves it says so.
-	CHECK(hosted.world.StateHash() == 0x63a4858a587bffa5ULL);
+	CHECK(hosted.world.StateHash() == 0xb0f0e0af264cae5eULL);
 }

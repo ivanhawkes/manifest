@@ -33,7 +33,9 @@ void RegisterTypes()
 		    .Value<Result::WrongVenue>("WrongVenue")
 		    .Value<Result::InsufficientStock>("InsufficientStock")
 		    .Value<Result::CapacityExceeded>("CapacityExceeded")
-		    .Value<Result::InvalidQuantity>("InvalidQuantity");
+		    .Value<Result::InvalidQuantity>("InvalidQuantity")
+		    .Value<Result::InvalidPrice>("InvalidPrice")
+		    .Value<Result::BookFull>("BookFull");
 		RegisterEnum<ActorKind>("Manifest.Command.ActorKind")
 		    .Value<ActorKind::Principal>("Principal")
 		    .Value<ActorKind::Administrator>("Administrator");

@@ -27,7 +27,7 @@ using Jettison::Sim::SimWorld;
 using World::Kind;
 
 
-// What the commands run on: the scenario's items and the IBCs each hull holds, looked up once.
+// What the commands run on: the scenario's items and the totes each hull holds, looked up once.
 struct Rules
 {
 	World::Identities &identities;
@@ -123,7 +123,7 @@ Result Moved(SimWorld &world, const Rules &rules, const Actor &actor, const Move
 	const auto item = rules.items.find(move.itemId);
 	if (item == rules.items.end())
 		return Result::UnknownTarget;
-	if (move.containers == 0)
+	if (move.totes == 0)
 		return Result::InvalidQuantity;
 
 	World::Stock &stock = registry.get<World::Stock>(company);
@@ -139,38 +139,44 @@ Result Moved(SimWorld &world, const Rules &rules, const Actor &actor, const Move
 
 	if (aboard)
 	{
-		if (!held || holding->available < move.containers)
+		if (!held || holding->available < move.totes)
 			return Result::InsufficientStock;
 		const auto hold = rules.holds.find(ship.hullId);
 		std::uint64_t free = hold == rules.holds.end() ? 0 : hold->second;
 		for (const World::Lot &aboardLot : cargo.lots)
-			free -= std::min(free, aboardLot.containers);
-		if (move.containers > free)
+			free -= std::min(free, aboardLot.totes);
+		if (move.totes > free)
 			return Result::CapacityExceeded;
 
-		holding->available -= move.containers;
+		holding->available -= move.totes;
 		if (holding->available == 0 && holding->reserved == 0)
 			stock.holdings.erase(holding);
 		if (carried)
-			lot->containers += move.containers;
+			lot->totes += move.totes;
 		else
-			cargo.lots.insert(lot, {move.itemId, move.containers});
+			cargo.lots.insert(lot, {move.itemId, move.totes});
 		return Result::Succeeded;
 	}
 
-	if (!carried || lot->containers < move.containers)
+	if (!carried || lot->totes < move.totes)
 		return Result::InsufficientStock;
-	const std::uint64_t warehoused = held ? holding->available + holding->reserved : 0;
-	if (move.containers > Core::kMaxWarehouseIbcs - warehoused)
+	// A resting buy order keeps room for what it may still fill.
+	std::uint64_t warehoused = held ? holding->available + holding->reserved : 0;
+	for (const auto [entity, order] : registry.view<const World::Order>().each())
+		if (order.side == World::Side::Buy && order.ownerKind == Kind::Company &&
+		    order.ownerId == ship.companyId && order.venueId == move.venueId &&
+		    order.itemId == move.itemId)
+			warehoused += order.remaining;
+	if (warehoused > Core::kMaxWarehouseTotes || move.totes > Core::kMaxWarehouseTotes - warehoused)
 		return Result::CapacityExceeded;
 
-	lot->containers -= move.containers;
-	if (lot->containers == 0)
+	lot->totes -= move.totes;
+	if (lot->totes == 0)
 		cargo.lots.erase(lot);
 	if (held)
-		holding->available += move.containers;
+		holding->available += move.totes;
 	else
-		stock.holdings.insert(holding, {move.venueId, move.itemId, move.containers, 0});
+		stock.holdings.insert(holding, {move.venueId, move.itemId, move.totes, 0});
 	return Result::Succeeded;
 }
 } // namespace
@@ -191,7 +197,7 @@ void RegisterTypes()
 		    .Field<&Move::shipId>("shipId", kSaved)
 		    .Field<&Move::venueId>("venueId", kSaved)
 		    .Field<&Move::itemId>("itemId", kSaved)
-		    .Field<&Move::containers>("containers", kSaved);
+		    .Field<&Move::totes>("totes", kSaved);
 		return true;
 	}();
 	(void)registered;
@@ -217,13 +223,15 @@ void RegisterCommands(
 		if (const auto volume = hull.baseStats.find(Core::EffectStat::CargoVolume);
 		    volume != hull.baseStats.end())
 		{
-			// NaN fails the last comparison.
-			if (volume->second < 0.0 || volume->second > static_cast<double>(Core::kMaxHoldIbcs) ||
-			    std::trunc(volume->second) != volume->second)
+			// Cubic metres, so totes exactly; NaN fails the last comparison.
+			const double totes = volume->second * static_cast<double>(Core::kTotesPerIbc);
+			if (totes < 0.0 || totes > static_cast<double>(Core::kMaxHoldTotes) ||
+			    std::trunc(totes) != totes)
 				throw std::invalid_argument{std::format(
-				    "hull '{}' has a CargoVolume of {}, not a whole number of IBCs up to {}",
-				    hull.hullId, volume->second, Core::kMaxHoldIbcs)};
-			rules->holds.emplace(hull.hullId, static_cast<std::uint64_t>(volume->second));
+				    "hull '{}' has a CargoVolume of {}, not a whole number of totes up "
+				    "to {} totes",
+				    hull.hullId, volume->second, Core::kMaxHoldTotes)};
+			rules->holds.emplace(hull.hullId, static_cast<std::uint64_t>(totes));
 		}
 	identities.SetHolds(rules->holds);
 

@@ -108,6 +108,25 @@ struct CompanyTuning
 	std::int64_t startingCredits{0};
 };
 
+// The hosted order book (D-083, D-085).
+struct MarketTuning
+{
+	// What a venue takes from each side of a fill, in basis points of its gross, fixed on an order
+	// as it is placed.
+	int listingFeeBps{0};
+	// A resting order's life, in simulation seconds, a whole number of fixed steps; 0 is none.
+	double orderLifeSeconds{0.0};
+};
+
+// Each venue's broker (D-084): what its account starts with, and how far apart it quotes.
+struct BrokerTuning
+{
+	// Whole credits.
+	std::int64_t treasury{0};
+	// Between its bid and its ask, in basis points of the native price, half on each side.
+	int spreadBps{0};
+};
+
 struct ConcessionTuning
 {
 	double termHours{0.0};
@@ -140,6 +159,8 @@ struct TuningDefinition
 	ConditionTuning condition;
 	LifeSupportTuning lifeSupport;
 	CompanyTuning company;
+	MarketTuning market;
+	BrokerTuning brokers;
 	ConcessionTuning concessions;
 	ProcurementTuning procurement;
 	std::vector<ProjectDefinition> projects;
@@ -237,6 +258,7 @@ struct MarketEntry
 	std::string itemId;
 	double production{0.0};
 	double demand{0.0};
+	// IBCs, a whole number of totes (D-087), at most a warehouse's: its broker's at the start.
 	double stock{0.0};
 };
 

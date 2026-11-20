@@ -43,6 +43,14 @@ bool Contains(const Range &range, const Value &value, Projection projection)
 }
 
 
+// A count of IBCs that is a whole number of totes, from none up to the most given in totes.
+bool WholeTotes(double ibcs, std::uint64_t most)
+{
+	const double totes = ibcs * static_cast<double>(Core::kTotesPerIbc);
+	return totes >= 0.0 && totes <= static_cast<double>(most) && std::trunc(totes) == totes;
+}
+
+
 bool Positive(double value)
 {
 	return std::isfinite(value) && value > 0.0;
@@ -294,10 +302,10 @@ void CheckHulls(Checker &checker, const Jettison::Sim::DefinitionRegistry &regis
 		if (const auto volume = hull.baseStats.find(Core::EffectStat::CargoVolume);
 		    volume != hull.baseStats.end())
 			checker.Require(
-			    volume->second <= static_cast<double>(Core::kMaxHoldIbcs) &&
-			        std::trunc(volume->second) == volume->second,
-			    "baseStats",
-			    std::format("CargoVolume must be a whole number of IBCs up to {}", Core::kMaxHoldIbcs));
+			    WholeTotes(volume->second, Core::kMaxHoldTotes), "baseStats",
+			    std::format(
+			        "CargoVolume must be a whole number of totes up to {} IBCs",
+			        Core::kMaxHoldTotes / Core::kTotesPerIbc));
 		for (const std::string &effect : hull.fitableEffects)
 			checker.Require(
 			    effects.Has(effect), "fitableEffects", std::format("'{}' names no effect", effect));
@@ -508,6 +516,16 @@ void CheckTuning(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 		    "must be above 0");
 		checker.Require(
 		    tuning.company.startingCredits > 0, "company.startingCredits", "must be above 0");
+		checker.Require(
+		    tuning.market.listingFeeBps >= 0 && tuning.market.listingFeeBps <= 10000,
+		    "market.listingFeeBps", "must be in [0, 10000]");
+		checker.Require(
+		    NotNegative(tuning.market.orderLifeSeconds), "market.orderLifeSeconds",
+		    "must be finite and not below 0");
+		checker.Require(tuning.brokers.treasury >= 0, "brokers.treasury", "must not be below 0");
+		checker.Require(
+		    tuning.brokers.spreadBps >= 0 && tuning.brokers.spreadBps < 20000, "brokers.spreadBps",
+		    "must be in [0, 20000)");
 		checker.Require(
 		    Positive(tuning.concessions.termHours), "concessions.termHours", "must be above 0");
 		checker.Require(
@@ -846,12 +864,16 @@ void CheckScenarios(
 				    goods.insert(entry.itemId).second, "venues",
 				    problem(std::format("market lists '{}' twice", entry.itemId)));
 				checker.Require(
-				    NotNegative(entry.production) && NotNegative(entry.demand) &&
-				        NotNegative(entry.stock),
-				    "venues",
+				    NotNegative(entry.production) && NotNegative(entry.demand), "venues",
+				    problem(
+				        std::format("market '{}' rates must be finite and not below 0", entry.itemId)));
+				checker.Require(
+				    WholeTotes(entry.stock, Core::kMaxWarehouseTotes), "venues",
 				    problem(
 				        std::format(
-				            "market '{}' quantities must be finite and not below 0", entry.itemId)));
+				            "market '{}' stock must be a whole number of totes up to {} "
+				            "IBCs",
+				            entry.itemId, Core::kMaxWarehouseTotes / Core::kTotesPerIbc)));
 			}
 		}
 

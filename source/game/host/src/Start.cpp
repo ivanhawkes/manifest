@@ -16,6 +16,7 @@
 
 #include <manifest/command/Requests.h>
 #include <manifest/company/Company.h>
+#include <manifest/trade/Trade.h>
 #include <manifest/world/World.h>
 
 namespace Manifest::Host
@@ -84,6 +85,7 @@ class Game final : public Jettison::Host::Game
 	void RegisterTypes() override
 	{
 		Company::RegisterTypes();
+		Trade::RegisterTypes();
 	}
 
 
@@ -102,12 +104,14 @@ class Game final : public Jettison::Host::Game
 		m_pIdentities = &World::RegisterWorld(world);
 		m_pRequests = &Command::RegisterRequests(world, *m_pIdentities);
 		Company::RegisterCommands(*m_pRequests, *m_pIdentities, m_content);
+		Trade::Register(world, *m_pRequests, *m_pIdentities, m_content);
 	}
 
 
 	void CreateInitialState(Jettison::Sim::SimWorld &world) override
 	{
 		World::CreateInitialState(world, *m_pIdentities, m_content);
+		Trade::Quote(world, *m_pIdentities, m_content);
 	}
 
 	Services WorldServices() const

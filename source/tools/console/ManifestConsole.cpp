@@ -74,13 +74,13 @@ std::string Describe(const Query::Snapshot &snapshot, std::string_view as)
 		     << " credits";
 		for (const World::Holding &holding : company.holdings)
 			view << "\n  at " << holding.venueId << ": " << holding.itemId << " " << holding.available
-			     << " IBC available, " << holding.reserved << " reserved";
+			     << " totes available, " << holding.reserved << " reserved";
 		for (const Query::ShipView &ship : company.ships)
 		{
 			view << "\n  " << ship.shipId << " " << ship.hullId << ", "
 			     << (ship.dockedAt.empty() ? std::string{"undocked"} : "docked at " + ship.dockedAt);
 			for (const World::Lot &lot : ship.cargo)
-				view << "\n    " << lot.itemId << " " << lot.containers << " IBC";
+				view << "\n    " << lot.itemId << " " << lot.totes << " totes";
 		}
 	}
 	return view.str();
@@ -149,7 +149,7 @@ void ManifestConsole::RegisterCommands()
 	    [this](Arguments arguments) { return CommandProvision(arguments[0], arguments[1]); });
 	RegisterCommand(
 	    "cargo",
-	    "cargo load|unload [principal] <ship> <venue> <item> <IBCs>: queues a player's move; the "
+	    "cargo load|unload [principal] <ship> <venue> <item> <totes>: queues a player's move; the "
 	    "principal only when not connected",
 	    5, 6, [this](Arguments arguments) { return CommandCargo(arguments); });
 	RegisterCommand(
@@ -565,8 +565,8 @@ std::string ManifestConsole::CommandCargo(Arguments arguments)
 	const std::size_t first = m_pRemote ? 1 : 2;
 	if (arguments.size() != first + 4)
 		throw std::runtime_error{
-		    m_pRemote ? "usage: cargo load|unload <ship> <venue> <item> <IBCs>, as you, when connected"
-		              : "usage: cargo load|unload <principal> <ship> <venue> <item> <IBCs>"};
+		    m_pRemote ? "usage: cargo load|unload <ship> <venue> <item> <totes>, as you, when connected"
+		              : "usage: cargo load|unload <principal> <ship> <venue> <item> <totes>"};
 	using Jettison::Serialise::BinaryArchive;
 	const std::string_view command = arguments[0] == "load" ? Company::kLoad : Company::kUnload;
 	const std::vector<std::byte> payload = BinaryArchive::Write(

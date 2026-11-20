@@ -5,6 +5,7 @@
 #include <limits>
 #include <stdexcept>
 #include <string_view>
+#include <tuple>
 
 #include <jettison/core/Assert.h>
 
@@ -20,6 +21,10 @@ std::string_view IssuedPrefix(Kind kind)
 		case Kind::Company: return "Company";
 		case Kind::Organisation: return "Organisation";
 		case Kind::Ship: return "Ship";
+		case Kind::Order: return "Order";
+		case Kind::Broker:
+		case Kind::BrokerAccount:
+		case Kind::VenueAccount:
 		case Kind::Region:
 		case Kind::CompanyAccount:
 		case Kind::PublicAccount:
@@ -38,6 +43,14 @@ entt::entity Identities::Create(entt::registry &registry, Kind kind, std::string
 	registry.emplace<Identity>(created, kind, id);
 	m_index.emplace(std::pair{kind, std::move(id)}, created);
 	return created;
+}
+
+
+void Identities::Destroy(entt::registry &registry, entt::entity entity)
+{
+	const Identity &identity = registry.get<const Identity>(entity);
+	JETTISON_VERIFY(m_index.erase({identity.kind, identity.id}) == 1);
+	registry.destroy(entity);
 }
 
 
@@ -89,18 +102,51 @@ std::function<void()> Identities::Load(
 	for (const auto [entity, cargo] : loaded.view<const Cargo>().each())
 		if (const std::optional<std::string> problem = Broken(cargo))
 			reader.Fail(*problem);
+	// Every reserved tote backs the sell orders of its owner there, and the reverse.
+	std::map<std::tuple<Kind, std::string, std::string, std::string>, std::uint64_t> reserved;
+	for (const auto [entity, order] : loaded.view<const Order>().each())
+	{
+		if (const std::optional<std::string> problem = Broken(order))
+			reader.Fail(*problem);
+		const Kind account =
+		    order.ownerKind == Kind::Broker ? Kind::BrokerAccount : Kind::CompanyAccount;
+		if (!index.contains({order.ownerKind, order.ownerId}) ||
+		    !index.contains({account, order.ownerId}) ||
+		    !index.contains({Kind::VenueAccount, order.venueId}))
+			reader.Fail(
+			    std::format(
+			        "order {} names an owner or venue the world does not hold", order.sequence));
+		if (order.side == Side::Sell)
+			reserved[{order.ownerKind, order.ownerId, order.venueId, order.itemId}] += order.remaining;
+	}
+	for (const auto [entity, identity, stock] : loaded.view<const Identity, const Stock>().each())
+		for (const Holding &holding : stock.holdings)
+		{
+			const auto backed =
+			    reserved.find({identity.kind, identity.id, holding.venueId, holding.itemId});
+			const std::uint64_t ordered = backed == reserved.end() ? 0 : backed->second;
+			if (holding.reserved != ordered)
+				reader.Fail(
+				    std::format(
+				        "'{}' reserves {} totes of '{}' at '{}' for sell orders of {}", identity.id,
+				        holding.reserved, holding.itemId, holding.venueId, ordered));
+			if (backed != reserved.end())
+				reserved.erase(backed);
+		}
+	if (!reserved.empty())
+		reader.Fail("a sell order's totes are reserved in no holding of its owner");
 	if (m_holds)
 		for (const auto [entity, ship, cargo] : loaded.view<const Ship, const Cargo>().each())
 		{
 			// Broken has bounded the sum, so it cannot wrap.
 			std::uint64_t carried = 0;
 			for (const Lot &lot : cargo.lots)
-				carried += lot.containers;
+				carried += lot.totes;
 			const auto hold = m_holds->find(ship.hullId);
 			if (carried > (hold == m_holds->end() ? 0 : hold->second))
 				reader.Fail(
 				    std::format(
-				        "a ship of hull '{}' carries {} IBCs, more than its hold", ship.hullId,
+				        "a ship of hull '{}' carries {} totes, more than its hold", ship.hullId,
 				        carried));
 		}
 	return [this, counters = std::move(counters), index = std::move(index)]() mutable

@@ -1,5 +1,6 @@
 #include "TestHelpers.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <filesystem>
 #include <limits>
@@ -54,14 +55,33 @@ std::int64_t Balance(const Hosted &hosted, Kind kind, const std::string &id)
 } // namespace
 
 
-TEST_CASE("The scenario seeds its organisations, its regions and each region's two accounts")
+TEST_CASE(
+    "The scenario seeds its organisations, its regions and their accounts, and its venues' brokers")
 {
 	Hosted hosted;
 	CreateInitialState(hosted.world, hosted.identities, Trading());
 	const entt::registry &registry = hosted.world.Registry();
 	CHECK(registry.view<const Organisation>().size() == 2);
 	CHECK(registry.view<const Region>().size() == 2);
-	CHECK(registry.view<const Account>().size() == 4);
+	// Two a region, and a venue's broker's and its own.
+	CHECK(registry.view<const Account>().size() == 8);
+
+	// Ore's broker holds the venue's stock in totes, 2.625 IBCs of furs, with the authored treasury.
+	const entt::entity broker = hosted.identities.Find(Kind::Broker, "VenueOreHighport");
+	REQUIRE(broker != entt::null);
+	CHECK(registry.get<Broker>(broker).operatorId == "OrganisationAnvilPortAuthority");
+	const Stock &stock = registry.get<Stock>(broker);
+	CHECK(stock.holdings.size() == 8);
+	CHECK(!Broken(stock));
+	const auto furs = std::ranges::find(stock.holdings, std::string{"ItemFurs"}, &Holding::itemId);
+	REQUIRE(furs != stock.holdings.end());
+	CHECK(*furs == Holding{"VenueOreHighport", "ItemFurs", 21, 0});
+	CHECK(
+	    registry.get<Account>(hosted.identities.Find(Kind::BrokerAccount, "VenueOreHighport"))
+	        .balance == 1'000'000);
+	CHECK(
+	    registry.get<Account>(hosted.identities.Find(Kind::VenueAccount, "VenueOreHighport")).balance ==
+	    0);
 
 	const entt::entity home = hosted.identities.Find(Kind::Region, "RegionOreHighlands");
 	REQUIRE(home != entt::null);
@@ -171,7 +191,7 @@ TEST_CASE("A save whose stock or cargo breaks its rules does not load, and the w
 	Hosted hosted;
 	CreateInitialState(hosted.world, hosted.identities, Trading());
 	const std::uint64_t before = hosted.world.StateHash();
-	constexpr std::uint64_t kFull = Manifest::Core::kMaxWarehouseIbcs;
+	constexpr std::uint64_t kFull = Manifest::Core::kMaxWarehouseTotes;
 	const std::vector<Stock> stocks{
 	    {{{"VenueA", "ItemB", 1, 0}, {"VenueA", "ItemA", 1, 0}}},
 	    {{{"VenueA", "ItemA", 1, 0}, {"VenueA", "ItemA", 2, 0}}},
@@ -191,8 +211,8 @@ TEST_CASE("A save whose stock or cargo breaks its rules does not load, and the w
 	    {{{"ItemA", 1}, {"ItemA", 1}}},
 	    {{{"ItemA", 0}}},
 	    {{{"", 1}}},
-	    {{{"ItemA", Manifest::Core::kMaxHoldIbcs + 1}}},
-	    {{{"ItemA", Manifest::Core::kMaxHoldIbcs}, {"ItemB", 1}}}};
+	    {{{"ItemA", Manifest::Core::kMaxHoldTotes + 1}}},
+	    {{{"ItemA", Manifest::Core::kMaxHoldTotes}, {"ItemB", 1}}}};
 	for (const Cargo &cargo : holds)
 	{
 		Hosted broken;

@@ -482,9 +482,12 @@ Decimal Simulation::GetPrice(const std::string &itemId) const
 		return Decimal{0};
 	}
 
-	const double supply = GetSupply(itemId);
-	const double demand = GetDemand(itemId);
+	return MarketPrice(basePrice, GetSupply(itemId), GetDemand(itemId));
+}
 
+
+Decimal Simulation::MarketPrice(Decimal basePrice, double supply, double demand)
+{
 	const double factor = Clamp(
 	    std::pow(demand / std::max(supply, 0.001), kPriceElasticity), kMinPriceFactor, kMaxPriceFactor);
 
@@ -513,6 +516,12 @@ Decimal Simulation::GetLocalPrice(const std::string &civilisationId, const std::
 	// the typical economy and not of the whole universe.
 	const double average = (GetSupply(itemId) + GetDemand(itemId)) /
 	                       static_cast<double>(std::max<std::size_t>(m_civilisations.size(), 1));
+	return LocalPrice(marketPrice, made, need, average);
+}
+
+
+Decimal Simulation::LocalPrice(Decimal marketPrice, double made, double need, double average)
+{
 	if (average <= 0.0)
 	{
 		return marketPrice;

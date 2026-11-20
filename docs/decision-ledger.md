@@ -102,6 +102,7 @@ changes, add the new row, mark the old one `superseded` and link both ways.
 | <a id="d-084"></a>D-084 | A company trades against one broker at each venue, a trading principal owned by the venue's operator with its own account and whole-IBC holdings, seeded from the scenario's stock and an authored treasury; each economic turn it cancels and reposts one bid and one ask an item around the native price with an authored spread, bounded by its holdings and funds, with no mint | [Stage 4 plan: production, demand and native liquidity](stage-4-trading-plan.md#production-demand-and-native-liquidity) | selected (2026-11-20, the user's; W02) | Manifest, W03 |
 | <a id="d-085"></a>D-085 | A resting order lives one simulation day by default, authored in simulation seconds and converted to steps (0 is no expiry); one command's matching pass settles at most 64 fills, and a side of one venue's book for one item holds at most 64 resting orders, so no remainder rests crossed | [Stage 4 plan: fixed-step schedule](stage-4-trading-plan.md#fixed-step-schedule) | selected (2026-11-20, the user's; W02) | Manifest, W03 |
 | <a id="d-086"></a>D-086 | The hosted world steps at 1/60 simulation second (an economic turn is 3,600 steps); one `Travel(ship, venue)` command starts a saved journey the host drives through Jettison's pad release, cruise and pad request; travel, docking and handling are free in the first slice, the listing fee the only charge | [Stage 4 plan: the step, in order](stage-4-trading-plan.md#the-step-in-order) | selected (2026-11-20, the user's; W02) | both, W05 |
+| <a id="d-087"></a>D-087 | Goods are counted in totes, an eighth of an IBC, a full container 500 mm a side (0.125 m³), for every good: holdings, holds, orders, warehouse and hold limits count totes, eight to the IBC, so a trader buys an expensive good in smaller amounts. A hull's `CargoVolume` and a venue's `stock` stay authored in cubic metres and IBCs, each a whole number of totes; a fill's gross is the price times `unitsPerCubicMetre / 8` times the totes. Supersedes D-078's and D-083's whole-IBC count | [Stage 4 plan: delivered W03](stage-4-trading-plan.md#delivered-w03-2026-11-20) | selected (2026-11-20, the user's, during W03); implemented in W03 | Manifest, W03 |
 
 ## Workflow and verification decisions
 
@@ -135,9 +136,10 @@ worked examples, which the data suite checks against the data.
 | Hull cargo capacities, occupants, oxygen tanks and cartridges | `data/ships/hulls.yaml` | [Small-ship plan](small-trader-and-docking-plan.md), [D-050](small-trader-and-docking-plan.md#modular-oxygen-storage) |
 | Item base prices, densities, unit types, pack factors | `data/trade-items/*.yaml` | [Model reference](model.md#units-prices-and-storage) |
 | The fixtures' positions, populations, funds, condition, station capacities and market rates | `data/scenarios/trading.yaml`, `governance.yaml` | [Stage 2 content plan: scenario and frames](stage-2-content-plan.md#scenario-and-frames) |
-| Marketplace fees, insurance, order lifetimes, price bounds | `MarketplaceOptions` in `source/game/market/include/manifest/market/Marketplace.h` | the header |
+| The hosted book's listing fee and order life ([D-085](#d-085)), the brokers' treasury and spread ([D-084](#d-084)), fixture test values (W03) | `balance.yaml`: `market`, `brokers` | [Stage 4 plan: delivered W03](stage-4-trading-plan.md#delivered-w03-2026-11-20) |
+| Development marketplace fees, insurance, order lifetimes, price bounds | `MarketplaceOptions` in `source/game/market/include/manifest/market/Marketplace.h` | the header |
 
-Still open, so in no file: the brokers' treasuries and spreads (W03 authors them as fixture test values, [D-084](#d-084)), recipe wage bills and work durations, the
+Still open, so in no file: recipe wage bills and work durations, the
 bond's whole-credit rounding, the compact ship's life support, and population sizes beyond the fixtures' test values.
 
 ## Open questions carried by the plans

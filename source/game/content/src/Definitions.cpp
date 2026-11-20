@@ -196,6 +196,12 @@ void RegisterTypes()
 		    .Field<&LifeSupportTuning::cartridgeOccupantDays>("cartridgeOccupantDays", kDefined);
 		RegisterType<CompanyTuning>("Manifest.CompanyTuning")
 		    .Field<&CompanyTuning::startingCredits>("startingCredits", kDefined);
+		RegisterType<MarketTuning>("Manifest.MarketTuning")
+		    .Field<&MarketTuning::listingFeeBps>("listingFeeBps", kDefined)
+		    .Field<&MarketTuning::orderLifeSeconds>("orderLifeSeconds", kDefined);
+		RegisterType<BrokerTuning>("Manifest.BrokerTuning")
+		    .Field<&BrokerTuning::treasury>("treasury", kDefined)
+		    .Field<&BrokerTuning::spreadBps>("spreadBps", kDefined);
 		RegisterType<ConcessionTuning>("Manifest.ConcessionTuning")
 		    .Field<&ConcessionTuning::termHours>("termHours", kDefined);
 		RegisterType<ProcurementTuning>("Manifest.ProcurementTuning")
@@ -215,6 +221,8 @@ void RegisterTypes()
 		    .Field<&TuningDefinition::condition>("condition", kDefined)
 		    .Field<&TuningDefinition::lifeSupport>("lifeSupport", kDefined)
 		    .Field<&TuningDefinition::company>("company", kDefined)
+		    .Field<&TuningDefinition::market>("market", kDefined)
+		    .Field<&TuningDefinition::brokers>("brokers", kDefined)
 		    .Field<&TuningDefinition::concessions>("concessions", kDefined)
 		    .Field<&TuningDefinition::procurement>("procurement", kDefined)
 		    .Field<&TuningDefinition::projects>("projects", kDefined)

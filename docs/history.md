@@ -100,6 +100,22 @@ cargo's lots are bounded together (`world`), and a ship's cargo against its hull
 `CargoVolume`, whose empty map was taken for none given; a hull the map does not name now carries
 nothing (`company`). Round 7 approved with no finding open.
 
+## W03: the hosted book on owner and venue accounts — 2026-11-20
+
+On pin `65846bb`, with no engine edit; the dock-before-lanes edge W05 needs is in Jettison's
+`feature-base` (`bc5dc1a`), not yet pinned. A new `trade` module holds orders on their own entities,
+reserving a seller's totes in their holding and a buyer's credits in escrow, matched at once on
+placement and settled in one planned write, with a day's expiry and a broker at each venue quoting
+around the development model's native price each turn ([what it chose and its
+evidence](stage-4-trading-plan.md#delivered-w03-2026-11-20)).
+
+Mid-task the user asked to plan for eighth-size IBCs, 500 mm a side, so traders buy expensive goods
+in smaller amounts, and then to name them: they are totes ([D-087](decision-ledger.md#d-087)), for
+every good, and every count of goods is now in totes, Stage 3's holdings, holds and limits included,
+since no save is durable before Stage 5. The `company` suite's pinned hash moved, the world now
+holding brokers, venue accounts and the order and broker components. Left: the trade views and
+console commands (W07, W15) and the governance fixture's stocks in totes.
+
 ## W02: the step, settlement and travel choices — 2026-11-20
 
 A planning task, documents only, with no engine edit. Checking the C01 table and `balance.yaml`

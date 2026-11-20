@@ -46,8 +46,9 @@ std::vector<Jettison::Vfs::Mount> Mounts(const Options &options);
 // given. Every package's engine requirement and required packages are satisfied, and the
 // definitions are loaded and checked as one content set for the scenario
 // (Manifest::Content::LoadScenario). The world it starts holds the scenario's state
-// (Manifest::World::CreateInitialState). Throws Jettison::Host::StartupError naming the phase, the
-// source and the cause, having released everything it acquired.
+// (Manifest::World::CreateInitialState) and the brokers' first quotes (Manifest::Trade::Quote). Throws
+// Jettison::Host::StartupError naming the phase, the source and the cause, having released everything
+// it acquired.
 std::unique_ptr<Jettison::Host::Session> Start(const Options &options);
 
 // The services of a started session's world, which it owns: what a frontend admits requests to and

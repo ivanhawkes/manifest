@@ -296,11 +296,11 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	CheckRefused(
 	    starter, "version: 1\nbaseStats: {CargoVolume: -1}\n",
 	    "baseStats Cargo Volume must be finite and not below 0");
-	// A hold is whole IBCs, none bigger than the largest hull class's envelope.
-	for (const std::string_view volume : {"18446744073709551616", "11520001", "20.5"})
+	// A hold is whole totes, none bigger than the largest hull class's envelope.
+	for (const std::string_view volume : {"18446744073709551616", "11520001", "20.0625"})
 		CheckRefused(
 		    starter, std::format("version: 1\nbaseStats: {{CargoVolume: {}}}\n", volume),
-		    "CargoVolume must be a whole number of IBCs up to 11520000");
+		    "CargoVolume must be a whole number of totes up to 11520000 IBCs");
 	CheckRefused(
 	    starter, "version: 1\nfitableEffects: [Teleport]\n",
 	    "fitableEffects 'Teleport' names no effect");
@@ -341,6 +341,17 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	CheckRefused(
 	    balance, "version: 1\ncompany: {startingCredits: 0}\n",
 	    "company.startingCredits must be above 0");
+	CheckRefused(
+	    balance, "version: 1\nmarket: {listingFeeBps: 10001}\n",
+	    "market.listingFeeBps must be in [0, 10000]");
+	CheckRefused(
+	    balance, "version: 1\nmarket: {orderLifeSeconds: -1}\n",
+	    "market.orderLifeSeconds must be finite and not below 0");
+	CheckRefused(
+	    balance, "version: 1\nbrokers: {treasury: -1}\n", "brokers.treasury must not be below 0");
+	CheckRefused(
+	    balance, "version: 1\nbrokers: {spreadBps: 20000}\n",
+	    "brokers.spreadBps must be in [0, 20000)");
 	CheckRefused(balance, "version: 1\nneeds: []\n", "needs holds none");
 	CheckRefused(
 	    balance, "version: 1\nneeds: !merge=needId\n  - {needId: NeedStapleFood, weight: 0}\n",
@@ -684,8 +695,16 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	    trading, venue("market: [{itemId: ItemSalt}, {itemId: ItemSalt}]"),
 	    "'VenueBrineHighport' market lists 'ItemSalt' twice");
 	CheckRefused(
-	    trading, venue("market: [{itemId: ItemSalt, stock: -1}]"),
-	    "'VenueBrineHighport' market 'ItemSalt' quantities must be finite and not below 0");
+	    trading, venue("market: [{itemId: ItemSalt, production: -1}]"),
+	    "'VenueBrineHighport' market 'ItemSalt' rates must be finite and not below 0");
+	CheckRefused(
+	    trading, venue("market: [{itemId: ItemSalt, stock: 1152000001}]"),
+	    "'VenueBrineHighport' market 'ItemSalt' stock must be a whole number of totes up to "
+	    "1152000000 IBCs");
+	CheckRefused(
+	    trading, venue("market: [{itemId: ItemSalt, stock: 0.1}]"),
+	    "'VenueBrineHighport' market 'ItemSalt' stock must be a whole number of totes up to "
+	    "1152000000 IBCs");
 
 	// A player's home needs an operational public station that docks the starter, serves the region
 	// and has life support to spare (D-047); each lack alone refuses it.

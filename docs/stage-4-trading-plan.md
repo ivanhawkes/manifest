@@ -353,11 +353,11 @@ Each slice preserves existing relevant checks before the next expands the integr
 The final test must use the public command/query boundary, not direct component edits
 after bootstrap:
 
-Under D-083 the trading fixture's stocks and rates are restated in whole IBCs by W03. A
-25,000-credit start ([D-077](decision-ledger.md#d-077)) buys whole IBCs of furs at Ore and of
-salt, lime, glassware and soap at Brine; one IBC of copper is about 118,500 credits, of tin about
-339,000 and of gold about 2.3 billion, so those stay later goods and W15 trades furs Ore to Brine
-or a Brine good back.
+W03 restated the trading fixture's stocks in totes ([D-087](decision-ledger.md#d-087)). A
+25,000-credit start ([D-077](decision-ledger.md#d-077)) buys totes of furs at Ore and of salt,
+lime, glassware and soap at Brine, and now a tote of copper (about 14,800 credits) or of tin
+(about 42,400 at base price, beyond the start); a tote of gold is about 290 million, a later good.
+W15 trades furs Ore to Brine or a Brine good back.
 
 1. Load the validated scenario and provision a company with one docked ship and a
    bounded treasury. Native production/policy supplies genuine local orders.
@@ -397,6 +397,61 @@ required repository gates with each machine's concurrency (D-051), local clang-t
 remaining graphics configuration dependencies honestly. A successful automated local
 loop establishes gameplay integration; it does not establish multiplayer, recovery,
 graphical presentation or public hosting readiness.
+
+## Delivered: W03, 2026-11-20
+
+The `trade` module settles the hosted book on owner/venue accounts; Stage 3's goods are counted in
+totes ([D-087](decision-ledger.md#d-087), the user's choice during W03), so nothing below is whole
+IBCs. What it chose where the contract above left room:
+
+- **State.** `World::Order` (`Order<n>`, n its time priority) on its own entity names its owner, a
+  `Company` or a venue's `Broker`, its venue, item, side, Decimal limit as raw microcredits, totes
+  and remaining, a buy's escrow, the fee it was placed at, its `expiresStep` and the sequence of the
+  request that placed it. A sell's remaining totes are its owner's `Holding::reserved`, which a
+  load checks against the sell orders both ways. Each venue has a `Broker` (by the venue's ID) with
+  a `Stock` seeded from its market `stock`, a `BrokerAccount` with `brokers.treasury`, and a
+  `VenueAccount` for the fees, the one credited balance of venue income.
+- **Commands.** `Manifest.Trade.Place` and `Manifest.Trade.Cancel`, a player's, refusing with the
+  Stage 3 results plus `InvalidPrice` and `BookFull`. What filled and what rests are read from the
+  order its request placed (`Order::request`); a whole fill rests nothing. A company may trade at any
+  venue, with no ship there.
+- **Escrow.** A buy reserves, for each tote, a tote's cost at its limit rounded up and the fee on
+  that. A fill of n totes at a price at or under the limit costs at most n of these (its gross
+  rounded to the nearest, its fee rounded up), so the escrow never runs short, however the book
+  splits the order; what is left goes back when the order leaves. This is the market price rules'
+  ceil reservation taken a tote at a time.
+- **Room.** A buy is refused unless its owner's warehouse there holds it with every resting buy of
+  theirs filled, and an unload counts those buys too, so no fill can pass `kMaxWarehouseTotes`.
+- **Planning.** A command or system works on copies of the accounts, stocks and orders it touches,
+  one copy for an account reached twice, and writes them only when every check has held; an order's
+  ID is issued after. The expiry sweep and a broker's cancellations retire in placement order, and a
+  refund they cannot pay throws, as an invariant breach.
+- **Brokers.** The native price is the development model's (`Simulation::MarketPrice` and
+  `LocalPrice`, extracted for this) over the scenario's venues as its economies. On the last step of
+  each turn, `(s + 1) % N == 0`, and once in the initial state, each broker in scenario order
+  cancels its orders and, good by good in its market's order, asks for all it holds at the price
+  plus half the spread (rounded up) and bids at the price less half (rounded down) for what an equal
+  share of its funds among the goods still to quote buys, within its warehouse's room. Its orders
+  live a day like any, and a side it cannot fund or rest posts nothing. Fixture values:
+  1,000,000 credits and a 1,000-basis-point spread.
+- **Step.** `manifest.expiry` then `manifest.brokers` (after it); the brokers' edge after
+  `manifest.economy` comes with W04, and before `spatial` with W05, since the pinned SDK's scheduler
+  has no edge to an unregistered system.
+
+Evidence, in the `trade` suite: a buy filling a resting sell at the maker's price with both fees to
+the venue and the rest resting, then cancelled to the escrow left; reserved totes refused a load and
+given back on a cancel; a better price, then the older order at one price, filling first; an order
+matching on the step before its `expiresStep`, not on that step, and that step's sweep returning it;
+every refusal leaving accounts, stocks and orders as they were; two buys in one step competing for one
+account; 64 resting orders and `BookFull` past them, a whole fill still accepted; a 64-fill pass with
+its remainder resting; credits (accounts and escrow) and totes conserved by a trade; the brokers'
+first quotes and their requote at step 59 replacing every order, none piling up; the step's order; an
+order life not a whole number of steps refused at start; and a save with an open order continuing as
+its world, a holding reserving more than its sell orders, or an order of an unknown owner, refused.
+
+Left: market views in the snapshot, and the console's and TUI's trade commands (W07, W15); the
+governance fixture's stocks, still whole IBCs, not restated in totes; immediate-or-cancel, which
+the acceptance scenario has not needed; and a broker's demand beyond its funds, a W04 question.
 
 ## Handoff to stage 5
 

@@ -21,7 +21,13 @@ enum class Kind
 	CompanyAccount,
 	PublicAccount,
 	HouseholdAccount,
-	Ship
+	Ship,
+	// A venue's broker and its account, each by the venue's ID (D-084).
+	Broker,
+	BrokerAccount,
+	// What a venue takes in fees, by the venue's ID: its one credited balance.
+	VenueAccount,
+	Order
 };
 
 // Every hosted entity has one, given when it is created and never changed (Identities::Create).
@@ -82,8 +88,8 @@ struct Ship
 	bool operator==(const Ship &) const = default;
 };
 
-// An owner's goods at one venue's warehouse, in IBCs (D-078), their total at most kMaxWarehouseIbcs.
-// Reserved IBCs back an order and cannot move; the total held is the sum.
+// An owner's goods at one venue's warehouse, in totes (D-087), their total at most kMaxWarehouseTotes.
+// Reserved totes back an order and cannot move; the total held is the sum.
 struct Holding
 {
 	std::string venueId;
@@ -103,11 +109,11 @@ struct Stock
 	bool operator==(const Stock &) const = default;
 };
 
-// The IBCs of one item in a ship's hold, at most kMaxHoldIbcs.
+// The totes of one item in a ship's hold, at most kMaxHoldTotes.
 struct Lot
 {
 	std::string itemId;
-	std::uint64_t containers{0};
+	std::uint64_t totes{0};
 
 	bool operator==(const Lot &) const = default;
 };
@@ -120,10 +126,54 @@ struct Cargo
 	bool operator==(const Cargo &) const = default;
 };
 
+// A venue's broker (D-084): a trading principal of the venue's operator, its ID the venue's, with
+// its money in its BrokerAccount and its goods in its Stock.
+struct Broker
+{
+	std::string operatorId;
+};
+
+enum class Side
+{
+	Buy,
+	Sell
+};
+
+// An order resting in a venue's book, "Order<n>" by ID. A sell order's totes still to fill are
+// reserved in its owner's Holding there; a buy order holds the credits it may still spend in its
+// escrow, which goes back to its owner's account when the order leaves the book.
+struct Order
+{
+	// A Company or a Broker, by ID; its Stock is on that entity and its Account is the kind's own.
+	Kind ownerKind{Kind::Company};
+	std::string ownerId;
+	std::string venueId;
+	std::string itemId;
+	Side side{Side::Buy};
+	// The worst price it trades at, a Core::Decimal's raw microcredits per the item's unit.
+	std::int64_t limit{0};
+	std::uint64_t totes{0};
+	std::uint64_t remaining{0};
+	// Whole credits, a buy order's alone.
+	std::int64_t escrow{0};
+	// The venue's listing fee as it was placed, which its escrow was reserved at.
+	int feeBps{0};
+	// Its place in time priority: the n of its ID.
+	std::uint64_t sequence{0};
+	// The step from which it no longer matches and leaves the book; 0 for none.
+	std::uint64_t expiresStep{0};
+	// The sequence of its owner's principal's request that placed it; 0 for a broker's.
+	std::uint64_t request{0};
+
+	bool operator==(const Order &) const = default;
+};
+
 // Why a Stock or a Cargo breaks the rules above, for a load to refuse: none when it keeps them.
 std::optional<std::string> Broken(const Stock &stock);
 
 std::optional<std::string> Broken(const Cargo &cargo);
+
+std::optional<std::string> Broken(const Order &order);
 
 // The components and their service's record, with Reflect. Safe to call again.
 void RegisterTypes();

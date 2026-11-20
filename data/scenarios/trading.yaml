@@ -4,7 +4,8 @@ version: 1
 # where a good is made and sells where it is wanted. Metals and furs come from Ore, salt, lime,
 # glassware and soap from Brine. Every number is an initial test value recorded with C05, not a
 # balance result. Positions are metres in the system's frame, a station 42,000 km out from its
-# planet; market rates are per simulation day, in the item's unit (docs/model.md).
+# planet; market rates are per simulation day, in the item's unit (docs/model.md), and stock is in
+# IBCs, a whole number of totes (D-087): the earlier quantities to the nearest tote, at least one.
 gameMode: manifest
 starterHull: HullLoneTraderStarter
 items:
@@ -66,14 +67,14 @@ venues:
     lifeSupportCapacity: 4
     regions: [{regionId: RegionOreHighlands}]
     market:
-      - {itemId: ItemCopper, production: 2, demand: 0, stock: 20}
-      - {itemId: ItemTin, production: 0.3, demand: 0, stock: 3}
-      - {itemId: ItemGold, production: 64.3, demand: 0, stock: 643}
-      - {itemId: ItemFurs, production: 40, demand: 0, stock: 400}
-      - {itemId: ItemSalt, production: 0, demand: 3.56, stock: 5.94}
-      - {itemId: ItemLime, production: 0, demand: 5.18, stock: 5.18}
-      - {itemId: ItemGlassware, production: 0, demand: 200, stock: 300}
-      - {itemId: ItemSoap, production: 0, demand: 1500, stock: 2000}
+      - {itemId: ItemCopper, production: 2, demand: 0, stock: 2.25}
+      - {itemId: ItemTin, production: 0.3, demand: 0, stock: 0.375}
+      - {itemId: ItemGold, production: 64.3, demand: 0, stock: 0.125}
+      - {itemId: ItemFurs, production: 40, demand: 0, stock: 2.625}
+      - {itemId: ItemSalt, production: 0, demand: 3.56, stock: 2.75}
+      - {itemId: ItemLime, production: 0, demand: 5.18, stock: 1.5}
+      - {itemId: ItemGlassware, production: 0, demand: 200, stock: 0.75}
+      - {itemId: ItemSoap, production: 0, demand: 1500, stock: 0.25}
   - venueId: VenueBrineHighport
     systemId: SystemAnvil
     planetId: PlanetBrine
@@ -85,11 +86,11 @@ venues:
     lifeSupportCapacity: 4
     regions: [{regionId: RegionBrineCoast}]
     market:
-      - {itemId: ItemSalt, production: 4.75, demand: 0, stock: 47.5}
-      - {itemId: ItemLime, production: 6.21, demand: 0, stock: 62.1}
-      - {itemId: ItemGlassware, production: 250, demand: 0, stock: 2500}
-      - {itemId: ItemSoap, production: 2000, demand: 0, stock: 20000}
-      - {itemId: ItemCopper, production: 0, demand: 1.5, stock: 2}
-      - {itemId: ItemTin, production: 0, demand: 0.25, stock: 0.3}
-      - {itemId: ItemGold, production: 0, demand: 48.2, stock: 64.3}
-      - {itemId: ItemFurs, production: 0, demand: 30, stock: 40}
+      - {itemId: ItemSalt, production: 4.75, demand: 0, stock: 22}
+      - {itemId: ItemLime, production: 6.21, demand: 0, stock: 18.625}
+      - {itemId: ItemGlassware, production: 250, demand: 0, stock: 6.25}
+      - {itemId: ItemSoap, production: 2000, demand: 0, stock: 2.25}
+      - {itemId: ItemCopper, production: 0, demand: 1.5, stock: 0.25}
+      - {itemId: ItemTin, production: 0, demand: 0.25, stock: 0.125}
+      - {itemId: ItemGold, production: 0, demand: 48.2, stock: 0.125}
+      - {itemId: ItemFurs, production: 0, demand: 30, stock: 0.25}

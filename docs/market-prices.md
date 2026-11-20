@@ -40,7 +40,8 @@ exactly without trailing fractional zeros; display formatting does not alter sto
 ## Settlement and safety
 
 Preserve the existing whole-credit settlement rules: a buy reservation rounds quantity times
-limit price up, fill gross rounds quantity times maker price to the nearest whole credit, and
+limit price up (in the hosted book a tote at a time, with its fee, so the escrow covers any split;
+[Stage 4: delivered W03](stage-4-trading-plan.md#delivered-w03-2026-11-20)), fill gross rounds quantity times maker price to the nearest whole credit, and
 fees round up in whole credits. The unit price remains decimal while quantities remain double;
 the mixed product explicitly uses `price.ToDouble() * quantity` to retain existing double
 rounding, then checks finite/range conditions before narrowing into the integer ledger.

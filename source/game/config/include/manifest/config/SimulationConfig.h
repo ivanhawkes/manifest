@@ -112,15 +112,19 @@ struct ItemNode
 
 using Items = std::vector<ItemNode>;
 
-// Goods are held and moved in IBCs (D-078): containers of one cubic metre, each full, so an IBC is an
-// item's unitsPerCubicMetre in its unit. The most a hull's hold carries is the largest hull class's
-// envelope, the heavy destroyer's 600 x 160 x 120 m (small-trader-and-docking-plan.md, "Ship size
-// classes"): no hold is bigger than its hull. Content and the commands each refuse a hull over it.
-inline constexpr std::uint64_t kMaxHoldIbcs = 11'520'000;
+// Goods are held, moved and traded in totes (D-078, D-087): an IBC is a full container of one cubic
+// metre, an item's unitsPerCubicMetre in its unit, and a tote an eighth of one, a full container
+// 500 mm a side, for any good. Every count of goods is in totes, eight to the IBC.
+inline constexpr std::uint64_t kTotesPerIbc = 8;
 
-// The most IBCs one owner holds of one item at one venue's warehouse: a hundred of the largest holds.
-// Even in gold's troy ounces, 621,152 to the IBC, that many is below 2^53.
-inline constexpr std::uint64_t kMaxWarehouseIbcs = 100 * kMaxHoldIbcs;
+// The most a hull's hold carries is the largest hull class's envelope, the heavy destroyer's
+// 600 x 160 x 120 m (small-trader-and-docking-plan.md, "Ship size classes"): no hold is bigger than
+// its hull. Content and the commands each refuse a hull over it.
+inline constexpr std::uint64_t kMaxHoldTotes = 11'520'000 * kTotesPerIbc;
+
+// The most one owner holds of one item at one venue's warehouse: a hundred of the largest holds.
+// Even in gold's troy ounces, 621,152 to the IBC, that many is below 2^53 units.
+inline constexpr std::uint64_t kMaxWarehouseTotes = 100 * kMaxHoldTotes;
 
 struct SkillNode
 {

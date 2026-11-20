@@ -49,8 +49,20 @@ lifeSupport:
 
 company:
   # A new player's trading company's account, in whole credits (D-077): about a full hold of grain
-  # in the starter, or two tonnes of copper.
+  # in the starter; whole IBCs of furs, salt, lime, glassware or soap, not of copper (D-083).
   startingCredits: 25000
+
+market:
+  # What a venue takes from each side of a fill, in basis points of its gross (D-083).
+  listingFeeBps: 40
+  # A resting order's life: one simulation day (D-085).
+  orderLifeSeconds: 86400
+
+brokers:
+  # Each venue's broker (D-084), initial test values (W03): its account at the start, in whole
+  # credits, and its quotes 10% apart around the native price.
+  treasury: 1000000
+  spreadBps: 1000
 
 concessions:
   # The frontier concession's exclusive term, in real server-running hours, not simulation time.

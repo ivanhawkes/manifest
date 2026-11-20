@@ -106,7 +106,7 @@ TEST_CASE("A player sees their own company as it was at the completed step, and 
 	          {{"Ship1", "HullLoneTraderStarter", "VenueOreHighport", {{"ItemCopper", 3}}}}}}});
 
 	REQUIRE(hosted.Run(kAda, Company::kUnload, move) == Result::Succeeded);
-	CHECK(loaded.companies[0].ships[0].cargo[0].containers == 3);
+	CHECK(loaded.companies[0].ships[0].cargo[0].totes == 3);
 	const Snapshot unloaded = hosted.Observe(kAda);
 	CHECK(unloaded.step == 3);
 	CHECK(unloaded.companies[0].ships[0].cargo.empty());

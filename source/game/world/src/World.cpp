@@ -1,5 +1,6 @@
 #include <manifest/world/World.h>
 
+#include <algorithm>
 #include <format>
 #include <memory>
 #include <stdexcept>
@@ -39,6 +40,8 @@ Identities &RegisterWorld(Jettison::Sim::SimWorld &world)
 	world.RegisterComponent<Ship>();
 	world.RegisterComponent<Stock>();
 	world.RegisterComponent<Cargo>();
+	world.RegisterComponent<Broker>();
+	world.RegisterComponent<Order>();
 	auto identities = std::make_unique<Identities>();
 	Identities &added = *identities;
 	world.AddService("Manifest.Identities", std::move(identities));
@@ -70,6 +73,22 @@ void CreateInitialState(
 		CreateAccount(world, identities, Kind::PublicAccount, region.regionId, region.publicFunds);
 		CreateAccount(
 		    world, identities, Kind::HouseholdAccount, region.regionId, region.householdFunds);
+	}
+	for (const Content::VenueDefinition &venue : scenario.venues)
+	{
+		const entt::entity broker = CreateOrRefuse(world, identities, Kind::Broker, venue.venueId);
+		registry.emplace<Broker>(broker, venue.operatorId);
+		Stock &stock = registry.emplace<Stock>(broker);
+		// Content holds the stock to a whole number of totes a warehouse holds.
+		for (const Content::MarketEntry &entry : venue.market)
+			if (const auto totes =
+			        static_cast<std::uint64_t>(entry.stock * static_cast<double>(Core::kTotesPerIbc));
+			    totes > 0)
+				stock.holdings.push_back({venue.venueId, entry.itemId, totes, 0});
+		std::ranges::sort(stock.holdings, {}, &Holding::itemId);
+		CreateAccount(
+		    world, identities, Kind::BrokerAccount, venue.venueId, content.tuning.brokers.treasury);
+		CreateAccount(world, identities, Kind::VenueAccount, venue.venueId, 0);
 	}
 }
 } // namespace Manifest::World

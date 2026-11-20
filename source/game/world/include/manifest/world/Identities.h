@@ -33,18 +33,29 @@ class Identities final : public Jettison::Sim::WorldService
 	// the kind already has.
 	entt::entity Create(entt::registry &registry, Kind kind, std::string id);
 
+	// Destroys an entity Create made, and its name with it.
+	void Destroy(entt::registry &registry, entt::entity entity);
+
 	// Null when the world has no such entity.
 	entt::entity Find(Kind kind, const std::string &id) const;
 
-	// An ID for a new Principal, Company, Organisation or Ship, "<Kind>n" with n counting from 1,
-	// skipping any the kind already has, and never handed out twice, across saves. The number is spent
-	// here, so a caller checks everything that could reject the action first. None once the kind's
-	// counter is exhausted. A kind that is not issued (a region, an account) is a programming error.
+	// An ID for a new Principal, Company, Organisation, Ship or Order, "<Kind>n" with n counting from
+	// 1, skipping any the kind already has, and never handed out twice, across saves. The number is
+	// spent here, so a caller checks everything that could reject the action first. None once the
+	// kind's counter is exhausted. A kind that is not issued (a region, an account) is a programming
+	// error.
 	std::optional<std::string> Issue(Kind kind);
 
-	// The IBCs each hull's hold carries, by hull ID, which Load holds each ship's cargo to; a hull it
+	// The n of the kind's last ID Issue gave, 0 before the first.
+	std::uint64_t LastIssued(Kind kind) const
+	{
+		const auto issued = m_counters.issued.find(kind);
+		return issued == m_counters.issued.end() ? 0 : issued->second;
+	}
+
+	// The totes each hull's hold carries, by hull ID, which Load holds each ship's cargo to; a hull it
 	// does not name carries none. Unset, as in a world with no company commands, a load checks each
-	// hold against kMaxHoldIbcs alone.
+	// hold against kMaxHoldTotes alone.
 	void SetHolds(std::map<std::string, std::uint64_t, std::less<>> holds)
 	{
 		m_holds = std::move(holds);
@@ -52,8 +63,9 @@ class Identities final : public Jettison::Sim::WorldService
 
 	void Save(Jettison::Serialise::BinaryWriter &writer) const override;
 
-	// Fails the save for two entities of one kind and ID, an empty ID, a Stock or Cargo that breaks
-	// its rules (Broken), or, once SetHolds has run, a ship carrying more than its hull's hold.
+	// Fails the save for two entities of one kind and ID, an empty ID, a Stock, Cargo or Order that
+	// breaks its rules (Broken), a holding's reserved totes that are not its owner's sell orders'
+	// there, or, once SetHolds has run, a ship carrying more than its hull's hold.
 	std::function<void()> Load(
 	    Jettison::Serialise::BinaryReader &reader, const entt::registry &loaded,
 	    std::span<const entt::meta_any> queued) override;

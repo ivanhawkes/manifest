@@ -28,14 +28,14 @@ struct Provision
 // ship (UnknownTarget), that the sender's company owns it (NotAuthorised), that it is docked
 // (NotDocked) at the venue (WrongVenue), the scenario's item (UnknownTarget), a count above 0
 // (InvalidQuantity), enough available to move, reserved goods not counted (InsufficientStock), and
-// room for them: the hull's hold on loading, the warehouse's kMaxWarehouseIbcs on unloading
-// (CapacityExceeded).
+// room for them: the hull's hold on loading, the warehouse's kMaxWarehouseTotes on unloading, less
+// what the company's resting buy orders there may still fill (CapacityExceeded).
 struct Move
 {
 	std::string shipId;
 	std::string venueId;
 	std::string itemId;
-	std::uint64_t containers{0};
+	std::uint64_t totes{0};
 };
 
 inline constexpr std::string_view kProvision = "Manifest.Company.Provision";

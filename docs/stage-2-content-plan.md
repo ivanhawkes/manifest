@@ -186,8 +186,9 @@ population-scaled rates per 1,000 people per simulation day ([D-022](decision-le
 A good's quantity is a double in its `unitType`; its packed volume and mass follow
 `unitsPerCubicMetre`, `density` and `packFactor` as the field notes in `data/trade-items/` define
 them, never the trading unit alone. Since [D-078](decision-ledger.md#d-078) and
-[D-083](decision-ledger.md#d-083), goods held, moved or traded are whole IBCs, so a venue's market
-`stock` becomes a whole number of IBCs in W03; rates stay doubles in the unit, per day. Prices are
+[D-083](decision-ledger.md#d-083), goods held, moved or traded are counted in totes, eighths of an IBC
+([D-087](decision-ledger.md#d-087)), so a venue's market `stock` is IBCs, a whole number of totes
+(W03); rates stay doubles in the unit, per day. Prices are
 Decimal text, ledgers whole credits (int64).
 Positions are metres, `glm::dvec3`, in a system's frame.
 

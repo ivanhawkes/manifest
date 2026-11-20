@@ -222,10 +222,12 @@ void Requests::Execute(Jettison::Sim::SimWorld &world, const Request &request)
 
 	const auto handler = m_handlers.find(request.command);
 	const Actor actor{request.actorKind, request.actorId};
+	m_running = request.sequence;
 	const Result result =
 	    handler == m_handlers.end() || handler->second.version != request.version
 	        ? Result::UnsupportedCommand
 	        : handler->second.apply(world, actor, std::as_bytes(std::span{request.payload}));
+	m_running = 0;
 	ledger.completed.push_back({request, world.Clock().Step(), result});
 	if (ledger.completed.size() > kRetainedResults)
 	{

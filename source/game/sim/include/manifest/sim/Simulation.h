@@ -135,6 +135,13 @@ class Simulation
 	// Market price: the base price scaled by how scarce the good is.
 	Decimal GetPrice(const std::string &itemId) const;
 
+	// The rules GetPrice and GetLocalPrice apply, for a caller with its own supply and demand: the
+	// base price scaled by the scarcity of the whole market, then that moved by one economy's own
+	// making and needing against the average economy's supply and demand. A base price within
+	// IsValidBasePrice's bound always gives a representable price.
+	static Decimal MarketPrice(Decimal basePrice, double supply, double demand);
+	static Decimal LocalPrice(Decimal marketPrice, double made, double need, double average);
+
 	// Price at one world: the market price moved by that economy's own surplus or
 	// deficit. The gap between two worlds is what makes a trade pay.
 	Decimal GetLocalPrice(const std::string &civilisationId, const std::string &itemId) const;
