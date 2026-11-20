@@ -1,0 +1,4 @@
+version: 1
+# Batches of minutes rather than a day, so the fixture's loop sees them delivered (W09).
+production:
+  batchSeconds: 300

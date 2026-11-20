@@ -254,6 +254,28 @@ TEST_CASE("Travel is refused, writing nothing, for what it cannot send")
 }
 
 
+TEST_CASE("A journey whose cruise the engine refuses fails, its ship left where it is with its cargo")
+{
+	Hosted hosted;
+	entt::registry &registry = hosted.world.Registry();
+	// Fixture bootstrap: a tote of furs loaded, and the ship's drive taken out, which the engine's
+	// cruise refuses a ship for.
+	registry.get<World::Stock>(hosted.services.identities.Find(Kind::Company, "Company1"))
+	    .holdings.push_back({std::string{kOre}, "ItemFurs", 1, 0});
+	REQUIRE(hosted.Load(kOre) == Result::Succeeded);
+	registry.remove<Space::CruiseDrive>(hosted.Ship());
+	const World::Cargo cargo = registry.get<World::Cargo>(hosted.Ship());
+
+	REQUIRE(hosted.Go(kAda, kBrine) == Result::Succeeded);
+	CHECK(hosted.RunJourney() == std::vector<Leg>{Leg::Departing, Leg::Clearing, Leg::Failed});
+	CHECK(hosted.Journey().failure == Failure::CruiseRefused);
+	CHECK(hosted.Record().dockedAt.empty());
+	CHECK(registry.get<World::Cargo>(hosted.Ship()) == cargo);
+	// Ended, it gives way to a new journey, back to the pads it left.
+	CHECK(hosted.Go(kAda, kOre) == Result::Succeeded);
+}
+
+
 TEST_CASE("A ship held on its pad while cargo crosses the deck fails to depart, keeping its dock")
 {
 	Hosted hosted;

@@ -100,6 +100,16 @@ cargo's lots are bounded together (`world`), and a ship's cargo against its hull
 `CargoVolume`, whose empty map was taken for none given; a hull the map does not name now carries
 nothing (`company`). Round 7 approved with no finding open.
 
+## W09: the complete trading fixture — 2026-11-20
+
+On pin `9e0274f`, with no engine edit. The `fixture` suite plays one command stream on the trading
+scenario from purchase to upgrade, checking every step that credits and goods move only by the
+upgrade, provisioning, delivered batches and the households' use, and runs it saved in flight,
+replayed and from the pack ([what it chose and its evidence](stage-4-trading-plan.md#delivered-w09-2026-11-20)).
+Two things the plan had not foreseen: a batch is about a day, so the suite shortens it with an overlay
+of its own to see production within the loop; and the trading fixture sold no oxygen or cartridges,
+so Ore now makes them and Brine wants them. No suite had a refused cruise, which `travel` now has.
+
 ## L26: the console's long step — 2026-11-20
 
 On pin `9e0274f`, with one engine provision. `step` runs a slice at a time beside the frontend,

@@ -487,9 +487,9 @@ TEST_CASE(
 	CHECK(ask->totes == 21);
 	CHECK(ask->limit == 8'183'941);
 	CHECK(hosted.Held(Kind::Broker, kOre).reserved == 21);
-	// An ask and a bid for each of its fourteen goods, the essentials among them, gold's bid beyond
-	// its share of the funds.
-	CHECK(ore == 27);
+	// An ask and a bid for each of its sixteen goods, the essentials and the life-support goods among
+	// them, gold's bid beyond its share of the funds.
+	CHECK(ore == 31);
 
 	// Ada lifts two totes of the ask: 18.75 furs a tote at 8.183941, 307 credits, 2 in fees.
 	REQUIRE(hosted.Place(kAda, Side::Buy, 2, Credits(9)) == Result::Succeeded);

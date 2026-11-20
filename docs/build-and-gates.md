@@ -31,7 +31,7 @@ skips a unit that was clean and whose compile command, includes (`ninja -t deps`
 `.clang-tidy` are unchanged since, recorded under `<build>/tidy-clean`.
 
 The CTest suites are `types`, `config`, `universe`, `progression`, `sim`, `ecs`, `market`,
-`host`, `content`, `effects`, `remote`, `data`, `packaging`, `mod` and `sdk_import`, plus `console` when the TUI is enabled. The
+`host`, `content`, `effects`, `remote`, `data`, `packaging`, `mod`, `fixture` and `sdk_import`, plus `console` when the TUI is enabled. The
 `cli_*` tests run the `manifest` executable from an unrelated directory with no display: both
 content forms start, and a missing source and bad command lines fail. `cli_serve` runs the server
 with no client, checks that it stepped, and stops it with SIGINT; the `token_*` tests run
@@ -43,7 +43,8 @@ Manifest uses exists, naming each one missing. `sdk_import` configures Manifest 
 stand-in targets, complete and partial (`source/test/sdk-import`), without fetching or building.
 Module libraries publish their own header sets and dependencies;
 integration tests link the aggregate `Manifest::Game`. Existing assertions run under the engine's
-doctest version. The simulation suite pins generated and replayed state hashes. The mod suite
+doctest version. The simulation suite pins generated and replayed state hashes, and the fixture suite the trading
+fixture's whole loop ([W09](stage-4-trading-plan.md#delivered-w09-2026-11-20)). The mod suite
 mounts the staged directory and generated pack through the engine VFS. The default test build
 builds that pack first, validated before and after packing
 ([content identity](stage-2-content-plan.md#content-identity)). The TUI executable is `build/<preset>/source/tools/tui/manifest_tui`.

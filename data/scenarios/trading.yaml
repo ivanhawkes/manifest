@@ -9,7 +9,8 @@ version: 1
 # nearest tote, at least one. Each region trades the essentials at its venue (W04): Ore grows rice and
 # oats, Brine wheat and barley and makes the medical supplies, and each draws its own water; an
 # essential's demand is its region's need, which sets its price. A row's region is the employer that
-# makes it, and the households that want it when no need names it.
+# makes it, and the households that want it when no need names it. Ore makes the oxygen and
+# cartridges a ship's resupply takes, and Brine wants them (W09).
 gameMode: manifest
 starterHull: HullLoneTraderStarter
 starterVenue: VenueOreHighport
@@ -28,6 +29,8 @@ items:
   - itemId: ItemBarley
   - itemId: ItemDrinkingWater
   - itemId: ItemBasicMedicalSupplies
+  - itemId: ItemOxygen
+  - itemId: ItemCarbonScrubberCartridge
 
 systems:
   - {systemId: SystemAnvil, displayName: Anvil}
@@ -92,6 +95,9 @@ venues:
       - {itemId: ItemBarley, production: 0, demand: 3.125, stock: 10}
       - {itemId: ItemDrinkingWater, regionId: RegionOreHighlands, production: 80, demand: 75, stock: 1200}
       - {itemId: ItemBasicMedicalSupplies, production: 0, demand: 125, stock: 8}
+      - {itemId: ItemOxygen, regionId: RegionOreHighlands, production: 228, demand: 0, stock: 16}
+      - {itemId: ItemCarbonScrubberCartridge, regionId: RegionOreHighlands, production: 10, demand: 0,
+         stock: 50}
   - venueId: VenueBrineHighport
     systemId: SystemAnvil
     planetId: PlanetBrine
@@ -117,3 +123,5 @@ venues:
       - {itemId: ItemDrinkingWater, regionId: RegionBrineCoast, production: 80, demand: 75, stock: 1200}
       - {itemId: ItemBasicMedicalSupplies, regionId: RegionBrineCoast, production: 250, demand: 125,
          stock: 16}
+      - {itemId: ItemOxygen, production: 0, demand: 22.8, stock: 2}
+      - {itemId: ItemCarbonScrubberCartridge, production: 0, demand: 1, stock: 4}

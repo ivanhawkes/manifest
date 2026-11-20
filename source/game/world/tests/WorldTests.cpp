@@ -71,7 +71,7 @@ TEST_CASE(
 	REQUIRE(broker != entt::null);
 	CHECK(registry.get<Broker>(broker).operatorId == "OrganisationAnvilPortAuthority");
 	const Stock &stock = registry.get<Stock>(broker);
-	CHECK(stock.holdings.size() == 14);
+	CHECK(stock.holdings.size() == 16);
 	CHECK(!Broken(stock));
 	const auto furs = std::ranges::find(stock.holdings, std::string{"ItemFurs"}, &Holding::itemId);
 	REQUIRE(furs != stock.holdings.end());

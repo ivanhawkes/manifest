@@ -6,6 +6,17 @@ target_compile_definitions(manifest_effects_tests PRIVATE MANIFEST_MOD_DIRECTORY
 add_dependencies(manifest_effects_tests manifest_mod)
 add_test(NAME effects COMMAND manifest_effects_tests)
 
+# The trading fixture's whole loop, from the directory and the pack (W09).
+add_executable(manifest_fixture_tests FixtureTests.cpp)
+target_link_libraries(manifest_fixture_tests PRIVATE Manifest::Game manifest_host Jettison::Space manifest_test_helpers doctest::doctest_with_main manifest_warnings)
+target_compile_options(manifest_fixture_tests PRIVATE -ffp-contract=off)
+target_compile_definitions(manifest_fixture_tests PRIVATE
+    MANIFEST_MOD_DIRECTORY="${MANIFEST_MOD_DIRECTORY}"
+    MANIFEST_MOD_PACK="${PROJECT_BINARY_DIR}/manifest.pack"
+    MANIFEST_FIXTURE_OVERLAY="${CMAKE_CURRENT_SOURCE_DIR}/overlays/quick-batches")
+add_dependencies(manifest_fixture_tests manifest_validate_pack)
+add_test(NAME fixture COMMAND manifest_fixture_tests)
+
 add_executable(manifest_data_tests DataTests.cpp)
 target_link_libraries(manifest_data_tests PRIVATE Manifest::Game manifest_test_helpers manifest_warnings)
 target_compile_definitions(manifest_data_tests PRIVATE DOCTEST_CONFIG_IMPLEMENT)
@@ -29,4 +40,4 @@ add_test(NAME sdk_import COMMAND "${CMAKE_COMMAND}"
     "-DMANIFEST_ROOT=${PROJECT_SOURCE_DIR}" "-DWORK=${CMAKE_CURRENT_BINARY_DIR}/sdk-import"
     "-DGENERATOR=${CMAKE_GENERATOR}" "-DCXX=${CMAKE_CXX_COMPILER}"
     -P "${CMAKE_CURRENT_SOURCE_DIR}/sdk-import/check.cmake")
-set_target_properties(manifest_effects_tests manifest_data_tests manifest_mod_tests PROPERTIES FOLDER "Test")
+set_target_properties(manifest_effects_tests manifest_fixture_tests manifest_data_tests manifest_mod_tests PROPERTIES FOLDER "Test")

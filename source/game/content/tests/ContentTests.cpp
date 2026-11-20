@@ -516,9 +516,9 @@ TEST_CASE("The fixtures are the trading and governance scenarios their plans des
 
 	// One system, two planets each with a region of its own civilisation and a public station, and
 	// eight goods (docs/stage-2-content-plan.md, "Initial scenario"), with the essentials every region
-	// trades (W04).
+	// trades (W04) and the life-support goods a ship's resupply takes (W09).
 	const ScenarioDefinition &trading = content.scenarios.at("trading");
-	CHECK(trading.items.size() == 14);
+	CHECK(trading.items.size() == 16);
 	CHECK(trading.systems.size() == 1);
 	CHECK(trading.planets.size() == 2);
 	CHECK(trading.civilisations.size() == 2);

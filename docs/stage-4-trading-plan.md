@@ -865,6 +865,51 @@ Left: an admin's control of a server's time (a pause or a scale), which no messa
 the step's remaining cost, the engine's movement, which a fast-forward over quiet steps would cut
 rather than any rate of Manifest's own.
 
+## Delivered: W09, 2026-11-20
+
+The slice's whole fixture, the `fixture` suite (`source/test/FixtureTests.cpp`), on pin `9e0274f`
+with no engine edit. One command stream on the trading scenario, through admission and the player's
+query alone after the bootstrap (Ada provisioned by the host, her ship's cruise on the drive's power
+law as the `travel` suite's is, so the journey is minutes):
+
+- **The loop.** Ore live and Brine her starting report; furs, a tote of oxygen and one of cartridges
+  bought at the asks of her live report of Ore (25,000 to 24,691 credits for the furs), the goods the
+  company's at Ore and the hold unchanged; a load past what is there refused, then all three loaded; a
+  bid under Brine's market left resting, its escrow held; the ship sent to Brine, then a load, an
+  unload and the upgrade each refused `NotDocked` with the business unchanged, and Ore's report
+  frozen at the step before the ship left its pad. Cruising, the tanks refilled from the hold in
+  flight, the rest of the tote kept opened. Docked at Brine with its cargo, Brine live and Ore stale;
+  an unload at Ore refused `WrongVenue`; a fresh cartridge from the hold; the furs unloaded and sold
+  at the bid of her live report, the proceeds hers and no sell resting; the resting bid cancelled, its
+  escrow back; and `OfferCargoHolds` tier 1 bought for 27,000 credits, the hold 2,560 totes, a retry
+  answered as it ran and a new request refused `AlreadyFitted`, neither paying.
+- **The ledger**, checked every step: the world's credits (every account, buy escrow and batch wages
+  not yet paid) change only by the upgrade's 27,000 and the starting credits provisioning makes; each
+  item's whole totes (every holding, reserved ones among them, every hold's lots and opened totes)
+  change only by the batches delivered in the step, and fall only in a step the households' pantries
+  take what they open. The suite sees both happen, under an overlay of its own
+  (`source/test/overlays/quick-batches`) whose batches are 300 s, so they are delivered within the
+  loop; dropping the production allowance fails it.
+- **Continuation and replay.** Saved cruising with the bid resting, a loaded world goes on to the same
+  outcomes, step for step, and the same hash; the recorded commands replayed from the bootstrap reach
+  it too; and the final hash is pinned, the same in Debug, Release, sanitised and the TUI off.
+- **Directory and pack.** The two give the same content manifest, the same outcomes and hashes at
+  every command and the same final world.
+- **Content.** The trading fixture's Ore makes oxygen and cartridges and Brine wants them, as the
+  governance fixture's Cassiter and Forge do, so a ship's resupply is bought where it starts (W06's
+  left item). Ore's broker quotes sixteen goods; W15's credits are unchanged.
+
+The plan's other cases are each held where their mechanic is: partial fills, cancellation, the
+expiry boundary, same-price FIFO, two buys competing for one account and `BookFull` in the `trade`
+suite; another company's ship and order, invalid quantities and the warehouse and hold limits in the
+`company` and `trade` suites; a full station in the `travel` suite, which now also has a cruise the
+engine refuses, the ship left where it is with its cargo; and the starting grant over a connection
+graph, frozen reports and different players' views in the `trade` suite's W07 cases.
+
+Left: trader and script facts read from the reports alone, which W10's standing policies and NPC jobs
+bring; durable recovery, which is Stage 5's; and the manned profile's 4.49-day journey in the fixture,
+which a release build steps in minutes (W15) and the suite does not.
+
 ## Handoff to stage 5
 
 Carry forward the exact scheduler order, command/result schema, content manifest,
