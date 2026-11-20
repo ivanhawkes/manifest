@@ -48,7 +48,8 @@ totes, an eighth of a cubic metre ([D-087](decision-ledger.md#d-087)). W05 is do
 ship [travels](stage-4-trading-plan.md#delivered-w05-2026-11-20) from one venue's pad to another's
 through Jettison's departure, cruise and docking, on star systems and drives authored as the engine's
 records ([D-088](decision-ledger.md#d-088)), on pin `377bd8d`, with two engine provisions. The user
-selected new onboarding during it ([D-089](decision-ledger.md#d-089)). Next: W16, then W15.
+selected new onboarding during it ([D-089](decision-ledger.md#d-089)), and after it a cruise limited
+by acceleration ([D-090](decision-ledger.md#d-090)). Next: W17, then W16, then W15.
 
 ## Priority 0: maintenance before Stage 1
 
@@ -149,7 +150,8 @@ Canonical scope: [Stage 4](stage-4-trading-plan.md), with the
 | 32 / W02 | Resolve outstanding settlement, transport, service and cadence choices; document the actual scheduler graph and transaction boundaries before integration. **Done 2026-11-20**, [the step](stage-4-trading-plan.md#the-step-in-order) and [D-083](decision-ledger.md#d-083) to [D-086](decision-ledger.md#d-086). | W01, C08, A07 |
 | 33 / W03 | Adapt marketplace reservations, matching, partial settlement, cancellation, expiry and fees to owner/venue accounts with checked atomic writes. **Done 2026-11-20**, [delivered](stage-4-trading-plan.md#delivered-w03-2026-11-20), goods in totes ([D-087](decision-ledger.md#d-087)). | W02 |
 | 34 / W05 | Integrate real departure, cruise, arrival, docking and cargo eligibility; prove starter/compact berth and capacity behavior where selected. **Done 2026-11-20**, [delivered](stage-4-trading-plan.md#delivered-w05-2026-11-20), the star systems and drives ([D-088](decision-ledger.md#d-088)). | W01, W03, A04 |
-| 34a / W16 | Onboarding by [D-089](decision-ledger.md#d-089): provisioning gives a company, the starting credits and the starter ship parked at a neutral public spaceport the scenario names, with no home region or polity; retire `playerHome` allocation, `NoHomeRegion` and the home-venue rule, and move W13's home regions to founding by acquisition. Founding a homeworld is its own later task under the acquisition rules. | W05 |
+| 34a / W17 | Cruise by acceleration ([D-090](decision-ledger.md#d-090)): Jettison provisions a `CruiseDrive` acceleration profile (a boost for a time split across both ends, a sustained rate between) with its time and placement, a drive without one cruising as now; Manifest authors a manned and an unmanned profile and gives a ship the one its hull's occupants select. Prove local trips at 2 g, a long one switching to 1 g after two hours, an unmanned one at 12 g, and a save mid-cruise. | W05 |
+| 34b / W16 | Onboarding by [D-089](decision-ledger.md#d-089): provisioning gives a company, the starting credits and the starter ship parked at a neutral public spaceport the scenario names, with no home region or polity; retire `playerHome` allocation, `NoHomeRegion` and the home-venue rule, and move W13's home regions to founding by acquisition. Founding a homeworld is its own later task under the acquisition rules. | W05 |
 | 35 / W15 | Vertical slice: in the trading fixture, one company ship buys at one venue, departs, cruises, docks and sells at the other through the public commands, on W03's settlement and W05's travel; no production, life support, observations or upgrades yet. Played through the console, it shows the loop end to end before W04 and W06–W08 build around it; W09 later proves the complete fixture. | W03, W05 |
 | 36 / W04 | Integrate local production, finite brokers/demand, regional payroll/tax, essential purchases and health/happiness in the selected fixed-step order; eliminate automatic inter-venue stock transfers. | W03 |
 | 37 / W06 | Implement working station life-support connections, onboard usage and explicit resupply under the resolved physical/accounting rules; preserve one-time starter grants. | W04, W05 |
