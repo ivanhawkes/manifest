@@ -165,7 +165,15 @@ void RegisterTypes()
 		    .Field<&Core::ShipClassSpec::fitableEffects>("fitableEffects", kDefined)
 		    .Field<&Core::ShipClassSpec::occupants>("occupants", kDefined)
 		    .Field<&Core::ShipClassSpec::oxygenTanks>("oxygenTanks", kDefined)
-		    .Field<&Core::ShipClassSpec::scrubberCartridges>("scrubberCartridges", kDefined);
+		    .Field<&Core::ShipClassSpec::scrubberCartridges>("scrubberCartridges", kDefined)
+		    .Field<&Core::ShipClassSpec::mass>("mass", kDefined);
+		RegisterEnum<OfferTarget>("Manifest.OfferTarget").Value<OfferTarget::Ship>("Ship");
+		RegisterType<OfferDefinition>("Manifest.Offer", Attribute::Moddable)
+		    .Field<&OfferDefinition::offerId>("offerId", kDefined)
+		    .Field<&OfferDefinition::skillId>("skillId", kDefined)
+		    .Field<&OfferDefinition::target>("target", kDefined)
+		    .Field<&OfferDefinition::cost>("cost", kDefined)
+		    .Field<&OfferDefinition::maxTier>("maxTier", kDefined);
 		RegisterType<NamePoolDefinition>("Manifest.NamePool", Attribute::Moddable)
 		    .Field<&NamePoolDefinition::pool>("pool", kDefined)
 		    .Field<&NamePoolDefinition::names>("names", kDefined);
@@ -345,6 +353,8 @@ std::span<const DefinitionType> DefinitionTypes()
 		    {YamlMigrations{"Manifest.Hull", kVersion1}, "manifest/definitions/hulls",
 		     entt::resolve<Core::ShipClassSpec>(),
 		     &IdOf<Core::ShipClassSpec, &Core::ShipClassSpec::hullId>},
+		    {YamlMigrations{"Manifest.Offer", kVersion1}, "manifest/definitions/offers",
+		     entt::resolve<OfferDefinition>(), &IdOf<OfferDefinition, &OfferDefinition::offerId>},
 		    {YamlMigrations{"Dock.PadClassDefinition", {Jettison::Dock::kDefinitionVersion}},
 		     "manifest/definitions/pads", entt::resolve<Jettison::Dock::PadClassDefinition>(), nullptr},
 		    {Jettison::Dock::HullMigrations(), "manifest/definitions/dock-hulls",

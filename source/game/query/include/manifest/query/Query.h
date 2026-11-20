@@ -25,6 +25,10 @@ struct ShipView
 	// The totes opened for its life support, and its tanks, cartridges and connection (D-094).
 	std::vector<World::Opened> opened{};
 	World::LifeSupport lifeSupport{};
+	// The totes its hold carries, its hull's with its systems' (Company::Upgrade), and the systems
+	// its company has bought for it.
+	std::uint64_t hold{0};
+	std::vector<World::Fitting> systems{};
 
 	bool operator==(const ShipView &) const = default;
 };

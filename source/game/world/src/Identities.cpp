@@ -106,6 +106,9 @@ std::function<void()> Identities::Load(
 	for (const auto [entity, cargo] : loaded.view<const Cargo>().each())
 		if (const std::optional<std::string> problem = Broken(cargo))
 			reader.Fail(*problem);
+	for (const auto [entity, systems] : loaded.view<const Systems>().each())
+		if (const std::optional<std::string> problem = Broken(systems))
+			reader.Fail(*problem);
 	for (const auto [entity, production] : loaded.view<const Production>().each())
 		if (const std::optional<std::string> problem = Broken(production))
 			reader.Fail(*problem);
@@ -165,8 +168,12 @@ std::function<void()> Identities::Load(
 			for (const Lot &lot : cargo.lots)
 				carried += lot.totes;
 			carried += cargo.opened.size();
-			const auto hold = m_holds->find(ship.hullId);
-			if (carried > (hold == m_holds->end() ? 0 : hold->second))
+			const std::optional<std::uint64_t> hold = m_holds(ship, loaded.try_get<Systems>(entity));
+			if (!hold)
+				reader.Fail(
+				    std::format(
+				        "a ship of hull '{}' has systems it cannot carry, or no hold", ship.hullId));
+			else if (carried > *hold)
 				reader.Fail(
 				    std::format(
 				        "a ship of hull '{}' carries {} totes, more than its hold", ship.hullId,

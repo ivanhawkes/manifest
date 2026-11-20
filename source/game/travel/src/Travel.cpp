@@ -50,11 +50,6 @@ namespace Space = Jettison::Space;
 
 constexpr std::string_view kCompanyPrefix = "Company";
 
-// shortcut: every ship weighs a loaded skiff's 20 t, which only its collisions feel, since its
-// thrusters are accelerations (Physics::Handling); W08 authors a hull's mass.
-constexpr float kShipMass = 20000.0f;
-
-
 // What the command and the system run on.
 struct Rules
 {
@@ -314,10 +309,14 @@ void Fleet::Park(
 	entt::registry &registry = world.Registry();
 	const entt::entity station = registry.get<Dock::Pad>(pad).station;
 	const std::string hull = Content::RegistryName(hullId);
+	// Content holds a scenario's starter hull to having a mass.
+	const auto spec = std::ranges::find(m_content.hulls, hullId, &Core::ShipClassSpec::hullId);
+	JETTISON_VERIFY(spec != m_content.hulls.end() && spec->mass);
 	registry.emplace<Sim::Transform>(ship, registry.get<Sim::Transform>(station));
 	registry.emplace<Sim::InFrame>(ship, registry.get<Sim::InFrame>(station).frame);
 	registry.emplace<Physics::LocalFrame>(ship, registry.get<Physics::OnRails>(station).body);
-	Physics::Body body{Physics::BodyKind::Dynamic, Dock::Docks::HullShape(hull), kShipMass};
+	Physics::Body body{
+	    Physics::BodyKind::Dynamic, Dock::Docks::HullShape(hull), static_cast<float>(*spec->mass)};
 	body.continuous = true;
 	registry.emplace<Physics::Body>(ship, body);
 	registry.emplace<Physics::Velocity>(ship);

@@ -38,7 +38,9 @@ void RegisterTypes()
 		    .Value<Result::NoPadFree>("NoPadFree")
 		    .Value<Result::Travelling>("Travelling")
 		    .Value<Result::AlreadyThere>("AlreadyThere")
-		    .Value<Result::NoServiceFree>("NoServiceFree");
+		    .Value<Result::NoServiceFree>("NoServiceFree")
+		    .Value<Result::AlreadyFitted>("AlreadyFitted")
+		    .Value<Result::NotFittable>("NotFittable");
 		RegisterEnum<ActorKind>("Manifest.Command.ActorKind")
 		    .Value<ActorKind::Principal>("Principal")
 		    .Value<ActorKind::Administrator>("Administrator");

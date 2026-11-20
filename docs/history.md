@@ -100,6 +100,18 @@ cargo's lots are bounded together (`world`), and a ship's cargo against its hull
 `CargoVolume`, whose empty map was taken for none given; a hull the map does not name now carries
 nothing (`company`). Round 7 approved with no finding open.
 
+## W08: company-funded cargo upgrades — 2026-11-20
+
+On pin `54fb871`, with no engine edit. `Upgrade` buys a tier of an offer, a new versioned
+`Manifest.Offer` record, for a company's docked ship with the company's own credits, and records it
+in the ship's saved `Systems`; the ship's hold is its hull's with each system's effect, computed as
+the effects engine computes a hull's stats, which `Recompute` now shares
+([what it chose and its evidence](stage-4-trading-plan.md#delivered-w08-2026-11-20)). The starter had
+no slot for any system and the only cargo effect is sized for the long-haul trader; the user gave the
+starter the slot with the effect unchanged, a price only a completed trade reaches, docked purchase
+with no payee, and the hull's mass authored ([D-096](decision-ledger.md#d-096)). The console's
+`upgrade` was taken by the development sandbox's skill tree, so the command is `fit`.
+
 ## W07: live and stale market observations — 2026-11-20
 
 On pin `54fb871`, with no engine edit. `manifest.observe` runs after travel: each player's report of

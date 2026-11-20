@@ -7,6 +7,7 @@
 #include <format>
 #include <functional>
 #include <initializer_list>
+#include <limits>
 #include <map>
 #include <optional>
 #include <set>
@@ -317,6 +318,38 @@ void CheckHulls(Checker &checker, const Jettison::Sim::DefinitionRegistry &regis
 			for (const double capacity : *hull.oxygenTanks)
 				checker.Require(Positive(capacity), "oxygenTanks", "a capacity must be above 0");
 		}
+		// Jolt keeps a body's mass as a float, which must hold it above 0.
+		const double mass = hull.mass.value_or(1.0);
+		checker.Require(
+		    Positive(mass) && mass <= std::numeric_limits<float>::max() &&
+		        static_cast<float>(mass) >= std::numeric_limits<float>::min(),
+		    "mass", "must be above 0 and within a float's normal range");
+	}
+}
+
+
+void CheckOffers(Checker &checker, const Jettison::Sim::DefinitionRegistry &registry)
+{
+	const Core::EffectCatalogue effects = Core::EffectCatalogue::Default();
+	for (const std::string &name : registry.Names<OfferDefinition>())
+	{
+		const OfferDefinition &offer = *registry.Find<OfferDefinition>(name);
+		At<OfferDefinition>(checker, name, offer.offerId);
+		checker.Require(!offer.offerId.empty(), "offerId", "is required");
+		checker.Require(offer.target.has_value(), "target", "is required");
+		checker.Require(offer.cost >= 1, "cost", "must be at least 1 credit");
+		const auto *pSkill = registry.Find<Core::SkillNode>(RegistryName(offer.skillId));
+		checker.Require(
+		    pSkill != nullptr && pSkill->skillId == offer.skillId, "skillId",
+		    std::format("'{}' names no skill", offer.skillId));
+		const Core::EffectDefinition *pEffect = effects.Find(pSkill->targetEffectID);
+		checker.Require(
+		    pSkill->nodeType == Core::NodeType::Skill && pEffect != nullptr &&
+		        pEffect->domain == Core::EffectDomain::Ship,
+		    "skillId", std::format("'{}' is no ship system", offer.skillId));
+		checker.Require(
+		    offer.maxTier >= 1 && offer.maxTier <= pSkill->maxTiers, "maxTier",
+		    std::format("must be from 1 to its skill's {}", pSkill->maxTiers));
 	}
 }
 
@@ -924,6 +957,9 @@ void CheckScenarios(
 		checker.Require(!scenario.starterHull.empty(), "starterHull", "is required");
 		checker.Require(
 		    starterResolves, "starterHull", std::format("'{}' names no hull", scenario.starterHull));
+		checker.Require(
+		    pStarter->mass.has_value(), "starterHull",
+		    std::format("'{}' has no mass to fly with", scenario.starterHull));
 
 		(void)ListIds(checker, scenario.venues, &VenueDefinition::venueId, "venues");
 		for (const VenueDefinition &venue : scenario.venues)
@@ -1040,6 +1076,7 @@ void LoadChecked(const Jettison::Vfs::FileSystem &files, Jettison::Sim::Definiti
 	CheckSkills(checker, registry);
 	CheckNamePools(checker, registry);
 	CheckHulls(checker, registry);
+	CheckOffers(checker, registry);
 	CheckDocks(checker, registry);
 	CheckTuning(checker, registry);
 	CheckGameModes(checker, registry);
@@ -1081,6 +1118,8 @@ ContentSet Build(
 		content.scenarios.emplace(name, *registry.Find<ScenarioDefinition>(name));
 	for (const Core::ShipClassSpec *pHull : All<Core::ShipClassSpec>(registry))
 		content.hulls.push_back(*pHull);
+	for (const OfferDefinition *pOffer : All<OfferDefinition>(registry))
+		content.offers.push_back(*pOffer);
 	content.padClasses = PadClassesOf(registry);
 	for (const std::string &name : registry.Names<Jettison::Dock::HullDefinition>())
 		content.dockHulls.emplace(name, *registry.Find<Jettison::Dock::HullDefinition>(name));

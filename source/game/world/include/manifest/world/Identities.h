@@ -62,12 +62,21 @@ class Identities final : public Jettison::Sim::WorldService
 		return issued == m_counters.issued.end() ? 0 : issued->second;
 	}
 
-	// The totes each hull's hold carries, by hull ID, which Load holds each ship's cargo to; a hull it
-	// does not name carries none. Unset, as in a world with no company commands, a load checks each
-	// hold against kMaxHoldTotes alone.
-	void SetHolds(std::map<std::string, std::uint64_t, std::less<>> holds)
+	// The totes a ship's hold carries, by its hull and the systems fitted to it, none for a ship with
+	// none; none at all for systems that give it no whole number of totes up to kMaxHoldTotes.
+	using HoldOf = std::function<std::optional<std::uint64_t>(const Ship &, const Systems *)>;
+
+	// The rule Hold answers by and Load holds each ship's cargo to. Unset, as in a world with no
+	// company commands, a load checks each hold against kMaxHoldTotes alone.
+	void SetHolds(HoldOf holds)
 	{
 		m_holds = std::move(holds);
+	}
+
+	// The ship's hold by the rule SetHolds gave; none before it has run.
+	std::optional<std::uint64_t> Hold(const Ship &ship, const Systems *pSystems) const
+	{
+		return m_holds ? m_holds(ship, pSystems) : std::nullopt;
 	}
 
 	// What each hull's life support holds, by hull ID, and a fresh cartridge's occupant-days, which
@@ -85,8 +94,9 @@ class Identities final : public Jettison::Sim::WorldService
 	// Production, Pantry, Sales or Reports that breaks its rules (Broken), a market report of a venue
 	// the world does not hold, a holding's reserved totes that are not its owner's sell orders' there,
 	// a LifeSupport of no number or less than nothing, or connected to no
-	// venue, or, once SetHolds has run, a ship carrying more than its hull's hold, lots and opened
-	// totes together, and once SetLifeSupport has, more in a tank or a cartridge than its hull's holds.
+	// venue, Systems that break their rules, or, once SetHolds has run, a ship with no hold or carrying
+	// more than it holds, lots and opened totes together, and once SetLifeSupport has, more in a tank
+	// or a cartridge than its hull's holds.
 	std::function<void()> Load(
 	    Jettison::Serialise::BinaryReader &reader, const entt::registry &loaded,
 	    std::span<const entt::meta_any> queued) override;
@@ -94,7 +104,7 @@ class Identities final : public Jettison::Sim::WorldService
   private:
 	std::map<std::pair<Kind, std::string>, entt::entity> m_index;
 	IdentityCounters m_counters;
-	std::optional<std::map<std::string, std::uint64_t, std::less<>>> m_holds;
+	HoldOf m_holds;
 	std::optional<std::map<std::string, Installed, std::less<>>> m_installed;
 	double m_freshCartridge{0.0};
 };

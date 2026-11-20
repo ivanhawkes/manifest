@@ -10,8 +10,8 @@ No code, content assets, SDK pin or environment changed; no builds or gameplay c
 The starter ship is the entry point for a lone trader and has a cargo hold of 160 totes
 (20 m³, a tote being an eighth of a cubic metre, [D-087](decision-ledger.md#d-087)). It is
 distinct from the new compact 32-tote ship below. 160 totes is the selected starting hold
-capacity; upgrade rules and
-other starter specifications remain open.
+capacity. Its first upgrade is a tier of cargo holds, 2,400 totes more
+([D-096](decision-ledger.md#d-096)); other upgrade rules and starter specifications remain open.
 
 The subsequently selected initial starter supply is 30 kg of oxygen and one fresh
 installed standard scrubber cartridge, providing 30 occupant-days of scrubbing capacity.

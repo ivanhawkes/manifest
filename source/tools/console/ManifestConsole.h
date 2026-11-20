@@ -106,6 +106,7 @@ class ManifestConsole
 	std::string CommandCancel(Arguments arguments);
 	std::string CommandTravel(Arguments arguments);
 	std::string CommandService(Arguments arguments);
+	std::string CommandFit(Arguments arguments);
 	std::string CommandBook(Arguments arguments);
 	std::string CommandStep(Arguments arguments);
 	std::string CommandConnect(const std::string &endpoint, const std::string &token);

@@ -528,3 +528,25 @@ TEST_CASE("Manifest console: a ship's life support in the view, and its resupply
 	MANIFEST_CHECK_CONTAINS(
 	    Execute(session, "step").text, "Manifest.Company.Replace: InsufficientStock");
 }
+
+
+TEST_CASE("Manifest console: a ship's hold and systems in the view, and an upgrade sent as fit")
+{
+	const CompressedContent content;
+	ManifestConsole session{content.Path()};
+	REQUIRE(Execute(session, "host trading").kind == ConsoleLine::Kind::Output);
+	REQUIRE(Execute(session, "provision Ada \"Ada Co\"").kind == ConsoleLine::Kind::Output);
+	Execute(session, "step");
+	MANIFEST_CHECK_CONTAINS(Execute(session, "observe Ada").text, "hold of 160 totes");
+	for (const std::string command :
+	     {"fit Ada Ship1 OfferCargoHolds", "fit Ada Ship1 OfferCargoHolds none", "fit Ada"})
+	{
+		CAPTURE(command);
+		CHECK(Execute(session, command).kind == ConsoleLine::Kind::Error);
+	}
+	// A new company's credits are short of the offer's (D-096).
+	Execute(session, "fit Ada Ship1 OfferCargoHolds 1");
+	MANIFEST_CHECK_CONTAINS(
+	    Execute(session, "step").text, "Manifest.Company.Upgrade: InsufficientFunds");
+	MANIFEST_CHECK_CONTAINS(Execute(session, "observe Ada").text, "Company1 'Ada Co': 25000 credits");
+}

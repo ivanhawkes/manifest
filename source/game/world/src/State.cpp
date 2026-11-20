@@ -144,6 +144,22 @@ std::optional<std::string> Broken(const Pantry &pantry)
 }
 
 
+std::optional<std::string> Broken(const Systems &systems)
+{
+	for (std::size_t at = 0; at < systems.fitted.size(); ++at)
+	{
+		const Fitting &fitting = systems.fitted[at];
+		if (fitting.skillId.empty())
+			return "a system names no skill";
+		if (fitting.tier < 1)
+			return std::format("the system '{}' is fitted at tier {}", fitting.skillId, fitting.tier);
+		if (at > 0 && systems.fitted[at - 1].skillId >= fitting.skillId)
+			return "the systems are out of order or fitted twice";
+	}
+	return std::nullopt;
+}
+
+
 std::optional<std::string> Broken(const LifeSupport &lifeSupport)
 {
 	for (const std::vector<double> *const reserve : {&lifeSupport.tanks, &lifeSupport.cartridges})
@@ -278,6 +294,10 @@ void RegisterTypes()
 		RegisterType<Cargo>("Manifest.World.Cargo")
 		    .Field<&Cargo::lots>("lots", kSaved)
 		    .Field<&Cargo::opened>("opened", kSaved);
+		RegisterType<Fitting>("Manifest.World.Fitting")
+		    .Field<&Fitting::skillId>("skillId", kSaved)
+		    .Field<&Fitting::tier>("tier", kSaved);
+		RegisterType<Systems>("Manifest.World.Systems").Field<&Systems::fitted>("fitted", kSaved);
 		RegisterType<LifeSupport>("Manifest.World.LifeSupport")
 		    .Field<&LifeSupport::tanks>("tanks", kSaved)
 		    .Field<&LifeSupport::cartridges>("cartridges", kSaved)

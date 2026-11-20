@@ -552,13 +552,8 @@ bool ShipEffectEngine::Recompute(
 		return false;
 	}
 
-	std::map<EffectStat, double> stats = base->values;
-
-	// Keyed by effect id, which is the order the modifiers are applied in: the same
-	// tree, the same hull, the same numbers on every platform. A Multiply and a Set
-	// depend on what a previous effect left behind, so an order that moved between
-	// runs would move the hull with it.
-	std::map<std::string, EffectSource> sources;
+	// Keyed by effect id, which is the order Stats applies them in.
+	std::map<std::string, int> tiers;
 
 	const auto view = world.View<EffectSource, EffectOn>();
 
@@ -573,26 +568,10 @@ bool ShipEffectEngine::Recompute(
 			continue;
 		}
 
-		sources[source->effectId] = *source;
+		tiers[source->effectId] = source->tier;
 	}
 
-	for (const auto &entry : sources)
-	{
-		const EffectDefinition *definition = m_catalogue.Find(entry.first);
-
-		if (definition == nullptr)
-		{
-			// A catalogue swap, mid-game: the system stays fitted and buys nothing,
-			// which is the honest reading. The hull's ShipSystems list is where the
-			// player is told about it, not a stat that has quietly gone to zero.
-			continue;
-		}
-
-		for (const auto &modifier : definition->modifiers)
-		{
-			ApplyEffectModifiers(stats, modifier, entry.second.tier);
-		}
-	}
+	const std::map<EffectStat, double> stats = Stats(base->values, tiers);
 
 	world.Put<ShipStats>(ship, ShipStats{stats});
 
@@ -811,5 +790,34 @@ bool ShipEffectEngine::ResolveShipEffect(
 	}
 
 	return true;
+}
+
+
+std::map<EffectStat, double> ShipEffectEngine::Stats(
+    const std::map<EffectStat, double> &base, const std::map<std::string, int> &tiers) const
+{
+	std::map<EffectStat, double> stats = base;
+
+	// In effect id order: a Multiply and a Set depend on what a previous effect left behind, so an
+	// order that moved between runs would move the hull with it.
+	for (const auto &[effectId, tier] : tiers)
+	{
+		const EffectDefinition *definition = m_catalogue.Find(effectId);
+
+		if (definition == nullptr)
+		{
+			// A catalogue swap, mid-game: the system stays fitted and buys nothing,
+			// which is the honest reading. The hull's ShipSystems list is where the
+			// player is told about it, not a stat that has quietly gone to zero.
+			continue;
+		}
+
+		for (const auto &modifier : definition->modifiers)
+		{
+			ApplyEffectModifiers(stats, modifier, tier);
+		}
+	}
+
+	return stats;
 }
 } // namespace Manifest::Core

@@ -195,6 +195,25 @@ struct Cargo
 	bool operator==(const Cargo &) const = default;
 };
 
+// A tier of a ship system its company bought for it (W08), by its Skill node's ID.
+struct Fitting
+{
+	std::string skillId;
+	int tier{0};
+
+	bool operator==(const Fitting &) const = default;
+};
+
+// The ship systems its company has bought for a ship, by skill ID, each at a tier of at least 1: the
+// company's own progression, apart from any civilisation's technology. A ship that has bought none has
+// no Systems.
+struct Systems
+{
+	std::vector<Fitting> fitted;
+
+	bool operator==(const Systems &) const = default;
+};
+
 // A venue's broker (D-084): a trading principal of the venue's operator, its ID the venue's, with
 // its money in its BrokerAccount and its goods in its Stock.
 struct Broker
@@ -387,6 +406,8 @@ std::optional<std::string> Broken(const Stock &stock);
 std::optional<std::string> Broken(const Cargo &cargo);
 
 std::optional<std::string> Broken(const Order &order);
+
+std::optional<std::string> Broken(const Systems &systems);
 
 std::optional<std::string> Broken(const Production &production);
 

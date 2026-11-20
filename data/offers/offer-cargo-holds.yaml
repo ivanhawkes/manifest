@@ -1,0 +1,10 @@
+# A tier of cargo holds, 2,400 totes (the CargoHolds effect's), for a company's own ship, bought with
+# the company's credits while the ship is docked (D-096). Its price is beyond a new company's
+# starting credits and within them after one completed trade: W15's furs run, Ore to Brine, ends
+# at 29,590. A record of Manifest.Offer.
+version: 1
+offerId: OfferCargoHolds
+skillId: SkillShipCargoHolds
+target: Ship
+cost: 27000
+maxTier: 1

@@ -45,7 +45,12 @@ enum class Result
 	Travelling,
 	AlreadyThere,
 	// Provisioning at a starter venue whose life support has no connection free (D-047).
-	NoServiceFree
+	NoServiceFree,
+	// A system's tier bought for a ship that has it already.
+	AlreadyFitted,
+	// A system the ship cannot take: no slot for it, a prerequisite it lacks, or a tier beyond its
+	// next or the offer's.
+	NotFittable
 };
 
 enum class ActorKind

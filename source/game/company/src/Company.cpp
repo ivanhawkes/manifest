@@ -8,7 +8,9 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <set>
 #include <stdexcept>
+#include <string_view>
 #include <tuple>
 #include <variant>
 #include <vector>
@@ -18,6 +20,7 @@
 #include <jettison/reflect/Reflect.h>
 #include <jettison/sim/SimWorld.h>
 
+#include <manifest/effects/ShipEffectEngine.h>
 #include <manifest/trade/Trade.h>
 #include <manifest/world/State.h>
 
@@ -34,23 +37,97 @@ using World::Kind;
 constexpr double kSecondsPerDay = 86400.0;
 
 
-// What the commands and the system run on: the fleet ships are parked through, and the scenario's
-// items, the totes each hull holds, the hulls, each venue's life-support connections and how much of
-// the life-support goods a tote holds, looked up once.
+// What the commands and the system run on: the fleet ships are parked through, the effects engine
+// that says what a hull's systems make of it, and the scenario's items, the hulls, the game mode's
+// skills, the offers of them, each venue's life-support connections and how much of the life-support
+// goods a tote holds, looked up once.
 struct Rules
 {
 	World::Identities &identities;
 	const Travel::Fleet &fleet;
 	const Content::ContentSet &content;
 	const Content::ScenarioDefinition &scenario;
+	Core::ShipEffectEngine effects{};
 	std::map<std::string, const Core::ItemNode *, std::less<>> items;
-	std::map<std::string, std::uint64_t, std::less<>> holds;
 	std::map<std::string, const Core::ShipClassSpec *, std::less<>> hulls;
+	std::map<std::string, const Core::SkillNode *, std::less<>> skills;
+	std::map<std::string, const Content::OfferDefinition *, std::less<>> offers;
 	std::map<std::string, int, std::less<>> connections;
 	double oxygenPerTote{0.0};
 	double cartridgesPerTote{0.0};
 	std::uint64_t windowSteps{0};
 };
+
+
+// Whether a ship of the hull can carry the systems: each a Skill node of the game mode, of a ship
+// effect, at most its maxTiers, the effect of none another's, the hull with a slot for each effect, and
+// each prerequisite fitted among them at its tier. What Upgrade fits, and what a save may hold.
+bool Fits(const Rules &rules, const Core::ShipClassSpec &hull, const World::Systems &systems)
+{
+	const auto tierOf = [&systems](std::string_view skillId)
+	{
+		const auto fitted = std::ranges::find(systems.fitted, skillId, &World::Fitting::skillId);
+		return fitted == systems.fitted.end() ? 0 : fitted->tier;
+	};
+	std::set<std::string_view> effects;
+	for (const World::Fitting &fitting : systems.fitted)
+	{
+		const auto found = rules.skills.find(fitting.skillId);
+		if (found == rules.skills.end())
+			return false;
+		const Core::SkillNode &skill = *found->second;
+		const Core::EffectDefinition *pEffect = rules.effects.Catalogue().Find(skill.targetEffectID);
+		if (skill.nodeType != Core::NodeType::Skill || pEffect == nullptr ||
+		    pEffect->domain != Core::EffectDomain::Ship)
+			return false;
+		const bool prepared = std::ranges::all_of(
+		    skill.requiredSkills, [&tierOf](const Core::Prerequisite &prerequisite)
+		    { return tierOf(prerequisite.nodeId) >= prerequisite.requiredTier; });
+		if (fitting.tier > skill.maxTiers || !effects.insert(skill.targetEffectID).second ||
+		    std::ranges::find(hull.fitableEffects, skill.targetEffectID) == hull.fitableEffects.end() ||
+		    !prepared)
+			return false;
+	}
+	return true;
+}
+
+
+// The ship's hold (World::Identities::HoldOf): its hull's CargoVolume with each system's effect at its
+// tier; none for systems the hull cannot carry (Fits). A hull the content does not have holds
+// nothing, and carries no system.
+std::optional<std::uint64_t> Hold(
+    const Rules &rules, const World::Ship &ship, const World::Systems *pSystems)
+{
+	const World::Systems none;
+	const World::Systems &systems = pSystems ? *pSystems : none;
+	const auto hull = rules.hulls.find(ship.hullId);
+	if (hull == rules.hulls.end())
+		return systems.fitted.empty() ? std::optional<std::uint64_t>{0} : std::nullopt;
+	if (!Fits(rules, *hull->second, systems))
+		return std::nullopt;
+	std::map<std::string, int> tiers;
+	for (const World::Fitting &fitting : systems.fitted)
+		tiers[rules.skills.at(fitting.skillId)->targetEffectID] = fitting.tier;
+	const std::map<Core::EffectStat, double> stats =
+	    rules.effects.Stats(hull->second->baseStats, tiers);
+	const auto volume = stats.find(Core::EffectStat::CargoVolume);
+	const double totes = volume == stats.end() ? 0.0 : volume->second;
+	// NaN fails the last comparison.
+	if (totes < 0.0 || totes > static_cast<double>(Core::kMaxHoldTotes) || std::trunc(totes) != totes)
+		return std::nullopt;
+	return static_cast<std::uint64_t>(totes);
+}
+
+
+// The totes aboard, its opened totes taking a tote each.
+std::uint64_t Carried(const World::Cargo &cargo)
+{
+	// World::Broken bounds the sum, so it cannot wrap.
+	std::uint64_t carried = cargo.opened.size();
+	for (const World::Lot &lot : cargo.lots)
+		carried += lot.totes;
+	return carried;
+}
 
 
 // The ships connected to the venue's life support.
@@ -180,8 +257,8 @@ Result Moved(SimWorld &world, const Rules &rules, const Actor &actor, const Move
 	{
 		if (!held || holding->available < move.totes)
 			return Result::InsufficientStock;
-		const auto hold = rules.holds.find(ship.hullId);
-		std::uint64_t free = hold == rules.holds.end() ? 0 : hold->second;
+		std::uint64_t free =
+		    rules.identities.Hold(ship, registry.try_get<World::Systems>(shipEntity)).value_or(0);
 		for (const World::Lot &aboardLot : cargo.lots)
 			free -= std::min(free, aboardLot.totes);
 		free -= std::min<std::uint64_t>(free, cargo.opened.size());
@@ -323,6 +400,61 @@ Result Replaced(SimWorld &world, const Rules &rules, const Actor &actor, const S
 }
 
 
+Result Upgraded(SimWorld &world, const Rules &rules, const Actor &actor, const Upgrade &upgrade)
+{
+	entt::registry &registry = world.Registry();
+	const auto owned = Owned(registry, rules, actor, upgrade.shipId);
+	if (const Result *refused = std::get_if<Result>(&owned))
+		return *refused;
+	const entt::entity shipEntity = std::get<entt::entity>(owned);
+	const auto offer = rules.offers.find(upgrade.offerId);
+	if (offer == rules.offers.end())
+		return Result::UnknownTarget;
+	const World::Ship &ship = registry.get<World::Ship>(shipEntity);
+	if (ship.dockedAt.empty())
+		return Result::NotDocked;
+	if (upgrade.tier == 0)
+		return Result::InvalidQuantity;
+
+	const Content::OfferDefinition &terms = *offer->second;
+	const Core::SkillNode &skill = *rules.skills.at(terms.skillId);
+	const World::Systems *pSystems = registry.try_get<World::Systems>(shipEntity);
+	World::Systems systems = pSystems ? *pSystems : World::Systems{};
+	const auto tierOf = [&systems](std::string_view skillId)
+	{
+		const auto fitted = std::ranges::find(systems.fitted, skillId, &World::Fitting::skillId);
+		return fitted == systems.fitted.end() ? 0 : fitted->tier;
+	};
+	const auto fitted = static_cast<std::uint32_t>(tierOf(skill.skillId));
+	if (upgrade.tier <= fitted)
+		return Result::AlreadyFitted;
+	if (upgrade.tier != fitted + 1 || upgrade.tier > static_cast<std::uint32_t>(terms.maxTier))
+		return Result::NotFittable;
+
+	const auto at =
+	    std::ranges::lower_bound(systems.fitted, skill.skillId, {}, &World::Fitting::skillId);
+	if (at != systems.fitted.end() && at->skillId == skill.skillId)
+		at->tier = static_cast<int>(upgrade.tier);
+	else
+		systems.fitted.insert(at, {skill.skillId, static_cast<int>(upgrade.tier)});
+	const auto hull = rules.hulls.find(ship.hullId);
+	if (hull == rules.hulls.end() || !Fits(rules, *hull->second, systems))
+		return Result::NotFittable;
+	// A system that took room away could leave the cargo aboard more than the hold.
+	const std::optional<std::uint64_t> hold = Hold(rules, ship, &systems);
+	if (!hold || *hold < Carried(registry.get<World::Cargo>(shipEntity)))
+		return Result::CapacityExceeded;
+	World::Account &account =
+	    registry.get<World::Account>(rules.identities.Find(Kind::CompanyAccount, ship.companyId));
+	if (account.balance < terms.cost)
+		return Result::InsufficientFunds;
+
+	account.balance -= terms.cost;
+	registry.emplace_or_replace<World::Systems>(shipEntity, std::move(systems));
+	return Result::Succeeded;
+}
+
+
 // Draws the need from the reserve's tanks or cartridges in order, never more than they hold.
 void Draw(std::vector<double> &reserve, double need)
 {
@@ -395,6 +527,10 @@ void RegisterTypes()
 		    .Field<&Move::itemId>("itemId", kSaved)
 		    .Field<&Move::totes>("totes", kSaved);
 		RegisterType<Service>("Manifest.Company.Service").Field<&Service::shipId>("shipId", kSaved);
+		RegisterType<Upgrade>("Manifest.Company.Upgrade")
+		    .Field<&Upgrade::shipId>("shipId", kSaved)
+		    .Field<&Upgrade::offerId>("offerId", kSaved)
+		    .Field<&Upgrade::tier>("tier", kSaved);
 		return true;
 	}();
 	(void)registered;
@@ -417,26 +553,25 @@ void RegisterCommands(
 		JETTISON_VERIFY(item != content.gameMode.items.end());
 		rules->items.emplace(selection.itemId, &*item);
 	}
-	// Content refuses these too; a set built some other way is refused here before the cast.
 	for (const Core::ShipClassSpec &hull : content.hulls)
-		if (const auto volume = hull.baseStats.find(Core::EffectStat::CargoVolume);
-		    volume != hull.baseStats.end())
-		{
-			// NaN fails the last comparison.
-			const double totes = volume->second;
-			if (totes < 0.0 || totes > static_cast<double>(Core::kMaxHoldTotes) ||
-			    std::trunc(totes) != totes)
-				throw std::invalid_argument{std::format(
-				    "hull '{}' has a CargoVolume of {}, not a whole number of totes up to {}",
-				    hull.hullId, volume->second, Core::kMaxHoldTotes)};
-			rules->holds.emplace(hull.hullId, static_cast<std::uint64_t>(totes));
-		}
-	identities.SetHolds(rules->holds);
+		rules->hulls.emplace(hull.hullId, &hull);
+	for (const Core::SkillNode &skill : content.gameMode.skills)
+		rules->skills.emplace(skill.skillId, &skill);
+	for (const Content::OfferDefinition &offer : content.offers)
+		if (rules->skills.contains(offer.skillId))
+			rules->offers.emplace(offer.offerId, &offer);
+	// Content refuses these too; a set built some other way is refused here.
+	for (const Core::ShipClassSpec &hull : content.hulls)
+		if (!Hold(*rules, {{}, hull.hullId, {}}, nullptr))
+			throw std::invalid_argument{std::format(
+			    "hull '{}' has a CargoVolume of {}, not a whole number of totes up to {}", hull.hullId,
+			    hull.baseStats.at(Core::EffectStat::CargoVolume), Core::kMaxHoldTotes)};
+	identities.SetHolds([rules](const World::Ship &ship, const World::Systems *pSystems)
+	                    { return Hold(*rules, ship, pSystems); });
 
 	std::map<std::string, World::Installed, std::less<>> installed;
 	for (const Core::ShipClassSpec &hull : content.hulls)
 	{
-		rules->hulls.emplace(hull.hullId, &hull);
 		installed.emplace(
 		    hull.hullId, World::Installed{
 		                     hull.oxygenTanks.value_or(std::vector<double>{}),
@@ -476,6 +611,10 @@ void RegisterCommands(
 	    std::string{kReplace}, kVersion, Command::ActorKind::Principal,
 	    [rules](SimWorld &target, const Actor &actor, const Service &service)
 	    { return Replaced(target, *rules, actor, service); });
+	requests.Register<Upgrade>(
+	    std::string{kUpgrade}, kVersion, Command::ActorKind::Principal,
+	    [rules](SimWorld &target, const Actor &actor, const Upgrade &upgrade)
+	    { return Upgraded(target, *rules, actor, upgrade); });
 
 	world.RegisterSystem(
 	    {.name = std::string{kLifeSupportSystem},

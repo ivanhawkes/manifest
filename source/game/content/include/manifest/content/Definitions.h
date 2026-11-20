@@ -124,6 +124,25 @@ struct LifeSupportTuning
 	std::string cartridgeItemId;
 };
 
+// Who an offer is bought for: a company's own ship, the one target so far.
+enum class OfferTarget
+{
+	Ship
+};
+
+// What a company may buy with its own credits (docs/stage-4-trading-plan.md, "First company
+// purchase"), named by its offerId: a tier at a time of a Skill node fitted to its target, up to its
+// maxTier, the skill's at most. What it costs leaves the economy, paid to no one.
+struct OfferDefinition
+{
+	std::string offerId;
+	std::string skillId;
+	std::optional<OfferTarget> target;
+	// Whole credits, a tier.
+	std::int64_t cost{0};
+	int maxTier{0};
+};
+
 // A player's trading company as provisioning creates it.
 struct CompanyTuning
 {

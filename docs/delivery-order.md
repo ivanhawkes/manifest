@@ -72,7 +72,10 @@ spawning connected, on the same pin with no engine edit. W07 is done (2026-11-20
 of the venues their fleet is docked at refreshed as each step ends and frozen as the last ship leaves,
 with each market's sales over the hour, and starting reports of the rest of their system and the
 systems directly connected to it ([D-095](decision-ledger.md#d-095)), on the same pin with no engine
-edit. Next: W08.
+edit. W08 is done (2026-11-20): [company-funded cargo upgrades](stage-4-trading-plan.md#delivered-w08-2026-11-20),
+a tier of cargo holds bought with the company's own credits for its docked ship, once, its hold
+computed from its hull and its systems, and a hull's authored mass ([D-096](decision-ledger.md#d-096)),
+on the same pin with no engine edit. Next: W09.
 
 ## Priority 0: maintenance before Stage 1
 
@@ -179,7 +182,7 @@ Canonical scope: [Stage 4](stage-4-trading-plan.md), with the
 | 36 / W04 | Integrate local production, finite brokers/demand, regional payroll/tax, essential purchases and health/happiness in the selected fixed-step order; eliminate automatic inter-venue stock transfers. **Done 2026-11-20**, [delivered](stage-4-trading-plan.md#delivered-w04-2026-11-20), every region trading the essentials ([D-092](decision-ledger.md#d-092)). | W03 |
 | 37 / W06 | Implement working station life-support connections, onboard usage and explicit resupply under the resolved physical/accounting rules; preserve one-time starter grants. **Done 2026-11-20**, [delivered](stage-4-trading-plan.md#delivered-w06-2026-11-20), on the user's choices ([D-094](decision-ledger.md#d-094)). | W04, W05 |
 | 38 / W07 | Implement live/stale observations, spawn reports for every directly connected station market, report age and actor filtering across queries and trader/script facts. **Done 2026-11-20**, [delivered](stage-4-trading-plan.md#delivered-w07-2026-11-20); trader and script facts read the same reports when W10 adds them. | W03, W05, A05 |
-| 39 / W08 | Implement company-funded cargo upgrades without sharing regional/civilisation funds; prove retry-safe payment/capacity changes. | W03, A04 |
+| 39 / W08 | Implement company-funded cargo upgrades without sharing regional/civilisation funds; prove retry-safe payment/capacity changes. **Done 2026-11-20**, [delivered](stage-4-trading-plan.md#delivered-w08-2026-11-20), on the user's choices ([D-096](decision-ledger.md#d-096)). | W03, A04 |
 | 40 / W09 | Prove the complete public-command buy → load → travel → dock → unload → sell → upgrade fixture, including directory/pack and cross-build replay. | W04, W05, W06, W07, W08 |
 | 41 / W10 | Add enabled standing trade policies, autopilot and NPC jobs through the same physical commands and permitted market facts; prove operation without connected clients. | W09, N03 |
 | 42 / W11 | Resolve the clean public-project/tender lifecycle's remaining rounding, deadline, default and regional delivery choices; define saved jobs, rights and reservations. | W10 |

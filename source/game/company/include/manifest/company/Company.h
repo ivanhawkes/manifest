@@ -31,7 +31,7 @@ struct Provision
 // ship (UnknownTarget), that the sender's company owns it (NotAuthorised), that it is docked
 // (NotDocked) at the venue (WrongVenue), the scenario's item (UnknownTarget), a count above 0
 // (InvalidQuantity), enough available to move, reserved goods not counted (InsufficientStock), and
-// room for them: the hull's hold, its opened totes taking a tote each, on loading, the warehouse's
+// room for them: the ship's hold, its opened totes taking a tote each, on loading, the warehouse's
 // kMaxWarehouseTotes on unloading, less what the company's resting buy orders there may still fill
 // (CapacityExceeded).
 struct Move
@@ -54,11 +54,30 @@ struct Service
 	std::string shipId;
 };
 
+// The players' command that buys a tier of an offer (Content::OfferDefinition) for their company's
+// ship with the company's credits, paid to no one, while the ship is docked (D-096). The ship's
+// Systems take the offer's skill at the tier, and its hold is then its hull's CargoVolume with every
+// system's effect at its tier, as the effects engine computes a hull's stats. The tier is the one
+// bought, one above the ship's, so a request repeated for a tier the ship has pays nothing and is
+// refused AlreadyFitted. It checks before it writes: the ship (UnknownTarget), that the sender's
+// company owns it (NotAuthorised), the offer, of a skill of the game mode (UnknownTarget), that the
+// ship is docked (NotDocked), a tier above 0 (InvalidQuantity), not fitted already (AlreadyFitted),
+// the next tier, at most the offer's, on a hull with a slot for the skill's effect and every
+// prerequisite fitted to the ship at its tier (NotFittable), a hold of a whole number of totes up to
+// kMaxHoldTotes (CapacityExceeded), and the cost in the company's account (InsufficientFunds).
+struct Upgrade
+{
+	std::string shipId;
+	std::string offerId;
+	std::uint32_t tier{0};
+};
+
 inline constexpr std::string_view kProvision = "Manifest.Company.Provision";
 inline constexpr std::string_view kLoad = "Manifest.Company.Load";
 inline constexpr std::string_view kUnload = "Manifest.Company.Unload";
 inline constexpr std::string_view kRefill = "Manifest.Company.Refill";
 inline constexpr std::string_view kReplace = "Manifest.Company.Replace";
+inline constexpr std::string_view kUpgrade = "Manifest.Company.Upgrade";
 
 // The system, by the name the step's table gives it: after manifest.travel, it lets go of the
 // life-support connection of each ship no longer docked at its venue, connects each docked ship while
@@ -71,9 +90,10 @@ inline constexpr std::uint32_t kVersion = 1;
 // The payloads, with Reflect, and the command types. Safe to call again.
 void RegisterTypes();
 
-// Registers the commands with the requests, and the life-support system after manifest.travel. The
-// identities, the fleet and the content, whose scenario they run on, must outlive the world. Throws
-// std::invalid_argument for a content set with no scenario selected.
+// Registers the commands with the requests, the life-support system after manifest.travel, and the
+// ships' holds with the identities (World::Identities::SetHolds). The identities, the fleet and the
+// content, whose scenario they run on, must outlive the world. Throws std::invalid_argument for a
+// content set with no scenario selected.
 void RegisterCommands(
     Jettison::Sim::SimWorld &world, Command::Requests &requests, World::Identities &identities,
     const Travel::Fleet &fleet, const Content::ContentSet &content);

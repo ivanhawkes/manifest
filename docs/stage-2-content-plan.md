@@ -119,6 +119,7 @@ References resolve by authored ID through an index built at load.
 | `Manifest.Skill` | `definitions/skills` | `skill-tree/*.yaml`, `skill-base` (age gates included) | 85 |
 | `Manifest.NamePool` | `definitions/name-pools` | `universe/solar-system-names.yaml`, one per key | 2 |
 | `Manifest.Hull` | `definitions/hulls` | `ships/hulls.yaml`, `hull-base` (C04) | 3 |
+| `Manifest.Offer` | `definitions/offers` | `offers/*.yaml`, authored as records (W08) | 1 |
 | `Dock.PadClassDefinition` | `definitions/pads` | `docks/pads/*.yaml`, authored as records (C09) | 5 |
 | `Dock.HullDefinition` | `definitions/dock-hulls` | `docks/hulls/*.yaml`, each named by its `Manifest.Hull` (C09) | 3 |
 | `Dock.StationLayout` | `definitions/stations` | `docks/stations/*.yaml`, authored as records (C09) | 1 |
@@ -173,6 +174,10 @@ authored value is below one.
 | Hull | `occupants` | `std::optional<int>`, empty | not negative, 0 a hull with no one aboard (W17); empty is unselected, and cruises manned |
 | Hull | `scrubberCartridges` | `std::optional<int>`, empty | at least 1; empty is unselected |
 | Hull | `oxygenTanks` | `std::optional<std::vector<double>>`, kilograms a tank | at least one, each above 0; empty is unselected |
+| Hull | `mass` | `std::optional<double>`, kilograms | above 0; empty is unselected, and a scenario's starter hull needs one (W08, [D-096](decision-ledger.md#d-096)) |
+| Offer | `offerId`, `skillId` | string, empty | required; the skill is a Skill node of a ship effect |
+| Offer | `target` | `std::optional<OfferTarget>`: `Ship` | required |
+| Offer | `cost`, `maxTier` | `std::int64_t` whole credits a tier; `int` | the cost at least 1; the tier from 1 to the skill's `maxTiers` |
 
 Every shipped item carries its physical fields today, so none is optional: test fixtures that omit
 them gain them. Selections are mappings rather than bare strings so that a patch can use

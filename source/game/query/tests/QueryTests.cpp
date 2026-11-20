@@ -119,7 +119,8 @@ TEST_CASE("A player sees their own company as it was at the completed step, and 
 	                      {{"ItemCopper", 3}},
 	                      {},
 	                      {},
-	                      {{10.0, 10.0, 10.0}, {30.0}, "VenueOreHighport"}}}}}});
+	                      {{10.0, 10.0, 10.0}, {30.0}, "VenueOreHighport"},
+	                      160}}}}});
 
 	REQUIRE(hosted.Run(kAda, Company::kUnload, move) == Result::Succeeded);
 	CHECK(loaded.companies[0].ships[0].cargo[0].totes == 3);

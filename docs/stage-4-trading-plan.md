@@ -475,8 +475,8 @@ the contract above left room:
 - **Ships.** Provisioning parks the starter on the smallest free pad its dock hull fits, the lowest
   numbered of those (a skiff pad), as a dynamic body of its hull with its drive, refusing `NoPadFree`
   before anything is written. Its engine controller is a player's, slot n of its `Company<n>`
-  (`ControllerOf`), never reused. `travel` sends every engine command as that controller. shortcut:
-  every ship weighs 20 t, which only collisions feel; W08 authors a hull's mass.
+  (`ControllerOf`), never reused. `travel` sends every engine command as that controller. It weighs
+  its hull's authored mass (W08).
 - **The journey.** `World::Journey` on the ship (saved): the venue, the leg (`Departing`,
   `Clearing`, `Cruising`, `Arriving`, then `Arrived` or `Failed`), why it failed, and the step it
   started. `Travel` refuses `UnknownTarget`, `NotAuthorised`, `Travelling` while one is under way
@@ -776,6 +776,57 @@ NPC jobs and the scripts after them, which are to read these reports and nothing
 development sandbox's `prices` and `plan`, which stay privileged and apart from the hosted world;
 ship transfers, which do not exist yet; and each covered venue's report rebuilt every step from the
 book, to profile with the long step ([L26](delivery-order.md#later-priorities-and-re-entry-conditions)).
+
+## Delivered: W08, 2026-11-20
+
+Company-funded cargo upgrades, `Manifest.Company.Upgrade`, on pin `54fb871` with no engine edit. What
+it chose where the plans left room ([D-096](decision-ledger.md#d-096), the user's choices):
+
+- **The offer.** `Manifest.Offer`, a versioned record of its own under `definitions/offers`, authored
+  as records under `data/offers/` and in the content fingerprint: an `offerId`, the Skill node it
+  sells (`skillId`), its `target` (`Ship`, the one target so far), its `cost` in whole credits a tier
+  and the highest tier it sells (`maxTier`, the skill's `maxTiers` at most). Content refuses a skill
+  that is not a ship system, a cost below a credit and a tier out of range. The trading fixture's
+  `OfferCargoHolds` sells `SkillShipCargoHolds` tier 1 at 27,000 credits, beyond a new company's
+  25,000 and within the 29,590 W15's furs run ends at. `resourceCostPerTier` is not read.
+- **The ship's systems.** A ship's saved `Systems` hold the tiers its company bought for it, by skill
+  ID, apart from any civilisation's technology; a ship that has bought none has none. Its hold is its
+  hull's `CargoVolume` with each system's effect at its tier, computed as the effects engine computes
+  a hull's stats (`ShipEffectEngine::Stats`, which `Recompute` now calls), never a cached capacity:
+  the starter's 160 totes and `CargoHolds`' 2,400 a tier make 2,560. `Load`, the save's check, the
+  snapshot and the console all read it through `Identities::Hold`. What a ship may carry is one
+  rule, `Fits`, that the purchase and the save's check both hold to: each system a skill of the game
+  mode, at most its `maxTiers`, of an effect no other system has, in a slot of the hull, its
+  prerequisites fitted. A save is refused for systems out of order, below tier 1, that a ship cannot
+  carry, or a ship over its hold.
+- **The command.** `Upgrade` names the ship, the offer and the tier bought, one above the ship's, so a
+  retried request is answered from the ledger and a new one for a tier the ship has is refused
+  `AlreadyFitted`, neither paying. It checks everything before it writes: the ship, its owner, the
+  offer, that the ship is docked (at any venue), the tier, a slot on the hull for the skill's effect
+  and each prerequisite fitted to the ship, no other system of the effect (`NotFittable`), a hold
+  it would give that holds what is aboard (`CapacityExceeded`) and the cost in the company's account (`InsufficientFunds`); then it pays the
+  cost, which leaves the economy, and fits the tier together. The starter has a slot for `CargoHolds`.
+- **Mass.** A hull's `mass`, in kilograms, is authored: the starter's 20 t, the others open, each
+  above 0 as the float a body keeps. A scenario's starter hull must have one, and a ship is spawned at it; fitting adds none.
+- **Snapshot and console.** A player's ships show their hold and systems, protocol 5; the console's
+  `fit <ship> <offer> <tier>` sends the command, and `observe` shows each ship's hold and systems.
+
+Evidence, in the `company` suite: a new company refused for its funds with nothing changed; with the
+slice's 29,590, the tier bought for 27,000, the hold 2,560 and the system shown; the request retried
+answered as it ran, a new request for the tier refused `AlreadyFitted`, and both leaving the credits
+and the hold as they were; 2,560 totes loading where 2,561 do not; every refusal (ship, owner, offer,
+tier, a second tier, undocked, a hull with no slot, an unmet prerequisite, a second skill of the
+effect, a hold past the largest)
+paying and fitting nothing; and a save carrying the systems on, refused for each broken rule. In the
+`content` suite, the offer's and the mass's refusals; in the `data` suite, the starter's slot and
+mass; in the `query` and `console` suites, the hold in the view and `fit`. The `company` suite's
+pinned hash moved for the `Systems` component a save now registers, and only for that: with it
+unregistered the old hash holds.
+
+Left: the upgrade in the slice's whole fixture, earned by trading, with production, life support and
+observations (W09); the long-haul trader's tiers and every other offer, which no scenario sells yet;
+a hull's systems refitted or taken off, which no command does; and what a hull's systems add to its
+mass.
 
 ## Handoff to stage 5
 

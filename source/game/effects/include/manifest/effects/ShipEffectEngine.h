@@ -39,6 +39,8 @@ struct ShipClassSpec
 	// The installed operating oxygen bank, each tank's capacity in kilograms (D-050).
 	std::optional<std::vector<double>> oxygenTanks;
 	std::optional<int> scrubberCartridges;
+	// In kilograms, as it flies: a ship of a hull with none cannot be spawned.
+	std::optional<double> mass;
 };
 
 // The engine that puts skill effects and technology effects on ships.
@@ -151,6 +153,12 @@ class ShipEffectEngine
 	// order that says the same tree gives the same numbers on every platform, which is
 	// what a fill log, a UI and a test all need.
 	bool Recompute(EntityStore &world, const std::string &shipId, std::string &errorMessage);
+
+	// What Recompute writes, from a hull's base stats and the tier of each effect on it, by effect
+	// id: a world of its own, the hosted one, keeps its ships' systems and reads the stats here. An
+	// effect the catalogue does not define buys nothing.
+	std::map<EffectStat, double> Stats(
+	    const std::map<EffectStat, double> &base, const std::map<std::string, int> &tiers) const;
 
 	// Every ship in the world. Returns how many were rebuilt.
 	unsigned RecomputeAll(EntityStore &world, std::string &errorMessage);

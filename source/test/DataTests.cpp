@@ -243,13 +243,15 @@ TEST_CASE("the_hulls_carry_their_selected_values_and_leave_the_rest_unset")
 	CHECK(trader.baseStats.at(EffectStat::TraderComputer) == 1.5);
 	CHECK(trader.fitableEffects.size() == 25);
 	CHECK_FALSE(trader.occupants.has_value());
+	CHECK_FALSE(trader.mass.has_value());
 
 	const ShipClassSpec &starter = find("HullLoneTraderStarter");
 	CHECK(starter.baseStats == std::map<EffectStat, double>{{EffectStat::CargoVolume, 160.0}});
 	CHECK(starter.occupants == 1);
 	CHECK(starter.oxygenTanks == std::vector<double>{10.0, 10.0, 10.0});
 	CHECK(starter.scrubberCartridges == 1);
-	CHECK(starter.fitableEffects.empty());
+	CHECK(starter.fitableEffects == std::vector<std::string>{"CargoHolds"});
+	CHECK(starter.mass == 20000.0);
 
 	const ShipClassSpec &compact = find("HullCompactSingle");
 	CHECK(compact.baseStats == std::map<EffectStat, double>{{EffectStat::CargoVolume, 32.0}});
@@ -257,6 +259,7 @@ TEST_CASE("the_hulls_carry_their_selected_values_and_leave_the_rest_unset")
 	CHECK_FALSE(compact.oxygenTanks.has_value());
 	CHECK_FALSE(compact.scrubberCartridges.has_value());
 	CHECK(compact.fitableEffects.empty());
+	CHECK_FALSE(compact.mass.has_value());
 }
 
 // T4's balance inputs against the plans' own worked examples (docs/economy-and-development-plan.md,

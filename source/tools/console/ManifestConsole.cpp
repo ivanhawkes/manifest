@@ -180,6 +180,9 @@ std::string Describe(const Query::Snapshot &snapshot, std::string_view as)
 			view << "\n  " << ship.shipId << " " << ship.hullId << ", "
 			     << (ship.dockedAt.empty() ? std::string{"undocked"} : "docked at " + ship.dockedAt)
 			     << (ship.journey ? Describe(*ship.journey, snapshot.step) : "");
+			view << "\n    hold of " << ship.hold << " totes";
+			for (const World::Fitting &fitting : ship.systems)
+				view << ", " << fitting.skillId << " tier " << fitting.tier;
 			for (const World::Lot &lot : ship.cargo)
 				view << "\n    " << lot.itemId << " " << lot.totes << " totes";
 			for (const World::Opened &opened : ship.opened)
@@ -298,6 +301,12 @@ void ManifestConsole::RegisterCommands()
 	    "service refill|replace [principal] <ship>: queues a player's oxygen refill or cartridge "
 	    "replacement from the ship's hold; the principal only when not connected",
 	    2, 3, [this](Arguments arguments) { return CommandService(arguments); });
+	RegisterCommand(
+	    "fit",
+	    "fit [principal] <ship> <offer> <tier>: queues a player's purchase of an offer's tier for "
+	    "their "
+	    "docked ship with their company's credits; the principal only when not connected",
+	    3, 4, [this](Arguments arguments) { return CommandFit(arguments); });
 	RegisterCommand(
 	    "book", "book <venue> [item]: the resting orders at a venue, as the host sees them", 1, 2,
 	    [this](Arguments arguments) { return CommandBook(arguments); });
@@ -806,6 +815,21 @@ std::string ManifestConsole::CommandService(Arguments arguments)
 	return Queue(
 	    arguments, 1, arguments[0] == "refill" ? Company::kRefill : Company::kReplace,
 	    Company::kVersion, payload);
+}
+
+
+std::string ManifestConsole::CommandFit(Arguments arguments)
+{
+	const Arguments operands = Operands(
+	    arguments, 0, 3,
+	    m_pRemote ? "fit <ship> <offer> <tier>" : "fit <principal> <ship> <offer> <tier>");
+	using Jettison::Serialise::BinaryArchive;
+	const std::vector<std::byte> payload = BinaryArchive::Write(
+	    Company::Upgrade{
+	        operands[0], operands[1],
+	        ParseCount(operands, 2, 0, 1, std::numeric_limits<unsigned>::max())},
+	    Jettison::Serialise::FormatVersion{Company::kVersion});
+	return Queue(arguments, 0, Company::kUpgrade, Company::kVersion, payload);
 }
 
 

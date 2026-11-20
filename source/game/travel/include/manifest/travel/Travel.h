@@ -71,8 +71,9 @@ class Fleet
 	entt::entity FreePad(
 	    const entt::registry &registry, std::string_view venueId, std::string_view hullId) const;
 
-	// Makes the ship a body of its hull in space, with its cruise drive, commanded by its company
-	// (ControllerOf), and parks it on the pad, docked. The pad is FreePad's for the hull.
+	// Makes the ship a body of its hull in space, of the hull's mass, with its cruise drive, commanded
+	// by its company (ControllerOf), and parks it on the pad, docked. The pad is FreePad's for the
+	// hull.
 	void Park(
 	    Jettison::Sim::SimWorld &world, entt::entity ship, entt::entity pad, std::string_view hullId,
 	    std::string_view companyId) const;

@@ -337,6 +337,28 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	CheckRefused(starter, "version: 1\noxygenTanks: []\n", "oxygenTanks holds none");
 	CheckRefused(
 	    starter, "version: 1\noxygenTanks: [10, 0]\n", "oxygenTanks a capacity must be above 0");
+	CheckRefused(starter, "version: 1\nmass: 0\n", "mass must be above 0");
+	// Above 0 as a double, and 0 as the float a body keeps.
+	CheckRefused(starter, "version: 1\nmass: 1e-100\n", "mass must be above 0");
+	CheckRefused(
+	    starter, "version: 1\nmass: null\n",
+	    "starterHull 'HullLoneTraderStarter' has no mass to fly with");
+
+	// A company's offer (D-096).
+	const std::string offer = "manifest/definitions/offers/offer-cargo-holds.patch.yaml";
+	CheckRefused(
+	    offer, "version: 1\ncost: 0\n",
+	    "Manifest.Offer 'OfferCargoHolds': cost must be at least 1 credit");
+	CheckRefused(offer, "version: 1\nmaxTier: 4\n", "maxTier must be from 1 to its skill's 3");
+	CheckRefused(offer, "version: 1\nmaxTier: 0\n", "maxTier must be from 1 to its skill's 3");
+	CheckRefused(offer, "version: 1\nskillId: SkillNothing\n", "skillId 'SkillNothing' names no skill");
+	CheckRefused(
+	    offer, "version: 1\nskillId: SkillYardDrydock\n",
+	    "skillId 'SkillYardDrydock' is no ship system");
+	CheckRefused(
+	    "manifest/definitions/offers/offer-bare.yaml",
+	    "version: 1\nofferId: OfferBare\nskillId: SkillShipCargoHolds\ncost: 1\nmaxTier: 1\n",
+	    "Manifest.Offer 'OfferBare': target is required");
 
 	const std::string balance = "manifest/definitions/tuning/balance.patch.yaml";
 	CheckRefused(

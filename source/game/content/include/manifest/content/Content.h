@@ -52,6 +52,8 @@ struct ContentSet
 	Core::UniverseNamePools names;
 	// Every hull, in registry order.
 	std::vector<Core::ShipClassSpec> hulls;
+	// Every offer a company may buy, in registry order.
+	std::vector<OfferDefinition> offers;
 	// Jettison's docks as authored (D-062), by record name: the pad classes, each hull's dock hull and
 	// cruise drive, by its Manifest.Hull's record name, and the station layouts.
 	Jettison::Dock::PadClasses padClasses;

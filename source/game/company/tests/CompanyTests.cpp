@@ -212,7 +212,7 @@ TEST_CASE("Provisioning gives a player a company, its credits and a ship docked 
 	        "Co",
 	        25000,
 	        {},
-	        {{"Ship1", "HullLoneTraderStarter", "VenueOreHighport", {}, {}, {}, granted}}});
+	        {{"Ship1", "HullLoneTraderStarter", "VenueOreHighport", {}, {}, {}, granted, 160}}});
 
 	// What the snapshot leaves out: the principal. No polity is made and no region governed (D-089).
 	const entt::registry &registry = hosted.world.Registry();
@@ -659,6 +659,200 @@ TEST_CASE(
 }
 
 
+namespace
+{
+// The company's account, written as fixture bootstrap.
+World::Account &Credits(Hosted &hosted, const std::string &companyId)
+{
+	return hosted.world.Registry().get<World::Account>(hosted.Find(Kind::CompanyAccount, companyId));
+}
+} // namespace
+
+
+TEST_CASE("A company's credits buy its ship a tier of cargo holds, once, and its hold grows by it")
+{
+	Hosted hosted;
+	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
+	const Upgrade holds{"Ship1", "OfferCargoHolds", 1};
+	// A new company's 25,000 credits are short of the offer's 27,000 (D-096).
+	const CompanyView start = hosted.Seen(kAda);
+	CHECK(start.ships[0].hold == 160);
+	CHECK(hosted.Run(kAda, kUpgrade, holds) == Result::InsufficientFunds);
+	CHECK(hosted.Seen(kAda) == start);
+
+	// What W15's furs run leaves it with, which W09's fixture earns by trading.
+	Credits(hosted, "Company1").balance = 29590;
+	const std::uint64_t sequence = hosted.requests.NextSequence(kAda);
+	CHECK(hosted.Run(kAda, kUpgrade, holds) == Result::Succeeded);
+	const CompanyView bought = hosted.Seen(kAda);
+	CHECK(bought.credits == 2590);
+	CHECK(bought.ships[0].hold == 2560);
+	CHECK(bought.ships[0].systems == std::vector<World::Fitting>{{"SkillShipCargoHolds", 1}});
+
+	// The request retried is answered from the ledger, and a new one for the tier it has is refused:
+	// neither pays or fits again.
+	const Receipt retried = hosted.requests.Admit(
+	    hosted.world, kAda, sequence, std::string{kUpgrade}, kVersion,
+	    BinaryArchive::Write(holds, FormatVersion{kVersion}));
+	CHECK(retried.status == Receipt::Status::Completed);
+	CHECK(retried.result == Result::Succeeded);
+	hosted.world.Step();
+	CHECK(hosted.Run(kAda, kUpgrade, holds) == Result::AlreadyFitted);
+	CHECK(hosted.Seen(kAda) == bought);
+
+	// The hold takes what the hull's alone would not, and no more.
+	hosted.Stock("Company1").holdings = {{"VenueOreHighport", "ItemCopper", 2561, 0}};
+	const Move copper{"Ship1", "VenueOreHighport", "ItemCopper", 2561};
+	CHECK(hosted.Load(kAda, copper) == Result::CapacityExceeded);
+	CHECK(hosted.Load(kAda, {"Ship1", "VenueOreHighport", "ItemCopper", 2560}) == Result::Succeeded);
+	CHECK(Aboard(hosted.Seen(kAda), "Ship1", "ItemCopper") == 2560);
+}
+
+
+TEST_CASE("A refused upgrade pays nothing and fits nothing")
+{
+	Hosted hosted;
+	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
+	REQUIRE(hosted.Provision("Bea") == Result::Succeeded);
+	Credits(hosted, "Company1").balance = 100000;
+	const CompanyView before = hosted.Seen(kAda);
+	const struct
+	{
+		Actor actor;
+		Upgrade upgrade;
+		Result expected;
+	} refused[]{
+	    {kAda, {"Ship9", "OfferCargoHolds", 1}, Result::UnknownTarget},
+	    {kBea, {"Ship1", "OfferCargoHolds", 1}, Result::NotAuthorised},
+	    {kAda, {"Ship1", "OfferNothing", 1}, Result::UnknownTarget},
+	    {kAda, {"Ship1", "OfferCargoHolds", 0}, Result::InvalidQuantity},
+	    // A tier at a time, and the offer sells only the first.
+	    {kAda, {"Ship1", "OfferCargoHolds", 2}, Result::NotFittable},
+	};
+	for (const auto &[actor, upgrade, expected] : refused)
+	{
+		CAPTURE(upgrade.shipId);
+		CAPTURE(upgrade.offerId);
+		CAPTURE(upgrade.tier);
+		CHECK(hosted.Run(actor, kUpgrade, upgrade) == expected);
+		CHECK(hosted.Seen(kAda) == before);
+	}
+	World::Ship &ship = hosted.Record("Ship1");
+	ship.dockedAt.clear();
+	CHECK(hosted.Run(kAda, kUpgrade, Upgrade{"Ship1", "OfferCargoHolds", 1}) == Result::NotDocked);
+	CHECK(hosted.Seen(kAda).credits == before.credits);
+	CHECK_FALSE(hosted.world.Registry().all_of<World::Systems>(hosted.Find(Kind::Ship, "Ship1")));
+
+	// A hull with no slot for the system, a prerequisite the ship lacks, and a hold past the largest.
+	using Manifest::Content::ContentSet;
+	const auto starter = [](ContentSet &set) -> Manifest::Core::ShipClassSpec &
+	{
+		return *std::ranges::find(
+		    set.hulls, "HullLoneTraderStarter", &Manifest::Core::ShipClassSpec::hullId);
+	};
+	ContentSet slotless = Scenario("trading");
+	starter(slotless).fitableEffects.clear();
+	ContentSet unprepared = Scenario("trading");
+	std::ranges::find(
+	    unprepared.gameMode.skills, "SkillShipCargoHolds", &Manifest::Core::SkillNode::skillId)
+	    ->requiredSkills = {{"SkillShipFuelBunkers", 1}};
+	// A second skill of the same effect, which would take the first's place in the hold.
+	ContentSet twin = Scenario("trading");
+	Manifest::Core::SkillNode second = *std::ranges::find(
+	    twin.gameMode.skills, "SkillShipCargoHolds", &Manifest::Core::SkillNode::skillId);
+	second.skillId = "SkillShipCargoHoldsTwin";
+	twin.gameMode.skills.push_back(second);
+	Manifest::Content::OfferDefinition twinOffer = twin.offers.at(0);
+	twinOffer.offerId = "OfferTwin";
+	twinOffer.skillId = second.skillId;
+	twin.offers.push_back(twinOffer);
+	{
+		Hosted other{twin};
+		REQUIRE(other.Provision("Ada") == Result::Succeeded);
+		Credits(other, "Company1").balance = 100000;
+		REQUIRE(other.Run(kAda, kUpgrade, Upgrade{"Ship1", "OfferCargoHolds", 1}) == Result::Succeeded);
+		CHECK(other.Run(kAda, kUpgrade, Upgrade{"Ship1", "OfferTwin", 1}) == Result::NotFittable);
+		CHECK(other.Seen(kAda).credits == 73000);
+		CHECK(other.Seen(kAda).ships[0].hold == 2560);
+	}
+	ContentSet vast = Scenario("trading");
+	starter(vast).baseStats[Manifest::Core::EffectStat::CargoVolume] =
+	    static_cast<double>(Manifest::Core::kMaxHoldTotes - 100);
+	for (const auto &[set, expected] :
+	     {std::pair<const ContentSet *, Result>{&slotless, Result::NotFittable},
+	      {&unprepared, Result::NotFittable},
+	      {&vast, Result::CapacityExceeded}})
+	{
+		Hosted other{*set};
+		REQUIRE(other.Provision("Ada") == Result::Succeeded);
+		Credits(other, "Company1").balance = 100000;
+		CHECK(other.Run(kAda, kUpgrade, Upgrade{"Ship1", "OfferCargoHolds", 1}) == expected);
+		CHECK(other.Seen(kAda).credits == 100000);
+		CHECK(other.Seen(kAda).ships[0].systems.empty());
+	}
+}
+
+
+TEST_CASE(
+    "A save keeps a ship's systems, and one whose systems break their rules or its hold does not load")
+{
+	Hosted hosted;
+	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
+	Credits(hosted, "Company1").balance = 27000;
+	REQUIRE(hosted.Run(kAda, kUpgrade, Upgrade{"Ship1", "OfferCargoHolds", 1}) == Result::Succeeded);
+	hosted.Hold("Ship1").lots = {{"ItemCopper", 2560}};
+	Hosted loaded;
+	loaded.world.Load(hosted.world.Save());
+	CHECK(loaded.Seen(kAda) == hosted.Seen(kAda));
+	CHECK(loaded.Seen(kAda).ships[0].hold == 2560);
+	CHECK(loaded.world.StateHash() == hosted.world.StateHash());
+
+	// A technology is the civilisation's, never a ship's system, though its effect is the holds'.
+	Manifest::Content::ContentSet known = Scenario("trading");
+	Manifest::Core::SkillNode technique = *std::ranges::find(
+	    known.gameMode.skills, "SkillShipCargoHolds", &Manifest::Core::SkillNode::skillId);
+	technique.skillId = "TechCargoHolds";
+	technique.nodeType = Manifest::Core::NodeType::Tech;
+	known.gameMode.skills.push_back(technique);
+	{
+		Hosted taught{known};
+		REQUIRE(taught.Provision("Ada") == Result::Succeeded);
+		taught.world.Registry().emplace<World::Systems>(
+		    taught.Find(Kind::Ship, "Ship1"), World::Systems{{{"TechCargoHolds", 1}}});
+		Hosted refused{known};
+		CHECK_THROWS_WITH_AS(
+		    refused.world.Load(taught.world.Save()), doctest::Contains("has systems it cannot carry"),
+		    Jettison::Serialise::FormatError);
+	}
+
+	World::Systems &systems =
+	    hosted.world.Registry().get<World::Systems>(hosted.Find(Kind::Ship, "Ship1"));
+	const struct
+	{
+		std::vector<World::Fitting> fitted;
+		const char *problem;
+	} broken[]{
+	    {{{"SkillShipCargoHolds", 0}}, "fitted at tier 0"},
+	    {{{"SkillShipCargoHolds", 1}, {"SkillShipCargoHolds", 1}}, "out of order or fitted twice"},
+	    {{{"SkillNothing", 1}}, "has systems it cannot carry"},
+	    // Past the skill's three tiers, which no purchase reaches.
+	    {{{"SkillShipCargoHolds", 4}}, "has systems it cannot carry"},
+	    // Without its holds, the copper is more than the hull's 160.
+	    {{}, "more than its hold"},
+	};
+	for (const auto &[fitted, problem] : broken)
+	{
+		CAPTURE(problem);
+		systems.fitted = fitted;
+		Hosted refused;
+		const std::uint64_t before = refused.world.StateHash();
+		CHECK_THROWS_WITH_AS(
+		    refused.world.Load(hosted.world.Save()), doctest::Contains(problem),
+		    Jettison::Serialise::FormatError);
+		CHECK(refused.world.StateHash() == before);
+	}
+}
+
 TEST_CASE("Requests run in their step in admission order, the later seeing what the earlier did")
 {
 	Hosted hosted{"governance"};
@@ -730,11 +924,9 @@ TEST_CASE("A retried command runs once, and the next stage's commands are refuse
 	hosted.world.Step();
 	CHECK(Aboard(hosted.Seen(kAda), "Ship1", "ItemCopper") == 4);
 
-	// Whatever Stage 4 names its order, travel and upgrade commands, none is registered before its
-	// rules are, and refusing one consumes no sequence.
+	// A command no rules registered is refused, and refusing one consumes no sequence.
 	for (const std::string_view command :
-	     {"Manifest.Market.PlaceOrder", "Manifest.Market.CancelOrder", "Manifest.Travel.Depart",
-	      "Manifest.Company.Upgrade"})
+	     {"Manifest.Market.PlaceOrder", "Manifest.Market.CancelOrder", "Manifest.Travel.Depart"})
 	{
 		CAPTURE(command);
 		const Receipt refused = send(2, command);
@@ -805,5 +997,5 @@ TEST_CASE("A save with work pending, and a replay from the start, carry the comp
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves only
 	// with what a save holds or the engine's save format, and a change that moves it says so.
-	CHECK(hosted.world.StateHash() == 0x7a2a4f95524e1c6cULL);
+	CHECK(hosted.world.StateHash() == 0x522a66a29694d030ULL);
 }
