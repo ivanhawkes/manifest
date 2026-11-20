@@ -795,9 +795,9 @@ it chose where the plans left room ([D-096](decision-ledger.md#d-096), the user'
   a hull's stats (`ShipEffectEngine::Stats`, which `Recompute` now calls), never a cached capacity:
   the starter's 160 totes and `CargoHolds`' 2,400 a tier make 2,560. `Load`, the save's check, the
   snapshot and the console all read it through `Identities::Hold`. What a ship may carry is one
-  rule, `Fits`, that the purchase and the save's check both hold to: each system a skill of the game
-  mode, at most its `maxTiers`, of an effect no other system has, in a slot of the hull, its
-  prerequisites fitted. A save is refused for systems out of order, below tier 1, that a ship cannot
+  rule, `Fits`, that the purchase and the save's check both hold to: each system a Skill node of the
+  game mode, of a ship effect, at most its `maxTiers`, of an effect and an exclusive group no other
+  system has, in a slot of the hull, its prerequisites fitted. A save is refused for systems out of order, below tier 1, that a ship cannot
   carry, or a ship over its hold.
 - **The command.** `Upgrade` names the ship, the offer and the tier bought, one above the ship's, so a
   retried request is answered from the ledger and a new one for a tier the ship has is refused
@@ -807,7 +807,8 @@ it chose where the plans left room ([D-096](decision-ledger.md#d-096), the user'
   it would give that holds what is aboard (`CapacityExceeded`) and the cost in the company's account (`InsufficientFunds`); then it pays the
   cost, which leaves the economy, and fits the tier together. The starter has a slot for `CargoHolds`.
 - **Mass.** A hull's `mass`, in kilograms, is authored: the starter's 20 t, the others open, each
-  above 0 as the float a body keeps. A scenario's starter hull must have one, and a ship is spawned at it; fitting adds none.
+  above 0 as the float a body keeps, and its dock hull's box's inertia at most 10^18 kg m², far below
+  what Jolt's float arithmetic overflows at. A scenario's starter hull must have one, and a ship is spawned at it; fitting adds none.
 - **Snapshot and console.** A player's ships show their hold and systems, protocol 5; the console's
   `fit <ship> <offer> <tier>` sends the command, and `observe` shows each ship's hold and systems.
 
@@ -816,8 +817,9 @@ slice's 29,590, the tier bought for 27,000, the hold 2,560 and the system shown;
 answered as it ran, a new request for the tier refused `AlreadyFitted`, and both leaving the credits
 and the hold as they were; 2,560 totes loading where 2,561 do not; every refusal (ship, owner, offer,
 tier, a second tier, undocked, a hull with no slot, an unmet prerequisite, a second skill of the
-effect, a hold past the largest)
-paying and fitting nothing; and a save carrying the systems on, refused for each broken rule. In the
+effect or of the group, a hold past the largest)
+paying and fitting nothing; a save carrying the systems on, refused for each broken rule; and an upgrade saved pending, run after
+the load, retried there and replayed from the start, paying once with the hashes equal. In the
 `content` suite, the offer's and the mass's refusals; in the `data` suite, the starter's slot and
 mass; in the `query` and `console` suites, the hold in the view and `fit`. The `company` suite's
 pinned hash moved for the `Systems` component a save now registers, and only for that: with it

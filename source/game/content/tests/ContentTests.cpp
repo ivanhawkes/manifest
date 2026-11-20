@@ -340,6 +340,10 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	CheckRefused(starter, "version: 1\nmass: 0\n", "mass must be above 0");
 	// Above 0 as a double, and 0 as the float a body keeps.
 	CheckRefused(starter, "version: 1\nmass: 1e-100\n", "mass must be above 0");
+	// A float, and its box's inertia past what Jolt's float arithmetic holds.
+	CheckRefused(
+	    starter, "version: 1\nmass: 1e38\n",
+	    "mass gives its 9.8 x 6.4 x 1.8 m box an inertia past 1e+18 kg m^2");
 	CheckRefused(
 	    starter, "version: 1\nmass: null\n",
 	    "starterHull 'HullLoneTraderStarter' has no mass to fly with");

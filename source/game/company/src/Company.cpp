@@ -60,8 +60,9 @@ struct Rules
 
 
 // Whether a ship of the hull can carry the systems: each a Skill node of the game mode, of a ship
-// effect, at most its maxTiers, the effect of none another's, the hull with a slot for each effect, and
-// each prerequisite fitted among them at its tier. What Upgrade fits, and what a save may hold.
+// effect, at most its maxTiers, the effect and the exclusive group of none another's, the hull with a
+// slot for each effect, and each prerequisite fitted among them at its tier. What Upgrade fits, and
+// what a save may hold.
 bool Fits(const Rules &rules, const Core::ShipClassSpec &hull, const World::Systems &systems)
 {
 	const auto tierOf = [&systems](std::string_view skillId)
@@ -70,6 +71,7 @@ bool Fits(const Rules &rules, const Core::ShipClassSpec &hull, const World::Syst
 		return fitted == systems.fitted.end() ? 0 : fitted->tier;
 	};
 	std::set<std::string_view> effects;
+	std::set<std::string_view> groups;
 	for (const World::Fitting &fitting : systems.fitted)
 	{
 		const auto found = rules.skills.find(fitting.skillId);
@@ -83,7 +85,9 @@ bool Fits(const Rules &rules, const Core::ShipClassSpec &hull, const World::Syst
 		const bool prepared = std::ranges::all_of(
 		    skill.requiredSkills, [&tierOf](const Core::Prerequisite &prerequisite)
 		    { return tierOf(prerequisite.nodeId) >= prerequisite.requiredTier; });
-		if (fitting.tier > skill.maxTiers || !effects.insert(skill.targetEffectID).second ||
+		const bool excluded =
+		    !skill.exclusiveGroupId.empty() && !groups.insert(skill.exclusiveGroupId).second;
+		if (fitting.tier > skill.maxTiers || !effects.insert(skill.targetEffectID).second || excluded ||
 		    std::ranges::find(hull.fitableEffects, skill.targetEffectID) == hull.fitableEffects.end() ||
 		    !prepared)
 			return false;

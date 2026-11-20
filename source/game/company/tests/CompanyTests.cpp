@@ -853,6 +853,87 @@ TEST_CASE(
 	}
 }
 
+TEST_CASE("Two systems of one exclusive group are neither bought nor loaded together")
+{
+	// Cargo holds and a stealth coating made rivals, the starter given a slot for each.
+	Manifest::Content::ContentSet rivals = Scenario("trading");
+	for (Manifest::Core::SkillNode &skill : rivals.gameMode.skills)
+		if (skill.skillId == "SkillShipCargoHolds" || skill.skillId == "SkillShipStealthCoating")
+			skill.exclusiveGroupId = "GroupHull";
+	std::ranges::find(rivals.hulls, "HullLoneTraderStarter", &Manifest::Core::ShipClassSpec::hullId)
+	    ->fitableEffects.emplace_back("StealthCoating");
+	Manifest::Content::OfferDefinition coating = rivals.offers.at(0);
+	coating.offerId = "OfferStealthCoating";
+	coating.skillId = "SkillShipStealthCoating";
+	rivals.offers.push_back(coating);
+
+	Hosted hosted{rivals};
+	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
+	Credits(hosted, "Company1").balance = 100000;
+	REQUIRE(hosted.Run(kAda, kUpgrade, Upgrade{"Ship1", "OfferCargoHolds", 1}) == Result::Succeeded);
+	CHECK(
+	    hosted.Run(kAda, kUpgrade, Upgrade{"Ship1", "OfferStealthCoating", 1}) == Result::NotFittable);
+	CHECK(hosted.Seen(kAda).credits == 73000);
+	CHECK(
+	    hosted.Seen(kAda).ships[0].systems == std::vector<World::Fitting>{{"SkillShipCargoHolds", 1}});
+
+	hosted.world.Registry().get<World::Systems>(hosted.Find(Kind::Ship, "Ship1")).fitted = {
+	    {"SkillShipCargoHolds", 1}, {"SkillShipStealthCoating", 1}};
+	Hosted refused{rivals};
+	CHECK_THROWS_WITH_AS(
+	    refused.world.Load(hosted.world.Save()), doctest::Contains("has systems it cannot carry"),
+	    Jettison::Serialise::FormatError);
+}
+
+
+TEST_CASE("An upgrade saved pending, retried after the load and replayed from the start, pays once")
+{
+	const Upgrade holds{"Ship1", "OfferCargoHolds", 1};
+	Hosted hosted;
+	const std::vector<std::byte> start = hosted.world.Save();
+	hosted.world.SetRecording(true);
+	hosted.Admit(kHost, kProvision, Provision{"Ada", "Ada", "Co"});
+	hosted.world.Step();
+	// What W15's furs run leaves it with, written as bootstrap between the first two steps.
+	Credits(hosted, "Company1").balance = 29590;
+	const std::uint64_t sequence = hosted.requests.NextSequence(kAda);
+	hosted.Admit(kAda, kUpgrade, holds);
+	const std::vector<std::byte> pending = hosted.world.Save();
+	hosted.world.Step();
+	CHECK(hosted.Outcome(kAda, sequence) == Result::Succeeded);
+	const CompanyView bought = hosted.Seen(kAda);
+	CHECK(bought.credits == 2590);
+	CHECK(bought.ships[0].hold == 2560);
+
+	Hosted loaded;
+	loaded.world.Load(pending);
+	CHECK(loaded.world.Commands().Pending().size() == 1);
+	loaded.world.Step();
+	CHECK(loaded.world.StateHash() == hosted.world.StateHash());
+	CHECK(loaded.Seen(kAda) == bought);
+	const Receipt retried = loaded.requests.Admit(
+	    loaded.world, kAda, sequence, std::string{kUpgrade}, kVersion,
+	    BinaryArchive::Write(holds, FormatVersion{kVersion}));
+	CHECK(retried.status == Receipt::Status::Completed);
+	CHECK(retried.result == Result::Succeeded);
+	loaded.world.Step();
+	CHECK(loaded.Seen(kAda) == bought);
+
+	Hosted replayed;
+	replayed.world.Load(start);
+	for (std::uint64_t step = 0; step < 2; ++step)
+	{
+		if (step == 1)
+			Credits(replayed, "Company1").balance = 29590;
+		for (const Jettison::Sim::AppliedCommand &applied : hosted.world.Recorded())
+			if (applied.step == step)
+				replayed.world.Commands().Push(applied.command);
+		replayed.world.Step();
+	}
+	CHECK(replayed.world.StateHash() == hosted.world.StateHash());
+	CHECK(replayed.Seen(kAda) == bought);
+}
+
 TEST_CASE("Requests run in their step in admission order, the later seeing what the earlier did")
 {
 	Hosted hosted{"governance"};

@@ -1,6 +1,7 @@
 #include <manifest/content/Content.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -446,6 +447,21 @@ void CheckDocks(Checker &checker, const Jettison::Sim::DefinitionRegistry &regis
 		checker.Require(
 		    registry.Find<Dock::HullDefinition>(name) != nullptr, "dock",
 		    std::format("has no Dock.HullDefinition '{}'", name));
+		// A ship is a box of its dock hull's size, whose largest moment of inertia, its mass times its
+		// two larger sides squared over 12, Jolt keeps and decomposes in floats: held far below a
+		// float's largest, so that arithmetic cannot overflow.
+		constexpr double kMaxInertia = 1e18;
+		if (const std::optional<double> mass = registry.Find<Core::ShipClassSpec>(name)->mass)
+		{
+			const Dock::HullDefinition &dock = *registry.Find<Dock::HullDefinition>(name);
+			std::array<double, 3> sides{dock.length, dock.beam, dock.height};
+			std::ranges::sort(sides);
+			checker.Require(
+			    *mass * (sides[1] * sides[1] + sides[2] * sides[2]) / 12.0 <= kMaxInertia, "mass",
+			    std::format(
+			        "gives its {} x {} x {} m box an inertia past {} kg m^2", dock.length, dock.beam,
+			        dock.height, kMaxInertia));
+		}
 		checker.Require(
 		    registry.Find<Jettison::Space::CruiseDrive>(name) != nullptr, "dock",
 		    std::format("has no Ai.CruiseDrive '{}'", name));
