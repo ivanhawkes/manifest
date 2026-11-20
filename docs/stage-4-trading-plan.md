@@ -661,9 +661,7 @@ pinned hash moved for the save's new entities and goods.
 Left: a batch interrupted or cancelled, which waits for facilities that stop (the Bronze recipe's
 batch with inputs is W12's); work and residence in different regions; a player's view of a region's
 condition and shortages; the economy's workload measured at scale, and 1,440 intervals' totals run
-rather than reasoned; a tote of drinking water costs a quarter of a credit at base price, so a fill of
-one rounds to nothing under the [market price rules](market-prices.md), which the balance work may
-want to revisit; and the governance fixture's oxygen, cartridge and tin demand, a ship's and a
+rather than reasoned; and the governance fixture's oxygen, cartridge and tin demand, a ship's and a
 workshop's, which W06 and W12 give their consumers.
 
 ## Handoff to stage 5

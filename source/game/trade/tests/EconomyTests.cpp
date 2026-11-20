@@ -11,6 +11,7 @@
 #include <jettison/vfs/FileSystem.h>
 
 #include <manifest/company/Company.h>
+#include <manifest/sim/Simulation.h>
 #include <manifest/trade/Economy.h>
 #include <manifest/trade/Trade.h>
 #include <manifest/travel/Travel.h>
@@ -309,6 +310,19 @@ TEST_CASE("An employer that cannot fund a batch's wages starts none")
 	hosted.StepTo(120);
 	CHECK(hosted.Get<World::Production>(Kind::Employer, kBrineCoast).batches.empty());
 	CHECK(hosted.Balance(Kind::EmployerAccount, kBrineCoast) == 468);
+}
+
+
+TEST_CASE("A tote of drinking water is a credit at base price (D-093)")
+{
+	const auto &items = Trading().gameMode.items;
+	const auto water =
+	    std::ranges::find(items, std::string{"ItemDrinkingWater"}, &Manifest::Core::ItemNode::itemId);
+	REQUIRE(water != items.end());
+	CHECK(
+	    Manifest::Core::Simulation::BasePrice(*water).ToDouble() * water->unitsPerCubicMetre /
+	        static_cast<double>(Manifest::Core::kTotesPerIbc) ==
+	    1.0);
 }
 
 

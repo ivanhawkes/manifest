@@ -8,7 +8,7 @@
 # is sold wholesale.
 item-base:
 
-  # Bulk potable water at 2025 utility rates: one kilolitre to the cubic metre, three quarters of an
+  # Bulk potable water, a credit a tote (D-093): one kilolitre to the cubic metre, three quarters of an
   # IBC cube filled, as ItemBeer.
   - item:
       itemId: ItemDrinkingWater
@@ -17,7 +17,7 @@ item-base:
       displayName: Drinking Water
       description: Potable water, in bulk
       unitsPerCubicMetre: 1
-      basePrice: 2
+      basePrice: 8
       unitType: Kilolitre
       density: 1.0
       packFactor: 0.75
