@@ -4,11 +4,13 @@
 #include <array>
 #include <charconv>
 #include <chrono>
+#include <cmath>
 #include <format>
 #include <limits>
 #include <sstream>
 #include <stdexcept>
 #include <string_view>
+#include <tuple>
 #include <utility>
 
 #include <jettison/net/Protocol.h>
@@ -18,6 +20,9 @@
 #include <manifest/company/Company.h>
 #include <manifest/host/Start.h>
 #include <manifest/query/Query.h>
+#include <manifest/trade/Trade.h>
+#include <manifest/travel/Travel.h>
+#include <manifest/world/State.h>
 
 namespace Manifest::Tools
 {
@@ -51,9 +56,65 @@ std::string PadRight(const std::string &text, std::size_t width)
 }
 
 
+template <typename Enum> std::string_view NameOf(Enum value)
+{
+	return Jettison::Reflect::EnumName(entt::meta_any{value});
+}
+
 std::string_view ResultName(Command::Result result)
 {
-	return Jettison::Reflect::EnumName(entt::meta_any{result});
+	return NameOf(result);
+}
+
+// The hosted world's step (D-086), which a snapshot's steps are counted in.
+constexpr double kStepSeconds = 1.0 / 60.0;
+constexpr double kDaySeconds = 86400.0;
+// The longest step asks for, in simulation seconds: a cruise between worlds takes days (D-090).
+constexpr double kMostSeconds = 60 * kDaySeconds;
+
+double Days(std::uint64_t steps)
+{
+	return static_cast<double>(steps) * kStepSeconds / kDaySeconds;
+}
+
+std::string Price(std::int64_t raw)
+{
+	return sim::Decimal::FromRaw(raw).ToString();
+}
+
+// A count of steps, or a span of simulation time such as 90s, 30m, 6h or 4d, as whole steps.
+std::uint64_t ParseSteps(std::span<const std::string> arguments)
+{
+	if (arguments.empty())
+		return 1;
+	const std::string &text = arguments[0];
+	constexpr std::string_view kUnits = "smhd";
+	constexpr std::array<double, 4> kSeconds{1.0, 60.0, 3600.0, kDaySeconds};
+	const std::size_t unit = text.empty() ? std::string_view::npos : kUnits.find(text.back());
+	const std::size_t digits = unit == std::string_view::npos ? text.size() : text.size() - 1;
+	std::uint64_t value{};
+	const auto [end, error] = std::from_chars(text.data(), text.data() + digits, value);
+	const double seconds =
+	    static_cast<double>(value) * (unit == std::string_view::npos ? kStepSeconds : kSeconds[unit]);
+	if (digits == 0 || error != std::errc{} || end != text.data() + digits || value == 0 ||
+	    seconds > kMostSeconds)
+		throw std::runtime_error{std::format(
+		    "expected a count of steps or a time such as 90s, 30m, 6h or 4d, at most 60d, got '{}'",
+		    text)};
+	return unit == std::string_view::npos
+	           ? value
+	           : static_cast<std::uint64_t>(std::llround(seconds / kStepSeconds));
+}
+
+std::string Describe(const World::Journey &journey, std::uint64_t step)
+{
+	if (journey.leg == World::Leg::Failed)
+		return std::format(", journey to {} failed: {}", journey.venueId, NameOf(journey.failure));
+	if (journey.Ended())
+		return "";
+	return std::format(
+	    ", {} to {}, {:.2f} days out", NameOf(journey.leg), journey.venueId,
+	    Days(step - journey.started));
 }
 
 
@@ -78,10 +139,15 @@ std::string Describe(const Query::Snapshot &snapshot, std::string_view as)
 		for (const Query::ShipView &ship : company.ships)
 		{
 			view << "\n  " << ship.shipId << " " << ship.hullId << ", "
-			     << (ship.dockedAt.empty() ? std::string{"undocked"} : "docked at " + ship.dockedAt);
+			     << (ship.dockedAt.empty() ? std::string{"undocked"} : "docked at " + ship.dockedAt)
+			     << (ship.journey ? Describe(*ship.journey, snapshot.step) : "");
 			for (const World::Lot &lot : ship.cargo)
 				view << "\n    " << lot.itemId << " " << lot.totes << " totes";
 		}
+		for (const auto &[orderId, order] : company.orders)
+			view << "\n  " << orderId << ": " << (order.side == World::Side::Buy ? "buy " : "sell ")
+			     << order.itemId << " at " << order.venueId << ", " << order.remaining << " of "
+			     << order.totes << " totes left at " << Price(order.limit);
 	}
 	return view.str();
 }
@@ -89,6 +155,9 @@ std::string Describe(const Query::Snapshot &snapshot, std::string_view as)
 
 ManifestConsole::ManifestConsole(std::string contentSource) : m_contentSource{std::move(contentSource)}
 {
+	// A connected console writes these payloads with no hosted world to have registered them.
+	Trade::RegisterTypes();
+	Travel::RegisterTypes();
 	RegisterCommands();
 	m_console.CaptureLog();
 }
@@ -153,8 +222,27 @@ void ManifestConsole::RegisterCommands()
 	    "principal only when not connected",
 	    5, 6, [this](Arguments arguments) { return CommandCargo(arguments); });
 	RegisterCommand(
-	    "step", "step [count]: advances the hosted world and reports what ran (default 1)", 0, 1,
-	    [this](Arguments arguments) { return CommandStep(arguments); });
+	    "trade",
+	    "trade buy|sell [principal] <venue> <item> <totes> <price>: queues a player's limit order, the "
+	    "price per the item's unit; the principal only when not connected",
+	    5, 6, [this](Arguments arguments) { return CommandTrade(arguments); });
+	RegisterCommand(
+	    "cancel",
+	    "cancel [principal] <order>: queues a player's cancel; the principal only when not connected",
+	    1, 2, [this](Arguments arguments) { return CommandCancel(arguments); });
+	RegisterCommand(
+	    "travel",
+	    "travel [principal] <ship> <venue>: queues a player's journey; the principal only when not "
+	    "connected",
+	    2, 3, [this](Arguments arguments) { return CommandTravel(arguments); });
+	RegisterCommand(
+	    "book", "book <venue> [item]: the resting orders at a venue, as the host sees them", 1, 2,
+	    [this](Arguments arguments) { return CommandBook(arguments); });
+	RegisterCommand(
+	    "step",
+	    "step [count|time]: advances the hosted world, by steps or a time such as 6h or 4d, stopping "
+	    "when a journey ends, and reports what ran (default 1)",
+	    0, 1, [this](Arguments arguments) { return CommandStep(arguments); });
 	RegisterCommand(
 	    "connect", "connect <host:port> <token>: plays on a server as the token's actor", 2, 2,
 	    [this](Arguments arguments) { return CommandConnect(arguments[0], arguments[1]); });
@@ -520,13 +608,14 @@ std::string ManifestConsole::CommandObserve(Arguments arguments)
 
 
 std::string ManifestConsole::Admit(
-    const Command::Actor &actor, std::string_view command, std::span<const std::byte> payload)
+    const Command::Actor &actor, std::string_view command, std::uint32_t version,
+    std::span<const std::byte> payload)
 {
 	Jettison::Host::Session &hosted = Hosted();
 	Command::Requests &requests = Host::HostedServices(hosted).requests;
 	const std::uint64_t sequence = requests.NextSequence(actor);
-	const Command::Receipt receipt = requests.Admit(
-	    hosted.World(), actor, sequence, std::string{command}, Company::kVersion, payload);
+	const Command::Receipt receipt =
+	    requests.Admit(hosted.World(), actor, sequence, std::string{command}, version, payload);
 	if (receipt.status == Command::Receipt::Status::Refused)
 		return std::format("Refused: {}.", ResultName(receipt.result));
 	m_unreported.emplace_back(actor, sequence);
@@ -536,10 +625,10 @@ std::string ManifestConsole::Admit(
 }
 
 
-std::string ManifestConsole::Send(std::string_view command, std::span<const std::byte> payload)
+std::string ManifestConsole::Send(
+    std::string_view command, std::uint32_t version, std::span<const std::byte> payload)
 {
-	const std::optional<std::uint64_t> sequence =
-	    m_pRemote->Submit(command, Company::kVersion, payload);
+	const std::optional<std::uint64_t> sequence = m_pRemote->Submit(command, version, payload);
 	if (!sequence)
 		throw std::runtime_error{"Not connected yet: wait for the welcome."};
 	return std::format("Sent request {} to the server.", *sequence);
@@ -553,7 +642,29 @@ std::string ManifestConsole::CommandProvision(
 	const std::vector<std::byte> payload = BinaryArchive::Write(
 	    Company::Provision{principalId, principalId, companyName},
 	    Jettison::Serialise::FormatVersion{Company::kVersion});
-	return m_pRemote ? Send(Company::kProvision, payload) : Admit(kHost, Company::kProvision, payload);
+	return m_pRemote ? Send(Company::kProvision, Company::kVersion, payload)
+	                 : Admit(kHost, Company::kProvision, Company::kVersion, payload);
+}
+
+
+ManifestConsole::Arguments ManifestConsole::Operands(
+    Arguments arguments, std::size_t first, std::size_t count, std::string_view usage) const
+{
+	const std::size_t start = m_pRemote ? first : first + 1;
+	if (arguments.size() != start + count)
+		throw std::runtime_error{std::format(
+		    "usage: {}", m_pRemote ? std::format("{}, as you, when connected", usage) : usage)};
+	return arguments.subspan(start);
+}
+
+
+std::string ManifestConsole::Queue(
+    Arguments arguments, std::size_t first, std::string_view command, std::uint32_t version,
+    std::span<const std::byte> payload)
+{
+	return m_pRemote
+	           ? Send(command, version, payload)
+	           : Admit({Command::ActorKind::Principal, arguments[first]}, command, version, payload);
 }
 
 
@@ -561,35 +672,137 @@ std::string ManifestConsole::CommandCargo(Arguments arguments)
 {
 	if (arguments[0] != "load" && arguments[0] != "unload")
 		throw std::runtime_error{std::format("expected load or unload, got '{}'", arguments[0])};
-	// Connected, the actor is the token's, so the principal is not given.
-	const std::size_t first = m_pRemote ? 1 : 2;
-	if (arguments.size() != first + 4)
-		throw std::runtime_error{
-		    m_pRemote ? "usage: cargo load|unload <ship> <venue> <item> <totes>, as you, when connected"
-		              : "usage: cargo load|unload <principal> <ship> <venue> <item> <totes>"};
+	const Arguments operands = Operands(
+	    arguments, 1, 4,
+	    m_pRemote ? "cargo load|unload <ship> <venue> <item> <totes>"
+	              : "cargo load|unload <principal> <ship> <venue> <item> <totes>");
 	using Jettison::Serialise::BinaryArchive;
 	const std::string_view command = arguments[0] == "load" ? Company::kLoad : Company::kUnload;
 	const std::vector<std::byte> payload = BinaryArchive::Write(
 	    Company::Move{
-	        arguments[first], arguments[first + 1], arguments[first + 2],
-	        ParseCount(arguments, first + 3, 0, 1, std::numeric_limits<unsigned>::max())},
+	        operands[0], operands[1], operands[2],
+	        ParseCount(operands, 3, 0, 1, std::numeric_limits<unsigned>::max())},
 	    Jettison::Serialise::FormatVersion{Company::kVersion});
-	return m_pRemote ? Send(command, payload)
-	                 : Admit({Command::ActorKind::Principal, arguments[1]}, command, payload);
+	return Queue(arguments, 1, command, Company::kVersion, payload);
+}
+
+
+std::string ManifestConsole::CommandTrade(Arguments arguments)
+{
+	if (arguments[0] != "buy" && arguments[0] != "sell")
+		throw std::runtime_error{std::format("expected buy or sell, got '{}'", arguments[0])};
+	const Arguments operands = Operands(
+	    arguments, 1, 4,
+	    m_pRemote ? "trade buy|sell <venue> <item> <totes> <price>"
+	              : "trade buy|sell <principal> <venue> <item> <totes> <price>");
+	const std::optional<sim::Decimal> price = sim::Decimal::TryParse(operands[3]);
+	if (!price)
+		throw std::runtime_error{std::format("expected a price such as 12.5, got '{}'", operands[3])};
+	using Jettison::Serialise::BinaryArchive;
+	const std::vector<std::byte> payload = BinaryArchive::Write(
+	    Trade::Place{
+	        operands[0], operands[1], arguments[0] == "buy" ? World::Side::Buy : World::Side::Sell,
+	        ParseCount(operands, 2, 0, 1, std::numeric_limits<unsigned>::max()), price->Raw()},
+	    Jettison::Serialise::FormatVersion{Trade::kVersion});
+	return Queue(arguments, 1, Trade::kPlace, Trade::kVersion, payload);
+}
+
+
+std::string ManifestConsole::CommandCancel(Arguments arguments)
+{
+	const Arguments operands =
+	    Operands(arguments, 0, 1, m_pRemote ? "cancel <order>" : "cancel <principal> <order>");
+	using Jettison::Serialise::BinaryArchive;
+	const std::vector<std::byte> payload = BinaryArchive::Write(
+	    Trade::Cancel{operands[0]}, Jettison::Serialise::FormatVersion{Trade::kVersion});
+	return Queue(arguments, 0, Trade::kCancel, Trade::kVersion, payload);
+}
+
+
+std::string ManifestConsole::CommandTravel(Arguments arguments)
+{
+	const Arguments operands = Operands(
+	    arguments, 0, 2, m_pRemote ? "travel <ship> <venue>" : "travel <principal> <ship> <venue>");
+	using Jettison::Serialise::BinaryArchive;
+	const std::vector<std::byte> payload = BinaryArchive::Write(
+	    Travel::Travel{operands[0], operands[1]}, Jettison::Serialise::FormatVersion{Travel::kVersion});
+	return Queue(arguments, 0, Travel::kTravel, Travel::kVersion, payload);
+}
+
+
+std::string ManifestConsole::CommandBook(Arguments arguments)
+{
+	if (m_pRemote)
+		throw std::runtime_error{"Connected: book is the host's view; disconnect first."};
+	Jettison::Host::Session &hosted = Hosted();
+	const std::string &venueId = arguments[0];
+	if (Host::HostedServices(hosted).identities.Find(World::Kind::VenueAccount, venueId) == entt::null)
+		throw std::runtime_error{std::format("no venue '{}'", venueId)};
+
+	std::vector<std::pair<std::string, World::Order>> orders;
+	for (const auto &[entity, identity, order] :
+	     hosted.World().Registry().view<const World::Identity, const World::Order>().each())
+		if (order.venueId == venueId && (arguments.size() == 1 || order.itemId == arguments[1]))
+			orders.emplace_back(identity.id, order);
+	// By item, asks then bids, each best price first and oldest first within a price.
+	std::ranges::sort(
+	    orders,
+	    [](const auto &left, const auto &right)
+	    {
+		    const World::Order &a = left.second;
+		    const World::Order &b = right.second;
+		    const auto price = [](const World::Order &order)
+		    { return order.side == World::Side::Sell ? order.limit : -order.limit; };
+		    return std::tuple{a.itemId, a.side != World::Side::Sell, price(a), a.sequence} <
+		           std::tuple{b.itemId, b.side != World::Side::Sell, price(b), b.sequence};
+	    });
+
+	std::string book = std::format("{} at step {}:", venueId, *HostedStep());
+	if (orders.empty())
+		book += " no resting orders";
+	for (const auto &[orderId, order] : orders)
+		book += std::format(
+		    "\n  {} {} {} totes at {}, {} by {} {}", order.itemId,
+		    order.side == World::Side::Buy ? "bid" : "ask", order.remaining, Price(order.limit),
+		    orderId, NameOf(order.ownerKind), order.ownerId);
+	return book;
 }
 
 
 std::string ManifestConsole::CommandStep(Arguments arguments)
 {
 	Jettison::Host::Session &hosted = Hosted();
-	const unsigned steps = ParseCount(arguments, 0, 1, 1, 1000);
-	for (unsigned index = 0; index < steps; ++index)
-		hosted.World().Step();
-	// What the engine raises is presentation's; the console reports from the world instead.
-	(void)hosted.World().Events().Take();
+	const std::uint64_t steps = ParseSteps(arguments);
+	Jettison::Sim::SimWorld &world = hosted.World();
+	// A ship whose journey ends stops the stepping, at the step it ended.
+	std::vector<entt::entity> underWay;
+	entt::entity ended = entt::null;
+	for (std::uint64_t index = 0; index < steps && ended == entt::null; ++index)
+	{
+		world.Step();
+		// What the engine raises is presentation's; the console reports from the world instead.
+		(void)world.Events().Take();
+		for (const auto &[entity, journey] : world.Registry().view<const World::Journey>().each())
+		{
+			const bool known = std::ranges::find(underWay, entity) != underWay.end();
+			if (!journey.Ended() && !known)
+				underWay.push_back(entity);
+			else if (journey.Ended() && known)
+				ended = entity;
+		}
+	}
 
 	const Command::Requests &requests = Host::HostedServices(hosted).requests;
 	std::string report = std::format("Hosted world at step {}.", *HostedStep());
+	if (ended != entt::null)
+	{
+		const auto &journey = world.Registry().get<World::Journey>(ended);
+		report += std::format(
+		    "\n  {}'s journey to {}: {}{} at step {}, after {:.2f} days",
+		    world.Registry().get<World::Identity>(ended).id, journey.venueId, NameOf(journey.leg),
+		    journey.leg == World::Leg::Failed ? std::format(", {}", NameOf(journey.failure)) : "",
+		    *HostedStep(), Days(*HostedStep() - journey.started));
+	}
 	std::vector<std::pair<Command::Actor, std::uint64_t>> unreported;
 	for (auto &[actor, sequence] : m_unreported)
 	{

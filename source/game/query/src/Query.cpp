@@ -24,6 +24,7 @@ Snapshot Observe(
 		     company.displayName,
 		     registry.get<World::Account>(account).balance,
 		     registry.get<World::Stock>(entity).holdings,
+		     {},
 		     {}});
 	}
 	std::ranges::sort(snapshot.companies, {}, &CompanyView::companyId);
@@ -34,11 +35,29 @@ Snapshot Observe(
 		const auto owner =
 		    std::ranges::lower_bound(snapshot.companies, ship.companyId, {}, &CompanyView::companyId);
 		if (owner != snapshot.companies.end() && owner->companyId == ship.companyId)
+		{
+			const auto *pJourney = registry.try_get<World::Journey>(entity);
 			owner->ships.push_back(
-			    {identity.id, ship.hullId, ship.dockedAt, registry.get<World::Cargo>(entity).lots});
+			    {identity.id, ship.hullId, ship.dockedAt, registry.get<World::Cargo>(entity).lots,
+			     pJourney ? std::optional{*pJourney} : std::nullopt});
+		}
+	}
+	for (const auto &[entity, identity, order] :
+	     registry.view<const World::Identity, const World::Order>().each())
+	{
+		if (order.ownerKind != World::Kind::Company)
+			continue;
+		const auto owner =
+		    std::ranges::lower_bound(snapshot.companies, order.ownerId, {}, &CompanyView::companyId);
+		if (owner != snapshot.companies.end() && owner->companyId == order.ownerId)
+			owner->orders.push_back({identity.id, order});
 	}
 	for (CompanyView &company : snapshot.companies)
+	{
 		std::ranges::sort(company.ships, {}, &ShipView::shipId);
+		std::ranges::sort(
+		    company.orders, {}, [](const OrderView &view) { return view.order.sequence; });
+	}
 	return snapshot;
 }
 } // namespace Manifest::Query

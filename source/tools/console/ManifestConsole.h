@@ -27,9 +27,11 @@ namespace Manifest::Tools
 // Rendering, refresh and transcripts belong to the frontend; no terminal is needed here.
 // Two kinds of command, kept apart: the sandbox's (generate, tick, upgrade and the rest) play the
 // local development simulation, which no player shares; the hosted ones (host, observe, provision,
-// cargo, step) go through the hosted world's admission and queries, as a player's would. There is
-// at most one hosted world, the one host started, and nothing in the sandbox reaches it. Connected
-// to a server (connect), observe, provision and cargo go to it instead, as the token's actor.
+// cargo, trade, cancel, travel, step) go through the hosted world's admission and queries, as a
+// player's would, and book shows a venue's orders as the host sees them, a development view until
+// market views (W07). There is at most one hosted world, the one host started, and nothing in the
+// sandbox reaches it. Connected to a server (connect), observe and the players' requests go to it
+// instead, as the token's actor.
 class ManifestConsole
 {
   public:
@@ -100,12 +102,25 @@ class ManifestConsole
 	std::string CommandObserve(Arguments arguments);
 	std::string CommandProvision(const std::string &principalId, const std::string &companyName);
 	std::string CommandCargo(Arguments arguments);
+	std::string CommandTrade(Arguments arguments);
+	std::string CommandCancel(Arguments arguments);
+	std::string CommandTravel(Arguments arguments);
+	std::string CommandBook(Arguments arguments);
 	std::string CommandStep(Arguments arguments);
 	std::string CommandConnect(const std::string &endpoint, const std::string &token);
 	std::string CommandDisconnect();
 	std::string Admit(
-	    const Command::Actor &actor, std::string_view command, std::span<const std::byte> payload);
-	std::string Send(std::string_view command, std::span<const std::byte> payload);
+	    const Command::Actor &actor, std::string_view command, std::uint32_t version,
+	    std::span<const std::byte> payload);
+	std::string Send(
+	    std::string_view command, std::uint32_t version, std::span<const std::byte> payload);
+	// A player's request: the operands follow the principal at arguments[first], which is not given
+	// when connected, as the actor is the token's. Throws the usage for any other count.
+	Arguments Operands(
+	    Arguments arguments, std::size_t first, std::size_t count, std::string_view usage) const;
+	std::string Queue(
+	    Arguments arguments, std::size_t first, std::string_view command, std::uint32_t version,
+	    std::span<const std::byte> payload);
 	Jettison::Host::Session &Hosted();
 
 	Manifest::Content::ContentSet m_content;

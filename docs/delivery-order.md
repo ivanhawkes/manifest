@@ -55,8 +55,11 @@ hull's occupants, Astralis on its drives' power law, on pin `54fb871` with Jetti
 W16 is done (2026-11-20): a new player
 [starts at the scenario's starter venue](stage-4-trading-plan.md#delivered-w16-2026-11-20), a neutral
 public spaceport, with no home region or polity ([D-089](decision-ledger.md#d-089)), on the same pin
-with no engine edit.
-Next: W15.
+with no engine edit. W15 is done (2026-11-20): the
+[vertical slice](stage-4-trading-plan.md#delivered-w15-2026-11-20) is played through the console,
+furs bought at Ore, flown to Brine in 4.49 days and sold there, with the console's trade, travel and
+timed step and a player's journeys and orders in the snapshot, on the same pin with no engine edit.
+Next: W04.
 
 ## Priority 0: maintenance before Stage 1
 
@@ -159,7 +162,7 @@ Canonical scope: [Stage 4](stage-4-trading-plan.md), with the
 | 34 / W05 | Integrate real departure, cruise, arrival, docking and cargo eligibility; prove starter/compact berth and capacity behavior where selected. **Done 2026-11-20**, [delivered](stage-4-trading-plan.md#delivered-w05-2026-11-20), the star systems and drives ([D-088](decision-ledger.md#d-088)). | W01, W03, A04 |
 | 34a / W17 | Cruise by acceleration ([D-090](decision-ledger.md#d-090)): Jettison provisions a `CruiseDrive` acceleration profile (a boost for a time split across both ends, a sustained rate between) with its time and placement, a drive without one cruising as now; the game mode chooses its cruise model, the Manifest mode authoring a manned and an unmanned profile, given by a hull's occupants, and Astralis keeping its time-compressed drives. Prove local trips at 2 g, a long one switching to 1 g after two hours, an unmanned one at 12 g, Astralis's cruise unchanged, and a save mid-cruise. **Done 2026-11-20**, [delivered](stage-4-trading-plan.md#delivered-w17-2026-11-20), on pin `54fb871`. | W05 |
 | 34b / W16 | Onboarding by [D-089](decision-ledger.md#d-089): provisioning gives a company, the starting credits and the starter ship parked at a neutral public spaceport the scenario names, with no home region or polity; retire `playerHome` allocation, `NoHomeRegion` and the home-venue rule, and move W13's home regions to founding by acquisition. Founding a homeworld is its own later task under the acquisition rules. **Done 2026-11-20**, [history](history.md#w16-onboarding-at-a-neutral-spaceport--2026-11-20). | W05 |
-| 35 / W15 | Vertical slice: in the trading fixture, one company ship buys at one venue, departs, cruises, docks and sells at the other through the public commands, on W03's settlement and W05's travel; no production, life support, observations or upgrades yet. Played through the console, it shows the loop end to end before W04 and W06–W08 build around it; W09 later proves the complete fixture. | W03, W05 |
+| 35 / W15 | Vertical slice: in the trading fixture, one company ship buys at one venue, departs, cruises, docks and sells at the other through the public commands, on W03's settlement and W05's travel; no production, life support, observations or upgrades yet. Played through the console, it shows the loop end to end before W04 and W06–W08 build around it; W09 later proves the complete fixture. **Done 2026-11-20**, [delivered](stage-4-trading-plan.md#delivered-w15-2026-11-20). | W03, W05 |
 | 36 / W04 | Integrate local production, finite brokers/demand, regional payroll/tax, essential purchases and health/happiness in the selected fixed-step order; eliminate automatic inter-venue stock transfers. | W03 |
 | 37 / W06 | Implement working station life-support connections, onboard usage and explicit resupply under the resolved physical/accounting rules; preserve one-time starter grants. | W04, W05 |
 | 38 / W07 | Implement live/stale observations, spawn reports for every directly connected station market, report age and actor filtering across queries and trader/script facts. | W03, W05, A05 |

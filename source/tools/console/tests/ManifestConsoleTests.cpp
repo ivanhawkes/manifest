@@ -327,7 +327,22 @@ TEST_CASE("Manifest console: connect plays on a server as the token's actor, and
 	Execute(session, "cargo load Ship1 VenueOreHighport ItemCopper 1");
 	CHECK(await("queued").starts_with("Request 1 queued in order 2"));
 	CHECK(await("Request 1:", true) == "Request 1: InsufficientStock at step 1.");
-	CHECK(Execute(session, "observe").text.starts_with("step 2, as Ada\nCompany1 'Ada Freight'"));
+	Execute(session, "trade buy VenueOreHighport ItemFurs 1 0.5");
+	CHECK(await("queued").starts_with("Request 2 queued"));
+	CHECK(await("Request 2:", true) == "Request 2: Succeeded at step 2.");
+	CHECK(Execute(session, "book VenueOreHighport").kind == ConsoleLine::Kind::Error);
+	// Snapshots go out at most once an interval, so the step's may follow its reply.
+	const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{2};
+	while ((!session.Connected()->Latest() || session.Connected()->Latest()->step != 3) &&
+	       std::chrono::steady_clock::now() < deadline)
+	{
+		server.Publish();
+		server.Poll(std::chrono::milliseconds{1});
+		(void)session.Poll();
+	}
+	const std::string seen = Execute(session, "observe").text;
+	CHECK(seen.starts_with("step 3, as Ada\nCompany1 'Ada Freight'"));
+	MANIFEST_CHECK_CONTAINS(seen, ": buy ItemFurs at VenueOreHighport, 1 of 1 totes left at 0.5");
 	CHECK(
 	    Execute(session, "status").text.find("connected: to " + endpoint + " as Ada") !=
 	    std::string::npos);
@@ -337,4 +352,125 @@ TEST_CASE("Manifest console: connect plays on a server as the token's actor, and
 	CHECK(Execute(session, "disconnect").kind == ConsoleLine::Kind::Error);
 	// Back to the local harness: observe needs a hosted world again.
 	CHECK(Execute(session, "observe").kind == ConsoleLine::Kind::Error);
+}
+
+
+namespace
+{
+// The staged content with the Manifest mode's cruise taken out, so its drives keep the power law
+// Astralis cruises by (D-088): Ore to Brine in minutes of simulation rather than days (D-090).
+class CompressedContent
+{
+  public:
+	CompressedContent()
+	{
+		std::filesystem::copy(
+		    MANIFEST_MOD_DIRECTORY, m_directory.Path(), std::filesystem::copy_options::recursive);
+		const std::filesystem::path mode =
+		    m_directory.Path() / "manifest" / "definitions" / "game-modes" / "manifest.yaml";
+		std::ifstream in{mode};
+		std::string kept;
+		bool cruise = false;
+		for (std::string line; std::getline(in, line);)
+		{
+			cruise = line.starts_with("cruise:") || (cruise && line.starts_with(' '));
+			if (!cruise)
+				kept += line + "\n";
+		}
+		in.close();
+		std::ofstream{mode} << kept;
+	}
+
+	std::string Path() const
+	{
+		return m_directory.Path().string();
+	}
+
+  private:
+	ConfigDirectory m_directory;
+};
+
+// The price of the book's best order on a side, as book prints it.
+std::string BestPrice(const std::string &book, std::string_view side)
+{
+	const std::size_t line = book.find(std::format(" {} ", side));
+	REQUIRE(line != std::string::npos);
+	const std::size_t at = book.find(" at ", line) + 4;
+	return book.substr(at, book.find(',', at) - at);
+}
+} // namespace
+
+TEST_CASE("Manifest console: the vertical slice, furs bought at Ore, flown to Brine and sold there")
+{
+	const CompressedContent content;
+	ManifestConsole session{content.Path()};
+	REQUIRE(Execute(session, "host trading").kind == ConsoleLine::Kind::Output);
+	REQUIRE(Execute(session, "provision Ada \"Ada Co\"").kind == ConsoleLine::Kind::Output);
+	Execute(session, "step");
+	for (const std::string command : {"step 0", "step 61d", "step 6x", "step d", "step -1"})
+	{
+		CAPTURE(command);
+		CHECK(Execute(session, command).kind == ConsoleLine::Kind::Error);
+	}
+	CHECK(Execute(session, "book VenueNowhere").kind == ConsoleLine::Kind::Error);
+	CHECK(
+	    Execute(session, "trade buy Ada VenueOreHighport ItemFurs 2 cheap").kind ==
+	    ConsoleLine::Kind::Error);
+	CHECK(session.HostedStep() == 1);
+
+	// Bought at the broker's ask, then loaded: the goods are the company's at Ore, then the ship's.
+	const std::string ore = Execute(session, "book VenueOreHighport ItemFurs").text;
+	MANIFEST_CHECK_CONTAINS(ore, "by Broker VenueOreHighport");
+	Execute(session, "trade buy Ada VenueOreHighport ItemFurs 2 " + BestPrice(ore, "ask"));
+	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Trade.Place: Succeeded");
+	const std::string bought = Execute(session, "observe Ada").text;
+	MANIFEST_CHECK_CONTAINS(bought, "Company1 'Ada Co': 24691 credits");
+	MANIFEST_CHECK_CONTAINS(bought, "at VenueOreHighport: ItemFurs 2 totes available");
+	Execute(session, "cargo load Ada Ship1 VenueOreHighport ItemFurs 2");
+	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Company.Load: Succeeded");
+
+	// The journey shows in the snapshot as it goes, and stepping stops as it ends.
+	Execute(session, "travel Ada Ship1 VenueBrineHighport");
+	MANIFEST_CHECK_CONTAINS(
+	    Execute(session, "step 2m").text, "Manifest.Travel.Travel: Succeeded at step 3");
+	const std::string cruising = Execute(session, "observe Ada").text;
+	MANIFEST_CHECK_CONTAINS(
+	    cruising, "Ship1 HullLoneTraderStarter, undocked, Cruising to VenueBrineHighport");
+	MANIFEST_CHECK_CONTAINS(cruising, "ItemFurs 2 totes");
+	CHECK(
+	    Execute(session, "cargo unload Ada Ship1 VenueBrineHighport ItemFurs 2").kind ==
+	    ConsoleLine::Kind::Output);
+	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Company.Unload: NotDocked");
+	MANIFEST_CHECK_CONTAINS(
+	    Execute(session, "step 1d").text, "Ship1's journey to VenueBrineHighport: Arrived at step");
+	CHECK(session.HostedStep() < 7204 + 60 * 60 * 24 * 60);
+	MANIFEST_CHECK_CONTAINS(
+	    Execute(session, "observe Ada").text,
+	    "Ship1 HullLoneTraderStarter, docked at VenueBrineHighport\n");
+
+	// Unloaded and sold at the broker's bid.
+	Execute(session, "cargo unload Ada Ship1 VenueBrineHighport ItemFurs 2");
+	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Company.Unload: Succeeded");
+	const std::string brine = Execute(session, "book VenueBrineHighport ItemFurs").text;
+	Execute(session, "trade sell Ada VenueBrineHighport ItemFurs 2 " + BestPrice(brine, "bid"));
+	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Trade.Place: Succeeded");
+	const std::string sold = Execute(session, "observe Ada").text;
+	MANIFEST_CHECK_CONTAINS(sold, "Company1 'Ada Co': 29590 credits");
+	CHECK(sold.find("ItemFurs") == std::string::npos);
+
+	// A bid under the market rests in the player's view until its cancel.
+	Execute(session, "trade buy Ada VenueBrineHighport ItemFurs 1 1");
+	Execute(session, "step");
+	const std::string resting = Execute(session, "observe Ada").text;
+	const std::size_t order = resting.find("\n  Order");
+	REQUIRE(order != std::string::npos);
+	MANIFEST_CHECK_CONTAINS(resting, ": buy ItemFurs at VenueBrineHighport, 1 of 1 totes left at 1");
+	const std::string orderId = resting.substr(order + 3, resting.find(':', order) - order - 3);
+	MANIFEST_CHECK_CONTAINS(
+	    Execute(session, "book VenueBrineHighport ItemFurs").text, orderId + " by Company Company1");
+	Execute(session, "cancel Ada " + orderId);
+	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Trade.Cancel: Succeeded");
+	const std::string cancelled = Execute(session, "observe Ada").text;
+	MANIFEST_CHECK_CONTAINS(cancelled, "29590 credits");
+	CHECK(cancelled.find("Order") == std::string::npos);
 }

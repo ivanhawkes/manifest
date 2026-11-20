@@ -31,13 +31,18 @@ void RegisterTypes()
 		    .Field<&Query::ShipView::shipId>("shipId", kSaved)
 		    .Field<&Query::ShipView::hullId>("hullId", kSaved)
 		    .Field<&Query::ShipView::dockedAt>("dockedAt", kSaved)
-		    .Field<&Query::ShipView::cargo>("cargo", kSaved);
+		    .Field<&Query::ShipView::cargo>("cargo", kSaved)
+		    .Field<&Query::ShipView::journey>("journey", kSaved);
+		RegisterType<Query::OrderView>("Manifest.Query.OrderView")
+		    .Field<&Query::OrderView::orderId>("orderId", kSaved)
+		    .Field<&Query::OrderView::order>("order", kSaved);
 		RegisterType<Query::CompanyView>("Manifest.Query.CompanyView")
 		    .Field<&Query::CompanyView::companyId>("companyId", kSaved)
 		    .Field<&Query::CompanyView::displayName>("displayName", kSaved)
 		    .Field<&Query::CompanyView::credits>("credits", kSaved)
 		    .Field<&Query::CompanyView::holdings>("holdings", kSaved)
-		    .Field<&Query::CompanyView::ships>("ships", kSaved);
+		    .Field<&Query::CompanyView::ships>("ships", kSaved)
+		    .Field<&Query::CompanyView::orders>("orders", kSaved);
 		RegisterType<Query::Snapshot>("Manifest.Query.Snapshot")
 		    .Field<&Query::Snapshot::step>("step", kSaved)
 		    .Field<&Query::Snapshot::companies>("companies", kSaved);

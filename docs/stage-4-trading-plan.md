@@ -561,6 +561,40 @@ Left: founding a homeworld and its polity, under the acquisition rules, is its o
 planning documents' home-region allocation (scope, roadmap's region supply, D-076, and the regional
 plan's onboarding) is W13's to restate as founding.
 
+## Delivered: W15, 2026-11-20
+
+The vertical slice, played through the console on the trading fixture, on pin `54fb871` with no
+engine edit:
+
+- **Console.** `trade buy|sell [principal] <venue> <item> <totes> <price>` and `cancel [principal]
+  <order>` send W03's `Place` and `Cancel`, and `travel [principal] <ship> <venue>` W05's `Travel`,
+  each through admission as `cargo` does, or to the server when connected, as the token's actor. The
+  price is exact decimal text per the item's unit. `book <venue> [item]` lists a venue's resting
+  orders, asks then bids, best first, as the host sees them: a development view, refused when
+  connected, until W07 gives a player market views (the user's choice, 2026-11-20).
+- **Stepping** (the user's choice, 2026-11-20). `step` takes a count or a time (`90s`, `30m`, `6h`,
+  `4d`), at most 60 days, and stops at the step after which a journey under way has ended, naming
+  the ship, how it ended and its days. On the manned profile Ore to Brine is 23,298,304 steps, 4.49
+  days, which a release build steps in 9 minutes 35 seconds (about 25 µs a step); a server steps it
+  in real time, the idle the mode suits (D-090).
+- **Snapshot.** A ship's view carries its latest journey, and a company's its resting orders, oldest
+  first, `Order<n>` with the order as the world holds it: the player's own, which a cancel needs. The
+  protocol is version 2 for the snapshot's shape. The console and the TUI show a journey's leg, venue
+  and days out, a failed one's reason, and each order's side, venue, totes left and limit.
+
+Evidence, in the `console` suite, on the trading fixture with the mode's cruise taken out so the
+cruise is minutes: Ada buys 2 totes of furs at Ore's ask (25,000 to 24,691 credits), loads them,
+travels, is seen cruising with them aboard and refused an unload in transit, steps `1d` and stops
+docked at Brine, unloads and sells at Brine's bid (29,590 credits, no furs left), then a bid under
+the market rests in her view and in the book until her cancel; every bad step, price and venue is an
+error that steps nothing; and connected, a trade sent without a principal rests in the server's
+snapshot of her. Played on the manned profile in a release build, the same commands reach the same
+credits after 4.49 days. The `company`, `query` and `remote` suites hold.
+
+Left: market views for a player (W07); a step that runs on beside the console, which blocks while it
+steps; and the slice's whole fixture, with production, life support, observations and the upgrade
+(W09).
+
 ## Handoff to stage 5
 
 Carry forward the exact scheduler order, command/result schema, content manifest,

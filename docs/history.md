@@ -100,6 +100,16 @@ cargo's lots are bounded together (`world`), and a ship's cargo against its hull
 `CargoVolume`, whose empty map was taken for none given; a hull the map does not name now carries
 nothing (`company`). Round 7 approved with no finding open.
 
+## W15: the vertical slice through the console — 2026-11-20
+
+On pin `54fb871`, with no engine edit. The console sends the trade, cancel and travel commands, shows
+a venue's book as the host, and steps by time, stopping as a journey ends; a player's snapshot holds
+their ships' journeys and their orders, at protocol version 2
+([what it chose and its evidence](stage-4-trading-plan.md#delivered-w15-2026-11-20)). The user chose
+stepping by time over a local trip or the compressed cruise, and the host's book over an early live
+view. A remote check at first read a stale snapshot: Jettison's `net` sends one at most once an
+interval, so the test publishes until the step's arrives.
+
 ## W16: onboarding at a neutral spaceport — 2026-11-20
 
 On pin `54fb871`, with no engine edit: Jettison's `Fleet::Park` already places a docked ship. A

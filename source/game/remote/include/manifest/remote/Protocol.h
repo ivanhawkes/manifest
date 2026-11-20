@@ -15,7 +15,8 @@ namespace Manifest::Remote
 // body is the binary archive's, at the protocol's version, so a message's shape changing is a new
 // version. A snapshot's body is a Query::Snapshot, the session's own view.
 inline constexpr std::string_view kProtocol = "manifest";
-inline constexpr std::uint32_t kVersion = 1;
+// 2: a snapshot holds its ships' journeys and its company's orders (W15).
+inline constexpr std::uint32_t kVersion = 2;
 
 enum class Kind : Jettison::Net::MessageKind
 {

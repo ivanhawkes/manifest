@@ -93,7 +93,7 @@ commands validate argument counts and numeric bounds; rejected commands become c
 Configuration reloads replace the session together: a failure preserves the previous configuration
 and world, while a successful load resets the world and progression before the next generation.
 Those commands play a local sandbox no player shares. The hosted commands (`host`, `observe`,
-`provision`, `cargo`, `step`) drive one hosted world, started through `Host::Start`, only through its
+`provision`, `cargo`, `trade`, `cancel`, `travel`, `book`, `step`) drive one hosted world, started through `Host::Start`, only through its
 admission (`Command::Requests`) and `Query::Observe`; `Host::HostedServices` gives a frontend the
 world's services. Nothing in the sandbox reaches the hosted world, and there is at most one.
 
