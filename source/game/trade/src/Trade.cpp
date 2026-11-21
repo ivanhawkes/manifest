@@ -10,7 +10,10 @@
 #include <memory>
 #include <optional>
 #include <set>
+#include <span>
 #include <stdexcept>
+#include <string_view>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -38,6 +41,58 @@ using World::Side;
 constexpr std::int64_t kMaxCredits = std::numeric_limits<std::int64_t>::max();
 
 
+// The book's orders by venue and item, in the registry's context, kept as each is made and retired,
+// so a post reads its own market's orders and not the whole book's. Not saved: a registry without it,
+// a world just loaded, lists its book on first reading it.
+struct Markets
+{
+	std::map<std::string, std::map<std::string, std::vector<entt::entity>, std::less<>>, std::less<>>
+	    orders;
+};
+
+
+void Listed(entt::registry &registry, entt::entity entity)
+{
+	const auto &order = registry.get<const World::Order>(entity);
+	registry.ctx().get<Markets>().orders[order.venueId][order.itemId].push_back(entity);
+}
+
+
+void Delisted(entt::registry &registry, entt::entity entity)
+{
+	const auto &order = registry.get<const World::Order>(entity);
+	std::vector<entt::entity> &listed =
+	    registry.ctx().get<Markets>().orders[order.venueId][order.itemId];
+	std::erase(listed, entity);
+}
+
+
+Markets &MarketsOf(entt::registry &registry)
+{
+	if (auto *pMarkets = registry.ctx().find<Markets>())
+		return *pMarkets;
+	auto &markets = registry.ctx().emplace<Markets>();
+	for (const auto [entity, order] : registry.view<const World::Order>().each())
+		markets.orders[order.venueId][order.itemId].push_back(entity);
+	registry.on_construct<World::Order>().connect<&Listed>();
+	registry.on_destroy<World::Order>().connect<&Delisted>();
+	return markets;
+}
+
+
+// The market's orders, by entity, in no order.
+std::span<const entt::entity> Listing(
+    entt::registry &registry, std::string_view venueId, std::string_view itemId)
+{
+	const Markets &markets = MarketsOf(registry);
+	const auto venue = markets.orders.find(venueId);
+	if (venue == markets.orders.end())
+		return {};
+	const auto item = venue->second.find(itemId);
+	return item == venue->second.end() ? std::span<const entt::entity>{} : item->second;
+}
+
+
 // A good a venue's broker prices (D-102): its native price, the curve's reference, and the stock it
 // is quoted at, the scenario's seeded totes, at least one.
 struct Good
@@ -45,13 +100,16 @@ struct Good
 	std::string itemId;
 	Decimal native;
 	std::uint64_t target{1};
+	// The count of its units a tote holds.
+	double unitsPerTote{0.0};
 };
 
 
 struct Venue
 {
-	// The venue's market's goods in its order.
+	// The venue's market's goods in its order, and each one's place in it by its item.
 	std::vector<Good> goods;
+	std::unordered_map<std::string_view, std::size_t> goodIndex;
 };
 
 
@@ -245,8 +303,12 @@ std::shared_ptr<const Rules> MakeRules(
 			const std::optional<Decimal> local =
 			    Decimal::TryFromDouble(market.ToDouble() * (1.0 + bias));
 			JETTISON_VERIFY(local.has_value());
-			hosted.goods.push_back({entry.itemId, *local, std::max<std::uint64_t>(entry.stock, 1)});
+			hosted.goods.push_back(
+			    {entry.itemId, *local, std::max<std::uint64_t>(entry.stock, 1),
+			     rules->unitsPerTote.at(entry.itemId)});
 		}
+		for (std::size_t at = 0; at < hosted.goods.size(); ++at)
+			hosted.goodIndex.emplace(hosted.goods[at].itemId, at);
 	}
 
 	const std::optional<std::uint64_t> life =
@@ -320,6 +382,16 @@ namespace
 // Copies of what one unit of work changes, written back together by Commit: everything a command or
 // a system decides is planned here, so an expected refusal leaves the world as it was. An account
 // or an owner reached twice, by a self-trade or a broker's own venue, is the one copy.
+// Where the holding of the item at the venue is, or would go, in a stock's (venue, item) order.
+template <typename Holdings>
+auto Find(Holdings &holdings, const std::string &venueId, const std::string &itemId)
+{
+	return std::ranges::lower_bound(
+	    holdings, std::tie(venueId, itemId), std::less<>{},
+	    [](const World::Holding &held) { return std::tie(held.venueId, held.itemId); });
+}
+
+
 class Ledger
 {
   public:
@@ -345,22 +417,22 @@ class Ledger
 		return true;
 	}
 
-	// The owner's holding of the item at the venue, made empty if it has none: used at once, since
-	// the next call may move it.
+	// The owner's holding of the item at the venue, made empty if it has none. Only the holdings
+	// touched are staged, not the owner's whole stock.
 	World::Holding &Holding(
 	    Kind owner, const std::string &ownerId, const std::string &venueId, const std::string &itemId)
 	{
 		const entt::entity entity = Require(owner, ownerId);
-		std::vector<World::Holding> &holdings =
-		    m_stocks.try_emplace(entity, m_registry.get<const World::Stock>(entity))
-		        .first->second.holdings;
-		const auto key = std::tie(venueId, itemId);
-		const auto at = std::ranges::lower_bound(
-		    holdings, key, std::less<>{},
-		    [](const World::Holding &held) { return std::tie(held.venueId, held.itemId); });
-		if (at != holdings.end() && std::tie(at->venueId, at->itemId) == key)
-			return *at;
-		return *holdings.insert(at, {venueId, itemId, 0, 0});
+		auto staged = m_holdings.find(std::tie(entity, venueId, itemId));
+		if (staged != m_holdings.end())
+			return staged->second;
+		const std::vector<World::Holding> &holdings =
+		    m_registry.get<const World::Stock>(entity).holdings;
+		const auto at = Find(holdings, venueId, itemId);
+		World::Holding held = at != holdings.end() && at->venueId == venueId && at->itemId == itemId
+		                          ? *at
+		                          : World::Holding{venueId, itemId, 0, 0};
+		return m_holdings.emplace(std::tuple{entity, venueId, itemId}, std::move(held)).first->second;
 	}
 
 	World::Order &Order(entt::entity entity)
@@ -378,13 +450,28 @@ class Ledger
 	{
 		for (const auto &[entity, account] : m_accounts)
 			m_registry.replace<World::Account>(entity, account);
-		for (auto &[entity, stock] : m_stocks)
+		// Each touched stock with its staged holdings in place, and none left empty.
+		std::set<entt::entity> touched;
+		for (auto &[key, holding] : m_holdings)
 		{
-			std::erase_if(
-			    stock.holdings, [](const World::Holding &holding)
-			    { return holding.available == 0 && holding.reserved == 0; });
-			m_registry.replace<World::Stock>(entity, std::move(stock));
+			const entt::entity entity = std::get<0>(key);
+			touched.insert(entity);
+			std::vector<World::Holding> &holdings = m_registry.get<World::Stock>(entity).holdings;
+			const auto at = Find(holdings, holding.venueId, holding.itemId);
+			if (at != holdings.end() && at->venueId == holding.venueId && at->itemId == holding.itemId)
+				*at = std::move(holding);
+			else
+				holdings.insert(at, std::move(holding));
 		}
+		for (const entt::entity entity : touched)
+			m_registry.patch<World::Stock>(
+			    entity,
+			    [](World::Stock &stock)
+			    {
+				    std::erase_if(
+				        stock.holdings, [](const World::Holding &holding)
+				        { return holding.available == 0 && holding.reserved == 0; });
+			    });
 		for (const auto &[entity, order] : m_orders)
 			if (!m_closed.contains(entity))
 				m_registry.replace<World::Order>(entity, order);
@@ -403,7 +490,8 @@ class Ledger
 	entt::registry &m_registry;
 	World::Identities &m_identities;
 	std::map<entt::entity, World::Account> m_accounts;
-	std::map<entt::entity, World::Stock> m_stocks;
+	std::map<std::tuple<entt::entity, std::string, std::string>, World::Holding, std::less<>>
+	    m_holdings;
 	std::map<entt::entity, World::Order> m_orders;
 	std::set<entt::entity> m_closed;
 };
@@ -498,32 +586,35 @@ Result Post(SimWorld &world, const Rules &rules, World::Order order)
 			return Result::InsufficientFunds;
 		account.balance -= reservation;
 		order.escrow = reservation;
-
-		// Room for everything it and the owner's resting buys there may still fill.
-		const World::Holding &holding =
-		    ledger.Holding(order.ownerKind, order.ownerId, order.venueId, order.itemId);
-		std::uint64_t held = holding.available + holding.reserved;
-		for (const auto [entity, resting] : registry.view<const World::Order>().each())
-			if (resting.side == Side::Buy && resting.ownerKind == order.ownerKind &&
-			    resting.ownerId == order.ownerId && resting.venueId == order.venueId &&
-			    resting.itemId == order.itemId)
-				held += resting.remaining;
-		if (held > Core::kMaxWarehouseTotes || order.totes > Core::kMaxWarehouseTotes - held)
-			return Result::CapacityExceeded;
 	}
 
-	// The makers it crosses, best price first, then in time priority; an expired one no longer trades.
+	// One pass of its market's orders: the makers it crosses, and the owner's resting buys there.
 	std::vector<std::pair<entt::entity, const World::Order *>> makers;
 	std::size_t restingHere = 0;
-	for (const auto [entity, resting] : registry.view<const World::Order>().each())
+	std::uint64_t buying = 0;
+	for (const entt::entity entity : Listing(registry, order.venueId, order.itemId))
 	{
-		if (resting.venueId != order.venueId || resting.itemId != order.itemId)
-			continue;
+		const auto &resting = registry.get<const World::Order>(entity);
 		if (resting.side == order.side)
+		{
 			++restingHere;
+			if (resting.side == Side::Buy && resting.ownerKind == order.ownerKind &&
+			    resting.ownerId == order.ownerId)
+				buying += resting.remaining;
+		}
 		else if ((resting.expiresStep == 0 || step < resting.expiresStep) && Crosses(order, resting))
 			makers.emplace_back(entity, &resting);
 	}
+	if (order.side == Side::Buy)
+	{
+		// Room for everything it and the owner's resting buys there may still fill.
+		const World::Holding &holding =
+		    ledger.Holding(order.ownerKind, order.ownerId, order.venueId, order.itemId);
+		const std::uint64_t held = holding.available + holding.reserved + buying;
+		if (held > Core::kMaxWarehouseTotes || order.totes > Core::kMaxWarehouseTotes - held)
+			return Result::CapacityExceeded;
+	}
+	// The makers it crosses, best price first, then in time priority; an expired one no longer trades.
 	std::ranges::sort(
 	    makers,
 	    [buying = order.side == Side::Buy](const auto &left, const auto &right)
@@ -783,28 +874,28 @@ struct Posting
 };
 
 
-// The good's asks at the stock it holds: up to kLevels, a rung each, priced at the curve at the rung's
-// middle, so they climb as they sell it down.
-std::vector<Posting> Asks(const Good &good, std::uint64_t held, int spreadBps)
+// The good's asks at the stock it holds, after what the ladder has: up to kLevels, a rung each,
+// priced at the curve at the rung's middle, so they climb as they sell it down.
+void Asks(const Good &good, std::uint64_t held, int spreadBps, std::vector<Posting> &ladder)
 {
-	std::vector<Posting> asks;
-	for (std::uint64_t at = held; at > 0 && asks.size() < kLevels;)
+	for (std::uint64_t at = held, level = 0; at > 0 && level < kLevels; ++level)
 	{
 		const std::uint64_t totes = std::min(Rung(good), at);
-		asks.push_back({Side::Sell, totes, CurvePrice(good, 2 * at - totes, spreadBps, Side::Sell), 0});
+		ladder.push_back(
+		    {Side::Sell, totes, CurvePrice(good, 2 * at - totes, spreadBps, Side::Sell), 0});
 		at -= totes;
 	}
-	return asks;
 }
 
 
-// The good's bids at the stock it holds: up to kLevels so, falling as they buy it up, within the
-// budget and its warehouse's room.
-std::vector<Posting> Bids(const Rules &rules, const Good &good, std::uint64_t held, std::int64_t budget)
+// The good's bids at the stock it holds, after what the ladder has: up to kLevels so, falling as they
+// buy it up, within the budget and its warehouse's room.
+void Bids(
+    const Rules &rules, const Good &good, std::uint64_t held, std::int64_t budget,
+    std::vector<Posting> &ladder)
 {
-	std::vector<Posting> bids;
-	const double unitsPerTote = rules.unitsPerTote.at(good.itemId);
-	while (bids.size() < kLevels && held < Core::kMaxWarehouseTotes)
+	const double unitsPerTote = good.unitsPerTote;
+	for (std::uint64_t level = 0; level < kLevels && held < Core::kMaxWarehouseTotes; ++level)
 	{
 		const std::uint64_t totes = std::min(Rung(good), Core::kMaxWarehouseTotes - held);
 		const std::int64_t limit = CurvePrice(good, 2 * held + totes, rules.spreadBps, Side::Buy);
@@ -816,11 +907,10 @@ std::vector<Posting> Bids(const Rules &rules, const Good &good, std::uint64_t he
 		if (affordable == 0)
 			break;
 		const std::int64_t escrow = *perTote * static_cast<std::int64_t>(affordable);
-		bids.push_back({Side::Buy, affordable, limit, escrow});
+		ladder.push_back({Side::Buy, affordable, limit, escrow});
 		budget -= escrow;
 		held += totes;
 	}
-	return bids;
 }
 
 
@@ -833,37 +923,48 @@ void Requote(SimWorld &world, const Rules &rules)
 {
 	entt::registry &registry = world.Registry();
 	const std::uint64_t next = world.Clock().Step() + rules.turnSteps;
+	using Resting = std::vector<std::pair<std::uint64_t, entt::entity>>;
+	std::vector<Posting> ladder;
 	for (const std::string &venueId : rules.venueOrder)
 	{
-		std::map<std::string, std::vector<std::pair<std::uint64_t, entt::entity>>, std::less<>> resting;
-		std::int64_t funds = 0;
-		for (const auto [entity, order] : registry.view<const World::Order>().each())
-			if (order.ownerKind == Kind::Broker && order.ownerId == venueId)
-			{
-				resting[order.itemId].emplace_back(order.sequence, entity);
-				funds += order.escrow;
-			}
 
 		const entt::entity broker = rules.identities.Find(Kind::Broker, venueId);
 		const entt::entity account = rules.identities.Find(Kind::BrokerAccount, venueId);
 		JETTISON_VERIFY(broker != entt::null && account != entt::null);
-		funds += registry.get<const World::Account>(account).balance;
-		const std::vector<Good> &goods = rules.venues.at(venueId).goods;
+		const Venue &venue = rules.venues.at(venueId);
+		const std::vector<Good> &goods = venue.goods;
+		// Its resting orders by good, from the venue's markets, and the escrow they hold.
+		std::vector<Resting> resting(goods.size());
+		std::int64_t funds = registry.get<const World::Account>(account).balance;
+		for (std::size_t index = 0; index < goods.size(); ++index)
+			for (const entt::entity entity : Listing(registry, venueId, goods[index].itemId))
+				if (const auto &order = registry.get<const World::Order>(entity);
+				    order.ownerKind == Kind::Broker)
+				{
+					resting[index].emplace_back(order.sequence, entity);
+					funds += order.escrow;
+				}
+		// What it holds of each good, available and reserved, in one pass of its stock.
+		std::vector<std::uint64_t> stocked(goods.size(), 0);
+		for (const World::Holding &holding : registry.get<const World::Stock>(broker).holdings)
+			if (const auto good = venue.goodIndex.find(holding.itemId); good != venue.goodIndex.end())
+				stocked[good->second] = holding.available + holding.reserved;
 		auto left = static_cast<std::int64_t>(
 		    std::ranges::count_if(goods, [](const Good &good) { return good.native > Decimal{}; }));
 		std::vector<std::pair<const Good *, std::int64_t>> due;
-		for (const Good &good : goods)
+		for (std::size_t index = 0; index < goods.size(); ++index)
 		{
+			const Good &good = goods[index];
 			if (good.native <= Decimal{})
 				continue;
-			const std::uint64_t held = BrokerStock(registry, broker, good.itemId);
+			const std::uint64_t held = stocked[index];
 			const std::int64_t budget = funds / left--;
-			std::vector<Posting> ladder = Asks(good, held, rules.spreadBps);
-			const std::vector<Posting> bids = Bids(rules, good, held, budget);
-			ladder.insert(ladder.end(), bids.begin(), bids.end());
+			ladder.clear();
+			Asks(good, held, rules.spreadBps, ladder);
+			Bids(rules, good, held, budget, ladder);
 			for (const Posting &posting : ladder)
 				funds -= posting.escrow;
-			std::vector<std::pair<std::uint64_t, entt::entity>> &orders = resting[good.itemId];
+			Resting &orders = resting[index];
 			std::ranges::sort(orders);
 			const bool kept = std::ranges::equal(
 			    ladder, orders,
@@ -889,16 +990,18 @@ void Requote(SimWorld &world, const Rules &rules)
 			order.itemId = pGood->itemId;
 			// Its orders retired, all it holds is free; an ask may fill, so the bids are at what is
 			// left.
-			for (const Posting &posting :
-			     Asks(*pGood, BrokerStock(registry, broker, pGood->itemId), rules.spreadBps))
+			ladder.clear();
+			Asks(*pGood, BrokerStock(registry, broker, pGood->itemId), rules.spreadBps, ladder);
+			for (const Posting &posting : ladder)
 			{
 				order.side = posting.side;
 				order.totes = posting.totes;
 				order.limit = posting.limit;
 				(void)Post(world, rules, order);
 			}
-			for (const Posting &posting :
-			     Bids(rules, *pGood, BrokerStock(registry, broker, pGood->itemId), budget))
+			ladder.clear();
+			Bids(rules, *pGood, BrokerStock(registry, broker, pGood->itemId), budget, ladder);
+			for (const Posting &posting : ladder)
 			{
 				order.side = posting.side;
 				order.totes = posting.totes;
@@ -1082,6 +1185,20 @@ void Payroll(SimWorld &world, const Rules &rules)
 }
 
 
+// The owner's resting orders in the venue's market for the item, cancelled in placement order.
+void CancelAt(
+    SimWorld &world, const Rules &rules, Kind kind, const std::string &id, const std::string &venueId,
+    const std::string &itemId)
+{
+	std::vector<std::pair<std::uint64_t, entt::entity>> resting;
+	for (const entt::entity entity : Listing(world.Registry(), venueId, itemId))
+		if (const auto &order = world.Registry().get<const World::Order>(entity);
+		    order.ownerKind == kind && order.ownerId == id)
+			resting.emplace_back(order.sequence, entity);
+	RetireAll(world.Registry(), rules.identities, std::move(resting));
+}
+
+
 // The owner's resting orders, cancelled in placement order.
 void CancelAll(SimWorld &world, const Rules &rules, Kind kind, const std::string &id)
 {
@@ -1181,7 +1298,7 @@ void Buy(
 		order.limit = limit;
 		order.totes = totes;
 		(void)Post(world, rules, std::move(order));
-		CancelAll(world, rules, Kind::Household, economy.regionId);
+		CancelAt(world, rules, Kind::Household, economy.regionId, economy.venueId, itemId);
 		const std::uint64_t bought = Available(registry, household, economy.venueId, itemId) - held;
 		shortfall -= static_cast<double>(bought) * unitsPerTote;
 	}
@@ -1347,6 +1464,11 @@ template <typename Visit> void EachUnderWay(const SimWorld &world, const Rules &
 }
 
 
+// A bound on the rounding of one addition of a step's work to a batch's progress, relative to the
+// batch's duration and work: a half unit in the last place, doubled for safety.
+constexpr double kAdditionError = 0x1p-52;
+
+
 // The first step the economy has to run in (Jettison::Sim::Quiet): the turn's last, or sooner a batch
 // finishing, a batch that can start, or a finished one with room for its totes. Until then a step
 // only adds each batch's work to it, the same addition every step.
@@ -1389,6 +1511,12 @@ std::uint64_t EconomyNext(const SimWorld &world, const Rules &rules)
 				    due = stocked <= Core::kMaxWarehouseTotes - batch->totes;
 				    continue;
 			    }
+			    // Short of its end by more than the steps to next can add, rounding included, it is not
+			    // due.
+			    const auto span = static_cast<double>(next - now) + 1.0;
+			    if (batch->duration - batch->progress - work * span >
+			        span * kAdditionError * (batch->duration + work))
+				    continue;
 			    double progress = batch->progress;
 			    for (std::uint64_t step = now; step < next; ++step)
 			    {
@@ -1420,8 +1548,7 @@ void EconomySkip(SimWorld &world, const Rules &rules, std::uint64_t passed)
 			            batches, [&](const World::Batch &held)
 			            { return held.venueId == row.venueId && held.itemId == row.itemId; });
 			        batch != batches.end() && batch->progress < batch->duration)
-				    for (std::uint64_t step = 0; step < passed; ++step)
-					    batch->progress += work;
+				    batch->progress = Added(batch->progress, work, passed);
 	    });
 }
 
@@ -1622,6 +1749,7 @@ void Register(
     const Content::ContentSet &content)
 {
 	std::shared_ptr<const Rules> rules = MakeRules(world, identities, content);
+	(void)MarketsOf(world.Registry());
 	requests.Register<Place>(
 	    std::string{kPlace}, kVersion, Command::ActorKind::Principal,
 	    [rules, &requests](SimWorld &on, const Actor &actor, const Place &place)

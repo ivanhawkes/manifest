@@ -1331,7 +1331,13 @@ Slices, each one commit with its suites, the gate after the second and the last:
    market's times one and 0.3 of the venue's own (demand less production) over its rate: 0.7 where
    a station only makes a good, 1.3 where it only wants it (`kLocalBias`); the legacy harness keeps
    its own. A player starts with reports of all ten stations; the trading fixture's NPC now opens
-   with Coast's glassware for Ore's Vale.
+   with Coast's glassware for Ore's Vale. Ten stations took Ore to Brine from 2.0 s to 6.6 s
+   against the 3.6 s budget; profiled with perf, now in the shell: the economy's next step stepped
+   each batch through a turn's 3,600 steps on every fast-forward, a requote read the whole book a
+   station, and each post scanned it. Now a batch that cannot finish before the turn is passed over
+   on a bound of its rounding, the book is listed by market (in the registry's context, rebuilt on
+   a load), a post reads its own market, a skip adds a batch's work a binary exponent's range at a
+   time to the same bits, and the ledger stages a holding, not a stock: 3.3 s, every pin unmoved.
 4. The need-priced budget and relief tender functions, ready for W12; the fixture's long runs showing
    a shortage pulling a cargo in and a glut sending one away, fast-forwarded to the same bytes.
 5. Close-out.

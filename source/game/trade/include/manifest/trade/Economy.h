@@ -58,4 +58,8 @@ Withholding Withhold(std::int64_t gross, std::int64_t carry, std::int64_t perCre
 
 // The whole credits of a batch's gross wage bill its progress has earned, rounded down.
 std::int64_t Earned(std::int64_t wages, double progress, double duration);
+
+// The progress after the work, at least 0, is added to it the times given one addition at a time, as
+// each step adds it: to the bit, the additions within a binary exponent's range worked out at once.
+double Added(double progress, double work, std::uint64_t times);
 } // namespace Manifest::Trade

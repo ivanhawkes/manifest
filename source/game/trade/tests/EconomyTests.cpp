@@ -237,6 +237,34 @@ TEST_CASE("A batch's wages are earned with its work, rounded down, and all of th
 }
 
 
+TEST_CASE("Work added many times at once is to the bit what adding it a step at a time makes")
+{
+	const auto stepped = [](double progress, double work, std::uint64_t times)
+	{
+		for (std::uint64_t step = 0; step < times; ++step)
+			progress += work;
+		return progress;
+	};
+	// Across binary exponents, from 0, with work that rounds away, and ties to even at 2^53.
+	for (const auto &[progress, work, times] : std::vector<std::tuple<double, double, std::uint64_t>>{
+	         {0.0, 0.1, 10'000},
+	         {0.0, 0.9375, 5'000},
+	         {599.5, 0.5625, 3'600},
+	         {1.0, 1.0 / 3.0, 100'000},
+	         {1e6, 1e-11, 1'000},
+	         {1e6, 0x1p-34, 4'000},
+	         {0x1p53, 1.0, 7},
+	         {0x1p52 + 1.0, 0.5, 9},
+	         {12.25, 0.0, 50},
+	         {3.0, 0.7071067811865476, 777'777}})
+	{
+		CAPTURE(progress);
+		CAPTURE(work);
+		CHECK(Added(progress, work, times) == stepped(progress, work, times));
+	}
+}
+
+
 TEST_CASE("A batch reserves its wages, pays them as it works, and sells its goods to the broker")
 {
 	Hosted hosted{OneBatch()};

@@ -2,9 +2,17 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 namespace Manifest::Trade
 {
+namespace
+{
+// The bits of a double's mantissa after its leading one, and the points of its grid in one binary
+// exponent's range.
+constexpr int kMantissaBits = std::numeric_limits<double>::digits - 1;
+constexpr double kGridPoints = 0x1p53;
+} // namespace
 
 double WorkRate(double health, double happiness, double floor)
 {
@@ -67,5 +75,53 @@ std::int64_t Earned(std::int64_t wages, double progress, double duration)
 	return std::min(
 	    wages,
 	    static_cast<std::int64_t>(std::floor(static_cast<double>(wages) * (progress / duration))));
+}
+
+
+// Within one binary exponent's range a double's values are a grid of one spacing, so adding the same
+// work to a point of it moves it by the same whole number of spacings each time, the work rounded to
+// the grid, unless the work is exactly half a spacing over a whole number of them, when the rounding
+// to even depends on the point. Those additions are made at once; a tie, an addition leaving the
+// range and a subnormal progress are made one at a time.
+double Added(double progress, double work, std::uint64_t times)
+{
+	while (times > 0)
+	{
+		const double next = progress + work;
+		// The work rounds away, and so it does every time after.
+		if (next == progress)
+			return progress;
+		if (!std::isnormal(progress))
+		{
+			progress = next;
+			--times;
+			continue;
+		}
+		const int exponent = std::ilogb(progress);
+		const double spacing = std::ldexp(1.0, exponent - kMantissaBits);
+		const double step = next - progress;
+		if (next >= std::ldexp(1.0, exponent + 1) || 2.0 * std::abs(work - step) == spacing)
+		{
+			progress = next;
+			--times;
+			continue;
+		}
+		// In spacings: the point, the step and how many steps stay in the range.
+		const double units = progress / spacing;
+		const double stride = step / spacing;
+		auto steps = static_cast<std::uint64_t>(std::floor((kGridPoints - 1.0 - units) / stride));
+		steps = std::min(steps, times);
+		while (steps > 0 && units + static_cast<double>(steps) * stride > kGridPoints - 1.0)
+			--steps;
+		if (steps == 0)
+		{
+			progress = next;
+			--times;
+			continue;
+		}
+		progress = (units + static_cast<double>(steps) * stride) * spacing;
+		times -= steps;
+	}
+	return progress;
 }
 } // namespace Manifest::Trade
