@@ -125,4 +125,43 @@ void Register(
 // Throws as Register does.
 void Quote(
     Jettison::Sim::SimWorld &world, World::Identities &identities, const Content::ContentSet &content);
+
+// ─── Prices by need, for W12's tenders (D-102) ───
+// A need's pressure past this calls a relief tender, and the relief's urgency is its pressure times
+// kReliefUrgency.
+inline constexpr double kReliefPressure = 0.25;
+inline constexpr double kReliefUrgency = 3.0;
+
+// A tender's budget in whole credits: the units at the price, raw microcredits per unit, rounded up as
+// a buy's cost is, times one and the urgency, rounded up. None for an urgency below 0 or a budget the
+// ledger cannot hold.
+std::optional<std::int64_t> Budget(std::int64_t price, double units, double urgency);
+
+// What a tender at the venue prices the item at, raw microcredits per its unit: the lowest ask
+// resting on the venue's book, or its broker's native price where nothing is offered. None for an
+// item the venue's market does not price. Throws as Register does.
+std::optional<std::int64_t> TenderPrice(
+    Jettison::Sim::SimWorld &world, World::Identities &identities, const Content::ContentSet &content,
+    std::string_view venueId, std::string_view itemId);
+
+// A relief tender a region's government calls for an essential its households are short of.
+struct Relief
+{
+	std::string regionId;
+	std::string needId;
+	// The region's first venue, where its households keep their goods, and the cheapest of the need's
+	// goods there by TenderPrice, the first in the need's order of those as cheap.
+	std::string venueId;
+	std::string itemId;
+	// The day's shortfall, a day's requirement times the pressure, in whole totes rounded up.
+	std::uint64_t totes{0};
+	std::int64_t budget{0};
+};
+
+// Each relief tender called for now, by region in the scenario's order and need in the tuning's: one
+// for each essential need whose pressure is past kReliefPressure, budgeted at its pressure times
+// kReliefUrgency. None for a need whose goods its venue does not price, or whose budget the ledger
+// cannot hold. Throws as Register does.
+std::vector<Relief> Reliefs(
+    Jettison::Sim::SimWorld &world, World::Identities &identities, const Content::ContentSet &content);
 } // namespace Manifest::Trade

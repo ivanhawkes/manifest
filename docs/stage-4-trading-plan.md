@@ -1339,7 +1339,15 @@ Slices, each one commit with its suites, the gate after the second and the last:
    a load), a post reads its own market, a skip adds a batch's work a binary exponent's range at a
    time to the same bits, and the ledger stages a holding, not a stock: 3.3 s, every pin unmoved.
 4. The need-priced budget and relief tender functions, ready for W12; the fixture's long runs showing
-   a shortage pulling a cargo in and a glut sending one away, fast-forwarded to the same bytes.
+   a shortage pulling a cargo in and a glut sending one away, fast-forwarded to the same bytes. Done
+   2026-11-22: `Trade::Budget`, `TenderPrice` (the lowest ask on the venue's book, or the native
+   price) and `Reliefs` (each need past `kReliefPressure`, its day's shortfall in whole totes of
+   its cheapest good, at `kReliefUrgency` times the pressure), in the `trade` suite. Six days of the
+   fixture with two traders made no shortage or glut of their own, every broker near its target,
+   so the fixture's `fixture_prices` makes them: Bo buying out Brine's furs through the book turns
+   Ada's first job from copper (an estimate of 9,542) to Ore's furs for Brine (26,615), and a
+   windfall of five times Brine's copper target has her buy copper there and carry it to Ore; each
+   fast-forwarded to the bytes stepping leaves. Every pin unmoved.
 5. Close-out.
 
 ## Handoff to stage 5

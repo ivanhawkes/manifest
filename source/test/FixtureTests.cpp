@@ -761,3 +761,190 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 	// The same in every build the gate runs; it moves as the fixture's does.
 	CHECK(hosted.world.StateHash() == 0x163d2714a7a72baeULL);
 }
+
+
+// Bo, a player whose company is given a million credits for the purpose, buys every ask resting at
+// the venue for the item, a turn at a time, until its broker has none left to post: a shortage made
+// through the book, the broker's next quotes at an empty stock.
+void Hoard(
+    Hosted &hosted, const Manifest::Content::ContentSet &content, std::string_view venueId,
+    std::string_view itemId)
+{
+	const Actor bo{ActorKind::Principal, "Bo"};
+	REQUIRE(
+	    hosted.Run(
+	        kHost, Company::kProvision, Company::kVersion, Company::Provision{"Bo", "Bo", "Bo Co"}) ==
+	    Result::Succeeded);
+	entt::registry &registry = hosted.world.Registry();
+	const entt::entity account = hosted.services.identities.Find(
+	    Kind::CompanyAccount,
+	    registry.get<const World::Ship>(hosted.services.identities.Find(Kind::Ship, "Ship1"))
+	        .companyId);
+	registry.patch<World::Account>(account, [](World::Account &funds) { funds.balance = 1'000'000; });
+	const auto turn = static_cast<std::uint64_t>(
+	    std::llround(content.tuning.economy.intervalSeconds / hosted.world.FixedStep()));
+	for (int round = 0; round < 4; ++round)
+	{
+		std::int64_t limit = 0;
+		std::uint64_t totes = 0;
+		for (const auto &[entity, order] : registry.view<const World::Order>().each())
+			if (order.venueId == venueId && order.itemId == itemId && order.side == Side::Sell)
+			{
+				limit = std::max(limit, order.limit);
+				totes += order.remaining;
+			}
+		if (totes == 0)
+			break;
+		REQUIRE(
+		    hosted.Run(
+		        bo, Trade::kPlace, Trade::kVersion,
+		        Trade::Place{std::string{venueId}, std::string{itemId}, Side::Buy, totes, limit}) ==
+		    Result::Succeeded);
+		const std::uint64_t requoted = (hosted.world.Clock().Step() / turn + 1) * turn;
+		while (hosted.world.Clock().Step() < requoted)
+			hosted.Step();
+	}
+}
+
+
+// A glut: the venue's broker given the totes, a windfall, and every broker requoted.
+void Glut(
+    Hosted &hosted, const Manifest::Content::ContentSet &content, std::string_view venueId,
+    std::string_view itemId, std::uint64_t totes)
+{
+	entt::registry &registry = hosted.world.Registry();
+	const entt::entity broker = hosted.services.identities.Find(Kind::Broker, std::string{venueId});
+	registry.patch<World::Stock>(
+	    broker,
+	    [&](World::Stock &stock)
+	    {
+		    for (World::Holding &holding : stock.holdings)
+			    if (holding.itemId == itemId)
+				    holding.available += totes;
+	    });
+	Trade::Quote(hosted.world, hosted.services.identities, content);
+}
+
+
+// The totes of the item the venue's broker holds, free or in its asks.
+std::uint64_t BrokerTotes(const Hosted &hosted, std::string_view venueId, std::string_view itemId)
+{
+	const entt::entity broker = hosted.services.identities.Find(Kind::Broker, std::string{venueId});
+	for (const World::Holding &holding :
+	     hosted.world.Registry().get<const World::Stock>(broker).holdings)
+		if (holding.itemId == itemId)
+			return holding.available + holding.reserved;
+	return 0;
+}
+
+
+// Ada provisioned at Ore, her starting reports the markets as they stand, and her ship's standing
+// policy on: the ship's ID, its cruise the drive's power law.
+std::string Trader(Hosted &hosted)
+{
+	REQUIRE(
+	    hosted.Run(
+	        kHost, Company::kProvision, Company::kVersion,
+	        Company::Provision{"Ada", "Ada", "Ada Co"}) == Result::Succeeded);
+	entt::registry &registry = hosted.world.Registry();
+	std::string shipId;
+	for (const auto &[entity, identity, ship] :
+	     registry.view<const World::Identity, const World::Ship>().each())
+		if (registry
+		        .get<const World::Company>(
+		            hosted.services.identities.Find(Kind::Company, ship.companyId))
+		        .principalId == "Ada")
+		{
+			shipId = identity.id;
+			registry.get<Jettison::Space::CruiseDrive>(entity).profile.reset();
+		}
+	REQUIRE_FALSE(shipId.empty());
+	REQUIRE(
+	    hosted.Run(
+	        kAda, Manifest::Policy::kSet, Manifest::Policy::kVersion,
+	        Manifest::Policy::Set{shipId, true, 0, 0}) == Result::Succeeded);
+	return shipId;
+}
+
+
+// Prices moved by stock (W19, D-102), as a trader's standing policy meets them in the trading fixture:
+// unshocked, Ada's first job carries copper from Ore to Brine.
+TEST_CASE(
+    "A shortage pulls a cargo in and a glut sends one away, fast-forwarded to the bytes stepping "
+    "leaves")
+{
+	const std::vector<std::filesystem::path> overlays{MANIFEST_FIXTURE_OVERLAY};
+	const Manifest::Content::ContentSet content =
+	    Manifest::Host::Validate({MANIFEST_MOD_DIRECTORY, overlays, "trading"});
+	Hosted unshocked{MANIFEST_MOD_DIRECTORY, overlays};
+	const std::string unshockedShip = Trader(unshocked);
+	const auto job = [](const Hosted &hosted, const std::string &shipId) -> const World::Job &
+	{
+		return hosted.world.Registry().get<const World::Job>(
+		    hosted.services.identities.Find(Kind::Ship, shipId));
+	};
+	while (job(unshocked, unshockedShip).itemId.empty())
+		unshocked.Step();
+	const World::Job &usual = job(unshocked, unshockedShip);
+	REQUIRE(usual.itemId == kGood);
+	REQUIRE(usual.sourceId == kOre);
+	REQUIRE(usual.destinationId == kBrine);
+
+	// Each shock made alike in a world fast-forwarded and one stepped; the first lot fast-forwarded
+	// until it sells, the stepped world stepped as far, and the two the same to the byte.
+	const auto firstLot = [&](const auto &shock, std::string_view venueId, std::string_view itemId)
+	{
+		Hosted forwarded{MANIFEST_MOD_DIRECTORY, overlays};
+		Hosted stepped{MANIFEST_MOD_DIRECTORY, overlays};
+		std::string shipId;
+		for (Hosted *hosted : {&forwarded, &stepped})
+		{
+			shock(*hosted);
+			shipId = Trader(*hosted);
+		}
+		REQUIRE(forwarded.world.Save() == stepped.world.Save());
+		const std::uint64_t before = BrokerTotes(forwarded, venueId, itemId);
+		const std::uint64_t end = forwarded.world.Clock().Step() + std::uint64_t{60} * 60 * 24;
+		World::Job lot;
+		while (forwarded.world.Clock().Step() < end &&
+		       (lot.totes == 0 || job(forwarded, shipId).totes > 0))
+		{
+			forwarded.world.FastForward(end);
+			(void)forwarded.world.Events().Take();
+			if (job(forwarded, shipId).totes > 0)
+				lot = job(forwarded, shipId);
+		}
+		REQUIRE(lot.totes > 0);
+		REQUIRE(job(forwarded, shipId).totes == 0);
+		while (stepped.world.Clock().Step() < forwarded.world.Clock().Step())
+		{
+			stepped.world.Step();
+			(void)stepped.world.Events().Take();
+		}
+		CHECK(forwarded.world.Save() == stepped.world.Save());
+		return std::tuple{lot, before, BrokerTotes(forwarded, venueId, itemId)};
+	};
+
+	SUBCASE("Brine's furs bought out, Ada carries Ore's furs to Brine instead, for more than copper")
+	{
+		const auto [lot, before, after] = firstLot(
+		    [&](Hosted &hosted) { Hoard(hosted, content, kBrine, "ItemFurs"); }, kBrine, "ItemFurs");
+		CHECK(before == 0);
+		CHECK(lot.itemId == "ItemFurs");
+		CHECK(lot.sourceId == kOre);
+		CHECK(lot.destinationId == kBrine);
+		CHECK(lot.estimate > usual.estimate);
+		CHECK(after == lot.totes);
+	}
+	SUBCASE("Brine's copper at five times its target, Ada buys it there and carries it away")
+	{
+		const std::uint64_t target = 13;
+		const auto [lot, before, after] = firstLot(
+		    [&](Hosted &hosted) { Glut(hosted, content, kBrine, kGood, 5 * target); }, kBrine, kGood);
+		CHECK(before > 5 * target);
+		CHECK(lot.itemId == kGood);
+		CHECK(lot.sourceId == kBrine);
+		CHECK(lot.destinationId != kBrine);
+		CHECK(after == before - lot.totes);
+	}
+}

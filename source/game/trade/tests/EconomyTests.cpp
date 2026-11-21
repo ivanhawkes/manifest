@@ -434,6 +434,37 @@ TEST_CASE("An essential that cannot be bought is recorded, lowers condition and 
 }
 
 
+TEST_CASE("A need's pressure past a quarter calls a relief tender for the day's shortfall")
+{
+	ContentSet content = Trading();
+	Entry(content, kOre, kMedical).stock = 0;
+	Hosted hosted{std::move(content)};
+	// Each short minute adds a sixtieth of the rest: 17 leave the pressure under a quarter, 18 past it.
+	hosted.StepTo(std::uint64_t{60} * 17);
+	CHECK(Reliefs(hosted.world, hosted.identities, hosted.content).empty());
+	hosted.StepTo(std::uint64_t{60} * 18);
+	const std::vector<Relief> reliefs = Reliefs(hosted.world, hosted.identities, hosted.content);
+	REQUIRE(reliefs.size() == 1);
+	const Relief &relief = reliefs[0];
+	CHECK(relief.regionId == kOreHighlands);
+	CHECK(relief.needId == "NeedBasicMedicalSupplies");
+	CHECK(relief.venueId == kOre);
+	CHECK(relief.itemId == kMedical);
+	const auto &pantry = hosted.Get<World::Pantry>(Kind::Household, kOreHighlands);
+	const auto medical = std::ranges::find(pantry.unmet, relief.needId, &World::Unmet::needId);
+	REQUIRE(medical != pantry.unmet.end());
+	const double pressure = medical->pressure;
+	CHECK(pressure > kReliefPressure);
+	// 125 kg a day, short by the pressure, is a tote of 125 kg, rounded up.
+	CHECK(relief.totes == 1);
+	// Nothing is offered at Ore, so the tote at its native price, three times the pressure over it.
+	const auto price = TenderPrice(hosted.world, hosted.identities, hosted.content, kOre, kMedical);
+	REQUIRE(price);
+	CHECK(relief.budget == Budget(*price, 125.0, kReliefUrgency * pressure));
+	CHECK(relief.budget > *Budget(*price, 125.0, 0.0));
+}
+
+
 TEST_CASE("A need's pressure raises the households' bid until they buy what the broker asks")
 {
 	ContentSet content = Trading();

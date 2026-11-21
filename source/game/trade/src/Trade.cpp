@@ -1844,4 +1844,96 @@ void Quote(SimWorld &world, World::Identities &identities, const Content::Conten
 {
 	Requote(world, *MakeRules(world, identities, content));
 }
+
+
+namespace
+{
+std::optional<std::int64_t> PriceForTender(
+    entt::registry &registry, const Rules &rules, const std::string &venueId, const std::string &itemId)
+{
+	const Good *pGood = GoodAt(rules, venueId, itemId);
+	if (!pGood)
+		return std::nullopt;
+	std::optional<std::int64_t> lowest;
+	for (const entt::entity entity : Listing(registry, venueId, itemId))
+		if (const World::Order &order = registry.get<const World::Order>(entity);
+		    order.side == Side::Sell && (!lowest || order.limit < *lowest))
+			lowest = order.limit;
+	return lowest ? lowest : pGood->native.Raw();
+}
+} // namespace
+
+
+std::optional<std::int64_t> Budget(std::int64_t price, double units, double urgency)
+{
+	const std::optional<std::int64_t> cost = Cost(price, units, true);
+	if (!cost || !(urgency >= 0.0))
+		return std::nullopt;
+	const double budget = std::ceil(static_cast<double>(*cost) * (1.0 + urgency));
+	if (!(budget < 0x1p63))
+		return std::nullopt;
+	return static_cast<std::int64_t>(budget);
+}
+
+
+// shortcut: each call works out the rules from the content again, as Quote does; W12's issuer keeps
+// them when a profile shows its calls.
+std::optional<std::int64_t> TenderPrice(
+    SimWorld &world, World::Identities &identities, const Content::ContentSet &content,
+    std::string_view venueId, std::string_view itemId)
+{
+	return PriceForTender(
+	    world.Registry(), *MakeRules(world, identities, content), std::string{venueId},
+	    std::string{itemId});
+}
+
+
+std::vector<Relief> Reliefs(
+    SimWorld &world, World::Identities &identities, const Content::ContentSet &content)
+{
+	const std::shared_ptr<const Rules> rules = MakeRules(world, identities, content);
+	entt::registry &registry = world.Registry();
+	std::vector<Relief> reliefs;
+	for (const Economy &economy : rules->economies)
+	{
+		if (economy.venueId.empty())
+			continue;
+		const double population =
+		    registry.get<const World::Region>(Require(*rules, Kind::Region, economy.regionId))
+		        .population;
+		const World::Pantry &pantry =
+		    registry.get<const World::Pantry>(Require(*rules, Kind::Household, economy.regionId));
+		for (const Need &need : rules->needs)
+		{
+			const auto unmet = std::ranges::find(pantry.unmet, need.needId, &World::Unmet::needId);
+			if (unmet == pantry.unmet.end() || !(unmet->pressure > kReliefPressure))
+				continue;
+			std::optional<std::int64_t> cheapest;
+			const std::string *pItem = nullptr;
+			for (const std::string &itemId : need.items)
+				if (const std::optional<std::int64_t> price =
+				        PriceForTender(registry, *rules, economy.venueId, itemId);
+				    price && (!cheapest || *price < *cheapest))
+				{
+					cheapest = price;
+					pItem = &itemId;
+				}
+			if (!cheapest)
+				continue;
+			const double unitsPerTote = rules->unitsPerTote.at(*pItem);
+			const double shortfall = need.perThousandPerDay * population / 1'000.0 * unmet->pressure;
+			const double totes = std::ceil(shortfall / unitsPerTote);
+			const std::optional<std::int64_t> budget =
+			    totes < 0x1p63
+			        ? Budget(*cheapest, totes * unitsPerTote, kReliefUrgency * unmet->pressure)
+			        : std::nullopt;
+			if (!budget)
+				continue;
+			reliefs.push_back(
+			    {economy.regionId, need.needId, economy.venueId, *pItem,
+			     static_cast<std::uint64_t>(totes), *budget});
+		}
+	}
+	return reliefs;
+}
 } // namespace Manifest::Trade

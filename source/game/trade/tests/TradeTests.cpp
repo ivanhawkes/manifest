@@ -853,3 +853,39 @@ TEST_CASE("A save keeps each player's reports and each market's sales, and refus
 	    loaded.world.Load(hosted.world.Save()), doctest::Contains("a venue the world does not hold"),
 	    Jettison::Serialise::FormatError);
 }
+
+
+TEST_CASE("A tender's budget is its units at the price, times one and its urgency, rounded up")
+{
+	// 10 units at 1.5 credits are 15, and half again 22.5, so 23.
+	CHECK(Budget(1'500'000, 10.0, 0.5) == 23);
+	CHECK(Budget(1'500'000, 10.0, 0.0) == 15);
+	// The cost is rounded up first: 10 units at 1.05 are 10.5, so 11, and twice that 22.
+	CHECK(Budget(1'050'000, 10.0, 1.0) == 22);
+	CHECK_FALSE(Budget(1'500'000, 10.0, -0.5));
+	// A cost of 2^62 credits is held; twice it is not.
+	CHECK(Budget(Credits(1), 0x1p62, 0.0) == std::int64_t{1} << 62);
+	CHECK_FALSE(Budget(Credits(1), 0x1p62, 1.0));
+}
+
+
+TEST_CASE("A tender prices a good at the lowest ask on the venue's book, or its native price with none")
+{
+	Hosted hosted;
+	const auto price = [&](std::string_view item)
+	{ return TenderPrice(hosted.world, hosted.identities, Trading(), kOre, item); };
+	// No broker has quoted: nothing is offered, so the native price.
+	const std::optional<std::int64_t> native = price(kFurs);
+	REQUIRE(native);
+	CHECK(*native > 0);
+	// Ore's market does not price tin.
+	CHECK_FALSE(price("ItemTin"));
+	// A bid is not an offer; the lowest of the asks is the price.
+	hosted.Give("CompanyB", 2);
+	REQUIRE(hosted.Place(kAda, Side::Buy, 1, Credits(1)) == Result::Succeeded);
+	CHECK(price(kFurs) == native);
+	REQUIRE(hosted.Place(kBea, Side::Sell, 1, Credits(100)) == Result::Succeeded);
+	CHECK(price(kFurs) == Credits(100));
+	REQUIRE(hosted.Place(kBea, Side::Sell, 1, Credits(90)) == Result::Succeeded);
+	CHECK(price(kFurs) == Credits(90));
+}
