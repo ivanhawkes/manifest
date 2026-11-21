@@ -100,6 +100,18 @@ cargo's lots are bounded together (`world`), and a ship's cargo against its hull
 `CargoVolume`, whose empty map was taken for none given; a hull the map does not name now carries
 nothing (`company`). Round 7 approved with no finding open.
 
+## W10: standing trade policies, autopilot and NPC jobs — 2026-11-21
+
+On pin `0f973b2`, with one engine provision. Each ship's saved job chooses, flies, buys and sells
+through the players' own commands, a scenario's NPC traders run the same executor on their own
+reports, and docking and berth fees are charged at nominal values, each venue's own
+([what it chose and its evidence](stage-4-trading-plan.md#delivered-w10-2026-11-21)). The plan
+expected no Jettison gap; the zero-client run found one, a ship that circled the point above its pad
+at Ore until its reservation lapsed. Jettison's docks now bring a ship to rest out along its pad's
+normal first, a stopgap, the quality solution on
+[Jettison's roadmap](../../jettison/docs/roadmap.md#then-robustness-tools-and-what-a-mod-can-reach).
+No suite had fast-forwarded a blocked job; the `policy` suite does since L28.
+
 ## L28: docked fleets and the fast-forward — 2026-11-21
 
 On pin `0f973b2`, with no engine edit. Observation's skip captures each docked fleet's venue at the

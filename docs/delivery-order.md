@@ -83,9 +83,13 @@ one command stream from purchase to upgrade with production, life support and ob
 and goods accounted for every step, saved in flight, replayed, and the same from the pack, on the same
 pin with no engine edit. L27 is done (2026-11-20): [a fast-forward over quiet steps](stage-4-trading-plan.md#delivered-l27-2026-11-20),
 each system saying when it next has to run and the console and server passing over the steps
-between to the same bits, Ore to Brine 2.37 s, on pin `892b7b3`. W10's slices are committed, on pin
-`0f973b2`. L28 is done (2026-11-21): [a docked fleet's wait](stage-4-trading-plan.md#delivered-l28-2026-11-21)
-is passed over, its reports captured at the clock, with no engine edit. Next: closing W10.
+between to the same bits, Ore to Brine 2.37 s, on pin `892b7b3`. W10 is done (2026-11-21):
+[standing trade policies, autopilot and NPC jobs](stage-4-trading-plan.md#delivered-w10-2026-11-21),
+each ship's saved job trading through the players' own commands, a scenario's NPC traders and the
+transport and holding charges at nominal values, proved with no client connected, on pin `0f973b2`
+with Jettison's stopgap for the way in to a pad. L28 is done (2026-11-21):
+[a docked fleet's wait](stage-4-trading-plan.md#delivered-l28-2026-11-21) is passed over, its reports
+captured at the clock, with no engine edit. Next: W18, the charges at their real values.
 
 ## Priority 0: maintenance before Stage 1
 
@@ -194,7 +198,7 @@ Canonical scope: [Stage 4](stage-4-trading-plan.md), with the
 | 38 / W07 | Implement live/stale observations, spawn reports for every directly connected station market, report age and actor filtering across queries and trader/script facts. **Done 2026-11-20**, [delivered](stage-4-trading-plan.md#delivered-w07-2026-11-20); trader and script facts read the same reports when W10 adds them. | W03, W05, A05 |
 | 39 / W08 | Implement company-funded cargo upgrades without sharing regional/civilisation funds; prove retry-safe payment/capacity changes. **Done 2026-11-20**, [delivered](stage-4-trading-plan.md#delivered-w08-2026-11-20), on the user's choices ([D-096](decision-ledger.md#d-096)). | W03, A04 |
 | 40 / W09 | Prove the complete public-command buy → load → travel → dock → unload → sell → upgrade fixture, including directory/pack and cross-build replay. **Done 2026-11-20**, [delivered](stage-4-trading-plan.md#delivered-w09-2026-11-20). | W04, W05, W06, W07, W08 |
-| 41 / W10 | Add enabled standing trade policies, autopilot and NPC jobs through the same physical commands and permitted market facts; prove operation without connected clients. | W09, N03 |
+| 41 / W10 | Add enabled standing trade policies, autopilot and NPC jobs through the same physical commands and permitted market facts; prove operation without connected clients. **Done 2026-11-21**, [delivered](stage-4-trading-plan.md#delivered-w10-2026-11-21). | W09, N03 |
 | 41a / W18 | Transport and holding charges at their real values. W10 charges them nominally (a 10-credit docking fee as a `Travel` starts, a 2-credit berth fee each simulation hour docked, [D-097](decision-ledger.md#d-097)) and its jobs attribute them to a lot through `Policy::Charges`. Add the operator's command that sets a venue's fees and its arrears' interest rate, refused above the usury limit, and an AI operator's rule for them ([D-098](decision-ledger.md#d-098)); select the berth fee's amount and basis (it includes connected life support, D-047), the docking fee's, arrears' consequences, and the cost of life support used in transit, attributed the same way; storage fees (L16) and tolls (L10, L16) join that attribution when they land. Prove an estimate and a floor with each charge, and a changed fee charged from the next charge, not one paid. | W10 |
 | 42 / W11 | Resolve the clean public-project/tender lifecycle's remaining rounding, deadline, default and regional delivery choices; define saved jobs, rights and reservations. | W10 |
 | 43 / W12 | Implement competitive procurement, partial delivery/payment, performance security and a material-gated regional project through physical fulfilment. | W11 |

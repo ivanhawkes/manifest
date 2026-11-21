@@ -406,6 +406,23 @@ TEST_CASE("A lot no bid clears is kept, and the allowance is shared across its s
 	CHECK(hosted.Job().blockedSince == since);
 	CHECK(hosted.Job().totes == kTotes - 2);
 
+	// Its docked wait to the next retry passed over, to the bytes stepping leaves (L28).
+	{
+		const std::uint64_t retry = hosted.Job().retry + 1;
+		const std::uint64_t waited = retry - hosted.world.Clock().Step();
+		Hosted forwarded;
+		Hosted stepped;
+		forwarded.world.Load(hosted.world.Save());
+		stepped.world.Load(hosted.world.Save());
+		std::uint64_t calls = 0;
+		for (; forwarded.world.Clock().Step() < retry; ++calls)
+			forwarded.world.FastForward(retry);
+		stepped.StepTo(retry);
+		CHECK(forwarded.world.Save() == stepped.world.Save());
+		MESSAGE(waited << " steps blocked and docked in " << calls << " calls");
+		CHECK(calls * 100 < waited);
+	}
+
 	// Saved and loaded, then an allowance enough for Ore's bid, read at the next decision: the rest
 	// sells, losing no more than the allowance.
 	Hosted loaded;

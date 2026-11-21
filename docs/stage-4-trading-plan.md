@@ -941,11 +941,11 @@ to the bit, and the ship's place, is the same on the old pin and the new.
 Left: observation reports each docked fleet's venues afresh every step, so no step is passed over
 while a fleet is docked, which W10's fleets will be; [L28](#delivered-l28-2026-11-21) lets them be.
 
-## W10 plan, 2026-11-21
+## Delivered: W10, 2026-11-21
 
 Standing trade policies, autopilot and NPC jobs, on [D-097](decision-ledger.md#d-097) (the user's,
-2026-11-21). Inspection baseline: Manifest `feature-base` at `b1bf8e8`, Jettison `feature-base` at
-`28e8272`. No implementation yet.
+2026-11-21), on pin `0f973b2` with one engine provision, from Manifest `feature-base` at `b1bf8e8`
+and Jettison's at `28e8272`:
 
 - **The executor.** `manifest.policy`, a native system after `manifest.brokers` and before the
   movement, so a journey it starts is driven that step and a buy meets the turn's requote. It reads
@@ -1014,22 +1014,25 @@ Standing trade policies, autopilot and NPC jobs, on [D-097](decision-ledger.md#d
   a player's are. Autopilot is the job's travel; no route mode.
 - **Its quiet.** The current step while an enabled job has a decision due, its retry step while
   blocked, never otherwise: travel's quiet wakes the world for an arrival.
-- **Jettison.** No gap is expected: commands sent from a system, the quiet and the docks are public.
-  One found is provisioned there first, with its own consumer test.
-- **Acceptance.** A `policy` suite: a route planned from a stale starting report, its estimate and
+- **Jettison.** What W10 uses was public: commands sent from a system, the quiet and the docks. The
+  zero-client run found one gap, a ship that came round Ore fast and sideways and circled the point
+  above its pad until the pad lapsed; Jettison's docks now bring a ship to rest out along its pad's
+  normal and fly it straight down (pin `0f973b2`, with its consumer test).
+- **Evidence.** The `policy` suite: a route planned from a stale starting report, its estimate and
   report age shown; a live ask past the target skipped and replanned from reports alone; cargo kept
   when no bid clears the floor; zero allowance never selling below it; an authorised allowance shared
   across partial fills, retries and a save, never multiplied; an edit applied at the next decision; a
-  change to an unobserved market changing no decision. The `fixture` suite: an NPC and a
-  disconnected player's ship each completing trades on a server with no client, saved mid-job, loaded
-  and replayed to one hash in every gate build (the NPC added by the `one-trader` overlay); and a
-  blocked job's wait passed over by the fast-forward: docked since [L28](#delivered-l28-2026-11-21);
-  one in space after a failed arrival is flown every step.
-- **Slices**, each a commit leaving the gate green: (1) `Requests::Act`, `World::Policy`,
-  `World::Job` and `Manifest.Policy.Set`; (2) the nominal charges, with their pins moved and why;
-  (3) the executor, with the `policy` suite; (4) NPC
-  traders in the scenario and their provisioning; (5) the `fixture` suite's zero-client run; then [L28](delivery-order.md#later-priorities-and-re-entry-conditions), booked
-  straight after, on a docked fleet stopping the fast-forward.
+  change to an unobserved market changing no decision; and a blocked job's docked wait to its retry,
+  3,600 steps, passed over in 4 calls to the bytes stepping leaves, since [L28](#delivered-l28-2026-11-21).
+  The `fixture` suite: an NPC and a disconnected player's ship each completing trades on a server with
+  no client, every arrival docked, saved mid-job, loaded and replayed to one hash in every gate build
+  (the NPC added by the `one-trader` overlay), 90,000 steps in 42,483 calls. A job blocked in space
+  after a failed arrival is flown every step.
+- **Slices**, each a commit with the gate green: (1) `Requests::Act`, `World::Policy`, `World::Job`
+  and `Manifest.Policy.Set` (`c399fa1`); (2) the nominal charges, with their pins moved and why
+  (`800e26b`); (3) the executor, with the `policy` suite (`69fc0d0`); (4) NPC traders in the scenario
+  and their provisioning (`02ccc42`); (5) the `fixture` suite's zero-client run (`a1be7ef`); the
+  docks' pin (`aec90b7`); then L28 (`f72c906`), on a docked fleet stopping the fast-forward.
 - **Left.** Scouting an unknown market, a standing route and Wasm policies; the charges' real amounts and the
   ones not yet charged (W18). A ship flown in to a pad stops out along its normal first, Jettison's stopgap for one that
   circled its pad until the pad lapsed, as Ada's did at Ore in the zero-client run; the quality
@@ -1047,6 +1050,7 @@ an expiry changes a report, wakes the world for what a capture at the clock alre
 
 Evidence. The `fixture` suite's fast-forwarded cruise, compared byte for byte with one stepped at
 every stop, goes on for an hour docked at Brine: 6 calls, where observation's old quiet took 3,600.
+The `policy` suite passes over a blocked job's docked wait to its retry, 3,600 steps, in 4.
 Every pin is unchanged, the zero-client run's included. That run is still 42,483 calls for 90,000
 steps: its docked waits, Nia's blocked one among them, each fall while the other ship is flown in a
 station's frame, departing, clearing or coming in, which steering flies every step; only the cruises
