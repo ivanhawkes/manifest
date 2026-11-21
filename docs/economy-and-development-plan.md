@@ -420,8 +420,8 @@ executed for this planning decision.
 ### Power grid, compute and the AI economy (selected 2026-11-21)
 
 The user selected a power and compute economy for the later ages ([D-103](decision-ledger.md#d-103)),
-booked as [W20](delivery-order.md#priority-5-stage-4-trading-automation-and-regional-development)
-after W13. It is priced by [supply and demand](stage-4-trading-plan.md#w19-plan) (D-102) and built
+booked as [L31](delivery-order.md#later-priorities-and-re-entry-conditions)
+after Stage 4. It is priced by [supply and demand](stage-4-trading-plan.md#w19-plan) (D-102) and built
 through W12's public projects. Existing goods it uses: silicon wafers, AI accelerators
 (`ItemProcessors`), batteries, solar panels, robots, reactor fuel, uranium, natural gas, coal,
 helium-3, copper wire, neodymium, lithium, cobalt and graphite.
@@ -455,7 +455,7 @@ helium-3, copper wire, neodymium, lithium, cobalt and graphite.
    electronics factory, battery factory, turbine works and robot factory.
 10. **Compute facilities:** server farm and AI lab.
 
-Open, for W20's planning: each good's price from real-world quotes as the existing goods' are, units
+Open, for L31's planning: each good's price from real-world quotes as the existing goods' are, units
 and densities; each facility's inputs, outputs, power draw, workforce and construction recipe; each
 plant's capacity and fuel use; per-capita household draw; the shortfall's effect sizes; compute and AI
 capability's units and what capability unlocks; and the governance fixture's power scenario.
