@@ -1408,7 +1408,7 @@ World::Report Capture(
 	    {}};
 	report.lines.reserve(venue.market.size());
 	for (const Content::MarketEntry &entry : venue.market)
-		report.lines.push_back({.itemId = entry.itemId});
+		report.lines.emplace_back().itemId = entry.itemId;
 	const auto lineOf = [&](std::string_view itemId) -> World::Line *
 	{
 		const auto line = std::ranges::find(report.lines, itemId, &World::Line::itemId);
@@ -1421,16 +1421,19 @@ World::Report Capture(
 		// An order that no longer matches after the observed step is not in the book it shows.
 		if (!pLine || (order.expiresStep != 0 && order.expiresStep <= observed))
 			continue;
-		const bool buy = order.side == Side::Buy;
-		std::int64_t &best = buy ? pLine->bid : pLine->ask;
-		std::uint64_t &totes = buy ? pLine->bidTotes : pLine->askTotes;
-		if (best == 0 || (buy ? order.limit > best : order.limit < best))
-		{
-			best = order.limit;
-			totes = order.remaining;
-		}
-		else if (order.limit == best)
-			totes += order.remaining;
+		std::vector<World::Level> &side = order.side == Side::Buy ? pLine->bids : pLine->asks;
+		const auto level = std::ranges::find(side, order.limit, &World::Level::price);
+		if (level == side.end())
+			side.push_back({order.limit, order.remaining});
+		else
+			level->totes += order.remaining;
+	}
+	for (World::Line &line : report.lines)
+	{
+		std::ranges::sort(line.bids, std::greater{}, &World::Level::price);
+		std::ranges::sort(line.asks, {}, &World::Level::price);
+		line.bids.resize(std::min(line.bids.size(), World::kReportLevels));
+		line.asks.resize(std::min(line.asks.size(), World::kReportLevels));
 	}
 
 	const entt::entity market = identities.Find(Kind::Market, venue.venueId);

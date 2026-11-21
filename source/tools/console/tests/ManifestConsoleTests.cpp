@@ -502,7 +502,7 @@ TEST_CASE("Manifest console: the vertical slice, furs bought at Ore, flown to Br
 	                 Reported(spawned, "VenueOreHighport", "ItemFurs", "ask"));
 	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Trade.Place: Succeeded");
 	const std::string bought = Execute(session, "observe Ada").text;
-	MANIFEST_CHECK_CONTAINS(bought, "Company1 'Ada Co': 24691 credits");
+	MANIFEST_CHECK_CONTAINS(bought, "Company1 'Ada Co': 24674 credits");
 	MANIFEST_CHECK_CONTAINS(bought, "at VenueOreHighport: ItemFurs 2 totes available");
 	Execute(session, "cargo load Ada Ship1 VenueOreHighport ItemFurs 2");
 	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Company.Load: Succeeded");
@@ -526,18 +526,26 @@ TEST_CASE("Manifest console: the vertical slice, furs bought at Ore, flown to Br
 	    Execute(session, "observe Ada").text,
 	    "Ship1 HullLoneTraderStarter, docked at VenueBrineHighport\n");
 
-	// Unloaded and sold at the bid her report of Brine, live now, shows; Ore's is stale.
+	// Unloaded and sold a tote at a time at the bid her report of Brine, live now, shows, the broker's
+	// ladder a tote a level there, 3,014 and 2,062 credits; Ore's is stale.
 	Execute(session, "cargo unload Ada Ship1 VenueBrineHighport ItemFurs 2");
 	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Company.Unload: Succeeded");
 	const std::string arrived = Execute(session, "observe Ada").text;
 	MANIFEST_CHECK_CONTAINS(arrived, "VenueBrineHighport: live");
 	MANIFEST_CHECK_CONTAINS(arrived, "VenueOreHighport: stale, observed");
-	Execute(
-	    session, "trade sell Ada VenueBrineHighport ItemFurs 2 " +
-	                 Reported(arrived, "VenueBrineHighport", "ItemFurs", "bid"));
-	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Trade.Place: Succeeded");
+	// Its households bought the broker's last tote over the cruise, and its bids rose with it.
+	MANIFEST_CHECK_CONTAINS(arrived, "ItemFurs: bid 161.434747 (1 totes, 8 prices)");
+	for (int tote = 0; tote < 2; ++tote)
+	{
+		Execute(
+		    session,
+		    "trade sell Ada VenueBrineHighport ItemFurs 1 " +
+		        Reported(
+		            Execute(session, "observe Ada").text, "VenueBrineHighport", "ItemFurs", "bid"));
+		MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Trade.Place: Succeeded");
+	}
 	const std::string sold = Execute(session, "observe Ada").text;
-	MANIFEST_CHECK_CONTAINS(sold, "Company1 'Ada Co': 29490 credits");
+	MANIFEST_CHECK_CONTAINS(sold, "Company1 'Ada Co': 29650 credits");
 	CHECK(sold.substr(0, sold.find("\nmarkets")).find("ItemFurs") == std::string::npos);
 	MANIFEST_CHECK_CONTAINS(sold, "ItemFurs: bid");
 	MANIFEST_CHECK_CONTAINS(sold, "totes sold, last sold at");
@@ -554,7 +562,7 @@ TEST_CASE("Manifest console: the vertical slice, furs bought at Ore, flown to Br
 	Execute(session, "cancel Ada " + orderId);
 	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Trade.Cancel: Succeeded");
 	const std::string cancelled = Execute(session, "observe Ada").text;
-	MANIFEST_CHECK_CONTAINS(cancelled, "29490 credits");
+	MANIFEST_CHECK_CONTAINS(cancelled, "29650 credits");
 	CHECK(cancelled.find("Order") == std::string::npos);
 }
 

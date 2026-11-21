@@ -362,19 +362,40 @@ enum class Source
 	Starting
 };
 
-// One good of a market report: the best resting bid and ask, a Core::Decimal's raw microcredits per
-// the item's unit and the totes resting at that price, 0 and 0 for none; the totes sold over the
-// report's window; and the good's last sale, its step and price, 0 and 0 for none.
+// A price a side of a report's book rests at, a Core::Decimal's raw microcredits per the item's unit,
+// above 0, and the totes resting at it, at least one.
+struct Level
+{
+	std::int64_t price{0};
+	std::uint64_t totes{0};
+
+	bool operator==(const Level &) const = default;
+};
+
+// The prices a report keeps of each side of a good's book (D-102): a broker's ladder.
+inline constexpr std::size_t kReportLevels = 8;
+
+// One good of a market report: each side's best kReportLevels prices resting, best first, the bids
+// highest and the asks lowest; the totes sold over the report's window; and the good's last sale, its
+// step and price, 0 and 0 for none.
 struct Line
 {
 	std::string itemId;
-	std::int64_t bid{0};
-	std::uint64_t bidTotes{0};
-	std::int64_t ask{0};
-	std::uint64_t askTotes{0};
+	std::vector<Level> bids;
+	std::vector<Level> asks;
 	std::uint64_t sold{0};
 	std::uint64_t lastStep{0};
 	std::int64_t lastPrice{0};
+
+	// A side's best price, 0 for none.
+	std::int64_t Bid() const
+	{
+		return bids.empty() ? 0 : bids.front().price;
+	}
+	std::int64_t Ask() const
+	{
+		return asks.empty() ? 0 : asks.front().price;
+	}
 
 	bool operator==(const Line &) const = default;
 };

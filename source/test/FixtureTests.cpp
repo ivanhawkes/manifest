@@ -360,13 +360,13 @@ void ToCruise(Hosted &hosted)
 	const CompanyView start = hosted.Seen();
 	CHECK(start.credits == 25000);
 	REQUIRE(
-	    hosted.Place(kOre, kFurs, Side::Buy, 2, hosted.Quote(kOre, kFurs).ask) == Result::Succeeded);
-	CHECK(hosted.Seen().credits == 24691);
+	    hosted.Place(kOre, kFurs, Side::Buy, 2, hosted.Quote(kOre, kFurs).Ask()) == Result::Succeeded);
+	CHECK(hosted.Seen().credits == 24674);
 	REQUIRE(
-	    hosted.Place(kOre, kOxygen, Side::Buy, 1, hosted.Quote(kOre, kOxygen).ask) ==
+	    hosted.Place(kOre, kOxygen, Side::Buy, 1, hosted.Quote(kOre, kOxygen).Ask()) ==
 	    Result::Succeeded);
 	REQUIRE(
-	    hosted.Place(kOre, kCartridges, Side::Buy, 1, hosted.Quote(kOre, kCartridges).ask) ==
+	    hosted.Place(kOre, kCartridges, Side::Buy, 1, hosted.Quote(kOre, kCartridges).Ask()) ==
 	    Result::Succeeded);
 	const CompanyView bought = hosted.Seen();
 	CHECK(Held(bought, kOre, kFurs).available == 2);
@@ -462,14 +462,21 @@ void FromCruise(Hosted &hosted)
 	CHECK(replaced.lifeSupport.cartridges[0] == 30.0);
 	CHECK(Aboard(replaced, kCartridges) == 0);
 
-	// Unloaded and sold at the bid of the live report: the proceeds are the company's, the furs the
-	// broker's, and no sell rests.
+	// Unloaded and sold down the bids of the live report to the level its second tote takes: the
+	// proceeds are the company's, the furs the broker's, and no sell rests.
 	REQUIRE(hosted.Move(Company::kUnload, kBrine, kFurs, 2) == Result::Succeeded);
 	CHECK(Held(hosted.Seen(), kBrine, kFurs).available == 2);
 	const std::int64_t unloaded = hosted.Seen().credits;
-	REQUIRE(
-	    hosted.Place(kBrine, kFurs, Side::Sell, 2, hosted.Quote(kBrine, kFurs).bid) ==
-	    Result::Succeeded);
+	std::uint64_t reach = 0;
+	std::int64_t limit = 0;
+	for (const World::Level &level : hosted.Quote(kBrine, kFurs).bids)
+		if (reach < 2)
+		{
+			reach += level.totes;
+			limit = level.price;
+		}
+	REQUIRE(reach >= 2);
+	REQUIRE(hosted.Place(kBrine, kFurs, Side::Sell, 2, limit) == Result::Succeeded);
 	const CompanyView sold = hosted.Seen();
 	CHECK(sold.credits > unloaded);
 	CHECK(Held(sold, kBrine, kFurs) == World::Holding{std::string{kBrine}, std::string{kFurs}, 0, 0});
@@ -566,7 +573,7 @@ TEST_CASE("The trading fixture's loop, saved in flight with a bid resting and re
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves with
 	// what a save holds, the fixture's content or stream, or the engine's movement or save format.
-	CHECK(hosted.world.StateHash() == 0x00598d6e13c32fb0ULL);
+	CHECK(hosted.world.StateHash() == 0x726b868b5244ac85ULL);
 }
 
 
@@ -749,5 +756,5 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 	CHECK(replayed.world.StateHash() == hosted.world.StateHash());
 
 	// The same in every build the gate runs; it moves as the fixture's does.
-	CHECK(hosted.world.StateHash() == 0x2b06f11f8cf4b2c5ULL);
+	CHECK(hosted.world.StateHash() == 0x1de8400a54e6ebc8ULL);
 }

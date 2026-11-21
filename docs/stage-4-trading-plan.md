@@ -179,9 +179,10 @@ production/consumption sources and sinks for invariant tests.
 The native counterparty is a broker at each venue ([D-084](decision-ledger.md#d-084), W02): a
 trading principal owned by the venue's operator, with its own account and holdings in totes
 there, seeded from the scenario's venue stock and an authored treasury. On each due economic turn
-it cancels its resting orders and posts one bid and one ask per item it trades, around the
-existing native price with an authored spread and explicit Decimal rounding: the ask no more
-than its unreserved holdings, the bid no more than its unreserved funds cover with fees. Its
+it cancels its resting orders and posts a ladder of bids and asks per item it trades, priced on
+its stock's curve about the existing native price ([D-102](decision-ledger.md#d-102), W19's
+[curve and ladder](#w19-plan)) with an authored spread and exact integer rounding: the asks no
+more than its unreserved holdings, the bids no more than its unreserved funds cover with fees. Its
 orders take the same order/reservation path as a company's, in stable venue/item order, so a turn
 cannot accumulate orders. The treasury and spread are fixture test values W03 authors in
 `balance.yaml`, as C05 authored the fixtures'; until W04, a broker's stock changes only by trade.
@@ -733,10 +734,10 @@ chose where the plans left room ([D-095](decision-ledger.md#d-095), the user's c
   matching pass filled, by step and item, for at least the last sales window, and each item's last sale,
   its step and price, however long ago. Each principal's saved `Reports` hold their reports, by venue:
   how it was come by (`Docked` or `Starting`), the step it was observed at, the step its sales window
-  began and, in the market's order, each good's best resting bid and ask with the totes at that price,
-  the totes sold over the window and the last sale. A venue with no report is unknown. A save is
-  refused for sales or reports out of order, a report of a venue the world does not hold, or a price
-  and its totes that disagree.
+  began and, in the market's order, each side's best eight resting prices of each good (W19), best first,
+  with the totes at each, the totes sold over the window and the last sale. A venue with no report is
+  unknown. A save is refused for sales or reports out of order, a report of a venue the world does not
+  hold, or a side of more than eight prices, out of order, or with a price or its totes not above 0.
 - **Sales.** Every fill counts once, buyer and seller together, a broker's, an employer's and a
   household's as a company's, recorded after the pass commits; a cancelled or unfilled order adds
   none. The window is `market.salesWindowSeconds`, 3,600 s, a whole number of steps: the fills of the
@@ -1279,9 +1280,12 @@ with relief at three times the pressure past a quarter. No engine edit is expect
 Slices, each one commit with its suites, the gate after the second and the last:
 
 1. The curve and the ladder: the broker's quote, its bounds and funds, a sale walking the bids and a
-   round trip losing (`trade`). Done 2026-11-21; `policy`, `console` and the fixtures fail on the
-   moved prices until slice 2.
+   round trip losing (`trade`). Done 2026-11-21.
 2. Reports with levels and the policy's estimate over them (`trade`, `policy`), the pins moved and why.
+   Done 2026-11-21: a report keeps each side's eight best prices; a job's buy walks the asks to the
+   count its estimate makes most on, both ladders walked, and its sale walks the bids to the lowest
+   level whose proceeds still recover their share of the floor. The ladder opened a trade the flat
+   quote hid, tin from Ore to Brine at ten times its ask, which the policy's tests now take.
 3. Need pressure and the households' bids; the employer's floor and held goods (`trade`, the economy).
 4. The need-priced budget and relief tender functions, ready for W12; the fixture's long runs showing
    a shortage pulling a cargo in and a glut sending one away, fast-forwarded to the same bytes.

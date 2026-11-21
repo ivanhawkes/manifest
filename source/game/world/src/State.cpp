@@ -205,10 +205,22 @@ std::optional<std::string> Broken(const Reports &reports)
 		if (at > 0 && reports.reports[at - 1].venueId >= report.venueId)
 			return "the market reports are out of order or held twice";
 		for (const Line &line : report.lines)
-			if (line.itemId.empty() || line.bid < 0 || line.ask < 0 || line.lastPrice < 0 ||
-			    (line.bid == 0) != (line.bidTotes == 0) || (line.ask == 0) != (line.askTotes == 0) ||
+		{
+			const auto levels = [](const std::vector<Level> &side, auto better)
+			{
+				return side.size() <= kReportLevels &&
+				       std::ranges::all_of(
+				           side,
+				           [](const Level &level) { return level.price > 0 && level.totes > 0; }) &&
+				       std::ranges::adjacent_find(
+				           side, [&](const Level &a, const Level &b)
+				           { return !better(a.price, b.price); }) == side.end();
+			};
+			if (line.itemId.empty() || !levels(line.bids, std::greater{}) ||
+			    !levels(line.asks, std::less{}) || line.lastPrice < 0 ||
 			    line.lastStep > report.observed)
 				return std::format("the report of '{}' has a good of no item or price", report.venueId);
+		}
 	}
 	return std::nullopt;
 }
@@ -440,12 +452,13 @@ void RegisterTypes()
 		RegisterEnum<Source>("Manifest.World.Source")
 		    .Value<Source::Docked>("Docked")
 		    .Value<Source::Starting>("Starting");
+		RegisterType<Level>("Manifest.World.Level")
+		    .Field<&Level::price>("price", kSaved)
+		    .Field<&Level::totes>("totes", kSaved);
 		RegisterType<Line>("Manifest.World.Line")
 		    .Field<&Line::itemId>("itemId", kSaved)
-		    .Field<&Line::bid>("bid", kSaved)
-		    .Field<&Line::bidTotes>("bidTotes", kSaved)
-		    .Field<&Line::ask>("ask", kSaved)
-		    .Field<&Line::askTotes>("askTotes", kSaved)
+		    .Field<&Line::bids>("bids", kSaved)
+		    .Field<&Line::asks>("asks", kSaved)
 		    .Field<&Line::sold>("sold", kSaved)
 		    .Field<&Line::lastStep>("lastStep", kSaved)
 		    .Field<&Line::lastPrice>("lastPrice", kSaved);

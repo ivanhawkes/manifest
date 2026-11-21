@@ -179,7 +179,11 @@ TEST_CASE("A player's markets are their own reports, live only as observed at th
 	const std::uint64_t step = hosted.world.Clock().Step();
 	adas.reports = {
 	    {"VenueBrineHighport", World::Source::Docked, step - 1, 0, {}},
-	    {"VenueOreHighport", World::Source::Docked, step, 0, {{"ItemFurs", 5, 1, 7, 2, 0, 0, 0}}}};
+	    {"VenueOreHighport",
+	     World::Source::Docked,
+	     step,
+	     0,
+	     {{"ItemFurs", {{5, 1}}, {{7, 2}, {8, 3}}, 0, 0, 0}}}};
 
 	const Snapshot seen = hosted.Observe(kAda);
 	REQUIRE(seen.markets.size() == 2);

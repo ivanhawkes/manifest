@@ -692,13 +692,13 @@ TEST_CASE("A new player sees their own station live, and the rest of their syste
 	const World::Report brine = ReportOf(hosted, "Cai", kBrine);
 	CHECK(brine == spawn);
 	CHECK(ReportsOf(hosted, "Cai").reports.size() == 2);
-	CHECK(LineOf(brine, "ItemSalt").ask > 0);
+	CHECK(LineOf(brine, "ItemSalt").Ask() > 0);
 	CHECK(LineOf(brine, "ItemSalt").sold == 0);
 	CHECK(LineOf(brine, "ItemSalt").lastPrice == 0);
 
 	// A trade at Brine, unseen: the report and its observation stay as they were.
 	const World::Line salt = LineOf(brine, "ItemSalt");
-	REQUIRE(hosted.Place(kAda, Side::Buy, 1, salt.ask, "ItemSalt", kBrine) == Result::Succeeded);
+	REQUIRE(hosted.Place(kAda, Side::Buy, 1, salt.Ask(), "ItemSalt", kBrine) == Result::Succeeded);
 	const std::uint64_t traded = hosted.world.Clock().Step() - 1;
 	CHECK(ReportOf(hosted, "Cai", kBrine) == brine);
 	CHECK(ReportOf(hosted, "Cai", kOre).observed == hosted.world.Clock().Step());
@@ -711,11 +711,11 @@ TEST_CASE("A new player sees their own station live, and the rest of their syste
 	CHECK(live.source == World::Source::Docked);
 	CHECK(live.observed == hosted.world.Clock().Step());
 	CHECK(LineOf(live, "ItemSalt").sold == 1);
-	CHECK(LineOf(live, "ItemSalt").lastPrice == salt.ask);
+	CHECK(LineOf(live, "ItemSalt").lastPrice == salt.Ask());
 	CHECK(LineOf(live, "ItemSalt").lastStep == traded);
 	const World::Report ore = ReportOf(hosted, "Cai", kOre);
 	CHECK(ore.observed == left);
-	REQUIRE(hosted.Place(kAda, Side::Buy, 1, LineOf(ore, "ItemFurs").ask) == Result::Succeeded);
+	REQUIRE(hosted.Place(kAda, Side::Buy, 1, LineOf(ore, "ItemFurs").Ask()) == Result::Succeeded);
 	CHECK(ReportOf(hosted, "Cai", kOre) == ore);
 	CHECK(LineOf(Current(hosted, kOre, 0), "ItemFurs").sold == 1);
 }
@@ -738,7 +738,7 @@ TEST_CASE("A fleet's second ship keeps a station live; as the last leaves, the s
 	// The last of Cai's ships leaves in the step Ada buys there.
 	const World::Report before = ReportOf(hosted, "Cai", kOre);
 	Dock(hosted, "ShipX", "");
-	REQUIRE(hosted.Place(kAda, Side::Buy, 2, LineOf(before, "ItemFurs").ask) == Result::Succeeded);
+	REQUIRE(hosted.Place(kAda, Side::Buy, 2, LineOf(before, "ItemFurs").Ask()) == Result::Succeeded);
 	CHECK(ReportOf(hosted, "Cai", kOre) == before);
 	const World::Report dees = ReportOf(hosted, "Dee", kOre);
 	CHECK(dees.observed == hosted.world.Clock().Step());
@@ -756,12 +756,12 @@ TEST_CASE("A report's sales are its window's fills, each once, and a frozen repo
 	REQUIRE(window == 3600);
 
 	const World::Report quoted = ReportOf(hosted, "Dee", kOre);
-	const std::int64_t furs = LineOf(quoted, "ItemFurs").ask;
+	const std::int64_t furs = LineOf(quoted, "ItemFurs").Ask();
 	REQUIRE(hosted.Place(kAda, Side::Buy, 2, furs) == Result::Succeeded);
 	const std::uint64_t first = hosted.world.Clock().Step() - 1;
 	REQUIRE(hosted.Place(kAda, Side::Buy, 1, furs) == Result::Succeeded);
 	REQUIRE(
-	    hosted.Place(kAda, Side::Buy, 1, LineOf(quoted, "ItemCopper").ask, "ItemCopper") ==
+	    hosted.Place(kAda, Side::Buy, 1, LineOf(quoted, "ItemCopper").Ask(), "ItemCopper") ==
 	    Result::Succeeded);
 	const std::uint64_t last = hosted.world.Clock().Step() - 1;
 
@@ -829,7 +829,7 @@ TEST_CASE("A save keeps each player's reports and each market's sales, and refus
 	Hosted hosted{true};
 	Provision(hosted, "Cai");
 	REQUIRE(
-	    hosted.Place(kAda, Side::Buy, 1, LineOf(ReportOf(hosted, "Cai", kOre), "ItemFurs").ask) ==
+	    hosted.Place(kAda, Side::Buy, 1, LineOf(ReportOf(hosted, "Cai", kOre), "ItemFurs").Ask()) ==
 	    Result::Succeeded);
 	Dock(hosted, "Ship1", "");
 	hosted.world.Step();

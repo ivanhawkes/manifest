@@ -90,7 +90,8 @@ std::vector<std::string> StartingVenues(
     const Content::ScenarioDefinition &scenario, std::string_view venueId);
 
 // The report of the venue's market as the world holds it now, observed at the step: the venue's goods
-// in its market's order, each its best bid and ask that still match after that step, the totes sold
+// in its market's order, each side's best World::kReportLevels prices that still match after that step
+// and the totes resting at each, the totes sold
 // since the window began and its last sale. The world must hold the venue's Market.
 World::Report Capture(
     const entt::registry &registry, const World::Identities &identities,

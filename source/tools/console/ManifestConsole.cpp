@@ -127,11 +127,14 @@ std::string Minutes(std::uint64_t steps)
 }
 
 
-// A side of a report's book: its best price and the totes resting at it.
-std::string BookSide(std::string_view side, std::int64_t price, std::uint64_t totes)
+// A side of a report's book: its best price, the totes resting at it, and how many prices it keeps.
+std::string BookSide(std::string_view side, const std::vector<World::Level> &levels)
 {
-	return price == 0 ? std::format("no {}", side)
-	                  : std::format("{} {} ({} totes)", side, Price(price), totes);
+	if (levels.empty())
+		return std::format("no {}", side);
+	return std::format(
+	    "{} {} ({} totes{})", side, Price(levels.front().price), levels.front().totes,
+	    levels.size() > 1 ? std::format(", {} prices", levels.size()) : std::string{});
 }
 
 
@@ -148,9 +151,8 @@ std::string Describe(const Query::MarketView &market, std::uint64_t step)
 	    Minutes(report.observed - report.since));
 	for (const World::Line &line : report.lines)
 		text += std::format(
-		    "\n    {}: {}, {}, {} totes sold, {}", line.itemId,
-		    BookSide("bid", line.bid, line.bidTotes), BookSide("ask", line.ask, line.askTotes),
-		    line.sold,
+		    "\n    {}: {}, {}, {} totes sold, {}", line.itemId, BookSide("bid", line.bids),
+		    BookSide("ask", line.asks), line.sold,
 		    line.lastPrice == 0 ? std::string{"never sold"}
 		                        : std::format(
 		                              "last sold at {} {} before", Price(line.lastPrice),

@@ -332,7 +332,8 @@ TEST_CASE(
 	const std::int64_t before = hosted.Balance("Company1");
 	REQUIRE(hosted.SetPolicy(kAda, {"Ship1", true, 0, 0}) == Result::Succeeded);
 
-	// Brine's report is the starting one, stale; the job's trade is from it, shown with its estimate.
+	// Brine's report is the starting one, stale; the job's trade is to it, shown with its estimate:
+	// tin, which Brine's broker, holding a tote, bids ten times Ore's ask for.
 	const Manifest::Query::Snapshot seen =
 	    Manifest::Query::Observe(hosted.world, hosted.identities, kAda);
 	const auto brine = std::ranges::find_if(
@@ -343,14 +344,17 @@ TEST_CASE(
 	const Manifest::Query::ShipView &ship = seen.companies.at(0).ships.at(0);
 	REQUIRE(ship.policy);
 	REQUIRE(ship.job);
-	CHECK(ship.job->phase == World::Phase::ToSource);
-	CHECK(ship.job->sourceId == "VenueBrineHighport");
-	CHECK(ship.job->destinationId == "VenueOreHighport");
+	// Docked at Ore, its source, it buys there and pays Brine's docking fee to go.
+	CHECK(ship.job->phase == World::Phase::ToDestination);
+	CHECK(ship.job->itemId == "ItemTin");
+	CHECK(ship.job->sourceId == "VenueOreHighport");
+	CHECK(ship.job->destinationId == "VenueBrineHighport");
 	CHECK(ship.job->estimate > 0);
 	REQUIRE(ship.journey);
 	CHECK(ship.journey->venueId == "VenueBrineHighport");
-	CHECK(hosted.Balance("Company1") == before - 100);
-	CHECK(ship.job->totes == 0);
+	CHECK(ship.job->totes > 0);
+	CHECK(ship.job->charges == 100);
+	CHECK(hosted.Balance("Company1") == before - ship.job->cost - 100);
 }
 
 
@@ -383,11 +387,11 @@ TEST_CASE("A lot no bid clears is kept, and the allowance is shared across its s
 	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
 	REQUIRE(hosted.Provision("Bea") == Result::Succeeded);
 	const World::Line furs = hosted.Line("Ada", "VenueOreHighport", "ItemFurs");
-	REQUIRE(furs.bid > 0);
+	REQUIRE(furs.Bid() > 0);
 	// Two credits a tote above what Ore's bid nets: no bid there clears it at no allowance.
 	constexpr std::uint64_t kTotes = 10;
 	constexpr auto kCount = static_cast<std::int64_t>(kTotes);
-	const std::int64_t cost = (hosted.NetPerTote(furs.bid, "ItemFurs") + 2) * kCount;
+	const std::int64_t cost = (hosted.NetPerTote(furs.Bid(), "ItemFurs") + 2) * kCount;
 	hosted.Lot(kTotes, cost);
 
 	const std::int64_t before = hosted.Balance("Company1");
@@ -407,7 +411,7 @@ TEST_CASE("A lot no bid clears is kept, and the allowance is shared across its s
 	    hosted.Run(
 	        kBea, Manifest::Trade::kPlace, Manifest::Trade::kVersion,
 	        Manifest::Trade::Place{
-	            "VenueOreHighport", "ItemFurs", World::Side::Buy, 2, furs.bid / 20 * 21}) ==
+	            "VenueOreHighport", "ItemFurs", World::Side::Buy, 2, furs.Bid() / 20 * 21}) ==
 	    Result::Succeeded);
 	const std::int64_t beforeSale = hosted.Balance("Company1");
 	hosted.StepTo(hosted.Job().retry + 1);
@@ -428,7 +432,7 @@ TEST_CASE("A lot no bid clears is kept, and the allowance is shared across its s
 	    hosted.Run(
 	        kBea, Manifest::Trade::kPlace, Manifest::Trade::kVersion,
 	        Manifest::Trade::Place{
-	            "VenueBrineHighport", "ItemFurs", World::Side::Buy, 8, furs.bid * 3}) ==
+	            "VenueBrineHighport", "ItemFurs", World::Side::Buy, 8, furs.Bid() * 3}) ==
 	    Result::Succeeded);
 	hosted.StepTo(hosted.Job().retry + 1);
 	CHECK(hosted.Job().phase == World::Phase::Blocked);
@@ -452,13 +456,13 @@ TEST_CASE("A lot no bid clears is kept, and the allowance is shared across its s
 		CHECK(calls * 100 < waited);
 	}
 
-	// Saved and loaded, then an allowance enough for Ore's bid, read at the next decision: the rest
-	// sells, losing no more than the allowance.
+	// Saved and loaded, then an allowance enough to walk down Ore's bids, read at the next decision:
+	// the rest sells, losing no more than the allowance.
 	Hosted loaded;
 	loaded.world.Load(hosted.world.Save());
 	REQUIRE(loaded.world.StateHash() == hosted.world.StateHash());
 	const std::int64_t remaining = loaded.Job().cost;
-	const std::int64_t allowance = 6 * kCount;
+	const std::int64_t allowance = 12 * kCount;
 	REQUIRE(loaded.SetPolicy(kAda, {"Ship1", true, 0, allowance}) == Result::Succeeded);
 	CHECK(loaded.Job().phase == World::Phase::Blocked);
 	const std::int64_t beforeRest = loaded.Balance("Company1");
@@ -473,7 +477,7 @@ TEST_CASE("A lot no bid clears is kept, and the allowance is shared across its s
 }
 
 
-TEST_CASE("Docked at its source, a job buys at the live ask, cancels the rest, loads it and leaves")
+TEST_CASE("Docked at its source, a job walks the live asks, cancels the rest, loads it and leaves")
 {
 	Hosted hosted;
 	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
@@ -484,17 +488,27 @@ TEST_CASE("Docked at its source, a job buys at the live ask, cancels the rest, l
 	job.sourceId = "VenueOreHighport";
 	job.destinationId = "VenueBrineHighport";
 	const std::int64_t before = hosted.Balance("Company1");
-	const std::int64_t ask = hosted.Line("Ada", "VenueOreHighport", "ItemFurs").ask;
+	const World::Line asks = hosted.Line("Ada", "VenueOreHighport", "ItemFurs");
 	REQUIRE(hosted.SetPolicy(kAda, {"Ship1", true, 0, 0}) == Result::Succeeded);
-
-	// The company keeps the price it paid.
-	const World::PaidPrice *pPaid = World::Find(
-	    hosted.world.Registry().get<World::Paid>(hosted.Find(Kind::Company, "Company1")), "ItemFurs");
-	REQUIRE(pPaid);
-	CHECK(pPaid->price == ask);
 	const World::Job &bought = hosted.Job();
 	CHECK(bought.phase == World::Phase::ToDestination);
 	REQUIRE(bought.totes > 0);
+
+	// Up the asks to the level its last tote takes, past the first; the company keeps that price.
+	std::uint64_t taken = 0;
+	std::int64_t deepest = 0;
+	for (const World::Level &level : asks.asks)
+		if (taken < bought.totes)
+		{
+			taken += level.totes;
+			deepest = level.price;
+		}
+	CHECK(taken >= bought.totes);
+	CHECK(deepest > asks.Ask());
+	const World::PaidPrice *pPaid = World::Find(
+	    hosted.world.Registry().get<World::Paid>(hosted.Find(Kind::Company, "Company1")), "ItemFurs");
+	REQUIRE(pPaid);
+	CHECK(pPaid->price == deepest);
 	// The lot's cost is what the account paid for it, its docking fee at Brine a charge of the lot.
 	CHECK(bought.charges == 100);
 	CHECK(bought.cost == before - hosted.Balance("Company1") - 100);
@@ -634,19 +648,31 @@ TEST_CASE("Past the grace, a ship's cargo is sold tote by tote at the live bids 
 	};
 	const auto lots = [](Hosted &hosted)
 	{ return hosted.world.Registry().get<const World::Cargo>(hosted.Ship("Ship1")).lots; };
-	const std::int64_t furs = 138;
-	const std::int64_t soap = 816;
+	// The live bids at Ore as the seizure's step begins, a tote's net at each and its totes, once Ore's
+	// employer has sold its broker two days of furs.
+	const auto bids = [&](Hosted &hosted, std::string_view item)
+	{
+		std::vector<std::pair<std::int64_t, std::uint64_t>> nets;
+		for (const World::Level &level : hosted.Line("Ada", ore, item).bids)
+			nets.emplace_back(hosted.NetPerTote(level.price, item), level.totes);
+		return nets;
+	};
+	const auto owe = [](Hosted &hosted, std::int64_t owed)
+	{ hosted.world.Registry().get<World::Arrears>(hosted.Ship("Ship1")).owed = owed; };
 
 	// Not as the first day ends, less than a day after they began; as the second does, furs a tote at
-	// a time until their proceeds cover what is owed, which they pay, the job's lot sharing it.
+	// a time until their proceeds cover what is owed, which they pay, the job's lot sharing it: three
+	// totes, all from the bids' first level, for a little over two.
 	const std::vector<World::Lot> held{{"ItemFurs", 10}, {"ItemSoap", 2}};
 	Hosted forwarded{content};
-	owing(forwarded, 2 * furs + 1, held);
-	REQUIRE(forwarded.NetPerTote(7'404'517, "ItemFurs") == furs);
-	REQUIRE(forwarded.NetPerTote(728'699, "ItemSoap") == soap);
+	owing(forwarded, 1, held);
 	forward(forwarded, day);
 	CHECK(lots(forwarded) == held);
 	CHECK(forwarded.world.Registry().all_of<World::Arrears>(forwarded.Ship("Ship1")));
+	forward(forwarded, 2 * day - 1);
+	const auto [furs, first] = bids(forwarded, "ItemFurs").front();
+	REQUIRE(first >= 3);
+	owe(forwarded, 2 * furs + 1);
 	forward(forwarded, 2 * day);
 	CHECK(lots(forwarded) == std::vector<World::Lot>{{"ItemFurs", 7}, {"ItemSoap", 2}});
 	CHECK_FALSE(forwarded.world.Registry().all_of<World::Arrears>(forwarded.Ship("Ship1")));
@@ -659,26 +685,36 @@ TEST_CASE("Past the grace, a ship's cargo is sold tote by tote at the live bids 
 
 	// To the same bytes as stepping the hour before the seizure and its step.
 	Hosted stepped{content};
-	owing(stepped, 2 * furs + 1, held);
+	owing(stepped, 1, held);
 	forward(stepped, 2 * day - 3600);
-	while (stepped.world.Clock().Step() < 2 * day)
+	while (stepped.world.Clock().Step() < 2 * day - 1)
 		stepped.world.Step();
+	owe(stepped, 2 * furs + 1);
+	stepped.world.Step();
 	CHECK(stepped.world.Save() == forwarded.world.Save());
 
-	// Owing more than the bids take: the furs they take, then the soap, the rest loaded back and the
-	// proceeds paid, the rest still owed. The job's three totes of the furs go, and with no lot it
-	// chooses again.
+	// Owing more than the bids take: every level of the furs, then of the soap, the rest loaded back
+	// and the proceeds paid, the rest still owed. The job's three totes of the furs go, and with no
+	// lot it chooses again.
 	Hosted unpaid{content};
 	owing(unpaid, 100'000, {{"ItemFurs", 150}, {"ItemSoap", 10}});
 	unpaid.Job().totes = 3;
 	unpaid.Job().cost = 300;
+	forward(unpaid, 2 * day - 1);
+	std::int64_t proceeds = 0;
+	std::map<std::string, std::uint64_t> taken;
+	for (const std::string item : {"ItemFurs", "ItemSoap"})
+		for (const auto &[net, totes] : bids(unpaid, item))
+		{
+			proceeds += net * static_cast<std::int64_t>(totes);
+			taken[item] += totes;
+		}
 	forward(unpaid, 2 * day);
 	const std::vector<World::Lot> left = lots(unpaid);
 	REQUIRE(left.size() == 2);
-	CHECK(left[0].itemId == "ItemFurs");
-	CHECK(left[1].itemId == "ItemSoap");
-	CHECK(left[0].totes < 147);
-	CHECK(left[1].totes < 10);
+	CHECK(left[0] == World::Lot{"ItemFurs", 150 - taken["ItemFurs"]});
+	CHECK(left[1] == World::Lot{"ItemSoap", 10 - taken["ItemSoap"]});
+	CHECK(taken["ItemSoap"] > 0);
 	for (const auto [entity, order] : unpaid.world.Registry().view<const World::Order>().each())
 		CHECK_FALSE(
 		    (order.venueId == ore && order.side == World::Side::Buy &&
@@ -686,9 +722,7 @@ TEST_CASE("Past the grace, a ship's cargo is sold tote by tote at the live bids 
 	const World::Arrears *pArrears =
 	    unpaid.world.Registry().try_get<const World::Arrears>(unpaid.Ship("Ship1"));
 	REQUIRE(pArrears);
-	const auto sold = [](std::uint64_t from, std::uint64_t to)
-	{ return static_cast<std::int64_t>(from - to); };
-	CHECK(pArrears->owed == 100'000 - sold(150, left[0].totes) * furs - sold(10, left[1].totes) * soap);
+	CHECK(pArrears->owed == 100'000 - proceeds);
 	CHECK(unpaid.Balance("Company1") == 0);
 	CHECK(unpaid.Resting("Company1") == 0);
 	CHECK(unpaid.Job() == World::Job{});
@@ -714,12 +748,14 @@ TEST_CASE("A scenario's NPC traders start provisioned, the world's own, their jo
 	    registry.get<World::Reports>(ada).reports.size() ==
 	    registry.get<World::Reports>(nia).reports.size());
 
-	// By the first economic turn's end, its reports show a trade, and it sets off for its source.
+	// By the first economic turn's end, its reports show a trade from Ore, where it is docked: it buys
+	// and sets off for the destination.
 	hosted.StepTo(3600);
 	const World::Job &job = hosted.Job();
-	CHECK(job.phase == World::Phase::ToSource);
+	CHECK(job.phase == World::Phase::ToDestination);
+	CHECK(job.sourceId == "VenueOreHighport");
 	CHECK(job.estimate > 0);
-	CHECK(registry.get<World::Journey>(hosted.Ship("Ship1")).venueId == job.sourceId);
+	CHECK(registry.get<World::Journey>(hosted.Ship("Ship1")).venueId == job.destinationId);
 
 	// Traders the starter cannot take, which the content's check refuses, refuse the world too.
 	content.scenarios.at(content.scenario).traders = {

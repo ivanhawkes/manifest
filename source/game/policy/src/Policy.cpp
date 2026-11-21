@@ -327,8 +327,8 @@ struct Context
 };
 
 
-// A trade a job may make: its item, from the source to the destination, the totes, and what it is
-// estimated to make after charges.
+// A trade a job may make: its item, from the source to the destination, the totes, what it is
+// estimated to make after charges, and the limit its buy walks the asks to.
 struct Deal
 {
 	std::string itemId;
@@ -336,31 +336,86 @@ struct Deal
 	std::string destinationId;
 	std::uint64_t totes{0};
 	std::int64_t estimate{0};
+	std::int64_t limit{0};
 };
 
 
-// The trade between an ask and a bid: the least of the ask's and the bid's totes, the hold's free
-// totes and what the account covers after the charges at the ask's escrow, estimated as one fill at
-// each price. None for no totes.
+// What a side's levels, best first, come to for the totes, each level estimated as one fill: a buy's
+// outlay or a sale's proceeds, and the price the last tote fills at. None past the levels' totes or
+// for an amount the ledger cannot hold.
+struct Walked
+{
+	std::int64_t total{0};
+	std::int64_t limit{0};
+};
+std::optional<Walked> Walk(
+    const std::vector<World::Level> &side, std::uint64_t totes, double units, int feeBps, bool buying)
+{
+	Walked walked;
+	for (const World::Level &level : side)
+	{
+		if (totes == 0)
+			break;
+		const std::uint64_t taken = std::min(totes, level.totes);
+		const double traded = units * static_cast<double>(taken);
+		const std::optional<std::int64_t> each =
+		    buying ? Outlay(level.price, traded, feeBps) : Proceeds(level.price, traded, feeBps);
+		if (!each || *each > kMaxCredits - walked.total)
+			return std::nullopt;
+		walked.total += *each;
+		walked.limit = level.price;
+		totes -= taken;
+	}
+	return totes == 0 ? std::optional{walked} : std::nullopt;
+}
+
+
+// The trade between a source's asks and a destination's bids, walking both (D-102): of the totes both
+// sides hold, the hold's free totes and what the account covers after the charges at the deepest
+// ask's escrow, the count estimated to make the most, the fewest of equals. None for no totes.
 std::optional<Deal> Estimate(
     const Context &context, const std::string &itemId, const World::Line &ask, const World::Line &bid,
     std::int64_t charges, std::int64_t balance, std::uint64_t free)
 {
+	if (balance <= charges)
+		return std::nullopt;
 	const double units = context.UnitsPerTote(itemId);
 	const int feeBps = context.rules.feeBps;
-	const std::optional<std::int64_t> perTote = Trade::PerTote(ask.ask, units, feeBps);
-	if (!perTote || *perTote <= 0 || balance <= charges)
-		return std::nullopt;
-	const std::uint64_t totes = std::min(
-	    {ask.askTotes, bid.bidTotes, free, static_cast<std::uint64_t>((balance - charges) / *perTote)});
-	if (totes == 0)
-		return std::nullopt;
-	const double traded = units * static_cast<double>(totes);
-	const std::optional<std::int64_t> proceeds = Proceeds(bid.bid, traded, feeBps);
-	const std::optional<std::int64_t> outlay = Outlay(ask.ask, traded, feeBps);
-	if (!proceeds || !outlay)
-		return std::nullopt;
-	return Deal{itemId, {}, {}, totes, *proceeds - *outlay - charges};
+	// Each tote further fills at a worse price on both sides, so the best count is at a level's edge
+	// or a cap: what the hold, either side or the funds at a level's escrow allow.
+	std::vector<std::uint64_t> counts{free};
+	std::uint64_t asked = 0;
+	for (const World::Level &level : ask.asks)
+	{
+		counts.push_back(asked += level.totes);
+		if (const std::optional<std::int64_t> perTote = Trade::PerTote(level.price, units, feeBps);
+		    perTote && *perTote > 0)
+			counts.push_back(static_cast<std::uint64_t>((balance - charges) / *perTote));
+	}
+	std::uint64_t bidden = 0;
+	for (const World::Level &level : bid.bids)
+		counts.push_back(bidden += level.totes);
+	const std::uint64_t most = std::min({asked, bidden, free});
+
+	std::optional<Deal> best;
+	for (std::uint64_t totes : counts)
+	{
+		totes = std::min(totes, most);
+		const std::optional<Walked> buy =
+		    totes > 0 ? Walk(ask.asks, totes, units, feeBps, true) : std::nullopt;
+		const std::optional<Walked> sale =
+		    buy ? Walk(bid.bids, totes, units, feeBps, false) : std::nullopt;
+		const std::optional<std::int64_t> perTote =
+		    sale ? Trade::PerTote(buy->limit, units, feeBps) : std::nullopt;
+		if (!perTote || *perTote <= 0 ||
+		    totes > static_cast<std::uint64_t>((balance - charges) / *perTote))
+			continue;
+		const std::int64_t estimate = sale->total - buy->total - charges;
+		if (best && (estimate < best->estimate || (estimate == best->estimate && totes >= best->totes)))
+			continue;
+		best = Deal{itemId, {}, {}, totes, estimate, buy->limit};
+	}
+	return best;
 }
 
 
@@ -371,6 +426,37 @@ std::pair<std::int64_t, std::int64_t> Floor(const World::Job &job, const World::
 	const std::int64_t whole = Added(Added(job.cost, job.charges), policy.targetProfit);
 	const std::int64_t left = std::max<std::int64_t>(0, policy.lossAllowance - job.allowanceSpent);
 	return {whole - left, whole};
+}
+
+
+// The limit a sale of the lot walks the bids to (D-102): the lowest bid level the sale can reach with
+// what it sells to there recovering its share of the least, and never above the uniform limit at
+// which every tote does. None where that is none.
+std::optional<std::int64_t> WalkLimit(
+    const World::Line *pBid, std::int64_t least, std::uint64_t totes, double units, int feeBps)
+{
+	std::optional<std::int64_t> limit = SellLimit(least, totes, units, feeBps);
+	if (!limit || !pBid)
+		return limit;
+	std::uint64_t sold = 0;
+	std::int64_t proceeds = 0;
+	for (const World::Level &level : pBid->bids)
+	{
+		if (sold == totes)
+			break;
+		const std::uint64_t taken = std::min(totes - sold, level.totes);
+		const std::optional<std::int64_t> each =
+		    Proceeds(level.price, units * static_cast<double>(taken), feeBps);
+		if (!each || *each > kMaxCredits - proceeds)
+			break;
+		sold += taken;
+		proceeds += *each;
+		// As SellLimit allows for, a credit and a half a fill rounding can take.
+		const auto fills = static_cast<std::int64_t>(std::min<std::uint64_t>(sold, Trade::kMaxFills));
+		if (level.price < *limit && 2 * proceeds - 3 * fills >= 2 * Share(least, sold, totes))
+			limit = level.price;
+	}
+	return limit;
 }
 
 
@@ -387,12 +473,12 @@ std::optional<Deal> ChooseTrade(const Context &context)
 		for (const auto &[itemId, units] : context.rules.items)
 		{
 			const World::Line *pAsk = LineOf(reports, sourceId, itemId);
-			if (!pAsk || pAsk->ask <= 0 || pAsk->askTotes == 0)
+			if (!pAsk || pAsk->asks.empty())
 				continue;
 			for (const std::string &destinationId : context.rules.venues)
 			{
 				const World::Line *pBid = LineOf(reports, destinationId, itemId);
-				if (destinationId == sourceId || !pBid || pBid->bid <= 0 || pBid->bidTotes == 0)
+				if (destinationId == sourceId || !pBid || pBid->bids.empty())
 					continue;
 				const std::int64_t charges = Charges(
 				    context.Registry(), context.rules.identities, context.rules.content, context.ship,
@@ -428,19 +514,25 @@ std::optional<std::string> ChooseDestination(const Context &context)
 	for (const std::string &venueId : context.rules.venues)
 	{
 		const World::Line *pBid = LineOf(context.Reports(), venueId, job.itemId);
-		if (!pBid || pBid->bid <= 0 || pBid->bidTotes == 0)
+		if (!pBid || pBid->bids.empty())
 			continue;
 		const std::int64_t charges = Charges(
 		    context.Registry(), context.rules.identities, context.rules.content, context.ship, {},
 		    venueId);
-		const std::optional<std::int64_t> limit = SellLimit(
-		    Added(Floor(job, context.Policy()).first, charges), job.totes, units, context.rules.feeBps);
-		const std::optional<std::int64_t> proceeds = Proceeds(
-		    pBid->bid, units * static_cast<double>(std::min(pBid->bidTotes, job.totes)),
+		const std::optional<std::int64_t> limit = WalkLimit(
+		    pBid, Added(Floor(job, context.Policy()).first, charges), job.totes, units,
 		    context.rules.feeBps);
-		if (!limit || pBid->bid < *limit || !proceeds)
+		if (!limit || pBid->Bid() < *limit)
 			continue;
-		const std::int64_t estimate = *proceeds - charges;
+		// The bids at the limit or above, as far as the lot goes.
+		std::uint64_t sellable = 0;
+		for (const World::Level &level : pBid->bids)
+			sellable += level.price >= *limit ? level.totes : 0;
+		const std::optional<Walked> sale =
+		    Walk(pBid->bids, std::min(sellable, job.totes), units, context.rules.feeBps, false);
+		if (!sale)
+			continue;
+		const std::int64_t estimate = sale->total - charges;
 		if (best &&
 		    (estimate < bestEstimate ||
 		     (estimate == bestEstimate && (record.dockedAt != venueId || record.dockedAt == *best))))
@@ -495,8 +587,9 @@ bool Choose(const Context &context)
 }
 
 
-// Docked at the source: the trade estimated again on the live ask, and if it is still above the
-// target, a buy at that ask whose rest is cancelled, everything bought loaded, and the journey on.
+// Docked at the source: the trade estimated again on the live asks, and if it is still above the
+// target, a buy walking them to its limit whose rest is cancelled, everything bought loaded, and the
+// journey on.
 void Buy(const Context &context)
 {
 	World::Job &job = context.Job();
@@ -508,9 +601,8 @@ void Buy(const Context &context)
 	    job.destinationId);
 	const std::int64_t before = context.Balance();
 	const std::optional<Deal> trade =
-	    pAsk && pBid && pAsk->ask > 0 && pBid->bid > 0
-	        ? Estimate(context, job.itemId, *pAsk, *pBid, charges, before, context.FreeHold())
-	        : std::nullopt;
+	    pAsk && pBid ? Estimate(context, job.itemId, *pAsk, *pBid, charges, before, context.FreeHold())
+	                 : std::nullopt;
 	if (!trade || trade->estimate <= context.Policy().targetProfit)
 	{
 		job = World::Job{};
@@ -520,7 +612,7 @@ void Buy(const Context &context)
 	const std::uint64_t held = context.Available(job.sourceId, job.itemId);
 	(void)context.Act(
 	    Trade::kPlace, Trade::kVersion,
-	    Trade::Place{job.sourceId, job.itemId, World::Side::Buy, trade->totes, pAsk->ask});
+	    Trade::Place{job.sourceId, job.itemId, World::Side::Buy, trade->totes, trade->limit});
 	context.CancelRest(job.sourceId, job.itemId);
 	const std::uint64_t bought = context.Available(job.sourceId, job.itemId) - held;
 	if (bought == 0)
@@ -540,7 +632,7 @@ void Buy(const Context &context)
 }
 
 
-// Docked at the destination: the lot unloaded and offered at its sell limit, the rest cancelled and
+// Docked at the destination: the lot unloaded and offered at its walk limit, the rest cancelled and
 // loaded back, and what was sold taking its share of the lot's cost and charges, any shortfall below
 // its share of the whole floor spending the allowance.
 void Sell(const Context &context)
@@ -549,8 +641,9 @@ void Sell(const Context &context)
 	const World::Policy &policy = context.Policy();
 	const std::string venueId = context.Record().dockedAt;
 	const auto [least, whole] = Floor(job, policy);
-	const std::optional<std::int64_t> limit =
-	    SellLimit(least, job.totes, context.UnitsPerTote(job.itemId), context.rules.feeBps);
+	const std::optional<std::int64_t> limit = WalkLimit(
+	    LineOf(context.Reports(), venueId, job.itemId), least, job.totes,
+	    context.UnitsPerTote(job.itemId), context.rules.feeBps);
 	if (!limit)
 		return context.Block(World::Blockage::NoTrade);
 	if (context.Act(
