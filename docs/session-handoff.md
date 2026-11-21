@@ -4,9 +4,9 @@
 
 W19 is done: [supply and demand pricing](stage-4-trading-plan.md#delivered-w19-2026-11-22), on
 [D-102](decision-ledger.md#d-102), pin `f14c288` with no engine edit. The user then booked fuel
-burn ([D-107](decision-ledger.md#d-107)) as W21, at high priority. Next: W21, its fuel, burn and
-refuelling planned with the user first ([small-ship plan](small-trader-and-docking-plan.md#fuel-burn-and-the-speed-of-a-run-selected-2026-11-22));
-then W12, competitive procurement on the
+burn ([D-107](decision-ledger.md#d-107)) as W21, at high priority. Next: W21, on the
+[W21 plan](stage-4-trading-plan.md#w21-plan), its choices settled with the user; slice 1 is the
+Jettison coast phase. Then W12, competitive procurement on the
 [tender contract](stage-4-trading-plan.md#tender-contract-w11-2026-11-21), its AI issuer spending
 `Trade::Budget` and calling `Trade::Reliefs`. A commit is gated in
 the second checkout, `build/gate-tree`, with `--tidy`, editing alone beside it

@@ -1361,6 +1361,85 @@ Slices, each a commit with its suites:
    work out the market's rules again on each call, as `Quote` does (a `shortcut:` comment), for W12
    to keep if a profile shows it; water's drift is the balance's.
 
+## W21 plan
+
+Fuel burn, on [D-107](decision-ledger.md#d-107) (the user's, 2026-11-22), booked at high priority
+ahead of W12, its choices settled with the user as it was planned (2026-11-22): a new drive fuel of
+the ships' own, burned faster the harder a drive accelerates and the heavier the ship and its cargo;
+a slow run coasts; stations refuel a ship automatically, as they connect its life support, while its
+owner allows it and its funds last; and a standing policy picks the burn that makes the most an hour
+unless its owner fixes one. Every number below is a starting point (mine, the user's to review). One
+engine provision: the coast phase.
+
+- **The drive fuel.** `ItemDriveFuel`, "Drive fuel", `CategoryFuels`, of the Space Age, by the
+  kilogram: 800 kg to the cubic metre and a pack factor of 0.9, 90 kg a tote, at 8 credits a kg.
+  It is the ships' alone; LPG stays the planets' cooking and vehicle fuel. Every station venue of the
+  scenarios makes it, about a tote a day, its broker seeded with about ten days, so it is priced by
+  D-102's curve like any good.
+- **Tanks.** A ship's saved `World::Fuel` holds the kilograms aboard, up to its hull's
+  `FuelCapacity` (tonnes; `FuelBunkers` adds to it): the lone-trader starter's 0.8 t, provisioned
+  full once, as its oxygen is. A save is refused for fuel below 0, not a number, or past the tanks.
+- **The coast (Jettison).** `Space::CruiseProfile` gains an optional `sustainedSeconds`, the
+  sustained acceleration's seconds of the whole cruise, half at each end after the boost's, the ship
+  coasting between; none is today's profile, sustained through the middle, and saves as before.
+  `CruiseSeconds` and `CruiseCovered` take the coast in closed form, and `CheckCruiseDrive`
+  refuses negative or non-finite seconds and a profile that reaches no speed to coast at. A generic
+  burn-coast-burn any space game can use, accepted in the space suite and by the sample's drive.
+- **The burn.** A journey's burn is a share of the leg's full speed change (`burnBps`, 1 to 10,000).
+  The full burn is the mode's profile, as now; a share spends the boost first, then the sustained
+  acceleration, for that share of the speed change, and coasts. Ore to Brine, 396 million km, manned
+  (2 g for 4 h, then 1 g): 100% 4.5 days and 3,946 km/s, 50% 5.7 days, 25% 9.7, 12.5% 18.8; a local
+  trip across a planet's orbit, 42,000 km, 49 minutes and 57 km/s at full burn, 1.7 hours at 25%.
+- **Fuel burned.** `fuel.kilogramsPerTonneKms` (0.005) times the ship's mass in tonnes times the
+  leg's speed change in km/s, rounded up: fuel flows at the acceleration times the mass, so a harder
+  burn empties the tanks faster and a heavier ship or cargo burns more. The mass is the hull's
+  `mass` and its cargo's, each tote its units times the item's density over its units per cubic
+  metre (copper's 0.95 t), taken as the leg starts. The starter with two totes of copper burns 432 kg
+  to Brine at full burn, about 3,500 credits, and 108 kg at 25%; with its hold full of copper, 172 t,
+  3,390 kg and 850 kg, past its tanks, so a heavy cheap cargo goes slow and a light dear one fast.
+  The fuel's own mass is left out, a first-order rocket equation, exact in integers.
+- **The journey.** `Manifest.Travel.Travel` takes `burnBps` (version 2; a version-1 command flies
+  the full burn). It sets the ship's drive profile for the burn, works out the leg's fuel from the
+  distance between the stations now, and takes it from the tanks as the journey starts; refused
+  `InsufficientFuel`, a new result, for a leg the tanks cannot finish after refuelling. A ship with
+  no profile (Astralis, and the fixtures' power-law ships) burns none.
+- **Refuelling.** A ship's `World::Refuel` flag, on by default, set by its owner's
+  `Manifest.Company.SetRefuel` (`shipId`, `enabled`; the client's checkbox). As a journey starts
+  from a venue, a ship with it on first buys, at the venue's live asks through its book, the whole
+  totes of drive fuel its tanks have room for, as far as its company's account holds after the
+  docking fee, straight into its tanks, as a station connects life support without the hold. With it
+  off a ship refuels by nothing yet, so its owner chooses when and where to pay.
+- **The lot's charge.** The fuel a leg burns is charged to the lot aboard at the company's last price
+  for it (`World::Paid`), rounded up, as transit life support is (W18).
+- **Estimates and the policy.** `Policy::Charges` adds each leg's fuel at a burn, at the reported
+  ask of the venue the ship refuels at, the last price paid where it has none, and its life support
+  for the burn's longer cruise. `Manifest.Policy.Set` takes `burnBps` (version 2): 0, the default,
+  chooses; otherwise every leg flies that share. Choosing, the policy prices each trade at each of
+  `fuel.burnShares` (100%, 50%, 25% and 12.5%) whose legs the tanks can finish, and takes the most
+  an hour: the estimate over the legs' cruise hours, each leg's `fuel.legAllowanceSeconds` (1,800,
+  for leaving and docking) added; its target profit still bounds a job's estimate. Choosing per hour
+  changes which job a policy takes, so the policy's tests and the pinned hashes move.
+- **What it changes.** Travel, the company's provisioning and the policy's estimates; the saves' ship
+  state and the drive's profile. The fixtures' ships fly the power law and burn nothing, so their
+  trades stand; each moved pin is shown to be bytes, then the fuel and refuel state.
+
+Slices, each a commit with its suites, the gate after the third and the last:
+
+1. Jettison: the coast phase, its times, covered metres and refusals, a world saved mid-coast; the
+   pin moved in Manifest, every Manifest pin held.
+2. The drive fuel and the tanks: the item, the stations making it, `World::Fuel`, provisioning and
+   saves (`content`, `data`, `company`).
+3. The burn: `Travel`'s `burnBps`, the profile for a share, fuel burned by mass and speed change,
+   `InsufficientFuel`; refuelling and `SetRefuel`, the account short and the flag off (`travel`,
+   `company`).
+4. The policy: the lot's charge, the estimate at a burn and the choice per hour, a fixed share
+   (`policy`), the pins moved and why.
+5. The fixture, on the manned profile: Ore to Brine with two totes of copper and with a full hold, the
+   policy flying the light lot faster and the heavy one slower, each its fuel and time, refuelled as
+   it leaves, a leg refused with refuelling off and the tanks short, a save mid-coast, and
+   fast-forwarded to the bytes stepping leaves.
+6. Close-out.
+
 ## Handoff to stage 5
 
 Carry forward the exact scheduler order, command/result schema, content manifest,

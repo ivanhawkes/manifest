@@ -114,24 +114,13 @@ and replaced.
 The user's (2026-11-22), [D-107](decision-ledger.md#d-107), booked as W21 at high priority, next
 after W19 and before W12: a ship's drive burns fuel to accelerate, and how hard it burns is a choice
 in planning a route. Burning more arrives sooner, so a ship trades more often; burning less spends
-less fuel and may make a run more profitable, offset by the longer cruise and so fewer runs. Today
-a cruise burns nothing: its time is Jettison's `CruiseDrive` profile (W17, D-090), and a hull's
-`FuelCapacity` and the `SkillShipFuelBunkers` upgrade are authored but read by nothing. Open for
-W21's planning:
-
-- **The fuel.** An item of the Fuels category bought at a venue, LPG or a drive fuel of its own,
-  held in tanks of the hull's `FuelCapacity` and refuelled as oxygen is (D-094).
-- **The burn.** Fuel as a function of a leg's acceleration and burn time and the ship's mass with
-  its cargo, so a faster leg costs more than in proportion; whether Jettison's `CruiseDrive` gives a
-  leg's burn with its time, an engine provision if not. The manned 2 g and 1 g and the unmanned 12 g
-  (D-090) bound it.
-- **The choice.** A journey's burn, set by the player's `Travel` and by a standing policy, which
-  picks it for the most profit an hour: fuel against time, with transit life support (W18) rising as
-  a cruise lengthens.
-- **The charge.** Fuel burned charged to the lot as transit life support is, in its estimate and
-  floor.
-- **Running dry.** A leg the tanks cannot finish refused before departure, a reserve kept, and what
-  a ship that runs dry does.
+less fuel and may make a run more profitable, offset by the longer cruise and so fewer runs. The
+fuel is a drive fuel of the ships' own (LPG stays the planets' cooking and vehicle fuel), burned
+faster the harder the drive accelerates and the heavier the ship and its cargo; a slow run coasts
+between its burns; a station refuels a ship automatically, as it connects its life support, while
+its owner allows it and its funds last; and a standing policy picks the burn that makes the most an
+hour unless its owner fixes one (the user's, as W21 was planned). The mechanism and its numbers are
+the [W21 plan](stage-4-trading-plan.md#w21-plan).
 
 ## Compact ship and matching dock requirements
 
