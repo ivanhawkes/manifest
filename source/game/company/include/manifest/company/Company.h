@@ -88,7 +88,8 @@ inline constexpr std::string_view kLifeSupportSystem = "manifest.lifeSupport";
 // The system after it that charges the berth fee (D-097): as each simulation hour's last step ends,
 // each ship docked then, in entity order, pays its World::Arrears and its venue's World::Fees
 // berthPerHour from its company's account to its venue's, as far as the one holds and the other has
-// room, what is left owed carried as its arrears. As each day's last step ends, first, the arrears
+// room, what is left owed carried as its arrears, the fee added to the charges of the lot its
+// World::Job has aboard. As each day's last step ends, first, the arrears
 // grow by a day's interest at the venue's arrearsRateBps, at most the tuning's usury limit.
 inline constexpr std::string_view kBerthSystem = "manifest.berths";
 inline constexpr std::uint32_t kVersion = 1;

@@ -463,7 +463,10 @@ enum class Blockage
 	// No known trade estimates above the target, or none for the lot aboard clears its floor.
 	NoTrade,
 	// A journey of the job's failed, its ship left where it is with its cargo.
-	JourneyFailed
+	JourneyFailed,
+	// A command of the job's was refused: a journey its company could not pay for, or goods it could
+	// not move.
+	Refused
 };
 
 // A ship's standing job, beside its Policy: what it trades, from where to where, and the lot it
@@ -480,6 +483,8 @@ struct Job
 	std::int64_t cost{0};
 	std::int64_t charges{0};
 	std::int64_t allowanceSpent{0};
+	// What its trade was estimated to make after charges when it was chosen, whole credits; 0 before.
+	std::int64_t estimate{0};
 	Blockage blockage{Blockage::None};
 	// The step it first blocked at, of this blockage, and the step it reconsiders at.
 	std::uint64_t blockedSince{0};

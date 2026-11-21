@@ -235,6 +235,9 @@ std::shared_ptr<const Rules> MakeRules(
 }
 
 
+} // namespace
+
+
 // ─── Money ───
 // The market price rules (docs/market-prices.md), over totes (D-083, D-087).
 
@@ -273,6 +276,10 @@ std::optional<std::int64_t> PerTote(std::int64_t limit, double unitsPerTote, int
 		return std::nullopt;
 	return *cost + *fee;
 }
+
+
+namespace
+{
 
 
 // Copies of what one unit of work changes, written back together by Commit: everything a command or

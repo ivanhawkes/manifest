@@ -29,6 +29,9 @@ struct ShipView
 	// its company has bought for it.
 	std::uint64_t hold{0};
 	std::vector<World::Fitting> systems{};
+	// Its standing policy and its job (D-097), none before its owner first sets one.
+	std::optional<World::Policy> policy{};
+	std::optional<World::Job> job{};
 
 	bool operator==(const ShipView &) const = default;
 };

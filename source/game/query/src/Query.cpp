@@ -6,6 +6,15 @@
 
 namespace Manifest::Query
 {
+namespace
+{
+template <typename T> std::optional<T> Copied(const T *pValue)
+{
+	return pValue ? std::optional<T>{*pValue} : std::nullopt;
+}
+} // namespace
+
+
 Snapshot Observe(
     const Jettison::Sim::SimWorld &world, const World::Identities &identities,
     const Command::Actor &actor)
@@ -43,7 +52,9 @@ Snapshot Observe(
 			    {identity.id, ship.hullId, ship.dockedAt, cargo.lots,
 			     pJourney ? std::optional{*pJourney} : std::nullopt, cargo.opened,
 			     registry.get<World::LifeSupport>(entity), identities.Hold(ship, pSystems).value_or(0),
-			     pSystems ? pSystems->fitted : std::vector<World::Fitting>{}});
+			     pSystems ? pSystems->fitted : std::vector<World::Fitting>{},
+			     Copied(registry.try_get<World::Policy>(entity)),
+			     Copied(registry.try_get<World::Job>(entity))});
 		}
 	}
 	for (const auto &[entity, identity, order] :

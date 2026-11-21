@@ -605,6 +605,9 @@ void Berth(SimWorld &world, const Rules &rules)
 		const std::int64_t paid = std::min({due, account.balance, kMaxCredits - venue.balance});
 		account.balance -= paid;
 		venue.balance += paid;
+		// The hour's fee is a holding charge of the lot a standing job has aboard (D-097).
+		if (auto *pJob = registry.try_get<World::Job>(ship); pJob && pJob->totes > 0)
+			pJob->charges += std::min(fee, kMaxCredits - pJob->charges);
 		if (due > paid)
 			registry.emplace_or_replace<World::Arrears>(ship, due - paid, arrears.carry);
 		else
@@ -752,7 +755,7 @@ void RegisterCommands(
 	    {.name = std::string{kBerthSystem},
 	     .phase = Jettison::Ecs::TickPhase::Simulation,
 	     .access = Jettison::Ecs::Access::Of<World::Ship, World::Fees, World::Arrears, World::Account>()
-	                   .Writing<World::Account, World::Arrears>(),
+	                   .Writing<World::Account, World::Arrears, World::Job>(),
 	     .after = {std::string{kLifeSupportSystem}},
 	     .run = [rules, &world](entt::registry &, double) { Berth(world, *rules); }},
 	    {.next = [rules](const SimWorld &target) { return BerthNext(target, *rules); }});

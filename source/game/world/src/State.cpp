@@ -436,7 +436,8 @@ void RegisterTypes()
 		RegisterEnum<Blockage>("Manifest.World.Blockage")
 		    .Value<Blockage::None>("None")
 		    .Value<Blockage::NoTrade>("NoTrade")
-		    .Value<Blockage::JourneyFailed>("JourneyFailed");
+		    .Value<Blockage::JourneyFailed>("JourneyFailed")
+		    .Value<Blockage::Refused>("Refused");
 		RegisterType<Job>("Manifest.World.Job")
 		    .Field<&Job::phase>("phase", kSaved)
 		    .Field<&Job::itemId>("itemId", kSaved)
@@ -446,6 +447,7 @@ void RegisterTypes()
 		    .Field<&Job::cost>("cost", kSaved)
 		    .Field<&Job::charges>("charges", kSaved)
 		    .Field<&Job::allowanceSpent>("allowanceSpent", kSaved)
+		    .Field<&Job::estimate>("estimate", kSaved)
 		    .Field<&Job::blockage>("blockage", kSaved)
 		    .Field<&Job::blockedSince>("blockedSince", kSaved)
 		    .Field<&Job::retry>("retry", kSaved);

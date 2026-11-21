@@ -8,6 +8,7 @@ manifest_add_module(host
 		travel
 		company
 		trade
+		policy
 	HEADERS
 		include/manifest/host/Start.h
 	SOURCES

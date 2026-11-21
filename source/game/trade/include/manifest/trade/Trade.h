@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -62,6 +63,15 @@ inline constexpr std::string_view kBrokers = "manifest.brokers";
 // the step ends; a report no ship refreshes stays as it was (docs/market-information-plan.md,
 // "Observation timing").
 inline constexpr std::string_view kObserve = "manifest.observe";
+
+// The market price rules (docs/market-prices.md), in whole credits, none for an amount the ledger
+// cannot hold. Fee is a gross's listing fee at the rate in basis points, rounded up; Cost a count of an
+// item's units at a price, raw microcredits per unit, rounded up or to the nearest, as a fill's gross
+// is; and PerTote what a buy order at the limit holds in escrow for each tote, a tote's cost rounded
+// up and its fee.
+std::optional<std::int64_t> Fee(std::int64_t gross, int feeBps);
+std::optional<std::int64_t> Cost(std::int64_t price, double units, bool roundUp);
+std::optional<std::int64_t> PerTote(std::int64_t limit, double unitsPerTote, int feeBps);
 
 // The payloads, with Reflect. Safe to call again.
 void RegisterTypes();

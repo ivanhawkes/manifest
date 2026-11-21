@@ -983,8 +983,10 @@ Standing trade policies, autopilot and NPC jobs, on [D-097](decision-ledger.md#d
   taken first at the next hour and all of it before the ship leaves; arrears compound daily at the
   venue's rate, 10% a year by default, never above the usury limit of 35% a year (D-098). The estimate's charges are one function's, `Policy::Charges`: the
   destination's docking fee, and the source's if the ship must fly there first. A lot keeps the
-  charges attributed to it as they fall (`charges`, whole credits: its journeys' docking fees and
-  its berth hours), and its sale floor recovers them with its cost. Their real amounts and bases,
+  charges attributed to it as they fall once it is bought (`charges`, whole credits: its journeys'
+  docking fees and the berth fees of the hours it is aboard), and its sale floor recovers them with
+  its cost; the source's docking fee is the estimate's alone, and a failed journey's fee is not
+  refunded (W18's). Their real amounts and bases,
   warehouse storage, tolls and the life support used in transit are
   [W18](delivery-order.md#priority-5-stage-4-trading-automation-and-regional-development)'s. The
   highest estimate wins, then a source the ship is docked at, then the scenario's order of source,
@@ -995,12 +997,15 @@ Standing trade policies, autopilot and NPC jobs, on [D-097](decision-ledger.md#d
   bought loaded. **Selling**, docked at the destination: the lot unloaded and offered at the lowest
   limit whose fills, however the book splits them in up to `kMaxFills`, net the floor's share of the
   totes sold (each fill's nearest-credit gross and rounded-up fee may cost 1.5 credits against one
-  price); the rest cancelled, a shortfall spending the allowance, and what is unsold loaded back.
+  price; `Policy::SellLimit`); the rest cancelled, a shortfall below the sale's share of the whole
+  floor spending at most the allowance left, and what is unsold loaded back.
   Partial sales share the lot's cost proportionally, rounded up, the last taking the rest.
-- **Blocked.** It keeps its cargo and reconsiders at the economic turn's step (every 60 simulation
-  seconds, after the requote) or the step after a ship of its owner's docks, a new live report.
-  Its reason, first-blocked step and the lot's charges so far are the player's to see through the
-  query and on reconnect.
+- **Blocked.** It keeps its cargo and reconsiders at the next economic turn's last step (every 60
+  simulation seconds, after the requote), no sooner, since a turn is a minute: no wake on an owner's
+  docking. Its reason (`NoTrade`, `JourneyFailed`, or `Refused` for a journey it could not pay
+  for or goods it could not move), the step it first blocked at (kept across retries that change
+  nothing), the lot's charges so far and the chosen trade's `estimate` are the player's to see
+  through the query's ship view and on reconnect.
 - **NPC jobs.** A scenario's `traders` name NPC principals and their companies, provisioned in the
   initial state through `Company::Provision` at the starter venue, each ship given an enabled policy,
   their principals marked `World::Npc`, for which `manifest-token` issues no token. They read

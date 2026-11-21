@@ -16,6 +16,7 @@
 
 #include <manifest/command/Requests.h>
 #include <manifest/company/Company.h>
+#include <manifest/policy/Policy.h>
 #include <manifest/trade/Trade.h>
 #include <manifest/travel/Travel.h>
 #include <manifest/world/World.h>
@@ -88,6 +89,7 @@ class Game final : public Jettison::Host::Game
 		Travel::RegisterTypes();
 		Company::RegisterTypes();
 		Trade::RegisterTypes();
+		Policy::RegisterTypes();
 	}
 
 
@@ -108,6 +110,7 @@ class Game final : public Jettison::Host::Game
 		m_pFleet = &Travel::Register(world, *m_pRequests, *m_pIdentities, m_content);
 		Company::RegisterCommands(world, *m_pRequests, *m_pIdentities, *m_pFleet, m_content);
 		Trade::Register(world, *m_pRequests, *m_pIdentities, m_content);
+		Policy::Register(world, *m_pRequests, *m_pIdentities, m_content);
 	}
 
 
