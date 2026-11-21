@@ -21,6 +21,7 @@
 #include <jettison/reflect/Reflect.h>
 #include <jettison/sim/SimWorld.h>
 
+#include <manifest/content/Content.h>
 #include <manifest/effects/ShipEffectEngine.h>
 #include <manifest/trade/Trade.h>
 #include <manifest/world/State.h>
@@ -590,7 +591,19 @@ void Berth(SimWorld &world, const Rules &rules)
 		const entt::entity market = rules.identities.Find(Kind::Market, record.dockedAt);
 		JETTISON_VERIFY(market != entt::null);
 		const World::Fees &fees = registry.get<const World::Fees>(market);
-		const std::int64_t fee = fees.berthPerHour;
+		const World::ClassFees *pClass =
+		    World::Find(fees, Content::FeeClass(rules.content, record.hullId));
+		JETTISON_VERIFY(pClass != nullptr);
+		// The occupants' share while the venue's life support keeps them (D-047, D-100).
+		const auto *pSupport = registry.try_get<const World::LifeSupport>(ship);
+		const std::int64_t occupants = pSupport && pSupport->connectedTo == record.dockedAt
+		                                   ? rules.hulls.at(record.hullId)->occupants.value_or(0)
+		                                   : 0;
+		const std::int64_t share =
+		    occupants == 0 ? 0
+		                   : std::min(fees.berthPerOccupantHour, kMaxCredits / occupants) * occupants;
+		const std::int64_t fee =
+		    pClass->berthPerHour + std::min(share, kMaxCredits - pClass->berthPerHour);
 		const auto *pArrears = registry.try_get<const World::Arrears>(ship);
 		World::Arrears arrears = pArrears ? *pArrears : World::Arrears{};
 		if (dayEnds)
@@ -754,7 +767,8 @@ void RegisterCommands(
 	world.RegisterSystem(
 	    {.name = std::string{kBerthSystem},
 	     .phase = Jettison::Ecs::TickPhase::Simulation,
-	     .access = Jettison::Ecs::Access::Of<World::Ship, World::Fees, World::Arrears, World::Account>()
+	     .access = Jettison::Ecs::Access::Of<
+	                   World::Ship, World::Fees, World::Arrears, World::Account, World::LifeSupport>()
 	                   .Writing<World::Account, World::Arrears, World::Job>(),
 	     .after = {std::string{kLifeSupportSystem}},
 	     .run = [rules, &world](entt::registry &, double) { Berth(world, *rules); }},

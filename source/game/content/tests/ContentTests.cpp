@@ -376,11 +376,26 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	CheckRefused(
 	    balance, "version: 1\nmarket: {listingFeeBps: 10001}\n",
 	    "market.listingFeeBps must be in [0, 10000]");
+	const auto classes = [](std::string_view skiff)
+	{
+		return std::format(
+		    "version: 1\ncharges:\n  padClasses:\n    - {}\n    - {{padClass: corvette}}\n"
+		    "    - {{padClass: frigate}}\n    - {{padClass: destroyer}}\n    - {{padClass: cruiser}}\n",
+		    skiff);
+	};
+	CheckRefused(balance, classes("{padClass: skiff, dockingFee: -1}"), "'skiff' has a fee below 0");
 	CheckRefused(
-	    balance, "version: 1\ncharges: {dockingFee: -1}\n", "charges.dockingFee must not be below 0");
+	    balance, classes("{padClass: skiff, berthFeePerHour: -1}"), "'skiff' has a fee below 0");
+	CheckRefused(balance, classes("{padClass: dinghy}"), "'dinghy' names no pad class");
+	CheckRefused(balance, classes("{padClass: corvette}"), "'corvette' is charged twice");
 	CheckRefused(
-	    balance, "version: 1\ncharges: {berthFeePerHour: -1}\n",
-	    "charges.berthFeePerHour must not be below 0");
+	    balance,
+	    "version: 1\ncharges:\n  padClasses: [{padClass: corvette}, {padClass: frigate}, "
+	    "{padClass: destroyer}, {padClass: cruiser}]\n",
+	    "pad class 'skiff' has no fees");
+	CheckRefused(
+	    balance, "version: 1\ncharges: {berthFeePerOccupantHour: -1}\n",
+	    "charges.berthFeePerOccupantHour must not be below 0");
 	CheckRefused(
 	    balance, "version: 1\ncharges: {arrearsRateBps: 3501}\n",
 	    "charges.arrearsRateBps must be in [0, charges.maxArrearsRateBps]");
@@ -927,7 +942,9 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	      "version: 1\ndisplayName: Tender dock\ndecks: [{centre: [0, 0, 0], size: [40, 10, 40]}]\n"
 	      "pads: [{class: tender, position: [0, 5, 0]}]\n"},
 	     {trading, "version: 1\nvenues: !merge=venueId\n  - {venueId: VenueOreHighport, layout: "
-	               "tender-dock}\n"}},
+	               "tender-dock}\n"},
+	     {"manifest/definitions/tuning/balance.patch.yaml",
+	      "version: 1\ncharges: {padClasses: !append [{padClass: tender}]}\n"}},
 	    kNotStarter);
 	// The scenario's traders take a pad and a connection each and leave a player one: four leave the
 	// starter's four connections none.

@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <manifest/content/Definitions.h>
@@ -405,15 +406,29 @@ struct Reports
 // A yearly rate in basis points over a day of it: interest on arrears is owed * rate / kRateYear a day.
 inline constexpr std::int64_t kRateYear = 10'000LL * 365;
 
-// A venue's posted charges (D-097, D-098), on its Market, in whole credits, each at least 0: its
-// operator's to set, each venue's the tuning's charges in the initial state. A change applies to the
-// next charge, never to one paid.
-struct Fees
+// What a venue charges ships of one fee class (Content::FeeClass), in whole credits, each at least 0.
+struct ClassFees
 {
+	// The Dock.PadClass, by record name.
+	std::string padClass;
 	// Paid to the venue as a journey to it starts (Travel::Travel).
 	std::int64_t docking{0};
 	// Paid by each ship docked at the venue as each simulation hour ends.
 	std::int64_t berthPerHour{0};
+
+	bool operator==(const ClassFees &) const = default;
+};
+
+// A venue's posted charges (D-097, D-098, D-100), on its Market, in whole credits, each at least 0: its
+// operator's to set, each venue's the tuning's charges in the initial state. A change applies to the
+// next charge, never to one paid.
+struct Fees
+{
+	// By pad class, in name order, each named once.
+	std::vector<ClassFees> classes;
+	// Paid with the hour's berth fee for each occupant of a docked ship connected to the venue's life
+	// support (D-047).
+	std::int64_t berthPerOccupantHour{0};
 	// The yearly interest on arrears owed to the venue, in basis points, compounded daily, at most
 	// the tuning's usury limit as it is charged.
 	int arrearsRateBps{0};
@@ -515,6 +530,9 @@ std::optional<std::string> Broken(const Sales &sales);
 std::optional<std::string> Broken(const Reports &reports);
 
 std::optional<std::string> Broken(const Fees &fees);
+
+// The venue's fees for the fee class; null for a class it posts none for.
+const ClassFees *Find(const Fees &fees, std::string_view padClass);
 
 std::optional<std::string> Broken(const Arrears &arrears);
 

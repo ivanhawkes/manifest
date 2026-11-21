@@ -163,14 +163,27 @@ struct MarketTuning
 	double salesWindowSeconds{0.0};
 };
 
-// What each venue charges as the initial state opens it (D-097, D-098), in whole credits, each at
-// least 0: its operator's to change, nominal until W18 selects them.
-struct ChargesTuning
+// What each venue charges ships of one fee class, the smallest pad class a hull fits (FeeClass), as
+// the initial state opens it, in whole credits, each at least 0.
+struct ClassChargesTuning
 {
+	// The Dock.PadClass, by record name.
+	std::string padClass;
 	// Paid to the destination as a journey to it starts.
 	std::int64_t dockingFee{0};
 	// Paid by each ship docked at the venue as each simulation hour ends.
 	std::int64_t berthFeePerHour{0};
+};
+
+// What each venue charges as the initial state opens it (D-097, D-098, D-100), in whole credits, each
+// at least 0: its operator's to change.
+struct ChargesTuning
+{
+	// One for each pad class the content defines.
+	std::vector<ClassChargesTuning> padClasses;
+	// Paid with the hour's berth fee for each occupant of a docked ship connected to the venue's life
+	// support (D-047).
+	std::int64_t berthFeePerOccupantHour{0};
 	// The yearly interest on a ship's arrears to the venue, in basis points, compounded daily.
 	int arrearsRateBps{0};
 	// The most any venue may charge, the game's usury limit, at most 1,000,000: arrearsRateBps is at

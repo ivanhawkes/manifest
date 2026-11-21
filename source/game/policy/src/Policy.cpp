@@ -44,6 +44,7 @@ struct Rules
 {
 	Command::Requests &requests;
 	World::Identities &identities;
+	const Content::ContentSet &content;
 	// The scenario's venues and items, in its order, each item the count of its units a tote holds.
 	std::vector<std::string> venues;
 	std::vector<std::pair<std::string, double>> items;
@@ -77,6 +78,19 @@ entt::entity Required(const World::Identities &identities, Kind kind, const std:
 	const entt::entity entity = identities.Find(kind, id);
 	JETTISON_VERIFY(entity != entt::null);
 	return entity;
+}
+
+
+// The venue's docking fee as posted now for the ship's fee class (D-100).
+std::int64_t DockingFee(
+    const entt::registry &registry, const World::Identities &identities,
+    const Content::ContentSet &content, const World::Ship &ship, std::string_view venueId)
+{
+	const World::ClassFees *pFees = World::Find(
+	    registry.get<const World::Fees>(Required(identities, Kind::Market, std::string{venueId})),
+	    Content::FeeClass(content, ship.hullId));
+	JETTISON_VERIFY(pFees != nullptr);
+	return pFees->docking;
 }
 
 
@@ -251,9 +265,7 @@ struct Context
 	void Go(const std::string &venueId, Phase phase) const
 	{
 		const std::int64_t fee =
-		    Registry()
-		        .get<const World::Fees>(Required(rules.identities, Kind::Market, venueId))
-		        .docking;
+		    DockingFee(Registry(), rules.identities, rules.content, Record(), venueId);
 		if (Act(Travel::kTravel, Travel::kVersion, Travel::Travel{shipId, venueId}) !=
 		    Result::Succeeded)
 			return Block(World::Blockage::Refused);
@@ -333,7 +345,8 @@ std::optional<Deal> ChooseTrade(const Context &context)
 				if (destinationId == sourceId || !pBid || pBid->bid <= 0 || pBid->bidTotes == 0)
 					continue;
 				const std::int64_t charges = Charges(
-				    context.Registry(), context.rules.identities, record, sourceId, destinationId);
+				    context.Registry(), context.rules.identities, context.rules.content, record,
+				    sourceId, destinationId);
 				std::optional<Deal> trade =
 				    Estimate(context, itemId, *pAsk, *pBid, charges, balance, free);
 				if (!trade || trade->estimate <= context.Policy().targetProfit)
@@ -367,8 +380,8 @@ std::optional<std::string> ChooseDestination(const Context &context)
 		const World::Line *pBid = LineOf(context.Reports(), venueId, job.itemId);
 		if (!pBid || pBid->bid <= 0 || pBid->bidTotes == 0)
 			continue;
-		const std::int64_t charges =
-		    Charges(context.Registry(), context.rules.identities, record, {}, venueId);
+		const std::int64_t charges = Charges(
+		    context.Registry(), context.rules.identities, context.rules.content, record, {}, venueId);
 		const std::optional<std::int64_t> limit = SellLimit(
 		    Added(Floor(job, context.Policy()).first, charges), job.totes, units, context.rules.feeBps);
 		const std::optional<std::int64_t> proceeds = Proceeds(
@@ -440,8 +453,8 @@ void Buy(const Context &context)
 	const World::Line *pAsk = LineOf(reports, job.sourceId, job.itemId);
 	const World::Line *pBid = LineOf(reports, job.destinationId, job.itemId);
 	const std::int64_t charges = Charges(
-	    context.Registry(), context.rules.identities, context.Record(), job.sourceId,
-	    job.destinationId);
+	    context.Registry(), context.rules.identities, context.rules.content, context.Record(),
+	    job.sourceId, job.destinationId);
 	const std::int64_t before = context.Balance();
 	const std::optional<Deal> trade =
 	    pAsk && pBid && pAsk->ask > 0 && pBid->bid > 0
@@ -631,14 +644,12 @@ std::uint64_t RunNext(const SimWorld &world)
 
 
 std::int64_t Charges(
-    const entt::registry &registry, const World::Identities &identities, const World::Ship &ship,
-    std::string_view sourceId, std::string_view destinationId)
+    const entt::registry &registry, const World::Identities &identities,
+    const Content::ContentSet &content, const World::Ship &ship, std::string_view sourceId,
+    std::string_view destinationId)
 {
 	const auto docking = [&](std::string_view venueId)
-	{
-		return registry.get<const World::Fees>(Required(identities, Kind::Market, std::string{venueId}))
-		    .docking;
-	};
+	{ return DockingFee(registry, identities, content, ship, venueId); };
 	std::int64_t charges = 0;
 	const bool atSource = sourceId.empty() || ship.dockedAt == sourceId;
 	if (!atSource)
@@ -728,7 +739,7 @@ void Register(
 	const auto selected = content.scenarios.find(content.scenario);
 	if (selected == content.scenarios.end())
 		throw std::invalid_argument{"the content set has no scenario selected"};
-	auto rules = std::make_shared<Rules>(requests, identities);
+	auto rules = std::make_shared<Rules>(requests, identities, content);
 	for (const Content::VenueDefinition &venue : selected->second.venues)
 		rules->venues.push_back(venue.venueId);
 	for (const Content::ItemSelection &selection : selected->second.items)

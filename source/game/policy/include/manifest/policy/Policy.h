@@ -40,12 +40,13 @@ inline constexpr std::uint32_t kVersion = 1;
 // A job with nothing it can do blocks, keeping its cargo, until the next economic turn's last step.
 inline constexpr std::string_view kSystem = "manifest.policy";
 
-// The charges a route is estimated at (D-097), in whole credits, from each venue's World::Fees as
-// posted now: the destination's docking fee unless the ship is docked there, and the source's too
-// when there is one and the ship must fly there first.
+// The charges a route is estimated at (D-097, D-100), in whole credits, from each venue's World::Fees
+// as posted now for the ship's fee class (Content::FeeClass): the destination's docking fee unless
+// the ship is docked there, and the source's too when there is one and the ship must fly there first.
 std::int64_t Charges(
-    const entt::registry &registry, const World::Identities &identities, const World::Ship &ship,
-    std::string_view sourceId, std::string_view destinationId);
+    const entt::registry &registry, const World::Identities &identities,
+    const Content::ContentSet &content, const World::Ship &ship, std::string_view sourceId,
+    std::string_view destinationId);
 
 // The lowest sell limit, raw microcredits per the item's unit, at which every sale of n of the lot's
 // totes nets at least ceil(n * floor / totes), the whole floor for all of them, however the book

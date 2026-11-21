@@ -1,7 +1,9 @@
 #include <manifest/world/State.h>
 
+#include <algorithm>
 #include <cmath>
 #include <format>
+#include <iterator>
 #include <tuple>
 
 #include <jettison/reflect/Reflect.h>
@@ -214,9 +216,23 @@ std::optional<std::string> Broken(const Reports &reports)
 
 std::optional<std::string> Broken(const Fees &fees)
 {
-	if (fees.docking < 0 || fees.berthPerHour < 0 || fees.arrearsRateBps < 0)
+	if (fees.berthPerOccupantHour < 0 || fees.arrearsRateBps < 0)
 		return "a venue's fee is below 0";
+	for (auto each = fees.classes.begin(); each != fees.classes.end(); ++each)
+	{
+		if (each->padClass.empty() || each->docking < 0 || each->berthPerHour < 0)
+			return "a venue's fee is of no pad class or below 0";
+		if (each != fees.classes.begin() && std::prev(each)->padClass >= each->padClass)
+			return "a venue's fees are not each of one pad class, in name order";
+	}
 	return std::nullopt;
+}
+
+
+const ClassFees *Find(const Fees &fees, std::string_view padClass)
+{
+	const auto found = std::ranges::find(fees.classes, padClass, &ClassFees::padClass);
+	return found == fees.classes.end() ? nullptr : &*found;
 }
 
 
@@ -416,9 +432,13 @@ void RegisterTypes()
 		    .Field<&Report::since>("since", kSaved)
 		    .Field<&Report::lines>("lines", kSaved);
 		RegisterType<Reports>("Manifest.World.Reports").Field<&Reports::reports>("reports", kSaved);
+		RegisterType<ClassFees>("Manifest.World.ClassFees")
+		    .Field<&ClassFees::padClass>("padClass", kSaved)
+		    .Field<&ClassFees::docking>("docking", kSaved)
+		    .Field<&ClassFees::berthPerHour>("berthPerHour", kSaved);
 		RegisterType<Fees>("Manifest.World.Fees")
-		    .Field<&Fees::docking>("docking", kSaved)
-		    .Field<&Fees::berthPerHour>("berthPerHour", kSaved)
+		    .Field<&Fees::classes>("classes", kSaved)
+		    .Field<&Fees::berthPerOccupantHour>("berthPerOccupantHour", kSaved)
 		    .Field<&Fees::arrearsRateBps>("arrearsRateBps", kSaved);
 		RegisterType<Arrears>("Manifest.World.Arrears")
 		    .Field<&Arrears::owed>("owed", kSaved)

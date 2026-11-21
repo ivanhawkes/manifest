@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <jettison/serialise/Archive.h>
@@ -1078,7 +1079,7 @@ TEST_CASE("A save with work pending, and a replay from the start, carry the comp
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves only
 	// with what a save holds or the engine's save format, and a change that moves it says so.
-	CHECK(hosted.world.StateHash() == 0x4f5a57e46997b384ULL);
+	CHECK(hosted.world.StateHash() == 0x697f766e003aabcaULL);
 }
 
 
@@ -1096,8 +1097,13 @@ TEST_CASE(
 	    registry.get<World::Account>(hosted.Find(Kind::VenueAccount, "VenueOreHighport"));
 	World::Account &brine =
 	    registry.get<World::Account>(hosted.Find(Kind::VenueAccount, "VenueBrineHighport"));
-	const World::Fees nominal{10, 2, 1000};
-	CHECK(registry.get<World::Fees>(hosted.Find(Kind::Market, "VenueOreHighport")) == nominal);
+	const World::Fees &posted =
+	    registry.get<World::Fees>(hosted.Find(Kind::Market, "VenueOreHighport"));
+	CHECK(posted.classes.size() == 5);
+	REQUIRE(World::Find(posted, "skiff"));
+	CHECK(*World::Find(posted, "skiff") == World::ClassFees{"skiff", 100, 20});
+	CHECK(posted.berthPerOccupantHour == 2);
+	CHECK(posted.arrearsRateBps == 1000);
 	const auto stepTo = [&hosted](std::uint64_t step)
 	{
 		while (hosted.world.Clock().Step() < step)
@@ -1105,19 +1111,26 @@ TEST_CASE(
 	};
 	constexpr std::uint64_t kHour = 3600;
 
-	// The hour's fee as its last step ends, and no sooner.
+	// The hour's fee as its last step ends, and no sooner: the skiff's 20 and 2 for its occupant, whom
+	// Ore's life support keeps.
 	stepTo(kHour - 1);
 	CHECK(account.balance == 25'000);
 	stepTo(kHour);
-	CHECK(account.balance == 24'998);
-	CHECK(ore.balance == 2);
+	CHECK(account.balance == 24'978);
+	CHECK(ore.balance == 22);
+
+	// With no life support connected, the skiff's 20 alone.
+	registry.remove<World::LifeSupport>(ship);
+	stepTo(2 * kHour);
+	CHECK(account.balance == 24'958);
+	CHECK(ore.balance == 42);
 
 	// What the account cannot pay is owed.
 	account.balance = 1;
-	stepTo(2 * kHour);
+	stepTo(3 * kHour);
 	CHECK(account.balance == 0);
-	CHECK(ore.balance == 3);
-	CHECK(registry.get<World::Arrears>(ship) == World::Arrears{1, 0});
+	CHECK(ore.balance == 43);
+	CHECK(registry.get<World::Arrears>(ship) == World::Arrears{19, 0});
 
 	// A day's interest as the day ends, before the hour's fee: at a rate above the usury limit, the
 	// limit's 35% a year, 350 credits a day on 365,000.
@@ -1125,19 +1138,24 @@ TEST_CASE(
 	registry.replace<World::Arrears>(ship, 365'000, 0);
 	registry.get<World::Fees>(hosted.Find(Kind::Market, "VenueOreHighport")).arrearsRateBps = 100'000;
 	stepTo(24 * kHour);
-	CHECK(registry.get<World::Arrears>(ship) == World::Arrears{365'352, 0});
+	CHECK(registry.get<World::Arrears>(ship) == World::Arrears{365'370, 0});
 
-	// Leaving pays the arrears to Ore and the docking fee to Brine, or the ship does not leave.
+	// Leaving pays the arrears to Ore and the skiff's docking fee to Brine, not another class's, or the
+	// ship does not leave.
+	for (World::ClassFees &fees :
+	     registry.get<World::Fees>(hosted.Find(Kind::Market, "VenueBrineHighport")).classes)
+		if (fees.padClass != "skiff")
+			fees.docking = 1;
 	const Manifest::Travel::Travel toBrine{"Ship1", "VenueBrineHighport"};
 	CHECK(hosted.Run(kAda, Manifest::Travel::kTravel, toBrine) == Result::InsufficientFunds);
-	account.balance = 365'352 + 9;
+	account.balance = 365'370 + 99;
 	CHECK(hosted.Run(kAda, Manifest::Travel::kTravel, toBrine) == Result::InsufficientFunds);
 	const std::int64_t oreBefore = ore.balance;
-	account.balance = 365'352 + 10;
+	account.balance = 365'370 + 100;
 	CHECK(hosted.Run(kAda, Manifest::Travel::kTravel, toBrine) == Result::Succeeded);
 	CHECK(account.balance == 0);
-	CHECK(ore.balance == oreBefore + 365'352);
-	CHECK(brine.balance == 10);
+	CHECK(ore.balance == oreBefore + 365'370);
+	CHECK(brine.balance == 100);
 	CHECK_FALSE(registry.all_of<World::Arrears>(ship));
 }
 
@@ -1165,7 +1183,12 @@ TEST_CASE("Saved fees and arrears load, and broken ones do not")
 	CHECK_THROWS(undocked.world.Load(hosted.world.Save()));
 	registry.get<World::Ship>(ship).dockedAt = "VenueOreHighport";
 	registry.remove<World::Arrears>(ship);
-	registry.get<World::Fees>(hosted.Find(Kind::Market, "VenueOreHighport")).docking = -1;
+	registry.get<World::Fees>(hosted.Find(Kind::Market, "VenueOreHighport")).classes[0].docking = -1;
 	Hosted negative;
 	CHECK_THROWS(negative.world.Load(hosted.world.Save()));
+	World::Fees &fees = registry.get<World::Fees>(hosted.Find(Kind::Market, "VenueOreHighport"));
+	fees.classes[0].docking = 0;
+	std::swap(fees.classes[0], fees.classes[1]);
+	Hosted unordered;
+	CHECK_THROWS(unordered.world.Load(hosted.world.Save()));
 }

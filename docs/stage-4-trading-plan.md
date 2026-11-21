@@ -1056,6 +1056,61 @@ steps: its docked waits, Nia's blocked one among them, each fall while the other
 station's frame, departing, clearing or coming in, which steering flies every step; only the cruises
 are passed over.
 
+## W18 plan
+
+Transport and holding charges at their real values, on [D-100](decision-ledger.md#d-100) (the
+user's, 2026-11-21), from Manifest `feature-base` at `dfde305` on pin `0f973b2`. No engine edit
+is expected: a journey's cruise time is Jettison's `Space::CruiseSeconds`.
+
+- **Fees by pad class.** A ship's fee class is its dock hull's own pad class (`Content::FeeClass`),
+  the smallest it lands on, whichever pad it is given. `World::Fees` holds a docking fee and an hourly berth fee for
+  each pad class, a berth fee for each occupant hour while the ship is connected to the venue's life
+  support, and the arrears rate. `balance.yaml`'s `charges` authors the defaults, which rise with
+  pad area from the skiff's 100 to dock and 20 an hour: corvette 1,750 and 350, frigate 5,625 and
+  1,125, destroyer 18,000 and 3,600, cruiser 54,000 and 10,800, and 2 an hour per occupant.
+  `Travel::Travel` takes the docking fee at the ship's class, and `manifest.berths` takes the hour's
+  class fee plus the occupants' share. A failed journey's docking fee stays paid, as in W10.
+- **The operator's command.** `Manifest.Venue.SetFees` (`venueId` and the whole `Fees`) is accepted
+  from the principal directing the venue's operator organisation (`Organisation::principalId`). It is
+  refused `NotAuthorised` from anyone else or for an AI-run operator, `RateTooHigh` above
+  `charges.maxArrearsRateBps`, and `InvalidQuantity` for a negative fee or a pad class missing or
+  unknown. It takes effect from the next charge: a docking fee already paid and an hour already
+  charged stay as they were.
+- **The AI operator's rule.** `manifest.pricing` runs on each day's last step, before the berth fees,
+  for every venue whose operator no principal directs. Occupancy is the share of the station's
+  non-display pads not free. Above 3/4 the venue's saved level rises by 1,000 basis points, below
+  1/4 it falls by 1,000, and it stays within 5,000 to 20,000, starting at 10,000. Every fee is then
+  the default at that level, rounded to the nearest credit. The arrears rate stays at its default.
+  The thresholds, step and bounds are `charges.pricing` in `balance.yaml`.
+- **Life support used in transit.** The company keeps the last unit price it paid for each item
+  (`World::Paid`, set as its buy fills settle). While a job's lot is aboard and the ship draws on its
+  own life support, `manifest.lifeSupport` adds what it draws to the job: oxygen in kilograms and
+  cartridge occupant-days. When the ship docks, the policy converts the draw at those prices,
+  rounded up, into the lot's `charges`. An item the company never bought, such as its provisioned
+  supplies, costs 0.
+- **Estimates and floors.** `Policy::Charges` adds to the docking fees, at the ship's class, the life
+  support of each leg: the occupants times `CruiseSeconds` over the distance between the two stations
+  now, at the same prices. The berth fees are not estimated, since a job waits docked only when it is
+  blocked. Every charge that falls on a lot is in its floor, as in W10.
+- **Arrears' consequences.** `World::Arrears` records the step it began. The ship stays held, as in
+  W10. On the last step of each day after `charges.seizureGraceDays` (7), `manifest.seizure`, in the
+  policy module, sells the ship's cargo through its owner's commands (`Company::Unload` and
+  `Trade::Place`). It goes lot by lot in hold order, opened life-support totes excepted, a tote at a
+  time against the venue's live bids, until the proceeds cover what is owed or the bids run out. The
+  unsold rest is cancelled and loaded back, and the proceeds pay the arrears at once. Seized totes of
+  a job's lot leave it as a sale's do (D-097's shares), and a job left with no lot chooses again.
+
+Slices, each one commit with the gate green, the saved layout's moved pins proven bytes, not state:
+
+1. Fees by pad class and the occupants' berth share (`content`, `company`, `policy` suites).
+2. `Manifest.Venue.SetFees`, with a changed fee charged from the next charge, not one paid.
+3. `manifest.pricing`, a full and an empty station stepped over days, fast-forwarded to the same
+   bytes.
+4. Transit life support: `World::Paid`, the job's draw, the estimate and the floor recovering it.
+5. Seizure after the grace, covered by the bids and run out of bids, fast-forwarded to the same
+   bytes.
+6. Close-out: the delivered section, D-100, the delivery order, history and the handoff.
+
 ## Handoff to stage 5
 
 Carry forward the exact scheduler order, command/result schema, content manifest,

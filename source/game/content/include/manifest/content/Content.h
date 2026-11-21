@@ -92,4 +92,8 @@ ContentSet LoadScenario(
 // a file system and a registry of its own that are gone when it returns: a failure anywhere leaves
 // nothing behind, so a caller's working content is kept by keeping its own set.
 ContentSet LoadContent(std::span<const Jettison::Vfs::Mount> sources, std::string_view gameMode);
+
+// A ship's fee class (D-100), the pad class of its hull's dock hull, which venues charge it by
+// (ChargesTuning, World::Fees); empty for a hull with no dock hull.
+std::string FeeClass(const ContentSet &content, std::string_view hullId);
 } // namespace Manifest::Content

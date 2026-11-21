@@ -5,6 +5,7 @@
 #include <memory>
 #include <stdexcept>
 #include <utility>
+#include <vector>
 
 namespace Manifest::World
 {
@@ -108,9 +109,12 @@ void CreateInitialState(
 		CreateAccount(world, identities, Kind::VenueAccount, venue.venueId, 0);
 		const entt::entity market = CreateOrRefuse(world, identities, Kind::Market, venue.venueId);
 		registry.emplace<Sales>(market);
-		registry.emplace<Fees>(
-		    market, content.tuning.charges.dockingFee, content.tuning.charges.berthFeePerHour,
+		Fees &fees = registry.emplace<Fees>(
+		    market, std::vector<ClassFees>{}, content.tuning.charges.berthFeePerOccupantHour,
 		    content.tuning.charges.arrearsRateBps);
+		for (const Content::ClassChargesTuning &charged : content.tuning.charges.padClasses)
+			fees.classes.push_back({charged.padClass, charged.dockingFee, charged.berthFeePerHour});
+		std::ranges::sort(fees.classes, {}, &ClassFees::padClass);
 	}
 }
 } // namespace Manifest::World

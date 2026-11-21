@@ -71,13 +71,19 @@ market:
   # (docs/market-information-plan.md, "Sales reporting").
   salesWindowSeconds: 3600
 
-# What each venue charges as the initial state opens it, in whole credits (D-097, D-098): nominal
-# values, so the charges are in place but small, until W18 selects them; each venue's operator's
-# to change. A docking fee as a journey to the venue starts; a berth fee as each simulation hour
-# ends, for each ship docked there.
+# What each venue charges as the initial state opens it, in whole credits (D-097, D-098, D-100); each
+# venue's operator's to change. A ship pays by its fee class, its hull's pad class: a docking fee as a
+# journey to the venue starts, and as each simulation hour ends, for each ship docked there, a berth
+# fee and a share for each occupant it keeps connected to the venue's life support. The class fees
+# rise with pad area from the skiff's 80 m² (the user's, 2026-11-21).
 charges:
-  dockingFee: 10
-  berthFeePerHour: 2
+  padClasses:
+    - {padClass: skiff, dockingFee: 100, berthFeePerHour: 20}
+    - {padClass: corvette, dockingFee: 1750, berthFeePerHour: 350}
+    - {padClass: frigate, dockingFee: 5625, berthFeePerHour: 1125}
+    - {padClass: destroyer, dockingFee: 18000, berthFeePerHour: 3600}
+    - {padClass: cruiser, dockingFee: 54000, berthFeePerHour: 10800}
+  berthFeePerOccupantHour: 2
   # Yearly interest on unpaid berth fees, in basis points, compounded daily on what is owed, and the
   # game's usury limit, the most any venue may set (the user's, 2026-11-21).
   arrearsRateBps: 1000

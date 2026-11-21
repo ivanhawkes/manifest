@@ -320,7 +320,7 @@ TEST_CASE(
 	CHECK(ship.job->estimate > 0);
 	REQUIRE(ship.journey);
 	CHECK(ship.journey->venueId == "VenueBrineHighport");
-	CHECK(hosted.Balance("Company1") == before - 10);
+	CHECK(hosted.Balance("Company1") == before - 100);
 	CHECK(ship.job->totes == 0);
 }
 
@@ -461,8 +461,8 @@ TEST_CASE("Docked at its source, a job buys at the live ask, cancels the rest, l
 	CHECK(bought.phase == World::Phase::ToDestination);
 	REQUIRE(bought.totes > 0);
 	// The lot's cost is what the account paid for it, its docking fee at Brine a charge of the lot.
-	CHECK(bought.charges == 10);
-	CHECK(bought.cost == before - hosted.Balance("Company1") - 10);
+	CHECK(bought.charges == 100);
+	CHECK(bought.cost == before - hosted.Balance("Company1") - 100);
 	CHECK(
 	    hosted.world.Registry().get<World::Cargo>(hosted.Ship("Ship1")).lots ==
 	    std::vector<World::Lot>{{"ItemFurs", bought.totes}});

@@ -28,6 +28,7 @@
 #include <jettison/space/Types.h>
 #include <jettison/spatial/SystemIndices.h>
 
+#include <manifest/content/Content.h>
 #include <manifest/content/Definitions.h>
 #include <manifest/world/State.h>
 
@@ -108,9 +109,13 @@ Result Started(SimWorld &world, const Rules &rules, const Actor &actor, const Tr
 	if (record.dockedAt == travel.venueId)
 		return Result::AlreadyThere;
 
-	// The destination's docking fee and the ship's arrears where it is, paid as it starts (D-097).
-	const std::int64_t fee =
-	    registry.get<World::Fees>(Required(rules, Kind::Market, travel.venueId)).docking;
+	// The destination's docking fee for the ship's fee class and the ship's arrears where it is, paid
+	// as it starts (D-097, D-100).
+	const World::ClassFees *pFees = World::Find(
+	    registry.get<World::Fees>(Required(rules, Kind::Market, travel.venueId)),
+	    Content::FeeClass(rules.content, record.hullId));
+	JETTISON_VERIFY(pFees != nullptr);
+	const std::int64_t fee = pFees->docking;
 	const auto *pArrears = registry.try_get<World::Arrears>(ship);
 	const std::int64_t owed = pArrears ? pArrears->owed : 0;
 	World::Account &account =

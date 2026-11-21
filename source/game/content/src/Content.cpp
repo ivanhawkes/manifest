@@ -632,9 +632,26 @@ void CheckTuning(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 		    "must be finite and not below 0");
 		checker.Require(
 		    Positive(tuning.market.salesWindowSeconds), "market.salesWindowSeconds", "must be above 0");
-		checker.Require(tuning.charges.dockingFee >= 0, "charges.dockingFee", "must not be below 0");
+		std::set<std::string, std::less<>> charged;
+		for (const ClassChargesTuning &fees : tuning.charges.padClasses)
+		{
+			checker.Require(
+			    registry.Find<Jettison::Dock::PadClassDefinition>(fees.padClass) != nullptr,
+			    "charges.padClasses", std::format("'{}' names no pad class", fees.padClass));
+			checker.Require(
+			    charged.insert(fees.padClass).second, "charges.padClasses",
+			    std::format("'{}' is charged twice", fees.padClass));
+			checker.Require(
+			    fees.dockingFee >= 0 && fees.berthFeePerHour >= 0, "charges.padClasses",
+			    std::format("'{}' has a fee below 0", fees.padClass));
+		}
+		for (const std::string &padClass : registry.Names<Jettison::Dock::PadClassDefinition>())
+			checker.Require(
+			    charged.contains(padClass), "charges.padClasses",
+			    std::format("pad class '{}' has no fees", padClass));
 		checker.Require(
-		    tuning.charges.berthFeePerHour >= 0, "charges.berthFeePerHour", "must not be below 0");
+		    tuning.charges.berthFeePerOccupantHour >= 0, "charges.berthFeePerOccupantHour",
+		    "must not be below 0");
 		checker.Require(
 		    tuning.charges.maxArrearsRateBps >= 0 && tuning.charges.maxArrearsRateBps <= 1'000'000,
 		    "charges.maxArrearsRateBps", "must be in [0, 1000000]");
@@ -1209,5 +1226,12 @@ ContentSet LoadContent(std::span<const Jettison::Vfs::Mount> sources, std::strin
 		files.AddMount({source.name, source.source});
 	Jettison::Sim::DefinitionRegistry registry{files};
 	return LoadContent(files, registry, gameMode);
+}
+
+
+std::string FeeClass(const ContentSet &content, std::string_view hullId)
+{
+	const auto found = content.dockHulls.find(RegistryName(hullId));
+	return found == content.dockHulls.end() ? std::string{} : found->second.pad;
 }
 } // namespace Manifest::Content

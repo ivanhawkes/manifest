@@ -218,9 +218,13 @@ void RegisterTypes()
 		    .Field<&MarketTuning::listingFeeBps>("listingFeeBps", kDefined)
 		    .Field<&MarketTuning::orderLifeSeconds>("orderLifeSeconds", kDefined)
 		    .Field<&MarketTuning::salesWindowSeconds>("salesWindowSeconds", kDefined);
+		RegisterType<ClassChargesTuning>("Manifest.ClassChargesTuning")
+		    .Field<&ClassChargesTuning::padClass>("padClass", kDefined)
+		    .Field<&ClassChargesTuning::dockingFee>("dockingFee", kDefined)
+		    .Field<&ClassChargesTuning::berthFeePerHour>("berthFeePerHour", kDefined);
 		RegisterType<ChargesTuning>("Manifest.ChargesTuning")
-		    .Field<&ChargesTuning::dockingFee>("dockingFee", kDefined)
-		    .Field<&ChargesTuning::berthFeePerHour>("berthFeePerHour", kDefined)
+		    .Field<&ChargesTuning::padClasses>("padClasses", kDefined)
+		    .Field<&ChargesTuning::berthFeePerOccupantHour>("berthFeePerOccupantHour", kDefined)
 		    .Field<&ChargesTuning::arrearsRateBps>("arrearsRateBps", kDefined)
 		    .Field<&ChargesTuning::maxArrearsRateBps>("maxArrearsRateBps", kDefined);
 		RegisterType<BrokerTuning>("Manifest.BrokerTuning")
