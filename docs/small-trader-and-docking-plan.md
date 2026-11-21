@@ -109,6 +109,30 @@ planning: about 25%, 40% and 50% of the requirement at tiers 1 to 3, its cost ag
 27,000 credits, any power (L31), mass or volume it takes, and whether its culture must be bought
 and replaced.
 
+## Fuel burn and the speed of a run (selected 2026-11-22)
+
+The user's (2026-11-22), [D-107](decision-ledger.md#d-107), booked as W21 at high priority, next
+after W19 and before W12: a ship's drive burns fuel to accelerate, and how hard it burns is a choice
+in planning a route. Burning more arrives sooner, so a ship trades more often; burning less spends
+less fuel and may make a run more profitable, offset by the longer cruise and so fewer runs. Today
+a cruise burns nothing: its time is Jettison's `CruiseDrive` profile (W17, D-090), and a hull's
+`FuelCapacity` and the `SkillShipFuelBunkers` upgrade are authored but read by nothing. Open for
+W21's planning:
+
+- **The fuel.** An item of the Fuels category bought at a venue, LPG or a drive fuel of its own,
+  held in tanks of the hull's `FuelCapacity` and refuelled as oxygen is (D-094).
+- **The burn.** Fuel as a function of a leg's acceleration and burn time and the ship's mass with
+  its cargo, so a faster leg costs more than in proportion; whether Jettison's `CruiseDrive` gives a
+  leg's burn with its time, an engine provision if not. The manned 2 g and 1 g and the unmanned 12 g
+  (D-090) bound it.
+- **The choice.** A journey's burn, set by the player's `Travel` and by a standing policy, which
+  picks it for the most profit an hour: fuel against time, with transit life support (W18) rising as
+  a cruise lengthens.
+- **The charge.** Fuel burned charged to the lot as transit life support is, in its estimate and
+  floor.
+- **Running dry.** A leg the tanks cannot finish refused before departure, a reserve kept, and what
+  a ship that runs dry does.
+
 ## Compact ship and matching dock requirements
 
 Add a small ship class with room for one occupant on a long journey. Its accommodation
