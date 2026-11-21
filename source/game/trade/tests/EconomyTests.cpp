@@ -424,13 +424,13 @@ TEST_CASE("A need's pressure raises the households' bid until they buy what the 
 	std::uint64_t step = 60;
 	while (hosted.Totes(Kind::Broker, kOre, kOre, kMedical) == seeded - 1 && step < 6'000)
 		hosted.StepTo(step += 60);
-	// Three intervals short: the ask at 7 totes of 8 is about 11% over the reference.
-	CHECK(step == 300);
-	CHECK(pantry.shortIntervals == 3);
+	// Two intervals short: the ask at 9 totes of 10 is about 9% over the reference.
+	CHECK(step == 240);
+	CHECK(pantry.shortIntervals == 2);
 	const auto medical =
 	    std::ranges::find(pantry.unmet, std::string{"NeedBasicMedicalSupplies"}, &World::Unmet::needId);
 	REQUIRE(medical != pantry.unmet.end());
-	CHECK(medical->pressure > 0.036);
+	CHECK(medical->pressure > 0.029);
 }
 
 

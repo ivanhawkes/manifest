@@ -53,7 +53,8 @@ const Actor kHost{ActorKind::Administrator, "Host"};
 const Actor kAda{ActorKind::Principal, "Ada"};
 constexpr std::string_view kOre = "VenueOreHighport";
 constexpr std::string_view kBrine = "VenueBrineHighport";
-constexpr std::string_view kFurs = "ItemFurs";
+// The loop's good, made at Ore and wanted at Brine, its best run for a starter (W19's balance).
+constexpr std::string_view kGood = "ItemCopper";
 constexpr std::string_view kOxygen = "ItemOxygen";
 constexpr std::string_view kCartridges = "ItemCarbonScrubberCartridge";
 // OfferCargoHolds' tier 1 (D-096), the one credit sink of the loop.
@@ -360,8 +361,8 @@ void ToCruise(Hosted &hosted)
 	const CompanyView start = hosted.Seen();
 	CHECK(start.credits == 25000);
 	REQUIRE(
-	    hosted.Place(kOre, kFurs, Side::Buy, 2, hosted.Quote(kOre, kFurs).Ask()) == Result::Succeeded);
-	CHECK(hosted.Seen().credits == 24674);
+	    hosted.Place(kOre, kGood, Side::Buy, 2, hosted.Quote(kOre, kGood).Ask()) == Result::Succeeded);
+	CHECK(hosted.Seen().credits == 6040);
 	REQUIRE(
 	    hosted.Place(kOre, kOxygen, Side::Buy, 1, hosted.Quote(kOre, kOxygen).Ask()) ==
 	    Result::Succeeded);
@@ -369,24 +370,24 @@ void ToCruise(Hosted &hosted)
 	    hosted.Place(kOre, kCartridges, Side::Buy, 1, hosted.Quote(kOre, kCartridges).Ask()) ==
 	    Result::Succeeded);
 	const CompanyView bought = hosted.Seen();
-	CHECK(Held(bought, kOre, kFurs).available == 2);
+	CHECK(Held(bought, kOre, kGood).available == 2);
 	CHECK(Held(bought, kOre, kOxygen).available == 1);
 	CHECK(Held(bought, kOre, kCartridges).available == 1);
 	CHECK(bought.ships[0].cargo.empty());
 	CHECK(bought.orders.empty());
 
 	// Loaded, within the hold, from what the company has there.
-	CHECK(hosted.Move(Company::kLoad, kOre, kFurs, 3) == Result::InsufficientStock);
-	for (const std::string_view item : {kFurs, kOxygen, kCartridges})
-		REQUIRE(hosted.Move(Company::kLoad, kOre, item, item == kFurs ? 2 : 1) == Result::Succeeded);
+	CHECK(hosted.Move(Company::kLoad, kOre, kGood, 3) == Result::InsufficientStock);
+	for (const std::string_view item : {kGood, kOxygen, kCartridges})
+		REQUIRE(hosted.Move(Company::kLoad, kOre, item, item == kGood ? 2 : 1) == Result::Succeeded);
 	const CompanyView loaded = hosted.Seen();
 	CHECK(loaded.holdings.empty());
-	CHECK(Aboard(loaded.ships[0], kFurs) == 2);
+	CHECK(Aboard(loaded.ships[0], kGood) == 2);
 	CHECK(Aboard(loaded.ships[0], kOxygen) == 1);
 	CHECK(Aboard(loaded.ships[0], kCartridges) == 1);
 
 	// A bid under Brine's market rests, its escrow held, over the journey and the save.
-	REQUIRE(hosted.Place(kBrine, kFurs, Side::Buy, 1, 1'000'000) == Result::Succeeded);
+	REQUIRE(hosted.Place(kBrine, kGood, Side::Buy, 1, 1'000'000) == Result::Succeeded);
 	const CompanyView resting = hosted.Seen();
 	REQUIRE(resting.orders.size() == 1);
 	CHECK(resting.orders[0].order.escrow > 0);
@@ -402,8 +403,8 @@ void ToCruise(Hosted &hosted)
 
 	// Refused in transit, each leaving the business as it was.
 	const Business before{hosted.Seen()};
-	CHECK(hosted.Move(Company::kLoad, kOre, kFurs, 1) == Result::NotDocked);
-	CHECK(hosted.Move(Company::kUnload, kBrine, kFurs, 1) == Result::NotDocked);
+	CHECK(hosted.Move(Company::kLoad, kOre, kGood, 1) == Result::NotDocked);
+	CHECK(hosted.Move(Company::kUnload, kBrine, kGood, 1) == Result::NotDocked);
 	CHECK(
 	    hosted.Run(
 	        kAda, Company::kUpgrade, Company::kVersion,
@@ -421,7 +422,7 @@ void ToCruise(Hosted &hosted)
 }
 
 // Cruising: the tanks refilled from the hold in flight, then docked at Brine, the cartridge replaced,
-// the furs unloaded and sold, the resting bid cancelled and the holds bought.
+// the copper unloaded and sold, the resting bid cancelled and the holds bought.
 void FromCruise(Hosted &hosted)
 {
 	const ShipView cruising = hosted.Ship1();
@@ -445,7 +446,7 @@ void FromCruise(Hosted &hosted)
 	CHECK(arrived.dockedAt == kBrine);
 	CHECK(arrived.lifeSupport.connectedTo == kBrine);
 	// The cargo stayed with the ship.
-	CHECK(Aboard(arrived, kFurs) == 2);
+	CHECK(Aboard(arrived, kGood) == 2);
 	CHECK(Aboard(arrived, kCartridges) == 1);
 	// Brine is live now, and Ore as it froze.
 	CHECK(hosted.Market(kBrine).live);
@@ -453,7 +454,7 @@ void FromCruise(Hosted &hosted)
 	CHECK_FALSE(hosted.Market(kOre).live);
 
 	const Business before{hosted.Seen()};
-	CHECK(hosted.Move(Company::kUnload, kOre, kFurs, 2) == Result::WrongVenue);
+	CHECK(hosted.Move(Company::kUnload, kOre, kGood, 2) == Result::WrongVenue);
 	CHECK(Business{hosted.Seen()} == before);
 
 	// A fresh cartridge from the hold's tote, the other kept opened in it.
@@ -463,23 +464,23 @@ void FromCruise(Hosted &hosted)
 	CHECK(Aboard(replaced, kCartridges) == 0);
 
 	// Unloaded and sold down the bids of the live report to the level its second tote takes: the
-	// proceeds are the company's, the furs the broker's, and no sell rests.
-	REQUIRE(hosted.Move(Company::kUnload, kBrine, kFurs, 2) == Result::Succeeded);
-	CHECK(Held(hosted.Seen(), kBrine, kFurs).available == 2);
+	// proceeds are the company's, the copper the broker's, and no sell rests.
+	REQUIRE(hosted.Move(Company::kUnload, kBrine, kGood, 2) == Result::Succeeded);
+	CHECK(Held(hosted.Seen(), kBrine, kGood).available == 2);
 	const std::int64_t unloaded = hosted.Seen().credits;
 	std::uint64_t reach = 0;
 	std::int64_t limit = 0;
-	for (const World::Level &level : hosted.Quote(kBrine, kFurs).bids)
+	for (const World::Level &level : hosted.Quote(kBrine, kGood).bids)
 		if (reach < 2)
 		{
 			reach += level.totes;
 			limit = level.price;
 		}
 	REQUIRE(reach >= 2);
-	REQUIRE(hosted.Place(kBrine, kFurs, Side::Sell, 2, limit) == Result::Succeeded);
+	REQUIRE(hosted.Place(kBrine, kGood, Side::Sell, 2, limit) == Result::Succeeded);
 	const CompanyView sold = hosted.Seen();
 	CHECK(sold.credits > unloaded);
-	CHECK(Held(sold, kBrine, kFurs) == World::Holding{std::string{kBrine}, std::string{kFurs}, 0, 0});
+	CHECK(Held(sold, kBrine, kGood) == World::Holding{std::string{kBrine}, std::string{kGood}, 0, 0});
 	REQUIRE(sold.orders.size() == 1);
 	CHECK(sold.orders[0].order.side == Side::Buy);
 
@@ -573,7 +574,7 @@ TEST_CASE("The trading fixture's loop, saved in flight with a bid resting and re
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves with
 	// what a save holds, the fixture's content or stream, or the engine's movement or save format.
-	CHECK(hosted.world.StateHash() == 0xdff5f1a3395dedd8ULL);
+	CHECK(hosted.world.StateHash() == 0xd42700c4edfd9dbaULL);
 }
 
 
@@ -756,5 +757,5 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 	CHECK(replayed.world.StateHash() == hosted.world.StateHash());
 
 	// The same in every build the gate runs; it moves as the fixture's does.
-	CHECK(hosted.world.StateHash() == 0xa6086647e9a05262ULL);
+	CHECK(hosted.world.StateHash() == 0x71ff506f2b8cc38dULL);
 }

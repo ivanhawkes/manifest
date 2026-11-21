@@ -23,7 +23,9 @@ namespace
 constexpr double kPriceElasticity = 0.5;
 constexpr double kMinPriceFactor = 0.2;
 constexpr double kMaxPriceFactor = 5.0;
-constexpr double kLocalPriceBias = 0.9;
+// A venue's own surplus or deficit moves its price by at most about 60% of the market's (W19's
+// balance, 2026-11-21): at 0.9 a maker's goods sold at a tenth of their base, under their wages.
+constexpr double kLocalPriceBias = 0.3;
 constexpr double kFreightRate = 0.08;
 constexpr double kTradeFraction = 0.8;
 constexpr unsigned kRoutesPerTick = 25;

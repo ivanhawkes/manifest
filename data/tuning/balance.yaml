@@ -89,10 +89,12 @@ condition:
 
 # A region's employer works each market row it makes in batches of whole totes, each about a day of the
 # row's rate (the user's choice, W04), its gross wage bill a share of the output's value at its base
-# price, reserved as the batch starts and paid as the work is done.
+# price, reserved as the batch starts and paid as the work is done. A maker's goods sell at about 0.5
+# to 0.65 of their base price, so 0.45 leaves it a margin and pays its households enough to buy their
+# needs and some optional goods (W19's balance, 2026-11-21); its wages per unit are also its floor.
 production:
   batchSeconds: 86400
-  wageShare: 0.3
+  wageShare: 0.45
 
 # A ship's onboard life support, while it relies on it.
 lifeSupport:

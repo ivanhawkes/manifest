@@ -388,10 +388,10 @@ TEST_CASE("A lot no bid clears is kept, and the allowance is shared across its s
 	REQUIRE(hosted.Provision("Bea") == Result::Succeeded);
 	const World::Line furs = hosted.Line("Ada", "VenueOreHighport", "ItemFurs");
 	REQUIRE(furs.Bid() > 0);
-	// Two credits a tote above what Ore's bid nets: no bid there clears it at no allowance.
+	// 4% a tote above what Ore's bid nets: no bid there clears it at no allowance.
 	constexpr std::uint64_t kTotes = 10;
 	constexpr auto kCount = static_cast<std::int64_t>(kTotes);
-	const std::int64_t cost = (hosted.NetPerTote(furs.Bid(), "ItemFurs") + 2) * kCount;
+	const std::int64_t cost = hosted.NetPerTote(furs.Bid(), "ItemFurs") * 104 / 100 * kCount;
 	hosted.Lot(kTotes, cost);
 
 	const std::int64_t before = hosted.Balance("Company1");
@@ -462,7 +462,7 @@ TEST_CASE("A lot no bid clears is kept, and the allowance is shared across its s
 	loaded.world.Load(hosted.world.Save());
 	REQUIRE(loaded.world.StateHash() == hosted.world.StateHash());
 	const std::int64_t remaining = loaded.Job().cost;
-	const std::int64_t allowance = 12 * kCount;
+	const std::int64_t allowance = 120 * kCount;
 	REQUIRE(loaded.SetPolicy(kAda, {"Ship1", true, 0, allowance}) == Result::Succeeded);
 	CHECK(loaded.Job().phase == World::Phase::Blocked);
 	const std::int64_t beforeRest = loaded.Balance("Company1");
@@ -618,7 +618,7 @@ TEST_CASE("Past the grace, a ship's cargo is sold tote by tote at the live bids 
 	// Ore's broker with little to bid with, for a few totes of furs and soap, and arrears that stand a
 	// day.
 	Manifest::Content::ContentSet content = Scenario("trading");
-	content.tuning.brokers.treasury = 10'000;
+	content.tuning.brokers.treasury = 70'000;
 	content.tuning.charges.seizureGraceDays = 1;
 	const std::string ore = "VenueOreHighport";
 	const std::uint64_t day = std::uint64_t{60} * 86'400;

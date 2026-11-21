@@ -1307,6 +1307,19 @@ Slices, each one commit with its suites, the gate after the second and the last:
    against its 12.5), and the wellness goods made at Brine and wanted at Ore. Ore now imports its
    salt and soap. The extra goods split Brine's broker's funds further, so the job the policy's
    tests take from Ore is copper, not tin; the pins move with the goods and the pressure saved.
+   A first balance followed (2026-11-21; every number a starting point, the user's). The local
+   price bias, 0.9, priced a maker's goods at a tenth of their base and a buyer's at nearly twice
+   it: margins of 175% to 1,300% between the venues, and most makers' bids under their wages.
+   At 0.3 a venue's price runs from about 0.5 to 1.5 of the market's; the first tote of a
+   complementary good nets 15% to 55%, a starter's best run (two totes of copper) about 10,000
+   credits on 25,000, glassware or furs 2,000 to 5,000, and grain or salt a skiff's fees at most,
+   until a shortage lifts them. Seeded stocks, each broker's target, are about ten days of their
+   rate, so a ladder takes a run (liquidity), and the brokers' prices move with need and
+   spending, not depth alone. The wage share is 0.45, not 0.3: at about 18,000 credits a day Ore's
+   households bought what they needed, with too little circulating; now each region earns a little
+   more than its needs and optional goods cost. Brine's oxygen and cartridge demand, pricing rows,
+   are 200 kg and 8 a day, not a tenth of what Ore makes. The trading fixture's loop runs copper,
+   not furs, since two totes of furs no longer pay for the holds.
 4. The need-priced budget and relief tender functions, ready for W12; the fixture's long runs showing
    a shortage pulling a cargo in and a glut sending one away, fast-forwarded to the same bytes.
 5. Close-out.
