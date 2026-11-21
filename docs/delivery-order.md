@@ -96,8 +96,9 @@ the life support used in transit charged to the lot and a held ship's cargo seiz
 after 7 days ([D-100](decision-ledger.md#d-100)), on the same pin with no engine edit. W11 is done (2026-11-21):
 [the tender contract](stage-4-trading-plan.md#tender-contract-w11-2026-11-21) settles the clean
 public-project lifecycle's choices, its reservations as accounts, its rights and the policy's
-contract jobs ([D-101](decision-ledger.md#d-101)). Next: W12, competitive procurement and the
-Bronze project delivered physically, on that contract.
+contract jobs ([D-101](decision-ledger.md#d-101)). The user then selected a supply and demand economy
+([D-102](decision-ledger.md#d-102)), booked as W19 ahead of W12. Next: W19, on the
+[W19 plan](stage-4-trading-plan.md#w19-plan), its numbers settled with the user as it starts.
 
 ## Priority 0: maintenance before Stage 1
 
@@ -209,7 +210,8 @@ Canonical scope: [Stage 4](stage-4-trading-plan.md), with the
 | 41 / W10 | Add enabled standing trade policies, autopilot and NPC jobs through the same physical commands and permitted market facts; prove operation without connected clients. **Done 2026-11-21**, [delivered](stage-4-trading-plan.md#delivered-w10-2026-11-21). | W09, N03 |
 | 41a / W18 | Transport and holding charges at their real values. W10 charges them nominally (a 10-credit docking fee as a `Travel` starts, a 2-credit berth fee each simulation hour docked, [D-097](decision-ledger.md#d-097)) and its jobs attribute them to a lot through `Policy::Charges`. Add the operator's command that sets a venue's fees and its arrears' interest rate, refused above the usury limit, and an AI operator's rule for them ([D-098](decision-ledger.md#d-098)); select the berth fee's amount and basis (it includes connected life support, D-047), the docking fee's, arrears' consequences, and the cost of life support used in transit, attributed the same way; storage fees (L16) and tolls (L10, L16) join that attribution when they land. Prove an estimate and a floor with each charge, and a changed fee charged from the next charge, not one paid. [D-100](decision-ledger.md#d-100). **Done 2026-11-21**, [delivered](stage-4-trading-plan.md#delivered-w18-2026-11-21). | W10 |
 | 42 / W11 | Resolve the clean public-project/tender lifecycle's remaining rounding, deadline, default and regional delivery choices; define saved jobs, rights and reservations. **Done 2026-11-21**, [the tender contract](stage-4-trading-plan.md#tender-contract-w11-2026-11-21), [D-101](decision-ledger.md#d-101). | W10 |
-| 43 / W12 | Implement competitive procurement, partial delivery/payment, performance security and a material-gated regional project through physical fulfilment. | W11 |
+| 42a / W19 | Supply and demand pricing ([D-102](decision-ledger.md#d-102), the user's, 2026-11-21): a venue's broker quotes a ladder on a curve of its stock against a target, households bid above the posted price as an essential's pressure rises, makers offer a surplus down to its cost, and governments' tender budgets are priced by need, with relief tenders for essentials. Changes W03's and W04's quotes and orders, W07's reports (levels) and W10's estimates; every price-naming pin and test moves, shown to be prices. Prove a shortage pulling a cargo in, a glut sending one away, no round trip pumping money and prices settling over long runs. Plan: [W19 plan](stage-4-trading-plan.md#w19-plan). | W11 |
+| 43 / W12 | Implement competitive procurement, partial delivery/payment, performance security and a material-gated regional project through physical fulfilment. | W11, W19 |
 | 44 / W13 | Prove the multi-region idle governance scenario: independent accounts/condition, AI neighbours, a homeworld region per participant founded by acquisition ([D-089](decision-ledger.md#d-089)), development queues, protected late joining and reconnect continuity. | W12, W10 |
 | 45 / W14 | Close Stage 4: verify trading, market fog, automation and regional development together, in-memory continuation and final repository gates; record the actual schedule and state contracts. | W09, W13 |
 

@@ -1162,9 +1162,11 @@ components and systems on the world's services.
 - **The AI issuer.** For a region its governing organisation's AI runs, each input its project
   still needs, with no tender open or contracted for it, is tendered as the world starts and at
   once when its last tender closes unawarded, is cancelled, or ends in default: the remaining
-  totes, `B` twice their authored base value (the price times `unitsPerCubicMetre / 8` a tote),
-  windows of 1 and 14 days, at the region's first venue in the scenario's order. A player
-  directing the governor tenders by command.
+  totes, `B` their price by need ([W19](#w19-plan), D-102: the live ask, or the reference where
+  nothing is offered, times one plus the project's urgency), windows of 1 and 14 days, at the region's
+  first venue in the scenario's order. It also calls W19's relief tenders for an essential its
+  households are short of. The user's first rule, twice the base value, was superseded by D-102 the
+  same day. A player directing the governor tenders by command.
 - **Bids** are sealed: one per company per tender (`Kind::Bid`), a total `T` from 1 to `B` for all
   `Q` by the delivery close, with its revision and the step and request order it was accepted at. A
   bid is placed, replaced at its current revision or withdrawn before the bid close. Only its
@@ -1223,6 +1225,60 @@ W12's slices, each one commit with its suites, the gate after the third and the 
    competing; fast-forwarded to the bytes stepping leaves.
 6. The governance fixture: Forge East's project tendered, tin bought at Cassiter and copper at Forge
    delivered physically, worked and unlocked; saved and replayed to one hash. Then the close-out.
+
+## W19 plan
+
+Supply and demand pricing, on [D-102](decision-ledger.md#d-102) (the user's, 2026-11-21), booked ahead
+of W12 so procurement's budgets and bids are built on live prices. Today a venue's native price is
+worked out once at load from the authored rates (`Simulation::MarketPrice` and `LocalPrice`), and
+its broker reposts one bid and one ask about it each turn (D-084), so neither stock, shortage nor need
+moves a price. The mechanism below is selected; its numbers are proposals, settled with the user as
+W19 starts. No engine edit is expected.
+
+- **The broker's curve.** Each venue's good keeps its load-time native price as its reference `r`
+  and a target stock `T` in totes, the scenario's seeded stock, at least 1. A broker holding `h` totes
+  prices the next tote at `r 4T / (T + 3h)`: `r` at the target, 4 times it empty and a quarter of it
+  at five times the target, never below that, in exact integer arithmetic (no `pow`, so every build
+  gives the same bits). Scarcity raises the price and a glut lowers it, and the traders' own buying and
+  selling move it.
+- **A ladder, not a point.** Each turn the broker posts up to 8 levels a side, each a share of the
+  target, priced at the curve where that level leaves its stock, half the spread outside it: its asks
+  climb as it sells down and its bids fall as it buys up. A large sale walks down its bids in the same
+  fill, so selling and buying back loses the spread and the curve, and no round trip pumps money out.
+  Within `kMaxRestingOrders` and its funds, as now; with no mint.
+- **Need raises what households pay.** Each region keeps each essential need's pressure, its unmet
+  share smoothed over a day (0 to 1, saved). Households bid for an essential's goods, the cheapest
+  first as now, at up to `r (1 + 3 p)` for pressure `p`: the reference when fed, rising to the
+  curve's ceiling when starving, so a starving region can buy what stock there is while its funds
+  last, spending at most a share of them a turn. Optional goods are bought only at or below `r`.
+- **Surplus lowers what makers take.** A region's employer sells its batches into the broker's bids
+  down to a floor, the batch's wage bill per tote, and keeps what does not sell at the floor in its
+  warehouse, offering it again each turn. A glut fills the broker, its bids fall, and the maker's
+  goods wait or go cheaper, but never below what they cost to make.
+- **Governments price by need.** The functions W12's AI issuer uses: a tender's budget is its totes at
+  the acceptance venue's live ask, or `r` where nothing is offered, times `1 + u`, its urgency `u` the
+  project's authored priority premium (0.5 for the Bronze project) or, for a relief tender of an
+  essential, the region's pressure on it times 3. A relief tender is called when a need's pressure
+  passes a threshold (a quarter), for the day's shortfall in totes of its cheapest good, delivered into
+  the region's household goods at its venue and paid from its public account. Goods a government holds
+  beyond its needs are offered below the live bid; in the pilot it holds none, since a tender asks only
+  for what is still needed.
+- **What it changes.** W03's and W04's broker quote and the households' and employer's orders; W07's
+  report keeps each side's levels (at most 8), since a trade's estimate must walk the ladder; W10's
+  estimate and floor read the levels its totes would take; W11's AI budget is the function above.
+  Every pinned hash and every test that names a price moves; each move is shown to be the prices, not
+  layout. The trading fixture's routes must stay profitable at the new prices, and its long runs show
+  prices settling, not oscillating.
+
+Slices, each one commit with its suites, the gate after the second and the last:
+
+1. The curve and the ladder: the broker's quote, its bounds and funds, a sale walking the bids and a
+   round trip losing (`trade`).
+2. Reports with levels and the policy's estimate over them (`trade`, `policy`), the pins moved and why.
+3. Need pressure and the households' bids; the employer's floor and held goods (`trade`, the economy).
+4. The need-priced budget and relief tender functions, ready for W12; the fixture's long runs showing
+   a shortage pulling a cargo in and a glut sending one away, fast-forwarded to the same bytes.
+5. Close-out.
 
 ## Handoff to stage 5
 
