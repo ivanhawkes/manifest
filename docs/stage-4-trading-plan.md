@@ -1260,7 +1260,12 @@ with relief at three times the pressure past a quarter. No engine edit is expect
   share smoothed over a day (0 to 1, saved). Households bid for an essential's goods, the cheapest
   first as now, at up to `r (1 + 3 p)` for pressure `p`: the reference when fed, rising to the
   curve's ceiling when starving, so a starving region can buy what stock there is while its funds
-  last, with no cap a turn: households buy only the shortfall's whole totes. Optional goods are bought only at or below `r`.
+  last, with no cap a turn: households buy only the shortfall's whole totes. Optional goods are bought only in an interval every need is met, at up to
+  `r` times their bucket's premium, at their bucket's share of their authored demand (the user's,
+  2026-11-21): everyday goods (televisions, tablets, phones, and wellness products and supplements,
+  new optional goods) at perhaps 20% over `r`, luxuries (gold watches, sports cars, fashion clothing)
+  less often and nearer `r`. The buckets map the item categories; their numbers are settled as slice
+  3 starts.
 - **Surplus lowers what makers take.** A region's employer sells its batches into the broker's bids
   down to a floor, the batch's wage bill per tote, and keeps what does not sell at the floor in its
   warehouse, offering it again each turn. A glut fills the broker, its bids fall, and the maker's
@@ -1289,7 +1294,8 @@ Slices, each one commit with its suites, the gate after the second and the last:
    count its estimate makes most on, both ladders walked, and its sale walks the bids to the lowest
    level whose proceeds still recover their share of the floor. The ladder opened a trade the flat
    quote hid, tin from Ore to Brine at ten times its ask, which the policy's tests now take.
-3. Need pressure and the households' bids; the employer's floor and held goods (`trade`, the economy).
+3. Need pressure and the households' bids; the optional goods' buckets, with wellness products and
+   supplements added; the employer's floor and held goods (`trade`, the economy).
 4. The need-priced budget and relief tender functions, ready for W12; the fixture's long runs showing
    a shortage pulling a cargo in and a glut sending one away, fast-forwarded to the same bytes.
 5. Close-out.
