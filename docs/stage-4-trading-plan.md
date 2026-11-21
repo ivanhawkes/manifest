@@ -97,6 +97,7 @@ registration order, and a test pins `Scheduler().Order(TickPhase::Simulation)`.
 | 7a | each step | `manifest.lifeSupport` (W06) | after `manifest.travel` | connections, onboard oxygen and cartridges, a job's draw |
 | 7b | each day's last step | `manifest.pricing` (W18) | after `manifest.lifeSupport` | an AI-run venue's `Pricing` level and `Fees` |
 | 7c | each hour's last step | `manifest.berths` (W10, W18) | after `manifest.pricing` | berth fees, arrears, a job's charges |
+| 7d | each day's last step | `manifest.seizure` (W18) | after `manifest.berths`, before `manifest.observe` | a held ship's cargo sold through its owner's commands, arrears, a job's lot |
 | 8 | each step | `manifest.observe` (W07) | after `manifest.travel` | players' market reports |
 
 Jettison's movement systems are registered without its `behaviour` system (no behaviour trees

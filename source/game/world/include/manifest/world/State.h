@@ -451,12 +451,15 @@ inline constexpr int kDefaultLevelBps = 10'000;
 // What a docked ship's company could not pay of its berth fees, in whole credits above 0, owed to the
 // venue the ship is docked at, its interest added to it as each day ends: paid first as the next hour
 // ends, and all of it before the ship leaves (Travel::Travel), so a ship that is not docked owes none.
+// Past the grace, its cargo is seized for it (Policy::kSeizureSystem).
 struct Arrears
 {
 	std::int64_t owed{0};
 	// The part of a credit of interest accrued and not yet added to what is owed, in units of
 	// 1 / kRateYear credits, below kRateYear, so a small debt accrues exactly over the days.
 	std::int64_t carry{0};
+	// The step whose berth fee began them, kept until they are paid in full.
+	std::uint64_t since{0};
 
 	bool operator==(const Arrears &) const = default;
 };

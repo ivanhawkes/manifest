@@ -659,6 +659,9 @@ void CheckTuning(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 		    tuning.charges.arrearsRateBps >= 0 &&
 		        tuning.charges.arrearsRateBps <= tuning.charges.maxArrearsRateBps,
 		    "charges.arrearsRateBps", "must be in [0, charges.maxArrearsRateBps]");
+		checker.Require(
+		    tuning.charges.seizureGraceDays >= 0 && tuning.charges.seizureGraceDays <= 36'500,
+		    "charges.seizureGraceDays", "must be in [0, 36500]");
 		const PricingTuning &pricing = tuning.charges.pricing;
 		checker.Require(
 		    pricing.lowerBelowBps >= 0 && pricing.lowerBelowBps <= pricing.raiseAboveBps &&

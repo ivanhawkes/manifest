@@ -467,7 +467,8 @@ void RegisterTypes()
 		RegisterType<Pricing>("Manifest.World.Pricing").Field<&Pricing::levelBps>("levelBps", kSaved);
 		RegisterType<Arrears>("Manifest.World.Arrears")
 		    .Field<&Arrears::owed>("owed", kSaved)
-		    .Field<&Arrears::carry>("carry", kSaved);
+		    .Field<&Arrears::carry>("carry", kSaved)
+		    .Field<&Arrears::since>("since", kSaved);
 		RegisterType<Policy>("Manifest.World.Policy")
 		    .Field<&Policy::enabled>("enabled", kSaved)
 		    .Field<&Policy::targetProfit>("targetProfit", kSaved)

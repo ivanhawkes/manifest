@@ -744,7 +744,8 @@ void Berth(SimWorld &world, const Rules &rules)
 		if (auto *pJob = registry.try_get<World::Job>(ship); pJob && pJob->totes > 0)
 			pJob->charges += std::min(fee, kMaxCredits - pJob->charges);
 		if (due > paid)
-			registry.emplace_or_replace<World::Arrears>(ship, due - paid, arrears.carry);
+			registry.emplace_or_replace<World::Arrears>(
+			    ship, due - paid, arrears.carry, pArrears ? arrears.since : world.Clock().Step());
 		else
 			registry.remove<World::Arrears>(ship);
 	}

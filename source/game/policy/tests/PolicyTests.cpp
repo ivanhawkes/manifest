@@ -599,6 +599,102 @@ TEST_CASE(
 }
 
 
+TEST_CASE("Past the grace, a ship's cargo is sold tote by tote at the live bids for its arrears")
+{
+	// Ore's broker with little to bid with, for a few totes of furs and soap, and arrears that stand a
+	// day.
+	Manifest::Content::ContentSet content = Scenario("trading");
+	content.tuning.brokers.treasury = 10'000;
+	content.tuning.charges.seizureGraceDays = 1;
+	const std::string ore = "VenueOreHighport";
+	const std::uint64_t day = std::uint64_t{60} * 86'400;
+	// Ada's ship docked at Ore with the totes of furs, ten for her job, and of soap, her account empty
+	// and owing what is given since now; Bea directs Ore's operator, whose fees are 0.
+	const auto owing = [&](Hosted &hosted, std::int64_t owed, std::vector<World::Lot> lots)
+	{
+		REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
+		hosted.Lot(10, 1000);
+		entt::registry &registry = hosted.world.Registry();
+		registry.get<World::Cargo>(hosted.Ship("Ship1")).lots = std::move(lots);
+		registry.get<World::Account>(hosted.Find(Kind::CompanyAccount, "Company1")).balance = 0;
+		registry
+		    .get<World::Organisation>(hosted.Find(Kind::Organisation, "OrganisationAnvilPortAuthority"))
+		    .principalId = "Bea";
+		World::Fees &fees = registry.get<World::Fees>(hosted.Find(Kind::Market, ore));
+		for (World::ClassFees &fee : fees.classes)
+			fee.berthPerHour = 0;
+		fees.berthPerOccupantHour = 0;
+		fees.arrearsRateBps = 0;
+		registry.emplace<World::Arrears>(hosted.Ship("Ship1"), owed, 0, hosted.world.Clock().Step());
+	};
+	const auto forward = [](Hosted &hosted, std::uint64_t until)
+	{
+		while (hosted.world.Clock().Step() < until)
+			hosted.world.FastForward(until);
+	};
+	const auto lots = [](Hosted &hosted)
+	{ return hosted.world.Registry().get<const World::Cargo>(hosted.Ship("Ship1")).lots; };
+	const std::int64_t furs = 138;
+	const std::int64_t soap = 816;
+
+	// Not as the first day ends, less than a day after they began; as the second does, furs a tote at
+	// a time until their proceeds cover what is owed, which they pay, the job's lot sharing it.
+	const std::vector<World::Lot> held{{"ItemFurs", 10}, {"ItemSoap", 2}};
+	Hosted forwarded{content};
+	owing(forwarded, 2 * furs + 1, held);
+	REQUIRE(forwarded.NetPerTote(7'404'517, "ItemFurs") == furs);
+	REQUIRE(forwarded.NetPerTote(728'699, "ItemSoap") == soap);
+	forward(forwarded, day);
+	CHECK(lots(forwarded) == held);
+	CHECK(forwarded.world.Registry().all_of<World::Arrears>(forwarded.Ship("Ship1")));
+	forward(forwarded, 2 * day);
+	CHECK(lots(forwarded) == std::vector<World::Lot>{{"ItemFurs", 7}, {"ItemSoap", 2}});
+	CHECK_FALSE(forwarded.world.Registry().all_of<World::Arrears>(forwarded.Ship("Ship1")));
+	CHECK(forwarded.Balance("Company1") == 3 * furs - (2 * furs + 1));
+	CHECK(forwarded.Resting("Company1") == 0);
+	const World::Job &job = forwarded.Job();
+	CHECK(job.totes == 7);
+	CHECK(job.cost == 700);
+	CHECK(job.phase == World::Phase::Selling);
+
+	// To the same bytes as stepping the hour before the seizure and its step.
+	Hosted stepped{content};
+	owing(stepped, 2 * furs + 1, held);
+	forward(stepped, 2 * day - 3600);
+	while (stepped.world.Clock().Step() < 2 * day)
+		stepped.world.Step();
+	CHECK(stepped.world.Save() == forwarded.world.Save());
+
+	// Owing more than the bids take: the furs they take, then the soap, the rest loaded back and the
+	// proceeds paid, the rest still owed. The job's three totes of the furs go, and with no lot it
+	// chooses again.
+	Hosted unpaid{content};
+	owing(unpaid, 100'000, {{"ItemFurs", 150}, {"ItemSoap", 10}});
+	unpaid.Job().totes = 3;
+	unpaid.Job().cost = 300;
+	forward(unpaid, 2 * day);
+	const std::vector<World::Lot> left = lots(unpaid);
+	REQUIRE(left.size() == 2);
+	CHECK(left[0].itemId == "ItemFurs");
+	CHECK(left[1].itemId == "ItemSoap");
+	CHECK(left[0].totes < 147);
+	CHECK(left[1].totes < 10);
+	for (const auto [entity, order] : unpaid.world.Registry().view<const World::Order>().each())
+		CHECK_FALSE(
+		    (order.venueId == ore && order.side == World::Side::Buy &&
+		     (order.itemId == "ItemFurs" || order.itemId == "ItemSoap")));
+	const World::Arrears *pArrears =
+	    unpaid.world.Registry().try_get<const World::Arrears>(unpaid.Ship("Ship1"));
+	REQUIRE(pArrears);
+	const auto sold = [](std::uint64_t from, std::uint64_t to)
+	{ return static_cast<std::int64_t>(from - to); };
+	CHECK(pArrears->owed == 100'000 - sold(150, left[0].totes) * furs - sold(10, left[1].totes) * soap);
+	CHECK(unpaid.Balance("Company1") == 0);
+	CHECK(unpaid.Resting("Company1") == 0);
+	CHECK(unpaid.Job() == World::Job{});
+}
+
+
 TEST_CASE("A scenario's NPC traders start provisioned, the world's own, their jobs trading")
 {
 	Manifest::Content::ContentSet content = Scenario("trading");

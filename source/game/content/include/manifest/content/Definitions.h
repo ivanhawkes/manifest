@@ -202,6 +202,8 @@ struct ChargesTuning
 	// The most any venue may charge, the game's usury limit, at most 1,000,000: arrearsRateBps is at
 	// most this.
 	int maxArrearsRateBps{0};
+	// Whole days, at most 36,500, a ship's arrears stand before its venue seizes its cargo for them.
+	int seizureGraceDays{0};
 	PricingTuning pricing;
 };
 

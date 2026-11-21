@@ -57,6 +57,9 @@ struct Rules
 	std::vector<std::pair<std::string, double>> items;
 	int feeBps{0};
 	std::uint64_t turnSteps{0};
+	std::uint64_t daySteps{0};
+	// How long arrears stand before their ship's cargo is seized, in steps.
+	std::uint64_t graceSteps{0};
 };
 
 
@@ -674,6 +677,110 @@ void Run(SimWorld &world, const Rules &rules)
 }
 
 
+// The seized totes of the item leaving the ship's job's lot, as a sale's do, with their shares of its
+// cost and charges; a job left with no lot chooses again.
+void Seized(World::Job &job, const std::string &itemId, std::uint64_t seized)
+{
+	if (job.totes == 0 || job.itemId != itemId || seized == 0)
+		return;
+	const std::uint64_t totes = std::min(seized, job.totes);
+	job.cost -= Share(job.cost, totes, job.totes);
+	job.charges -= Share(job.charges, totes, job.totes);
+	job.totes -= totes;
+	if (job.totes == 0)
+		job = World::Job{};
+}
+
+
+// As the day's last step ends, each ship whose arrears have stood the grace, in entity order, has its
+// cargo sold for them through its owner's commands (kSeizureSystem): lot by lot in hold order, a tote
+// at a time at the venue's live bids, until the proceeds cover what is owed or the bids run out, the
+// rest loaded back; then its company's account pays the arrears as far as it can.
+void Seize(SimWorld &world, const Rules &rules)
+{
+	const std::uint64_t now = world.Clock().Step();
+	if ((now + 1) % rules.daySteps != 0)
+		return;
+	entt::registry &registry = world.Registry();
+	std::vector<entt::entity> ships;
+	for (const auto [ship, arrears] : registry.view<const World::Arrears>().each())
+		if (now - arrears.since >= rules.graceSteps)
+			ships.push_back(ship);
+	std::ranges::sort(ships, {}, [](entt::entity ship) { return entt::to_integral(ship); });
+	for (const entt::entity ship : ships)
+	{
+		const World::Ship &record = registry.get<const World::Ship>(ship);
+		const std::string companyId = record.companyId;
+		const std::string venueId = record.dockedAt;
+		const Context context{
+		    world,
+		    rules,
+		    ship,
+		    registry.get<const World::Identity>(ship).id,
+		    {Command::ActorKind::Principal,
+		     registry.get<const World::Company>(Required(rules.identities, Kind::Company, companyId))
+		         .principalId}};
+		const std::int64_t owed = registry.get<const World::Arrears>(ship).owed;
+		const std::int64_t before = context.Balance();
+		const std::vector<World::Lot> lots = registry.get<const World::Cargo>(ship).lots;
+		for (const World::Lot &lot : lots)
+		{
+			if (context.Balance() - before >= owed)
+				break;
+			if (context.Act(
+			        Company::kUnload, Company::kVersion,
+			        Company::Move{context.shipId, venueId, lot.itemId, lot.totes}) != Result::Succeeded)
+				continue;
+			const std::uint64_t held = context.Available(venueId, lot.itemId);
+			std::uint64_t sold = 0;
+			while (sold < lot.totes && context.Balance() - before < owed)
+			{
+				// At the least a price can be, so the tote takes the best bid there is.
+				(void)context.Act(
+				    Trade::kPlace, Trade::kVersion,
+				    Trade::Place{venueId, lot.itemId, World::Side::Sell, 1, 1});
+				context.CancelRest(venueId, lot.itemId);
+				if (context.Available(venueId, lot.itemId) + sold == held)
+					break;
+				++sold;
+			}
+			if (sold < lot.totes)
+				JETTISON_VERIFY(
+				    context.Act(
+				        Company::kLoad, Company::kVersion,
+				        Company::Move{context.shipId, venueId, lot.itemId, lot.totes - sold}) ==
+				    Result::Succeeded);
+			if (auto *pJob = registry.try_get<World::Job>(ship))
+				Seized(*pJob, lot.itemId, sold);
+		}
+
+		World::Arrears &arrears = registry.get<World::Arrears>(ship);
+		World::Account &account =
+		    registry.get<World::Account>(Required(rules.identities, Kind::CompanyAccount, companyId));
+		World::Account &venue =
+		    registry.get<World::Account>(Required(rules.identities, Kind::VenueAccount, venueId));
+		const std::int64_t paid =
+		    std::min({arrears.owed, account.balance, kMaxCredits - venue.balance});
+		account.balance -= paid;
+		venue.balance += paid;
+		arrears.owed -= paid;
+		if (arrears.owed == 0)
+			registry.remove<World::Arrears>(ship);
+	}
+}
+
+
+// The first step the seizure has to run in (Jettison::Sim::Quiet): the day's last while any ship owes
+// arrears; otherwise never.
+std::uint64_t SeizeNext(const SimWorld &world, const Rules &rules)
+{
+	if (world.Registry().view<const World::Arrears>().empty())
+		return std::numeric_limits<std::uint64_t>::max();
+	const std::uint64_t now = world.Clock().Step();
+	return now + (rules.daySteps - 1 - now % rules.daySteps);
+}
+
+
 // The first step a job has a decision in (Jettison::Sim::Quiet): the next while one is choosing,
 // trading or has its journey ended, a blocked one's retry, and never while every enabled job is on a
 // journey under way, which travel's quiet wakes the world for.
@@ -827,6 +934,10 @@ void Register(
 	if (!(turn >= 1.0))
 		throw std::invalid_argument{"economy.intervalSeconds is less than one of the world's steps"};
 	rules->turnSteps = static_cast<std::uint64_t>(turn);
+	// A day as the berth fees count it, in whole hours of steps.
+	rules->daySteps = static_cast<std::uint64_t>(std::round(3600.0 / world.FixedStep())) * 24;
+	rules->graceSteps =
+	    static_cast<std::uint64_t>(content.tuning.charges.seizureGraceDays) * rules->daySteps;
 
 	requests.Register<Set>(
 	    std::string{kSet}, kVersion, Command::ActorKind::Principal,
@@ -851,5 +962,19 @@ void Register(
 	     .run = [rules, &world](entt::registry &, double) { Run(world, *rules); },
 	     .before = {std::string{Jettison::Spatial::SystemIndices::kSystemName}}},
 	    {.next = [](const SimWorld &target) { return RunNext(target); }});
+	world.RegisterSystem(
+	    {.name = std::string{kSeizureSystem},
+	     .phase = Jettison::Ecs::TickPhase::Simulation,
+	     // What the commands it sends write, besides its own.
+	     .access = Access::Of<
+	                   World::Arrears, World::Job, World::Ship, World::Company, World::Account,
+	                   World::Stock, World::Order, World::Identity, World::Cargo, World::Systems>()
+	                   .Writing<
+	                       World::Arrears, World::Job, World::Order, World::Account, World::Stock,
+	                       World::Identity, World::Sales, World::Cargo, World::Paid>(),
+	     .after = {std::string{Company::kBerthSystem}},
+	     .run = [rules, &world](entt::registry &, double) { Seize(world, *rules); },
+	     .before = {std::string{Trade::kObserve}}},
+	    {.next = [rules](const SimWorld &target) { return SeizeNext(target, *rules); }});
 }
 } // namespace Manifest::Policy

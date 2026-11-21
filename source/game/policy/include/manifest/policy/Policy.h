@@ -40,6 +40,16 @@ inline constexpr std::uint32_t kVersion = 1;
 // A job with nothing it can do blocks, keeping its cargo, until the next economic turn's last step.
 inline constexpr std::string_view kSystem = "manifest.policy";
 
+// The system after manifest.berths that seizes cargo for arrears (D-100): as each simulation day's
+// last step ends, each ship whose World::Arrears began charges.seizureGraceDays or more before, in
+// entity order, has its cargo sold through its owner's commands (Company::Unload, Trade::Place): lot
+// by lot in hold order, its opened life-support totes kept, a tote at a time at the venue's live bids,
+// until the proceeds cover what is owed or the bids run out, the rest cancelled and loaded back. Its
+// company's account then pays the arrears as far as it holds and the venue's has room. Seized totes
+// of the job's lot leave it with their shares of its cost and charges, as a sale's do, and a job left
+// with no lot chooses again.
+inline constexpr std::string_view kSeizureSystem = "manifest.seizure";
+
 // The charges a route is estimated at (D-097, D-100), in whole credits, from each venue's World::Fees
 // as posted now for the ship's fee class (Content::FeeClass): the destination's docking fee unless
 // the ship is docked there, and the source's too when there is one and the ship must fly there first;
@@ -73,10 +83,10 @@ void ProvisionTraders(
 // The payload, with Reflect. Safe to call again.
 void RegisterTypes();
 
-// Registers the command with the requests and the system with the world, after manifest.brokers
-// and before the movement Travel::Register attaches, both of which must be registered, as must the
-// trade and company commands it sends. The world, the requests, the identities and the content must
-// outlive the world's last step.
+// Registers the command with the requests, the system with the world, after manifest.brokers and
+// before the movement Travel::Register attaches, and the seizure after manifest.berths and before
+// manifest.observe, all of which must be registered, as must the trade and company commands they send.
+// The world, the requests, the identities and the content must outlive the world's last step.
 void Register(
     Jettison::Sim::SimWorld &world, Command::Requests &requests, World::Identities &identities,
     const Content::ContentSet &content);

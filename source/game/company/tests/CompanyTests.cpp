@@ -1133,7 +1133,7 @@ TEST_CASE(
 	stepTo(3 * kHour);
 	CHECK(account.balance == 0);
 	CHECK(ore.balance == 43);
-	CHECK(registry.get<World::Arrears>(ship) == World::Arrears{19, 0});
+	CHECK(registry.get<World::Arrears>(ship) == World::Arrears{19, 0, 3 * kHour - 1});
 
 	// A day's interest as the day ends, before the hour's fee: at a rate above the usury limit, the
 	// limit's 35% a year, 350 credits a day on 365,000.
@@ -1141,7 +1141,7 @@ TEST_CASE(
 	registry.replace<World::Arrears>(ship, 365'000, 0);
 	registry.get<World::Fees>(hosted.Find(Kind::Market, "VenueOreHighport")).arrearsRateBps = 100'000;
 	stepTo(24 * kHour);
-	CHECK(registry.get<World::Arrears>(ship) == World::Arrears{365'370, 0});
+	CHECK(registry.get<World::Arrears>(ship) == World::Arrears{365'370, 0, 0});
 
 	// Leaving pays the arrears to Ore and the skiff's docking fee to Brine, not another class's, or the
 	// ship does not leave.
@@ -1255,10 +1255,11 @@ TEST_CASE("Saved fees and arrears load, and broken ones do not")
 	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
 	entt::registry &registry = hosted.world.Registry();
 	const entt::entity ship = hosted.Find(Kind::Ship, "Ship1");
-	registry.emplace<World::Arrears>(ship, 5, 7);
+	registry.emplace<World::Arrears>(ship, 5, 7, 42);
 	Hosted loaded;
 	loaded.world.Load(hosted.world.Save());
 	CHECK(loaded.world.StateHash() == hosted.world.StateHash());
+	CHECK(loaded.world.Registry().get<World::Arrears>(ship) == World::Arrears{5, 7, 42});
 
 	for (const World::Arrears broken : {World::Arrears{0, 0}, World::Arrears{5, World::kRateYear}})
 	{

@@ -111,7 +111,8 @@ inline constexpr std::string_view kPricingSystem = "manifest.pricing";
 // ends, each ship docked then, in entity order, pays its World::Arrears and its venue's World::Fees,
 // the berthPerHour of its fee class (Content::FeeClass) and berthPerOccupantHour for each of its hull's
 // occupants while it is connected to the venue's life support, from its company's account to its
-// venue's, as far as the one holds and the other has room, what is left owed carried as its arrears,
+// venue's, as far as the one holds and the other has room, what is left owed carried as its arrears
+// from the step it began,
 // the fee added to the charges of the lot its World::Job has aboard. As each day's last step ends,
 // first, the arrears grow by a day's interest at the venue's arrearsRateBps, at most the tuning's
 // usury limit.

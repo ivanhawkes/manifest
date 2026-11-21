@@ -88,6 +88,9 @@ charges:
   # game's usury limit, the most any venue may set (the user's, 2026-11-21).
   arrearsRateBps: 1000
   maxArrearsRateBps: 3500
+  # Whole days a ship's arrears may stand before its venue sells its cargo to pay them (the user's,
+  # 2026-11-21).
+  seizureGraceDays: 7
   # How a venue whose operator no player directs moves its fees, once a day, by its station's share of
   # pads taken, in basis points: 10% of the defaults up above 3/4 full and down below 1/4, within half
   # to twice the defaults (the user's, 2026-11-21).

@@ -233,6 +233,7 @@ void RegisterTypes()
 		    .Field<&ChargesTuning::berthFeePerOccupantHour>("berthFeePerOccupantHour", kDefined)
 		    .Field<&ChargesTuning::arrearsRateBps>("arrearsRateBps", kDefined)
 		    .Field<&ChargesTuning::maxArrearsRateBps>("maxArrearsRateBps", kDefined)
+		    .Field<&ChargesTuning::seizureGraceDays>("seizureGraceDays", kDefined)
 		    .Field<&ChargesTuning::pricing>("pricing", kDefined);
 		RegisterType<BrokerTuning>("Manifest.BrokerTuning")
 		    .Field<&BrokerTuning::treasury>("treasury", kDefined)
