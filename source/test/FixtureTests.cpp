@@ -608,11 +608,10 @@ TEST_CASE("The trading fixture's cruise fast-forwarded is the one stepped, at ev
 	// The cruise passed over between what wakes a system (its arrival, a batch finishing, the bid's
 	// lapse, a turn), the economy working and the crew breathing throughout, then docking stepped; and
 	// each stop the world stepping reaches.
-	const std::uint64_t end = forwarded.world.Clock().Step() + kJourneySteps;
 	std::uint64_t calls = 0;
-	while (!forwarded.Ship1().journey->Ended() && forwarded.world.Clock().Step() < end)
+	const auto forward = [&](std::uint64_t until)
 	{
-		forwarded.world.FastForward(end);
+		forwarded.world.FastForward(until);
 		(void)forwarded.world.Events().Take();
 		++calls;
 		while (stepped.world.Clock().Step() < forwarded.world.Clock().Step())
@@ -621,11 +620,24 @@ TEST_CASE("The trading fixture's cruise fast-forwarded is the one stepped, at ev
 			(void)stepped.world.Events().Take();
 		}
 		REQUIRE(forwarded.world.Save() == stepped.world.Save());
-	}
+	};
+	const std::uint64_t end = forwarded.world.Clock().Step() + kJourneySteps;
+	while (!forwarded.Ship1().journey->Ended() && forwarded.world.Clock().Step() < end)
+		forward(end);
 	REQUIRE(forwarded.Ship1().journey->leg == Leg::Arrived);
 	const std::uint64_t steps = forwarded.world.Clock().Step() - (end - kJourneySteps);
 	MESSAGE(steps << " steps to Brine in " << calls << " calls");
 	CHECK(calls * 4 < steps);
+
+	// An hour docked at Brine passed over too, its venue's report the one stepping leaves, observed
+	// at the clock (L28).
+	REQUIRE_FALSE(forwarded.Ship1().dockedAt.empty());
+	calls = 0;
+	const std::uint64_t hour = forwarded.world.Clock().Step() + std::uint64_t{60} * 60;
+	while (forwarded.world.Clock().Step() < hour)
+		forward(hour);
+	MESSAGE("an hour docked in " << calls << " calls");
+	CHECK(calls * 4 < std::uint64_t{60} * 60);
 }
 
 
@@ -707,7 +719,8 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 	REQUIRE(midJob);
 	const std::uint64_t steps = end - first;
 	MESSAGE(steps << " steps in " << calls << " calls");
-	// The cruises passed over; every step a ship is docked runs, as observation has it (L28).
+	// The cruises passed over. A ship flown in a station's frame is steered every step, and here each
+	// docked wait has the other ship so flown.
 	CHECK(calls * 3 < steps * 2);
 
 	// Loaded mid-job, it goes on to the same world.

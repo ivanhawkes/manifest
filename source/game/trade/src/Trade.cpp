@@ -1251,10 +1251,10 @@ void Remember(World::Reports &reports, World::Report report)
 }
 
 
-void Observe(SimWorld &world, const Rules &rules)
+// Each docked fleet's venue reported to its principals as it is when the step observed begins.
+void Observe(SimWorld &world, const Rules &rules, std::uint64_t observed)
 {
 	entt::registry &registry = world.Registry();
-	const std::uint64_t observed = world.Clock().Step() + 1;
 	// Each venue a fleet is docked at, and the principals whose fleets they are.
 	std::map<std::string, std::set<std::string>, std::less<>> covered;
 	for (const auto [entity, ship] : registry.view<const World::Ship>().each())
@@ -1488,17 +1488,14 @@ void Register(
 	         Access::Of<World::Ship, World::Company, World::Order, World::Sales, World::Identity>()
 	             .Writing<World::Reports>(),
 	     .after = {std::string{Travel::kSystem}},
-	     .run = [rules, &world](entt::registry &, double) { Observe(world, *rules); }},
-	    // shortcut: a docked fleet's venue is reported afresh every step, so no step is passed over
-	    // while one is docked; a live report that does not change each step, when W10's fleets are
-	    // docked at once.
-	    {.next = [](const SimWorld &target)
-	     {
-		     for (const auto [entity, ship] : target.Registry().view<const World::Ship>().each())
-			     if (!ship.dockedAt.empty())
-				     return target.Clock().Step();
-		     return std::numeric_limits<std::uint64_t>::max();
-	     }});
+	     .run = [rules, &world](entt::registry &, double)
+	     { Observe(world, *rules, world.Clock().Step() + 1); }},
+	    // A report is read off its venue's book and sales and the fleets docked there, which only a
+	    // step that runs changes, at the step observed, which moves its window's edge and an order's
+	    // lapse: captured once at the last step passed over, it is what that step's own would be.
+	    {.next = [](const SimWorld &) { return std::numeric_limits<std::uint64_t>::max(); },
+	     .skip = [rules](SimWorld &target, std::uint64_t, double)
+	     { Observe(target, *rules, target.Clock().Step()); }});
 }
 
 

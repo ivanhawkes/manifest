@@ -100,6 +100,15 @@ cargo's lots are bounded together (`world`), and a ship's cargo against its hull
 `CargoVolume`, whose empty map was taken for none given; a hull the map does not name now carries
 nothing (`company`). Round 7 approved with no finding open.
 
+## L28: docked fleets and the fast-forward — 2026-11-21
+
+On pin `0f973b2`, with no engine edit. Observation's skip captures each docked fleet's venue at the
+last step passed over, and its quiet asks for no step, so a docked wait is passed over
+([what it chose and its evidence](stage-4-trading-plan.md#delivered-l28-2026-11-21)): an hour docked
+at Brine is 6 calls, from 3,600. The evidence the row named, W10's zero-client run, cannot show it:
+each docked wait there falls while the other ship is steered in a station's frame, which runs every
+step, so the fixture's cruise test holds the evidence instead.
+
 ## L27: a fast-forward over quiet steps — 2026-11-20
 
 On pin `892b7b3`, with its engine provision. Each of Manifest's systems says when it next has to

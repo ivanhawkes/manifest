@@ -1,11 +1,11 @@
 # Session handoff
 
-## Next, on resuming — 2026-11-20 (after L27)
+## Next, on resuming — 2026-11-21 (after L28)
 
-L27 is done: [a fast-forward over quiet steps](stage-4-trading-plan.md#delivered-l27-2026-11-20),
-on pin `892b7b3`. Next: W10, standing trade policies, autopilot and NPC jobs. Its fleets docked at
-once will stop every step being passed over until observation's live reports stop changing each
-step; and each system W10 adds needs its own quiet (`Jettison::Sim::Quiet`), or none is passed over.
+W10's slices are committed, on pin `0f973b2`, and L28 is done: [a docked fleet's wait passed
+over](stage-4-trading-plan.md#delivered-l28-2026-11-21). Next: closing W10, its row, its delivered
+section and D-097's status. A ship steered in a station's frame still runs every step, which is most
+of the zero-client run's steps.
 The planning documents' home-region allocation (scope, the roadmap's region supply and D-076) waits
 for W13 to restate it as founding.
 
