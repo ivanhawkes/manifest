@@ -94,6 +94,21 @@ Implementer acceptance evidence:
 
 Tank rules, data and tests remain unimplemented. No runtime or gate result is claimed.
 
+
+## Algae oxygen recycling (selected 2026-11-21)
+
+The user's (2026-11-21), [D-106](decision-ledger.md#d-106), for L34: a life-support technology a ship
+can be upgraded to, an algae photobioreactor that turns its occupants' exhaled carbon dioxide back
+into oxygen. It is bought as other ship upgrades are, an offer of a skill node fitted to the ship
+(D-096), requiring the Life Support skill, in tiers. Each tier supplies a share of the ship's daily
+oxygen requirement, drawn from its tanks that much more slowly, and, taking up the carbon dioxide,
+spends its scrubber cartridge as much more slowly; it adds no oxygen past the occupants' use and
+none while the ship is connected to a station's life support. A ship with it still needs its
+tanks and cartridges, for the rest and for the reactor's failure. Starting points, open for L34's
+planning: about 25%, 40% and 50% of the requirement at tiers 1 to 3, its cost against the holds'
+27,000 credits, any power (L31), mass or volume it takes, and whether its culture must be bought
+and replaced.
+
 ## Compact ship and matching dock requirements
 
 Add a small ship class with room for one occupant on a long journey. Its accommodation

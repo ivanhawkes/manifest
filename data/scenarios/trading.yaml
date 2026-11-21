@@ -7,10 +7,11 @@ version: 1
 # (systems/system-anvil.yaml); market rates are per simulation day, in the item's unit
 # (docs/model.md), and stock is in totes, eight to the IBC (D-087): about ten days of a row's rate,
 # so a venue's broker's ladder takes a starter's run (W19's balance, 2026-11-21), and at least the
-# earlier quantities. Each region trades the essentials at its venue (W04): Ore grows rice,
-# oats, beans and lentils, Brine wheat, barley, chickpeas and peas and makes the medical supplies,
-# the salt and the soap, which Ore must import, and each draws its own water; an essential's demand is
-# its region's need, which sets its price. A row's region is the employer that
+# earlier quantities. Each region trades the essentials at its venue (W04): Ore grows rice
+# and lentils, a complete protein, and a little oats and beans, Brine wheat and chickpeas and a
+# little barley and peas, each 13 t a day against its 12.5 (D-105), and Brine makes the medical
+# supplies, the salt and the soap, which Ore must import, and each draws its own water; an
+# essential's demand is its region's need, which sets its price. A row's region is the employer that
 # makes it, and the households that want it when no need names it. Ore makes the oxygen and
 # cartridges a ship's resupply takes, and Brine wants them (W09).
 gameMode: manifest
@@ -100,12 +101,12 @@ venues:
       - {itemId: ItemWellnessProducts, regionId: RegionOreHighlands, production: 0, demand: 40,
          stock: 2}
       - {itemId: ItemSupplements, regionId: RegionOreHighlands, production: 0, demand: 200, stock: 5}
-      - {itemId: ItemRice, regionId: RegionOreHighlands, production: 6, demand: 1.5625, stock: 331}
-      - {itemId: ItemOats, regionId: RegionOreHighlands, production: 4, demand: 1.5625, stock: 262}
+      - {itemId: ItemRice, regionId: RegionOreHighlands, production: 6.5, demand: 1.5625, stock: 359}
+      - {itemId: ItemOats, regionId: RegionOreHighlands, production: 1, demand: 1.5625, stock: 80}
       - {itemId: ItemWheat, production: 0, demand: 1.5625, stock: 98}
       - {itemId: ItemBarley, production: 0, demand: 1.5625, stock: 96}
-      - {itemId: ItemBeans, regionId: RegionOreHighlands, production: 2, demand: 1.5625, stock: 123}
-      - {itemId: ItemLentils, regionId: RegionOreHighlands, production: 2, demand: 1.5625, stock: 119}
+      - {itemId: ItemBeans, regionId: RegionOreHighlands, production: 0.5, demand: 1.5625, stock: 31}
+      - {itemId: ItemLentils, regionId: RegionOreHighlands, production: 5, demand: 1.5625, stock: 296}
       - {itemId: ItemChickpeas, production: 0, demand: 1.5625, stock: 96}
       - {itemId: ItemPeas, production: 0, demand: 1.5625, stock: 93}
       - {itemId: ItemDrinkingWater, regionId: RegionOreHighlands, production: 80, demand: 75,
@@ -134,12 +135,12 @@ venues:
       - {itemId: ItemTin, production: 0, demand: 0.25, stock: 3}
       - {itemId: ItemGold, production: 0, demand: 48.2, stock: 1}
       - {itemId: ItemFurs, regionId: RegionBrineCoast, production: 0, demand: 30, stock: 16}
-      - {itemId: ItemWheat, regionId: RegionBrineCoast, production: 6, demand: 1.5625, stock: 378}
-      - {itemId: ItemBarley, regionId: RegionBrineCoast, production: 4, demand: 1.5625, stock: 246}
+      - {itemId: ItemWheat, regionId: RegionBrineCoast, production: 6.5, demand: 1.5625, stock: 409}
+      - {itemId: ItemBarley, regionId: RegionBrineCoast, production: 1, demand: 1.5625, stock: 80}
       - {itemId: ItemRice, production: 0, demand: 1.5625, stock: 86}
       - {itemId: ItemOats, production: 0, demand: 1.5625, stock: 102}
-      - {itemId: ItemChickpeas, regionId: RegionBrineCoast, production: 2, demand: 1.5625, stock: 123}
-      - {itemId: ItemPeas, regionId: RegionBrineCoast, production: 2, demand: 1.5625, stock: 119}
+      - {itemId: ItemChickpeas, regionId: RegionBrineCoast, production: 5, demand: 1.5625, stock: 308}
+      - {itemId: ItemPeas, regionId: RegionBrineCoast, production: 0.5, demand: 1.5625, stock: 30}
       - {itemId: ItemBeans, production: 0, demand: 1.5625, stock: 96}
       - {itemId: ItemLentils, production: 0, demand: 1.5625, stock: 93}
       - {itemId: ItemDrinkingWater, regionId: RegionBrineCoast, production: 80, demand: 75, stock: 2000}

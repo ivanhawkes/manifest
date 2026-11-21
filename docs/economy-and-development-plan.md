@@ -198,6 +198,22 @@ The same goods cannot back two broker offers, a public project and a ship load. 
 remain floats/doubles under the existing policy; finite/range/canonical-quantity rules must
 reject unavailable amounts without minting small quantities through epsilon allowances.
 
+
+### Cases for high-value goods (selected 2026-11-21)
+
+The user's (2026-11-21), [D-104](decision-ledger.md#d-104), for L32. A tote (D-087) is too coarse for
+the densest value: a tote of gold is about 77,600 troy ounces, some 289 million credits, which no
+broker, maker or company in the opening scenarios can fund, so gold never trades. A smaller
+container, the **case**, a litre (a hundred and twenty-fifth of a tote), carries gold, the other
+precious metals, gems and luxury goods (gold watches, jewellery, fine art): each item names its
+container, tote or case, and is held, moved, ordered and quoted in it, its price still per unit. A
+case of gold is about 620 ounces, some 2.3 million credits; a case of watches a few of them. A
+hold's and a warehouse's capacity counts cases against totes by volume. Some goods stay out of a
+new player's reach on purpose (the user's): gold even by the case, and tin, a tote about 27,000
+credits against a starter's 25,000, until a few runs have paid for it. Open for L32's planning: the
+case's exact size, whether it needs a secure hold fitting, its handling and insurance (L23), and
+how brokers ladder a case good.
+
 ## Brokers and merchant income
 
 A broker is a trading principal with its own finite treasury and commodity holdings at a
@@ -905,6 +921,30 @@ the declared fixed-step configuration, immediate settlement when completion/canc
 processed, and schedule continuity through save/load and crash/retry boundaries. Measure cash
 flow and update workload before changing the initial interval. These checks belong to the
 implementer and have not run.
+
+
+### Regional staple self-sufficiency (selected 2026-11-21)
+
+The user's (2026-11-21), [D-105](decision-ledger.md#d-105), for scenario authoring now and the
+generated regions of L33. Where a region's staples come from depends on what kind of world it is,
+and the shortfalls between them are the trade:
+
+- **Developed governed regions** are almost self-sufficient in the staples that keep them healthy:
+  each grows a surplus of a complementary pair, a grain and a legume or pulse that together make a
+  complete protein, and may run a deficit in the others, its total near its need (about 100% to
+  110%). The trading scenario's Ore grows rice and lentils, Brine wheat and chickpeas, each a
+  little of one other; the governance scenario's four Forge regions each grow a grain and a legume.
+- **Undeveloped worlds** start short of their staples, producing perhaps half to four fifths of
+  their need, and grow into self-sufficiency as their infrastructure and the tech tree advance
+  (irrigation, ploughs, fertilisers; [planetary development](planetary-development-plan.md)).
+- **Ruined advanced worlds** once fed themselves and no longer can: pollution, soil erosion and the
+  depletion of soil nutrients have cut their staple production below their need, for good until
+  remediation (fertilisers, soil restoration, projects of their own) wins some of it back.
+- **Resource worlds**, mining and other exploitation colonies, have little or no means of feeding
+  their people: they import their food, and some their water, entirely or in part. The governance
+  scenario's Cassiter, which grows nothing and draws its own water, is one.
+
+Every number here is a starting point for tuning ([scope](scope.md)).
 
 ### Population health, happiness and production (selected)
 

@@ -1319,7 +1319,9 @@ Slices, each one commit with its suites, the gate after the second and the last:
    households bought what they needed, with too little circulating; now each region earns a little
    more than its needs and optional goods cost. Brine's oxygen and cartridge demand, pricing rows,
    are 200 kg and 8 a day, not a tenth of what Ore makes. The trading fixture's loop runs copper,
-   not furs, since two totes of furs no longer pay for the holds.
+   not furs, since two totes of furs no longer pay for the holds. D-105 then gave each region a
+   staple pair, a complete protein: Ore rice and lentils, Brine wheat and chickpeas, with a little
+   of one grain and one legume more, 13 t a day each.
 4. The need-priced budget and relief tender functions, ready for W12; the fixture's long runs showing
    a shortage pulling a cargo in and a glut sending one away, fast-forwarded to the same bytes.
 5. Close-out.
