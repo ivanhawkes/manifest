@@ -1232,8 +1232,10 @@ Supply and demand pricing, on [D-102](decision-ledger.md#d-102) (the user's, 202
 of W12 so procurement's budgets and bids are built on live prices. Today a venue's native price is
 worked out once at load from the authored rates (`Simulation::MarketPrice` and `LocalPrice`), and
 its broker reposts one bid and one ask about it each turn (D-084), so neither stock, shortage nor need
-moves a price. The mechanism below is selected; its numbers are proposals, settled with the user as
-W19 starts. No engine edit is expected.
+moves a price. The mechanism below is selected and its numbers were settled with the user as W19 started
+(2026-11-21), each the proposal: the curve's 4 times and a quarter, rungs of an eighth of the target,
+households' bids to `r (1 + 3 p)` with no cap a turn, and the Bronze project's premium of a half
+with relief at three times the pressure past a quarter. No engine edit is expected.
 
 - **The broker's curve.** Each venue's good keeps its load-time native price as its reference `r`
   and a target stock `T` in totes, the scenario's seeded stock, at least 1. A broker holding `h` totes
@@ -1241,16 +1243,20 @@ W19 starts. No engine edit is expected.
   at five times the target, never below that, in exact integer arithmetic (no `pow`, so every build
   gives the same bits). Scarcity raises the price and a glut lowers it, and the traders' own buying and
   selling move it.
-- **A ladder, not a point.** Each turn the broker posts up to 8 levels a side, each a share of the
-  target, priced at the curve where that level leaves its stock, half the spread outside it: its asks
-  climb as it sells down and its bids fall as it buys up. A large sale walks down its bids in the same
-  fill, so selling and buying back loses the spread and the curve, and no round trip pumps money out.
+- **A ladder, not a point.** Each turn the broker posts up to 8 levels a side, each an eighth of the
+  target, at least a tote, priced at the curve at the level's middle, half the spread outside it: its
+  asks climb as it sells down and its bids fall as it buys up. A large sale walks down its bids in the
+  same fill, and buying back walks up the asks through the same middles, so the round trip loses the
+  spread and no round trip pumps money out. The middle, not the stock a level leaves, as the plan first
+  had it: that is as safe and keeps the quote at the target close to the native price (furs at Ore ask
+  8.65 and bid 7.03 about 7.79, where pricing at the level's end gives 9.17 and 6.69, and a one-tote
+  good asks four times its price).
   Within `kMaxRestingOrders` and its funds, as now; with no mint.
 - **Need raises what households pay.** Each region keeps each essential need's pressure, its unmet
   share smoothed over a day (0 to 1, saved). Households bid for an essential's goods, the cheapest
   first as now, at up to `r (1 + 3 p)` for pressure `p`: the reference when fed, rising to the
   curve's ceiling when starving, so a starving region can buy what stock there is while its funds
-  last, spending at most a share of them a turn. Optional goods are bought only at or below `r`.
+  last, with no cap a turn: households buy only the shortfall's whole totes. Optional goods are bought only at or below `r`.
 - **Surplus lowers what makers take.** A region's employer sells its batches into the broker's bids
   down to a floor, the batch's wage bill per tote, and keeps what does not sell at the floor in its
   warehouse, offering it again each turn. A glut fills the broker, its bids fall, and the maker's
@@ -1273,7 +1279,8 @@ W19 starts. No engine edit is expected.
 Slices, each one commit with its suites, the gate after the second and the last:
 
 1. The curve and the ladder: the broker's quote, its bounds and funds, a sale walking the bids and a
-   round trip losing (`trade`).
+   round trip losing (`trade`). Done 2026-11-21; `policy`, `console` and the fixtures fail on the
+   moved prices until slice 2.
 2. Reports with levels and the policy's estimate over them (`trade`, `policy`), the pins moved and why.
 3. Need pressure and the households' bids; the employer's floor and held goods (`trade`, the economy).
 4. The need-priced budget and relief tender functions, ready for W12; the fixture's long runs showing

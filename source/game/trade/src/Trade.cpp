@@ -38,10 +38,20 @@ using World::Side;
 constexpr std::int64_t kMaxCredits = std::numeric_limits<std::int64_t>::max();
 
 
+// A good a venue's broker prices (D-102): its native price, the curve's reference, and the stock it
+// is quoted at, the scenario's seeded totes, at least one.
+struct Good
+{
+	std::string itemId;
+	Decimal native;
+	std::uint64_t target{1};
+};
+
+
 struct Venue
 {
-	// The venue's market's goods in its order, each at its native price.
-	std::vector<std::pair<std::string, Decimal>> quotes;
+	// The venue's market's goods in its order.
+	std::vector<Good> goods;
 };
 
 
@@ -208,9 +218,11 @@ std::shared_ptr<const Rules> MakeRules(
 			const double needed = demand[entry.itemId];
 			const Decimal market = Core::Simulation::MarketPrice(
 			    Core::Simulation::BasePrice(*items.at(entry.itemId)), made, needed);
-			hosted.quotes.emplace_back(
-			    entry.itemId, Core::Simulation::LocalPrice(
-			                      market, entry.production, entry.demand, (made + needed) / economies));
+			hosted.goods.push_back(
+			    {entry.itemId,
+			     Core::Simulation::LocalPrice(
+			         market, entry.production, entry.demand, (made + needed) / economies),
+			     std::max<std::uint64_t>(entry.stock, 1)});
 		}
 	}
 
@@ -666,32 +678,74 @@ void Expire(SimWorld &world, const Rules &rules)
 }
 
 
-// A broker's bid and ask about a native price: half the spread either side, the ask rounded up and the
-// bid down.
-std::pair<std::int64_t, std::int64_t> Around(Decimal native, int spreadBps)
+// A tote of the good at a point of the broker's stock, in half totes so a rung is priced at its
+// middle, about its native price r and target T (D-102): r 4T / (T + 3h), r at the target, 4r empty and
+// r/4 from 5T up; half the spread above it for an ask, rounded up, or below it for a bid, rounded down.
+// Exact, so every build prices alike.
+std::int64_t CurvePrice(const Good &good, std::uint64_t halfTotes, int spreadBps, Side side)
 {
-	const __int128 mid = native.Raw();
-	return {
-	    static_cast<std::int64_t>(mid * (20'000 - spreadBps) / 20'000),
-	    static_cast<std::int64_t>((mid * (20'000 + spreadBps) + 19'999) / 20'000)};
+	const __int128 target = good.target;
+	const __int128 stock = std::min<__int128>(halfTotes, 10 * target);
+	const bool ask = side == Side::Sell;
+	const __int128 numerator = static_cast<__int128>(good.native.Raw()) * 8 * target *
+	                           (ask ? 20'000 + spreadBps : 20'000 - spreadBps);
+	const __int128 denominator = (2 * target + 3 * stock) * 20'000;
+	const __int128 price = ask ? (numerator + denominator - 1) / denominator : numerator / denominator;
+	return static_cast<std::int64_t>(std::min<__int128>(price, kMaxCredits));
 }
 
 
-// The bid and ask a venue's broker quotes the item at; none for a good its market does not price.
-std::optional<std::pair<std::int64_t, std::int64_t>> Quotes(
-    const Rules &rules, const std::string &venueId, const std::string &itemId)
+// The totes of the item the broker holds at its venue, free or in its asks.
+std::uint64_t BrokerStock(
+    const entt::registry &registry, entt::entity broker, const std::string &itemId)
+{
+	for (const World::Holding &holding : registry.get<const World::Stock>(broker).holdings)
+		if (holding.itemId == itemId)
+			return holding.available + holding.reserved;
+	return 0;
+}
+
+
+// A rung of the good's ladder: an eighth of its target, at least a tote.
+std::uint64_t Rung(const Good &good)
+{
+	return (good.target + kLevels - 1) / kLevels;
+}
+
+
+// The good at the venue its market prices; none for one it does not.
+const Good *GoodAt(const Rules &rules, const std::string &venueId, const std::string &itemId)
 {
 	const auto venue = rules.venues.find(venueId);
 	if (venue == rules.venues.end())
-		return std::nullopt;
-	const auto quote =
-	    std::ranges::find(venue->second.quotes, itemId, &std::pair<std::string, Decimal>::first);
-	if (quote == venue->second.quotes.end() || quote->second <= Decimal{})
-		return std::nullopt;
-	return Around(quote->second, rules.spreadBps);
+		return nullptr;
+	const auto good = std::ranges::find(venue->second.goods, itemId, &Good::itemId);
+	return good == venue->second.goods.end() || good->native <= Decimal{} ? nullptr : &*good;
 }
 
 
+// The best bid and ask the venue's broker quotes the item at as its stock stands, its ladder's top
+// rungs; none for a good its market does not price.
+std::optional<std::pair<std::int64_t, std::int64_t>> Quotes(
+    const entt::registry &registry, const Rules &rules, const std::string &venueId,
+    const std::string &itemId)
+{
+	const Good *pGood = GoodAt(rules, venueId, itemId);
+	if (!pGood)
+		return std::nullopt;
+	const std::uint64_t held =
+	    BrokerStock(registry, rules.identities.Find(Kind::Broker, venueId), itemId);
+	const std::uint64_t rung = Rung(*pGood);
+	return std::pair{
+	    CurvePrice(*pGood, 2 * held + rung, rules.spreadBps, Side::Buy),
+	    CurvePrice(*pGood, 2 * held - std::min(rung, held), rules.spreadBps, Side::Sell)};
+}
+
+
+// Each broker cancels its orders and posts its ladders afresh: for each good up to kLevels asks, a
+// rung each, priced at the curve at the rung's middle, so they climb as it sells down, then up to
+// kLevels bids so, falling as it buys up, within its share of the funds and its warehouse's room. A
+// sale and its buy back meet at the same middles, so the round trip loses the spread.
 void Requote(SimWorld &world, const Rules &rules)
 {
 	entt::registry &registry = world.Registry();
@@ -706,46 +760,49 @@ void Requote(SimWorld &world, const Rules &rules)
 		const entt::entity broker = rules.identities.Find(Kind::Broker, venueId);
 		const entt::entity account = rules.identities.Find(Kind::BrokerAccount, venueId);
 		JETTISON_VERIFY(broker != entt::null && account != entt::null);
-		const std::vector<std::pair<std::string, Decimal>> &quotes = rules.venues.at(venueId).quotes;
+		const std::vector<Good> &goods = rules.venues.at(venueId).goods;
 		auto left = static_cast<std::int64_t>(
-		    std::ranges::count_if(quotes, [](const auto &quote) { return quote.second > Decimal{}; }));
-		for (const auto &[itemId, native] : quotes)
+		    std::ranges::count_if(goods, [](const Good &good) { return good.native > Decimal{}; }));
+		for (const Good &good : goods)
 		{
-			if (native <= Decimal{})
+			if (good.native <= Decimal{})
 				continue;
-			const auto [bid, ask] = Around(native, rules.spreadBps);
+			const std::uint64_t rung = Rung(good);
 			World::Order order;
 			order.ownerKind = Kind::Broker;
 			order.ownerId = venueId;
 			order.venueId = venueId;
-			order.itemId = itemId;
+			order.itemId = good.itemId;
 
-			const std::vector<World::Holding> &holdings =
-			    registry.get<const World::Stock>(broker).holdings;
-			const auto held = std::ranges::find_if(
-			    holdings, [&](const World::Holding &holding) { return holding.itemId == itemId; });
-			if (held != holdings.end() && held->available > 0)
+			// Its orders retired, all it holds is free.
+			order.side = Side::Sell;
+			for (std::uint64_t at = BrokerStock(registry, broker, good.itemId), level = 0;
+			     at > 0 && level < kLevels; ++level)
 			{
-				order.side = Side::Sell;
-				order.limit = ask;
-				order.totes = held->available;
+				order.totes = std::min(rung, at);
+				order.limit = CurvePrice(good, 2 * at - order.totes, rules.spreadBps, Side::Sell);
+				at -= order.totes;
 				(void)Post(world, rules, order);
 			}
 
-			// Its share of the funds, as far as its warehouse has room; the ask may have filled.
-			const std::int64_t budget = registry.get<const World::Account>(account).balance / left--;
-			const std::optional<std::int64_t> perTote =
-			    bid > 0 ? PerTote(bid, rules.unitsPerTote.at(itemId), rules.feeBps) : std::nullopt;
-			std::uint64_t room = Core::kMaxWarehouseTotes;
-			for (const World::Holding &holding : registry.get<const World::Stock>(broker).holdings)
-				if (holding.itemId == itemId)
-					room -= holding.available + holding.reserved;
-			if (perTote && *perTote > 0 && budget / *perTote > 0 && room > 0)
+			// Its share of the funds, as far as its warehouse has room; an ask may have filled.
+			std::int64_t budget = registry.get<const World::Account>(account).balance / left--;
+			const double unitsPerTote = rules.unitsPerTote.at(good.itemId);
+			std::uint64_t held = BrokerStock(registry, broker, good.itemId);
+			order.side = Side::Buy;
+			for (std::uint64_t level = 0; level < kLevels && held < Core::kMaxWarehouseTotes; ++level)
 			{
-				order.side = Side::Buy;
-				order.limit = bid;
-				order.totes = std::min(static_cast<std::uint64_t>(budget / *perTote), room);
-				(void)Post(world, rules, order);
+				const std::uint64_t totes = std::min(rung, Core::kMaxWarehouseTotes - held);
+				order.limit = CurvePrice(good, 2 * held + totes, rules.spreadBps, Side::Buy);
+				const std::optional<std::int64_t> perTote =
+				    order.limit > 0 ? PerTote(order.limit, unitsPerTote, rules.feeBps) : std::nullopt;
+				if (!perTote || *perTote <= 0)
+					break;
+				order.totes = std::min(totes, static_cast<std::uint64_t>(budget / *perTote));
+				if (order.totes == 0 || Post(world, rules, order) != Result::Succeeded)
+					break;
+				budget -= *perTote * static_cast<std::int64_t>(order.totes);
+				held += totes;
 			}
 		}
 	}
@@ -947,7 +1004,7 @@ void Sell(SimWorld &world, const Rules &rules)
 		    registry.get<const World::Stock>(Require(rules, Kind::Employer, economy.regionId)).holdings;
 		for (const World::Holding &holding : holdings)
 		{
-			const auto quotes = Quotes(rules, holding.venueId, holding.itemId);
+			const auto quotes = Quotes(registry, rules, holding.venueId, holding.itemId);
 			if (holding.available == 0 || !quotes || quotes->first <= 0)
 				continue;
 			World::Order order;
@@ -976,7 +1033,7 @@ void Buy(
 	const entt::entity account = Require(rules, Kind::HouseholdAccount, economy.regionId);
 	std::vector<std::pair<std::int64_t, std::string>> asks;
 	for (const std::string &itemId : items)
-		if (const auto quotes = Quotes(rules, economy.venueId, itemId))
+		if (const auto quotes = Quotes(registry, rules, economy.venueId, itemId))
 			asks.emplace_back(quotes->second, itemId);
 	std::ranges::stable_sort(asks, {}, &std::pair<std::int64_t, std::string>::first);
 	for (const auto &[ask, itemId] : asks)
