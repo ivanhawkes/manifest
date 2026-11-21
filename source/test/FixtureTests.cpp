@@ -566,7 +566,7 @@ TEST_CASE("The trading fixture's loop, saved in flight with a bid resting and re
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves with
 	// what a save holds, the fixture's content or stream, or the engine's movement or save format.
-	CHECK(hosted.world.StateHash() == 0x6346aab660c9a4d0ULL);
+	CHECK(hosted.world.StateHash() == 0xa7a4a17c560e685dULL);
 }
 
 
@@ -671,6 +671,7 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 	std::optional<std::vector<std::byte>> midJob;
 	std::uint64_t saved = 0;
 	std::uint64_t calls = 0;
+	bool padLost = false;
 	const std::uint64_t end = first + std::uint64_t{60} * 60 * 25;
 	while (hosted.world.Clock().Step() < end)
 	{
@@ -683,6 +684,8 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 			const World::Job &was = jobs[id];
 			sales[id] += was.totes > 0 && job.totes < was.totes && job.phase != World::Phase::Buying;
 			jobs[id] = job;
+			const auto *journey = registry.try_get<const World::Journey>(ship(hosted, id));
+			padLost = padLost || (journey && journey->failure == World::Failure::PadLost);
 		}
 		// Saved with Ada's lot aboard and under way to its buyer.
 		const auto *pJourney = registry.try_get<const World::Journey>(ship(hosted, "Ship2"));
@@ -698,6 +701,9 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 		CHECK_MESSAGE(sales[id] > 0, id);
 		CHECK_MESSAGE(balance(hosted, id) > 25000, id);
 	}
+	// Every arrival docked: none circled the point above its pad until the pad lapsed, as one did
+	// before Jettison's docks stopped a ship out along its pad's normal first.
+	CHECK_FALSE(padLost);
 	REQUIRE(midJob);
 	const std::uint64_t steps = end - first;
 	MESSAGE(steps << " steps in " << calls << " calls");
@@ -730,5 +736,5 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 	CHECK(replayed.world.StateHash() == hosted.world.StateHash());
 
 	// The same in every build the gate runs; it moves as the fixture's does.
-	CHECK(hosted.world.StateHash() == 0xfb25e484936a45a8ULL);
+	CHECK(hosted.world.StateHash() == 0x90896e87235906bbULL);
 }

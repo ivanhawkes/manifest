@@ -1033,8 +1033,9 @@ Standing trade policies, autopilot and NPC jobs, on [D-097](decision-ledger.md#d
   straight after, on a docked fleet stopping the fast-forward.
 - **Left.** Scouting an unknown market, a standing route and Wasm policies; the charges' real amounts and the
   ones not yet charged (W18); and observation running every step while a fleet is docked, which a docked NPC keeps doing
-  (L28). Not yet diagnosed: in the zero-client run Ada's ship spends its pad's whole 300 s
-  reservation arriving at Ore and fails as `PadLost`, where every other arrival takes about 70 s.
+  (L28). A ship flown in to a pad stops out along its normal first, Jettison's stopgap for one that
+  circled its pad until the pad lapsed, as Ada's did at Ore in the zero-client run; the quality
+  solution is Jettison's ([roadmap](../../jettison/docs/roadmap.md#then-robustness-tools-and-what-a-mod-can-reach)).
 
 ## Handoff to stage 5
 
