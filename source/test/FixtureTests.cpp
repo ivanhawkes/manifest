@@ -24,6 +24,7 @@
 
 #include <manifest/company/Company.h>
 #include <manifest/host/Start.h>
+#include <manifest/policy/Policy.h>
 #include <manifest/query/Query.h>
 #include <manifest/trade/Trade.h>
 #include <manifest/travel/Travel.h>
@@ -156,8 +157,10 @@ struct Hosted
 	std::int64_t made{0};
 	std::uint64_t consumptions{0};
 
-	explicit Hosted(const std::string &content)
-	    : session{Manifest::Host::Start({content, {MANIFEST_FIXTURE_OVERLAY}, "trading"})},
+	explicit Hosted(
+	    const std::string &content,
+	    std::vector<std::filesystem::path> overlays = {MANIFEST_FIXTURE_OVERLAY})
+	    : session{Manifest::Host::Start({content, std::move(overlays), "trading"})},
 	      credits{Credits(world.Registry())}
 	{
 	}
@@ -623,4 +626,109 @@ TEST_CASE("The trading fixture's cruise fast-forwarded is the one stepped, at ev
 	const std::uint64_t steps = forwarded.world.Clock().Step() - (end - kJourneySteps);
 	MESSAGE(steps << " steps to Brine in " << calls << " calls");
 	CHECK(calls * 4 < steps);
+}
+
+
+// Nia's ship and Ada's, the trader the overlay adds and the player.
+const std::vector<std::string> kTraderShips{"Ship1", "Ship2"};
+
+// With no client connected, a scenario's NPC trader and a player whose ship has its standing policy
+// trade as the server's loop steps the world (D-097), passing over what it may (Jettison::Sim::Quiet).
+TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded and replayed alike")
+{
+	const std::vector<std::filesystem::path> overlays{
+	    MANIFEST_FIXTURE_OVERLAY, MANIFEST_TRADER_OVERLAY};
+	Hosted hosted{MANIFEST_MOD_DIRECTORY, overlays};
+	REQUIRE(
+	    hosted.Run(
+	        kHost, Company::kProvision, Company::kVersion,
+	        Company::Provision{"Ada", "Ada", "Ada Co"}) == Result::Succeeded);
+	entt::registry &registry = hosted.world.Registry();
+	const auto ship = [&](const Hosted &on, const std::string &id)
+	{ return on.services.identities.Find(Kind::Ship, id); };
+	// Both cruises on the drive's power law, as the bootstrap's, so that a trade is minutes (D-090).
+	for (const std::string &id : kTraderShips)
+		registry.get<Jettison::Space::CruiseDrive>(ship(hosted, id)).profile.reset();
+	const std::vector<std::byte> start = hosted.world.Save();
+	const std::uint64_t first = hosted.world.Clock().Step();
+	hosted.world.SetRecording(true);
+	REQUIRE(
+	    hosted.Run(
+	        kAda, Manifest::Policy::kSet, Manifest::Policy::kVersion,
+	        Manifest::Policy::Set{"Ship2", true, 0, 0}) == Result::Succeeded);
+	CHECK(registry.get<const World::Principal>(hosted.services.identities.Find(Kind::Principal, "Nia"))
+	          .npc);
+
+	// Each lot a job sells or keeps after selling, and its company's credits as the run ends.
+	const auto balance = [&](const Hosted &on, const std::string &id)
+	{
+		const entt::entity company = on.services.identities.Find(
+		    Kind::CompanyAccount, on.world.Registry().get<const World::Ship>(ship(on, id)).companyId);
+		return on.world.Registry().get<const World::Account>(company).balance;
+	};
+	std::map<std::string, int> sales;
+	std::map<std::string, World::Job> jobs;
+	std::optional<std::vector<std::byte>> midJob;
+	std::uint64_t saved = 0;
+	std::uint64_t calls = 0;
+	const std::uint64_t end = first + std::uint64_t{60} * 60 * 25;
+	while (hosted.world.Clock().Step() < end)
+	{
+		hosted.world.FastForward(end);
+		(void)hosted.world.Events().Take();
+		++calls;
+		for (const std::string &id : kTraderShips)
+		{
+			const World::Job &job = registry.get<const World::Job>(ship(hosted, id));
+			const World::Job &was = jobs[id];
+			sales[id] += was.totes > 0 && job.totes < was.totes && job.phase != World::Phase::Buying;
+			jobs[id] = job;
+		}
+		// Saved with Ada's lot aboard and under way to its buyer.
+		const auto *pJourney = registry.try_get<const World::Journey>(ship(hosted, "Ship2"));
+		if (!midJob && jobs["Ship2"].phase == World::Phase::ToDestination && pJourney &&
+		    pJourney->leg == Leg::Cruising)
+		{
+			midJob = hosted.world.Save();
+			saved = hosted.world.Clock().Step();
+		}
+	}
+	for (const std::string &id : kTraderShips)
+	{
+		CHECK_MESSAGE(sales[id] > 0, id);
+		CHECK_MESSAGE(balance(hosted, id) > 25000, id);
+	}
+	REQUIRE(midJob);
+	const std::uint64_t steps = end - first;
+	MESSAGE(steps << " steps in " << calls << " calls");
+	// The cruises passed over; every step a ship is docked runs, as observation has it (L28).
+	CHECK(calls * 3 < steps * 2);
+
+	// Loaded mid-job, it goes on to the same world.
+	Hosted loaded{MANIFEST_MOD_DIRECTORY, overlays};
+	loaded.world.Load(*midJob);
+	REQUIRE(loaded.world.Clock().Step() == saved);
+	while (loaded.world.Clock().Step() < end)
+	{
+		loaded.world.FastForward(end);
+		(void)loaded.world.Events().Take();
+	}
+	CHECK(loaded.world.StateHash() == hosted.world.StateHash());
+
+	// Replayed from the start through every step, the one command recorded, it reaches the same world
+	// with the ledger kept: nothing the fast-forward passed over was a decision.
+	Hosted replayed{MANIFEST_MOD_DIRECTORY, overlays};
+	replayed.Load(start);
+	for (std::uint64_t step = first; step < end; ++step)
+	{
+		for (const Jettison::Sim::AppliedCommand &applied : hosted.world.Recorded())
+			if (applied.step == step)
+				replayed.world.Commands().Push(applied.command);
+		replayed.Step();
+	}
+	CheckLedger(replayed);
+	CHECK(replayed.world.StateHash() == hosted.world.StateHash());
+
+	// The same in every build the gate runs; it moves as the fixture's does.
+	CHECK(hosted.world.StateHash() == 0xfb25e484936a45a8ULL);
 }

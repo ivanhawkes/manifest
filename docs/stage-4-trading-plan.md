@@ -1023,17 +1023,18 @@ Standing trade policies, autopilot and NPC jobs, on [D-097](decision-ledger.md#d
   across partial fills, retries and a save, never multiplied; an edit applied at the next decision; a
   change to an unobserved market changing no decision. The `fixture` suite: an NPC and a
   disconnected player's ship each completing trades on a server with no client, saved mid-job, loaded
-  and replayed to one hash in every gate build, and a blocked job's wait passed over by the
-  fast-forward.
+  and replayed to one hash in every gate build (the NPC added by the `one-trader` overlay); and a
+  blocked job's wait passed over by the fast-forward, which is L28's: a job blocks docked, where
+  observation runs every step, or in space after a failed arrival, where flight does.
 - **Slices**, each a commit leaving the gate green: (1) `Requests::Act`, `World::Policy`,
   `World::Job` and `Manifest.Policy.Set`; (2) the nominal charges, with their pins moved and why;
   (3) the executor, with the `policy` suite; (4) NPC
-  traders in the scenario and their provisioning; (5) its quiet and the `fixture` suite's
-  zero-client run; then [L28](delivery-order.md#later-priorities-and-re-entry-conditions), booked
+  traders in the scenario and their provisioning; (5) the `fixture` suite's zero-client run; then [L28](delivery-order.md#later-priorities-and-re-entry-conditions), booked
   straight after, on a docked fleet stopping the fast-forward.
 - **Left.** Scouting an unknown market, a standing route and Wasm policies; the charges' real amounts and the
   ones not yet charged (W18); and observation running every step while a fleet is docked, which a docked NPC keeps doing
-  (L28).
+  (L28). Not yet diagnosed: in the zero-client run Ada's ship spends its pad's whole 300 s
+  reservation arriving at Ore and fails as `PadLost`, where every other arrival takes about 70 s.
 
 ## Handoff to stage 5
 

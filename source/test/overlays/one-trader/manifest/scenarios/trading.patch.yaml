@@ -1,0 +1,4 @@
+version: 1
+# An NPC trader beside the players, so the fixture's run with no client sees one trade (W10).
+traders:
+  - {principalId: Nia, displayName: Nia, companyName: Nia Co}

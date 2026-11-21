@@ -13,7 +13,8 @@ target_compile_options(manifest_fixture_tests PRIVATE -ffp-contract=off)
 target_compile_definitions(manifest_fixture_tests PRIVATE
     MANIFEST_MOD_DIRECTORY="${MANIFEST_MOD_DIRECTORY}"
     MANIFEST_MOD_PACK="${PROJECT_BINARY_DIR}/manifest.pack"
-    MANIFEST_FIXTURE_OVERLAY="${CMAKE_CURRENT_SOURCE_DIR}/overlays/quick-batches")
+    MANIFEST_FIXTURE_OVERLAY="${CMAKE_CURRENT_SOURCE_DIR}/overlays/quick-batches"
+    MANIFEST_TRADER_OVERLAY="${CMAKE_CURRENT_SOURCE_DIR}/overlays/one-trader")
 add_dependencies(manifest_fixture_tests manifest_validate_pack)
 add_test(NAME fixture COMMAND manifest_fixture_tests)
 
