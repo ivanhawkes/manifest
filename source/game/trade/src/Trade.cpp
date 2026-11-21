@@ -19,6 +19,7 @@
 
 #include <jettison/core/Assert.h>
 #include <jettison/ecs/Scheduler.h>
+#include <jettison/profile/Profile.h>
 #include <jettison/reflect/Reflect.h>
 #include <jettison/spatial/SystemIndices.h>
 
@@ -556,6 +557,7 @@ void Record(
 // when every check holds; what is left rests under a new ID.
 Result Post(SimWorld &world, const Rules &rules, World::Order order)
 {
+	JETTISON_PROFILE_ZONE("Manifest.Trade.Post");
 	entt::registry &registry = world.Registry();
 	const std::uint64_t step = world.Clock().Step();
 	const double unitsPerTote = rules.unitsPerTote.at(order.itemId);
@@ -783,6 +785,7 @@ void RetireAll(
 
 void Expire(SimWorld &world, const Rules &rules)
 {
+	JETTISON_PROFILE_ZONE("Manifest.Trade.Expire");
 	const std::uint64_t step = world.Clock().Step();
 	std::vector<std::pair<std::uint64_t, entt::entity>> expired;
 	for (const auto [entity, order] : world.Registry().view<const World::Order>().each())
@@ -921,6 +924,7 @@ void Bids(
 // are retired and posted afresh, each at the share the goods before it leave.
 void Requote(SimWorld &world, const Rules &rules)
 {
+	JETTISON_PROFILE_ZONE("Manifest.Trade.Requote");
 	entt::registry &registry = world.Registry();
 	const std::uint64_t next = world.Clock().Step() + rules.turnSteps;
 	using Resting = std::vector<std::pair<std::uint64_t, entt::entity>>;
@@ -1100,6 +1104,7 @@ std::optional<World::Batch> Start(
 // work left. A finished batch with no room in the warehouse waits, finished, for room.
 void Produce(SimWorld &world, const Rules &rules)
 {
+	JETTISON_PROFILE_ZONE("Manifest.Trade.Produce");
 	entt::registry &registry = world.Registry();
 	for (const Economy &economy : rules.economies)
 	{
@@ -1215,6 +1220,7 @@ void CancelAll(SimWorld &world, const Rules &rules, Kind kind, const std::string
 // again next turn.
 void Sell(SimWorld &world, const Rules &rules)
 {
+	JETTISON_PROFILE_ZONE("Manifest.Trade.Sell");
 	entt::registry &registry = world.Registry();
 	for (const Economy &economy : rules.economies)
 	{
@@ -1351,6 +1357,7 @@ constexpr double kPressureSeconds = 3'600.0;
 // next step.
 void Households(SimWorld &world, const Rules &rules)
 {
+	JETTISON_PROFILE_ZONE("Manifest.Trade.Households");
 	entt::registry &registry = world.Registry();
 	for (const Economy &economy : rules.economies)
 	{
@@ -1474,6 +1481,7 @@ constexpr double kAdditionError = 0x1p-52;
 // only adds each batch's work to it, the same addition every step.
 std::uint64_t EconomyNext(const SimWorld &world, const Rules &rules)
 {
+	JETTISON_PROFILE_ZONE("Manifest.Trade.EconomyNext");
 	const entt::registry &registry = world.Registry();
 	const std::uint64_t now = world.Clock().Step();
 	std::uint64_t next = TurnEnd(now, rules.turnSteps);
@@ -1537,6 +1545,7 @@ std::uint64_t EconomyNext(const SimWorld &world, const Rules &rules)
 // adds it.
 void EconomySkip(SimWorld &world, const Rules &rules, std::uint64_t passed)
 {
+	JETTISON_PROFILE_ZONE("Manifest.Trade.EconomySkip");
 	entt::registry &registry = world.Registry();
 	EachUnderWay(
 	    world, rules,
@@ -1579,6 +1588,7 @@ void Remember(World::Reports &reports, World::Report report)
 // Each docked fleet's venue reported to its principals as it is when the step observed begins.
 void Observe(SimWorld &world, const Rules &rules, std::uint64_t observed)
 {
+	JETTISON_PROFILE_ZONE("Manifest.Trade.Observe");
 	entt::registry &registry = world.Registry();
 	// Each venue a fleet is docked at, and the principals whose fleets they are.
 	std::map<std::string, std::set<std::string>, std::less<>> covered;

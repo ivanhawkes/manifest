@@ -23,6 +23,7 @@ manifest_add_module(trade
 		Jettison::Sim
 	PRIVATE_LIBRARIES
 		Jettison::Core
+		Jettison::Profile
 		Jettison::Reflect
 		Jettison::Spatial
 )
