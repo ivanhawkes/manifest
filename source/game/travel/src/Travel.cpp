@@ -81,6 +81,15 @@ const Celestial::StarSystem *SystemOf(
 }
 
 
+// The world's entity of the kind and ID, which the world must hold.
+entt::entity Required(const Rules &rules, Kind kind, const std::string &id)
+{
+	const entt::entity entity = rules.identities.Find(kind, id);
+	JETTISON_VERIFY(entity != entt::null);
+	return entity;
+}
+
+
 Result Started(SimWorld &world, const Rules &rules, const Actor &actor, const Travel &travel)
 {
 	entt::registry &registry = world.Registry();
@@ -98,6 +107,31 @@ Result Started(SimWorld &world, const Rules &rules, const Actor &actor, const Tr
 		return Result::Travelling;
 	if (record.dockedAt == travel.venueId)
 		return Result::AlreadyThere;
+
+	// The destination's docking fee and the ship's arrears where it is, paid as it starts (D-097).
+	const std::int64_t fee =
+	    registry.get<World::Fees>(Required(rules, Kind::Market, travel.venueId)).docking;
+	const auto *pArrears = registry.try_get<World::Arrears>(ship);
+	const std::int64_t owed = pArrears ? pArrears->owed : 0;
+	World::Account &account =
+	    registry.get<World::Account>(Required(rules, Kind::CompanyAccount, record.companyId));
+	if (account.balance < fee || account.balance - fee < owed)
+		return Result::InsufficientFunds;
+	World::Account &destination =
+	    registry.get<World::Account>(Required(rules, Kind::VenueAccount, travel.venueId));
+	World::Account *pLeft =
+	    owed > 0 ? &registry.get<World::Account>(Required(rules, Kind::VenueAccount, record.dockedAt))
+	             : nullptr;
+	constexpr std::int64_t kMaxCredits = std::numeric_limits<std::int64_t>::max();
+	if (fee > kMaxCredits - destination.balance || (pLeft && owed > kMaxCredits - pLeft->balance))
+		return Result::InvalidQuantity;
+	account.balance -= fee + owed;
+	destination.balance += fee;
+	if (pLeft)
+	{
+		pLeft->balance += owed;
+		registry.remove<World::Arrears>(ship);
+	}
 	registry.emplace_or_replace<World::Journey>(
 	    ship, travel.venueId, Leg::Departing, Failure::None, world.Clock().Step());
 	return Result::Succeeded;

@@ -71,6 +71,18 @@ market:
   # (docs/market-information-plan.md, "Sales reporting").
   salesWindowSeconds: 3600
 
+# What each venue charges as the initial state opens it, in whole credits (D-097, D-098): nominal
+# values, so the charges are in place but small, until W18 selects them; each venue's operator's
+# to change. A docking fee as a journey to the venue starts; a berth fee as each simulation hour
+# ends, for each ship docked there.
+charges:
+  dockingFee: 10
+  berthFeePerHour: 2
+  # Yearly interest on unpaid berth fees, in basis points, compounded daily on what is owed, and the
+  # game's usury limit, the most any venue may set (the user's, 2026-11-21).
+  arrearsRateBps: 1000
+  maxArrearsRateBps: 3500
+
 brokers:
   # Each venue's broker (D-084), initial test values (W03): its account at the start, in whole
   # credits, and its quotes 10% apart around the native price.

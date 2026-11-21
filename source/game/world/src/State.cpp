@@ -212,6 +212,24 @@ std::optional<std::string> Broken(const Reports &reports)
 }
 
 
+std::optional<std::string> Broken(const Fees &fees)
+{
+	if (fees.docking < 0 || fees.berthPerHour < 0 || fees.arrearsRateBps < 0)
+		return "a venue's fee is below 0";
+	return std::nullopt;
+}
+
+
+std::optional<std::string> Broken(const Arrears &arrears)
+{
+	if (arrears.owed <= 0)
+		return "a ship's arrears are not above 0";
+	if (arrears.carry < 0 || arrears.carry >= kRateYear)
+		return "a ship's arrears carry a part of a credit outside [0, 1)";
+	return std::nullopt;
+}
+
+
 std::optional<std::string> Broken(const Policy &policy)
 {
 	if (policy.targetProfit < 0 || policy.lossAllowance < 0)
@@ -397,6 +415,13 @@ void RegisterTypes()
 		    .Field<&Report::since>("since", kSaved)
 		    .Field<&Report::lines>("lines", kSaved);
 		RegisterType<Reports>("Manifest.World.Reports").Field<&Reports::reports>("reports", kSaved);
+		RegisterType<Fees>("Manifest.World.Fees")
+		    .Field<&Fees::docking>("docking", kSaved)
+		    .Field<&Fees::berthPerHour>("berthPerHour", kSaved)
+		    .Field<&Fees::arrearsRateBps>("arrearsRateBps", kSaved);
+		RegisterType<Arrears>("Manifest.World.Arrears")
+		    .Field<&Arrears::owed>("owed", kSaved)
+		    .Field<&Arrears::carry>("carry", kSaved);
 		RegisterType<Policy>("Manifest.World.Policy")
 		    .Field<&Policy::enabled>("enabled", kSaved)
 		    .Field<&Policy::targetProfit>("targetProfit", kSaved)

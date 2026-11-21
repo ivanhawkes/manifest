@@ -1078,5 +1078,94 @@ TEST_CASE("A save with work pending, and a replay from the start, carry the comp
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves only
 	// with what a save holds or the engine's save format, and a change that moves it says so.
-	CHECK(hosted.world.StateHash() == 0x6ee38e882d5e2b5cULL);
+	CHECK(hosted.world.StateHash() == 0xafb20f284d9458deULL);
+}
+
+
+TEST_CASE(
+    "A docked ship pays its berth fee each hour, owes what it cannot, with interest, and pays all to "
+    "leave")
+{
+	Hosted hosted;
+	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
+	entt::registry &registry = hosted.world.Registry();
+	const entt::entity ship = hosted.Find(Kind::Ship, "Ship1");
+	World::Account &account =
+	    registry.get<World::Account>(hosted.Find(Kind::CompanyAccount, "Company1"));
+	World::Account &ore =
+	    registry.get<World::Account>(hosted.Find(Kind::VenueAccount, "VenueOreHighport"));
+	World::Account &brine =
+	    registry.get<World::Account>(hosted.Find(Kind::VenueAccount, "VenueBrineHighport"));
+	const World::Fees nominal{10, 2, 1000};
+	CHECK(registry.get<World::Fees>(hosted.Find(Kind::Market, "VenueOreHighport")) == nominal);
+	const auto stepTo = [&hosted](std::uint64_t step)
+	{
+		while (hosted.world.Clock().Step() < step)
+			hosted.world.Step();
+	};
+	constexpr std::uint64_t kHour = 3600;
+
+	// The hour's fee as its last step ends, and no sooner.
+	stepTo(kHour - 1);
+	CHECK(account.balance == 25'000);
+	stepTo(kHour);
+	CHECK(account.balance == 24'998);
+	CHECK(ore.balance == 2);
+
+	// What the account cannot pay is owed.
+	account.balance = 1;
+	stepTo(2 * kHour);
+	CHECK(account.balance == 0);
+	CHECK(ore.balance == 3);
+	CHECK(registry.get<World::Arrears>(ship) == World::Arrears{1, 0});
+
+	// A day's interest as the day ends, before the hour's fee: at a rate above the usury limit, the
+	// limit's 35% a year, 350 credits a day on 365,000.
+	stepTo(23 * kHour);
+	registry.replace<World::Arrears>(ship, 365'000, 0);
+	registry.get<World::Fees>(hosted.Find(Kind::Market, "VenueOreHighport")).arrearsRateBps = 100'000;
+	stepTo(24 * kHour);
+	CHECK(registry.get<World::Arrears>(ship) == World::Arrears{365'352, 0});
+
+	// Leaving pays the arrears to Ore and the docking fee to Brine, or the ship does not leave.
+	const Manifest::Travel::Travel toBrine{"Ship1", "VenueBrineHighport"};
+	CHECK(hosted.Run(kAda, Manifest::Travel::kTravel, toBrine) == Result::InsufficientFunds);
+	account.balance = 365'352 + 9;
+	CHECK(hosted.Run(kAda, Manifest::Travel::kTravel, toBrine) == Result::InsufficientFunds);
+	const std::int64_t oreBefore = ore.balance;
+	account.balance = 365'352 + 10;
+	CHECK(hosted.Run(kAda, Manifest::Travel::kTravel, toBrine) == Result::Succeeded);
+	CHECK(account.balance == 0);
+	CHECK(ore.balance == oreBefore + 365'352);
+	CHECK(brine.balance == 10);
+	CHECK_FALSE(registry.all_of<World::Arrears>(ship));
+}
+
+
+TEST_CASE("Saved fees and arrears load, and broken ones do not")
+{
+	Hosted hosted;
+	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
+	entt::registry &registry = hosted.world.Registry();
+	const entt::entity ship = hosted.Find(Kind::Ship, "Ship1");
+	registry.emplace<World::Arrears>(ship, 5, 7);
+	Hosted loaded;
+	loaded.world.Load(hosted.world.Save());
+	CHECK(loaded.world.StateHash() == hosted.world.StateHash());
+
+	for (const World::Arrears broken : {World::Arrears{0, 0}, World::Arrears{5, World::kRateYear}})
+	{
+		registry.replace<World::Arrears>(ship, broken);
+		Hosted refused;
+		CHECK_THROWS(refused.world.Load(hosted.world.Save()));
+	}
+	registry.replace<World::Arrears>(ship, 5, 0);
+	registry.get<World::Ship>(ship).dockedAt.clear();
+	Hosted undocked;
+	CHECK_THROWS(undocked.world.Load(hosted.world.Save()));
+	registry.get<World::Ship>(ship).dockedAt = "VenueOreHighport";
+	registry.remove<World::Arrears>(ship);
+	registry.get<World::Fees>(hosted.Find(Kind::Market, "VenueOreHighport")).docking = -1;
+	Hosted negative;
+	CHECK_THROWS(negative.world.Load(hosted.world.Save()));
 }

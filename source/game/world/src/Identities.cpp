@@ -118,6 +118,16 @@ std::function<void()> Identities::Load(
 	for (const auto [entity, sales] : loaded.view<const Sales>().each())
 		if (const std::optional<std::string> problem = Broken(sales))
 			reader.Fail(*problem);
+	for (const auto [entity, fees] : loaded.view<const Fees>().each())
+		if (const std::optional<std::string> problem = Broken(fees))
+			reader.Fail(*problem);
+	for (const auto [entity, arrears] : loaded.view<const Arrears>().each())
+	{
+		if (const std::optional<std::string> problem = Broken(arrears))
+			reader.Fail(*problem);
+		if (const auto *pShip = loaded.try_get<const Ship>(entity); !pShip || pShip->dockedAt.empty())
+			reader.Fail("arrears are owed by no docked ship");
+	}
 	for (const auto [entity, policy] : loaded.view<const Policy>().each())
 		if (const std::optional<std::string> problem = Broken(policy))
 			reader.Fail(*problem);

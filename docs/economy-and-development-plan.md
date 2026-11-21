@@ -1141,7 +1141,7 @@ enabled; do not duplicate a payment across regions or reset carry by changing a 
 This is the first selected public-revenue rule. The local treasury can spend received credits
 through its authorised public budgets and procurement. Taxation transfers existing funds;
 it does not create currency or establish sustainable wage funding or development income.
-Player rate-setting powers and other tax bases remain open; the initial monetary rule is below.
+A governor sets its region's rates ([D-098](decision-ledger.md#d-098), L29); other tax bases remain open; the initial monetary rule is below.
 
 Implementer evidence includes the 100/90/10 split, no tax on unpaid payroll, insufficient or
 reserved employer funds, ten one-credit payments matching one ten-credit payment, and

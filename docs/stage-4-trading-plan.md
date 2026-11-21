@@ -972,11 +972,16 @@ Standing trade policies, autopilot and NPC jobs, on [D-097](decision-ledger.md#d
   and the bid's totes, the hold's free totes and what the account covers at the ask's `PerTote`; the
   estimate is the bid's proceeds net of its fee less the ask's cost and fee, by the market price
   rules, less the route's charges. **Charges** are real from W10 at nominal values (the user's,
-  2026-11-21), `balance.yaml`'s `charges`: transport, a docking fee of 10 credits paid to the
+  2026-11-21). They are each venue's own, `World::Fees` on the venue, which its operator sets
+  ([D-098](decision-ledger.md#d-098)); W10 gives every venue `balance.yaml`'s `charges` defaults
+  in the initial state and adds no command to change them. A venue's fees are posted, so an
+  estimate reads them live rather than from reports, and a change applies to the next charge, not
+  one paid. Transport is a docking fee, 10 credits by default, paid to the
   destination venue's account when a `Travel` starts (refused `InsufficientFunds` without it, so it
-  never overdraws); and holding, a berth fee of 2 credits each simulation hour a ship stays docked,
-  paid to its venue's account, what the account cannot pay carried as the company's `Arrears` and
-  taken first at the next hour. The estimate's charges are one function's, `Policy::Charges`: the
+  never overdraws); and holding is a berth fee, 2 credits by default each simulation hour a ship stays docked,
+  paid to its venue's account, what the account cannot pay carried as the ship's `Arrears` to that venue,
+  taken first at the next hour and all of it before the ship leaves; arrears compound daily at the
+  venue's rate, 10% a year by default, never above the usury limit of 35% a year (D-098). The estimate's charges are one function's, `Policy::Charges`: the
   destination's docking fee, and the source's if the ship must fly there first. A lot keeps the
   charges attributed to it as they fall (`charges`, whole credits: its journeys' docking fees and
   its berth hours), and its sale floor recovers them with its cost. Their real amounts and bases,

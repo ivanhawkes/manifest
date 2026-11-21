@@ -30,7 +30,11 @@ namespace Manifest::Travel
 // reach, the cruise and the pad asked for at the destination, one leg a step, to the ship docked and
 // its Ship::dockedAt the venue. It writes no engine state. Refused, writing nothing, for a ship or a
 // venue the world does not have (UnknownTarget), a ship of another company (NotAuthorised), one whose
-// journey is under way (Travelling) and one docked at the venue already (AlreadyThere).
+// journey is under way (Travelling), one docked at the venue already (AlreadyThere), and a company
+// whose account lacks the venue's docking fee (World::Fees) and the ship's World::Arrears together
+// (InsufficientFunds), or a venue whose account cannot hold what it is paid (InvalidQuantity). As it
+// starts it pays the fee to the venue's account and the arrears to the account of the venue it leaves
+// (D-097).
 struct Travel
 {
 	std::string shipId;

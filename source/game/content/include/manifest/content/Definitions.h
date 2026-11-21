@@ -163,6 +163,21 @@ struct MarketTuning
 	double salesWindowSeconds{0.0};
 };
 
+// What each venue charges as the initial state opens it (D-097, D-098), in whole credits, each at
+// least 0: its operator's to change, nominal until W18 selects them.
+struct ChargesTuning
+{
+	// Paid to the destination as a journey to it starts.
+	std::int64_t dockingFee{0};
+	// Paid by each ship docked at the venue as each simulation hour ends.
+	std::int64_t berthFeePerHour{0};
+	// The yearly interest on a ship's arrears to the venue, in basis points, compounded daily.
+	int arrearsRateBps{0};
+	// The most any venue may charge, the game's usury limit, at most 1,000,000: arrearsRateBps is at
+	// most this.
+	int maxArrearsRateBps{0};
+};
+
 // Each venue's broker (D-084): what its account starts with, and how far apart it quotes.
 struct BrokerTuning
 {
@@ -206,6 +221,7 @@ struct TuningDefinition
 	LifeSupportTuning lifeSupport;
 	CompanyTuning company;
 	MarketTuning market;
+	ChargesTuning charges;
 	BrokerTuning brokers;
 	ConcessionTuning concessions;
 	ProcurementTuning procurement;

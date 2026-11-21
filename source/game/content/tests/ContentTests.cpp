@@ -377,6 +377,14 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	    balance, "version: 1\nmarket: {listingFeeBps: 10001}\n",
 	    "market.listingFeeBps must be in [0, 10000]");
 	CheckRefused(
+	    balance, "version: 1\ncharges: {dockingFee: -1}\n", "charges.dockingFee must not be below 0");
+	CheckRefused(
+	    balance, "version: 1\ncharges: {berthFeePerHour: -1}\n",
+	    "charges.berthFeePerHour must not be below 0");
+	CheckRefused(
+	    balance, "version: 1\ncharges: {arrearsRateBps: 3501}\n",
+	    "charges.arrearsRateBps must be in [0, charges.maxArrearsRateBps]");
+	CheckRefused(
 	    balance, "version: 1\nmarket: {orderLifeSeconds: -1}\n",
 	    "market.orderLifeSeconds must be finite and not below 0");
 	CheckRefused(

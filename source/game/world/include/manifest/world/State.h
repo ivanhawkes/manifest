@@ -400,6 +400,38 @@ struct Reports
 	bool operator==(const Reports &) const = default;
 };
 
+// A yearly rate in basis points over a day of it: interest on arrears is owed * rate / kRateYear a day.
+inline constexpr std::int64_t kRateYear = 10'000LL * 365;
+
+// A venue's posted charges (D-097, D-098), on its Market, in whole credits, each at least 0: its
+// operator's to set, each venue's the tuning's charges in the initial state. A change applies to the
+// next charge, never to one paid.
+struct Fees
+{
+	// Paid to the venue as a journey to it starts (Travel::Travel).
+	std::int64_t docking{0};
+	// Paid by each ship docked at the venue as each simulation hour ends.
+	std::int64_t berthPerHour{0};
+	// The yearly interest on arrears owed to the venue, in basis points, compounded daily, at most
+	// the tuning's usury limit as it is charged.
+	int arrearsRateBps{0};
+
+	bool operator==(const Fees &) const = default;
+};
+
+// What a docked ship's company could not pay of its berth fees, in whole credits above 0, owed to the
+// venue the ship is docked at, its interest added to it as each day ends: paid first as the next hour
+// ends, and all of it before the ship leaves (Travel::Travel), so a ship that is not docked owes none.
+struct Arrears
+{
+	std::int64_t owed{0};
+	// The part of a credit of interest accrued and not yet added to what is owed, in units of
+	// 1 / kRateYear credits, below kRateYear, so a small debt accrues exactly over the days.
+	std::int64_t carry{0};
+
+	bool operator==(const Arrears &) const = default;
+};
+
 // A ship's standing trade policy (D-097), which its owner sets: whether its job runs, the whole credits
 // a trade's estimate must be above and a sale must recover beyond its lot's cost and charges, and the
 // whole credits below that the owner allows a lot to sell for, each at least 0.
@@ -474,6 +506,10 @@ std::optional<std::string> Broken(const LifeSupport &lifeSupport);
 std::optional<std::string> Broken(const Sales &sales);
 
 std::optional<std::string> Broken(const Reports &reports);
+
+std::optional<std::string> Broken(const Fees &fees);
+
+std::optional<std::string> Broken(const Arrears &arrears);
 
 std::optional<std::string> Broken(const Policy &policy);
 

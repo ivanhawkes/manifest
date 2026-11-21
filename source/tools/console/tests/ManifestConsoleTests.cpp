@@ -537,7 +537,7 @@ TEST_CASE("Manifest console: the vertical slice, furs bought at Ore, flown to Br
 	                 Reported(arrived, "VenueBrineHighport", "ItemFurs", "bid"));
 	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Trade.Place: Succeeded");
 	const std::string sold = Execute(session, "observe Ada").text;
-	MANIFEST_CHECK_CONTAINS(sold, "Company1 'Ada Co': 29590 credits");
+	MANIFEST_CHECK_CONTAINS(sold, "Company1 'Ada Co': 29580 credits");
 	CHECK(sold.substr(0, sold.find("\nmarkets")).find("ItemFurs") == std::string::npos);
 	MANIFEST_CHECK_CONTAINS(sold, "ItemFurs: bid");
 	MANIFEST_CHECK_CONTAINS(sold, "totes sold, last sold at");
@@ -554,7 +554,7 @@ TEST_CASE("Manifest console: the vertical slice, furs bought at Ore, flown to Br
 	Execute(session, "cancel Ada " + orderId);
 	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Trade.Cancel: Succeeded");
 	const std::string cancelled = Execute(session, "observe Ada").text;
-	MANIFEST_CHECK_CONTAINS(cancelled, "29590 credits");
+	MANIFEST_CHECK_CONTAINS(cancelled, "29580 credits");
 	CHECK(cancelled.find("Order") == std::string::npos);
 }
 

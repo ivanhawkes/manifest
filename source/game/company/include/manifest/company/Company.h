@@ -85,12 +85,19 @@ inline constexpr std::string_view kUpgrade = "Manifest.Company.Upgrade";
 // and draws each unconnected ship's step of use from its own tanks and cartridges, in order: the
 // tuning's rates times its hull's occupants, never more than is left (D-046, D-094).
 inline constexpr std::string_view kLifeSupportSystem = "manifest.lifeSupport";
+// The system after it that charges the berth fee (D-097): as each simulation hour's last step ends,
+// each ship docked then, in entity order, pays its World::Arrears and its venue's World::Fees
+// berthPerHour from its company's account to its venue's, as far as the one holds and the other has
+// room, what is left owed carried as its arrears. As each day's last step ends, first, the arrears
+// grow by a day's interest at the venue's arrearsRateBps, at most the tuning's usury limit.
+inline constexpr std::string_view kBerthSystem = "manifest.berths";
 inline constexpr std::uint32_t kVersion = 1;
 
 // The payloads, with Reflect, and the command types. Safe to call again.
 void RegisterTypes();
 
-// Registers the commands with the requests, the life-support system after manifest.travel, and the
+// Registers the commands with the requests, the life-support and berth systems after manifest.travel,
+// and the
 // ships' holds with the identities (World::Identities::SetHolds). The identities, the fleet and the
 // content, whose scenario they run on, must outlive the world. Throws std::invalid_argument for a
 // content set with no scenario selected.

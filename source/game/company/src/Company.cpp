@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <format>
 #include <functional>
+#include <limits>
 #include <map>
 #include <memory>
 #include <optional>
@@ -35,6 +36,8 @@ using World::Kind;
 
 
 constexpr double kSecondsPerDay = 86400.0;
+constexpr double kSecondsPerHour = 3600.0;
+constexpr std::int64_t kMaxCredits = std::numeric_limits<std::int64_t>::max();
 
 
 // What the commands and the system run on: the fleet ships are parked through, the effects engine
@@ -56,6 +59,8 @@ struct Rules
 	double oxygenPerTote{0.0};
 	double cartridgesPerTote{0.0};
 	std::uint64_t windowSteps{0};
+	// A simulation hour in the world's steps, which the berth fee is charged by.
+	std::uint64_t hourSteps{0};
 };
 
 
@@ -555,6 +560,71 @@ void BreatheSkip(entt::registry &registry, const Rules &rules, double step, std:
 		}
 	}
 }
+// A day's interest on the arrears at the yearly rate in basis points, compounded: added to what is
+// owed in whole credits, the part of a credit left carried to the next day.
+void Accrue(World::Arrears &arrears, int rateBps)
+{
+	const std::int64_t part = arrears.owed % World::kRateYear * rateBps + arrears.carry;
+	const std::int64_t interest = arrears.owed / World::kRateYear * rateBps + part / World::kRateYear;
+	arrears.owed += std::min(interest, kMaxCredits - arrears.owed);
+	arrears.carry = part % World::kRateYear;
+}
+
+
+// The hour's berth fee of every docked ship, in entity order, as the hour's last step ends
+// (kBerthSystem), on the day's last its arrears' interest first.
+void Berth(SimWorld &world, const Rules &rules)
+{
+	if ((world.Clock().Step() + 1) % rules.hourSteps != 0)
+		return;
+	entt::registry &registry = world.Registry();
+	std::vector<entt::entity> ships;
+	for (const auto [ship, record] : registry.view<const World::Ship>().each())
+		if (!record.dockedAt.empty())
+			ships.push_back(ship);
+	std::ranges::sort(ships, {}, [](entt::entity ship) { return entt::to_integral(ship); });
+	const bool dayEnds = (world.Clock().Step() + 1) % (rules.hourSteps * 24) == 0;
+	for (const entt::entity ship : ships)
+	{
+		const World::Ship &record = registry.get<const World::Ship>(ship);
+		const entt::entity market = rules.identities.Find(Kind::Market, record.dockedAt);
+		JETTISON_VERIFY(market != entt::null);
+		const World::Fees &fees = registry.get<const World::Fees>(market);
+		const std::int64_t fee = fees.berthPerHour;
+		const auto *pArrears = registry.try_get<const World::Arrears>(ship);
+		World::Arrears arrears = pArrears ? *pArrears : World::Arrears{};
+		if (dayEnds)
+			Accrue(
+			    arrears, std::min(fees.arrearsRateBps, rules.content.tuning.charges.maxArrearsRateBps));
+		const std::int64_t owed = arrears.owed;
+		const std::int64_t due = owed + std::min(fee, kMaxCredits - owed);
+		World::Account &account =
+		    registry.get<World::Account>(rules.identities.Find(Kind::CompanyAccount, record.companyId));
+		World::Account &venue =
+		    registry.get<World::Account>(rules.identities.Find(Kind::VenueAccount, record.dockedAt));
+		const std::int64_t paid = std::min({due, account.balance, kMaxCredits - venue.balance});
+		account.balance -= paid;
+		venue.balance += paid;
+		if (due > paid)
+			registry.emplace_or_replace<World::Arrears>(ship, due - paid, arrears.carry);
+		else
+			registry.remove<World::Arrears>(ship);
+	}
+}
+
+
+// The first step the berth fee has to run in (Jettison::Sim::Quiet): the hour's last, while a ship
+// is docked; otherwise never, as no other step charges anything.
+std::uint64_t BerthNext(const SimWorld &world, const Rules &rules)
+{
+	for (const auto [ship, record] : world.Registry().view<const World::Ship>().each())
+		if (!record.dockedAt.empty())
+		{
+			const std::uint64_t now = world.Clock().Step();
+			return now + (rules.hourSteps - 1 - now % rules.hourSteps);
+		}
+	return std::numeric_limits<std::uint64_t>::max();
+}
 } // namespace
 
 
@@ -594,6 +664,10 @@ void RegisterCommands(
 		throw std::invalid_argument{"the content set has no scenario selected"};
 	auto rules = std::make_shared<Rules>(identities, fleet, content, selected->second);
 	rules->windowSteps = Trade::SalesWindowSteps(world, content);
+	const double hourSteps = std::round(kSecondsPerHour / world.FixedStep());
+	if (!(hourSteps >= 1.0) || std::abs(hourSteps * world.FixedStep() - kSecondsPerHour) > 1e-6)
+		throw std::invalid_argument{"a simulation hour is not a whole number of the world's steps"};
+	rules->hourSteps = static_cast<std::uint64_t>(hourSteps);
 	for (const Content::ItemSelection &selection : selected->second.items)
 	{
 		const auto item =
@@ -674,5 +748,13 @@ void RegisterCommands(
 	    {.next = [rules](const SimWorld &target) { return BreatheNext(target, *rules); },
 	     .skip = [rules](SimWorld &target, std::uint64_t passed, double)
 	     { BreatheSkip(target.Registry(), *rules, target.FixedStep(), passed); }});
+	world.RegisterSystem(
+	    {.name = std::string{kBerthSystem},
+	     .phase = Jettison::Ecs::TickPhase::Simulation,
+	     .access = Jettison::Ecs::Access::Of<World::Ship, World::Fees, World::Arrears, World::Account>()
+	                   .Writing<World::Account, World::Arrears>(),
+	     .after = {std::string{kLifeSupportSystem}},
+	     .run = [rules, &world](entt::registry &, double) { Berth(world, *rules); }},
+	    {.next = [rules](const SimWorld &target) { return BerthNext(target, *rules); }});
 }
 } // namespace Manifest::Company

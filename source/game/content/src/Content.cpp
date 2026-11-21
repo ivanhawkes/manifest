@@ -629,6 +629,16 @@ void CheckTuning(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 		    "must be finite and not below 0");
 		checker.Require(
 		    Positive(tuning.market.salesWindowSeconds), "market.salesWindowSeconds", "must be above 0");
+		checker.Require(tuning.charges.dockingFee >= 0, "charges.dockingFee", "must not be below 0");
+		checker.Require(
+		    tuning.charges.berthFeePerHour >= 0, "charges.berthFeePerHour", "must not be below 0");
+		checker.Require(
+		    tuning.charges.maxArrearsRateBps >= 0 && tuning.charges.maxArrearsRateBps <= 1'000'000,
+		    "charges.maxArrearsRateBps", "must be in [0, 1000000]");
+		checker.Require(
+		    tuning.charges.arrearsRateBps >= 0 &&
+		        tuning.charges.arrearsRateBps <= tuning.charges.maxArrearsRateBps,
+		    "charges.arrearsRateBps", "must be in [0, charges.maxArrearsRateBps]");
 		checker.Require(tuning.brokers.treasury >= 0, "brokers.treasury", "must not be below 0");
 		checker.Require(
 		    tuning.brokers.spreadBps >= 0 && tuning.brokers.spreadBps < 20000, "brokers.spreadBps",
