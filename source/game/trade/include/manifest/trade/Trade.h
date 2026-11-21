@@ -55,7 +55,7 @@ inline constexpr std::uint32_t kVersion = 1;
 inline constexpr std::size_t kMaxFills = 64;
 inline constexpr std::size_t kMaxRestingOrders = 64;
 // A broker posts at most this many orders a side for each good, its ladder's rungs (D-102).
-inline constexpr std::uint64_t kLevels = 8;
+inline constexpr std::uint64_t kLevels = 4;
 
 // The systems, by the names the step's table gives them.
 inline constexpr std::string_view kExpiry = "manifest.expiry";

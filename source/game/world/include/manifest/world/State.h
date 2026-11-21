@@ -373,7 +373,7 @@ struct Level
 };
 
 // The prices a report keeps of each side of a good's book (D-102): a broker's ladder.
-inline constexpr std::size_t kReportLevels = 8;
+inline constexpr std::size_t kReportLevels = 4;
 
 // One good of a market report: each side's best kReportLevels prices resting, best first, the bids
 // highest and the asks lowest; the totes sold over the report's window; and the good's last sale, its

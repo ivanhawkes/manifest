@@ -734,10 +734,10 @@ chose where the plans left room ([D-095](decision-ledger.md#d-095), the user's c
   matching pass filled, by step and item, for at least the last sales window, and each item's last sale,
   its step and price, however long ago. Each principal's saved `Reports` hold their reports, by venue:
   how it was come by (`Docked` or `Starting`), the step it was observed at, the step its sales window
-  began and, in the market's order, each side's best eight resting prices of each good (W19), best first,
+  began and, in the market's order, each side's best four resting prices of each good (W19), best first,
   with the totes at each, the totes sold over the window and the last sale. A venue with no report is
   unknown. A save is refused for sales or reports out of order, a report of a venue the world does not
-  hold, or a side of more than eight prices, out of order, or with a price or its totes not above 0.
+  hold, or a side of more than four prices, out of order, or with a price or its totes not above 0.
 - **Sales.** Every fill counts once, buyer and seller together, a broker's, an employer's and a
   household's as a company's, recorded after the pass commits; a cancelled or unfilled order adds
   none. The window is `market.salesWindowSeconds`, 3,600 s, a whole number of steps: the fills of the
@@ -1244,15 +1244,18 @@ with relief at three times the pressure past a quarter. No engine edit is expect
   at five times the target, never below that, in exact integer arithmetic (no `pow`, so every build
   gives the same bits). Scarcity raises the price and a glut lowers it, and the traders' own buying and
   selling move it.
-- **A ladder, not a point.** Each turn the broker posts up to 8 levels a side, each an eighth of the
-  target, at least a tote, priced at the curve at the level's middle, half the spread outside it: its
+- **A ladder, not a point.** Each turn the broker posts up to 4 levels a side (the user's, 2026-11-21, trimmed
+  from 8 as the step budget failed), each an eighth of the target, at least a tote, priced at the curve at the level's middle, half the spread outside it: its
   asks climb as it sells down and its bids fall as it buys up. A large sale walks down its bids in the
   same fill, and buying back walks up the asks through the same middles, so the round trip loses the
   spread and no round trip pumps money out. The middle, not the stock a level leaves, as the plan first
   had it: that is as safe and keeps the quote at the target close to the native price (furs at Ore ask
   8.65 and bid 7.03 about 7.79, where pricing at the level's end gives 9.17 and 6.69, and a one-tote
   good asks four times its price).
-  Within `kMaxRestingOrders` and its funds, as now; with no mint.
+  Within `kMaxRestingOrders` and its funds, as now; with no mint. A good whose resting ladder is
+  the one its stock and share of the funds give, nothing filled or lapsing before the next turn, keeps
+  it: with 8 rungs reposted every turn, Ore to Brine took 11.2 s against the console's 3.6 s budget,
+  households' water buying reposting a venue every second turn; kept per good, at 4 rungs, 2.0 s.
 - **Need raises what households pay.** Each region keeps each essential need's pressure, its unmet
   share smoothed over a day (0 to 1, saved). Households bid for an essential's goods, the cheapest
   first as now, at up to `r (1 + 3 p)` for pressure `p`: the reference when fed, rising to the
@@ -1282,7 +1285,7 @@ Slices, each one commit with its suites, the gate after the second and the last:
 1. The curve and the ladder: the broker's quote, its bounds and funds, a sale walking the bids and a
    round trip losing (`trade`). Done 2026-11-21.
 2. Reports with levels and the policy's estimate over them (`trade`, `policy`), the pins moved and why.
-   Done 2026-11-21: a report keeps each side's eight best prices; a job's buy walks the asks to the
+   Done 2026-11-21: a report keeps each side's four best prices; a job's buy walks the asks to the
    count its estimate makes most on, both ladders walked, and its sale walks the bids to the lowest
    level whose proceeds still recover their share of the floor. The ladder opened a trade the flat
    quote hid, tin from Ore to Brine at ten times its ask, which the policy's tests now take.

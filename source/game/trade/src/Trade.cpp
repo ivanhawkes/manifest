@@ -678,18 +678,24 @@ void Expire(SimWorld &world, const Rules &rules)
 }
 
 
+// The curve's price empty, as a multiple of the native price: r C T / (T + (C - 1) h), r at the target
+// and r / C from (C + 1) T up (D-102).
+constexpr std::int64_t kCurveCeiling = 4;
+// Basis points of a price, doubled, over which half the spread is the spread's basis points.
+constexpr std::int64_t kHalfSpreadScale = 20'000;
+
+
 // A tote of the good at a point of the broker's stock, in half totes so a rung is priced at its
-// middle, about its native price r and target T (D-102): r 4T / (T + 3h), r at the target, 4r empty and
-// r/4 from 5T up; half the spread above it for an ask, rounded up, or below it for a bid, rounded down.
-// Exact, so every build prices alike.
+// middle, about its native price r and target T on the curve (kCurveCeiling); half the spread above it
+// for an ask, rounded up, or below it for a bid, rounded down. Exact, so every build prices alike.
 std::int64_t CurvePrice(const Good &good, std::uint64_t halfTotes, int spreadBps, Side side)
 {
 	const __int128 target = good.target;
-	const __int128 stock = std::min<__int128>(halfTotes, 10 * target);
+	const __int128 stock = std::min<__int128>(halfTotes, target * 2 * (kCurveCeiling + 1));
 	const bool ask = side == Side::Sell;
-	const __int128 numerator = static_cast<__int128>(good.native.Raw()) * 8 * target *
-	                           (ask ? 20'000 + spreadBps : 20'000 - spreadBps);
-	const __int128 denominator = (2 * target + 3 * stock) * 20'000;
+	const __int128 numerator = static_cast<__int128>(good.native.Raw()) * 2 * kCurveCeiling * target *
+	                           (ask ? kHalfSpreadScale + spreadBps : kHalfSpreadScale - spreadBps);
+	const __int128 denominator = (2 * target + (kCurveCeiling - 1) * stock) * kHalfSpreadScale;
 	const __int128 price = ask ? (numerator + denominator - 1) / denominator : numerator / denominator;
 	return static_cast<std::int64_t>(std::min<__int128>(price, kMaxCredits));
 }
@@ -706,10 +712,12 @@ std::uint64_t BrokerStock(
 }
 
 
-// A rung of the good's ladder: an eighth of its target, at least a tote.
+// A rung of the good's ladder: a kRungsPerTarget-th of its target, at least a tote, so the kLevels a
+// side reach half the target and the quote there stays close to the native price (D-102).
+constexpr std::uint64_t kRungsPerTarget = 8;
 std::uint64_t Rung(const Good &good)
 {
-	return (good.target + kLevels - 1) / kLevels;
+	return (good.target + kRungsPerTarget - 1) / kRungsPerTarget;
 }
 
 
@@ -742,67 +750,138 @@ std::optional<std::pair<std::int64_t, std::int64_t>> Quotes(
 }
 
 
-// Each broker cancels its orders and posts its ladders afresh: for each good up to kLevels asks, a
-// rung each, priced at the curve at the rung's middle, so they climb as it sells down, then up to
-// kLevels bids so, falling as it buys up, within its share of the funds and its warehouse's room. A
-// sale and its buy back meet at the same middles, so the round trip loses the spread.
+// A rung of a broker's ladder as it would rest: its side, totes and limit, and a bid's escrow.
+struct Posting
+{
+	Side side{Side::Sell};
+	std::uint64_t totes{0};
+	std::int64_t limit{0};
+	std::int64_t escrow{0};
+};
+
+
+// The good's asks at the stock it holds: up to kLevels, a rung each, priced at the curve at the rung's
+// middle, so they climb as they sell it down.
+std::vector<Posting> Asks(const Good &good, std::uint64_t held, int spreadBps)
+{
+	std::vector<Posting> asks;
+	for (std::uint64_t at = held; at > 0 && asks.size() < kLevels;)
+	{
+		const std::uint64_t totes = std::min(Rung(good), at);
+		asks.push_back({Side::Sell, totes, CurvePrice(good, 2 * at - totes, spreadBps, Side::Sell), 0});
+		at -= totes;
+	}
+	return asks;
+}
+
+
+// The good's bids at the stock it holds: up to kLevels so, falling as they buy it up, within the
+// budget and its warehouse's room.
+std::vector<Posting> Bids(const Rules &rules, const Good &good, std::uint64_t held, std::int64_t budget)
+{
+	std::vector<Posting> bids;
+	const double unitsPerTote = rules.unitsPerTote.at(good.itemId);
+	while (bids.size() < kLevels && held < Core::kMaxWarehouseTotes)
+	{
+		const std::uint64_t totes = std::min(Rung(good), Core::kMaxWarehouseTotes - held);
+		const std::int64_t limit = CurvePrice(good, 2 * held + totes, rules.spreadBps, Side::Buy);
+		const std::optional<std::int64_t> perTote =
+		    limit > 0 ? PerTote(limit, unitsPerTote, rules.feeBps) : std::nullopt;
+		if (!perTote || *perTote <= 0)
+			break;
+		const std::uint64_t affordable = std::min(totes, static_cast<std::uint64_t>(budget / *perTote));
+		if (affordable == 0)
+			break;
+		const std::int64_t escrow = *perTote * static_cast<std::int64_t>(affordable);
+		bids.push_back({Side::Buy, affordable, limit, escrow});
+		budget -= escrow;
+		held += totes;
+	}
+	return bids;
+}
+
+
+// Each broker's ladders (Asks, then Bids within its share of the funds, the goods in its market's
+// order): a sale and its buy back meet at the same middles of the curve, so the round trip loses the
+// spread. A good whose resting orders are already the ladder its stock and share give, none filled or
+// lapsing before the next turn's requote, keeps them, as posting it again would leave them; the rest
+// are retired and posted afresh, each at the share the goods before it leave.
 void Requote(SimWorld &world, const Rules &rules)
 {
 	entt::registry &registry = world.Registry();
+	const std::uint64_t next = world.Clock().Step() + rules.turnSteps;
 	for (const std::string &venueId : rules.venueOrder)
 	{
-		std::vector<std::pair<std::uint64_t, entt::entity>> resting;
+		std::map<std::string, std::vector<std::pair<std::uint64_t, entt::entity>>, std::less<>> resting;
+		std::int64_t funds = 0;
 		for (const auto [entity, order] : registry.view<const World::Order>().each())
 			if (order.ownerKind == Kind::Broker && order.ownerId == venueId)
-				resting.emplace_back(order.sequence, entity);
-		RetireAll(registry, rules.identities, std::move(resting));
+			{
+				resting[order.itemId].emplace_back(order.sequence, entity);
+				funds += order.escrow;
+			}
 
 		const entt::entity broker = rules.identities.Find(Kind::Broker, venueId);
 		const entt::entity account = rules.identities.Find(Kind::BrokerAccount, venueId);
 		JETTISON_VERIFY(broker != entt::null && account != entt::null);
+		funds += registry.get<const World::Account>(account).balance;
 		const std::vector<Good> &goods = rules.venues.at(venueId).goods;
 		auto left = static_cast<std::int64_t>(
 		    std::ranges::count_if(goods, [](const Good &good) { return good.native > Decimal{}; }));
+		std::vector<std::pair<const Good *, std::int64_t>> due;
 		for (const Good &good : goods)
 		{
 			if (good.native <= Decimal{})
 				continue;
-			const std::uint64_t rung = Rung(good);
+			const std::uint64_t held = BrokerStock(registry, broker, good.itemId);
+			const std::int64_t budget = funds / left--;
+			std::vector<Posting> ladder = Asks(good, held, rules.spreadBps);
+			const std::vector<Posting> bids = Bids(rules, good, held, budget);
+			ladder.insert(ladder.end(), bids.begin(), bids.end());
+			for (const Posting &posting : ladder)
+				funds -= posting.escrow;
+			std::vector<std::pair<std::uint64_t, entt::entity>> &orders = resting[good.itemId];
+			std::ranges::sort(orders);
+			const bool kept = std::ranges::equal(
+			    ladder, orders,
+			    [&](const Posting &posting, const std::pair<std::uint64_t, entt::entity> &held)
+			    {
+				    const auto &order = registry.get<const World::Order>(held.second);
+				    return order.side == posting.side && order.limit == posting.limit &&
+				           order.totes == posting.totes && order.remaining == posting.totes &&
+				           (order.expiresStep == 0 || order.expiresStep > next);
+			    });
+			if (kept)
+				continue;
+			RetireAll(registry, rules.identities, std::move(orders));
+			due.emplace_back(&good, budget);
+		}
+
+		for (const auto &[pGood, budget] : due)
+		{
 			World::Order order;
 			order.ownerKind = Kind::Broker;
 			order.ownerId = venueId;
 			order.venueId = venueId;
-			order.itemId = good.itemId;
-
-			// Its orders retired, all it holds is free.
-			order.side = Side::Sell;
-			for (std::uint64_t at = BrokerStock(registry, broker, good.itemId), level = 0;
-			     at > 0 && level < kLevels; ++level)
+			order.itemId = pGood->itemId;
+			// Its orders retired, all it holds is free; an ask may fill, so the bids are at what is
+			// left.
+			for (const Posting &posting :
+			     Asks(*pGood, BrokerStock(registry, broker, pGood->itemId), rules.spreadBps))
 			{
-				order.totes = std::min(rung, at);
-				order.limit = CurvePrice(good, 2 * at - order.totes, rules.spreadBps, Side::Sell);
-				at -= order.totes;
+				order.side = posting.side;
+				order.totes = posting.totes;
+				order.limit = posting.limit;
 				(void)Post(world, rules, order);
 			}
-
-			// Its share of the funds, as far as its warehouse has room; an ask may have filled.
-			std::int64_t budget = registry.get<const World::Account>(account).balance / left--;
-			const double unitsPerTote = rules.unitsPerTote.at(good.itemId);
-			std::uint64_t held = BrokerStock(registry, broker, good.itemId);
-			order.side = Side::Buy;
-			for (std::uint64_t level = 0; level < kLevels && held < Core::kMaxWarehouseTotes; ++level)
+			for (const Posting &posting :
+			     Bids(rules, *pGood, BrokerStock(registry, broker, pGood->itemId), budget))
 			{
-				const std::uint64_t totes = std::min(rung, Core::kMaxWarehouseTotes - held);
-				order.limit = CurvePrice(good, 2 * held + totes, rules.spreadBps, Side::Buy);
-				const std::optional<std::int64_t> perTote =
-				    order.limit > 0 ? PerTote(order.limit, unitsPerTote, rules.feeBps) : std::nullopt;
-				if (!perTote || *perTote <= 0)
+				order.side = posting.side;
+				order.totes = posting.totes;
+				order.limit = posting.limit;
+				if (Post(world, rules, order) != Result::Succeeded)
 					break;
-				order.totes = std::min(totes, static_cast<std::uint64_t>(budget / *perTote));
-				if (order.totes == 0 || Post(world, rules, order) != Result::Succeeded)
-					break;
-				budget -= *perTote * static_cast<std::int64_t>(order.totes);
-				held += totes;
 			}
 		}
 	}

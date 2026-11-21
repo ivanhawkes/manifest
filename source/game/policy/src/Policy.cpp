@@ -429,6 +429,10 @@ std::pair<std::int64_t, std::int64_t> Floor(const World::Job &job, const World::
 }
 
 
+// What rounding can take of a fill, in half credits: a credit and a half, as SellLimit allows for.
+constexpr std::int64_t kRoundingHalvesPerFill = 3;
+
+
 // The limit a sale of the lot walks the bids to (D-102): the lowest bid level the sale can reach with
 // what it sells to there recovering its share of the least, and never above the uniform limit at
 // which every tote does. None where that is none.
@@ -451,9 +455,9 @@ std::optional<std::int64_t> WalkLimit(
 			break;
 		sold += taken;
 		proceeds += *each;
-		// As SellLimit allows for, a credit and a half a fill rounding can take.
 		const auto fills = static_cast<std::int64_t>(std::min<std::uint64_t>(sold, Trade::kMaxFills));
-		if (level.price < *limit && 2 * proceeds - 3 * fills >= 2 * Share(least, sold, totes))
+		if (level.price < *limit &&
+		    2 * proceeds - kRoundingHalvesPerFill * fills >= 2 * Share(least, sold, totes))
 			limit = level.price;
 	}
 	return limit;

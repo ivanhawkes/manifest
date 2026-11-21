@@ -491,44 +491,39 @@ TEST_CASE("Each broker posts a ladder about its stock and requotes each turn, it
 		    [&](const auto &rung) { return side == Side::Sell ? rung.second : -rung.second; });
 		return rungs;
 	};
-	// All 21 totes it holds, climbing as they sell it down: the first at 19.5 totes, 8.647183.
+	// Four rungs of the 21 totes it holds, climbing as they sell it down: the first at 19.5 totes,
+	// 8.647183.
 	CHECK(
 	    limits(Side::Sell) == std::vector<std::pair<std::uint64_t, std::int64_t>>{
-	                              {3, 8'647'183},
-	                              {3, 9'751'078},
-	                              {3, 11'178'066},
-	                              {3, 13'094'305},
-	                              {3, 15'803'472},
-	                              {3, 19'926'116},
-	                              {3, 26'958'863}});
-	// Eight rungs of bids, falling as they buy it up: the first at 22.5 totes, 7.028016.
+	                              {3, 8'647'183}, {3, 9'751'078}, {3, 11'178'066}, {3, 13'094'305}});
+	// Four rungs of bids, falling as they buy it up: the first at 22.5 totes, 7.028016.
 	CHECK(
 	    limits(Side::Buy) == std::vector<std::pair<std::uint64_t, std::int64_t>>{
-	                             {3, 7'028'016},
-	                             {3, 6'379'276},
-	                             {3, 5'840'182},
-	                             {3, 5'385'103},
-	                             {3, 4'995'819},
-	                             {3, 4'659'022},
-	                             {3, 4'364'768},
-	                             {3, 4'105'475}});
-	CHECK(hosted.Held(Kind::Broker, kOre).reserved == 21);
+	                             {3, 7'028'016}, {3, 6'379'276}, {3, 5'840'182}, {3, 5'385'103}});
+	CHECK(hosted.Held(Kind::Broker, kOre).reserved == 12);
 
 	// Ada lifts six totes, walking two rungs: 18.75 furs a tote, 486 and 548 credits, 2 and 3 in fees.
 	REQUIRE(hosted.Place(kAda, Side::Buy, 6, Credits(10)) == Result::Succeeded);
 	CHECK(hosted.Held(Kind::Company, "CompanyA").available == 6);
 	CHECK(hosted.Balance(Kind::CompanyAccount, "CompanyA") == 25'000 - 486 - 2 - 548 - 3);
 
-	// The turn's last step is 59: then each broker cancels and posts afresh.
+	// The turn's last step is 59: then each broker posts afresh the ladders its stock has moved, Ore's
+	// furs alone, four rungs a side from 15 totes, and keeps the rest as they were.
 	while (hosted.world.Clock().Step() < 59)
 		hosted.world.Step();
 	const Business before = hosted.Now();
 	hosted.world.Step();
 	const Business after = hosted.Now();
-	CHECK(after.orders.size() == before.orders.size());
+	std::size_t furs = 0;
 	for (const auto &[id, order] : after.orders)
-		CHECK_FALSE(before.orders.contains(id));
-	CHECK(hosted.Held(Kind::Broker, kOre).reserved == 15);
+	{
+		const bool moved = order.venueId == kOre && order.itemId == kFurs;
+		furs += moved ? 1 : 0;
+		CHECK(before.orders.contains(id) != moved);
+	}
+	CHECK(furs == 2 * kLevels);
+	CHECK(after.orders.size() == before.orders.size() + 2);
+	CHECK(hosted.Held(Kind::Broker, kOre).reserved == 12);
 
 	// Selling them back walks its bids from 16.5 totes, 8.822403 and 7.823641: 496 and 440 credits, 2
 	// in fees each. The round trip meets the same middles of the curve, and loses the spread.

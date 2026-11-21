@@ -534,7 +534,7 @@ TEST_CASE("Manifest console: the vertical slice, furs bought at Ore, flown to Br
 	MANIFEST_CHECK_CONTAINS(arrived, "VenueBrineHighport: live");
 	MANIFEST_CHECK_CONTAINS(arrived, "VenueOreHighport: stale, observed");
 	// Its households bought the broker's last tote over the cruise, and its bids rose with it.
-	MANIFEST_CHECK_CONTAINS(arrived, "ItemFurs: bid 161.434747 (1 totes, 8 prices)");
+	MANIFEST_CHECK_CONTAINS(arrived, "ItemFurs: bid 161.434747 (1 totes, 4 prices)");
 	for (int tote = 0; tote < 2; ++tote)
 	{
 		Execute(
