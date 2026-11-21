@@ -942,6 +942,86 @@ Left: observation reports each docked fleet's venues afresh every step, so no st
 while a fleet is docked, which W10's fleets will be; a live report that does not change each step
 lets them be.
 
+## W10 plan, 2026-11-21
+
+Standing trade policies, autopilot and NPC jobs, on [D-097](decision-ledger.md#d-097) (the user's,
+2026-11-21). Inspection baseline: Manifest `feature-base` at `b1bf8e8`, Jettison `feature-base` at
+`28e8272`. No implementation yet.
+
+- **The executor.** `manifest.policy`, a native system after `manifest.brokers` and before the
+  movement, so a journey it starts is driven that step and a buy meets the turn's requote. It reads
+  its owner's reports as the last completed step's observation left them, so the live report a ship
+  trades on at arrival is the one observed as it docked.
+- **The command path.** `Command::Requests::Act` runs a registered command's handler for an actor
+  as a request's would run, with no admission, sequence, retention or recording: the world's own
+  consequence, sent again by a replay, as `SimWorld::Apply`'s are. `Running()` is 0 under it, so an
+  order it places records request 0, as a broker's does. Every buy, load, journey, unload and sale
+  of a job is `Trade::Place`, `Trade::Cancel`, `Company::Load`, `Company::Unload` and
+  `Travel::Travel` through it, meeting a player's checks.
+- **A policy.** `World::Policy` on a ship, set by `Manifest.Policy.Set` (`shipId`, `enabled`,
+  `targetProfit`, `lossAllowance`, whole credits, each at least 0, both 0 by default) from the ship's
+  owner. A trade starts only when its estimate is above `targetProfit`; a sale's floor is the lot's
+  cost plus `targetProfit`, less what is left of the allowance. An edit is read at the job's next
+  decision, held cargo included; allowance spent stays spent.
+- **A job.** `World::Job` on the ship: `Choosing`, `ToSource`, `Buying`, `ToDestination`,
+  `Selling` or `Blocked`; its item, source and destination; its lot's totes, its cost (what the
+  company's account paid for the fills, fees included) and the allowance it has spent; and for a
+  blocked job its reason, the step it first blocked at and its retry step.
+- **Choosing.** From the owner's reports alone: for every known source and destination venue, apart,
+  and each good with an ask at the one and a bid at the other, the totes are the least of the ask's
+  and the bid's totes, the hold's free totes and what the account covers at the ask's `PerTote`; the
+  estimate is the bid's proceeds net of its fee less the ask's cost and fee, by the market price
+  rules, less the route's charges. **Charges** are real from W10 at nominal values (the user's,
+  2026-11-21), `balance.yaml`'s `charges`: transport, a docking fee of 10 credits paid to the
+  destination venue's account when a `Travel` starts (refused `InsufficientFunds` without it, so it
+  never overdraws); and holding, a berth fee of 2 credits each simulation hour a ship stays docked,
+  paid to its venue's account, what the account cannot pay carried as the company's `Arrears` and
+  taken first at the next hour. The estimate's charges are one function's, `Policy::Charges`: the
+  destination's docking fee, and the source's if the ship must fly there first. A lot keeps the
+  charges attributed to it as they fall (`charges`, whole credits: its journeys' docking fees and
+  its berth hours), and its sale floor recovers them with its cost. Their real amounts and bases,
+  warehouse storage, tolls and the life support used in transit are
+  [W18](delivery-order.md#priority-5-stage-4-trading-automation-and-regional-development)'s. The
+  highest estimate wins, then a source the ship is docked at, then the scenario's order of source,
+  destination and item. An unknown venue gives nothing, and none above the target blocks the job.
+- **Buying**, docked at the source: the estimate again on the live ask, skipped if no longer above
+  the target; then a buy at the live ask for the totes, its rest cancelled in the same run (an
+  immediate-or-cancel made of the two commands), the lot's cost the account's fall, and everything
+  bought loaded. **Selling**, docked at the destination: the lot unloaded and offered at the lowest
+  limit whose fills, however the book splits them in up to `kMaxFills`, net the floor's share of the
+  totes sold (each fill's nearest-credit gross and rounded-up fee may cost 1.5 credits against one
+  price); the rest cancelled, a shortfall spending the allowance, and what is unsold loaded back.
+  Partial sales share the lot's cost proportionally, rounded up, the last taking the rest.
+- **Blocked.** It keeps its cargo and reconsiders at the economic turn's step (every 60 simulation
+  seconds, after the requote) or the step after a ship of its owner's docks, a new live report.
+  Its reason, first-blocked step and the lot's charges so far are the player's to see through the
+  query and on reconnect.
+- **NPC jobs.** A scenario's `traders` name NPC principals and their companies, provisioned in the
+  initial state through `Company::Provision` at the starter venue, each ship given an enabled policy,
+  their principals marked `World::Npc`, for which `manifest-token` issues no token. They read
+  their own reports, seeded as a player's are. Autopilot is the job's travel; no route mode.
+- **Its quiet.** The current step while an enabled job has a decision due, its retry step while
+  blocked, never otherwise: travel's quiet wakes the world for an arrival.
+- **Jettison.** No gap is expected: commands sent from a system, the quiet and the docks are public.
+  One found is provisioned there first, with its own consumer test.
+- **Acceptance.** A `policy` suite: a route planned from a stale starting report, its estimate and
+  report age shown; a live ask past the target skipped and replanned from reports alone; cargo kept
+  when no bid clears the floor; zero allowance never selling below it; an authorised allowance shared
+  across partial fills, retries and a save, never multiplied; an edit applied at the next decision; a
+  change to an unobserved market changing no decision. The `fixture` suite: an NPC and a
+  disconnected player's ship each completing trades on a server with no client, saved mid-job, loaded
+  and replayed to one hash in every gate build, and a blocked job's wait passed over by the
+  fast-forward.
+- **Slices**, each a commit leaving the gate green: (1) `Requests::Act`, `World::Policy`,
+  `World::Job` and `Manifest.Policy.Set`; (2) the nominal charges, with their pins moved and why;
+  (3) the executor, with the `policy` suite; (4) NPC
+  traders in the scenario and their provisioning; (5) its quiet and the `fixture` suite's
+  zero-client run; then [L28](delivery-order.md#later-priorities-and-re-entry-conditions), booked
+  straight after, on a docked fleet stopping the fast-forward.
+- **Left.** Scouting an unknown market, a standing route and Wasm policies; the charges' real amounts and the
+  ones not yet charged (W18); and observation running every step while a fleet is docked, which a docked NPC keeps doing
+  (L28).
+
 ## Handoff to stage 5
 
 Carry forward the exact scheduler order, command/result schema, content manifest,

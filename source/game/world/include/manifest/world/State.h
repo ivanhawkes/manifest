@@ -400,6 +400,62 @@ struct Reports
 	bool operator==(const Reports &) const = default;
 };
 
+// A ship's standing trade policy (D-097), which its owner sets: whether its job runs, the whole credits
+// a trade's estimate must be above and a sale must recover beyond its lot's cost and charges, and the
+// whole credits below that the owner allows a lot to sell for, each at least 0.
+struct Policy
+{
+	bool enabled{false};
+	std::int64_t targetProfit{0};
+	std::int64_t lossAllowance{0};
+
+	bool operator==(const Policy &) const = default;
+};
+
+// Where a ship's job has got (docs/stage-4-trading-plan.md, "W10 plan").
+enum class Phase
+{
+	// Choosing a trade from its owner's reports: a source and a destination, or with a lot aboard a
+	// destination for it.
+	Choosing,
+	ToSource,
+	Buying,
+	ToDestination,
+	Selling,
+	Blocked
+};
+
+enum class Blockage
+{
+	None,
+	// No known trade estimates above the target, or none for the lot aboard clears its floor.
+	NoTrade,
+	// A journey of the job's failed, its ship left where it is with its cargo.
+	JourneyFailed
+};
+
+// A ship's standing job, beside its Policy: what it trades, from where to where, and the lot it
+// carries, its totes, what they cost (their fills' credits, fees included), the charges attributed to
+// them and the allowance the lot has spent, each whole credits, all 0 with no lot. A blocked job keeps
+// its lot and reconsiders at its retry step.
+struct Job
+{
+	Phase phase{Phase::Choosing};
+	std::string itemId;
+	std::string sourceId;
+	std::string destinationId;
+	std::uint64_t totes{0};
+	std::int64_t cost{0};
+	std::int64_t charges{0};
+	std::int64_t allowanceSpent{0};
+	Blockage blockage{Blockage::None};
+	// The step it first blocked at, of this blockage, and the step it reconsiders at.
+	std::uint64_t blockedSince{0};
+	std::uint64_t retry{0};
+
+	bool operator==(const Job &) const = default;
+};
+
 // Why a Stock or a Cargo breaks the rules above, for a load to refuse: none when it keeps them.
 std::optional<std::string> Broken(const Stock &stock);
 
@@ -418,6 +474,10 @@ std::optional<std::string> Broken(const LifeSupport &lifeSupport);
 std::optional<std::string> Broken(const Sales &sales);
 
 std::optional<std::string> Broken(const Reports &reports);
+
+std::optional<std::string> Broken(const Policy &policy);
+
+std::optional<std::string> Broken(const Job &job);
 
 // The components and their service's record, with Reflect. Safe to call again.
 void RegisterTypes();

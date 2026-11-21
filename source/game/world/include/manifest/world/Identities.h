@@ -91,12 +91,12 @@ class Identities final : public Jettison::Sim::WorldService
 	void Save(Jettison::Serialise::BinaryWriter &writer) const override;
 
 	// Fails the save for two entities of one kind and ID, an empty ID, a Stock, Cargo, Order,
-	// Production, Pantry, Sales or Reports that breaks its rules (Broken), a market report of a venue
-	// the world does not hold, a holding's reserved totes that are not its owner's sell orders' there,
-	// a LifeSupport of no number or less than nothing, or connected to no
-	// venue, Systems that break their rules, or, once SetHolds has run, a ship with no hold or carrying
-	// more than it holds, lots and opened totes together, and once SetLifeSupport has, more in a tank
-	// or a cartridge than its hull's holds.
+	// Production, Pantry, Sales, Reports, Policy or Job that breaks its rules (Broken), a market report
+	// of a venue the world does not hold, a holding's reserved totes that are not its owner's sell
+	// orders' there, a LifeSupport of no number or less than nothing, or connected to no venue, Systems
+	// that break their rules, or, once SetHolds has run, a ship with no hold or carrying more than it
+	// holds, lots and opened totes together, and once SetLifeSupport has, more in a tank or a cartridge
+	// than its hull's holds.
 	std::function<void()> Load(
 	    Jettison::Serialise::BinaryReader &reader, const entt::registry &loaded,
 	    std::span<const entt::meta_any> queued) override;

@@ -49,6 +49,8 @@ Identities &RegisterWorld(Jettison::Sim::SimWorld &world)
 	world.RegisterComponent<Pantry>();
 	world.RegisterComponent<Sales>();
 	world.RegisterComponent<Reports>();
+	world.RegisterComponent<Policy>();
+	world.RegisterComponent<Job>();
 	auto identities = std::make_unique<Identities>();
 	Identities &added = *identities;
 	world.AddService("Manifest.Identities", std::move(identities));

@@ -1078,5 +1078,5 @@ TEST_CASE("A save with work pending, and a replay from the start, carry the comp
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves only
 	// with what a save holds or the engine's save format, and a change that moves it says so.
-	CHECK(hosted.world.StateHash() == 0xaafddb45fc323160ULL);
+	CHECK(hosted.world.StateHash() == 0x6ee38e882d5e2b5cULL);
 }

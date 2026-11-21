@@ -475,3 +475,42 @@ TEST_CASE(
 	CHECK(upgraded.Send(kAda, 2, 20).result == Result::UnsupportedCommand);
 	CHECK(upgraded.Balance() == 110);
 }
+
+TEST_CASE("An act runs the handler at once, with no sequence, ledger or recording")
+{
+	Hosted hosted;
+	hosted.Populate();
+	hosted.world.SetRecording(true);
+	CHECK(
+	    hosted.requests.Act(hosted.world, kAda, "Test.Grant", kGrantVersion, Grant{"RegionA", 5}) ==
+	    Result::Succeeded);
+	CHECK(hosted.Balance() == 105);
+	CHECK(
+	    hosted.requests.Act(hosted.world, kAda, "Test.Grant", kGrantVersion, Grant{"RegionA", -500}) ==
+	    Result::InsufficientFunds);
+	CHECK(hosted.Balance() == 105);
+	CHECK(hosted.requests.NextSequence(kAda) == 1);
+	CHECK(hosted.world.Commands().Pending().empty());
+	hosted.world.Step();
+	CHECK(hosted.world.Recorded().empty());
+
+	const Actor stranger{ActorKind::Principal, "Nobody"};
+	CHECK(
+	    hosted.requests.Act(hosted.world, stranger, "Test.Grant", kGrantVersion, Grant{"RegionA", 1}) ==
+	    Result::NotAuthorised);
+	CHECK(
+	    hosted.requests.Act(hosted.world, kHost, "Test.Grant", kGrantVersion, Grant{"RegionA", 1}) ==
+	    Result::NotAuthorised);
+	CHECK(
+	    hosted.requests.Act(hosted.world, kAda, "Test.Unknown", kGrantVersion, Grant{"RegionA", 1}) ==
+	    Result::UnsupportedCommand);
+	CHECK(
+	    hosted.requests.Act(hosted.world, kAda, "Test.Grant", 2, Grant{"RegionA", 1}) ==
+	    Result::UnsupportedCommand);
+	const std::vector<std::byte> truncated{std::byte{1}};
+	CHECK(
+	    hosted.requests.Act(
+	        hosted.world, kAda, std::string{"Test.Grant"}, kGrantVersion,
+	        std::span<const std::byte>{truncated}) == Result::MalformedPayload);
+	CHECK(hosted.Balance() == 105);
+}

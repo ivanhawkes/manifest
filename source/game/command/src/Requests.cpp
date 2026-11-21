@@ -7,6 +7,7 @@
 #include <memory>
 #include <ranges>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 #include <jettison/core/Assert.h>
@@ -167,6 +168,26 @@ Receipt Requests::Admit(
 	admitted.pending.push_back(std::move(request));
 	++admitted.next;
 	return {Receipt::Status::Queued, Result::Succeeded, m_order};
+}
+
+
+Result Requests::Act(
+    Jettison::Sim::SimWorld &world, const Actor &actor, const std::string &command,
+    std::uint32_t version, std::span<const std::byte> payload)
+{
+	const auto handler = m_handlers.find(command);
+	if (handler == m_handlers.end() || handler->second.version != version)
+		return Result::UnsupportedCommand;
+	if (handler->second.sender != actor.kind || actor.id.empty() ||
+	    (actor.kind == ActorKind::Principal &&
+	     m_identities.Find(World::Kind::Principal, actor.id) == entt::null))
+		return Result::NotAuthorised;
+	if (!handler->second.decodes(payload))
+		return Result::MalformedPayload;
+	const std::uint64_t running = std::exchange(m_running, 0);
+	const Result result = handler->second.apply(world, actor, payload);
+	m_running = running;
+	return result;
 }
 
 

@@ -9,7 +9,9 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <string_view>
 #include <utility>
+#include <vector>
 
 #include <jettison/serialise/Archive.h>
 #include <jettison/sim/SimWorld.h>
@@ -89,6 +91,26 @@ class Requests final : public Jettison::Sim::WorldService
 	Receipt Admit(
 	    Jettison::Sim::SimWorld &world, const Actor &actor, std::uint64_t sequence,
 	    const std::string &command, std::uint32_t version, std::span<const std::byte> payload);
+
+	// Runs the command's handler for the actor at once, as a request admitted for them would run, for
+	// an agent of the world's own, a standing policy's job (D-097): no admission, sequence, ledger or
+	// queue, and nothing recorded, since the state that sent it sends it again in a replay, as
+	// Jettison's SimWorld::Apply does. Running() is 0 while it runs. UnsupportedCommand for a command
+	// not registered at the version, NotAuthorised for an actor not of its sender's kind or a principal
+	// the world does not have, MalformedPayload for a payload it cannot read.
+	Result Act(
+	    Jettison::Sim::SimWorld &world, const Actor &actor, const std::string &command,
+	    std::uint32_t version, std::span<const std::byte> payload);
+
+	template <typename T>
+	Result Act(
+	    Jettison::Sim::SimWorld &world, const Actor &actor, std::string_view command,
+	    std::uint32_t version, const T &payload)
+	{
+		const std::vector<std::byte> bytes = Jettison::Serialise::BinaryArchive::Write(
+		    payload, Jettison::Serialise::FormatVersion{version});
+		return Act(world, actor, std::string{command}, version, std::span<const std::byte>{bytes});
+	}
 
 	// The sequence of the request whose handler is running, for a handler to record; 0 outside one.
 	std::uint64_t Running() const

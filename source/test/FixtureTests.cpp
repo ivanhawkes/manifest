@@ -563,7 +563,7 @@ TEST_CASE("The trading fixture's loop, saved in flight with a bid resting and re
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves with
 	// what a save holds, the fixture's content or stream, or the engine's movement or save format.
-	CHECK(hosted.world.StateHash() == 0xe1147c98e9de9a34ULL);
+	CHECK(hosted.world.StateHash() == 0x259db725a2d52438ULL);
 }
 
 

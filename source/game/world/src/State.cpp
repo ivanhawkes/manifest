@@ -212,6 +212,36 @@ std::optional<std::string> Broken(const Reports &reports)
 }
 
 
+std::optional<std::string> Broken(const Policy &policy)
+{
+	if (policy.targetProfit < 0 || policy.lossAllowance < 0)
+		return "a policy's target or allowance is below 0";
+	return std::nullopt;
+}
+
+
+std::optional<std::string> Broken(const Job &job)
+{
+	if (job.cost < 0 || job.charges < 0 || job.allowanceSpent < 0)
+		return "a job's lot costs, is charged or has spent less than nothing";
+	if (job.totes == 0 && (job.cost != 0 || job.charges != 0 || job.allowanceSpent != 0))
+		return "a job with no lot has its cost, charges or allowance";
+	if ((job.phase == Phase::Blocked) != (job.blockage != Blockage::None))
+		return "a job is blocked with no reason, or has one and is not blocked";
+	const bool buying = job.phase == Phase::ToSource || job.phase == Phase::Buying;
+	const bool selling = job.phase == Phase::ToDestination || job.phase == Phase::Selling;
+	if ((buying || selling) && (job.itemId.empty() || job.destinationId.empty()))
+		return "a job under way names no item or destination";
+	if (buying && (job.sourceId.empty() || job.totes != 0))
+		return "a job buying names no source or already has its lot";
+	if (selling && job.totes == 0)
+		return "a job selling has no lot";
+	if (job.totes > 0 && job.itemId.empty())
+		return "a job's lot names no item";
+	return std::nullopt;
+}
+
+
 void RegisterTypes()
 {
 	static const bool registered = []
@@ -367,6 +397,33 @@ void RegisterTypes()
 		    .Field<&Report::since>("since", kSaved)
 		    .Field<&Report::lines>("lines", kSaved);
 		RegisterType<Reports>("Manifest.World.Reports").Field<&Reports::reports>("reports", kSaved);
+		RegisterType<Policy>("Manifest.World.Policy")
+		    .Field<&Policy::enabled>("enabled", kSaved)
+		    .Field<&Policy::targetProfit>("targetProfit", kSaved)
+		    .Field<&Policy::lossAllowance>("lossAllowance", kSaved);
+		RegisterEnum<Phase>("Manifest.World.Phase")
+		    .Value<Phase::Choosing>("Choosing")
+		    .Value<Phase::ToSource>("ToSource")
+		    .Value<Phase::Buying>("Buying")
+		    .Value<Phase::ToDestination>("ToDestination")
+		    .Value<Phase::Selling>("Selling")
+		    .Value<Phase::Blocked>("Blocked");
+		RegisterEnum<Blockage>("Manifest.World.Blockage")
+		    .Value<Blockage::None>("None")
+		    .Value<Blockage::NoTrade>("NoTrade")
+		    .Value<Blockage::JourneyFailed>("JourneyFailed");
+		RegisterType<Job>("Manifest.World.Job")
+		    .Field<&Job::phase>("phase", kSaved)
+		    .Field<&Job::itemId>("itemId", kSaved)
+		    .Field<&Job::sourceId>("sourceId", kSaved)
+		    .Field<&Job::destinationId>("destinationId", kSaved)
+		    .Field<&Job::totes>("totes", kSaved)
+		    .Field<&Job::cost>("cost", kSaved)
+		    .Field<&Job::charges>("charges", kSaved)
+		    .Field<&Job::allowanceSpent>("allowanceSpent", kSaved)
+		    .Field<&Job::blockage>("blockage", kSaved)
+		    .Field<&Job::blockedSince>("blockedSince", kSaved)
+		    .Field<&Job::retry>("retry", kSaved);
 		RegisterType<IdentityCounters>("Manifest.World.IdentityCounters")
 		    .Field<&IdentityCounters::issued>("issued", kSaved);
 		return true;
