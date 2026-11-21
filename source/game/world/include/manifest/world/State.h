@@ -293,7 +293,7 @@ struct Unmet
 {
 	std::string needId;
 	double quantity{0.0};
-	// Its unmet share smoothed over a day, 0 to 1 (D-102).
+	// Its unmet share smoothed over an hour, 0 to 1 (D-102).
 	double pressure{0.0};
 
 	bool operator==(const Unmet &) const = default;

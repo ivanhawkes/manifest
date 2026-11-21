@@ -948,3 +948,48 @@ TEST_CASE(
 		CHECK(after == before - lot.totes);
 	}
 }
+
+
+// Prices settling over a long run (D-102): with Ada and Nia trading on their standing policies,
+// eight days leave every broker's stock of every good, so its prices, about its target, the
+// seeded stock: never below half of it, a tote spared a small target's rounding, nor past twice it.
+TEST_CASE("Eight days of two traders keep every broker's stock within half and twice its target")
+{
+	const std::vector<std::filesystem::path> overlays{
+	    MANIFEST_FIXTURE_OVERLAY, MANIFEST_TRADER_OVERLAY};
+	Hosted hosted{MANIFEST_MOD_DIRECTORY, overlays};
+	(void)Trader(hosted);
+	entt::registry &registry = hosted.world.Registry();
+	for (const std::string &id : kTraderShips)
+		registry.get<Jettison::Space::CruiseDrive>(hosted.services.identities.Find(Kind::Ship, id))
+		    .profile.reset();
+	std::map<std::string, std::uint64_t> targets;
+	for (const auto &[entity, identity, broker, stock] :
+	     registry.view<const World::Identity, const World::Broker, const World::Stock>().each())
+		for (const World::Holding &holding : stock.holdings)
+			targets[identity.id + "/" + holding.itemId] = holding.available + holding.reserved;
+	REQUIRE_FALSE(targets.empty());
+	const std::uint64_t first = hosted.world.Clock().Step();
+	const std::uint64_t day = std::uint64_t{60} * 60 * 24;
+	for (std::uint64_t days = 1; days <= 8; ++days)
+	{
+		const std::uint64_t end = first + days * day;
+		while (hosted.world.Clock().Step() < end)
+		{
+			hosted.world.FastForward(end);
+			(void)hosted.world.Events().Take();
+		}
+		for (const auto &[entity, identity, broker, stock] :
+		     registry.view<const World::Identity, const World::Broker, const World::Stock>().each())
+			for (const World::Holding &holding : stock.holdings)
+			{
+				const std::string key = identity.id + "/" + holding.itemId;
+				const std::uint64_t held = holding.available + holding.reserved;
+				// A good first stocked after the start has no target to hold to.
+				if (!targets.contains(key))
+					continue;
+				CHECK_MESSAGE(2 * (held + 1) >= targets[key], key << " day " << days << ": " << held);
+				CHECK_MESSAGE(held <= 2 * targets[key], key << " day " << days << ": " << held);
+			}
+	}
+}

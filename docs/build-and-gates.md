@@ -31,8 +31,8 @@ skips a unit that was clean and whose compile command, includes (`ninja -t deps`
 `.clang-tidy` are unchanged since, recorded under `<build>/tidy-clean`.
 
 The CTest suites are `types`, `config`, `universe`, `progression`, `sim`, `ecs`, `market`,
-`host`, `content`, `effects`, `remote`, `data`, `packaging`, `mod`, `fixture` (its two longest cases
-apart, as `fixture_cruise` and `fixture_alone`, so the three run side by side) and `sdk_import`, plus `console` when the TUI is enabled. The
+`host`, `content`, `effects`, `remote`, `data`, `packaging`, `mod`, `fixture` (its longest cases
+apart, as `fixture_cruise`, `fixture_alone` and `fixture_prices`, so the four run side by side) and `sdk_import`, plus `console` when the TUI is enabled. The
 `cli_*` tests run the `manifest` executable from an unrelated directory with no display: both
 content forms start, and a missing source and bad command lines fail. `cli_serve` runs the server
 with no client, checks that it stepped, and stops it with SIGINT; the `token_*` tests run

@@ -20,7 +20,7 @@ add_dependencies(manifest_fixture_tests manifest_validate_pack)
 # not match, so a case added or renamed still runs.
 set(MANIFEST_FIXTURE_CRUISE "*cruise fast-forwarded is the one stepped*")
 set(MANIFEST_FIXTURE_ALONE "*no client trade alone*")
-set(MANIFEST_FIXTURE_PRICES "*shortage pulls a cargo in*")
+set(MANIFEST_FIXTURE_PRICES "*shortage pulls a cargo in*,*Eight days of two traders*")
 add_test(NAME fixture COMMAND manifest_fixture_tests
     "--test-case-exclude=${MANIFEST_FIXTURE_CRUISE},${MANIFEST_FIXTURE_ALONE},${MANIFEST_FIXTURE_PRICES}")
 add_test(NAME fixture_cruise COMMAND manifest_fixture_tests "--test-case=${MANIFEST_FIXTURE_CRUISE}")

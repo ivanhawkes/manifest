@@ -181,7 +181,7 @@ trading principal owned by the venue's operator, with its own account and holdin
 there, seeded from the scenario's venue stock and an authored treasury. On each due economic turn
 it cancels its resting orders and posts a ladder of bids and asks per item it trades, priced on
 its stock's curve about the existing native price ([D-102](decision-ledger.md#d-102), W19's
-[curve and ladder](#w19-plan)) with an authored spread and exact integer rounding: the asks no
+[curve and ladder](#delivered-w19-2026-11-22)) with an authored spread and exact integer rounding: the asks no
 more than its unreserved holdings, the bids no more than its unreserved funds cover with fees. Its
 orders take the same order/reservation path as a company's, in stable venue/item order, so a turn
 cannot accumulate orders. The treasury and spread are fixture test values W03 authors in
@@ -1163,7 +1163,7 @@ components and systems on the world's services.
 - **The AI issuer.** For a region its governing organisation's AI runs, each input its project
   still needs, with no tender open or contracted for it, is tendered as the world starts and at
   once when its last tender closes unawarded, is cancelled, or ends in default: the remaining
-  totes, `B` their price by need ([W19](#w19-plan), D-102: the live ask, or the reference where
+  totes, `B` their price by need ([W19](#delivered-w19-2026-11-22), D-102: the live ask, or the reference where
   nothing is offered, times one plus the project's urgency), windows of 1 and 14 days, at the region's
   first venue in the scenario's order. It also calls W19's relief tenders for an essential its
   households are short of. The user's first rule, twice the base value, was superseded by D-102 the
@@ -1227,16 +1227,17 @@ W12's slices, each one commit with its suites, the gate after the third and the 
 6. The governance fixture: Forge East's project tendered, tin bought at Cassiter and copper at Forge
    delivered physically, worked and unlocked; saved and replayed to one hash. Then the close-out.
 
-## W19 plan
+## Delivered: W19, 2026-11-22
 
-Supply and demand pricing, on [D-102](decision-ledger.md#d-102) (the user's, 2026-11-21), booked ahead
-of W12 so procurement's budgets and bids are built on live prices. Today a venue's native price is
+Supply and demand pricing, on [D-102](decision-ledger.md#d-102) (the user's, 2026-11-21), built ahead
+of W12 so procurement's budgets and bids are on live prices, with no engine edit; the SDK pin moved
+from `0f973b2` to `f14c288` for the shell's profilers alone. Before it, a venue's native price was
 worked out once at load from the authored rates (`Simulation::MarketPrice` and `LocalPrice`), and
-its broker reposts one bid and one ask about it each turn (D-084), so neither stock, shortage nor need
-moves a price. The mechanism below is selected and its numbers were settled with the user as W19 started
-(2026-11-21), each the proposal: the curve's 4 times and a quarter, rungs of an eighth of the target,
+its broker reposted one bid and one ask about it each turn (D-084), so neither stock, shortage nor
+need moved a price. Its numbers were settled with the user as W19 started (2026-11-21), each the
+proposal: the curve's 4 times and a quarter, rungs of an eighth of the target,
 households' bids to `r (1 + 3 p)` with no cap a turn, and the Bronze project's premium of a half
-with relief at three times the pressure past a quarter. No engine edit is expected.
+with relief at three times the pressure past a quarter.
 
 - **The broker's curve.** Each venue's good keeps its load-time native price as its reference `r`
   and a target stock `T` in totes, the scenario's seeded stock, at least 1. A broker holding `h` totes
@@ -1286,21 +1287,22 @@ with relief at three times the pressure past a quarter. No engine edit is expect
 - **What it changes.** W03's and W04's broker quote and the households' and employer's orders; W07's
   report keeps each side's levels (at most 8), since a trade's estimate must walk the ladder; W10's
   estimate and floor read the levels its totes would take; W11's AI budget is the function above.
-  Every pinned hash and every test that names a price moves; each move is shown to be the prices, not
-  layout. The trading fixture's routes must stay profitable at the new prices, and its long runs show
-  prices settling, not oscillating.
+  Every pinned hash and every test that names a price moved, each move shown to be the prices, not
+  layout. The trading fixture's routes stay profitable at the new prices, and its long runs settle
+  (slice 5).
 
-Slices, each one commit with its suites, the gate after the second and the last:
+Slices, each a commit with its suites:
 
 1. The curve and the ladder: the broker's quote, its bounds and funds, a sale walking the bids and a
-   round trip losing (`trade`). Done 2026-11-21.
+   round trip losing (`trade`). Done 2026-11-21 (`6cc20aa`).
 2. Reports with levels and the policy's estimate over them (`trade`, `policy`), the pins moved and why.
-   Done 2026-11-21: a report keeps each side's four best prices; a job's buy walks the asks to the
+   Done 2026-11-21 (`91b5dca`, four rungs `a7fec99`): a report keeps each side's four best prices; a job's buy walks the asks to the
    count its estimate makes most on, both ladders walked, and its sale walks the bids to the lowest
    level whose proceeds still recover their share of the floor. The ladder opened a trade the flat
    quote hid, tin from Ore to Brine at ten times its ask, which the policy's tests now take.
 3. Need pressure and the households' bids; the optional goods' buckets, with wellness products and
-   supplements added; the employer's floor and held goods (`trade`, the economy). Done 2026-11-21,
+   supplements added; the employer's floor and held goods (`trade`, the economy). Done 2026-11-21 (`64a9f37`; the balance `89aeb3f`, the ten
+   regions `ca0c64d`, their speed `9a98cc6`),
    with the content the user added as it started: salt and soap essentials (50 g a head a day and a
    bar a month, soap weighted a half), beans, lentils, chickpeas and peas staples beside the grains
    (Ore grows the first two and Brine the others, each region's grains trimmed to make 14 t a day
@@ -1340,7 +1342,7 @@ Slices, each one commit with its suites, the gate after the second and the last:
    time to the same bits, and the ledger stages a holding, not a stock: 3.3 s, every pin unmoved.
 4. The need-priced budget and relief tender functions, ready for W12; the fixture's long runs showing
    a shortage pulling a cargo in and a glut sending one away, fast-forwarded to the same bytes. Done
-   2026-11-22: `Trade::Budget`, `TenderPrice` (the lowest ask on the venue's book, or the native
+   2026-11-22 (`a264c6d`): `Trade::Budget`, `TenderPrice` (the lowest ask on the venue's book, or the native
    price) and `Reliefs` (each need past `kReliefPressure`, its day's shortfall in whole totes of
    its cheapest good, at `kReliefUrgency` times the pressure), in the `trade` suite. Six days of the
    fixture with two traders made no shortage or glut of their own, every broker near its target,
@@ -1348,7 +1350,16 @@ Slices, each one commit with its suites, the gate after the second and the last:
    Ada's first job from copper (an estimate of 9,542) to Ore's furs for Brine (26,615), and a
    windfall of five times Brine's copper target has her buy copper there and carry it to Ore; each
    fast-forwarded to the bytes stepping leaves. Every pin unmoved.
-5. Close-out.
+5. Close-out, done 2026-11-22: prices settle over the fixture's long runs. Eight days of Ada and
+   Nia trading on their standing policies leave every broker's stock of every good, and so its
+   prices, within half and twice its target, a tote spared a small target's rounding
+   (`fixture_prices`, 2,338 checks). What moves a stock is a maker's batch landing or households
+   drawing it down; none empties or gluts, and none swings back and forth. Drinking water drifts a
+   few totes a day on 2,000, up where it is made and down where it is not, which matters over months.
+   Left: the AI issuer that calls relief tenders and spends the budgets is W12's; a government's
+   surplus offered below the bid waits for one that holds a surplus; `TenderPrice` and `Reliefs`
+   work out the market's rules again on each call, as `Quote` does (a `shortcut:` comment), for W12
+   to keep if a profile shows it; water's drift is the balance's.
 
 ## Handoff to stage 5
 

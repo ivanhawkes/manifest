@@ -1,12 +1,11 @@
 # Session handoff
 
-## Next, on resuming — 2026-11-21 (after W11)
+## Next, on resuming — 2026-11-22 (after W19)
 
-W11 is done: [the tender contract](stage-4-trading-plan.md#tender-contract-w11-2026-11-21), on
-[D-101](decision-ledger.md#d-101), the user's choices settled. The user then selected a supply and demand
-economy ([D-102](decision-ledger.md#d-102)), booked as W19 ahead of W12, which amends W11's AI budget.
-Next: W19, on the [W19 plan](stage-4-trading-plan.md#w19-plan), its numbers settled with the user as it
-starts; then W12 on the tender contract. A commit is gated in
+W19 is done: [supply and demand pricing](stage-4-trading-plan.md#delivered-w19-2026-11-22), on
+[D-102](decision-ledger.md#d-102), pin `f14c288` with no engine edit. Next: W12, competitive
+procurement on the [tender contract](stage-4-trading-plan.md#tender-contract-w11-2026-11-21), its AI
+issuer spending `Trade::Budget` and calling `Trade::Reliefs`. A commit is gated in
 the second checkout, `build/gate-tree`, with `--tidy`, editing alone beside it
 ([gating beside the work](build-and-gates.md#gating-beside-the-work)). A ship steered in a station's
 frame still runs every step, which is most of the zero-client run's steps.

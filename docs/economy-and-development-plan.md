@@ -438,7 +438,7 @@ executed for this planning decision.
 
 The user selected a power and compute economy for the later ages ([D-103](decision-ledger.md#d-103)),
 booked as [L31](delivery-order.md#later-priorities-and-re-entry-conditions)
-after Stage 4. It is priced by [supply and demand](stage-4-trading-plan.md#w19-plan) (D-102) and built
+after Stage 4. It is priced by [supply and demand](stage-4-trading-plan.md#delivered-w19-2026-11-22) (D-102) and built
 through W12's public projects. Existing goods it uses: silicon wafers, AI accelerators
 (`ItemProcessors`), batteries, solar panels, robots, reactor fuel, uranium, natural gas, coal,
 helium-3, copper wire, neodymium, lithium, cobalt and graphite.

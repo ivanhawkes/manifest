@@ -110,6 +110,18 @@ reservations and W12's slices. The project's authored 90 kg and 10 kg were each 
 D-087 had made the least that moves. Reservations are accounts of their own, so a reserved budget or
 bond is no one else's money and the ledgers sum as before.
 
+## W19: supply and demand pricing — 2026-11-22
+
+With no engine edit; the pin moved to `f14c288` for the shell's profilers alone. Each broker posts
+four rungs a side on a curve of its stock against its target, households bid up to the ask at the
+target times one and three times a need's pressure, makers sell down to their wages, and tenders are
+priced by need ([what it chose and its evidence](stage-4-trading-plan.md#delivered-w19-2026-11-22)).
+Eight rungs reposted every turn blew the step budget, so a requote keeps a ladder that has not moved;
+ten stations did again, until perf, now in the shell, showed batches stepped through every turn and
+books read whole. The households' reference was first `r` and their pressure a day's, and a fed
+region bought nothing (the user's correction). Six days of the fixture made no shortage or glut of
+their own, so `fixture_prices` makes them, a hoarder and a windfall, and shows eight days settling.
+
 ## W18: the transport and holding charges at their real values — 2026-11-21
 
 On pin `0f973b2`, with no engine edit, as the plan expected. A ship pays by its hull's pad class and
