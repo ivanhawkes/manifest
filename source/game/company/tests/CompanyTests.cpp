@@ -1160,6 +1160,92 @@ TEST_CASE(
 }
 
 
+TEST_CASE("The principal directing a venue's operator sets its fees, charged from the next charge")
+{
+	Hosted hosted;
+	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
+	entt::registry &registry = hosted.world.Registry();
+	registry.emplace<World::Principal>(
+	    hosted.identities.Create(registry, Kind::Principal, "Bea"), "Bea");
+	World::Account &ore =
+	    registry.get<World::Account>(hosted.Find(Kind::VenueAccount, "VenueOreHighport"));
+	World::Account &brine =
+	    registry.get<World::Account>(hosted.Find(Kind::VenueAccount, "VenueBrineHighport"));
+	const World::Fees &posted =
+	    registry.get<World::Fees>(hosted.Find(Kind::Market, "VenueOreHighport"));
+	const World::Fees defaults = posted;
+	const auto stepTo = [&hosted](std::uint64_t step)
+	{
+		while (hosted.world.Clock().Step() < step)
+			hosted.world.Step();
+	};
+	constexpr std::uint64_t kHour = 3600;
+
+	World::Fees raised = defaults;
+	for (World::ClassFees &each : raised.classes)
+		each = {each.padClass, each.docking * 5, each.berthPerHour + 30};
+	raised.berthPerOccupantHour = 3;
+	const auto set = [&hosted](const Actor &actor, std::string venueId, const World::Fees &fees)
+	{ return hosted.Run(actor, kSetFees, SetFees{std::move(venueId), fees}); };
+
+	// The Anvil Port Authority runs both venues, and the AI runs it until Bea directs it.
+	CHECK(set(kBea, "VenueOreHighport", raised) == Result::NotAuthorised);
+	registry.get<World::Organisation>(hosted.Find(Kind::Organisation, "OrganisationAnvilPortAuthority"))
+	    .principalId = "Bea";
+	World::Fees missing = raised;
+	missing.classes.pop_back();
+	World::Fees unknown = raised;
+	unknown.classes[0].padClass = "tender";
+	World::Fees negative = raised;
+	negative.classes[1].berthPerHour = -1;
+	World::Fees owedNegative = raised;
+	owedNegative.berthPerOccupantHour = -1;
+	World::Fees usurious = raised;
+	usurious.arrearsRateBps = 3501;
+	const struct
+	{
+		Actor actor;
+		std::string venueId;
+		World::Fees fees;
+		Result expected;
+	} refused[]{
+	    {kAda, "VenueOreHighport", raised, Result::NotAuthorised},
+	    {kBea, "VenueNowhere", raised, Result::UnknownTarget},
+	    {kBea, "VenueOreHighport", missing, Result::InvalidQuantity},
+	    {kBea, "VenueOreHighport", unknown, Result::InvalidQuantity},
+	    {kBea, "VenueOreHighport", negative, Result::InvalidQuantity},
+	    {kBea, "VenueOreHighport", owedNegative, Result::InvalidQuantity},
+	    {kBea, "VenueOreHighport", usurious, Result::RateTooHigh},
+	};
+	for (const auto &[actor, venueId, fees, expected] : refused)
+	{
+		CAPTURE(expected);
+		CHECK(set(actor, venueId, fees) == expected);
+		CHECK(posted == defaults);
+	}
+
+	// An hour charged at the defaults, 20 and 2 for the occupant, stays charged; set as the next hour
+	// runs, the new fees are its fee: 50 and 3.
+	stepTo(kHour);
+	REQUIRE(ore.balance == 22);
+	REQUIRE(set(kBea, "VenueOreHighport", raised) == Result::Succeeded);
+	CHECK(posted == raised);
+	stepTo(2 * kHour);
+	CHECK(ore.balance == 22 + 53);
+
+	// The docking fee is paid as the journey starts, and a change after it is not.
+	REQUIRE(set(kBea, "VenueBrineHighport", defaults) == Result::Succeeded);
+	REQUIRE(
+	    hosted.Run(
+	        kAda, Manifest::Travel::kTravel, Manifest::Travel::Travel{"Ship1", "VenueBrineHighport"}) ==
+	    Result::Succeeded);
+	CHECK(brine.balance == 100);
+	usurious.arrearsRateBps = 3500;
+	CHECK(set(kBea, "VenueBrineHighport", usurious) == Result::Succeeded);
+	CHECK(brine.balance == 100);
+}
+
+
 TEST_CASE("Saved fees and arrears load, and broken ones do not")
 {
 	Hosted hosted;

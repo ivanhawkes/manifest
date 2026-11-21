@@ -561,6 +561,38 @@ void BreatheSkip(entt::registry &registry, const Rules &rules, double step, std:
 		}
 	}
 }
+// SetFees, from the principal directing the venue's operator, checked before it writes.
+Result FeesSet(SimWorld &world, const Rules &rules, const Actor &actor, const SetFees &set)
+{
+	entt::registry &registry = world.Registry();
+	const entt::entity broker = rules.identities.Find(Kind::Broker, set.venueId);
+	const entt::entity market = rules.identities.Find(Kind::Market, set.venueId);
+	if (broker == entt::null || market == entt::null)
+		return Result::UnknownTarget;
+	const entt::entity organisation =
+	    rules.identities.Find(Kind::Organisation, registry.get<const World::Broker>(broker).operatorId);
+	if (organisation == entt::null)
+		return Result::NotAuthorised;
+	const std::string &director = registry.get<const World::Organisation>(organisation).principalId;
+	if (director.empty() || director != actor.id)
+		return Result::NotAuthorised;
+	World::Fees &posted = registry.get<World::Fees>(market);
+	const World::Fees &fees = set.fees;
+	if (!std::ranges::equal(
+	        fees.classes, posted.classes, {}, &World::ClassFees::padClass,
+	        &World::ClassFees::padClass) ||
+	    std::ranges::any_of(
+	        fees.classes,
+	        [](const World::ClassFees &each) { return each.docking < 0 || each.berthPerHour < 0; }) ||
+	    fees.berthPerOccupantHour < 0 || fees.arrearsRateBps < 0)
+		return Result::InvalidQuantity;
+	if (fees.arrearsRateBps > rules.content.tuning.charges.maxArrearsRateBps)
+		return Result::RateTooHigh;
+	posted = fees;
+	return Result::Succeeded;
+}
+
+
 // A day's interest on the arrears at the yearly rate in basis points, compounded: added to what is
 // owed in whole credits, the part of a credit left carried to the next day.
 void Accrue(World::Arrears &arrears, int rateBps)
@@ -665,6 +697,9 @@ void RegisterTypes()
 		    .Field<&Upgrade::shipId>("shipId", kSaved)
 		    .Field<&Upgrade::offerId>("offerId", kSaved)
 		    .Field<&Upgrade::tier>("tier", kSaved);
+		RegisterType<SetFees>("Manifest.Company.SetFees")
+		    .Field<&SetFees::venueId>("venueId", kSaved)
+		    .Field<&SetFees::fees>("fees", kSaved);
 		return true;
 	}();
 	(void)registered;
@@ -753,6 +788,10 @@ void RegisterCommands(
 	    std::string{kUpgrade}, kVersion, Command::ActorKind::Principal,
 	    [rules](SimWorld &target, const Actor &actor, const Upgrade &upgrade)
 	    { return Upgraded(target, *rules, actor, upgrade); });
+	requests.Register<SetFees>(
+	    std::string{kSetFees}, kVersion, Command::ActorKind::Principal,
+	    [rules](SimWorld &target, const Actor &actor, const SetFees &set)
+	    { return FeesSet(target, *rules, actor, set); });
 
 	world.RegisterSystem(
 	    {.name = std::string{kLifeSupportSystem},

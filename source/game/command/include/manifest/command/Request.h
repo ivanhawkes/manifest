@@ -50,7 +50,9 @@ enum class Result
 	AlreadyFitted,
 	// A system the ship cannot take: no slot for it, a prerequisite it lacks, or a tier beyond its
 	// next or the offer's.
-	NotFittable
+	NotFittable,
+	// A venue's fees whose arrears rate is above the tuning's usury limit (D-100).
+	RateTooHigh
 };
 
 enum class ActorKind

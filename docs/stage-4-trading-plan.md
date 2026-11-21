@@ -1070,7 +1070,7 @@ is expected: a journey's cruise time is Jettison's `Space::CruiseSeconds`.
   1,125, destroyer 18,000 and 3,600, cruiser 54,000 and 10,800, and 2 an hour per occupant.
   `Travel::Travel` takes the docking fee at the ship's class, and `manifest.berths` takes the hour's
   class fee plus the occupants' share. A failed journey's docking fee stays paid, as in W10.
-- **The operator's command.** `Manifest.Venue.SetFees` (`venueId` and the whole `Fees`) is accepted
+- **The operator's command.** `Manifest.Company.SetFees` (`venueId` and the whole `Fees`) is accepted
   from the principal directing the venue's operator organisation (`Organisation::principalId`). It is
   refused `NotAuthorised` from anyone else or for an AI-run operator, `RateTooHigh` above
   `charges.maxArrearsRateBps`, and `InvalidQuantity` for a negative fee or a pad class missing or
@@ -1103,7 +1103,7 @@ is expected: a journey's cruise time is Jettison's `Space::CruiseSeconds`.
 Slices, each one commit with the gate green, the saved layout's moved pins proven bytes, not state:
 
 1. Fees by pad class and the occupants' berth share (`content`, `company`, `policy` suites).
-2. `Manifest.Venue.SetFees`, with a changed fee charged from the next charge, not one paid.
+2. `Manifest.Company.SetFees`, with a changed fee charged from the next charge, not one paid.
 3. `manifest.pricing`, a full and an empty station stepped over days, fast-forwarded to the same
    bytes.
 4. Transit life support: `World::Paid`, the job's draw, the estimate and the floor recovering it.

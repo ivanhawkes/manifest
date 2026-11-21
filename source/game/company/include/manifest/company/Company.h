@@ -8,6 +8,7 @@
 #include <manifest/content/Content.h>
 #include <manifest/travel/Travel.h>
 #include <manifest/world/Identities.h>
+#include <manifest/world/State.h>
 
 namespace Manifest::Company
 {
@@ -72,12 +73,26 @@ struct Upgrade
 	std::uint32_t tier{0};
 };
 
+// The command by which the principal directing a venue's operator organisation (World::Broker's
+// operatorId, Organisation::principalId) posts its venue's whole World::Fees (D-100), charged from the
+// next charge: a docking fee paid and an hour charged stay as they were. It checks before it writes:
+// the venue (UnknownTarget), a sender who directs its operator, which no one does for an AI-run one
+// (NotAuthorised), each pad class of the venue's posted fees named once in their order and every fee
+// and rate at least 0 (InvalidQuantity), and an arrears rate at most the tuning's usury limit
+// (RateTooHigh).
+struct SetFees
+{
+	std::string venueId;
+	World::Fees fees;
+};
+
 inline constexpr std::string_view kProvision = "Manifest.Company.Provision";
 inline constexpr std::string_view kLoad = "Manifest.Company.Load";
 inline constexpr std::string_view kUnload = "Manifest.Company.Unload";
 inline constexpr std::string_view kRefill = "Manifest.Company.Refill";
 inline constexpr std::string_view kReplace = "Manifest.Company.Replace";
 inline constexpr std::string_view kUpgrade = "Manifest.Company.Upgrade";
+inline constexpr std::string_view kSetFees = "Manifest.Company.SetFees";
 
 // The system, by the name the step's table gives it: after manifest.travel, it lets go of the
 // life-support connection of each ship no longer docked at its venue, connects each docked ship while
