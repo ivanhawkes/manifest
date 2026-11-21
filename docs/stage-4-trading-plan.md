@@ -1321,7 +1321,17 @@ Slices, each one commit with its suites, the gate after the second and the last:
    are 200 kg and 8 a day, not a tenth of what Ore makes. The trading fixture's loop runs copper,
    not furs, since two totes of furs no longer pay for the holds. D-105 then gave each region a
    staple pair, a complete protein: Ore rice and lentils, Brine wheat and chickpeas, with a little
-   of one grain and one legume more, 13 t a day each.
+   of one grain and one legume more, 13 t a day each. Then the user's ten regions (2026-11-21), each
+   with a station of its own, nine governed, of mixed ages, their staples by D-105's kinds: two
+   developed on each planet (half again their need in a grain and a legume), one undeveloped (three
+   fifths), one ruined advanced (half, its water short too), one mining colony (none, and no
+   water). Across the ten, staples run about 6% over the need, and water, medical supplies, salt and
+   soap a little over. With ten markets the legacy local price, normalised by a venue's share of
+   the whole, put every concentrated maker back at the 0.9 clamp, so the broker's price is now the
+   market's times one and 0.3 of the venue's own (demand less production) over its rate: 0.7 where
+   a station only makes a good, 1.3 where it only wants it (`kLocalBias`); the legacy harness keeps
+   its own. A player starts with reports of all ten stations; the trading fixture's NPC now opens
+   with Coast's glassware for Ore's Vale.
 4. The need-priced budget and relief tender functions, ready for W12; the fixture's long runs showing
    a shortage pulling a cargo in and a glut sending one away, fast-forwarded to the same bytes.
 5. Close-out.

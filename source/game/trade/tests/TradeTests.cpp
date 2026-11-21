@@ -469,8 +469,8 @@ TEST_CASE("One pass settles at most 64 fills, the remainder resting")
 TEST_CASE("Each broker posts a ladder about its stock and requotes each turn, its orders not piling up")
 {
 	Hosted hosted{true};
-	// Ore makes furs and Brine wants them: Ore's native price, 51.219217, its target the 21 totes it is
-	// seeded with, in rungs of 3, each priced at its middle on 51.219217 x 4 x 21 / (21 + 3h), the
+	// Ore makes furs and Brine wants them: Ore's native price, 58.931104, its target the 21 totes it is
+	// seeded with, in rungs of 3, each priced at its middle on 58.931104 x 4 x 21 / (21 + 3h), the
 	// asks 5% over it rounded up and the bids 5% under rounded down.
 	const Business start = hosted.Now();
 	std::map<std::tuple<std::string, std::string, Side>, std::vector<World::Order>> ladders;
@@ -492,21 +492,21 @@ TEST_CASE("Each broker posts a ladder about its stock and requotes each turn, it
 		return rungs;
 	};
 	// Four rungs of the 21 totes it holds, climbing as they sell it down: the first at 19.5 totes,
-	// 56.824339.
+	// 65.380169.
 	CHECK(
 	    limits(Side::Sell) == std::vector<std::pair<std::uint64_t, std::int64_t>>{
-	                              {3, 56'824'339}, {3, 64'078'510}, {3, 73'455'853}, {3, 86'048'285}});
-	// Four rungs of bids, falling as they buy it up: the first at 22.5 totes, 46.184107.
+	                              {3, 65'380'169}, {3, 73'726'573}, {3, 84'515'828}, {3, 99'004'255}});
+	// Four rungs of bids, falling as they buy it up: the first at 22.5 totes, 53.137876.
 	CHECK(
 	    limits(Side::Buy) == std::vector<std::pair<std::uint64_t, std::int64_t>>{
-	                             {3, 46'184'107}, {3, 41'920'959}, {3, 38'378'342}, {3, 35'387'822}});
+	                             {3, 53'137'876}, {3, 48'232'842}, {3, 44'156'827}, {3, 40'716'035}});
 	CHECK(hosted.Held(Kind::Broker, kOre).reserved == 12);
 
-	// Ada lifts six totes, walking two rungs: 18.75 furs a tote, 3,196 and 3,604 credits, 13 and 15 in
+	// Ada lifts six totes, walking two rungs: 18.75 furs a tote, 3,678 and 4,147 credits, 15 and 17 in
 	// fees.
-	REQUIRE(hosted.Place(kAda, Side::Buy, 6, Credits(70)) == Result::Succeeded);
+	REQUIRE(hosted.Place(kAda, Side::Buy, 6, Credits(80)) == Result::Succeeded);
 	CHECK(hosted.Held(Kind::Company, "CompanyA").available == 6);
-	CHECK(hosted.Balance(Kind::CompanyAccount, "CompanyA") == 25'000 - 3'196 - 13 - 3'604 - 15);
+	CHECK(hosted.Balance(Kind::CompanyAccount, "CompanyA") == 25'000 - 3'678 - 15 - 4'147 - 17);
 
 	// The turn's last step is 59: then each broker posts afresh the ladders its stock has moved, Ore's
 	// furs alone, four rungs a side from 15 totes, and keeps the rest as they were.
@@ -526,12 +526,12 @@ TEST_CASE("Each broker posts a ladder about its stock and requotes each turn, it
 	CHECK(after.orders.size() == before.orders.size() + 2);
 	CHECK(hosted.Held(Kind::Broker, kOre).reserved == 12);
 
-	// Selling them back walks its bids from 16.5 totes, 57.975794 and 51.412497: 3,261 and 2,892
-	// credits, 14 and 12 in fees. The round trip meets the same middles of the curve, and loses the
+	// Selling them back walks its bids from 16.5 totes, 66.704994 and 59.153485: 3,752 and 3,327
+	// credits, 16 and 14 in fees. The round trip meets the same middles of the curve, and loses the
 	// spread.
 	REQUIRE(hosted.Place(kAda, Side::Sell, 6, 1) == Result::Succeeded);
 	CHECK(hosted.Held(Kind::Company, "CompanyA").available == 0);
-	CHECK(hosted.Balance(Kind::CompanyAccount, "CompanyA") == 24'299);
+	CHECK(hosted.Balance(Kind::CompanyAccount, "CompanyA") == 24'192);
 }
 
 
@@ -688,7 +688,8 @@ TEST_CASE("A new player sees their own station live, and the rest of their syste
 	spawn.source = World::Source::Starting;
 	const World::Report brine = ReportOf(hosted, "Cai", kBrine);
 	CHECK(brine == spawn);
-	CHECK(ReportsOf(hosted, "Cai").reports.size() == 2);
+	// Its own and its system's nine other stations.
+	CHECK(ReportsOf(hosted, "Cai").reports.size() == 10);
 	CHECK(LineOf(brine, "ItemSalt").Ask() > 0);
 	CHECK(LineOf(brine, "ItemSalt").sold == 0);
 	CHECK(LineOf(brine, "ItemSalt").lastPrice == 0);
@@ -766,7 +767,7 @@ TEST_CASE("A report's sales are its window's fills, each once, and a frozen repo
 	World::Report dees = ReportOf(hosted, "Dee", kOre);
 	CHECK(LineOf(dees, "ItemFurs").sold == 3);
 	CHECK(LineOf(dees, "ItemCopper").sold == 1);
-	CHECK(LineOf(dees, "ItemTin").sold == 0);
+	CHECK(LineOf(dees, "ItemLentils").sold == 0);
 	CHECK(dees.since == 0);
 
 	// Cai's ship leaves, and Cai's report stops with it.
@@ -844,8 +845,10 @@ TEST_CASE("A save keeps each player's reports and each market's sales, and refus
 	CHECK(LineOf(ReportOf(loaded, "Cai", kOre), "ItemFurs").sold == 1);
 
 	entt::registry &registry = hosted.world.Registry();
-	registry.get<World::Reports>(hosted.identities.Find(Kind::Principal, "Cai")).reports[0].venueId =
-	    "VenueNowhere";
+	// The last, so the reports stay in order.
+	registry.get<World::Reports>(hosted.identities.Find(Kind::Principal, "Cai"))
+	    .reports.back()
+	    .venueId = "VenueZNowhere";
 	CHECK_THROWS_WITH_AS(
 	    loaded.world.Load(hosted.world.Save()), doctest::Contains("a venue the world does not hold"),
 	    Jettison::Serialise::FormatError);

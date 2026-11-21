@@ -1,19 +1,19 @@
 version: 1
-# The eight-good trading fixture (docs/stage-2-content-plan.md, "Initial scenario"): one system,
-# two planets, a region and a public station on each, with complementary markets, so a ship buys
-# where a good is made and sells where it is wanted. Metals and furs come from Ore, salt, lime,
-# glassware, soap and the wellness goods from Brine. Every number is an initial test value recorded
-# with C05, not a balance result. Where the bodies and stations are is the system's record
-# (systems/system-anvil.yaml); market rates are per simulation day, in the item's unit
-# (docs/model.md), and stock is in totes, eight to the IBC (D-087): about ten days of a row's rate,
-# so a venue's broker's ladder takes a starter's run (W19's balance, 2026-11-21), and at least the
-# earlier quantities. Each region trades the essentials at its venue (W04): Ore grows rice
-# and lentils, a complete protein, and a little oats and beans, Brine wheat and chickpeas and a
-# little barley and peas, each 13 t a day against its 12.5 (D-105), and Brine makes the medical
-# supplies, the salt and the soap, which Ore must import, and each draws its own water; an
-# essential's demand is its region's need, which sets its price. A row's region is the employer that
-# makes it, and the households that want it when no need names it. Ore makes the oxygen and
-# cartridges a ship's resupply takes, and Brine wants them (W09).
+# The trading fixture (docs/stage-2-content-plan.md, "Initial scenario"): one system, two planets,
+# and ten regions, five on each, every region served by a station of its own (the user's,
+# 2026-11-21). Their staples follow their kind of world (D-105): the developed regions grow a
+# surplus of a complementary grain and legume, half again their need, and want the others; the
+# undeveloped grow three fifths of their staples, the ruined advanced half; the mining colonies
+# grow none and draw no water. Ore's Highlands, ungoverned, grows rice and lentils and makes the
+# copper, furs, oxygen and cartridges; its Vale oats and beans; its Deeps mine tin and gold. Brine's
+# Coast grows wheat and chickpeas and makes the glassware, soap, wellness goods and medical
+# supplies; its Delta barley and peas; its Saltworks salt and lime. A station makes what its region
+# makes and its essentials' demand is its region's need, which set its prices; a row's region is
+# the employer that makes it, and the households that want it when no need names it. Market rates
+# are per simulation day, in the item's unit (docs/model.md); stock is in totes, eight to the IBC
+# (D-087), about ten days of a row's rate, so a broker's ladder takes a starter's run (W19's
+# balance). Every number is an initial test value, not a balance result; where the bodies and
+# stations are is the system's record (systems/system-anvil.yaml).
 gameMode: manifest
 starterHull: HullLoneTraderStarter
 starterVenue: VenueOreHighport
@@ -51,13 +51,30 @@ planets:
 civilisations:
   - {civilisationId: CivilisationOre, displayName: Ore, ageId: AgeClassical}
   - {civilisationId: CivilisationBrine, displayName: Brine, ageId: AgeClassical}
+  - {civilisationId: CivilisationOreVale, displayName: Vale, ageId: AgeMedieval}
+  - {civilisationId: CivilisationAnvilMiners, displayName: Anvil Miners, ageId: AgeIndustrial}
+  - {civilisationId: CivilisationOreFells, displayName: Fells, ageId: AgeBronze}
+  - {civilisationId: CivilisationOreSteppe, displayName: Steppe, ageId: AgeInformation}
+  - {civilisationId: CivilisationBrineDelta, displayName: Delta, ageId: AgePre-industrial}
+  - {civilisationId: CivilisationBrineReach, displayName: Reach, ageId: AgePost-industrial}
+  - {civilisationId: CivilisationBrineShoals, displayName: Shoals, ageId: AgeCopper}
 
 organisations:
   - {organisationId: OrganisationAnvilPortAuthority, kind: Polity, displayName: Anvil Port Authority}
   - {organisationId: OrganisationBrineCouncil, kind: Polity, displayName: Brine Council}
+  - {organisationId: OrganisationOreValeCouncil, kind: Polity, displayName: Vale Council}
+  - {organisationId: OrganisationOreDeepsBoard, kind: Polity, displayName: Deeps Mining Board}
+  - {organisationId: OrganisationOreFellsElders, kind: Polity, displayName: Fells Elders}
+  - {organisationId: OrganisationOreSteppeAssembly, kind: Polity, displayName: Steppe Assembly}
+  - {organisationId: OrganisationBrineDeltaCouncil, kind: Polity, displayName: Delta Council}
+  - {organisationId: OrganisationBrineReachAssembly, kind: Polity, displayName: Reach Assembly}
+  - {organisationId: OrganisationBrineShoalsElders, kind: Polity, displayName: Shoals Elders}
+  - {organisationId: OrganisationBrineSaltworksBoard, kind: Polity, displayName: Saltworks Board}
 
+# Ten regions, each served by a station of its own (the user's, 2026-11-21): the two the fixture
+# began with, Highlands ungoverned for a player to found a homeworld in (D-089), and nine governed,
+# of mixed ages, their staples by their kind of world (D-105).
 regions:
-  # Ungoverned, for a player to found a homeworld in later (D-089).
   - regionId: RegionOreHighlands
     planetId: PlanetOre
     civilisationId: CivilisationOre
@@ -68,18 +85,99 @@ regions:
     employerFunds: 1000000
     health: 100
     happiness: 100
-  - regionId: RegionBrineCoast
-    planetId: PlanetBrine
-    civilisationId: CivilisationBrine
-    governorId: OrganisationBrineCouncil
+  - regionId: RegionOreVale
+    planetId: PlanetOre
+    civilisationId: CivilisationOreVale
+    governorId: "OrganisationOreValeCouncil"
     population: 25000
     householdFunds: 5000000
     publicFunds: 1000000
     employerFunds: 1000000
     health: 100
     happiness: 100
+  - regionId: RegionOreDeeps
+    planetId: PlanetOre
+    civilisationId: CivilisationAnvilMiners
+    governorId: "OrganisationOreDeepsBoard"
+    population: 6000
+    householdFunds: 3000000
+    publicFunds: 1000000
+    employerFunds: 2000000
+    health: 100
+    happiness: 100
+  - regionId: RegionOreFells
+    planetId: PlanetOre
+    civilisationId: CivilisationOreFells
+    governorId: "OrganisationOreFellsElders"
+    population: 10000
+    householdFunds: 500000
+    publicFunds: 100000
+    employerFunds: 200000
+    health: 100
+    happiness: 100
+  - regionId: RegionOreSteppe
+    planetId: PlanetOre
+    civilisationId: CivilisationOreSteppe
+    governorId: "OrganisationOreSteppeAssembly"
+    population: 20000
+    householdFunds: 10000000
+    publicFunds: 3000000
+    employerFunds: 1000000
+    health: 100
+    happiness: 100
+  - regionId: RegionBrineCoast
+    planetId: PlanetBrine
+    civilisationId: CivilisationBrine
+    governorId: "OrganisationBrineCouncil"
+    population: 25000
+    householdFunds: 5000000
+    publicFunds: 1000000
+    employerFunds: 1000000
+    health: 100
+    happiness: 100
+  - regionId: RegionBrineDelta
+    planetId: PlanetBrine
+    civilisationId: CivilisationBrineDelta
+    governorId: "OrganisationBrineDeltaCouncil"
+    population: 25000
+    householdFunds: 5000000
+    publicFunds: 1000000
+    employerFunds: 1000000
+    health: 100
+    happiness: 100
+  - regionId: RegionBrineReach
+    planetId: PlanetBrine
+    civilisationId: CivilisationBrineReach
+    governorId: "OrganisationBrineReachAssembly"
+    population: 20000
+    householdFunds: 9000000
+    publicFunds: 2500000
+    employerFunds: 1000000
+    health: 100
+    happiness: 100
+  - regionId: RegionBrineShoals
+    planetId: PlanetBrine
+    civilisationId: CivilisationBrineShoals
+    governorId: "OrganisationBrineShoalsElders"
+    population: 10000
+    householdFunds: 400000
+    publicFunds: 100000
+    employerFunds: 200000
+    health: 100
+    happiness: 100
+  - regionId: RegionBrineSaltworks
+    planetId: PlanetBrine
+    civilisationId: CivilisationAnvilMiners
+    governorId: "OrganisationBrineSaltworksBoard"
+    population: 6000
+    householdFunds: 2500000
+    publicFunds: 800000
+    employerFunds: 2000000
+    health: 100
+    happiness: 100
 
 venues:
+  # OreHighlands's station: developed, ungoverned for a player (D-089).
   - venueId: VenueOreHighport
     systemId: SystemAnvil
     planetId: PlanetOre
@@ -91,30 +189,128 @@ venues:
     regions: [{regionId: RegionOreHighlands}]
     market:
       - {itemId: ItemCopper, regionId: RegionOreHighlands, production: 2, demand: 0, stock: 18}
-      - {itemId: ItemTin, regionId: RegionOreHighlands, production: 0.3, demand: 0, stock: 3}
-      - {itemId: ItemGold, regionId: RegionOreHighlands, production: 64.3, demand: 0, stock: 1}
-      - {itemId: ItemFurs, regionId: RegionOreHighlands, production: 40, demand: 0, stock: 21}
-      - {itemId: ItemSalt, regionId: RegionOreHighlands, production: 0, demand: 1.25, stock: 46}
+      - {itemId: ItemSalt, production: 0, demand: 1.25, stock: 46}
       - {itemId: ItemLime, production: 0, demand: 5.18, stock: 124}
-      - {itemId: ItemGlassware, regionId: RegionOreHighlands, production: 0, demand: 200, stock: 40}
-      - {itemId: ItemSoap, regionId: RegionOreHighlands, production: 0, demand: 750, stock: 7}
-      - {itemId: ItemWellnessProducts, regionId: RegionOreHighlands, production: 0, demand: 40,
-         stock: 2}
-      - {itemId: ItemSupplements, regionId: RegionOreHighlands, production: 0, demand: 200, stock: 5}
-      - {itemId: ItemRice, regionId: RegionOreHighlands, production: 6.5, demand: 1.5625, stock: 359}
-      - {itemId: ItemOats, regionId: RegionOreHighlands, production: 1, demand: 1.5625, stock: 80}
+      - {itemId: ItemFurs, regionId: RegionOreHighlands, production: 40, demand: 0, stock: 21}
+      - {itemId: ItemGlassware, regionId: RegionOreHighlands, production: 0, demand: 120, stock: 40}
+      - {itemId: ItemSoap, production: 0, demand: 750, stock: 7}
+      - {itemId: ItemWellnessProducts, regionId: RegionOreHighlands, production: 0, demand: 25,
+        stock: 1}
+      - {itemId: ItemSupplements, regionId: RegionOreHighlands, production: 0, demand: 120, stock: 3}
+      - {itemId: ItemRice, regionId: RegionOreHighlands, production: 10, demand: 1.5625, stock: 552}
       - {itemId: ItemWheat, production: 0, demand: 1.5625, stock: 98}
+      - {itemId: ItemOats, production: 0, demand: 1.5625, stock: 102}
       - {itemId: ItemBarley, production: 0, demand: 1.5625, stock: 96}
-      - {itemId: ItemBeans, regionId: RegionOreHighlands, production: 0.5, demand: 1.5625, stock: 31}
-      - {itemId: ItemLentils, regionId: RegionOreHighlands, production: 5, demand: 1.5625, stock: 296}
+      - {itemId: ItemBeans, production: 0, demand: 1.5625, stock: 96}
+      - {itemId: ItemLentils, regionId: RegionOreHighlands, production: 8.75, demand: 1.5625,
+        stock: 519}
       - {itemId: ItemChickpeas, production: 0, demand: 1.5625, stock: 96}
       - {itemId: ItemPeas, production: 0, demand: 1.5625, stock: 93}
-      - {itemId: ItemDrinkingWater, regionId: RegionOreHighlands, production: 80, demand: 75,
-         stock: 2000}
+      - {itemId: ItemDrinkingWater, regionId: RegionOreHighlands, production: 100, demand: 75,
+        stock: 2000}
       - {itemId: ItemBasicMedicalSupplies, production: 0, demand: 125, stock: 10}
       - {itemId: ItemOxygen, regionId: RegionOreHighlands, production: 228, demand: 0, stock: 16}
-      - {itemId: ItemCarbonScrubberCartridge, regionId: RegionOreHighlands, production: 10, demand: 0,
-         stock: 50}
+      - {itemId: ItemCarbonScrubberCartridge, regionId: RegionOreHighlands, production: 10,
+        demand: 0, stock: 50}
+  # OreVale's station: developed.
+  - venueId: VenueOreValeStation
+    systemId: SystemAnvil
+    planetId: PlanetOre
+    operatorId: OrganisationOreValeCouncil
+    public: true
+    operational: true
+    layout: highport
+    lifeSupportCapacity: 4
+    regions: [{regionId: RegionOreVale}]
+    market:
+      - {itemId: ItemSalt, production: 0, demand: 1.25, stock: 46}
+      - {itemId: ItemGlassware, regionId: RegionOreVale, production: 0, demand: 60, stock: 12}
+      - {itemId: ItemSoap, production: 0, demand: 750, stock: 7}
+      - {itemId: ItemRice, production: 0, demand: 1.5625, stock: 86}
+      - {itemId: ItemWheat, production: 0, demand: 1.5625, stock: 98}
+      - {itemId: ItemOats, regionId: RegionOreVale, production: 10, demand: 1.5625, stock: 656}
+      - {itemId: ItemBarley, production: 0, demand: 1.5625, stock: 96}
+      - {itemId: ItemBeans, regionId: RegionOreVale, production: 8.75, demand: 1.5625, stock: 538}
+      - {itemId: ItemLentils, production: 0, demand: 1.5625, stock: 93}
+      - {itemId: ItemChickpeas, production: 0, demand: 1.5625, stock: 96}
+      - {itemId: ItemPeas, production: 0, demand: 1.5625, stock: 93}
+      - {itemId: ItemDrinkingWater, regionId: RegionOreVale, production: 100, demand: 75, stock: 2000}
+      - {itemId: ItemBasicMedicalSupplies, production: 0, demand: 125, stock: 10}
+  # OreDeeps's station: a mining colony, importing its food and water.
+  - venueId: VenueOreDeepsStation
+    systemId: SystemAnvil
+    planetId: PlanetOre
+    operatorId: OrganisationOreDeepsBoard
+    public: true
+    operational: true
+    layout: highport
+    lifeSupportCapacity: 2
+    regions: [{regionId: RegionOreDeeps}]
+    market:
+      - {itemId: ItemTin, regionId: RegionOreDeeps, production: 0.3, demand: 0, stock: 3}
+      - {itemId: ItemGold, regionId: RegionOreDeeps, production: 64.3, demand: 0, stock: 1}
+      - {itemId: ItemSalt, production: 0, demand: 0.3, stock: 11}
+      - {itemId: ItemSoap, production: 0, demand: 180, stock: 2}
+      - {itemId: ItemSupplements, regionId: RegionOreDeeps, production: 0, demand: 30, stock: 1}
+      - {itemId: ItemRice, production: 0, demand: 0.375, stock: 21}
+      - {itemId: ItemWheat, production: 0, demand: 0.375, stock: 24}
+      - {itemId: ItemOats, production: 0, demand: 0.375, stock: 25}
+      - {itemId: ItemBarley, production: 0, demand: 0.375, stock: 23}
+      - {itemId: ItemBeans, production: 0, demand: 0.375, stock: 23}
+      - {itemId: ItemLentils, production: 0, demand: 0.375, stock: 22}
+      - {itemId: ItemChickpeas, production: 0, demand: 0.375, stock: 23}
+      - {itemId: ItemPeas, production: 0, demand: 0.375, stock: 22}
+      - {itemId: ItemDrinkingWater, production: 0, demand: 18, stock: 1440}
+      - {itemId: ItemBasicMedicalSupplies, production: 0, demand: 30, stock: 2}
+  # OreFells's station: undeveloped, short of its staples and water.
+  - venueId: VenueOreFellsStation
+    systemId: SystemAnvil
+    planetId: PlanetOre
+    operatorId: OrganisationOreFellsElders
+    public: true
+    operational: true
+    layout: highport
+    lifeSupportCapacity: 2
+    regions: [{regionId: RegionOreFells}]
+    market:
+      - {itemId: ItemSalt, production: 0, demand: 0.5, stock: 19}
+      - {itemId: ItemSoap, production: 0, demand: 300, stock: 3}
+      - {itemId: ItemRice, production: 0, demand: 0.625, stock: 34}
+      - {itemId: ItemWheat, production: 0, demand: 0.625, stock: 39}
+      - {itemId: ItemOats, production: 0, demand: 0.625, stock: 41}
+      - {itemId: ItemBarley, regionId: RegionOreFells, production: 1.7, demand: 0.625, stock: 105}
+      - {itemId: ItemBeans, production: 0, demand: 0.625, stock: 38}
+      - {itemId: ItemLentils, production: 0, demand: 0.625, stock: 37}
+      - {itemId: ItemChickpeas, production: 0, demand: 0.625, stock: 38}
+      - {itemId: ItemPeas, regionId: RegionOreFells, production: 1.3, demand: 0.625, stock: 77}
+      - {itemId: ItemDrinkingWater, regionId: RegionOreFells, production: 24, demand: 30, stock: 2000}
+      - {itemId: ItemBasicMedicalSupplies, production: 0, demand: 50, stock: 4}
+  # OreSteppe's station: advanced and ruined, its eroded, depleted soil and polluted water short.
+  - venueId: VenueOreSteppeStation
+    systemId: SystemAnvil
+    planetId: PlanetOre
+    operatorId: OrganisationOreSteppeAssembly
+    public: true
+    operational: true
+    layout: highport
+    lifeSupportCapacity: 4
+    regions: [{regionId: RegionOreSteppe}]
+    market:
+      - {itemId: ItemSalt, production: 0, demand: 1, stock: 37}
+      - {itemId: ItemSoap, production: 0, demand: 600, stock: 5}
+      - {itemId: ItemWellnessProducts, regionId: RegionOreSteppe, production: 0, demand: 30, stock: 2}
+      - {itemId: ItemSupplements, regionId: RegionOreSteppe, production: 0, demand: 120, stock: 3}
+      - {itemId: ItemRice, production: 0, demand: 1.25, stock: 69}
+      - {itemId: ItemWheat, regionId: RegionOreSteppe, production: 2.8, demand: 1.25, stock: 176}
+      - {itemId: ItemOats, production: 0, demand: 1.25, stock: 82}
+      - {itemId: ItemBarley, production: 0, demand: 1.25, stock: 77}
+      - {itemId: ItemBeans, production: 0, demand: 1.25, stock: 77}
+      - {itemId: ItemLentils, production: 0, demand: 1.25, stock: 74}
+      - {itemId: ItemChickpeas, regionId: RegionOreSteppe, production: 2.2, demand: 1.25, stock: 135}
+      - {itemId: ItemPeas, production: 0, demand: 1.25, stock: 74}
+      - {itemId: ItemDrinkingWater, regionId: RegionOreSteppe, production: 45, demand: 60, stock: 2000}
+      - {itemId: ItemBasicMedicalSupplies, production: 0, demand: 100, stock: 8}
+  # BrineCoast's station: developed.
   - venueId: VenueBrineHighport
     systemId: SystemAnvil
     planetId: PlanetBrine
@@ -125,26 +321,124 @@ venues:
     lifeSupportCapacity: 4
     regions: [{regionId: RegionBrineCoast}]
     market:
-      - {itemId: ItemSalt, regionId: RegionBrineCoast, production: 4.75, demand: 1.25, stock: 176}
-      - {itemId: ItemLime, regionId: RegionBrineCoast, production: 6.21, demand: 0, stock: 149}
-      - {itemId: ItemGlassware, regionId: RegionBrineCoast, production: 250, demand: 0, stock: 50}
-      - {itemId: ItemSoap, regionId: RegionBrineCoast, production: 2000, demand: 750, stock: 18}
-      - {itemId: ItemWellnessProducts, regionId: RegionBrineCoast, production: 60, demand: 0, stock: 4}
-      - {itemId: ItemSupplements, regionId: RegionBrineCoast, production: 300, demand: 0, stock: 8}
       - {itemId: ItemCopper, production: 0, demand: 1.5, stock: 13}
       - {itemId: ItemTin, production: 0, demand: 0.25, stock: 3}
       - {itemId: ItemGold, production: 0, demand: 48.2, stock: 1}
-      - {itemId: ItemFurs, regionId: RegionBrineCoast, production: 0, demand: 30, stock: 16}
-      - {itemId: ItemWheat, regionId: RegionBrineCoast, production: 6.5, demand: 1.5625, stock: 409}
-      - {itemId: ItemBarley, regionId: RegionBrineCoast, production: 1, demand: 1.5625, stock: 80}
+      - {itemId: ItemSalt, production: 0, demand: 1.25, stock: 46}
+      - {itemId: ItemFurs, regionId: RegionBrineCoast, production: 0, demand: 20, stock: 16}
+      - {itemId: ItemGlassware, regionId: RegionBrineCoast, production: 250, demand: 0, stock: 50}
+      - {itemId: ItemSoap, regionId: RegionBrineCoast, production: 5500, demand: 750, stock: 49}
+      - {itemId: ItemWellnessProducts, regionId: RegionBrineCoast, production: 60, demand: 0, stock: 3}
+      - {itemId: ItemSupplements, regionId: RegionBrineCoast, production: 300, demand: 0, stock: 8}
       - {itemId: ItemRice, production: 0, demand: 1.5625, stock: 86}
+      - {itemId: ItemWheat, regionId: RegionBrineCoast, production: 10, demand: 1.5625, stock: 630}
       - {itemId: ItemOats, production: 0, demand: 1.5625, stock: 102}
-      - {itemId: ItemChickpeas, regionId: RegionBrineCoast, production: 5, demand: 1.5625, stock: 308}
-      - {itemId: ItemPeas, regionId: RegionBrineCoast, production: 0.5, demand: 1.5625, stock: 30}
+      - {itemId: ItemBarley, production: 0, demand: 1.5625, stock: 96}
       - {itemId: ItemBeans, production: 0, demand: 1.5625, stock: 96}
       - {itemId: ItemLentils, production: 0, demand: 1.5625, stock: 93}
-      - {itemId: ItemDrinkingWater, regionId: RegionBrineCoast, production: 80, demand: 75, stock: 2000}
-      - {itemId: ItemBasicMedicalSupplies, regionId: RegionBrineCoast, production: 250, demand: 125,
-         stock: 20}
-      - {itemId: ItemOxygen, production: 0, demand: 200, stock: 2}
-      - {itemId: ItemCarbonScrubberCartridge, production: 0, demand: 8, stock: 5}
+      - {itemId: ItemChickpeas, regionId: RegionBrineCoast, production: 8.75, demand: 1.5625,
+        stock: 538}
+      - {itemId: ItemPeas, production: 0, demand: 1.5625, stock: 93}
+      - {itemId: ItemDrinkingWater, regionId: RegionBrineCoast, production: 100, demand: 75,
+        stock: 2000}
+      - {itemId: ItemBasicMedicalSupplies, regionId: RegionBrineCoast, production: 900, demand: 125,
+        stock: 72}
+      - {itemId: ItemOxygen, production: 0, demand: 200, stock: 14}
+      - {itemId: ItemCarbonScrubberCartridge, production: 0, demand: 8, stock: 40}
+  # BrineDelta's station: developed.
+  - venueId: VenueBrineDeltaStation
+    systemId: SystemAnvil
+    planetId: PlanetBrine
+    operatorId: OrganisationBrineDeltaCouncil
+    public: true
+    operational: true
+    layout: highport
+    lifeSupportCapacity: 4
+    regions: [{regionId: RegionBrineDelta}]
+    market:
+      - {itemId: ItemSalt, production: 0, demand: 1.25, stock: 46}
+      - {itemId: ItemFurs, regionId: RegionBrineDelta, production: 0, demand: 15, stock: 8}
+      - {itemId: ItemSoap, production: 0, demand: 750, stock: 7}
+      - {itemId: ItemRice, production: 0, demand: 1.5625, stock: 86}
+      - {itemId: ItemWheat, production: 0, demand: 1.5625, stock: 98}
+      - {itemId: ItemOats, production: 0, demand: 1.5625, stock: 102}
+      - {itemId: ItemBarley, regionId: RegionBrineDelta, production: 10, demand: 1.5625, stock: 615}
+      - {itemId: ItemBeans, production: 0, demand: 1.5625, stock: 96}
+      - {itemId: ItemLentils, production: 0, demand: 1.5625, stock: 93}
+      - {itemId: ItemChickpeas, production: 0, demand: 1.5625, stock: 96}
+      - {itemId: ItemPeas, regionId: RegionBrineDelta, production: 8.75, demand: 1.5625, stock: 519}
+      - {itemId: ItemDrinkingWater, regionId: RegionBrineDelta, production: 100, demand: 75,
+        stock: 2000}
+      - {itemId: ItemBasicMedicalSupplies, production: 0, demand: 125, stock: 10}
+  # BrineReach's station: advanced and ruined, its polluted, eroded land and water short.
+  - venueId: VenueBrineReachStation
+    systemId: SystemAnvil
+    planetId: PlanetBrine
+    operatorId: OrganisationBrineReachAssembly
+    public: true
+    operational: true
+    layout: highport
+    lifeSupportCapacity: 4
+    regions: [{regionId: RegionBrineReach}]
+    market:
+      - {itemId: ItemSalt, production: 0, demand: 1, stock: 37}
+      - {itemId: ItemGlassware, regionId: RegionBrineReach, production: 0, demand: 60, stock: 12}
+      - {itemId: ItemSoap, production: 0, demand: 600, stock: 5}
+      - {itemId: ItemRice, regionId: RegionBrineReach, production: 2.8, demand: 1.25, stock: 154}
+      - {itemId: ItemWheat, production: 0, demand: 1.25, stock: 79}
+      - {itemId: ItemOats, production: 0, demand: 1.25, stock: 82}
+      - {itemId: ItemBarley, production: 0, demand: 1.25, stock: 77}
+      - {itemId: ItemBeans, production: 0, demand: 1.25, stock: 77}
+      - {itemId: ItemLentils, regionId: RegionBrineReach, production: 2.2, demand: 1.25, stock: 130}
+      - {itemId: ItemChickpeas, production: 0, demand: 1.25, stock: 77}
+      - {itemId: ItemPeas, production: 0, demand: 1.25, stock: 74}
+      - {itemId: ItemDrinkingWater, regionId: RegionBrineReach, production: 45, demand: 60, stock: 2000}
+      - {itemId: ItemBasicMedicalSupplies, production: 0, demand: 100, stock: 8}
+  # BrineShoals's station: undeveloped, short of its staples and water.
+  - venueId: VenueBrineShoalsStation
+    systemId: SystemAnvil
+    planetId: PlanetBrine
+    operatorId: OrganisationBrineShoalsElders
+    public: true
+    operational: true
+    layout: highport
+    lifeSupportCapacity: 2
+    regions: [{regionId: RegionBrineShoals}]
+    market:
+      - {itemId: ItemSalt, production: 0, demand: 0.5, stock: 19}
+      - {itemId: ItemSoap, production: 0, demand: 300, stock: 3}
+      - {itemId: ItemRice, production: 0, demand: 0.625, stock: 34}
+      - {itemId: ItemWheat, production: 0, demand: 0.625, stock: 39}
+      - {itemId: ItemOats, regionId: RegionBrineShoals, production: 1.7, demand: 0.625, stock: 111}
+      - {itemId: ItemBarley, production: 0, demand: 0.625, stock: 38}
+      - {itemId: ItemBeans, regionId: RegionBrineShoals, production: 1.3, demand: 0.625, stock: 80}
+      - {itemId: ItemLentils, production: 0, demand: 0.625, stock: 37}
+      - {itemId: ItemChickpeas, production: 0, demand: 0.625, stock: 38}
+      - {itemId: ItemPeas, production: 0, demand: 0.625, stock: 37}
+      - {itemId: ItemDrinkingWater, regionId: RegionBrineShoals, production: 24, demand: 30,
+        stock: 2000}
+      - {itemId: ItemBasicMedicalSupplies, production: 0, demand: 50, stock: 4}
+  # BrineSaltworks's station: a mining colony, importing its food and water.
+  - venueId: VenueBrineSaltworksStation
+    systemId: SystemAnvil
+    planetId: PlanetBrine
+    operatorId: OrganisationBrineSaltworksBoard
+    public: true
+    operational: true
+    layout: highport
+    lifeSupportCapacity: 2
+    regions: [{regionId: RegionBrineSaltworks}]
+    market:
+      - {itemId: ItemSalt, regionId: RegionBrineSaltworks, production: 9.5, demand: 0.3, stock: 352}
+      - {itemId: ItemLime, regionId: RegionBrineSaltworks, production: 6.21, demand: 0, stock: 149}
+      - {itemId: ItemSoap, production: 0, demand: 180, stock: 2}
+      - {itemId: ItemRice, production: 0, demand: 0.375, stock: 21}
+      - {itemId: ItemWheat, production: 0, demand: 0.375, stock: 24}
+      - {itemId: ItemOats, production: 0, demand: 0.375, stock: 25}
+      - {itemId: ItemBarley, production: 0, demand: 0.375, stock: 23}
+      - {itemId: ItemBeans, production: 0, demand: 0.375, stock: 23}
+      - {itemId: ItemLentils, production: 0, demand: 0.375, stock: 22}
+      - {itemId: ItemChickpeas, production: 0, demand: 0.375, stock: 23}
+      - {itemId: ItemPeas, production: 0, demand: 0.375, stock: 22}
+      - {itemId: ItemDrinkingWater, production: 0, demand: 18, stock: 1440}
+      - {itemId: ItemBasicMedicalSupplies, production: 0, demand: 30, stock: 2}

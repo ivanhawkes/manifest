@@ -132,6 +132,12 @@ std::optional<std::uint64_t> WholeSteps(double seconds, double step)
 }
 
 
+// How far a venue's own making and needing move its price from the market's, either way (W19's
+// balance, 2026-11-21): a venue that only makes a good prices it at 0.7 of the market, one that only
+// wants it at 1.3.
+constexpr double kLocalBias = 0.3;
+
+
 std::shared_ptr<const Rules> MakeRules(
     const SimWorld &world, World::Identities &identities, const Content::ContentSet &content)
 {
@@ -213,8 +219,9 @@ std::shared_ptr<const Rules> MakeRules(
 	rules->production = content.tuning.production;
 	rules->condition = content.tuning.condition;
 
-	// The legacy model's prices (Simulation::GetLocalPrice), over the scenario's venues as its
-	// economies: the whole market's scarcity, then each venue's own making and needing.
+	// The whole market's scarcity (Simulation::MarketPrice), then each venue's own making and needing,
+	// up to kLocalBias of it either way: a venue that only makes a good prices it lowest, one that only
+	// wants it highest, however many venues trade it.
 	std::map<std::string, double, std::less<>> supply;
 	std::map<std::string, double, std::less<>> demand;
 	for (const Content::VenueDefinition &venue : scenario.venues)
@@ -223,7 +230,6 @@ std::shared_ptr<const Rules> MakeRules(
 			supply[entry.itemId] += entry.production;
 			demand[entry.itemId] += entry.demand;
 		}
-	const auto economies = static_cast<double>(std::max<std::size_t>(scenario.venues.size(), 1));
 	for (const Content::VenueDefinition &venue : scenario.venues)
 	{
 		Venue &hosted = rules->venues[venue.venueId];
@@ -231,15 +237,15 @@ std::shared_ptr<const Rules> MakeRules(
 		rules->definitions.emplace(venue.venueId, &venue);
 		for (const Content::MarketEntry &entry : venue.market)
 		{
-			const double made = supply[entry.itemId];
-			const double needed = demand[entry.itemId];
 			const Decimal market = Core::Simulation::MarketPrice(
-			    Core::Simulation::BasePrice(*items.at(entry.itemId)), made, needed);
-			hosted.goods.push_back(
-			    {entry.itemId,
-			     Core::Simulation::LocalPrice(
-			         market, entry.production, entry.demand, (made + needed) / economies),
-			     std::max<std::uint64_t>(entry.stock, 1)});
+			    Core::Simulation::BasePrice(*items.at(entry.itemId)), supply[entry.itemId],
+			    demand[entry.itemId]);
+			const double own = entry.production + entry.demand;
+			const double bias = own > 0.0 ? kLocalBias * (entry.demand - entry.production) / own : 0.0;
+			const std::optional<Decimal> local =
+			    Decimal::TryFromDouble(market.ToDouble() * (1.0 + bias));
+			JETTISON_VERIFY(local.has_value());
+			hosted.goods.push_back({entry.itemId, *local, std::max<std::uint64_t>(entry.stock, 1)});
 		}
 	}
 

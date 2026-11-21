@@ -702,12 +702,11 @@ TEST_CASE("the engine RNG produces the same generation and hundred-tick replay i
 		return hash;
 	};
 	CHECK(stateHash() == 10355632731109243635ULL);
-	// The prices and trade moved with the local bias, 0.3 not 0.9 (W19's balance).
-	CHECK(priceHash() == 3663641820704981177ULL);
+	CHECK(priceHash() == 15444164946577136117ULL);
 	for (int tick = 0; tick < 100; ++tick)
 		REQUIRE(simulation.AdvanceTick(error));
-	CHECK(stateHash() == 8997600834391967142ULL);
-	CHECK(priceHash() == 3663641820704981177ULL);
+	CHECK(stateHash() == 12410383246888723003ULL);
+	CHECK(priceHash() == 15444164946577136117ULL);
 }
 
 TEST_CASE("invalid authored prices preserve an existing universe")
@@ -763,7 +762,7 @@ TEST_CASE("double scarcity and local ratios quantize only their resulting prices
 	civ.production["Good0"] = 1.0;
 	civ.demand["Good0"] = 4.0;
 	CHECK_EQ(simulation.GetPrice("Good0").Raw(), 2'469'134);
-	CHECK_EQ(simulation.GetLocalPrice(civ.id, "Good0").Raw(), 2'913'578);
+	CHECK_EQ(simulation.GetLocalPrice(civ.id, "Good0").Raw(), 3'802'466);
 	CHECK_EQ(civ.production["Good0"], 1.0);
 	CHECK_EQ(civ.demand["Good0"], 4.0);
 }

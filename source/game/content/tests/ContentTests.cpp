@@ -556,18 +556,44 @@ TEST_CASE("The fixtures are the trading and governance scenarios their plans des
 	const ContentSet content = LoadWith(none);
 	REQUIRE(content.scenarios.size() == 2);
 
-	// One system, two planets each with a region of its own civilisation and a public station, and
-	// eight goods (docs/stage-2-content-plan.md, "Initial scenario"), with the essentials every region
+	// One system, two planets, ten regions each served by a station of its own, nine governed, of
+	// mixed ages (docs/stage-2-content-plan.md, "Initial scenario"), with the essentials every region
 	// trades (W04), the life-support goods a ship's resupply takes (W09) and the wellness goods (W19).
 	const ScenarioDefinition &trading = content.scenarios.at("trading");
 	CHECK(trading.items.size() == 22);
 	CHECK(trading.systems.size() == 1);
 	CHECK(trading.planets.size() == 2);
-	CHECK(trading.civilisations.size() == 2);
-	REQUIRE(trading.regions.size() == 2);
-	CHECK(trading.regions[0].civilisationId != trading.regions[1].civilisationId);
-	CHECK(trading.venues.size() == 2);
-	// Complementary: each good is made at one station and wanted at the other.
+	REQUIRE(trading.regions.size() == 10);
+	CHECK(trading.venues.size() == 10);
+	CHECK(
+	    std::ranges::count_if(
+	        trading.regions,
+	        [](const RegionDefinition &region) { return !region.governorId.empty(); }) == 9);
+	std::set<std::string> ages;
+	for (const CivilisationDefinition &civilisation : trading.civilisations)
+		ages.insert(civilisation.ageId);
+	CHECK(ages.size() >= 8);
+	for (const VenueDefinition &venue : trading.venues)
+		CHECK(venue.regions.size() == 1);
+	// Each region's staples by its kind of world (D-105): a developed one makes half again its need,
+	// the others less, a mining colony none.
+	const auto &staples =
+	    std::ranges::find(content.tuning.needs, "NeedStapleFood", &NeedDefinition::needId);
+	REQUIRE(staples != content.tuning.needs.end());
+	for (const RegionDefinition &region : trading.regions)
+	{
+		CAPTURE(region.regionId);
+		double made = 0.0;
+		for (const VenueDefinition &venue : trading.venues)
+			for (const MarketEntry &entry : venue.market)
+				if (entry.regionId == region.regionId &&
+				    std::ranges::find(staples->items, entry.itemId, &ItemSelection::itemId) !=
+				        staples->items.end())
+					made += entry.production;
+		const double share = made / (staples->perThousandPerDay * region.population / 1'000.0);
+		CHECK((share == 0.0 || (share >= 0.5 && share <= 0.6) || share == doctest::Approx(1.5)));
+	}
+	// Complementary: each good is made at a station and wanted at another.
 	const auto needed = [&](const std::string &itemId)
 	{
 		return std::ranges::any_of(
@@ -599,8 +625,12 @@ TEST_CASE("The fixtures are the trading and governance scenarios their plans des
 					made += entry.production > 0.0 ? 1 : 0;
 					wanted += entry.demand > 0.0 ? 1 : 0;
 				}
-		CHECK(made == 1);
-		CHECK(wanted == 1);
+		CHECK(made >= 1);
+		CHECK(wanted >= 1);
+		for (const VenueDefinition &venue : trading.venues)
+			for (const MarketEntry &entry : venue.market)
+				CHECK_FALSE(
+				    (entry.itemId == item.itemId && entry.production > 0.0 && entry.demand > 0.0));
 	}
 
 	// Several independent regions on one planet: two ungoverned and two AI neighbours, served by one

@@ -387,6 +387,10 @@ reuse the development generator's civilisation layout as a physical transport mo
 Use the existing `SkillShipCargoHolds` as the proposed later company upgrade reference,
 with prerequisite closure available. Binding that skill to company ownership is stage 3.
 
+The fixture has since grown (W19, 2026-11-21) to 22 goods and ten regions on ten stations, their
+staples by kind of world ([D-105](decision-ledger.md#d-105)); `data/scenarios/trading.yaml`'s
+header describes it.
+
 Stage 2 validates scenario definitions only. Company creation, cargo transfers, travel,
 settlement and advancement are stages 3–4. Scenario balance numbers and exact locations
 are implementation choices to record with the fixture; no economic viability claim

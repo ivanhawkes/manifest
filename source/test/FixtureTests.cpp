@@ -362,7 +362,7 @@ void ToCruise(Hosted &hosted)
 	CHECK(start.credits == 25000);
 	REQUIRE(
 	    hosted.Place(kOre, kGood, Side::Buy, 2, hosted.Quote(kOre, kGood).Ask()) == Result::Succeeded);
-	CHECK(hosted.Seen().credits == 6040);
+	CHECK(hosted.Seen().credits == 4804);
 	REQUIRE(
 	    hosted.Place(kOre, kOxygen, Side::Buy, 1, hosted.Quote(kOre, kOxygen).Ask()) ==
 	    Result::Succeeded);
@@ -574,7 +574,7 @@ TEST_CASE("The trading fixture's loop, saved in flight with a bid resting and re
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves with
 	// what a save holds, the fixture's content or stream, or the engine's movement or save format.
-	CHECK(hosted.world.StateHash() == 0xfee8a16aedb1dbeaULL);
+	CHECK(hosted.world.StateHash() == 0x9592f16712f77784ULL);
 }
 
 
@@ -719,7 +719,9 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 	for (const std::string &id : kTraderShips)
 	{
 		CHECK_MESSAGE(sales[id] > 0, id);
-		CHECK_MESSAGE(balance(hosted, id) > 25000, id);
+		// What it holds counted at what it paid, since the run may end with a lot aboard.
+		const World::Job &job = registry.get<const World::Job>(ship(hosted, id));
+		CHECK_MESSAGE(balance(hosted, id) + (job.totes > 0 ? job.cost : 0) > 25000, id);
 	}
 	// Every arrival docked: none circled the point above its pad until the pad lapsed, as one did
 	// before Jettison's docks stopped a ship out along its pad's normal first.
@@ -757,5 +759,5 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 	CHECK(replayed.world.StateHash() == hosted.world.StateHash());
 
 	// The same in every build the gate runs; it moves as the fixture's does.
-	CHECK(hosted.world.StateHash() == 0x2b699ca7e37d84d7ULL);
+	CHECK(hosted.world.StateHash() == 0x163d2714a7a72baeULL);
 }

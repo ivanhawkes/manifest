@@ -383,7 +383,18 @@ TEST_CASE("A live ask past the target is skipped, and the job replans from its r
 
 TEST_CASE("A lot no bid clears is kept, and the allowance is shared across its sales, never multiplied")
 {
-	Hosted hosted;
+	// Furs made at every station that trades them and wanted at none, so no bid elsewhere is over
+	// Ore's.
+	Manifest::Content::ContentSet content = Scenario("trading");
+	for (Manifest::Content::VenueDefinition &venue : content.scenarios.at(content.scenario).venues)
+		for (Manifest::Content::MarketEntry &entry : venue.market)
+			if (entry.itemId == "ItemFurs")
+			{
+				entry.regionId = venue.regions.at(0).regionId;
+				entry.production = 40.0;
+				entry.demand = 0.0;
+			}
+	Hosted hosted{content};
 	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
 	REQUIRE(hosted.Provision("Bea") == Result::Succeeded);
 	const World::Line furs = hosted.Line("Ada", "VenueOreHighport", "ItemFurs");
@@ -443,8 +454,8 @@ TEST_CASE("A lot no bid clears is kept, and the allowance is shared across its s
 	{
 		const std::uint64_t retry = hosted.Job().retry + 1;
 		const std::uint64_t waited = retry - hosted.world.Clock().Step();
-		Hosted forwarded;
-		Hosted stepped;
+		Hosted forwarded{content};
+		Hosted stepped{content};
 		forwarded.world.Load(hosted.world.Save());
 		stepped.world.Load(hosted.world.Save());
 		std::uint64_t calls = 0;
@@ -458,7 +469,7 @@ TEST_CASE("A lot no bid clears is kept, and the allowance is shared across its s
 
 	// Saved and loaded, then an allowance enough to walk down Ore's bids, read at the next decision:
 	// the rest sells, losing no more than the allowance.
-	Hosted loaded;
+	Hosted loaded{content};
 	loaded.world.Load(hosted.world.Save());
 	REQUIRE(loaded.world.StateHash() == hosted.world.StateHash());
 	const std::int64_t remaining = loaded.Job().cost;
@@ -744,18 +755,23 @@ TEST_CASE("A scenario's NPC traders start provisioned, the world's own, their jo
 	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
 	const entt::entity ada = hosted.Find(Kind::Principal, "Ada");
 	CHECK_FALSE(registry.get<World::Principal>(ada).npc);
-	CHECK(
-	    registry.get<World::Reports>(ada).reports.size() ==
-	    registry.get<World::Reports>(nia).reports.size());
+	const auto starting = [&](entt::entity principal)
+	{
+		return std::ranges::count(
+		    registry.get<World::Reports>(principal).reports, World::Source::Starting,
+		    &World::Report::source);
+	};
+	CHECK(starting(ada) == 9);
+	CHECK(starting(ada) == starting(nia));
 
-	// By the first economic turn's end, its reports show a trade from Ore, where it is docked: it buys
-	// and sets off for the destination.
+	// By the first economic turn's end, its reports show a trade from Brine, Coast's glassware for
+	// Ore's Vale: it sets off for the source.
 	hosted.StepTo(3600);
 	const World::Job &job = hosted.Job();
-	CHECK(job.phase == World::Phase::ToDestination);
-	CHECK(job.sourceId == "VenueOreHighport");
+	CHECK(job.phase == World::Phase::ToSource);
+	CHECK(job.sourceId == "VenueBrineHighport");
 	CHECK(job.estimate > 0);
-	CHECK(registry.get<World::Journey>(hosted.Ship("Ship1")).venueId == job.destinationId);
+	CHECK(registry.get<World::Journey>(hosted.Ship("Ship1")).venueId == job.sourceId);
 
 	// Traders the starter cannot take, which the content's check refuses, refuse the world too.
 	content.scenarios.at(content.scenario).traders = {

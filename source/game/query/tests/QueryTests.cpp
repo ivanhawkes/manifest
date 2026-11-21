@@ -99,12 +99,19 @@ TEST_CASE("A player sees their own company as it was at the completed step, and 
 	const std::uint64_t hash = hosted.world.StateHash();
 	Snapshot loaded = hosted.Observe(kAda);
 	CHECK(hosted.world.StateHash() == hash);
-	// Ada's starting report of Brine, the other station of her system, from the step she spawned in.
-	REQUIRE(loaded.markets.size() == 1);
-	CHECK(loaded.markets[0].report.venueId == "VenueBrineHighport");
-	CHECK(loaded.markets[0].report.source == World::Source::Starting);
-	CHECK(loaded.markets[0].report.observed == 0);
-	CHECK_FALSE(loaded.markets[0].live);
+	// Ada's starting reports of the nine other stations of her system, Brine's among them, from the
+	// step she spawned in.
+	REQUIRE(loaded.markets.size() == 9);
+	CHECK(
+	    std::ranges::any_of(
+	        loaded.markets, [](const Manifest::Query::MarketView &market)
+	        { return market.report.venueId == "VenueBrineHighport"; }));
+	for (const Manifest::Query::MarketView &market : loaded.markets)
+	{
+		CHECK(market.report.source == World::Source::Starting);
+		CHECK(market.report.observed == 0);
+		CHECK_FALSE(market.live);
+	}
 	loaded.markets.clear();
 	CHECK(
 	    loaded == Snapshot{
@@ -190,9 +197,9 @@ TEST_CASE("A player's markets are their own reports, live only as observed at th
 	CHECK_FALSE(seen.markets[0].live);
 	CHECK(seen.markets[1] == MarketView{adas.reports[1], true});
 
-	// Bea's are her own starting report alone; the host, with no fleet, has none.
+	// Bea's are her own starting reports alone; the host, with no fleet, has none.
 	const Snapshot beas = hosted.Observe(kBea);
-	REQUIRE(beas.markets.size() == 1);
+	REQUIRE(beas.markets.size() == 9);
 	CHECK(beas.markets[0].report.source == World::Source::Starting);
 	CHECK(beas.markets[0].report.observed == 1);
 	CHECK(hosted.Observe(kHost).markets.empty());

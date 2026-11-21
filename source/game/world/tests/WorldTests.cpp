@@ -61,17 +61,17 @@ TEST_CASE(
 	Hosted hosted;
 	CreateInitialState(hosted.world, hosted.identities, Trading());
 	const entt::registry &registry = hosted.world.Registry();
-	CHECK(registry.view<const Organisation>().size() == 2);
-	CHECK(registry.view<const Region>().size() == 2);
-	// Three a region (public, households', employer's), and a venue's broker's and its own.
-	CHECK(registry.view<const Account>().size() == 10);
+	CHECK(registry.view<const Organisation>().size() == 10);
+	CHECK(registry.view<const Region>().size() == 10);
+	// Three a region (public, households', employer's), and a venue's broker's and its own, ten each.
+	CHECK(registry.view<const Account>().size() == 50);
 
 	// Ore's broker holds the venue's stock, 21 totes of furs, with the authored treasury.
 	const entt::entity broker = hosted.identities.Find(Kind::Broker, "VenueOreHighport");
 	REQUIRE(broker != entt::null);
 	CHECK(registry.get<Broker>(broker).operatorId == "OrganisationAnvilPortAuthority");
 	const Stock &stock = registry.get<Stock>(broker);
-	CHECK(stock.holdings.size() == 22);
+	CHECK(stock.holdings.size() == 20);
 	CHECK(!Broken(stock));
 	const auto furs = std::ranges::find(stock.holdings, std::string{"ItemFurs"}, &Holding::itemId);
 	REQUIRE(furs != stock.holdings.end());

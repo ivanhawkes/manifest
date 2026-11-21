@@ -202,10 +202,10 @@ TEST_CASE("The staged directory and pack both start Manifest with the scenario's
 		REQUIRE(session->Packages().front().description);
 		CHECK(session->Packages().front().description->name == "Manifest");
 		const entt::registry &registry = session->World().Registry();
-		CHECK(registry.view<const Manifest::World::Region>().size() == 2);
+		CHECK(registry.view<const Manifest::World::Region>().size() == 10);
 		// Each region's three, and each venue's broker's and its own.
-		CHECK(registry.view<const Manifest::World::Account>().size() == 10);
-		CHECK(registry.view<const Manifest::World::Broker>().size() == 2);
+		CHECK(registry.view<const Manifest::World::Account>().size() == 50);
+		CHECK(registry.view<const Manifest::World::Broker>().size() == 10);
 		session->Shutdown();
 		CHECK_FALSE(session->Running());
 		session->Shutdown();
