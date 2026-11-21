@@ -1,17 +1,14 @@
 # Session handoff
 
-## Next, on resuming — 2026-11-21 (after W10)
+## Next, on resuming — 2026-11-21 (after W18)
 
-W10 is done: [standing trade policies, autopilot and NPC jobs](stage-4-trading-plan.md#delivered-w10-2026-11-21),
-on pin `0f973b2`, and so is L28: [a docked fleet's wait passed over](stage-4-trading-plan.md#delivered-l28-2026-11-21).
-Next: W18, the transport and holding charges at their real values, on the
-[W18 plan](stage-4-trading-plan.md#w18-plan) and [D-100](decision-ledger.md#d-100), the user's choices
-settled; its slices are in the plan. Slices 1 (fees by pad class, `9dc5181`), 2
-(`Manifest.Company.SetFees`, `ad8f6b3`), 3 (`manifest.pricing`, `f4de3f0`, gated), 4 (transit life
-support, `8e9fdaf`) and 5 (`manifest.seizure`, `857fb9e`, gated) are done; next is slice 6, the close-out. A commit is
-gated in the second checkout, `build/gate-tree`, with `--tidy`, editing alone beside it
-([gating beside the work](build-and-gates.md#gating-beside-the-work)). A ship steered in a station's frame still runs every step, which is most of the
-zero-client run's steps.
+W18 is done: [the transport and holding charges at their real values](stage-4-trading-plan.md#delivered-w18-2026-11-21),
+on pin `0f973b2` with no engine edit. Next: W11, the clean public-project and tender lifecycle's
+remaining rounding, deadline, default and regional delivery choices, the user's to settle before it
+is planned ([delivery order](delivery-order.md#priority-5-stage-4-trading-automation-and-regional-development)).
+A commit is gated in the second checkout, `build/gate-tree`, with `--tidy`, editing alone beside it
+([gating beside the work](build-and-gates.md#gating-beside-the-work)). A ship steered in a station's
+frame still runs every step, which is most of the zero-client run's steps.
 The planning documents' home-region allocation (scope, the roadmap's region supply and D-076) waits
 for W13 to restate it as founding.
 

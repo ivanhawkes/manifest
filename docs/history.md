@@ -100,6 +100,17 @@ cargo's lots are bounded together (`world`), and a ship's cargo against its hull
 `CargoVolume`, whose empty map was taken for none given; a hull the map does not name now carries
 nothing (`company`). Round 7 approved with no finding open.
 
+## W18: the transport and holding charges at their real values — 2026-11-21
+
+On pin `0f973b2`, with no engine edit, as the plan expected. A ship pays by its hull's pad class and
+its occupants, a venue's fees are set by the principal directing its operator or by an AI operator's
+daily occupancy rule, the life support a lot's ship draws in transit is charged to it at the company's
+last prices, and a ship held 7 days for its arrears has its cargo sold at the live bids
+([what it chose and its evidence](stage-4-trading-plan.md#delivered-w18-2026-11-21)). The gate moved
+to a second checkout during it, with tidy in it, after a local gate without tidy let a finding
+through. Seizure pays the arrears from the company's account, the proceeds when it was empty; a
+station's balance cannot show the payment in a test, since it also takes the NPC traders' fill fees.
+
 ## W10: standing trade policies, autopilot and NPC jobs — 2026-11-21
 
 On pin `0f973b2`, with one engine provision. Each ship's saved job chooses, flies, buys and sells
