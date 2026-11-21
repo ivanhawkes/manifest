@@ -586,6 +586,33 @@ void CheckTuning(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 			}
 		}
 
+		const auto categories = Ids<Core::CategoryNode>(registry, &Core::CategoryNode::categoryId);
+		std::set<std::string, std::less<>> buckets;
+		std::set<std::string, std::less<>> bucketed;
+		for (const DemandBucket &bucket : tuning.optionalGoods)
+		{
+			checker.Require(!bucket.bucketId.empty(), "optionalGoods", "a bucketId is required");
+			checker.Require(
+			    buckets.insert(bucket.bucketId).second, "optionalGoods",
+			    std::format("'{}' is given twice", bucket.bucketId));
+			checker.Require(
+			    NotNegative(bucket.premium), "optionalGoods",
+			    std::format("'{}' premium must be at least 0", bucket.bucketId));
+			checker.Require(
+			    Positive(bucket.demandShare) && bucket.demandShare <= 1.0, "optionalGoods",
+			    std::format("'{}' demandShare must be in (0, 1]", bucket.bucketId));
+			for (const CategorySelection &selection : bucket.categories)
+			{
+				checker.Require(
+				    categories.contains(selection.categoryId), "optionalGoods",
+				    std::format(
+				        "'{}' category '{}' names nothing", bucket.bucketId, selection.categoryId));
+				checker.Require(
+				    bucketed.insert(selection.categoryId).second, "optionalGoods",
+				    std::format("'{}' is in more than one bucket", selection.categoryId));
+			}
+		}
+
 		const ConditionTuning &condition = tuning.condition;
 		checker.Require(
 		    NotNegative(condition.initial) && condition.initial <= 100.0, "condition.initial",

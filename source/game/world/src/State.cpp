@@ -140,6 +140,9 @@ std::optional<std::string> Broken(const Pantry &pantry)
 	for (const Unmet &unmet : pantry.unmet)
 		if (unmet.needId.empty() || !std::isfinite(unmet.quantity) || unmet.quantity < 0.0)
 			return "an unmet need names no need or is below 0";
+	for (const Unmet &unmet : pantry.unmet)
+		if (!std::isfinite(unmet.pressure) || unmet.pressure < 0.0 || unmet.pressure > 1.0)
+			return "a need's pressure is not in [0, 1]";
 	if (!std::isfinite(pantry.severity) || pantry.severity < 0.0 || pantry.severity > 1.0)
 		return "a pantry's severity is not in [0, 1]";
 	return std::nullopt;
@@ -432,7 +435,8 @@ void RegisterTypes()
 		    .Field<&Production::taxCarry>("taxCarry", kSaved);
 		RegisterType<Unmet>("Manifest.World.Unmet")
 		    .Field<&Unmet::needId>("needId", kSaved)
-		    .Field<&Unmet::quantity>("quantity", kSaved);
+		    .Field<&Unmet::quantity>("quantity", kSaved)
+		    .Field<&Unmet::pressure>("pressure", kSaved);
 		RegisterType<Pantry>("Manifest.World.Pantry")
 		    .Field<&Pantry::opened>("opened", kSaved)
 		    .Field<&Pantry::unmet>("unmet", kSaved)

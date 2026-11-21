@@ -78,8 +78,9 @@ ContentSet OneBatch()
 			entry.regionId.clear();
 	Content::MarketEntry &medical = Entry(content, kBrine, kMedical);
 	medical.regionId = kBrineCoast;
-	// 144 totes of 125 kg a day.
+	// 144 totes of 125 kg a day, wanted as much, so its price stays near its base, over its floor.
 	medical.production = 18'000.0;
+	medical.demand = 18'000.0;
 	return content;
 }
 
@@ -281,6 +282,21 @@ TEST_CASE("A batch reserves its wages, pays them as it works, and sells its good
 }
 
 
+TEST_CASE("An employer keeps what its broker's bids do not pay its wages for")
+{
+	ContentSet content = OneBatch();
+	// Wanted nowhere, its native price is a fiftieth of its base, under its wages.
+	Entry(content, kBrine, kMedical).demand = 0.0;
+	Hosted hosted{std::move(content)};
+	const std::uint64_t brokered = hosted.Totes(Kind::Broker, kBrine, kBrine, kMedical);
+	hosted.StepTo(700);
+	CHECK(hosted.Totes(Kind::Employer, kBrineCoast, kBrine, kMedical) == 1);
+	CHECK(hosted.Totes(Kind::Broker, kBrine, kBrine, kMedical) == brokered);
+	for (const auto [entity, order] : hosted.world.Registry().view<const World::Order>().each())
+		CHECK(order.ownerKind != Kind::Employer);
+}
+
+
 TEST_CASE("At half the work rate a batch takes twice as long, for the same goods and wages")
 {
 	ContentSet content = OneBatch();
@@ -351,8 +367,8 @@ TEST_CASE("Households buy their essentials through the book and consume each int
 	CHECK(grains == 1);
 	CHECK(grain > 0.0);
 	CHECK(hosted.Balance(Kind::HouseholdAccount, kOreHighlands) < funds);
-	// Every essential met, the optional goods are bought too: Ore's households want its salt.
-	CHECK(hosted.Opened(kOreHighlands, "ItemSalt") > 0.0);
+	// Every essential met, the optional goods are bought too: Ore's households want its glassware.
+	CHECK(hosted.Opened(kOreHighlands, "ItemGlassware") > 0.0);
 	CHECK(hosted.Get<World::Region>(Kind::Region, kOreHighlands).health == 100.0);
 	// No bid of theirs rests.
 	for (const auto [entity, order] : hosted.world.Registry().view<const World::Order>().each())
@@ -367,15 +383,18 @@ TEST_CASE("An essential that cannot be bought is recorded, lowers condition and 
 	Hosted hosted{std::move(content)};
 	hosted.StepTo(60);
 	const auto &pantry = hosted.Get<World::Pantry>(Kind::Household, kOreHighlands);
-	CHECK(pantry.severity == doctest::Approx(1.0 / 3.0));
+	// One of the needs' 4.5 weights, the medical supplies' 1.
+	CHECK(pantry.severity == doctest::Approx(1.0 / 4.5));
 	CHECK(pantry.shortIntervals == 1);
 	REQUIRE(pantry.unmet.size() == 1);
 	CHECK(pantry.unmet[0].needId == "NeedBasicMedicalSupplies");
 	CHECK(pantry.unmet[0].quantity == doctest::Approx(125.0 / 1'440.0));
+	// All of it unmet, smoothed over an hour of minutes.
+	CHECK(pantry.unmet[0].pressure == doctest::Approx(1.0 / 60.0));
 	const auto &region = hosted.Get<World::Region>(Kind::Region, kOreHighlands);
-	CHECK(region.health == doctest::Approx(100.0 - 6.0 / 3.0 / 60.0));
-	CHECK(region.happiness == doctest::Approx(100.0 - 12.0 / 3.0 / 60.0));
-	CHECK(hosted.Opened(kOreHighlands, "ItemSalt") == 0.0);
+	CHECK(region.health == doctest::Approx(100.0 - 6.0 / 4.5 / 60.0));
+	CHECK(region.happiness == doctest::Approx(100.0 - 12.0 / 4.5 / 60.0));
+	CHECK(hosted.Opened(kOreHighlands, "ItemGlassware") == 0.0);
 	// Brine, supplied, is untouched by Ore's shortage.
 	CHECK(hosted.Get<World::Region>(Kind::Region, kBrineCoast).health == 100.0);
 
@@ -383,6 +402,35 @@ TEST_CASE("An essential that cannot be bought is recorded, lowers condition and 
 	hosted.StepTo(120);
 	CHECK(pantry.shortIntervals == 2);
 	CHECK(pantry.unmet[0].quantity == doctest::Approx(2.0 * 125.0 / 1'440.0));
+	CHECK(pantry.unmet[0].pressure == doctest::Approx(1.0 / 60.0 + (1.0 - 1.0 / 60.0) / 60.0));
+}
+
+
+TEST_CASE("A need's pressure raises the households' bid until they buy what the broker asks")
+{
+	ContentSet content = Trading();
+	// A tote of medical supplies an interval, 125 kg a minute.
+	for (Content::NeedDefinition &need : content.tuning.needs)
+		if (need.needId == "NeedBasicMedicalSupplies")
+			need.perThousandPerDay *= 1'440.0;
+	Hosted hosted{std::move(content)};
+	const std::uint64_t seeded = hosted.Totes(Kind::Broker, kOre, kOre, kMedical);
+	const auto &pantry = hosted.Get<World::Pantry>(Kind::Household, kOreHighlands);
+	// At its target the broker asks the reference, and the households buy.
+	hosted.StepTo(60);
+	CHECK(hosted.Totes(Kind::Broker, kOre, kOre, kMedical) == seeded - 1);
+	CHECK(pantry.unmet.empty());
+	// Below it the broker asks more, and they go short until their pressure meets its ask.
+	std::uint64_t step = 60;
+	while (hosted.Totes(Kind::Broker, kOre, kOre, kMedical) == seeded - 1 && step < 6'000)
+		hosted.StepTo(step += 60);
+	// Three intervals short: the ask at 7 totes of 8 is about 11% over the reference.
+	CHECK(step == 300);
+	CHECK(pantry.shortIntervals == 3);
+	const auto medical =
+	    std::ranges::find(pantry.unmet, std::string{"NeedBasicMedicalSupplies"}, &World::Unmet::needId);
+	REQUIRE(medical != pantry.unmet.end());
+	CHECK(medical->pressure > 0.036);
 }
 
 

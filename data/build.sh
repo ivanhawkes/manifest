@@ -23,6 +23,7 @@ DEFINITIONS=(
   trade-items/minerals.yaml
   trade-items/seeds.yaml
   trade-items/grains.yaml
+  trade-items/legumes.yaml
   trade-items/life-support.yaml
   trade-items/food-and-drink.yaml
   trade-items/fuels.yaml

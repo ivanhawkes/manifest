@@ -55,12 +55,15 @@ struct Venue
 };
 
 
-// A market row a region's employer makes, or its households want, in the item's unit per day.
+// A market row a region's employer makes, or its households want, in the item's unit per day: an
+// optional good's at its bucket's share of its demand, bought at up to its premium over the native
+// price (D-102).
 struct Row
 {
 	std::string venueId;
 	std::string itemId;
 	double perDay{0.0};
+	double premium{0.0};
 };
 
 
@@ -181,7 +184,21 @@ std::shared_ptr<const Rules> MakeRules(
 					                   need.items, entry.itemId, &Content::ItemSelection::itemId) !=
 					               need.items.end();
 				        }))
-					economy.wanted.push_back({home->venueId, entry.itemId, entry.demand});
+				{
+					// A category in no bucket is bought at its native price, all of its demand.
+					double premium = 0.0;
+					double share = 1.0;
+					for (const Content::DemandBucket &bucket : content.tuning.optionalGoods)
+						if (std::ranges::find(
+						        bucket.categories, items.at(entry.itemId)->categoryId,
+						        &Content::CategorySelection::categoryId) != bucket.categories.end())
+						{
+							premium = bucket.premium;
+							share = bucket.demandShare;
+						}
+					economy.wanted.push_back(
+					    {home->venueId, entry.itemId, entry.demand * share, premium});
+				}
 	}
 	for (const Content::NeedDefinition &need : content.tuning.needs)
 	{
@@ -1070,7 +1087,9 @@ void CancelAll(SimWorld &world, const Rules &rules, Kind kind, const std::string
 }
 
 
-// Each employer offers everything it has made at its broker's bid, its last turn's offers cancelled.
+// Each employer sells everything it has made into its broker's bids, down to a floor, what a unit of
+// it cost in wages (D-102): what does not sell at once is cancelled and kept in its warehouse, offered
+// again next turn.
 void Sell(SimWorld &world, const Rules &rules)
 {
 	entt::registry &registry = world.Registry();
@@ -1083,8 +1102,9 @@ void Sell(SimWorld &world, const Rules &rules)
 		    registry.get<const World::Stock>(Require(rules, Kind::Employer, economy.regionId)).holdings;
 		for (const World::Holding &holding : holdings)
 		{
-			const auto quotes = Quotes(registry, rules, holding.venueId, holding.itemId);
-			if (holding.available == 0 || !quotes || quotes->first <= 0)
+			const double floor = std::ceil(
+			    static_cast<double>(rules.basePrices.at(holding.itemId)) * rules.production.wageShare);
+			if (holding.available == 0 || floor <= 0.0 || floor >= 0x1p63)
 				continue;
 			World::Order order;
 			order.ownerKind = Kind::Employer;
@@ -1092,35 +1112,47 @@ void Sell(SimWorld &world, const Rules &rules)
 			order.venueId = holding.venueId;
 			order.itemId = holding.itemId;
 			order.side = Side::Sell;
-			order.limit = quotes->first;
+			order.limit = static_cast<std::int64_t>(floor);
 			order.totes = holding.available;
 			(void)Post(world, rules, std::move(order));
 		}
+		CancelAll(world, rules, Kind::Employer, economy.regionId);
 	}
 }
 
 
-// The households buy at the broker's ask, cheapest of the items first, whole totes enough for the
-// shortfall in the items' unit, within their funds and their warehouse's room; what does not fill at
-// once is cancelled, so their bids never rest.
+// The households buy the items, cheapest of the broker's asks first, at up to the markup over the ask
+// each one's broker posts at its target stock (D-102), walking its asks: whole totes enough for the
+// shortfall in the items' unit, within their funds and their warehouse's room. What does not fill at
+// once is cancelled, so their bids never rest; an item whose best ask is over its limit is not bid for.
 void Buy(
     SimWorld &world, const Rules &rules, const Economy &economy, std::span<const std::string> items,
-    double shortfall)
+    double shortfall, double markup)
 {
 	entt::registry &registry = world.Registry();
 	const entt::entity household = Require(rules, Kind::Household, economy.regionId);
 	const entt::entity account = Require(rules, Kind::HouseholdAccount, economy.regionId);
-	std::vector<std::pair<std::int64_t, std::string>> asks;
+	std::vector<std::tuple<std::int64_t, std::int64_t, std::string>> asks;
 	for (const std::string &itemId : items)
-		if (const auto quotes = Quotes(registry, rules, economy.venueId, itemId))
-			asks.emplace_back(quotes->second, itemId);
-	std::ranges::stable_sort(asks, {}, &std::pair<std::int64_t, std::string>::first);
-	for (const auto &[ask, itemId] : asks)
+	{
+		const auto quotes = Quotes(registry, rules, economy.venueId, itemId);
+		if (!quotes)
+			continue;
+		const Good &good = *GoodAt(rules, economy.venueId, itemId);
+		const std::int64_t reference =
+		    CurvePrice(good, 2 * good.target - Rung(good), rules.spreadBps, Side::Sell);
+		const double limit = std::floor(static_cast<double>(reference) * markup);
+		const std::int64_t capped = limit < 0x1p63 ? static_cast<std::int64_t>(limit) : kMaxCredits;
+		if (quotes->second <= capped)
+			asks.emplace_back(quotes->second, capped, itemId);
+	}
+	std::ranges::stable_sort(asks, {}, [](const auto &ask) { return std::get<0>(ask); });
+	for (const auto &[ask, limit, itemId] : asks)
 	{
 		if (shortfall <= 0.0)
 			break;
 		const double unitsPerTote = rules.unitsPerTote.at(itemId);
-		const std::optional<std::int64_t> perTote = PerTote(ask, unitsPerTote, rules.feeBps);
+		const std::optional<std::int64_t> perTote = PerTote(limit, unitsPerTote, rules.feeBps);
 		if (!perTote)
 			continue;
 		const std::int64_t balance = registry.get<const World::Account>(account).balance;
@@ -1140,7 +1172,7 @@ void Buy(
 		order.venueId = economy.venueId;
 		order.itemId = itemId;
 		order.side = Side::Buy;
-		order.limit = ask;
+		order.limit = limit;
 		order.totes = totes;
 		(void)Post(world, rules, std::move(order));
 		CancelAll(world, rules, Kind::Household, economy.regionId);
@@ -1185,6 +1217,11 @@ double Consume(
 }
 
 
+// The span a need's pressure is its unmet share smoothed over (D-102): an hour, the user's, so a
+// shortage raises what households pay within a few intervals.
+constexpr double kPressureSeconds = 3'600.0;
+
+
 // Each region's households' interval: every need's fresh requirement, scaled by the population and the
 // interval, bought and consumed in the needs' order; then, every need met, the optional goods; then
 // the region's health and happiness, from the interval's severity, which the work rate reads from the
@@ -1216,35 +1253,39 @@ void Households(SimWorld &world, const Rules &rules)
 				}
 				return held;
 			};
-			const auto consume = [&](std::span<const std::string> items, double required)
+			const auto consume = [&](std::span<const std::string> items, double required, double markup)
 			{
 				if (const double held = have(items); held < required)
-					Buy(world, rules, economy, items, required - held);
+					Buy(world, rules, economy, items, required - held, markup);
 				Ledger ledger{registry, rules.identities};
 				const double consumed = Consume(ledger, pantry, rules, economy, items, required);
 				ledger.Commit();
 				return consumed;
 			};
+			const double smoothing = std::min(1.0, rules.intervalSeconds / kPressureSeconds);
 			for (const Need &need : rules.needs)
 			{
 				const double required = need.perThousandPerDay * population / 1'000.0 * days;
-				const double consumed = consume(need.items, required);
+				auto unmet = std::ranges::find(pantry.unmet, need.needId, &World::Unmet::needId);
+				const double pressure = unmet == pantry.unmet.end() ? 0.0 : unmet->pressure;
+				// From the ask at the target when fed to the curve's ceiling when starving.
+				const double consumed = consume(
+				    need.items, required, 1.0 + static_cast<double>(kCurveCeiling - 1) * pressure);
 				met.push_back({need.weight, required, consumed});
-				if (consumed < required)
-				{
-					auto unmet = std::ranges::find(pantry.unmet, need.needId, &World::Unmet::needId);
-					if (unmet == pantry.unmet.end())
-						unmet = pantry.unmet.insert(
-						    std::ranges::lower_bound(
-						        pantry.unmet, need.needId, {}, &World::Unmet::needId),
-						    {need.needId, 0.0});
-					unmet->quantity += required - consumed;
-				}
+				if (consumed < required && unmet == pantry.unmet.end())
+					unmet = pantry.unmet.insert(
+					    std::ranges::lower_bound(pantry.unmet, need.needId, {}, &World::Unmet::needId),
+					    {need.needId, 0.0, 0.0});
+				if (unmet == pantry.unmet.end())
+					continue;
+				unmet->quantity += required - consumed;
+				unmet->pressure = std::clamp(
+				    pressure + smoothing * ((required - consumed) / required - pressure), 0.0, 1.0);
 			}
 			if (std::ranges::all_of(
 			        met, [](const NeedMet &need) { return need.satisfied >= need.required; }))
 				for (const Row &row : economy.wanted)
-					(void)consume(std::span{&row.itemId, 1}, row.perDay * days);
+					(void)consume(std::span{&row.itemId, 1}, row.perDay * days, 1.0 + row.premium);
 		}
 		pantry.severity = Severity(met);
 		if (pantry.severity > 0.0)

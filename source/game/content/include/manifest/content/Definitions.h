@@ -95,6 +95,21 @@ struct NeedDefinition
 	std::vector<ItemSelection> items;
 };
 
+struct CategorySelection
+{
+	std::string categoryId;
+};
+
+// The optional goods of some categories (D-102): bought at up to premium over their native price,
+// demandShare of their authored demand.
+struct DemandBucket
+{
+	std::string bucketId;
+	double premium{0.0};
+	double demandShare{0.0};
+	std::vector<CategorySelection> categories;
+};
+
 struct ConditionTuning
 {
 	double initial{0.0};
@@ -245,6 +260,8 @@ struct TuningDefinition
 {
 	EconomyTuning economy;
 	std::vector<NeedDefinition> needs;
+	// A category is in at most one.
+	std::vector<DemandBucket> optionalGoods;
 	ConditionTuning condition;
 	ProductionTuning production;
 	LifeSupportTuning lifeSupport;

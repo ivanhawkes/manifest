@@ -1,0 +1,57 @@
+---
+# The fields and their units are defined in docs/model.md, "Units, prices and storage". Each
+# price is the 2026-11-19 spot or contract quote where the good has a market, sourced in the
+# same section, and the first-draft value converted to the unit where it has none.
+#
+# The legumes, staples a household eats as it eats the food grains (the user's, 2026-11-21): the
+# dried, cleaned seed, by the tonne. density is the whole seed and packFactor its bulk density over
+# it, as the grains'.
+item-base:
+
+  - item:
+      itemId: ItemBeans
+      categoryId: CategoryConsumables
+      ageId: AgeStone
+      displayName: Beans
+      description: Dried beans
+      unitsPerCubicMetre: 1.3
+      basePrice: 1000
+      unitType: Tonne
+      density: 1.3
+      packFactor: 0.6
+
+  - item:
+      itemId: ItemLentils
+      categoryId: CategoryConsumables
+      ageId: AgeStone
+      displayName: Lentils
+      description: Dried lentils
+      unitsPerCubicMetre: 1.35
+      basePrice: 750
+      unitType: Tonne
+      density: 1.35
+      packFactor: 0.6
+
+  - item:
+      itemId: ItemChickpeas
+      categoryId: CategoryConsumables
+      ageId: AgeStone
+      displayName: Chickpeas
+      description: Dried chickpeas
+      unitsPerCubicMetre: 1.3
+      basePrice: 850
+      unitType: Tonne
+      density: 1.3
+      packFactor: 0.58
+
+  - item:
+      itemId: ItemPeas
+      categoryId: CategoryConsumables
+      ageId: AgeStone
+      displayName: Peas
+      description: Dried field peas
+      unitsPerCubicMetre: 1.35
+      basePrice: 350
+      unitType: Tonne
+      density: 1.35
+      packFactor: 0.58

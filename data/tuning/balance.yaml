@@ -18,7 +18,15 @@ needs:
     weight: 1
     perThousandPerDay: 0.5
     unit: Tonne
-    items: [{itemId: ItemRice}, {itemId: ItemWheat}, {itemId: ItemOats}, {itemId: ItemBarley}]
+    items:
+      - {itemId: ItemRice}
+      - {itemId: ItemWheat}
+      - {itemId: ItemOats}
+      - {itemId: ItemBarley}
+      - {itemId: ItemBeans}
+      - {itemId: ItemLentils}
+      - {itemId: ItemChickpeas}
+      - {itemId: ItemPeas}
   # 3,000 litres, in kilolitres, the unit water is billed in.
   - needId: NeedDrinkingWater
     weight: 1
@@ -30,6 +38,43 @@ needs:
     perThousandPerDay: 5
     unit: Kilogram
     items: [{itemId: ItemBasicMedicalSupplies}]
+  # 50 grams of salt to cook with and preserve, and a bar of soap a month, for hygiene (the user's,
+  # 2026-11-21): salt's lack kills as food's does, soap's harms health more slowly.
+  - needId: NeedSalt
+    weight: 1
+    perThousandPerDay: 0.05
+    unit: Tonne
+    items: [{itemId: ItemSalt}]
+  - needId: NeedHygiene
+    weight: 0.5
+    perThousandPerDay: 30
+    unit: Unit
+    items: [{itemId: ItemSoap}]
+
+# The goods no need names, bought only in an interval every need is met (D-102), by the bucket of
+# their item's category: at up to premium over their native price, and demandShare of their authored
+# demand (the user's, 2026-11-21). A category in no bucket is bought at its native price, all of its
+# demand. Everyday goods sell at a premium; luxuries less often and nearer their price.
+optionalGoods:
+  - bucketId: BucketEveryday
+    premium: 0.2
+    demandShare: 1
+    categories:
+      - {categoryId: CategoryAppliances}
+      - {categoryId: CategoryCommunications}
+      - {categoryId: CategoryComputing}
+      - {categoryId: CategoryConsumables}
+      - {categoryId: CategoryCrafts}
+      - {categoryId: CategoryElectronics}
+      - {categoryId: CategoryEntertainment}
+      - {categoryId: CategoryWellness}
+  - bucketId: BucketLuxury
+    premium: 0.05
+    demandShare: 0.5
+    categories:
+      - {categoryId: CategoryAnimalProducts}
+      - {categoryId: CategoryLuxuryGoods}
+      - {categoryId: CategoryTextiles}
 
 # Health and happiness, 0 to 100, in points per simulation hour: a loss scaled by the severity
 # of the shortage, a recovery only when every essential is met. Each condition's factor in the

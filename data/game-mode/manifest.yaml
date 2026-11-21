@@ -264,6 +264,8 @@ items:
   - itemId: ItemMiningDrills
   - itemId: ItemHeavyWeapons
   - itemId: ItemTourists
+  - itemId: ItemWellnessProducts
+  - itemId: ItemSupplements
   # Post-industrial Age
   - itemId: ItemHomeAppliances
   - itemId: ItemAntibiotics
@@ -304,6 +306,12 @@ items:
   - itemId: ItemBarley
   - itemId: ItemOats
   - itemId: ItemRice
+
+  # Legumes
+  - itemId: ItemBeans
+  - itemId: ItemLentils
+  - itemId: ItemChickpeas
+  - itemId: ItemPeas
 
   # Life support
   - itemId: ItemOxygen

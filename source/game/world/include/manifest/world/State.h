@@ -293,13 +293,15 @@ struct Unmet
 {
 	std::string needId;
 	double quantity{0.0};
+	// Its unmet share smoothed over a day, 0 to 1 (D-102).
+	double pressure{0.0};
 
 	bool operator==(const Unmet &) const = default;
 };
 
 // A region's households' goods beyond whole totes, and their shortages: the opened totes by item, each
-// above 0; each need's unmet total; the last interval's severity, 0 to 1; and the intervals a need went
-// short in.
+// above 0; each need's unmet total and pressure, from its first short interval on; the last
+// interval's severity, 0 to 1; and the intervals a need went short in.
 struct Pantry
 {
 	std::vector<Opened> opened;

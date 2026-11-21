@@ -49,9 +49,10 @@ rules remain open.
   Batch regular wage payments and household purchases every 60 seconds of simulation time
   as an initial balance-testing setting; do not simulate individual citizens or families.
   Use an authored essentials basket scaled by population and elapsed simulation time.
-  The first basket has three needs: staple food satisfied only by rice, wheat, oats or
-  barley; drinking water; and basic medical supplies. Food is one need, not four separately
-  required grains. Bread remains tradable but does not satisfy this staple-food requirement.
+  The first basket had three needs: staple food satisfied only by rice, wheat, oats or
+  barley; drinking water; and basic medical supplies. W19 widened it to five (the user's,
+  2026-11-21): the legumes (beans, lentils, chickpeas, peas) meet staple food too, and salt and
+  soap are needs of their own. Food is one need, not eight separately required staples. Bread remains tradable but does not satisfy this staple-food requirement.
   Trade all four food grains in kilograms; 1 kg of any qualifying grain satisfies 1 kg of
   staple-food demand, including mixtures, while stocks/prices/storage remain distinct.
   Initial food demand is 500 kg per 1,000 people per simulation day, prorated across updates.
@@ -716,9 +717,13 @@ The complete selected initial daily basket is:
 | Staple food from the four qualifying grains | 500 kg total | 12,500 kg total |
 | Drinking water | 3,000 litres | 75,000 litres |
 | Basic Medical Supplies | 5 kg | 125 kg |
+| Salt (W19) | 50 kg | 1,250 kg |
+| Soap, for hygiene (W19) | 30 bars | 750 bars |
 
-Each need retains importance weight 1. Population/time scaling and fractional interval
-requirements apply to all three; physical units do not set importance.
+The legumes meet the staple-food row with the grains (W19). Each need has importance weight 1
+but hygiene's 0.5: salt's lack kills as food's does, soap's harms health more slowly (the
+user's, 2026-11-21). Population/time scaling and fractional interval requirements apply to
+all five; physical units do not set importance.
 
 Surplus qualifying food cannot compensate for missing water or
 medicine. Retain physical goods/ownership, finite household budgets and the single-consumption

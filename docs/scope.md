@@ -5,6 +5,11 @@ current scope is the C++ development harness, its terminal interface, authored Y
 content packaging. Jettison owns rendering, input, audio, physics, engine scheduling, VFS,
 serialisation and the sandboxed script runtime.
 
+A prime purpose of the game (the user's, 2026-11-21) is a playfield where people experiment with
+and learn how greed, fear, monopolies and other modern woes affect everyone's lifestyle, income
+and happiness. Its balance numbers are starting points, refined stepwise with an understanding of
+macroeconomics toward an enjoyable game, not a faithful emulation of today's economy.
+
 The configuration package mounts as a Jettison mod. It does not yet make the sample game execute
 Manifest's economic rules. The [host/script boundary](host-script-boundary.md) defines linked
 native ownership of those rules and capability-limited Wasm policy inputs. Decimal market prices

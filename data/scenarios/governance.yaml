@@ -8,7 +8,7 @@ version: 1
 # (systems/system-crucible.yaml); market rates are per simulation day, in the item's unit
 # (docs/model.md), and stock is in totes (D-087): the earlier quantities in the unit to the nearest
 # tote, at least one. Each region trades the essentials at its venue (W04); a row's region is the
-# employer that makes it.
+# employer that makes it. Forge grows its staples and works its salt, and buys its soap from Cassiter.
 gameMode: manifest
 starterHull: HullLoneTraderStarter
 starterVenue: VenueForgeHighport
@@ -17,6 +17,12 @@ items:
   - itemId: ItemWheat
   - itemId: ItemOats
   - itemId: ItemBarley
+  - itemId: ItemBeans
+  - itemId: ItemLentils
+  - itemId: ItemChickpeas
+  - itemId: ItemPeas
+  - itemId: ItemSalt
+  - itemId: ItemSoap
   - itemId: ItemDrinkingWater
   - itemId: ItemBasicMedicalSupplies
   - itemId: ItemCopper
@@ -119,6 +125,12 @@ venues:
       - {itemId: ItemWheat, regionId: RegionForgeSouth, production: 20, demand: 0, stock: 504}
       - {itemId: ItemOats, regionId: RegionForgeEast, production: 8, demand: 0, stock: 197}
       - {itemId: ItemBarley, regionId: RegionForgeWest, production: 9, demand: 0, stock: 215}
+      - {itemId: ItemBeans, regionId: RegionForgeNorth, production: 3, demand: 0, stock: 60}
+      - {itemId: ItemLentils, regionId: RegionForgeSouth, production: 3, demand: 0, stock: 60}
+      - {itemId: ItemChickpeas, regionId: RegionForgeEast, production: 2, demand: 0, stock: 40}
+      - {itemId: ItemPeas, regionId: RegionForgeWest, production: 2, demand: 0, stock: 40}
+      - {itemId: ItemSalt, regionId: RegionForgeWest, production: 5.5, demand: 5, stock: 80}
+      - {itemId: ItemSoap, production: 0, demand: 3000, stock: 8}
       - {itemId: ItemDrinkingWater, regionId: RegionForgeSouth, production: 320, demand: 0, stock: 8000}
       - {itemId: ItemCopper, regionId: RegionForgeEast, production: 3, demand: 0, stock: 27}
       - {itemId: ItemBasicMedicalSupplies, production: 0, demand: 500, stock: 8}
@@ -146,3 +158,9 @@ venues:
       - {itemId: ItemWheat, production: 0, demand: 0, stock: 10}
       - {itemId: ItemOats, production: 0, demand: 0, stock: 10}
       - {itemId: ItemBarley, production: 0, demand: 0, stock: 10}
+      - {itemId: ItemBeans, production: 0, demand: 0, stock: 10}
+      - {itemId: ItemLentils, production: 0, demand: 0, stock: 10}
+      - {itemId: ItemChickpeas, production: 0, demand: 0, stock: 10}
+      - {itemId: ItemPeas, production: 0, demand: 0, stock: 10}
+      - {itemId: ItemSalt, production: 0, demand: 1.25, stock: 10}
+      - {itemId: ItemSoap, regionId: RegionCassiterLowlands, production: 4000, demand: 750, stock: 24}

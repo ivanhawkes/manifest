@@ -435,6 +435,15 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	    "{itemId: ItemRice}]}\n",
 	    "'NeedStapleFood' selects 'ItemRice' twice");
 	CheckRefused(
+	    balance,
+	    "version: 1\noptionalGoods: !merge=bucketId\n  - {bucketId: BucketLuxury, demandShare: 2}\n",
+	    "'BucketLuxury' demandShare must be in (0, 1]");
+	CheckRefused(
+	    balance,
+	    "version: 1\noptionalGoods: !merge=bucketId\n  - {bucketId: BucketLuxury, categories: "
+	    "[{categoryId: CategoryNone}]}\n",
+	    "'BucketLuxury' category 'CategoryNone' names nothing");
+	CheckRefused(
 	    balance, "version: 1\ncondition: {initial: 101}\n", "condition.initial must be in [0, 100]");
 	CheckRefused(
 	    balance, "version: 1\ncondition: {workRateFloor: 2}\n",
@@ -549,9 +558,9 @@ TEST_CASE("The fixtures are the trading and governance scenarios their plans des
 
 	// One system, two planets each with a region of its own civilisation and a public station, and
 	// eight goods (docs/stage-2-content-plan.md, "Initial scenario"), with the essentials every region
-	// trades (W04) and the life-support goods a ship's resupply takes (W09).
+	// trades (W04), the life-support goods a ship's resupply takes (W09) and the wellness goods (W19).
 	const ScenarioDefinition &trading = content.scenarios.at("trading");
-	CHECK(trading.items.size() == 16);
+	CHECK(trading.items.size() == 22);
 	CHECK(trading.systems.size() == 1);
 	CHECK(trading.planets.size() == 2);
 	CHECK(trading.civilisations.size() == 2);

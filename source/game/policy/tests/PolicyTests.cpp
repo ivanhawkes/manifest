@@ -333,7 +333,7 @@ TEST_CASE(
 	REQUIRE(hosted.SetPolicy(kAda, {"Ship1", true, 0, 0}) == Result::Succeeded);
 
 	// Brine's report is the starting one, stale; the job's trade is to it, shown with its estimate:
-	// tin, which Brine's broker, holding a tote, bids ten times Ore's ask for.
+	// copper, which Ore makes and Brine's broker, holding two totes, bids well over Ore's ask for.
 	const Manifest::Query::Snapshot seen =
 	    Manifest::Query::Observe(hosted.world, hosted.identities, kAda);
 	const auto brine = std::ranges::find_if(
@@ -346,7 +346,7 @@ TEST_CASE(
 	REQUIRE(ship.job);
 	// Docked at Ore, its source, it buys there and pays Brine's docking fee to go.
 	CHECK(ship.job->phase == World::Phase::ToDestination);
-	CHECK(ship.job->itemId == "ItemTin");
+	CHECK(ship.job->itemId == "ItemCopper");
 	CHECK(ship.job->sourceId == "VenueOreHighport");
 	CHECK(ship.job->destinationId == "VenueBrineHighport");
 	CHECK(ship.job->estimate > 0);

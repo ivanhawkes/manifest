@@ -3,7 +3,7 @@
 # price is the 2026-11-19 spot or contract quote where the good has a market, sourced in the
 # same section, and the first-draft value converted to the unit where it has none.
 #
-# Soap, appliances and electronics, counted by the piece.
+# Soap, appliances, electronics and wellness goods, counted by the piece.
 item-base:
 
   - item:
@@ -53,4 +53,29 @@ item-base:
       unitType: Unit
       density: 1.2
       packFactor: 0.17
+
+  # Optional goods the everyday household buys (the user's, 2026-11-21).
+  - item:
+      itemId: ItemWellnessProducts
+      categoryId: CategoryWellness
+      ageId: AgeIndustrial
+      displayName: Wellness Products
+      description: Skin care, essential oils and fitness aids
+      unitsPerCubicMetre: 1500
+      basePrice: 25
+      unitType: Unit
+      density: 0.8
+      packFactor: 0.6
+
+  - item:
+      itemId: ItemSupplements
+      categoryId: CategoryWellness
+      ageId: AgeIndustrial
+      displayName: Supplements
+      description: Vitamins and dietary supplements, by the bottle
+      unitsPerCubicMetre: 3000
+      basePrice: 15
+      unitType: Unit
+      density: 0.6
+      packFactor: 0.7
 ...

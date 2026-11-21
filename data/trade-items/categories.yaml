@@ -210,6 +210,11 @@ categories:
       type: Water
       description: Water is life
   - category:
+      categoryId: CategoryWellness
+      displayName: Wellness
+      type: Wellness
+      description: Wellness products and supplements
+  - category:
       categoryId: CategoryWriting
       displayName: Writing
       type: Writing

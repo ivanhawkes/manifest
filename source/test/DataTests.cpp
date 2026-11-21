@@ -274,7 +274,7 @@ TEST_CASE("the_balance_tuning_reproduces_the_plans_worked_examples")
 	// A 100-credit wage payment: 90 to households, 10 to the treasury.
 	CHECK(100.0 * tuning.economy.wageTaxRate == doctest::Approx(10.0));
 
-	REQUIRE(tuning.needs.size() == 3);
+	REQUIRE(tuning.needs.size() == 5);
 	const auto need = [&](const std::string &needId) -> const Manifest::Content::NeedDefinition &
 	{
 		const auto found =
@@ -288,7 +288,7 @@ TEST_CASE("the_balance_tuning_reproduces_the_plans_worked_examples")
 	CHECK(daily(food, 25000.0) == doctest::Approx(12.5));
 	CHECK(daily(food, 25000.0) / intervalsPerDay == doctest::Approx(0.00868056).epsilon(1e-5));
 	CHECK(food.unit == TradeUnit::Tonne);
-	CHECK(food.items.size() == 4);
+	CHECK(food.items.size() == 8);
 	// 75,000 litres, in kilolitres.
 	const auto &water = need("NeedDrinkingWater");
 	CHECK(daily(water, 25000.0) * 1000.0 == doctest::Approx(75000.0));
@@ -297,8 +297,20 @@ TEST_CASE("the_balance_tuning_reproduces_the_plans_worked_examples")
 	CHECK(water.items[0].itemId == "ItemDrinkingWater");
 	const auto &medical = need("NeedBasicMedicalSupplies");
 	CHECK(daily(medical, 25000.0) == doctest::Approx(125.0));
+	// 50 g of salt a head a day, and a bar of soap a month.
+	const auto &salt = need("NeedSalt");
+	CHECK(daily(salt, 25000.0) == doctest::Approx(1.25));
+	const auto &hygiene = need("NeedHygiene");
+	CHECK(daily(hygiene, 25000.0) == doctest::Approx(750.0));
 	for (const auto &each : tuning.needs)
-		CHECK(each.weight == 1.0);
+		CHECK(each.weight == (each.needId == "NeedHygiene" ? 0.5 : 1.0));
+
+	// Everyday optional goods at up to 20% over their price, luxuries at 5% and half their demand.
+	REQUIRE(tuning.optionalGoods.size() == 2);
+	CHECK(tuning.optionalGoods[0].premium == doctest::Approx(0.2));
+	CHECK(tuning.optionalGoods[0].demandShare == 1.0);
+	CHECK(tuning.optionalGoods[1].premium == doctest::Approx(0.05));
+	CHECK(tuning.optionalGoods[1].demandShare == 0.5);
 
 	// One simulation hour of complete shortage takes 100/100 to 94/88, and the next hour of full
 	// essentials to 97/94; an interval of complete shortage loses 0.1 and 0.2.

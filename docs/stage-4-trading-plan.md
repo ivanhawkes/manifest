@@ -1257,15 +1257,20 @@ with relief at three times the pressure past a quarter. No engine edit is expect
   it: with 8 rungs reposted every turn, Ore to Brine took 11.2 s against the console's 3.6 s budget,
   households' water buying reposting a venue every second turn; kept per good, at 4 rungs, 2.0 s.
 - **Need raises what households pay.** Each region keeps each essential need's pressure, its unmet
-  share smoothed over a day (0 to 1, saved). Households bid for an essential's goods, the cheapest
-  first as now, at up to `r (1 + 3 p)` for pressure `p`: the reference when fed, rising to the
-  curve's ceiling when starving, so a starving region can buy what stock there is while its funds
-  last, with no cap a turn: households buy only the shortfall's whole totes. Optional goods are bought only in an interval every need is met, at up to
-  `r` times their bucket's premium, at their bucket's share of their authored demand (the user's,
-  2026-11-21): everyday goods (televisions, tablets, phones, and wellness products and supplements,
-  new optional goods) at perhaps 20% over `r`, luxuries (gold watches, sports cars, fashion clothing)
-  less often and nearer `r`. The buckets map the item categories; their numbers are settled as slice
-  3 starts.
+  share smoothed over an hour (0 to 1, saved, from the need's first short interval). Households bid
+  for an essential's goods, the cheapest first as now, at up to `a (1 + 3 p)` for pressure `p`,
+  where `a` is the ask the broker posts at its target stock: what a fed region pays at the target,
+  rising to the curve's ceiling when starving, so a starving region can buy what stock there is while
+  its funds last, with no cap a turn: households buy only the shortfall's whole totes. The plan first
+  had the reference `r` and a day's smoothing; built, a fed region at the target bought nothing,
+  the ask being half the spread over `r`, and starved for about 25 intervals before its pressure
+  met the ask (the user's correction, 2026-11-21). Optional goods are bought only in an interval
+  every need is met, at up to `a` times one and their bucket's premium, at their bucket's share of
+  their authored demand (`optionalGoods` in the balance tuning, by item category; the user's,
+  2026-11-21): everyday goods (appliances, electronics, communications, computing, entertainment,
+  consumables, crafts, and the wellness products and supplements) at 20% over and all their demand,
+  luxuries (luxury goods, textiles, animal products such as furs) at 5% over and half their demand.
+  A category in no bucket is bought at `a`, all of its demand.
 - **Surplus lowers what makers take.** A region's employer sells its batches into the broker's bids
   down to a floor, the batch's wage bill per tote, and keeps what does not sell at the floor in its
   warehouse, offering it again each turn. A glut fills the broker, its bids fall, and the maker's
@@ -1295,7 +1300,13 @@ Slices, each one commit with its suites, the gate after the second and the last:
    level whose proceeds still recover their share of the floor. The ladder opened a trade the flat
    quote hid, tin from Ore to Brine at ten times its ask, which the policy's tests now take.
 3. Need pressure and the households' bids; the optional goods' buckets, with wellness products and
-   supplements added; the employer's floor and held goods (`trade`, the economy).
+   supplements added; the employer's floor and held goods (`trade`, the economy). Done 2026-11-21,
+   with the content the user added as it started: salt and soap essentials (50 g a head a day and a
+   bar a month, soap weighted a half), beans, lentils, chickpeas and peas staples beside the grains
+   (Ore grows the first two and Brine the others, each region's grains trimmed to make 14 t a day
+   against its 12.5), and the wellness goods made at Brine and wanted at Ore. Ore now imports its
+   salt and soap. The extra goods split Brine's broker's funds further, so the job the policy's
+   tests take from Ore is copper, not tin; the pins move with the goods and the pressure saved.
 4. The need-priced budget and relief tender functions, ready for W12; the fixture's long runs showing
    a shortage pulling a cargo in and a glut sending one away, fast-forwarded to the same bytes.
 5. Close-out.
