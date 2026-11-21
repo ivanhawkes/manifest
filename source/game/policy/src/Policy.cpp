@@ -670,7 +670,7 @@ std::optional<std::int64_t> SellLimit(
 	for (std::uint64_t n = 1; n <= totes; ++n)
 	{
 		const auto share = static_cast<double>(n == totes ? floor : CeilDiv(floor, n, totes));
-		const double fills = static_cast<double>(std::min<std::uint64_t>(n, Trade::kMaxFills));
+		const auto fills = static_cast<double>(std::min<std::uint64_t>(n, Trade::kMaxFills));
 		most = std::max(most, (share + 1.5 * fills) / (static_cast<double>(n) * unitsPerTote * keep));
 	}
 	// A part in a billion over and a microcredit more, for the doubles the price rules compute in.
