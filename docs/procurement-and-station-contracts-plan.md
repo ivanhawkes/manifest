@@ -21,6 +21,9 @@ construction/control changes need separate rules.
 
 ## Decisions and proposal status
 
+W11 (2026-11-21) settled the pilot's terms in [the tender contract](stage-4-trading-plan.md#tender-contract-w11-2026-11-21)
+([D-101](decision-ledger.md#d-101)); where the proposals below differ, the contract holds.
+
 Confirmed: public procurement requires corporate bids, including the governor's own company;
 public and company accounts are separate; suppliers are paid for accepted partial deliveries
 as they arrive. The user subsequently selected a supplier-funded performance bond: initially

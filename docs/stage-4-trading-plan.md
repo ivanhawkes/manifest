@@ -1130,6 +1130,100 @@ user's, 2026-11-21), on pin `0f973b2` with no engine edit, from Manifest `featur
   land; the client's view and edit of a venue's fees is L15's. A failed journey's docking fee is not
   refunded, and berth fees are not estimated.
 
+## Tender contract (W11), 2026-11-21
+
+The clean public-project and tender lifecycle that W12 implements, on [D-101](decision-ledger.md#d-101)
+(the user's, 2026-11-21), settling the [procurement plan](procurement-and-station-contracts-plan.md)'s
+proposals for the pilot; where they differ, this holds. From Manifest `feature-base` at `39f6618` on
+pin `0f973b2`; no engine edit is expected: tenders, bids and contracts are Manifest's commands,
+components and systems on the world's services.
+
+- **The project.** Goods move in whole totes (D-087), so the Bronze project's inputs are restated as
+  9 totes of copper and 1 of tin (about 10 t and 0.9 t, the 9:1 count kept), and its recipe's batch
+  the same way, 9 copper and 1 tin making 10 bronze. A region's project is a saved entity
+  (`Kind::Project`, by region and project ID) with its phase (`Tendering`, `Working`, `Paused`,
+  `Done`), the work done in steps, and its own `Stock`, the delivered inputs at the venue they were
+  accepted at. Nothing acts for a project, so no order or other project can spend its goods. When
+  every input is held, the region has the required skills and its workshop is operational, the
+  inputs are consumed once and work runs for `projects`' `workDays` (7) of steps while the workshop
+  is operational, paused while not; completion unlocks the recipe in that region alone, once.
+- **A tender** (`Kind::Tender`, an ID the issuer's region, project, item and a count make) names its
+  region, project, item, the acceptance venue (one serving the region), the quantity `Q` in totes
+  (at most what the project still needs of it), the budget `B` in whole credits, and its steps:
+  published, bid close (published plus the bid window) and, once awarded, delivery close (award plus
+  the delivery window). The issuer sets both windows in whole simulation days within
+  `procurement`'s bounds, bids 1 to 7 and delivery 1 to 60. Its terms freeze when published: a
+  change is a cancellation and a new tender. Tenders are posted: anyone reads their terms live.
+- **Reservations are accounts.** Publishing moves `B` from the region's `PublicAccount` to the
+  tender's own (`Kind::TenderAccount`), refused `InsufficientFunds` without it, so the money is
+  spent once and is no one else's while reserved. The supplier's bond is moved at award from its
+  company account to the contract's (`Kind::BondAccount`). Each later transfer is from one of
+  these, so the ledgers sum as before and a retried command or a load cannot pay twice.
+- **The AI issuer.** For a region its governing organisation's AI runs, each input its project
+  still needs, with no tender open or contracted for it, is tendered as the world starts and at
+  once when its last tender closes unawarded, is cancelled, or ends in default: the remaining
+  totes, `B` twice their authored base value (the price times `unitsPerCubicMetre / 8` a tote),
+  windows of 1 and 14 days, at the region's first venue in the scenario's order. A player
+  directing the governor tenders by command.
+- **Bids** are sealed: one per company per tender (`Kind::Bid`), a total `T` from 1 to `B` for all
+  `Q` by the delivery close, with its revision and the step and request order it was accepted at. A
+  bid is placed, replaced at its current revision or withdrawn before the bid close. Only its
+  company's principal and the award see it; the governor's own company bids like any other and sees
+  no rival's. No goods or money are reserved for a bid.
+- **The award**, as the bid close's step runs, after commands: tenders closing in one step in ID
+  order, each to its lowest `T`, then its earliest acceptance, then the company ID, whose company
+  can then fund the bond, the next qualified bid otherwise, none leaving it unawarded and `B`
+  returned. The bond is `procurement`'s rate (10%) of `T`, rounded up; an earlier award's bond
+  spends the funds a later one would need. `B - T` returns to the public account. The winner, `T` and
+  the reason are then posted; losing bids stay their bidders' alone.
+- **Delivery**: the supplier's ship, docked at the acceptance venue before the delivery close,
+  unloads straight into the project's `Stock` (`Manifest.Procurement.Deliver`), at most the totes
+  still owed, the rest staying aboard. At `q` of `Q` accepted the supplier is owed `T q / Q` in all,
+  to the nearest credit, a half up, in exact integer arithmetic, and each delivery is paid what it
+  adds; at `Q` that is `T`, the bond is returned and the contract is fulfilled. Goods are the
+  supplier's until accepted.
+- **Default**, as the delivery close's step runs with goods missing, or at once on
+  `Manifest.Procurement.Abandon`: accepted goods and payments stand, the tender account's rest returns
+  to the public account, the bond's undelivered share, `bond (Q - q) / Q` rounded down, is forfeit to
+  it, and the rest goes back to the supplier, refund and forfeit summing to the bond. The AI issuer
+  then tenders the remaining totes at once.
+- **Rights.** `Publish` and `Cancel` (before the bid close) are the principal's directing the
+  region's governor (`Organisation::principalId`), refused `NotAuthorised` from anyone else or for an
+  AI-run governor. `Bid`, `Withdraw`, `Deliver` and `Abandon` are a company's principal's, for its
+  own company and ships. A bid or delivery executed at or after its close step is refused `Closed`
+  however early it arrived, and a replacement at a stale revision `StaleRevision`.
+- **Saved jobs.** W10's `World::Policy` gains `contracts` (off by default, set by
+  `Manifest.Policy.Set`). With it on, a choosing job bids on an open tender it can estimate from its
+  owner's reports: `T` its cost at a known source's ask, the route's charges and life support and
+  the target profit, rounded up, bid only at most `B` and above the best trade's estimate. The job
+  waits docked for the bid close (its quiet that step), then on an award buys, carries and delivers
+  as its lot (`Contract`, a new job kind whose destination is the acceptance venue), buying again
+  for totes still owed while the close allows, and on a loss chooses again. A ship holds one
+  contract at a time; NPC traders' policies have it on. A company may also bid and deliver by
+  command, connected or not, and nothing is spent on a bid.
+- **Bounds and saves.** `procurement` bounds a region's open tenders (8), a tender's bids (32) and
+  the closed tenders kept for the record (16 a region, the oldest settled dropped). Projects,
+  tenders, bids, contracts, their accounts and jobs are saved; a load refuses a tender whose account
+  is not its reservation, a fulfilled contract with a bond, or stock in a project it does not need.
+- **The step.** `manifest.tenders`, after commands and before the economy, awards and defaults at
+  their close steps and runs the AI issuer; `manifest.projects`, after it, consumes and works. Each
+  one's quiet is its next close or completion step.
+
+W12's slices, each one commit with its suites, the gate after the third and the last:
+
+1. The restated project and recipe, `Kind::Project` and its stock, consumption and work, paused and
+   resumed, unlocking once (`content`, `world`, a new `procurement` suite).
+2. Tenders and their accounts: `Publish`, `Cancel`, the AI issuer and its budget; refusals and
+   bounds.
+3. Bids and the award: sealed bids, revisions, withdrawal, the tie order, the bond's fallback and
+   simultaneous awards competing for funds; `Closed` at the boundary.
+4. Delivery and default: partial and excess delivery, payment under fragmented deliveries summing to
+   `T`, zero, partial and full delivery's bond, abandonment and retendering.
+5. Saved jobs: the policy's `contracts`, a bid estimated and won, delivered with no client, an NPC
+   competing; fast-forwarded to the bytes stepping leaves.
+6. The governance fixture: Forge East's project tendered, tin bought at Cassiter and copper at Forge
+   delivered physically, worked and unlocked; saved and replayed to one hash. Then the close-out.
+
 ## Handoff to stage 5
 
 Carry forward the exact scheduler order, command/result schema, content manifest,

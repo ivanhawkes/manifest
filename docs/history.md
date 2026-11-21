@@ -100,6 +100,16 @@ cargo's lots are bounded together (`world`), and a ship's cargo against its hull
 `CargoVolume`, whose empty map was taken for none given; a hull the map does not name now carries
 nothing (`company`). Round 7 approved with no finding open.
 
+## W11: the clean tender lifecycle's choices — 2026-11-21
+
+A planning task, no code: the user settled the Bronze project's totes and work time, the tender
+windows, the AI issuer's budget and retendering, delivery at the region's venue, the money's rounding
+and the policy's contract jobs ([D-101](decision-ledger.md#d-101)), and [the tender
+contract](stage-4-trading-plan.md#tender-contract-w11-2026-11-21) defines the saved state, rights,
+reservations and W12's slices. The project's authored 90 kg and 10 kg were each below one tote, which
+D-087 had made the least that moves. Reservations are accounts of their own, so a reserved budget or
+bond is no one else's money and the ledgers sum as before.
+
 ## W18: the transport and holding charges at their real values — 2026-11-21
 
 On pin `0f973b2`, with no engine edit, as the plan expected. A ship pays by its hull's pad class and
