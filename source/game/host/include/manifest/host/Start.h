@@ -48,7 +48,8 @@ std::vector<Jettison::Vfs::Mount> Mounts(const Options &options);
 // definitions are loaded and checked as one content set for the scenario
 // (Manifest::Content::LoadScenario). The world it starts steps at 1/60 s (D-086) and holds the
 // scenario's state (Manifest::World::CreateInitialState), its stations (Manifest::Travel::OpenStations)
-// and the brokers' first quotes (Manifest::Trade::Quote). Throws
+// the brokers' first quotes (Manifest::Trade::Quote) and its NPC traders
+// (Manifest::Policy::ProvisionTraders). Throws
 // Jettison::Host::StartupError naming the phase, the source and the cause, having released everything
 // it acquired.
 std::unique_ptr<Jettison::Host::Session> Start(const Options &options);

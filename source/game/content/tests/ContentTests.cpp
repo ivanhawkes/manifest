@@ -929,6 +929,18 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	     {trading, "version: 1\nvenues: !merge=venueId\n  - {venueId: VenueOreHighport, layout: "
 	               "tender-dock}\n"}},
 	    kNotStarter);
+	// The scenario's traders take a pad and a connection each and leave a player one: four leave the
+	// starter's four connections none.
+	std::string traders = "version: 1\ntraders:\n";
+	for (const std::string_view trader : {"Nia", "Oto", "Pim", "Quy"})
+		traders +=
+		    std::format("  - {{principalId: {0}, displayName: {0}, companyName: {0} Co}}\n", trader);
+	CheckRefused(trading, traders, kNotStarter);
+	CheckRefused(
+	    trading,
+	    "version: 1\ntraders:\n  - {principalId: Nia, displayName: Nia, companyName: Nia Co}\n"
+	    "  - {principalId: Nia, displayName: Nia, companyName: Nia Co}\n",
+	    "traders 'Nia' is given twice");
 }
 
 

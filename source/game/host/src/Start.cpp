@@ -119,6 +119,7 @@ class Game final : public Jettison::Host::Game
 		World::CreateInitialState(world, *m_pIdentities, m_content);
 		Travel::OpenStations(world, *m_pFleet);
 		Trade::Quote(world, *m_pIdentities, m_content);
+		Policy::ProvisionTraders(world, *m_pRequests, *m_pIdentities, m_content);
 	}
 
 	Services WorldServices() const

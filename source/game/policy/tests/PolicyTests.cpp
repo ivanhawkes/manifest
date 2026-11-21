@@ -64,8 +64,8 @@ void RegisterAllTypes()
 // A world as the host makes one, in its scenario's initial state.
 struct Hosted
 {
-	explicit Hosted(const std::string &scenario = "trading")
-	    : content{Scenario(scenario)}, identities{(RegisterAllTypes(), World::RegisterWorld(world))},
+	explicit Hosted(const Manifest::Content::ContentSet &set = Scenario("trading"))
+	    : content{set}, identities{(RegisterAllTypes(), World::RegisterWorld(world))},
 	      requests{Manifest::Command::RegisterRequests(world, identities)}
 	{
 		const Manifest::Travel::Fleet &fleet =
@@ -76,6 +76,7 @@ struct Hosted
 		World::CreateInitialState(world, identities, content);
 		Manifest::Travel::OpenStations(world, fleet);
 		Manifest::Trade::Quote(world, identities, content);
+		ProvisionTraders(world, requests, identities, content);
 	}
 
 	// The request admitted as the actor's next, and run in the next step.
@@ -452,4 +453,41 @@ TEST_CASE("Docked at its source, a job buys at the live ask, cancels the rest, l
 	CHECK(
 	    hosted.world.Registry().get<World::Journey>(hosted.Ship("Ship1")).venueId ==
 	    "VenueBrineHighport");
+}
+
+
+TEST_CASE("A scenario's NPC traders start provisioned, the world's own, their jobs trading")
+{
+	Manifest::Content::ContentSet content = Scenario("trading");
+	content.scenarios.at(content.scenario).traders = {{"Nia", "Nia", "Nia Freight"}};
+	Hosted hosted{content};
+	const entt::registry &registry = hosted.world.Registry();
+	const entt::entity nia = hosted.Find(Kind::Principal, "Nia");
+	CHECK(registry.get<World::Principal>(nia).npc);
+	CHECK(registry.get<World::Policy>(hosted.Ship("Ship1")) == World::Policy{true, 0, 0});
+	CHECK(hosted.Job().phase == World::Phase::Choosing);
+
+	// A player provisioned beside it is not the world's, and was seeded reports as it was.
+	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
+	const entt::entity ada = hosted.Find(Kind::Principal, "Ada");
+	CHECK_FALSE(registry.get<World::Principal>(ada).npc);
+	CHECK(
+	    registry.get<World::Reports>(ada).reports.size() ==
+	    registry.get<World::Reports>(nia).reports.size());
+
+	// By the first economic turn's end, its reports show a trade, and it sets off for its source.
+	hosted.StepTo(3600);
+	const World::Job &job = hosted.Job();
+	CHECK(job.phase == World::Phase::ToSource);
+	CHECK(job.estimate > 0);
+	CHECK(registry.get<World::Journey>(hosted.Ship("Ship1")).venueId == job.sourceId);
+
+	// Traders the starter cannot take, which the content's check refuses, refuse the world too.
+	content.scenarios.at(content.scenario).traders = {
+	    {"Nia", "Nia", "Co"},
+	    {"Oto", "Oto", "Co"},
+	    {"Pim", "Pim", "Co"},
+	    {"Quy", "Quy", "Co"},
+	    {"Rua", "Rua", "Co"}};
+	CHECK_THROWS_AS(Hosted{content}, std::runtime_error);
 }

@@ -1007,9 +1007,12 @@ Standing trade policies, autopilot and NPC jobs, on [D-097](decision-ledger.md#d
   nothing), the lot's charges so far and the chosen trade's `estimate` are the player's to see
   through the query's ship view and on reconnect.
 - **NPC jobs.** A scenario's `traders` name NPC principals and their companies, provisioned in the
-  initial state through `Company::Provision` at the starter venue, each ship given an enabled policy,
-  their principals marked `World::Npc`, for which `manifest-token` issues no token. They read
-  their own reports, seeded as a player's are. Autopilot is the job's travel; no route mode.
+  initial state, after the first quotes, through `Company::Provision` at the starter venue
+  (`Policy::ProvisionTraders`), each ship given an enabled policy, its target and allowance 0, and
+  their principals marked the world's own (`World::Principal`'s `npc`), as whom the server admits
+  no client whatever the token file holds. The content check leaves the starter a pad and a
+  life-support connection beyond the traders' for a player. They read their own reports, seeded as
+  a player's are. Autopilot is the job's travel; no route mode.
 - **Its quiet.** The current step while an enabled job has a decision due, its retry step while
   blocked, never otherwise: travel's quiet wakes the world for an arrival.
 - **Jettison.** No gap is expected: commands sent from a system, the quiet and the docks are public.

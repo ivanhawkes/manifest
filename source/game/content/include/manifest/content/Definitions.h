@@ -358,6 +358,15 @@ struct VenueDefinition
 	std::vector<MarketEntry> market;
 };
 
+// An NPC trader the scenario starts with (D-097): provisioned in the initial state at the starter venue
+// as a player is, its principal the world's own, its ship's standing policy enabled.
+struct TraderDefinition
+{
+	std::string principalId;
+	std::string displayName;
+	std::string companyName;
+};
+
 struct ScenarioDefinition
 {
 	std::string gameMode;
@@ -373,6 +382,7 @@ struct ScenarioDefinition
 	std::vector<OrganisationDefinition> organisations;
 	std::vector<RegionDefinition> regions;
 	std::vector<VenueDefinition> venues;
+	std::vector<TraderDefinition> traders;
 };
 
 // A type the registry loads, in the order the content manifest lists the types.

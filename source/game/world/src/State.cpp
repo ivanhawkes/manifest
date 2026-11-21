@@ -289,7 +289,8 @@ void RegisterTypes()
 		    .Field<&Identity::kind>("kind", kSaved)
 		    .Field<&Identity::id>("id", kSaved);
 		RegisterType<Principal>("Manifest.World.Principal")
-		    .Field<&Principal::displayName>("displayName", kSaved);
+		    .Field<&Principal::displayName>("displayName", kSaved)
+		    .Field<&Principal::npc>("npc", kSaved);
 		RegisterType<Company>("Manifest.World.Company")
 		    .Field<&Company::principalId>("principalId", kSaved)
 		    .Field<&Company::displayName>("displayName", kSaved);

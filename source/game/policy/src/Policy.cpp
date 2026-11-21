@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <format>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -666,6 +667,39 @@ std::optional<std::int64_t> SellLimit(
 	if (!std::isfinite(micro) || micro >= 0x1p63)
 		return std::nullopt;
 	return std::max<std::int64_t>(1, static_cast<std::int64_t>(micro));
+}
+
+
+void ProvisionTraders(
+    SimWorld &world, Command::Requests &requests, World::Identities &identities,
+    const Content::ContentSet &content)
+{
+	const auto selected = content.scenarios.find(content.scenario);
+	if (selected == content.scenarios.end())
+		throw std::invalid_argument{"the content set has no scenario selected"};
+	entt::registry &registry = world.Registry();
+	const Actor host{Command::ActorKind::Administrator, "Host"};
+	for (const Content::TraderDefinition &trader : selected->second.traders)
+	{
+		if (requests.Act(
+		        world, host, Company::kProvision, Company::kVersion,
+		        Company::Provision{trader.principalId, trader.displayName, trader.companyName}) !=
+		    Result::Succeeded)
+			throw std::runtime_error{
+			    std::format("the starter venue cannot take the trader '{}'", trader.principalId)};
+		registry.get<World::Principal>(Required(identities, Kind::Principal, trader.principalId)).npc =
+		    true;
+		std::vector<std::string> ships;
+		for (const auto [entity, ship, identity] :
+		     registry.view<const World::Ship, const World::Identity>().each())
+			if (registry.get<const World::Company>(Required(identities, Kind::Company, ship.companyId))
+			        .principalId == trader.principalId)
+				ships.push_back(identity.id);
+		const Actor npc{Command::ActorKind::Principal, trader.principalId};
+		for (const std::string &shipId : ships)
+			JETTISON_VERIFY(
+			    requests.Act(world, npc, kSet, kVersion, Set{shipId, true, 0, 0}) == Result::Succeeded);
+	}
 }
 
 

@@ -15,12 +15,12 @@
 namespace Manifest::Remote
 {
 // Serves a started session's world (Host::Start) to remote clients: each admitted by a token from
-// the token file, as the actor it names, its requests admitted through the world's one admission
-// path and its snapshot filtered to what that actor may see. Plaintext, for loopback or a LAN
-// (D-081). Single-threaded, as Jettison::Net is: the caller polls between steps and steps the
-// world itself, which steps the same with no session. An actor may hold three sessions at once, each
-// sent its own replies and the actor's snapshot; a fourth is closed as ServerFull. Destroying it
-// tells every client Shutdown.
+// the token file, as the actor it names, never an NPC's principal (D-097), its requests admitted
+// through the world's one admission path and its snapshot filtered to what that actor may see.
+// Plaintext, for loopback or a LAN (D-081). Single-threaded, as Jettison::Net is: the caller polls
+// between steps and steps the world itself, which steps the same with no session. An actor may hold
+// three sessions at once, each sent its own replies and the actor's snapshot; a fourth is closed as
+// ServerFull. Destroying it tells every client Shutdown.
 class Server
 {
   public:

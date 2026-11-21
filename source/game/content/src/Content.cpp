@@ -374,11 +374,14 @@ bool StartsPlayers(
 	const auto *pStarterDock =
 	    registry.Find<Jettison::Dock::HullDefinition>(RegistryName(scenario.starterHull));
 	const auto *pLayout = registry.Find<Jettison::Dock::StationLayout>(venue.layout);
-	return venue.isPublic && venue.operational && venue.lifeSupportCapacity >= 1 &&
+	// The scenario's traders take a pad and a connection each, and a player needs one more.
+	const auto traders = std::ssize(scenario.traders);
+	return venue.isPublic && venue.operational && venue.lifeSupportCapacity > traders &&
 	       pStarterDock != nullptr && pLayout != nullptr &&
-	       std::ranges::any_of(
+	       std::ranges::count_if(
 	           pLayout->pads, [&](const Jettison::Dock::PadLayout &pad)
-	           { return !pad.display && Jettison::Dock::Fits(classes, *pStarterDock, pad.padClass); });
+	           { return !pad.display && Jettison::Dock::Fits(classes, *pStarterDock, pad.padClass); }) >
+	           traders;
 }
 
 
@@ -988,6 +991,7 @@ void CheckScenarios(
 		    std::format("'{}' has no mass to fly with", scenario.starterHull));
 
 		(void)ListIds(checker, scenario.venues, &VenueDefinition::venueId, "venues");
+		(void)ListIds(checker, scenario.traders, &TraderDefinition::principalId, "traders");
 		for (const VenueDefinition &venue : scenario.venues)
 		{
 			const auto problem = [&](std::string_view text)

@@ -17,6 +17,7 @@
 #include <manifest/host/Start.h>
 #include <manifest/query/Query.h>
 #include <manifest/remote/Protocol.h>
+#include <manifest/world/State.h>
 
 namespace Manifest::Remote
 {
@@ -47,6 +48,18 @@ Jettison::Net::ServerConfig Config(std::string address, std::uint16_t port)
 Command::Actor ActorOf(const Credential &credential)
 {
 	return {credential.kind, credential.id};
+}
+
+
+// A principal the world's own NPC is (D-097), as whom no client connects, whatever the token file says.
+bool IsNpc(Jettison::Host::Session &session, const Credential &credential)
+{
+	if (credential.kind != Command::ActorKind::Principal)
+		return false;
+	const entt::entity principal =
+	    Host::HostedServices(session).identities.Find(World::Kind::Principal, credential.id);
+	const auto *pPrincipal = session.World().Registry().try_get<World::Principal>(principal);
+	return pPrincipal != nullptr && pPrincipal->npc;
 }
 
 
@@ -92,7 +105,7 @@ bool Server::Verify(Jettison::Net::SessionId id, std::span<const std::byte> cred
 {
 	const std::string_view token{reinterpret_cast<const char *>(credential.data()), credential.size()};
 	std::optional<Credential> resolved = Resolve(m_tokens, token);
-	if (!resolved)
+	if (!resolved || IsNpc(m_hosted, *resolved))
 		return false;
 	const auto held = static_cast<std::size_t>(std::ranges::count_if(
 	    m_sessions,

@@ -47,10 +47,12 @@ struct Identity
 	std::string id;
 };
 
-// A player's control identity in the world. Credentials and connections are not world state.
+// A player's control identity in the world. Credentials and connections are not world state. An NPC's
+// is the world's own (D-097): its jobs act for it, and no client may connect as it.
 struct Principal
 {
 	std::string displayName;
+	bool npc{false};
 };
 
 struct Company

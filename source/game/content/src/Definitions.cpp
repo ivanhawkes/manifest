@@ -323,6 +323,10 @@ void RegisterTypes()
 		    .Field<&VenueDefinition::lifeSupportCapacity>("lifeSupportCapacity", kDefined)
 		    .Field<&VenueDefinition::regions>("regions", kDefined)
 		    .Field<&VenueDefinition::market>("market", kDefined);
+		RegisterType<TraderDefinition>("Manifest.Trader")
+		    .Field<&TraderDefinition::principalId>("principalId", kDefined)
+		    .Field<&TraderDefinition::displayName>("displayName", kDefined)
+		    .Field<&TraderDefinition::companyName>("companyName", kDefined);
 		RegisterType<ScenarioDefinition>("Manifest.Scenario", Attribute::Moddable)
 		    .Field<&ScenarioDefinition::gameMode>("gameMode", kDefined)
 		    .Field<&ScenarioDefinition::starterHull>("starterHull", kDefined)
@@ -333,7 +337,8 @@ void RegisterTypes()
 		    .Field<&ScenarioDefinition::civilisations>("civilisations", kDefined)
 		    .Field<&ScenarioDefinition::organisations>("organisations", kDefined)
 		    .Field<&ScenarioDefinition::regions>("regions", kDefined)
-		    .Field<&ScenarioDefinition::venues>("venues", kDefined);
+		    .Field<&ScenarioDefinition::venues>("venues", kDefined)
+		    .Field<&ScenarioDefinition::traders>("traders", kDefined);
 		return true;
 	}();
 	(void)registered;

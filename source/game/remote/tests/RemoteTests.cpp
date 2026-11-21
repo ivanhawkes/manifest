@@ -18,6 +18,7 @@
 #include <manifest/remote/Client.h>
 #include <manifest/remote/Server.h>
 #include <manifest/remote/Tokens.h>
+#include <manifest/world/State.h>
 
 using namespace Manifest::Remote;
 using Jettison::Net::Reason;
@@ -224,6 +225,24 @@ TEST_CASE("a remote player is welcomed as its token's actor and sees only its ow
 	CHECK(player.Latest()->companies[0].displayName == "Ada Freight");
 	REQUIRE(served.Pump(admin, [&] { return admin.Latest().has_value(); }));
 	CHECK(admin.Latest()->companies.size() == 2);
+}
+
+
+TEST_CASE("no client connects as an NPC's principal, whatever token the file holds for it")
+{
+	Served served;
+	served.ProvisionPlayers();
+	const Manifest::Host::Services services = Manifest::Host::HostedServices(*served.pSession);
+	served.pSession->World()
+	    .Registry()
+	    .get<Manifest::World::Principal>(
+	        services.identities.Find(Manifest::World::Kind::Principal, "Ada"))
+	    .npc = true;
+	Client npc = served.Connect(served.ada);
+	CHECK_FALSE(served.Welcome(npc));
+	CHECK(npc.Closed() == Reason::BadCredential);
+	Client player = served.Connect(served.bea);
+	CHECK(served.Welcome(player));
 }
 
 
