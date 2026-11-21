@@ -417,6 +417,49 @@ accounted repeat production. Replay/recovery at consumption, progress and comple
 preserve inputs/outputs and apply the unlock once. No fixture, content or test was changed or
 executed for this planning decision.
 
+### Power grid, compute and the AI economy (selected 2026-11-21)
+
+The user selected a power and compute economy for the later ages ([D-103](decision-ledger.md#d-103)),
+booked as [W20](delivery-order.md#priority-5-stage-4-trading-automation-and-regional-development)
+after W13. It is priced by [supply and demand](stage-4-trading-plan.md#w19-plan) (D-102) and built
+through W12's public projects. Existing goods it uses: silicon wafers, AI accelerators
+(`ItemProcessors`), batteries, solar panels, robots, reactor fuel, uranium, natural gas, coal,
+helium-3, copper wire, neodymium, lithium, cobalt and graphite.
+
+1. **Power is a regional balance, not cargo.** A region's operational power plants give it
+   generating capacity, and its facilities and population draw on it. Each economic turn compares
+   them; in a shortfall, households are served first, then factories, then data centres, the rest
+   slowing in proportion and happiness falling. Plants burn fuel bought through the market, so
+   growing industry raises fuel demand and its price.
+2. **Compute is a regional quantity too.** Server farms turn power, servers and cooling into compute;
+   AI labs turn compute into the region's AI capability, which speeds its research and automation.
+   Building in the AI Age needs that capability, so a high-tech region keeps needing power and chips.
+3. **New capacity is a public project.** As demand nears capacity, the government tenders a power
+   plant at a budget priced by need, as any project.
+4. **Power goods:** turbine sets (Industrial); transformers and switchgear, high-voltage cable and
+   reactor components (Post-industrial); wind turbines and power electronics, inverters and
+   rectifiers (Information); superconductor tape (AI); fusion reactor cores (Space Colonisation).
+5. **Chip and AI goods:** high-purity quartz (Stone); polysilicon and rare-earth ore
+   (Post-industrial); gallium, photoresist and specialty gases, circuit boards, logic chips, rack
+   servers, data-centre cooling, optical fibre and lithography tools, the capital equipment a fab
+   needs (Information); high-bandwidth memory and AI server racks (AI).
+6. **Production skills:** power generation, electrical engineering, nuclear engineering, chip
+   fabrication, electronics assembly, data-centre operation, robotics, and fusion engineering (Space
+   Colonisation).
+7. **Technologies within the ages:** electrification and nuclear fission (Post-industrial);
+   integrated circuits (Information); advanced lithography, machine learning at scale and
+   superconductors (AI); fusion power (Space Colonisation).
+8. **Power plants:** coal (Industrial); gas and nuclear (Post-industrial); solar farm, wind farm and
+   grid battery storage (Information); fusion (Space Colonisation).
+9. **Industry:** smelter, steel mill, chemical plant, refinery, polysilicon plant, chip fab,
+   electronics factory, battery factory, turbine works and robot factory.
+10. **Compute facilities:** server farm and AI lab.
+
+Open, for W20's planning: each good's price from real-world quotes as the existing goods' are, units
+and densities; each facility's inputs, outputs, power draw, workforce and construction recipe; each
+plant's capacity and fuel use; per-capita household draw; the shortfall's effect sizes; compute and AI
+capability's units and what capability unlocks; and the governance fixture's power scenario.
+
 ## Established core and resource frontier
 
 Generate a map with an established inner region of generally higher-tech, historically
