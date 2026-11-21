@@ -9,7 +9,7 @@ configure with `-DJETTISON_SOURCE_DIR=/path/to/jettison` on `feature-base`.
 cmake --preset clang-debug
 cmake --build --preset clang-debug
 ctest --preset clang-debug
-./scripts/ci.sh --werror --asan --log build/gate.log
+./scripts/ci.sh --werror --asan --tidy --log build/gate.log
 ```
 
 Presets are `clang-debug`, `clang-notui`, `clang-release` and `clang-asan`. Each has its own build
@@ -31,7 +31,8 @@ skips a unit that was clean and whose compile command, includes (`ninja -t deps`
 `.clang-tidy` are unchanged since, recorded under `<build>/tidy-clean`.
 
 The CTest suites are `types`, `config`, `universe`, `progression`, `sim`, `ecs`, `market`,
-`host`, `content`, `effects`, `remote`, `data`, `packaging`, `mod`, `fixture` and `sdk_import`, plus `console` when the TUI is enabled. The
+`host`, `content`, `effects`, `remote`, `data`, `packaging`, `mod`, `fixture` (its two longest cases
+apart, as `fixture_cruise` and `fixture_alone`, so the three run side by side) and `sdk_import`, plus `console` when the TUI is enabled. The
 `cli_*` tests run the `manifest` executable from an unrelated directory with no display: both
 content forms start, and a missing source and bad command lines fail. `cli_serve` runs the server
 with no client, checks that it stepped, and stops it with SIGINT; the `token_*` tests run
@@ -76,8 +77,19 @@ The engine is added with `EXCLUDE_FROM_ALL`: configuring loads its complete SDK,
 Manifest compiles only the engine modules and dependencies it links, plus its packer. Renderer
 smoke tests remain Jettison's gate. Do not configure Jettison's unsupported install/export path.
 
-Clang-tidy is opt-in locally (`./scripts/ci.sh --tidy`), since it is expensive on the
-development laptop. CI enables it.
+Clang-tidy is opt-in (`./scripts/ci.sh --tidy`), since it is expensive on the development laptop.
+CI enables it, and so does a gate on Lythir: with its record of clean units, a small change costs
+little.
+
+### Gating beside the work
+
+On Lythir a commit is gated in a second checkout, so the next change is written while the gate
+runs. `build/gate-tree` is a detached worktree with its own presets' build trees, made once with
+`git worktree add --detach build/gate-tree <commit>`; for each commit gated,
+`git -C build/gate-tree checkout --detach <commit>` and then `build/gate-tree/scripts/ci.sh` with
+the gate's options. While it runs nothing else builds, runs tests or runs clang-tidy (the user's,
+2026-11-21), so the work beside it is editing alone. A failure is fixed by a later commit, before
+the push.
 
 ## Machine-specific concurrency
 

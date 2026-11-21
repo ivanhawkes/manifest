@@ -16,7 +16,14 @@ target_compile_definitions(manifest_fixture_tests PRIVATE
     MANIFEST_FIXTURE_OVERLAY="${CMAKE_CURRENT_SOURCE_DIR}/overlays/quick-batches"
     MANIFEST_TRADER_OVERLAY="${CMAKE_CURRENT_SOURCE_DIR}/overlays/one-trader")
 add_dependencies(manifest_fixture_tests manifest_validate_pack)
-add_test(NAME fixture COMMAND manifest_fixture_tests)
+# Its two longest cases are suites of their own, run beside the rest; the rest is every case they do
+# not match, so a case added or renamed still runs.
+set(MANIFEST_FIXTURE_CRUISE "*cruise fast-forwarded is the one stepped*")
+set(MANIFEST_FIXTURE_ALONE "*no client trade alone*")
+add_test(NAME fixture COMMAND manifest_fixture_tests
+    "--test-case-exclude=${MANIFEST_FIXTURE_CRUISE},${MANIFEST_FIXTURE_ALONE}")
+add_test(NAME fixture_cruise COMMAND manifest_fixture_tests "--test-case=${MANIFEST_FIXTURE_CRUISE}")
+add_test(NAME fixture_alone COMMAND manifest_fixture_tests "--test-case=${MANIFEST_FIXTURE_ALONE}")
 
 add_executable(manifest_data_tests DataTests.cpp)
 target_link_libraries(manifest_data_tests PRIVATE Manifest::Game manifest_test_helpers manifest_warnings)

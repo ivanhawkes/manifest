@@ -1100,7 +1100,8 @@ is expected: a journey's cruise time is Jettison's `Space::CruiseSeconds`.
   unsold rest is cancelled and loaded back, and the proceeds pay the arrears at once. Seized totes of
   a job's lot leave it as a sale's do (D-097's shares), and a job left with no lot chooses again.
 
-Slices, each one commit with the gate green, the saved layout's moved pins proven bytes, not state:
+Slices, each one commit, the gate run after slices 3 and 5 (the relaxed rule, 2026-11-21), the saved
+layout's moved pins proven bytes, not state:
 
 1. Fees by pad class and the occupants' berth share (`content`, `company`, `policy` suites).
 2. `Manifest.Company.SetFees`, with a changed fee charged from the next charge, not one paid.
