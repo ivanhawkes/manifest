@@ -12,9 +12,15 @@
 #include <utility>
 #include <vector>
 
+#include <glm/geometric.hpp>
+
 #include <jettison/core/Assert.h>
+#include <jettison/dock/Docks.h>
 #include <jettison/ecs/Scheduler.h>
+#include <jettison/physics/Components.h>
 #include <jettison/reflect/Reflect.h>
+#include <jettison/sim/Snapshot.h>
+#include <jettison/space/Cruise.h>
 #include <jettison/spatial/SystemIndices.h>
 
 #include <manifest/company/Company.h>
@@ -34,6 +40,7 @@ using World::Kind;
 using World::Phase;
 
 constexpr std::int64_t kMaxCredits = std::numeric_limits<std::int64_t>::max();
+constexpr double kSecondsPerDay = 86400.0;
 // A job's decisions in one step: choosing leads at once to buying where its ship is docked, or to
 // selling, and a blocked job's retry to choosing.
 constexpr int kMaxDecisions = 4;
@@ -97,6 +104,46 @@ std::int64_t DockingFee(
 std::int64_t Added(std::int64_t left, std::int64_t right)
 {
 	return left + std::min(right, kMaxCredits - left);
+}
+
+
+// What the life support is worth at the company's last prices for its goods (World::Paid), in whole
+// credits rounded up: the oxygen in kilograms, its unit, and the cartridges' occupant-days, a
+// cartridge for each cartridgeOccupantDays; nothing for a good the company never bought (D-100).
+std::int64_t Upkeep(
+    const entt::registry &registry, const World::Identities &identities,
+    const Content::ContentSet &content, const std::string &companyId, double oxygenKilograms,
+    double cartridgeDays)
+{
+	const Content::LifeSupportTuning &tuning = content.tuning.lifeSupport;
+	const auto *pPaid =
+	    registry.try_get<const World::Paid>(Required(identities, Kind::Company, companyId));
+	const auto price = [pPaid](std::string_view itemId)
+	{
+		const World::PaidPrice *pPrice = pPaid ? World::Find(*pPaid, itemId) : nullptr;
+		return pPrice ? static_cast<double>(pPrice->price) : 0.0;
+	};
+	const double micro = oxygenKilograms * price(tuning.oxygenItemId) +
+	                     cartridgeDays / tuning.cartridgeOccupantDays * price(tuning.cartridgeItemId);
+	const double credits = std::ceil(micro / 1e6);
+	return credits >= 0x1p63 ? kMaxCredits : static_cast<std::int64_t>(credits);
+}
+
+
+// The life support of a cruise of that many metres for the ship's occupants, as Upkeep values it.
+std::int64_t LegUpkeep(
+    const entt::registry &registry, const World::Identities &identities,
+    const Content::ContentSet &content, const World::Ship &ship, double metres)
+{
+	const auto hull = std::ranges::find(content.hulls, ship.hullId, &Core::ShipClassSpec::hullId);
+	const auto drive = content.drives.find(Content::RegistryName(ship.hullId));
+	if (hull == content.hulls.end() || drive == content.drives.end())
+		return 0;
+	const double occupantDays = hull->occupants.value_or(0) *
+	                            Jettison::Space::CruiseSeconds(drive->second, metres) / kSecondsPerDay;
+	return Upkeep(
+	    registry, identities, content, ship.companyId,
+	    occupantDays * content.tuning.lifeSupport.oxygenKilogramsPerOccupantDay, occupantDays);
 }
 
 
@@ -345,7 +392,7 @@ std::optional<Deal> ChooseTrade(const Context &context)
 				if (destinationId == sourceId || !pBid || pBid->bid <= 0 || pBid->bidTotes == 0)
 					continue;
 				const std::int64_t charges = Charges(
-				    context.Registry(), context.rules.identities, context.rules.content, record,
+				    context.Registry(), context.rules.identities, context.rules.content, context.ship,
 				    sourceId, destinationId);
 				std::optional<Deal> trade =
 				    Estimate(context, itemId, *pAsk, *pBid, charges, balance, free);
@@ -381,7 +428,8 @@ std::optional<std::string> ChooseDestination(const Context &context)
 		if (!pBid || pBid->bid <= 0 || pBid->bidTotes == 0)
 			continue;
 		const std::int64_t charges = Charges(
-		    context.Registry(), context.rules.identities, context.rules.content, record, {}, venueId);
+		    context.Registry(), context.rules.identities, context.rules.content, context.ship, {},
+		    venueId);
 		const std::optional<std::int64_t> limit = SellLimit(
 		    Added(Floor(job, context.Policy()).first, charges), job.totes, units, context.rules.feeBps);
 		const std::optional<std::int64_t> proceeds = Proceeds(
@@ -453,8 +501,8 @@ void Buy(const Context &context)
 	const World::Line *pAsk = LineOf(reports, job.sourceId, job.itemId);
 	const World::Line *pBid = LineOf(reports, job.destinationId, job.itemId);
 	const std::int64_t charges = Charges(
-	    context.Registry(), context.rules.identities, context.rules.content, context.Record(),
-	    job.sourceId, job.destinationId);
+	    context.Registry(), context.rules.identities, context.rules.content, context.ship, job.sourceId,
+	    job.destinationId);
 	const std::int64_t before = context.Balance();
 	const std::optional<Deal> trade =
 	    pAsk && pBid && pAsk->ask > 0 && pBid->bid > 0
@@ -564,6 +612,17 @@ bool Decide(Context &context)
 				context.Block(World::Blockage::JourneyFailed);
 				return false;
 			}
+			// The life support drawn on the way, charged to the lot as the ship docks (D-100).
+			if (!record.dockedAt.empty() && (job.oxygenKilograms > 0.0 || job.cartridgeDays > 0.0))
+			{
+				job.charges = Added(
+				    job.charges,
+				    Upkeep(
+				        context.Registry(), context.rules.identities, context.rules.content,
+				        record.companyId, job.oxygenKilograms, job.cartridgeDays));
+				job.oxygenKilograms = 0.0;
+				job.cartridgeDays = 0.0;
+			}
 			const std::string &target = toSource ? job.sourceId : job.destinationId;
 			if (record.dockedAt != target)
 				job.phase = Phase::Choosing;
@@ -645,18 +704,31 @@ std::uint64_t RunNext(const SimWorld &world)
 
 std::int64_t Charges(
     const entt::registry &registry, const World::Identities &identities,
-    const Content::ContentSet &content, const World::Ship &ship, std::string_view sourceId,
+    const Content::ContentSet &content, entt::entity ship, std::string_view sourceId,
     std::string_view destinationId)
 {
-	const auto docking = [&](std::string_view venueId)
-	{ return DockingFee(registry, identities, content, ship, venueId); };
-	std::int64_t charges = 0;
-	const bool atSource = sourceId.empty() || ship.dockedAt == sourceId;
-	if (!atSource)
-		charges = docking(sourceId);
-	if (atSource && ship.dockedAt == destinationId)
-		return charges;
-	return Added(charges, docking(destinationId));
+	const World::Ship &record = registry.get<const World::Ship>(ship);
+	const auto at = [&](std::string_view venueId)
+	{
+		const entt::entity station = Travel::StationOf(registry, content, venueId);
+		JETTISON_VERIFY(station != entt::null);
+		return registry.get<const Jettison::Sim::Transform>(station).position;
+	};
+	const auto leg = [&](const glm::dvec3 &from, std::string_view venueId)
+	{
+		return Added(
+		    DockingFee(registry, identities, content, record, venueId),
+		    LegUpkeep(registry, identities, content, record, glm::distance(from, at(venueId))));
+	};
+	const glm::dvec3 here = record.dockedAt.empty()
+	                            ? registry.get<const Jettison::Sim::Transform>(ship).position
+	                            : at(record.dockedAt);
+	const bool atSource = sourceId.empty() || record.dockedAt == sourceId;
+	if (atSource && record.dockedAt == destinationId)
+		return 0;
+	if (atSource)
+		return leg(here, destinationId);
+	return Added(leg(here, sourceId), leg(at(sourceId), destinationId));
 }
 
 
@@ -766,13 +838,15 @@ void Register(
 	    {.name = std::string{kSystem},
 	     .phase = Jettison::Ecs::TickPhase::Simulation,
 	     // What the commands it sends write, besides its own.
-	     .access = Access::Of<
-	                   World::Policy, World::Job, World::Ship, World::Company, World::Reports,
-	                   World::Fees, World::Journey, World::Account, World::Stock, World::Order,
-	                   World::Identity, World::Cargo, World::Systems>()
-	                   .Writing<
-	                       World::Job, World::Order, World::Account, World::Stock, World::Identity,
-	                       World::Sales, World::Cargo, World::Journey, World::Arrears>(),
+	     .access =
+	         Access::Of<
+	             World::Policy, World::Job, World::Ship, World::Company, World::Reports, World::Fees,
+	             World::Journey, World::Account, World::Stock, World::Order, World::Identity,
+	             World::Cargo, World::Systems, World::Paid, Jettison::Sim::Transform,
+	             Jettison::Dock::Station, Jettison::Physics::OnRails, Jettison::Sim::InFrame>()
+	             .Writing<
+	                 World::Job, World::Order, World::Account, World::Stock, World::Identity,
+	                 World::Sales, World::Cargo, World::Journey, World::Arrears, World::Paid>(),
 	     .after = {std::string{Trade::kBrokers}},
 	     .run = [rules, &world](entt::registry &, double) { Run(world, *rules); },
 	     .before = {std::string{Jettison::Spatial::SystemIndices::kSystemName}}},

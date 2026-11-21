@@ -272,7 +272,31 @@ std::optional<std::string> Broken(const Job &job)
 		return "a job selling has no lot";
 	if (job.totes > 0 && job.itemId.empty())
 		return "a job's lot names no item";
+	if (!std::isfinite(job.oxygenKilograms) || !std::isfinite(job.cartridgeDays) ||
+	    job.oxygenKilograms < 0.0 || job.cartridgeDays < 0.0 ||
+	    (job.totes == 0 && (job.oxygenKilograms != 0.0 || job.cartridgeDays != 0.0)))
+		return "a job's life support drawn is below 0, not finite, or of no lot";
 	return std::nullopt;
+}
+
+
+std::optional<std::string> Broken(const Paid &paid)
+{
+	for (auto each = paid.prices.begin(); each != paid.prices.end(); ++each)
+	{
+		if (each->itemId.empty() || each->price <= 0)
+			return "a company's last price is of no item or not above 0";
+		if (each != paid.prices.begin() && std::prev(each)->itemId >= each->itemId)
+			return "a company's last prices are not each of one item, in name order";
+	}
+	return std::nullopt;
+}
+
+
+const PaidPrice *Find(const Paid &paid, std::string_view itemId)
+{
+	const auto found = std::ranges::lower_bound(paid.prices, itemId, {}, &PaidPrice::itemId);
+	return found == paid.prices.end() || found->itemId != itemId ? nullptr : &*found;
 }
 
 
@@ -472,7 +496,13 @@ void RegisterTypes()
 		    .Field<&Job::estimate>("estimate", kSaved)
 		    .Field<&Job::blockage>("blockage", kSaved)
 		    .Field<&Job::blockedSince>("blockedSince", kSaved)
-		    .Field<&Job::retry>("retry", kSaved);
+		    .Field<&Job::retry>("retry", kSaved)
+		    .Field<&Job::oxygenKilograms>("oxygenKilograms", kSaved)
+		    .Field<&Job::cartridgeDays>("cartridgeDays", kSaved);
+		RegisterType<PaidPrice>("Manifest.World.PaidPrice")
+		    .Field<&PaidPrice::itemId>("itemId", kSaved)
+		    .Field<&PaidPrice::price>("price", kSaved);
+		RegisterType<Paid>("Manifest.World.Paid").Field<&Paid::prices>("prices", kSaved);
 		RegisterType<IdentityCounters>("Manifest.World.IdentityCounters")
 		    .Field<&IdentityCounters::issued>("issued", kSaved);
 		return true;

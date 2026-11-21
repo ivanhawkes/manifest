@@ -503,6 +503,8 @@ Result Post(SimWorld &world, const Rules &rules, World::Order order)
 	std::size_t fills = 0;
 	std::uint64_t traded = 0;
 	std::int64_t lastPrice = 0;
+	// Each company's buy filled, by its ID, at its fill's price, in fill order.
+	std::vector<std::pair<std::string, std::int64_t>> paid;
 	for (const auto &[entity, resting] : makers)
 	{
 		if (order.remaining == 0 || fills == kMaxFills)
@@ -539,6 +541,8 @@ Result Post(SimWorld &world, const Rules &rules, World::Order order)
 		++fills;
 		traded += totes;
 		lastPrice = maker.limit;
+		if (buy.ownerKind == Kind::Company)
+			paid.emplace_back(buy.ownerId, maker.limit);
 	}
 
 	if (order.remaining == 0)
@@ -553,6 +557,17 @@ Result Post(SimWorld &world, const Rules &rules, World::Order order)
 	ledger.Commit();
 	if (traded > 0)
 		Record(registry, rules, order.venueId, order.itemId, step, traded, lastPrice);
+	for (const auto &[companyId, price] : paid)
+	{
+		const entt::entity company = rules.identities.Find(Kind::Company, companyId);
+		JETTISON_VERIFY(company != entt::null);
+		std::vector<World::PaidPrice> &prices = registry.get_or_emplace<World::Paid>(company).prices;
+		const auto at = std::ranges::lower_bound(prices, order.itemId, {}, &World::PaidPrice::itemId);
+		if (at != prices.end() && at->itemId == order.itemId)
+			at->price = price;
+		else
+			prices.insert(at, {order.itemId, price});
+	}
 	if (order.remaining > 0)
 	{
 		std::optional<std::string> id = rules.identities.Issue(Kind::Order);
@@ -1431,9 +1446,10 @@ void Register(
 	    { return Cancelled(on, *rules, actor, cancel); });
 
 	using Jettison::Ecs::Access;
-	const Access writes =
-	    Access::Of<World::Order>()
-	        .Writing<World::Order, World::Account, World::Stock, World::Identity, World::Sales>();
+	const Access writes = Access::Of<World::Order>()
+	                          .Writing<
+	                              World::Order, World::Account, World::Stock, World::Identity,
+	                              World::Sales, World::Paid>();
 	// Ahead of the movement Travel::Register attaches (docs/stage-4-trading-plan.md, "The step, in
 	// order").
 	const std::vector<std::string> beforeMovement{
@@ -1457,10 +1473,11 @@ void Register(
 	world.RegisterSystem(
 	    {.name = std::string{kEconomy},
 	     .phase = Jettison::Ecs::TickPhase::Simulation,
-	     .access = Access::Of<World::Order>()
-	                   .Writing<
-	                       World::Order, World::Account, World::Stock, World::Identity,
-	                       World::Production, World::Pantry, World::Region, World::Sales>(),
+	     .access =
+	         Access::Of<World::Order>()
+	             .Writing<
+	                 World::Order, World::Account, World::Stock, World::Identity, World::Production,
+	                 World::Pantry, World::Region, World::Sales, World::Paid>(),
 	     .after = {std::string{kExpiry}},
 	     .run = [rules, &world](entt::registry &, double) { Step(world, *rules); },
 	     .before = beforeMovement},

@@ -56,6 +56,10 @@ void RegisterTypes();
 // that form, or an n past a slot.
 Jettison::Sim::Controller ControllerOf(std::string_view companyId);
 
+// The venue's station, or null for a venue the content does not have or that has none.
+entt::entity StationOf(
+    const entt::registry &registry, const Content::ContentSet &content, std::string_view venueId);
+
 // The world's ships in space, as Register attaches them: what provisioning parks a new ship through.
 class Fleet
 {
@@ -67,8 +71,11 @@ class Fleet
 	{
 	}
 
-	// The venue's station, or null for a venue that has none.
-	entt::entity StationOf(const entt::registry &registry, std::string_view venueId) const;
+	// The venue's station (Travel::StationOf).
+	entt::entity StationOf(const entt::registry &registry, std::string_view venueId) const
+	{
+		return ::Manifest::Travel::StationOf(registry, m_content, venueId);
+	}
 
 	// The smallest free pad of the venue's station, not a display one, that the hull's dock hull fits,
 	// the lowest numbered of those, as the docks give one (Dock::RequestPad); the hull a Manifest.Hull

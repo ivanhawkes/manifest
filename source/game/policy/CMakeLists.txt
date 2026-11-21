@@ -18,10 +18,12 @@ manifest_add_module(policy
 		Jettison::Sim
 	PRIVATE_LIBRARIES
 		Jettison::Core
+		Jettison::Physics
 		Jettison::Reflect
+		Jettison::Space
 )
 if(TARGET manifest_policy_tests)
-	target_link_libraries(manifest_policy_tests PRIVATE manifest_query Jettison::Vfs)
+	target_link_libraries(manifest_policy_tests PRIVATE manifest_query Jettison::Space Jettison::Vfs)
 	target_compile_definitions(manifest_policy_tests PRIVATE MANIFEST_MOD_DIRECTORY="${MANIFEST_MOD_DIRECTORY}")
 	add_dependencies(manifest_policy_tests manifest_validate_pack)
 endif()

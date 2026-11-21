@@ -469,15 +469,34 @@ Result Upgraded(SimWorld &world, const Rules &rules, const Actor &actor, const U
 
 
 // Draws the need from the reserve's tanks or cartridges in order, never more than they hold.
-void Draw(std::vector<double> &reserve, double need)
+double Draw(std::vector<double> &reserve, double need)
 {
+	double drawn = 0.0;
 	for (double &left : reserve)
 	{
-		const double drawn = std::min(left, need);
-		left -= drawn;
-		need -= drawn;
+		const double each = std::min(left, need);
+		left -= each;
+		need -= each;
+		drawn += each;
 		if (need <= 0.0)
-			return;
+			break;
+	}
+	return drawn;
+}
+
+
+// One step's use drawn from the ship's own tanks and cartridges, added to its job while the job's lot
+// is aboard (D-100).
+void DrawStep(
+    entt::registry &registry, entt::entity ship, World::LifeSupport &lifeSupport, double occupantDays,
+    double oxygenPerOccupantDay)
+{
+	const double oxygen = Draw(lifeSupport.tanks, occupantDays * oxygenPerOccupantDay);
+	const double cartridges = Draw(lifeSupport.cartridges, occupantDays);
+	if (auto *pJob = registry.try_get<World::Job>(ship); pJob && pJob->totes > 0)
+	{
+		pJob->oxygenKilograms += oxygen;
+		pJob->cartridgeDays += cartridges;
 	}
 }
 
@@ -516,8 +535,7 @@ void Breathe(entt::registry &registry, const Rules &rules, double step)
 			continue;
 		const double occupantDays =
 		    rules.hulls.at(record.hullId)->occupants.value_or(0) * step / kSecondsPerDay;
-		Draw(lifeSupport.tanks, occupantDays * tuning.oxygenKilogramsPerOccupantDay);
-		Draw(lifeSupport.cartridges, occupantDays);
+		DrawStep(registry, ship, lifeSupport, occupantDays, tuning.oxygenKilogramsPerOccupantDay);
 	}
 }
 
@@ -558,10 +576,7 @@ void BreatheSkip(entt::registry &registry, const Rules &rules, double step, std:
 		const double occupantDays =
 		    rules.hulls.at(record.hullId)->occupants.value_or(0) * step / kSecondsPerDay;
 		for (std::uint64_t each = 0; each < passed; ++each)
-		{
-			Draw(lifeSupport.tanks, occupantDays * tuning.oxygenKilogramsPerOccupantDay);
-			Draw(lifeSupport.cartridges, occupantDays);
-		}
+			DrawStep(registry, ship, lifeSupport, occupantDays, tuning.oxygenKilogramsPerOccupantDay);
 	}
 }
 // SetFees, from the principal directing the venue's operator, checked before it writes.
@@ -871,8 +886,8 @@ void RegisterCommands(
 	world.RegisterSystem(
 	    {.name = std::string{kLifeSupportSystem},
 	     .phase = Jettison::Ecs::TickPhase::Simulation,
-	     .access =
-	         Jettison::Ecs::Access::Of<World::LifeSupport, World::Ship>().Writing<World::LifeSupport>(),
+	     .access = Jettison::Ecs::Access::Of<World::LifeSupport, World::Ship, World::Job>()
+	                   .Writing<World::LifeSupport, World::Job>(),
 	     .after = {std::string{Travel::kSystem}},
 	     .run = [rules](entt::registry &registry, double step) { Breathe(registry, *rules, step); }},
 	    {.next = [rules](const SimWorld &target) { return BreatheNext(target, *rules); },

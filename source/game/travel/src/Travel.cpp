@@ -338,9 +338,10 @@ Sim::Controller ControllerOf(std::string_view companyId)
 }
 
 
-entt::entity Fleet::StationOf(const entt::registry &registry, std::string_view venueId) const
+entt::entity StationOf(
+    const entt::registry &registry, const Content::ContentSet &content, std::string_view venueId)
 {
-	const Content::VenueDefinition *pVenue = FindVenue(m_content, venueId);
+	const Content::VenueDefinition *pVenue = FindVenue(content, venueId);
 	if (!pVenue)
 		return entt::null;
 	const std::uint64_t frame = Sim::FrameId(pVenue->systemId);

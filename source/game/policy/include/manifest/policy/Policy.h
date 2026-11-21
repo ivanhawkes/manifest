@@ -42,10 +42,13 @@ inline constexpr std::string_view kSystem = "manifest.policy";
 
 // The charges a route is estimated at (D-097, D-100), in whole credits, from each venue's World::Fees
 // as posted now for the ship's fee class (Content::FeeClass): the destination's docking fee unless
-// the ship is docked there, and the source's too when there is one and the ship must fly there first.
+// the ship is docked there, and the source's too when there is one and the ship must fly there first;
+// and the life support of each leg flown, its hull's occupants for the leg's Space::CruiseSeconds
+// between where the ship is, or the station it is docked at, and each station now, at the company's
+// last prices (World::Paid), each leg rounded up. The ship is a World::Ship with a Sim::Transform.
 std::int64_t Charges(
     const entt::registry &registry, const World::Identities &identities,
-    const Content::ContentSet &content, const World::Ship &ship, std::string_view sourceId,
+    const Content::ContentSet &content, entt::entity ship, std::string_view sourceId,
     std::string_view destinationId);
 
 // The lowest sell limit, raw microcredits per the item's unit, at which every sale of n of the lot's

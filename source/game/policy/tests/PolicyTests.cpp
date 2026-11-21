@@ -1,15 +1,22 @@
 #include "TestHelpers.h"
 
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <map>
+#include <numeric>
 #include <string>
 #include <string_view>
 #include <vector>
 
+#include <glm/geometric.hpp>
+
 #include <jettison/serialise/Archive.h>
 #include <jettison/sim/DefinitionRegistry.h>
 #include <jettison/sim/SimWorld.h>
+#include <jettison/sim/Snapshot.h>
+#include <jettison/space/Cruise.h>
 #include <jettison/vfs/FileSystem.h>
 
 #include <manifest/company/Company.h>
@@ -255,6 +262,28 @@ TEST_CASE("A saved policy and job load, and a broken one does not")
 	hosted.world.Registry().replace<World::Job>(ship, broken);
 	Hosted refused;
 	CHECK_THROWS(refused.world.Load(hosted.world.Save()));
+	World::Job drawn;
+	drawn.oxygenKilograms = 1.0;
+	hosted.world.Registry().replace<World::Job>(ship, drawn);
+	Hosted lotless;
+	CHECK_THROWS(lotless.world.Load(hosted.world.Save()));
+	hosted.world.Registry().replace<World::Job>(ship, World::Job{});
+
+	// A company's last prices, each of one item in name order and above 0.
+	const entt::entity company = hosted.Find(Kind::Company, "Company1");
+	for (const std::vector<World::PaidPrice> &prices :
+	     {std::vector<World::PaidPrice>{{"ItemOxygen", 0}},
+	      std::vector<World::PaidPrice>{{"ItemOxygen", 1}, {"ItemCopper", 1}}})
+	{
+		hosted.world.Registry().emplace_or_replace<World::Paid>(company, prices);
+		Hosted unpriced;
+		CHECK_THROWS(unpriced.world.Load(hosted.world.Save()));
+	}
+	hosted.world.Registry().replace<World::Paid>(
+	    company, std::vector<World::PaidPrice>{{"ItemCopper", 1}, {"ItemOxygen", 1}});
+	Hosted priced;
+	priced.world.Load(hosted.world.Save());
+	CHECK(priced.world.StateHash() == hosted.world.StateHash());
 }
 
 
@@ -455,8 +484,14 @@ TEST_CASE("Docked at its source, a job buys at the live ask, cancels the rest, l
 	job.sourceId = "VenueOreHighport";
 	job.destinationId = "VenueBrineHighport";
 	const std::int64_t before = hosted.Balance("Company1");
+	const std::int64_t ask = hosted.Line("Ada", "VenueOreHighport", "ItemFurs").ask;
 	REQUIRE(hosted.SetPolicy(kAda, {"Ship1", true, 0, 0}) == Result::Succeeded);
 
+	// The company keeps the price it paid.
+	const World::PaidPrice *pPaid = World::Find(
+	    hosted.world.Registry().get<World::Paid>(hosted.Find(Kind::Company, "Company1")), "ItemFurs");
+	REQUIRE(pPaid);
+	CHECK(pPaid->price == ask);
 	const World::Job &bought = hosted.Job();
 	CHECK(bought.phase == World::Phase::ToDestination);
 	REQUIRE(bought.totes > 0);
@@ -470,6 +505,97 @@ TEST_CASE("Docked at its source, a job buys at the live ask, cancels the rest, l
 	CHECK(
 	    hosted.world.Registry().get<World::Journey>(hosted.Ship("Ship1")).venueId ==
 	    "VenueBrineHighport");
+}
+
+
+TEST_CASE(
+    "Life support drawn in transit is charged to the lot at the company's last prices, as estimated")
+{
+	Hosted hosted;
+	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
+	hosted.Lot(4, 400);
+	entt::registry &registry = hosted.world.Registry();
+	const entt::entity ship = hosted.Ship("Ship1");
+	const World::Ship &record = registry.get<const World::Ship>(ship);
+	const std::string ore = "VenueOreHighport";
+	const std::string brine = "VenueBrineHighport";
+	const Manifest::Content::LifeSupportTuning &tuning = hosted.content.tuning.lifeSupport;
+	const auto charges = [&]
+	{ return Charges(registry, hosted.identities, hosted.content, ship, {}, brine); };
+	const auto worth = [&](double kilograms, double occupantDays)
+	{
+		return static_cast<std::int64_t>(std::ceil(
+		    (kilograms * 260'000.0 + occupantDays / tuning.cartridgeOccupantDays * 800'000'000.0) /
+		    1e6));
+	};
+
+	// Estimated as Brine's docking fee alone while the company has bought no life support, and with its
+	// last prices, 0.26 a kilogram of oxygen and 800 a cartridge, the cruise's occupant-days of both
+	// too.
+	const std::int64_t docking = charges();
+	CHECK(docking == 100);
+	registry.emplace<World::Paid>(
+	    hosted.Find(Kind::Company, "Company1"),
+	    std::vector<World::PaidPrice>{
+	        {"ItemCarbonScrubberCartridge", 800'000'000}, {"ItemOxygen", 260'000}});
+	const auto hull =
+	    std::ranges::find(hosted.content.hulls, record.hullId, &Manifest::Core::ShipClassSpec::hullId);
+	REQUIRE(hull != hosted.content.hulls.end());
+	const auto at = [&](const std::string &venueId)
+	{
+		return registry
+		    .get<const Jettison::Sim::Transform>(
+		        Manifest::Travel::StationOf(registry, hosted.content, venueId))
+		    .position;
+	};
+	const double days = hull->occupants.value_or(0) *
+	                    Jettison::Space::CruiseSeconds(
+	                        hosted.content.drives.at(Manifest::Content::RegistryName(record.hullId)),
+	                        glm::distance(at(ore), at(brine))) /
+	                    86'400.0;
+	REQUIRE(days > 0.0);
+	const std::int64_t estimated = worth(days * tuning.oxygenKilogramsPerOccupantDay, days);
+	CHECK(estimated > 0);
+	CHECK(charges() == docking + estimated);
+
+	// Flown to Brine with its lot aboard, its policy off on the way: what the ship draws of its own
+	// tanks and cartridges is the job's.
+	World::Job &job = hosted.Job();
+	job.phase = World::Phase::ToDestination;
+	job.destinationId = brine;
+	const auto total = [](const std::vector<double> &reserve)
+	{ return std::accumulate(reserve.begin(), reserve.end(), 0.0); };
+	const World::LifeSupport full = registry.get<const World::LifeSupport>(ship);
+	REQUIRE(
+	    hosted.Run(
+	        kAda, Manifest::Travel::kTravel, Manifest::Travel::kVersion,
+	        Manifest::Travel::Travel{"Ship1", brine}) == Result::Succeeded);
+	// Passed over where it may be, as the server's loop steps it, its draws with it.
+	const auto ended = [&] { return registry.get<const World::Journey>(ship).Ended(); };
+	const std::uint64_t limit = hosted.world.Clock().Step() + std::uint64_t{60} * 86'400 * 8;
+	while (!ended() && hosted.world.Clock().Step() < limit)
+		hosted.world.FastForward(limit);
+	REQUIRE(ended());
+	REQUIRE(record.dockedAt == brine);
+	const World::LifeSupport &left = registry.get<const World::LifeSupport>(ship);
+	const double kilograms = job.oxygenKilograms;
+	const double occupantDays = job.cartridgeDays;
+	CHECK(kilograms == doctest::Approx(total(full.tanks) - total(left.tanks)));
+	CHECK(occupantDays == doctest::Approx(total(full.cartridges) - total(left.cartridges)));
+	CHECK(occupantDays > 0.0);
+
+	// Charged as its job next decides docked, at those prices rounded up, so the floor recovers it;
+	// with a target no bid meets the job keeps the lot. The flight out of Ore's reach and down to
+	// Brine's pad draws more than the cruise alone the estimate counts.
+	const std::int64_t before = job.charges;
+	REQUIRE(
+	    hosted.SetPolicy(kAda, {"Ship1", true, std::numeric_limits<std::int64_t>::max() / 2, 0}) ==
+	    Result::Succeeded);
+	CHECK(job.charges == before + worth(kilograms, occupantDays));
+	CHECK(job.oxygenKilograms == 0.0);
+	CHECK(job.cartridgeDays == 0.0);
+	CHECK(job.totes == 4);
+	CHECK(worth(kilograms, occupantDays) >= estimated);
 }
 
 

@@ -518,8 +518,33 @@ struct Job
 	// The step it first blocked at, of this blockage, and the step it reconsiders at.
 	std::uint64_t blockedSince{0};
 	std::uint64_t retry{0};
+	// What its ship has drawn of its own life support while the lot is aboard and its job has not yet
+	// charged to the lot (D-100), each finite and at least 0: oxygen in kilograms, cartridges in
+	// occupant-days.
+	double oxygenKilograms{0.0};
+	double cartridgeDays{0.0};
 
 	bool operator==(const Job &) const = default;
+};
+
+// The last price a company paid for an item, a Core::Decimal's raw microcredits per the item's unit,
+// above 0.
+struct PaidPrice
+{
+	std::string itemId;
+	std::int64_t price{0};
+
+	bool operator==(const PaidPrice &) const = default;
+};
+
+// A company's, on its Company, by item in name order, each once: set as its buys fill, the price the
+// life support its ships draw in transit is charged to a lot at (D-100). An item it never bought has
+// none.
+struct Paid
+{
+	std::vector<PaidPrice> prices;
+
+	bool operator==(const Paid &) const = default;
 };
 
 // Why a Stock or a Cargo breaks the rules above, for a load to refuse: none when it keeps them.
@@ -547,6 +572,11 @@ std::optional<std::string> Broken(const Fees &fees);
 const ClassFees *Find(const Fees &fees, std::string_view padClass);
 
 std::optional<std::string> Broken(const Arrears &arrears);
+
+std::optional<std::string> Broken(const Paid &paid);
+
+// The company's last price for the item, or null for an item it never bought.
+const PaidPrice *Find(const Paid &paid, std::string_view itemId);
 
 std::optional<std::string> Broken(const Policy &policy);
 

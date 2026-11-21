@@ -94,7 +94,7 @@ registration order, and a test pins `Scheduler().Order(TickPhase::Simulation)`.
 | 5 | each step | engine `dock` | after `physics`; before `lanes` (Jettison `bc5dc1a`) | pads, docking, transfers |
 | 6 | each step | engine `lanes`, then `cruise` | Jettison's own edges | lane and cruise state |
 | 7 | each step | `manifest.travel` (W05) | after `dock` and `cruise` | travel intents, `Ship::dockedAt` |
-| 7a | each step | `manifest.lifeSupport` (W06) | after `manifest.travel` | connections, onboard oxygen and cartridges |
+| 7a | each step | `manifest.lifeSupport` (W06) | after `manifest.travel` | connections, onboard oxygen and cartridges, a job's draw |
 | 7b | each day's last step | `manifest.pricing` (W18) | after `manifest.lifeSupport` | an AI-run venue's `Pricing` level and `Fees` |
 | 7c | each hour's last step | `manifest.berths` (W10, W18) | after `manifest.pricing` | berth fees, arrears, a job's charges |
 | 8 | each step | `manifest.observe` (W07) | after `manifest.travel` | players' market reports |
@@ -1088,8 +1088,10 @@ is expected: a journey's cruise time is Jettison's `Space::CruiseSeconds`.
 - **Life support used in transit.** The company keeps the last unit price it paid for each item
   (`World::Paid`, set as its buy fills settle). While a job's lot is aboard and the ship draws on its
   own life support, `manifest.lifeSupport` adds what it draws to the job: oxygen in kilograms and
-  cartridge occupant-days. When the ship docks, the policy converts the draw at those prices,
-  rounded up, into the lot's `charges`. An item the company never bought, such as its provisioned
+  cartridge occupant-days. When the ship docks at its journey's end, the policy converts the draw
+  at those prices, rounded up, into the lot's `charges`, once, as the job decides on the journey
+  ended: what a ship docked off the venue's life support draws after that is converted at its next
+  journey's end, not rounded up each step. An item the company never bought, such as its provisioned
   supplies, costs 0.
 - **Estimates and floors.** `Policy::Charges` adds to the docking fees, at the ship's class, the life
   support of each leg: the occupants times `CruiseSeconds` over the distance between the two stations

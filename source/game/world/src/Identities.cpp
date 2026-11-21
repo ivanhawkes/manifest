@@ -138,6 +138,13 @@ std::function<void()> Identities::Load(
 	for (const auto [entity, job] : loaded.view<const Job>().each())
 		if (const std::optional<std::string> problem = Broken(job))
 			reader.Fail(*problem);
+	for (const auto [entity, paid] : loaded.view<const Paid>().each())
+	{
+		if (const std::optional<std::string> problem = Broken(paid))
+			reader.Fail(*problem);
+		if (!loaded.all_of<Company>(entity))
+			reader.Fail("last prices are paid by no company");
+	}
 	for (const auto [entity, reports] : loaded.view<const Reports>().each())
 	{
 		if (const std::optional<std::string> problem = Broken(reports))
