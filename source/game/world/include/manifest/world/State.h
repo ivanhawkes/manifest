@@ -436,6 +436,18 @@ struct Fees
 	bool operator==(const Fees &) const = default;
 };
 
+// A venue's fees as a share of the tuning's defaults, in basis points, on its Market beside its Fees:
+// kDefaultLevelBps in the initial state, moved each day by manifest.pricing while no player directs
+// the venue's operator (D-100).
+struct Pricing
+{
+	int levelBps{0};
+
+	bool operator==(const Pricing &) const = default;
+};
+
+inline constexpr int kDefaultLevelBps = 10'000;
+
 // What a docked ship's company could not pay of its berth fees, in whole credits above 0, owed to the
 // venue the ship is docked at, its interest added to it as each day ends: paid first as the next hour
 // ends, and all of it before the ship leaves (Travel::Travel), so a ship that is not docked owes none.

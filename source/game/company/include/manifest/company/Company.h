@@ -100,6 +100,13 @@ inline constexpr std::string_view kSetFees = "Manifest.Company.SetFees";
 // and draws each unconnected ship's step of use from its own tanks and cartridges, in order: the
 // tuning's rates times its hull's occupants, never more than is left (D-046, D-094).
 inline constexpr std::string_view kLifeSupportSystem = "manifest.lifeSupport";
+// The system after it that prices each venue whose operator no principal directs (D-100), as each
+// simulation day's last step ends: its World::Pricing level, in basis points of the tuning's defaults,
+// rises by charges.pricing's stepBps when more of its station's pads (display pads aside) are taken
+// than raiseAboveBps of them and falls by it when fewer than lowerBelowBps are, within minLevelBps to
+// maxLevelBps, and each of its World::Fees is then the default at that level, to the nearest credit,
+// the arrears rate the default's.
+inline constexpr std::string_view kPricingSystem = "manifest.pricing";
 // The system after it that charges the berth fee (D-097, D-100): as each simulation hour's last step
 // ends, each ship docked then, in entity order, pays its World::Arrears and its venue's World::Fees,
 // the berthPerHour of its fee class (Content::FeeClass) and berthPerOccupantHour for each of its hull's
@@ -114,11 +121,10 @@ inline constexpr std::uint32_t kVersion = 1;
 // The payloads, with Reflect, and the command types. Safe to call again.
 void RegisterTypes();
 
-// Registers the commands with the requests, the life-support and berth systems after manifest.travel,
-// and the
-// ships' holds with the identities (World::Identities::SetHolds). The identities, the fleet and the
-// content, whose scenario they run on, must outlive the world. Throws std::invalid_argument for a
-// content set with no scenario selected.
+// Registers the commands with the requests, the life-support, pricing and berth systems after
+// manifest.travel, and the ships' holds with the identities (World::Identities::SetHolds). The
+// identities, the fleet and the content, whose scenario they run on, must outlive the world. Throws
+// std::invalid_argument for a content set with no scenario selected.
 void RegisterCommands(
     Jettison::Sim::SimWorld &world, Command::Requests &requests, World::Identities &identities,
     const Travel::Fleet &fleet, const Content::ContentSet &content);

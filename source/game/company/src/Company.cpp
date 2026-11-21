@@ -17,9 +17,12 @@
 #include <vector>
 
 #include <jettison/core/Assert.h>
+#include <jettison/dock/Docks.h>
 #include <jettison/ecs/Scheduler.h>
+#include <jettison/physics/Components.h>
 #include <jettison/reflect/Reflect.h>
 #include <jettison/sim/SimWorld.h>
+#include <jettison/sim/Snapshot.h>
 
 #include <manifest/content/Content.h>
 #include <manifest/effects/ShipEffectEngine.h>
@@ -604,6 +607,78 @@ void Accrue(World::Arrears &arrears, int rateBps)
 }
 
 
+// The fee at the level, in basis points of it, to the nearest credit, a half up; at most kMaxCredits.
+std::int64_t AtLevel(std::int64_t fee, int levelBps)
+{
+	constexpr std::int64_t kWhole = World::kDefaultLevelBps;
+	if (levelBps > 0 && fee / kWhole >= kMaxCredits / levelBps)
+		return kMaxCredits;
+	return fee / kWhole * levelBps + (fee % kWhole * levelBps + kWhole / 2) / kWhole;
+}
+
+
+// Each AI-run venue's level and fees by its station's occupancy as the day's last step ends
+// (kPricingSystem), in the scenario's order of venues.
+void Price(SimWorld &world, const Rules &rules)
+{
+	if ((world.Clock().Step() + 1) % (rules.hourSteps * 24) != 0)
+		return;
+	entt::registry &registry = world.Registry();
+	const Content::ChargesTuning &charges = rules.content.tuning.charges;
+	const Content::PricingTuning &rule = charges.pricing;
+	for (const Content::VenueDefinition &venue : rules.scenario.venues)
+	{
+		const entt::entity organisation = rules.identities.Find(
+		    Kind::Organisation,
+		    registry.get<const World::Broker>(rules.identities.Find(Kind::Broker, venue.venueId))
+		        .operatorId);
+		if (organisation != entt::null &&
+		    !registry.get<const World::Organisation>(organisation).principalId.empty())
+			continue;
+		const entt::entity station = rules.fleet.StationOf(registry, venue.venueId);
+		if (station == entt::null)
+			continue;
+		std::int64_t pads = 0;
+		std::int64_t taken = 0;
+		for (const entt::entity pad : registry.get<const Jettison::Dock::Station>(station).pads)
+			if (const auto &held = registry.get<const Jettison::Dock::Pad>(pad); !held.display)
+			{
+				++pads;
+				taken += held.state != Jettison::Dock::PadState::Free ? 1 : 0;
+			}
+		if (pads == 0)
+			continue;
+		const entt::entity market = rules.identities.Find(Kind::Market, venue.venueId);
+		int &level = registry.get<World::Pricing>(market).levelBps;
+		if (taken * World::kDefaultLevelBps > rule.raiseAboveBps * pads)
+			level += rule.stepBps;
+		else if (taken * World::kDefaultLevelBps < rule.lowerBelowBps * pads)
+			level -= rule.stepBps;
+		level = std::clamp(level, rule.minLevelBps, rule.maxLevelBps);
+		World::Fees &fees = registry.get<World::Fees>(market);
+		for (World::ClassFees &each : fees.classes)
+		{
+			const auto authored = std::ranges::find(
+			    charges.padClasses, each.padClass, &Content::ClassChargesTuning::padClass);
+			JETTISON_VERIFY(authored != charges.padClasses.end());
+			each.docking = AtLevel(authored->dockingFee, level);
+			each.berthPerHour = AtLevel(authored->berthFeePerHour, level);
+		}
+		fees.berthPerOccupantHour = AtLevel(charges.berthFeePerOccupantHour, level);
+		fees.arrearsRateBps = charges.arrearsRateBps;
+	}
+}
+
+
+// The first step pricing has to run in (Jettison::Sim::Quiet): the day's last.
+std::uint64_t PriceNext(const SimWorld &world, const Rules &rules)
+{
+	const std::uint64_t day = rules.hourSteps * 24;
+	const std::uint64_t now = world.Clock().Step();
+	return now + (day - 1 - now % day);
+}
+
+
 // The hour's berth fee of every docked ship, in entity order, as the hour's last step ends
 // (kBerthSystem), on the day's last its arrears' interest first.
 void Berth(SimWorld &world, const Rules &rules)
@@ -804,12 +879,23 @@ void RegisterCommands(
 	     .skip = [rules](SimWorld &target, std::uint64_t passed, double)
 	     { BreatheSkip(target.Registry(), *rules, target.FixedStep(), passed); }});
 	world.RegisterSystem(
+	    {.name = std::string{kPricingSystem},
+	     .phase = Jettison::Ecs::TickPhase::Simulation,
+	     .access =
+	         Jettison::Ecs::Access::Of<
+	             World::Broker, World::Organisation, Jettison::Dock::Station, Jettison::Dock::Pad,
+	             Jettison::Physics::OnRails, Jettison::Sim::InFrame, World::Fees, World::Pricing>()
+	             .Writing<World::Fees, World::Pricing>(),
+	     .after = {std::string{kLifeSupportSystem}},
+	     .run = [rules, &world](entt::registry &, double) { Price(world, *rules); }},
+	    {.next = [rules](const SimWorld &target) { return PriceNext(target, *rules); }});
+	world.RegisterSystem(
 	    {.name = std::string{kBerthSystem},
 	     .phase = Jettison::Ecs::TickPhase::Simulation,
 	     .access = Jettison::Ecs::Access::Of<
 	                   World::Ship, World::Fees, World::Arrears, World::Account, World::LifeSupport>()
 	                   .Writing<World::Account, World::Arrears, World::Job>(),
-	     .after = {std::string{kLifeSupportSystem}},
+	     .after = {std::string{kPricingSystem}},
 	     .run = [rules, &world](entt::registry &, double) { Berth(world, *rules); }},
 	    {.next = [rules](const SimWorld &target) { return BerthNext(target, *rules); }});
 }

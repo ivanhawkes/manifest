@@ -1079,7 +1079,7 @@ TEST_CASE("A save with work pending, and a replay from the start, carry the comp
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves only
 	// with what a save holds or the engine's save format, and a change that moves it says so.
-	CHECK(hosted.world.StateHash() == 0x697f766e003aabcaULL);
+	CHECK(hosted.world.StateHash() == 0xd1eab03c645eed9aULL);
 }
 
 
@@ -1090,6 +1090,9 @@ TEST_CASE(
 	Hosted hosted;
 	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
 	entt::registry &registry = hosted.world.Registry();
+	// Bea directs the venues' operator, so the day's end leaves their fees as this test sets them.
+	registry.get<World::Organisation>(hosted.Find(Kind::Organisation, "OrganisationAnvilPortAuthority"))
+	    .principalId = "Bea";
 	const entt::entity ship = hosted.Find(Kind::Ship, "Ship1");
 	World::Account &account =
 	    registry.get<World::Account>(hosted.Find(Kind::CompanyAccount, "Company1"));
@@ -1277,4 +1280,84 @@ TEST_CASE("Saved fees and arrears load, and broken ones do not")
 	std::swap(fees.classes[0], fees.classes[1]);
 	Hosted unordered;
 	CHECK_THROWS(unordered.world.Load(hosted.world.Save()));
+	std::swap(fees.classes[0], fees.classes[1]);
+	registry.remove<World::Pricing>(hosted.Find(Kind::Market, "VenueOreHighport"));
+	Hosted unpriced;
+	CHECK_THROWS(unpriced.world.Load(hosted.world.Save()));
+}
+
+
+TEST_CASE("An AI operator's fees follow its station's occupancy each day, within their bounds")
+{
+	// Ore's pads that fit the starter all taken, with connections to spare; Brine's all free.
+	Manifest::Content::ContentSet roomy = Scenario("trading");
+	roomy.scenarios.at("trading").venues[0].lifeSupportCapacity = 1000;
+	Hosted stepped{roomy};
+	Hosted forwarded{roomy};
+	for (Hosted *hosted : {&stepped, &forwarded})
+		for (int players = 0; hosted->Provision(std::format("Player{}", players)) == Result::Succeeded;
+		     ++players)
+		{
+		}
+	REQUIRE(stepped.world.Save() == forwarded.world.Save());
+	const std::string ore = "VenueOreHighport";
+	const std::string brine = "VenueBrineHighport";
+	const auto level = [](Hosted &hosted, const std::string &venueId) -> int &
+	{
+		return hosted.world.Registry().get<World::Pricing>(hosted.Find(Kind::Market, venueId)).levelBps;
+	};
+	const auto posted = [](Hosted &hosted, const std::string &venueId) -> const World::Fees &
+	{ return hosted.world.Registry().get<World::Fees>(hosted.Find(Kind::Market, venueId)); };
+	const auto skiff = [&posted](Hosted &hosted, const std::string &venueId)
+	{ return *World::Find(posted(hosted, venueId), "skiff"); };
+	const auto forward = [](Hosted &hosted, std::uint64_t until)
+	{
+		while (hosted.world.Clock().Step() < until)
+			hosted.world.FastForward(until);
+	};
+	constexpr std::uint64_t kDay = 86'400;
+
+	// Moved as the day's last step ends, not before: Ore's up a tenth of the defaults, Brine's down,
+	// each to the nearest credit, the arrears rate the default's.
+	while (stepped.world.Clock().Step() < kDay - 1)
+		stepped.world.Step();
+	CHECK(level(stepped, ore) == 10'000);
+	stepped.world.Step();
+	CHECK(level(stepped, ore) == 11'000);
+	CHECK(level(stepped, brine) == 9'000);
+	CHECK(skiff(stepped, ore) == World::ClassFees{"skiff", 110, 22});
+	CHECK(*World::Find(posted(stepped, ore), "cruiser") == World::ClassFees{"cruiser", 59'400, 11'880});
+	CHECK(posted(stepped, ore).berthPerOccupantHour == 2);
+	CHECK(posted(stepped, ore).arrearsRateBps == 1000);
+	CHECK(skiff(stepped, brine) == World::ClassFees{"skiff", 90, 18});
+	CHECK(posted(stepped, brine).berthPerOccupantHour == 2);
+
+	// Stepped and passed over to the second day's end alike, to the byte.
+	while (stepped.world.Clock().Step() < 2 * kDay)
+		stepped.world.Step();
+	forward(forwarded, 2 * kDay);
+	CHECK(forwarded.world.Save() == stepped.world.Save());
+	CHECK(level(forwarded, ore) == 12'000);
+	CHECK(level(forwarded, brine) == 8'000);
+	CHECK(skiff(forwarded, brine) == World::ClassFees{"skiff", 80, 16});
+
+	// Held within half to twice the defaults.
+	level(forwarded, ore) = 20'000;
+	level(forwarded, brine) = 5'000;
+	forward(forwarded, 3 * kDay);
+	CHECK(level(forwarded, ore) == 20'000);
+	CHECK(level(forwarded, brine) == 5'000);
+	CHECK(skiff(forwarded, ore) == World::ClassFees{"skiff", 200, 40});
+	CHECK(skiff(forwarded, brine) == World::ClassFees{"skiff", 50, 10});
+	CHECK(posted(forwarded, brine).berthPerOccupantHour == 1);
+
+	// The AI leaves the fees of a venue whose operator a player directs.
+	forwarded.world.Registry()
+	    .get<World::Organisation>(forwarded.Find(Kind::Organisation, "OrganisationAnvilPortAuthority"))
+	    .principalId = "Bea";
+	level(forwarded, ore) = 15'000;
+	const World::ClassFees held = skiff(forwarded, ore);
+	forward(forwarded, 4 * kDay);
+	CHECK(level(forwarded, ore) == 15'000);
+	CHECK(skiff(forwarded, ore) == held);
 }

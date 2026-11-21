@@ -88,6 +88,15 @@ charges:
   # game's usury limit, the most any venue may set (the user's, 2026-11-21).
   arrearsRateBps: 1000
   maxArrearsRateBps: 3500
+  # How a venue whose operator no player directs moves its fees, once a day, by its station's share of
+  # pads taken, in basis points: 10% of the defaults up above 3/4 full and down below 1/4, within half
+  # to twice the defaults (the user's, 2026-11-21).
+  pricing:
+    raiseAboveBps: 7500
+    lowerBelowBps: 2500
+    stepBps: 1000
+    minLevelBps: 5000
+    maxLevelBps: 20000
 
 brokers:
   # Each venue's broker (D-084), initial test values (W03): its account at the start, in whole

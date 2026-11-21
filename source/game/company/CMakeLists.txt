@@ -17,6 +17,7 @@ manifest_add_module(company
 		Jettison::Sim
 	PRIVATE_LIBRARIES
 		Jettison::Core
+		Jettison::Physics
 		Jettison::Reflect
 )
 if(TARGET manifest_company_tests)

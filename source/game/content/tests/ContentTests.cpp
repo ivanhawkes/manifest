@@ -400,6 +400,13 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	    balance, "version: 1\ncharges: {arrearsRateBps: 3501}\n",
 	    "charges.arrearsRateBps must be in [0, charges.maxArrearsRateBps]");
 	CheckRefused(
+	    balance, "version: 1\ncharges: {pricing: {lowerBelowBps: 8000}}\n",
+	    "charges.pricing needs 0 <= lowerBelowBps <= raiseAboveBps <= 10000");
+	CheckRefused(
+	    balance, "version: 1\ncharges: {pricing: {maxLevelBps: 9999}}\n",
+	    "charges.pricing needs stepBps in [0, 1000000] and 0 <= minLevelBps <= 10000 <= maxLevelBps "
+	    "<= 1000000");
+	CheckRefused(
 	    balance, "version: 1\nmarket: {orderLifeSeconds: -1}\n",
 	    "market.orderLifeSeconds must be finite and not below 0");
 	CheckRefused(

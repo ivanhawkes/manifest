@@ -119,8 +119,12 @@ std::function<void()> Identities::Load(
 		if (const std::optional<std::string> problem = Broken(sales))
 			reader.Fail(*problem);
 	for (const auto [entity, fees] : loaded.view<const Fees>().each())
+	{
 		if (const std::optional<std::string> problem = Broken(fees))
 			reader.Fail(*problem);
+		if (!loaded.all_of<Pricing>(entity))
+			reader.Fail("a venue's fees have no pricing level");
+	}
 	for (const auto [entity, arrears] : loaded.view<const Arrears>().each())
 	{
 		if (const std::optional<std::string> problem = Broken(arrears))

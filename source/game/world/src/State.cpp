@@ -440,6 +440,7 @@ void RegisterTypes()
 		    .Field<&Fees::classes>("classes", kSaved)
 		    .Field<&Fees::berthPerOccupantHour>("berthPerOccupantHour", kSaved)
 		    .Field<&Fees::arrearsRateBps>("arrearsRateBps", kSaved);
+		RegisterType<Pricing>("Manifest.World.Pricing").Field<&Pricing::levelBps>("levelBps", kSaved);
 		RegisterType<Arrears>("Manifest.World.Arrears")
 		    .Field<&Arrears::owed>("owed", kSaved)
 		    .Field<&Arrears::carry>("carry", kSaved);

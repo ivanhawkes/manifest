@@ -175,6 +175,19 @@ struct ClassChargesTuning
 	std::int64_t berthFeePerHour{0};
 };
 
+// How an AI operator moves its fees with its station's occupancy, the share of its pads not free
+// (D-100), once a day: its level, in basis points of the defaults (10,000 is the defaults), rises by
+// stepBps above raiseAboveBps of its pads taken and falls by it below lowerBelowBps, within minLevelBps
+// to maxLevelBps.
+struct PricingTuning
+{
+	int raiseAboveBps{0};
+	int lowerBelowBps{0};
+	int stepBps{0};
+	int minLevelBps{0};
+	int maxLevelBps{0};
+};
+
 // What each venue charges as the initial state opens it (D-097, D-098, D-100), in whole credits, each
 // at least 0: its operator's to change.
 struct ChargesTuning
@@ -189,6 +202,7 @@ struct ChargesTuning
 	// The most any venue may charge, the game's usury limit, at most 1,000,000: arrearsRateBps is at
 	// most this.
 	int maxArrearsRateBps{0};
+	PricingTuning pricing;
 };
 
 // Each venue's broker (D-084): what its account starts with, and how far apart it quotes.

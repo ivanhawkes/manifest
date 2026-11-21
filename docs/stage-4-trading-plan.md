@@ -95,6 +95,8 @@ registration order, and a test pins `Scheduler().Order(TickPhase::Simulation)`.
 | 6 | each step | engine `lanes`, then `cruise` | Jettison's own edges | lane and cruise state |
 | 7 | each step | `manifest.travel` (W05) | after `dock` and `cruise` | travel intents, `Ship::dockedAt` |
 | 7a | each step | `manifest.lifeSupport` (W06) | after `manifest.travel` | connections, onboard oxygen and cartridges |
+| 7b | each day's last step | `manifest.pricing` (W18) | after `manifest.lifeSupport` | an AI-run venue's `Pricing` level and `Fees` |
+| 7c | each hour's last step | `manifest.berths` (W10, W18) | after `manifest.pricing` | berth fees, arrears, a job's charges |
 | 8 | each step | `manifest.observe` (W07) | after `manifest.travel` | players' market reports |
 
 Jettison's movement systems are registered without its `behaviour` system (no behaviour trees
@@ -1078,10 +1080,11 @@ is expected: a journey's cruise time is Jettison's `Space::CruiseSeconds`.
   charged stay as they were.
 - **The AI operator's rule.** `manifest.pricing` runs on each day's last step, before the berth fees,
   for every venue whose operator no principal directs. Occupancy is the share of the station's
-  non-display pads not free. Above 3/4 the venue's saved level rises by 1,000 basis points, below
-  1/4 it falls by 1,000, and it stays within 5,000 to 20,000, starting at 10,000. Every fee is then
-  the default at that level, rounded to the nearest credit. The arrears rate stays at its default.
-  The thresholds, step and bounds are `charges.pricing` in `balance.yaml`.
+  non-display pads not free. Above 3/4 the venue's saved level (`World::Pricing`) rises by 1,000
+  basis points, below 1/4 it falls by 1,000, and it stays within 5,000 to 20,000, starting at 10,000.
+  Every fee is then the default at that level, rounded to the nearest credit, a half up. The arrears
+  rate stays at its default. The thresholds, step and bounds are `charges.pricing` in
+  `balance.yaml`.
 - **Life support used in transit.** The company keeps the last unit price it paid for each item
   (`World::Paid`, set as its buy fills settle). While a job's lot is aboard and the ship draws on its
   own life support, `manifest.lifeSupport` adds what it draws to the job: oxygen in kilograms and

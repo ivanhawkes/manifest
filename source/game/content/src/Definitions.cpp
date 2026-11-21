@@ -222,11 +222,18 @@ void RegisterTypes()
 		    .Field<&ClassChargesTuning::padClass>("padClass", kDefined)
 		    .Field<&ClassChargesTuning::dockingFee>("dockingFee", kDefined)
 		    .Field<&ClassChargesTuning::berthFeePerHour>("berthFeePerHour", kDefined);
+		RegisterType<PricingTuning>("Manifest.PricingTuning")
+		    .Field<&PricingTuning::raiseAboveBps>("raiseAboveBps", kDefined)
+		    .Field<&PricingTuning::lowerBelowBps>("lowerBelowBps", kDefined)
+		    .Field<&PricingTuning::stepBps>("stepBps", kDefined)
+		    .Field<&PricingTuning::minLevelBps>("minLevelBps", kDefined)
+		    .Field<&PricingTuning::maxLevelBps>("maxLevelBps", kDefined);
 		RegisterType<ChargesTuning>("Manifest.ChargesTuning")
 		    .Field<&ChargesTuning::padClasses>("padClasses", kDefined)
 		    .Field<&ChargesTuning::berthFeePerOccupantHour>("berthFeePerOccupantHour", kDefined)
 		    .Field<&ChargesTuning::arrearsRateBps>("arrearsRateBps", kDefined)
-		    .Field<&ChargesTuning::maxArrearsRateBps>("maxArrearsRateBps", kDefined);
+		    .Field<&ChargesTuning::maxArrearsRateBps>("maxArrearsRateBps", kDefined)
+		    .Field<&ChargesTuning::pricing>("pricing", kDefined);
 		RegisterType<BrokerTuning>("Manifest.BrokerTuning")
 		    .Field<&BrokerTuning::treasury>("treasury", kDefined)
 		    .Field<&BrokerTuning::spreadBps>("spreadBps", kDefined);

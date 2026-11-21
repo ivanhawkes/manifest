@@ -54,6 +54,7 @@ Identities &RegisterWorld(Jettison::Sim::SimWorld &world)
 	world.RegisterComponent<Arrears>();
 	world.RegisterComponent<Policy>();
 	world.RegisterComponent<Job>();
+	world.RegisterComponent<Pricing>();
 	auto identities = std::make_unique<Identities>();
 	Identities &added = *identities;
 	world.AddService("Manifest.Identities", std::move(identities));
@@ -115,6 +116,7 @@ void CreateInitialState(
 		for (const Content::ClassChargesTuning &charged : content.tuning.charges.padClasses)
 			fees.classes.push_back({charged.padClass, charged.dockingFee, charged.berthFeePerHour});
 		std::ranges::sort(fees.classes, {}, &ClassFees::padClass);
+		registry.emplace<Pricing>(market, kDefaultLevelBps);
 	}
 }
 } // namespace Manifest::World

@@ -659,6 +659,17 @@ void CheckTuning(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 		    tuning.charges.arrearsRateBps >= 0 &&
 		        tuning.charges.arrearsRateBps <= tuning.charges.maxArrearsRateBps,
 		    "charges.arrearsRateBps", "must be in [0, charges.maxArrearsRateBps]");
+		const PricingTuning &pricing = tuning.charges.pricing;
+		checker.Require(
+		    pricing.lowerBelowBps >= 0 && pricing.lowerBelowBps <= pricing.raiseAboveBps &&
+		        pricing.raiseAboveBps <= 10'000,
+		    "charges.pricing", "needs 0 <= lowerBelowBps <= raiseAboveBps <= 10000");
+		checker.Require(
+		    pricing.stepBps >= 0 && pricing.stepBps <= 1'000'000 && pricing.minLevelBps >= 0 &&
+		        pricing.minLevelBps <= 10'000 && pricing.maxLevelBps >= 10'000 &&
+		        pricing.maxLevelBps <= 1'000'000,
+		    "charges.pricing",
+		    "needs stepBps in [0, 1000000] and 0 <= minLevelBps <= 10000 <= maxLevelBps <= 1000000");
 		checker.Require(tuning.brokers.treasury >= 0, "brokers.treasury", "must not be below 0");
 		checker.Require(
 		    tuning.brokers.spreadBps >= 0 && tuning.brokers.spreadBps < 20000, "brokers.spreadBps",
