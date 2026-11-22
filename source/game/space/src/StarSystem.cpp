@@ -38,13 +38,13 @@ void RegisterSystemTypes()
 	static const bool registered = []
 	{
 		using namespace Jettison::Reflect;
-		RegisterEnum<BodyKind>("Celestial.BodyKind")
+		RegisterEnum<BodyKind>("Space.BodyKind")
 		    .Value<BodyKind::Star>("Star")
 		    .Value<BodyKind::Planet>("Planet")
 		    .Value<BodyKind::Moon>("Moon")
 		    .Value<BodyKind::Station>("Station")
 		    .Value<BodyKind::JumpPoint>("JumpPoint");
-		RegisterType<OrbitalElements>("Celestial.OrbitalElements")
+		RegisterType<OrbitalElements>("Space.OrbitalElements")
 		    .Field<&OrbitalElements::semiMajorAxis>("semiMajorAxis", Attribute::Saved)
 		    .Field<&OrbitalElements::eccentricity>("eccentricity", Attribute::Saved)
 		    .Field<&OrbitalElements::inclination>("inclination", Attribute::Saved)
@@ -53,11 +53,11 @@ void RegisterSystemTypes()
 		    .Field<&OrbitalElements::argumentOfPeriapsis>("argumentOfPeriapsis", Attribute::Saved)
 		    .Field<&OrbitalElements::meanAnomalyAtEpoch>("meanAnomalyAtEpoch", Attribute::Saved)
 		    .Field<&OrbitalElements::period>("period", Attribute::Saved);
-		RegisterType<Rotation>("Celestial.Rotation")
+		RegisterType<Rotation>("Space.Rotation")
 		    .Field<&Rotation::period>("period", Attribute::Saved)
 		    .Field<&Rotation::axialTilt>("axialTilt", Attribute::Saved)
 		    .Field<&Rotation::angleAtEpoch>("angleAtEpoch", Attribute::Saved);
-		RegisterType<Body>("Celestial.Body")
+		RegisterType<Body>("Space.Body")
 		    .Field<&Body::name>("name", Attribute::Saved)
 		    .Field<&Body::kind>("kind", Attribute::Saved)
 		    .Field<&Body::parent>("parent", Attribute::Saved)
@@ -66,7 +66,7 @@ void RegisterSystemTypes()
 		    .Field<&Body::radius>("radius", Attribute::Saved)
 		    .Field<&Body::gravitationalParameter>("gravitationalParameter", Attribute::Saved)
 		    .Field<&Body::layout>("layout", Attribute::Saved);
-		RegisterType<StarSystem>("Celestial.StarSystem", Attribute::Moddable)
+		RegisterType<StarSystem>("Space.StarSystem", Attribute::Moddable)
 		    .Field<&StarSystem::name>("name", Attribute::Saved)
 		    .Field<&StarSystem::bodies>("bodies", Attribute::Saved);
 		return true;

@@ -1,7 +1,7 @@
 # Jettison feature-base, pinned rather than following main or a moving branch.
 # Updating this commit and the development shell is one SDK change. Fetch the engine
 # first: EnTT, yaml-cpp and doctest must be its targets, never second copies here.
-set(MANIFEST_JETTISON_REVISION b7d45807d7b1250fa4cfaede4556db022619faf6)
+set(MANIFEST_JETTISON_REVISION 1297b9fbf9db7042e4d84044eac2a95b865d8c8d)
 set(JETTISON_SOURCE_DIR "" CACHE PATH "Use a local Jettison checkout instead of the pinned revision")
 if(NOT TARGET Jettison::Math)
     if(JETTISON_SOURCE_DIR)

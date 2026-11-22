@@ -203,7 +203,7 @@ struct MarketTuning
 // the initial state opens it, in whole credits, each at least 0.
 struct ClassChargesTuning
 {
-	// The Dock.PadClass, by record name.
+	// The Dock.BerthClassDefinition, by record name.
 	std::string padClass;
 	// Paid to the destination as a journey to it starts.
 	std::int64_t dockingFee{0};
@@ -418,7 +418,7 @@ struct VenueDefinition
 	// Open to every company on equal terms, as the scenario's starter venue must be.
 	bool isPublic{false};
 	bool operational{false};
-	// The Dock.StationLayout it is built to, by record name: its pads are the hulls it docks.
+	// The Dock.PlatformLayout it is built to, by record name: its pads are the hulls it docks.
 	std::string layout;
 	// Ships it can keep connected to working life support at once.
 	int lifeSupportCapacity{0};

@@ -452,7 +452,7 @@ inline constexpr std::int64_t kRateYear = 10'000LL * 365;
 // What a venue charges ships of one fee class (Content::FeeClass), in whole credits, each at least 0.
 struct ClassFees
 {
-	// The Dock.PadClass, by record name.
+	// The Dock.BerthClassDefinition, by record name.
 	std::string padClass;
 	// Paid to the venue as a journey to it starts (Travel::Travel).
 	std::int64_t docking{0};

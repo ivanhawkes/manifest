@@ -317,23 +317,24 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	CheckRefused(
 	    "manifest/definitions/dock-hulls/hull-lone-trader-starter.patch.yaml",
 	    "version: 2\nlength: 12\n",
-	    "Dock.HullDefinition 'hull-lone-trader-starter': dock Vehicle 'hull-lone-trader-starter' is 12 "
+	    "Dock.VehicleDefinition 'hull-lone-trader-starter': dock Vehicle 'hull-lone-trader-starter' is "
+	    "12 "
 	    "x "
 	    "6.4 x 1.8 m, larger than its berth's largest vehicle, 9.8 x 6.4 x 1.8 m");
 	CheckRefused(
 	    "manifest/definitions/pads/skiff.patch.yaml", "version: 1\npadSize: [4, 10]\n",
-	    "Dock.PadClassDefinition 'skiff': dock Berth class 'skiff' has a largest vehicle");
+	    "Dock.BerthClassDefinition 'skiff': dock Berth class 'skiff' has a largest vehicle");
 	CheckRefused(
 	    "manifest/definitions/stations/highport.patch.yaml", "version: 1\npiers: []\n",
-	    "Dock.StationLayout 'highport': dock Platform layout 'highport'");
+	    "Dock.PlatformLayout 'highport': dock Platform layout 'highport'");
 	CheckRefused(
 	    "manifest/definitions/dock-hulls/hull-nowhere.yaml",
 	    "version: 2\ndisplayName: Nowhere\nlength: 5\nbeam: 3\nheight: 1\npad: skiff\n",
-	    "Dock.HullDefinition 'hull-nowhere': dock is the dock hull of no Manifest.Hull of its name");
+	    "Dock.VehicleDefinition 'hull-nowhere': dock is the dock hull of no Manifest.Hull of its name");
 	CheckRefused(
 	    "manifest/definitions/hulls/hull-extra.yaml",
 	    "version: 1\nhullId: HullExtra\nclassName: Extra\nbaseStats: {CargoVolume: 1}\n",
-	    "Manifest.Hull 'HullExtra': dock has no Dock.HullDefinition 'hull-extra'");
+	    "Manifest.Hull 'HullExtra': dock has no Dock.VehicleDefinition 'hull-extra'");
 	CheckRefused(
 	    starter, "version: 1\nscrubberCartridges: 0\n", "scrubberCartridges must be at least 1");
 	CheckRefused(starter, "version: 1\noxygenTanks: []\n", "oxygenTanks holds none");

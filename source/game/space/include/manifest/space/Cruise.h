@@ -39,7 +39,7 @@ namespace Manifest::Space
 // the distance to the exponent, slower than it, so one planet's stations are about a minute apart
 // and two planets a few; or, where it has a profile (Transit::MotionProfile), the profile's time,
 // the power law unused. The game puts one on each ship that cruises, from its own data (Manifest's
-// drives, by hull). Registered with Reflect as "Ai.CruiseDrive", every field Saved and Moddable, by
+// drives, by hull). Registered with Reflect as "Space.CruiseDrive", every field Saved and Moddable, by
 // RegisterTypes; a drive with no profile saves as one did before profiles.
 struct CruiseDrive
 {

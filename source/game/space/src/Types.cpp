@@ -41,72 +41,72 @@ void RegisterTypes()
 		    .Value<Reason::NotCleared>("not_cleared")
 		    .Value<Reason::HullTooLarge>("hull_too_large");
 		constexpr Attribute kDefined = Attribute::Saved | Attribute::Moddable;
-		RegisterType<OnLane>("Ai.OnLane")
+		RegisterType<OnLane>("Space.OnLane")
 		    .Field<&OnLane::from>("from", Attribute::Saved)
 		    .Field<&OnLane::departure>("departure", Attribute::Saved)
 		    .Field<&OnLane::to>("to", Attribute::Saved)
 		    .Field<&OnLane::arrival>("arrival", Attribute::Saved)
 		    .Field<&OnLane::arrivalStep>("arrivalStep", Attribute::Saved);
-		RegisterType<EnterLane>("Ai.EnterLane")
+		RegisterType<EnterLane>("Space.EnterLane")
 		    .Field<&EnterLane::sender>("sender", Attribute::Saved)
 		    .Field<&EnterLane::entity>("entity", Attribute::Saved)
 		    .Field<&EnterLane::jumpPoint>("jumpPoint", Attribute::Saved);
-		RegisterType<LaneEntered>("Ai.LaneEntered", Attribute::Script)
+		RegisterType<LaneEntered>("Space.LaneEntered", Attribute::Script)
 		    .Field<&LaneEntered::entity>("entity", Attribute::Saved)
 		    .Field<&LaneEntered::lane>("lane", Attribute::Saved)
 		    .Field<&LaneEntered::transitSeconds>("transitSeconds", Attribute::Saved);
-		RegisterType<LaneLeft>("Ai.LaneLeft", Attribute::Script)
+		RegisterType<LaneLeft>("Space.LaneLeft", Attribute::Script)
 		    .Field<&LaneLeft::entity>("entity", Attribute::Saved)
 		    .Field<&LaneLeft::system>("system", Attribute::Saved)
 		    .Field<&LaneLeft::arrival>("arrival", Attribute::Saved);
-		RegisterType<LaneRefused>("Ai.LaneRefused", Attribute::Script)
+		RegisterType<LaneRefused>("Space.LaneRefused", Attribute::Script)
 		    .Field<&LaneRefused::entity>("entity", Attribute::Saved)
 		    .Field<&LaneRefused::jumpPoint>("jumpPoint", Attribute::Saved)
 		    .Field<&LaneRefused::reason>("reason", Attribute::Saved);
 
-		RegisterType<Gate>("Ai.Gate")
+		RegisterType<Gate>("Space.Gate")
 		    .Field<&Gate::jumpPoint>("jumpPoint", Attribute::Saved)
 		    .Field<&Gate::holder>("cleared", Attribute::Saved)
 		    .Field<&Gate::lapses>("lapses", Attribute::Saved)
 		    .Field<&Gate::queue>("queue", Attribute::Saved);
-		RegisterType<Transit>("Ai.Transit")
+		RegisterType<Transit>("Space.Transit")
 		    .Field<&Transit::slot>("gate", Attribute::Saved)
 		    .Field<&Transit::held>("cleared", Attribute::Saved);
-		RegisterType<RequestTransit>("Ai.RequestTransit")
+		RegisterType<RequestTransit>("Space.RequestTransit")
 		    .Field<&RequestTransit::sender>("sender", Attribute::Saved)
 		    .Field<&RequestTransit::ship>("ship", Attribute::Saved)
 		    .Field<&RequestTransit::gate>("gate", Attribute::Saved);
-		RegisterType<TransitCleared>("Ai.TransitCleared", Attribute::Script)
+		RegisterType<TransitCleared>("Space.TransitCleared", Attribute::Script)
 		    .Field<&TransitCleared::ship>("ship", Attribute::Saved)
 		    .Field<&TransitCleared::gate>("gate", Attribute::Saved)
 		    .Field<&TransitCleared::toll>("toll", Attribute::Saved)
 		    .Field<&TransitCleared::lapses>("lapses", Attribute::Saved);
-		RegisterType<TransitQueued>("Ai.TransitQueued", Attribute::Script)
+		RegisterType<TransitQueued>("Space.TransitQueued", Attribute::Script)
 		    .Field<&TransitQueued::ship>("ship", Attribute::Saved)
 		    .Field<&TransitQueued::gate>("gate", Attribute::Saved)
 		    .Field<&TransitQueued::place>("place", Attribute::Saved);
-		RegisterType<TransitRefused>("Ai.TransitRefused", Attribute::Script)
+		RegisterType<TransitRefused>("Space.TransitRefused", Attribute::Script)
 		    .Field<&TransitRefused::ship>("ship", Attribute::Saved)
 		    .Field<&TransitRefused::gate>("gate", Attribute::Saved)
 		    .Field<&TransitRefused::reason>("reason", Attribute::Saved);
-		RegisterType<TransitLapsed>("Ai.TransitLapsed", Attribute::Script)
+		RegisterType<TransitLapsed>("Space.TransitLapsed", Attribute::Script)
 		    .Field<&TransitLapsed::ship>("ship", Attribute::Saved)
 		    .Field<&TransitLapsed::gate>("gate", Attribute::Saved);
-		RegisterType<TransitSent>("Ai.TransitSent", Attribute::Script)
+		RegisterType<TransitSent>("Space.TransitSent", Attribute::Script)
 		    .Field<&TransitSent::ship>("ship", Attribute::Saved)
 		    .Field<&TransitSent::gate>("gate", Attribute::Saved)
 		    .Field<&TransitSent::toll>("toll", Attribute::Saved);
-		RegisterType<GatePassed>("Ai.GatePassed", Attribute::Script)
+		RegisterType<GatePassed>("Space.GatePassed", Attribute::Script)
 		    .Field<&GatePassed::ship>("ship", Attribute::Saved)
 		    .Field<&GatePassed::gate>("gate", Attribute::Saved)
 		    .Field<&GatePassed::reason>("reason", Attribute::Saved);
 
-		RegisterType<CruiseDrive>("Ai.CruiseDrive", Attribute::Moddable)
+		RegisterType<CruiseDrive>("Space.CruiseDrive", Attribute::Moddable)
 		    .Field<&CruiseDrive::seconds>("seconds", kDefined)
 		    .Field<&CruiseDrive::reference>("reference", kDefined)
 		    .Field<&CruiseDrive::exponent>("exponent", kDefined)
 		    .Field<&CruiseDrive::profile>("profile", kDefined);
-		RegisterType<Cruising>("Ai.Cruising")
+		RegisterType<Cruising>("Space.Cruising")
 		    .Field<&Cruising::target>("target", Attribute::Saved)
 		    .Field<&Cruising::frame>("frame", Attribute::Saved)
 		    .Field<&Cruising::carrier>("carrier", Attribute::Saved)
@@ -115,20 +115,20 @@ void RegisterTypes()
 		    .Field<&Cruising::arrivalStep>("arrivalStep", Attribute::Saved)
 		    .Field<&Cruising::body>("body", Attribute::Saved)
 		    .Field<&Cruising::profile>("profile", Attribute::Saved);
-		RegisterType<Cruise>("Ai.Cruise")
+		RegisterType<Cruise>("Space.Cruise")
 		    .Field<&Cruise::sender>("sender", Attribute::Saved)
 		    .Field<&Cruise::ship>("ship", Attribute::Saved)
 		    .Field<&Cruise::body>("body", Attribute::Saved);
-		RegisterType<CruiseStarted>("Ai.CruiseStarted", Attribute::Script)
+		RegisterType<CruiseStarted>("Space.CruiseStarted", Attribute::Script)
 		    .Field<&CruiseStarted::ship>("ship", Attribute::Saved)
 		    .Field<&CruiseStarted::body>("body", Attribute::Saved)
 		    .Field<&CruiseStarted::seconds>("seconds", Attribute::Saved)
 		    .Field<&CruiseStarted::metres>("metres", Attribute::Saved)
 		    .Field<&CruiseStarted::arrivalStep>("arrivalStep", Attribute::Saved);
-		RegisterType<CruiseEnded>("Ai.CruiseEnded", Attribute::Script)
+		RegisterType<CruiseEnded>("Space.CruiseEnded", Attribute::Script)
 		    .Field<&CruiseEnded::ship>("ship", Attribute::Saved)
 		    .Field<&CruiseEnded::body>("body", Attribute::Saved);
-		RegisterType<CruiseRefused>("Ai.CruiseRefused", Attribute::Script)
+		RegisterType<CruiseRefused>("Space.CruiseRefused", Attribute::Script)
 		    .Field<&CruiseRefused::ship>("ship", Attribute::Saved)
 		    .Field<&CruiseRefused::body>("body", Attribute::Saved)
 		    .Field<&CruiseRefused::reason>("reason", Attribute::Saved);

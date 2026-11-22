@@ -405,9 +405,9 @@ template <typename Check> void RequireDock(const Checker &checker, Check check)
 
 
 // Jettison's ship, station and star-system definitions as Manifest authors them (D-062): each checked
-// as the engine checks it (a system as Resolve does), every Manifest.Hull with the Dock.HullDefinition
-// and the Ai.CruiseDrive of its name, so a hull has a size, a pad class and a drive, and the reverse,
-// and each system named by its record.
+// as the engine checks it (a system as Resolve does), every Manifest.Hull with the
+// Dock.VehicleDefinition and the Ai.CruiseDrive of its name, so a hull has a size, a pad class and a
+// drive, and the reverse, and each system named by its record.
 void CheckDocks(Checker &checker, const Jettison::Sim::DefinitionRegistry &registry)
 {
 	namespace Dock = Jettison::Dock;
@@ -453,7 +453,7 @@ void CheckDocks(Checker &checker, const Jettison::Sim::DefinitionRegistry &regis
 		At<Core::ShipClassSpec>(checker, name, registry.Find<Core::ShipClassSpec>(name)->hullId);
 		checker.Require(
 		    registry.Find<Dock::VehicleDefinition>(name) != nullptr, "dock",
-		    std::format("has no Dock.HullDefinition '{}'", name));
+		    std::format("has no Dock.VehicleDefinition '{}'", name));
 		// A ship is a box of its dock hull's size, whose largest moment of inertia, its mass times its
 		// two larger sides squared over 12, Jolt keeps and decomposes in floats: held far below a
 		// float's largest, so that arithmetic cannot overflow.

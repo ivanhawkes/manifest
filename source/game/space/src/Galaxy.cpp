@@ -53,19 +53,19 @@ void RegisterGalaxyTypes()
 	static const bool registered = []
 	{
 		using namespace Jettison::Reflect;
-		RegisterType<GalaxySystem>("Celestial.GalaxySystem")
+		RegisterType<GalaxySystem>("Space.GalaxySystem")
 		    .Field<&GalaxySystem::name>("name", Attribute::Saved)
 		    .Field<&GalaxySystem::system>("system", Attribute::Saved)
 		    .Field<&GalaxySystem::scene>("scene", Attribute::Saved)
 		    .Field<&GalaxySystem::position>("position", Attribute::Saved);
-		RegisterType<LaneEnd>("Celestial.LaneEnd")
+		RegisterType<LaneEnd>("Space.LaneEnd")
 		    .Field<&LaneEnd::system>("system", Attribute::Saved)
 		    .Field<&LaneEnd::jumpPoint>("jumpPoint", Attribute::Saved);
-		RegisterType<JumpLane>("Celestial.JumpLane")
+		RegisterType<JumpLane>("Space.JumpLane")
 		    .Field<&JumpLane::a>("a", Attribute::Saved)
 		    .Field<&JumpLane::b>("b", Attribute::Saved)
 		    .Field<&JumpLane::transitSeconds>("transitSeconds", Attribute::Saved);
-		RegisterType<Galaxy>("Celestial.Galaxy", Attribute::Moddable)
+		RegisterType<Galaxy>("Space.Galaxy", Attribute::Moddable)
 		    .Field<&Galaxy::name>("name", Attribute::Saved)
 		    .Field<&Galaxy::systems>("systems", Attribute::Saved)
 		    .Field<&Galaxy::lanes>("lanes", Attribute::Saved)

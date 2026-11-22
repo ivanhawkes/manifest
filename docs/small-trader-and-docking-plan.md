@@ -191,9 +191,9 @@ dreadnought, the heavy destroyer and the dry-dock platform's layout are not.
 
 ## Shared ship and station definitions (C09, done 2026-11-19)
 
-Jettison's dock already defines ships and stations as data: `Dock.PadClassDefinition` (rank,
-largest hull, pad size), `Dock.HullDefinition` (size, pad class, cargo hatch, model) and
-`Dock.StationLayout` (decks, piers, pads with features such as `dry-dock`, cargo bays, deck
+Jettison's dock already defines ships and stations as data: `Dock.BerthClassDefinition` (rank,
+largest hull, pad size), `Dock.VehicleDefinition` (size, pad class, cargo hatch, model) and
+`Dock.PlatformLayout` (decks, piers, pads with features such as `dry-dock`, cargo bays, deck
 traffic), each checked by a free function (`CheckPadClass`, `CheckHull`, `CheckLayout`). The space
 sample adds its own cruise drive and ship-for-sale records. A `Manifest.Hull` carries only stats,
 occupants and life support, and C05's venues list the hulls they dock by hand. Manifest authors
@@ -208,14 +208,14 @@ for W05 would rewrite C05's venue format and the content identity after C08 clos
 
 C09, in order:
 
-1. **Pad classes.** Skiff to cruiser as `Dock.PadClassDefinition` records, the skiff's from
+1. **Pad classes.** Skiff to cruiser as `Dock.BerthClassDefinition` records, the skiff's from
    D-062 and corvette to cruiser the sample's sizes. Dreadnought and heavy destroyer wait for
    their proposed sizes to be selected; no hull needs them.
-2. **Hulls.** Each `Manifest.Hull` gains a `Dock.HullDefinition` of the same record name. The
+2. **Hulls.** Each `Manifest.Hull` gains a `Dock.VehicleDefinition` of the same record name. The
    lone-trader starter is the skiff, 9.8 x 6.4 x 1.8 m; its hatch and model are C09's. The compact
    ship is a smaller skiff, its size open until W05; the long-haul trader's size and class need
    selecting (the sample's 56 x 28 x 14 m frigate transport is the nearest).
-3. **Stations.** A venue names a `Dock.StationLayout` (`layout`) in place of its `hulls` list, the
+3. **Stations.** A venue names a `Dock.PlatformLayout` (`layout`) in place of its `hulls` list, the
    first seeded from the sample's Ostra Highport with skiff pads added. Starting access asks
    whether the layout has a pad the starter hull fits; `lifeSupportCapacity` stays Manifest's.
    The dry-dock platform's layout follows when its contents are designed.
@@ -229,7 +229,7 @@ C09, in order:
 `definitions/pads`, `definitions/dock-hulls` and `definitions/stations`; `DefinitionTypes` loads
 them through the engine's formats and migrations, so they are in the content identity, and
 `LoadContent` holds each to `CheckPadClass`, `CheckHull` and `CheckLayout` and every
-`Manifest.Hull` to a `Dock.HullDefinition` of its record name, and the reverse. The classes are
+`Manifest.Hull` to a `Dock.VehicleDefinition` of its record name, and the reverse. The classes are
 skiff to cruiser, ranks 0 to 4. The starter is the skiff, its hatch under it 2 m aft of its middle
 and no model until L15; the compact single-seat is a provisional 6 x 4 x 1.8 m skiff (selected
 2026-11-19, until W05); the long-haul trader is a frigate, the sample's 56 x 28 x 14 m transport
