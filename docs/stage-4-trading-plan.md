@@ -1364,25 +1364,47 @@ Slices, each a commit with its suites:
 ## W21 plan
 
 Fuel burn, on [D-107](decision-ledger.md#d-107) (the user's, 2026-11-22), booked at high priority
-ahead of W12, its choices settled with the user as it was planned (2026-11-22): a new drive fuel of
-the ships' own, burned on a curve that rises steeply with the acceleration, and with everything the
-ship carries, its tanks and their fuel included; tanks apart from the hold, grown on the tech tree;
-a slow run coasts; stations refuel a ship automatically, as they connect its life support, while its
-owner allows it and its funds last; and a standing policy picks the burn that makes the most an hour
-unless its owner fixes one. Every number below is a starting point (mine, the user's to review). One
-engine provision: the coast phase.
+ahead of W12, its choices settled with the user as it was planned (2026-11-22): the ships' own fuel,
+burned on a curve that rises steeply with the acceleration, and with everything the ship carries, its
+tanks and their fuel included; tanks apart from the hold, grown on the tech tree; a slow run coasts;
+stations refuel a ship automatically, as they connect its life support, while its owner allows it
+and its funds last; and a standing policy picks the burn that makes the most an hour unless its owner
+fixes one. The drive is a clean fusion torch burning two goods, reaction mass and fusion pellets, at
+an exhaust of 10% of light speed, and a hard burn is a decision, not a default ([D-108](decision-ledger.md#d-108),
+the user's, 2026-11-22). W21 builds the torch alone; the hauler's fusion drive, the pulse drive and
+their exclusion radii are designed below and built with the first larger hull. Every number below is
+a starting point (mine, the user's to review). One engine provision: the coast phase.
 
-- **The drive fuel.** `ItemDriveFuel`, "Drive fuel", `CategoryFuels`, of the Space Age, by the
-  kilogram: 800 kg to the cubic metre and a pack factor of 0.9, 90 kg a tote, at 8 credits a kg.
-  It is the ships' alone; LPG stays the planets' cooking and vehicle fuel. Every station venue of the
-  scenarios makes it, about a tote a day, its broker seeded with about ten days, so it is priced by
-  D-102's curve like any good.
-- **Tanks.** Separate from the cargo hold: a ship's saved `World::Fuel` holds the kilograms aboard,
-  up to its hull's `FuelCapacity` (tonnes), the lone-trader starter's 0.8 t, provisioned full once,
-  as its oxygen is. They grow on the tech tree: `SkillShipFuelBunkers`' `FuelBunkers` effect adds
-  to `FuelCapacity` a tier at a time (18 t as authored for the long-haul trader), and the starter
-  gains a slot for it and an offer of its own, as its cargo holds have (D-096), the tier's size and
-  price slice 2's. A save is refused for fuel below 0, not a number, or past the tanks.
+- **The torch (D-108).** The ships of the 2170s, a skiff to a corvette of a few hundred tonnes, fly a
+  clean fusion torch: aneutronic deuterium and helium-3 fusion heating reaction mass through a
+  magnetic nozzle, at an exhaust of 10% of light speed, 29,979 km/s (`fuel.exhaustKms`). Physics is
+  bent where play needs it: a pellet drives far more than fusion could, as a fiction's torch does,
+  so the reaction mass is a real load and the pellets a small dear one. Reaction mass follows the
+  rocket equation to first order: 1,000 / 29,979, 0.0334 kg per tonne aboard per km/s of speed change.
+  The pellets are the energy, and the cost of a hard burn: `fuel.pelletMilligramsPerTonneKms` (16.5)
+  times the acceleration's factor, 1 up to 1 g and the acceleration in g squared above it
+  (`fuel.curveExponent`, 2): the reactor run past its efficient power wastes the rest as heat. A
+  torch is clean, so it may thrust anywhere outside a station's reach, as today.
+- **The two fuels.** `ItemReactionMass`, "Reaction mass", purified water ice, `CategoryFuels`, of
+  the Space Age, by the kilogram: 1,000 kg to the cubic metre at a pack factor of 0.9, 112.5 kg a
+  tote, at 0.25 credits a kg. Every station venue of the scenarios makes it from its region's ice,
+  10,000 kg a day (89 totes), its broker seeded with 800 totes, about nine days. `ItemFusionPellets`,
+  "Fusion pellets", deuterium and helium-3, `CategoryFuels`, of the Space Age, by the kilogram: 100 kg
+  to the cubic metre (a density of 0.2 at a pack factor of 0.5), 12.5 kg a tote, at 1,200 credits a
+  kg, a tote 15,000. Helium-3 is refined in few places: one station of each planet makes pellets, Ore
+  Deeps and Brine Saltworks (the governance scenario's Cassiter Dock), 2 kg a day, seeded with 2 totes; every other station trades them only as
+  ships bring them. So pellets are a cargo worth carrying, and a refinery's owner holds a monopoly the
+  game's greed and fear play on. LPG stays the planets' cooking and vehicle fuel.
+- **Tanks and the magazine.** Separate from the cargo hold: a ship's saved `World::Fuel` holds its
+  reaction mass and its pellets, in kilograms. Its reaction mass tanks are its hull's `FuelCapacity`
+  (tonnes), the starter's 4 t, provisioned full once, as its oxygen is; its pellet magazine is its
+  hull's `pelletMagazine` (kilograms), the starter's 12.5, a tote, provisioned full once. The tanks
+  grow on the tech tree: `SkillShipFuelBunkers`' `FuelBunkers` effect adds 18 t to `FuelCapacity` a
+  tier, and the starter gains a slot for it and an offer of its own, `OfferFuelBunkers`, at 30,000
+  credits, as its cargo holds have (D-096), its prerequisite of engine thrust dropped, since a
+  torch burns whatever its tanks hold and the starter has no thrust slot. A save is refused for either fuel below 0, not a number,
+  or past what holds it.
+
 - **The coast (Jettison).** `Space::CruiseProfile` gains an optional `thrustShare`, the share of
   the cruise's time the drive thrusts, above 0 and at most 1, half at each end, the boost's included,
   the ship coasting between; none is today's profile, thrusting throughout, and saves as before. A
@@ -1411,22 +1433,30 @@ engine provision: the coast phase.
   same bounds. The console's `travel` takes them as two optional operands,
   `travel [principal] <ship> <venue> [thrust%] [g]`. Each converts to `thrustBps` and
   `accelerationMilliG`, which the server checks against the ship again.
-- **Fuel burned, on a curve.** Each phase of a leg burns `fuel.kilogramsPerTonneKms` (0.005) times
-  the ship's mass in tonnes times the phase's speed change in km/s, times the acceleration's factor:
-  1 up to 1 g and the acceleration in g squared above it (`fuel.curveExponent`, 2), so 2 g costs 4
-  times a km/s at 1 g, 4 g 16 times and 12 g 144 times: a hard burn empties the tanks far faster and
-  can be punishingly expensive, yet worth it to win a race, such as to colonise a new system. Each
-  phase's speed change is its acceleration times its seconds from `CruiseThrust`, the factor an
-  integer power, the kilograms rounded up. The mass is everything aboard as the leg starts: the
-  hull's `mass`, its fuel tanks' (`fuel.tankTonnesPerTonne`, 0.25 t of tank to each tonne of
-  capacity), the fuel in them, its occupants and passengers (`fuel.occupantKilograms`, 100 each,
-  with their effects) and its cargo, each tote its units times the item's density over its units per
-  cubic metre (copper's 0.95 t), opened life-support totes included. The fuel's mass counts at the
-  leg's start, not as it burns down, a first-order rocket equation. The starter, 23.0 t with two totes
-  of copper and its tanks full, burns 453 kg to Brine at 1 g and 100% thrust (about 3,600 credits),
-  551 kg with the 2 g boost hours, and 171 kg at 25%; with its hold full of copper, 173 t, 3,410 kg at
-  100% and 782 kg at 10%, the one share of the policy's its tanks allow, so a heavy cheap cargo goes
-  slow and a light dear one fast. An unmanned 20 t hull at 12 g would burn about 197 t, a racing ship's tanks.
+- **Fuel burned.** Each phase of a leg burns reaction mass, 0.0334 kg, and pellets, 16.5 mg times
+  the acceleration's factor, for each tonne aboard and each km/s of the phase's speed change, which is
+  its acceleration times its seconds from `CruiseThrust`; the factor an integer power, each fuel
+  rounded up to the gram. The mass is everything aboard as the leg starts: the hull's `mass`, its
+  tanks' (`fuel.tankTonnesPerTonne`, 0.25 t of tank to each tonne of reaction mass it holds), the
+  fuel in them, its occupants and passengers (`fuel.occupantKilograms`, 100 each, with their
+  effects) and its cargo, each tote its units times the item's density over its units per cubic metre
+  (copper's 0.95 t), opened totes included. The fuel's mass counts at the leg's start, not as it
+  burns down, a first-order rocket equation, within 10% at the torch's largest speed changes.
+- **A hard burn is a decision.** Thrust share and acceleration trade fuel for time, and neither end
+  wins outright. A share f reaches s = √(f / (2 − f)) of full thrust's speed: the fuel falls as s and
+  the cruise stretches by (1 + s²) / 2s. So a run's profit an hour, its gross G less s times its fuel
+  at full thrust C, over its time, is most at s = √(x² + 1) − x with x = C / G: about 45% thrust for
+  a lot whose full-thrust fuel is two thirds of its gross, 85% for one whose fuel is a seventh of it,
+  and full thrust only for fuel at no cost. Acceleration a raises the speed change as √a and shortens
+  the cruise as 1 / √a, the pellets rising as √a up to 1 g and as a^2.5 above it, so above 1 g each
+  hour saved costs steeply more: worth it for a race, a perishable lot or a contract's deadline, not
+  for a bulk run. The starter, 27.0 t with two totes of copper, its tanks and magazine full, to Brine
+  at 1 g: 100% 3,551 kg of reaction mass and 1.76 kg of pellets, 2,995 credits, in 4.65 days; 50%
+  1,729 credits, 5.37 days; 25% 1,132, 7.03; 10% 687, 10.7. On a run grossing 4,590 (W15's furs),
+  that is 14 credits an hour at 100%, 22 at 50%, 20 at 25% and 15 at 10%. At 2 g with the boost
+  hours' heat spent, 100% needs 5,021 kg of reaction mass, past the starter's 4 t without bunkers,
+  and 9.9 kg of pellets, 13,178 credits, for 3.29 days. With its hold full of copper, 177 t, its 4 t
+  of tanks reach 677 km/s, a 5.7% share and 13.9 days; with a tier of bunkers, 83%.
 - **The journey.** `Manifest.Travel.Travel` takes `accelerationMilliG` and `thrustBps` (version 2; a
   version-1 command flies 1 g at 100%), refused `InvalidQuantity` for either past the ship's bounds. It
   sets the ship's drive profile for them, works out the leg's fuel from the
@@ -1436,20 +1466,51 @@ engine provision: the coast phase.
 - **Refuelling.** A ship's `World::Refuel` flag, on by default, set by its owner's
   `Manifest.Company.SetRefuel` (`shipId`, `enabled`; the client's checkbox). As a journey starts
   from a venue, a ship with it on first buys, at the venue's live asks through its book, the whole
-  totes of drive fuel its tanks have room for, as far as its company's account holds after the
-  docking fee, straight into its tanks, as a station connects life support without the hold. With it
-  off a ship refuels by nothing yet, so its owner chooses when and where to pay.
-- **The lot's charge.** The fuel a leg burns is charged to the lot aboard at the company's last price
-  for it (`World::Paid`), rounded up, as transit life support is (W18).
+  totes of reaction mass its tanks have room for, as far as its company's account holds after the
+  docking fee, straight into its tanks, as a station connects life support without the hold; and,
+  where the venue sells pellets and its hold has none, a tote of them into its hold. Its magazine
+  then fills from the pellets in its hold, opening a tote at a time, as its oxygen tanks refill
+  (D-094), so pellets stay a cargo a ship can carry for sale. With the flag off a ship refuels by
+  nothing yet, so its owner chooses when and where to pay.
+- **The lot's charge.** The reaction mass and pellets a leg burns are charged to the lot aboard at the
+  company's last price for each (`World::Paid`), rounded up, as transit life support is (W18).
 - **Estimates and the policy.** `Policy::Charges` adds each leg's fuel at a burn, at the reported
   ask of the venue the ship refuels at, the last price paid where it has none, and its life support
   for the burn's longer cruise. `Manifest.Policy.Set` takes `thrustBps` (version 2): 0, the default,
   chooses; otherwise every leg flies that share. Choosing, the policy prices each trade at 1 g and each
-  of `fuel.thrustShares` (100%, 50%, 25% and 10%) whose legs the tanks can finish, and the mode's
-  boost at the full burn, and takes the most
+  of `fuel.thrustShares` (100%, 50%, 25% and 10%) whose legs the tanks can finish, the most the
+  tanks allow where it is below them, and the mode's boost at the full burn, and takes the most
   an hour: the estimate over the legs' cruise hours, each leg's `fuel.legAllowanceSeconds` (1,800,
   for leaving and docking) added; its target profit still bounds a job's estimate. Choosing per hour
   changes which job a policy takes, so the policy's tests and the pinned hashes move.
+- **Drives past the torch (D-108, designed 2026-11-22, built with the first larger hull).** A drive
+  class becomes a record, `Manifest.Drive`, which a hull names: its exhaust, its fuels and their
+  rates, its sustained and boost caps, manned and unmanned, and its exclusion radius; until a second
+  class is built, the torch's numbers are `fuel`'s and the mode's (D-090). The larger the hull, the
+  dirtier its drive:
+  - *Hauler fusion*, for medium freighters of thousands of tonnes: deuterium–deuterium fusion, at 3%
+    of light speed, 0.111 kg of reaction mass a tonne-km/s and 40 mg of deuterium pellets
+    (`ItemDeuteriumPellets`, 60 credits a kg, made wherever there is water), 0.3 g sustained and 0.6
+    g for 6 hours, manned or not, the reactor's limit; its neutrons want shielding (hull mass) and an
+    exclusion radius of 1,000 km about every station.
+  - *Pulse drive*, for bulk carriers and destroyer classes of tens of thousands of tonnes: small
+    nuclear charges against a pusher plate, at 1% of light speed, burning pulse units
+    (`ItemPulseUnits`, by the unit, 100 kg each, 150 credits) that are their own reaction mass, 0.0033
+    a tonne-km/s, 0.5 g sustained and 2 g for 2 hours; cheapest a tonne moved, slowest to leave. Its
+    fallout keeps it 100,000 km from every station and every populated body. Pulse units are made only
+    at polity-operated venues, sold to a ship whose owner its polity licenses (the standing W12 and
+    later bring), and carried without one as contraband.
+- **The exclusion radius (D-108, designed).** A drive may not thrust within its radius: a torch's is
+  the station's reach (2 km), as today. A ship crosses a larger one on its manoeuvring thrusters, as
+  the flight out of a station's reach is flown now (W05), at its thrusters' acceleration, about 1.5 h
+  out of a pulse ship's 100,000 km at 15 m/s², passed over by the fast-forward; or hires a venue's
+  tug, a service and fee of the venue's (later). Arriving, its cruise ends at the radius and it flies
+  in on thrusters to its pad. Jettison provisions it: a `Space::CruiseDrive`'s clearance, within
+  which a cruise is refused and at which it arrives, and `Space::ClearOf` taking the reach to fly
+  out to, with steering measured over flights of 10³ to 10⁵ km. A pulse ship's owner may override it
+  in an emergency: the drive lights inside the radius, the polity whose station or body it is fines
+  the company, and the regions it passes take a health and happiness loss, a choice a desperate or
+  greedy player makes, its numbers the build's.
 - **What it changes.** Travel, the company's provisioning and the policy's estimates; the saves' ship
   state and the drive's profile. The fixtures' ships fly the power law and burn nothing, so their
   trades stand; each moved pin is shown to be bytes, then the fuel and refuel state.
@@ -1459,10 +1520,11 @@ Slices, each a commit with its suites, the gate after the third and the last:
 1. Jettison: the coast phase, its times, covered metres and refusals, a world saved mid-coast; the
    pin moved in Manifest, every Manifest pin held. **Done** 2026-11-22: `thrustShare` and
    `CruiseThrust` on pin `a9b8305`, every Manifest suite and pin held.
-2. The drive fuel and the tanks: the item, the stations making it, `World::Fuel`, provisioning and
-   saves, and the starter's `FuelBunkers` slot and offer (`content`, `data`, `company`).
+2. The fuels, the tanks and the magazine: the two items, every station making reaction mass and the
+   two refineries pellets, `World::Fuel`, the hull's `pelletMagazine`, provisioning and saves, and
+   the starter's `FuelBunkers` slot and offer (`content`, `data`, `company`).
 3. The burn: `Travel`'s `thrustBps` and `accelerationMilliG`, the profile for them, the console's
-   operands and the TUI's stepped controls, fuel burned by mass and speed change,
+   operands and the TUI's stepped controls, reaction mass and pellets burned by mass and speed change,
    `InsufficientFuel`; refuelling and `SetRefuel`, the account short and the flag off (`travel`,
    `company`).
 4. The policy: the lot's charge, the estimate at a burn and the choice per hour, a fixed share

@@ -115,8 +115,9 @@ The user's (2026-11-22), [D-107](decision-ledger.md#d-107), booked as W21 at hig
 after W19 and before W12: a ship's drive burns fuel to accelerate, and how hard it burns is a choice
 in planning a route. Burning more arrives sooner, so a ship trades more often; burning less spends
 less fuel and may make a run more profitable, offset by the longer cruise and so fewer runs. The
-fuel is a drive fuel of the ships' own (LPG stays the planets' cooking and vehicle fuel), burned on a
-curve that rises steeply with the acceleration, so a very hard burn is punishingly expensive but can
+fuel is the ships' own, reaction mass and fusion pellets burned by a clean fusion torch, larger hulls
+flying dirtier drives ([D-108](decision-ledger.md#d-108); LPG stays the planets' cooking and vehicle
+fuel), burned on a curve that rises steeply with the acceleration, so a very hard burn is punishingly expensive but can
 win a race, such as to colonise a new system, and with the mass of everything aboard: hull, fuel
 tanks and their fuel, occupants and passengers, and cargo. The tanks are apart from the cargo hold
 and grow on the tech tree. A slow run coasts between its burns, the player choosing the share of the cruise's time the engines thrust as a percentage, and the acceleration in g up to what the ship can do; a station refuels a ship automatically, as it connects its life support, while
