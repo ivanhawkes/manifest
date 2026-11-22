@@ -36,7 +36,9 @@ void RegisterTypes()
 		    .Field<&Query::ShipView::opened>("opened", kSaved)
 		    .Field<&Query::ShipView::lifeSupport>("lifeSupport", kSaved)
 		    .Field<&Query::ShipView::hold>("hold", kSaved)
-		    .Field<&Query::ShipView::systems>("systems", kSaved);
+		    .Field<&Query::ShipView::systems>("systems", kSaved)
+		    .Field<&Query::ShipView::fuel>("fuel", kSaved)
+		    .Field<&Query::ShipView::fuelTanks>("fuelTanks", kSaved);
 		RegisterType<Query::OrderView>("Manifest.Query.OrderView")
 		    .Field<&Query::OrderView::orderId>("orderId", kSaved)
 		    .Field<&Query::OrderView::order>("order", kSaved);

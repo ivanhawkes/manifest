@@ -204,16 +204,29 @@ TEST_CASE("Provisioning gives a player a company, its credits and a ship docked 
 	Hosted hosted;
 	CHECK(hosted.Observe(kAda).companies.empty());
 	CHECK(hosted.Provision("Ada") == Result::Succeeded);
-	// Its tanks full and its cartridge fresh, once (D-045, D-050), and connected to Ore's life support.
+	// Its tanks full and its cartridge fresh, once (D-045, D-050), and connected to Ore's life support;
+	// its 4 t of reaction mass tanks and its 12.5 kg pellet magazine full (D-108).
 	const World::LifeSupport granted{{10.0, 10.0, 10.0}, {30.0}, "VenueOreHighport"};
+	const World::Fuel filled{4000.0, 12.5};
 	CHECK(
-	    hosted.Seen(kAda) ==
-	    CompanyView{
-	        "Company1",
-	        "Co",
-	        25000,
-	        {},
-	        {{"Ship1", "HullLoneTraderStarter", "VenueOreHighport", {}, {}, {}, granted, 160}}});
+	    hosted.Seen(kAda) == CompanyView{
+	                             "Company1",
+	                             "Co",
+	                             25000,
+	                             {},
+	                             {{"Ship1",
+	                               "HullLoneTraderStarter",
+	                               "VenueOreHighport",
+	                               {},
+	                               {},
+	                               {},
+	                               granted,
+	                               160,
+	                               {},
+	                               {},
+	                               {},
+	                               filled,
+	                               filled}}});
 
 	// What the snapshot leaves out: the principal. No polity is made and no region governed (D-089).
 	const entt::registry &registry = hosted.world.Registry();
@@ -670,6 +683,76 @@ World::Account &Credits(Hosted &hosted, const std::string &companyId)
 } // namespace
 
 
+TEST_CASE("A save whose fuel is past its tanks or magazine, below 0 or no number, does not load")
+{
+	Hosted hosted;
+	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
+	World::Fuel &fuel = hosted.world.Registry().get<World::Fuel>(hosted.Find(Kind::Ship, "Ship1"));
+	const World::Fuel full = fuel;
+	fuel.reactionMass = 4000.5;
+	const std::vector<std::byte> overfull = hosted.world.Save();
+	fuel = full;
+	fuel.pellets = 12.6;
+	const std::vector<std::byte> overloaded = hosted.world.Save();
+	fuel = full;
+	fuel.reactionMass = -1.0;
+	const std::vector<std::byte> negative = hosted.world.Save();
+	fuel = full;
+	fuel.pellets = std::numeric_limits<double>::quiet_NaN();
+	const std::vector<std::byte> nothing = hosted.world.Save();
+	fuel = {0.0, 0.0};
+	const std::vector<std::byte> empty = hosted.world.Save();
+
+	Hosted loaded;
+	for (const auto &[save, problem] :
+	     {std::pair{&overfull, "more than its tanks"},
+	      {&overloaded, "more than its tanks"},
+	      {&negative, "less than nothing"},
+	      {&nothing, "less than nothing"}})
+	{
+		CAPTURE(problem);
+		CHECK_THROWS_WITH_AS(
+		    loaded.world.Load(*save), doctest::Contains(problem), Jettison::Serialise::FormatError);
+	}
+	loaded.world.Load(empty);
+	CHECK(loaded.Seen(kAda).ships[0].fuel == World::Fuel{});
+	CHECK(loaded.Seen(kAda).ships[0].fuelTanks == full);
+}
+
+
+TEST_CASE("A company's credits buy its ship a tier of fuel bunkers, and its tanks grow by them")
+{
+	Hosted hosted;
+	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
+	const Upgrade bunkers{"Ship1", "OfferFuelBunkers", 1};
+	CHECK(hosted.Run(kAda, kUpgrade, bunkers) == Result::InsufficientFunds);
+	Credits(hosted, "Company1").balance = 30000;
+	CHECK(hosted.Run(kAda, kUpgrade, bunkers) == Result::Succeeded);
+	const CompanyView bought = hosted.Seen(kAda);
+	CHECK(bought.credits == 0);
+	CHECK(bought.ships[0].systems == std::vector<World::Fitting>{{"SkillShipFuelBunkers", 1}});
+	// 18 t more of reaction mass tanks, which it refuels into; what it had is still aboard, and the
+	// magazine is the hull's.
+	CHECK(bought.ships[0].fuelTanks.reactionMass == doctest::Approx(22000.0));
+	CHECK(bought.ships[0].fuelTanks.pellets == 12.5);
+	CHECK(bought.ships[0].fuel == World::Fuel{4000.0, 12.5});
+	CHECK(bought.ships[0].hold == 160);
+
+	// A save with the tanks filled loads, and one past them does not.
+	World::Fuel &fuel = hosted.world.Registry().get<World::Fuel>(hosted.Find(Kind::Ship, "Ship1"));
+	fuel.reactionMass = 22000.0;
+	const std::vector<std::byte> full = hosted.world.Save();
+	fuel.reactionMass = 22001.0;
+	const std::vector<std::byte> over = hosted.world.Save();
+	Hosted loaded;
+	loaded.world.Load(full);
+	CHECK(loaded.Seen(kAda).ships[0].fuel.reactionMass == 22000.0);
+	CHECK_THROWS_WITH_AS(
+	    loaded.world.Load(over), doctest::Contains("more than its tanks"),
+	    Jettison::Serialise::FormatError);
+}
+
+
 TEST_CASE("A company's credits buy its ship a tier of cargo holds, once, and its hold grows by it")
 {
 	Hosted hosted;
@@ -1079,7 +1162,7 @@ TEST_CASE("A save with work pending, and a replay from the start, carry the comp
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves only
 	// with what a save holds or the engine's save format, and a change that moves it says so.
-	CHECK(hosted.world.StateHash() == 0x52ea7bc62b961041ULL);
+	CHECK(hosted.world.StateHash() == 0xbbba40bbb4a1da0bULL);
 }
 
 

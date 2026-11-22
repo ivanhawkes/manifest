@@ -1522,7 +1522,9 @@ Slices, each a commit with its suites, the gate after the third and the last:
    `CruiseThrust` on pin `a9b8305`, every Manifest suite and pin held.
 2. The fuels, the tanks and the magazine: the two items, every station making reaction mass and the
    two refineries pellets, `World::Fuel`, the hull's `pelletMagazine`, provisioning and saves, and
-   the starter's `FuelBunkers` slot and offer (`content`, `data`, `company`).
+   the starter's `FuelBunkers` slot and offer (`content`, `data`, `company`). **Done**
+   2026-11-22: the player's ship view shows its fuel and what holds it; three pins moved, each test's
+   every other check held, by the ships' `World::Fuel` and the stations' reaction mass and pellets.
 3. The burn: `Travel`'s `thrustBps` and `accelerationMilliG`, the profile for them, the console's
    operands and the TUI's stepped controls, reaction mass and pellets burned by mass and speed change,
    `InsufficientFuel`; refuelling and `SetRefuel`, the account short and the flag off (`travel`,

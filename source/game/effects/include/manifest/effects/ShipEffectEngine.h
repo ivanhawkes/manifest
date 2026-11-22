@@ -39,6 +39,8 @@ struct ShipClassSpec
 	// The installed operating oxygen bank, each tank's capacity in kilograms (D-050).
 	std::optional<std::vector<double>> oxygenTanks;
 	std::optional<int> scrubberCartridges;
+	// The fusion pellets its drive's magazine holds, in kilograms (D-108), apart from the hold.
+	std::optional<double> pelletMagazine;
 	// In kilograms, as it flies: a ship of a hull with none cannot be spawned.
 	std::optional<double> mass;
 };

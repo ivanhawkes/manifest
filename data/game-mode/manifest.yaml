@@ -252,6 +252,8 @@ items:
   - itemId: ItemTobacco
   # Industrial Age
   - itemId: ItemLPG
+  - itemId: ItemReactionMass
+  - itemId: ItemFusionPellets
   - itemId: ItemBasicMedicalSupplies
   - itemId: ItemAnesthetics
   - itemId: ItemAnalgesics

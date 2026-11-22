@@ -15,10 +15,11 @@ namespace Manifest::Company
 // The administrative command that provisions a player (D-089): their Principal, with their starting
 // market reports (Trade::Seed), a company with the configured starting credits, and one ship of the
 // scenario's starter hull, parked on a pad of its starter venue (Travel::Fleet::Park) with an empty
-// hold, every oxygen tank full and every cartridge fresh, once, and connected to the venue's life
-// support (D-047); no region or polity. Rejected AlreadyProvisioned for a principal the world has,
-// NoPadFree with no free pad there the starter fits, NoServiceFree with no life-support connection free
-// there, and MalformedPayload for an empty principal ID.
+// hold, every oxygen tank full and every cartridge fresh, once, its reaction mass tanks and pellet
+// magazine full, once (D-107, D-108), and connected to the venue's life support (D-047); no region or
+// polity. Rejected AlreadyProvisioned for a principal the world has, NoPadFree with no free pad there
+// the starter fits, NoServiceFree with no life-support connection free there, and MalformedPayload for
+// an empty principal ID.
 struct Provision
 {
 	std::string principalId;

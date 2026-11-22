@@ -313,6 +313,8 @@ void CheckHulls(Checker &checker, const Jettison::Sim::DefinitionRegistry &regis
 		checker.Require(hull.occupants.value_or(0) >= 0, "occupants", "must not be negative");
 		checker.Require(
 		    hull.scrubberCartridges.value_or(1) >= 1, "scrubberCartridges", "must be at least 1");
+		checker.Require(
+		    Positive(hull.pelletMagazine.value_or(1.0)), "pelletMagazine", "must be above 0");
 		if (hull.oxygenTanks)
 		{
 			checker.Require(!hull.oxygenTanks->empty(), "oxygenTanks", "holds none");

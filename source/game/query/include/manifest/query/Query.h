@@ -32,6 +32,9 @@ struct ShipView
 	// Its standing policy and its job (D-097), none before its owner first sets one.
 	std::optional<World::Policy> policy{};
 	std::optional<World::Job> job{};
+	// Its fuel and the most it holds, its hull's with its systems' (D-107, D-108).
+	World::Fuel fuel{};
+	World::Fuel fuelTanks{};
 
 	bool operator==(const ShipView &) const = default;
 };

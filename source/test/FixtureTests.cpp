@@ -574,7 +574,7 @@ TEST_CASE("The trading fixture's loop, saved in flight with a bid resting and re
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves with
 	// what a save holds, the fixture's content or stream, or the engine's movement or save format.
-	CHECK(hosted.world.StateHash() == 0x9592f16712f77784ULL);
+	CHECK(hosted.world.StateHash() == 0x173d29013643f928ULL);
 }
 
 
@@ -759,7 +759,7 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 	CHECK(replayed.world.StateHash() == hosted.world.StateHash());
 
 	// The same in every build the gate runs; it moves as the fixture's does.
-	CHECK(hosted.world.StateHash() == 0x163d2714a7a72baeULL);
+	CHECK(hosted.world.StateHash() == 0x013c909b6e373cc3ULL);
 }
 
 

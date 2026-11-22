@@ -5,6 +5,7 @@
 #include <map>
 #include <regex>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -204,6 +205,8 @@ TEST_CASE("the_household_and_life_support_goods_are_distinct_manifest_mode_items
 	    {"ItemBasicMedicalSupplies", "CategoryMedicalEquipment", TradeUnit::Kilogram},
 	    {"ItemAntibiotics", "CategoryMedicine", TradeUnit::Kilogram},
 	    {"ItemLPG", "CategoryFuels", TradeUnit::Tonne},
+	    {"ItemReactionMass", "CategoryFuels", TradeUnit::Kilogram},
+	    {"ItemFusionPellets", "CategoryFuels", TradeUnit::Kilogram},
 	    {"ItemOxygen", "CategoryLifeSupport", TradeUnit::Kilogram},
 	    {"ItemCarbonScrubberCartridge", "CategoryLifeSupport", TradeUnit::Unit},
 	    {"ItemDrinkingWater", "CategoryWater", TradeUnit::Kilolitre},
@@ -221,6 +224,19 @@ TEST_CASE("the_household_and_life_support_goods_are_distinct_manifest_mode_items
 	const Manifest::Core::ItemNode &cartridge = *find("ItemCarbonScrubberCartridge");
 	const double cubeMass = cartridge.density * 1000.0 * cartridge.packFactor;
 	CHECK(cubeMass / cartridge.unitsPerCubicMetre == doctest::Approx(41.0).epsilon(0.01));
+
+	// A torch's two fuels (D-108), by the kilogram, of the Space Age: reaction mass, water ice at 1,000
+	// kg to the cubic metre packed at 0.9, 112.5 kg a tote; pellets 100 kg to the cube, 12.5 a tote.
+	for (const auto &[itemId, tote, price] :
+	     {std::tuple{"ItemReactionMass", 112.5, "0.25"}, {"ItemFusionPellets", 12.5, "1200"}})
+	{
+		CAPTURE(itemId);
+		const Manifest::Core::ItemNode &fuel = *find(itemId);
+		CHECK(fuel.density * 1000.0 * fuel.packFactor == doctest::Approx(fuel.unitsPerCubicMetre));
+		CHECK(fuel.unitsPerCubicMetre / 8.0 == doctest::Approx(tote));
+		CHECK(fuel.ageId == "AgeSpace");
+		CHECK(fuel.basePrice == price);
+	}
 }
 
 // C04's hulls (D-059): the long-haul trader moved to data unchanged, and the two small hulls
@@ -246,11 +262,14 @@ TEST_CASE("the_hulls_carry_their_selected_values_and_leave_the_rest_unset")
 	CHECK_FALSE(trader.mass.has_value());
 
 	const ShipClassSpec &starter = find("HullLoneTraderStarter");
-	CHECK(starter.baseStats == std::map<EffectStat, double>{{EffectStat::CargoVolume, 160.0}});
+	CHECK(
+	    starter.baseStats == std::map<EffectStat, double>{
+	                             {EffectStat::CargoVolume, 160.0}, {EffectStat::FuelCapacity, 4.0}});
 	CHECK(starter.occupants == 1);
 	CHECK(starter.oxygenTanks == std::vector<double>{10.0, 10.0, 10.0});
 	CHECK(starter.scrubberCartridges == 1);
-	CHECK(starter.fitableEffects == std::vector<std::string>{"CargoHolds"});
+	CHECK(starter.pelletMagazine == 12.5);
+	CHECK(starter.fitableEffects == std::vector<std::string>{"CargoHolds", "FuelBunkers"});
 	CHECK(starter.mass == 20000.0);
 
 	const ShipClassSpec &compact = find("HullCompactSingle");

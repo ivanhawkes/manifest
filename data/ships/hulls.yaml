@@ -12,6 +12,8 @@
 #   oxygenTanks        Its installed operating oxygen bank (D-050), each tank's capacity in
 #                      kilograms. It is outside the trade hold, as the installed scrubber is.
 #   scrubberCartridges The cartridges its installed scrubber holds.
+#   pelletMagazine     The fusion pellets its torch's magazine holds, in kilograms, outside the
+#                      trade hold (D-108); its reaction mass tanks are its FuelCapacity, in tonnes.
 #   mass               What it weighs as it flies, in kilograms, which only its collisions feel:
 #                      its thrusters are accelerations. A hull a scenario starts players in has one.
 #
@@ -62,18 +64,21 @@ hull-base:
 
   # The lone trader's first ship (D-045, D-050): a 160-tote hold, one occupant, three
   # 10 kg oxygen tanks and one scrubber cartridge, provisioned once with every tank full and a fresh
-  # cartridge; a loaded skiff's 20 t; and a slot for cargo holds, its company's first upgrade
-  # (D-096).
+  # cartridge; a loaded skiff's 20 t; 4 t of reaction mass tanks and a 12.5 kg pellet magazine, a
+  # tote, provisioned full once (D-107, D-108); and slots for cargo holds, its company's first upgrade
+  # (D-096), and fuel bunkers.
   - hull:
       hullId: HullLoneTraderStarter
       className: Lone-trader starter
       description: The entry ship of a lone trader
       baseStats:
         CargoVolume: 160
-      fitableEffects: [CargoHolds]
+        FuelCapacity: 4
+      fitableEffects: [CargoHolds, FuelBunkers]
       occupants: 1
       oxygenTanks: [10, 10, 10]
       scrubberCartridges: 1
+      pelletMagazine: 12.5
       mass: 20000
 
   # The compact single-occupant ship (D-044): 32 totes of cargo and a truck-cab cabin. Its

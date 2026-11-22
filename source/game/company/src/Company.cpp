@@ -105,17 +105,17 @@ bool Fits(const Rules &rules, const Core::ShipClassSpec &hull, const World::Syst
 }
 
 
-// The ship's hold (World::Identities::HoldOf): its hull's CargoVolume with each system's effect at its
-// tier; none for systems the hull cannot carry (Fits). A hull the content does not have holds
-// nothing, and carries no system.
-std::optional<std::uint64_t> Hold(
-    const Rules &rules, const World::Ship &ship, const World::Systems *pSystems)
+// A ship's stat: its hull's with each system's effect at its tier, 0 for one it does not list; none
+// for systems the hull cannot carry (Fits). A hull the content does not have has none of any, and
+// carries no system.
+std::optional<double> ShipStat(
+    const Rules &rules, const World::Ship &ship, const World::Systems *pSystems, Core::EffectStat stat)
 {
 	const World::Systems none;
 	const World::Systems &systems = pSystems ? *pSystems : none;
 	const auto hull = rules.hulls.find(ship.hullId);
 	if (hull == rules.hulls.end())
-		return systems.fitted.empty() ? std::optional<std::uint64_t>{0} : std::nullopt;
+		return systems.fitted.empty() ? std::optional<double>{0.0} : std::nullopt;
 	if (!Fits(rules, *hull->second, systems))
 		return std::nullopt;
 	std::map<std::string, int> tiers;
@@ -123,12 +123,42 @@ std::optional<std::uint64_t> Hold(
 		tiers[rules.skills.at(fitting.skillId)->targetEffectID] = fitting.tier;
 	const std::map<Core::EffectStat, double> stats =
 	    rules.effects.Stats(hull->second->baseStats, tiers);
-	const auto volume = stats.find(Core::EffectStat::CargoVolume);
-	const double totes = volume == stats.end() ? 0.0 : volume->second;
+	const auto found = stats.find(stat);
+	return found == stats.end() ? 0.0 : found->second;
+}
+
+
+// The ship's hold (World::Identities::HoldOf): its CargoVolume (ShipStat).
+std::optional<std::uint64_t> Hold(
+    const Rules &rules, const World::Ship &ship, const World::Systems *pSystems)
+{
+	const std::optional<double> volume = ShipStat(rules, ship, pSystems, Core::EffectStat::CargoVolume);
+	if (!volume)
+		return std::nullopt;
+	const double totes = *volume;
 	// NaN fails the last comparison.
 	if (totes < 0.0 || totes > static_cast<double>(Core::kMaxHoldTotes) || std::trunc(totes) != totes)
 		return std::nullopt;
 	return static_cast<std::uint64_t>(totes);
+}
+
+
+// The most fuel the ship holds (World::Identities::FuelTanksOf): its reaction mass tanks, its
+// FuelCapacity (ShipStat) in tonnes, and its hull's pellet magazine; none for a capacity below 0 or
+// not finite.
+std::optional<World::Fuel> FuelTanks(
+    const Rules &rules, const World::Ship &ship, const World::Systems *pSystems)
+{
+	constexpr double kKilogramsPerTonne = 1000.0;
+	const std::optional<double> tonnes =
+	    ShipStat(rules, ship, pSystems, Core::EffectStat::FuelCapacity);
+	// NaN fails the comparison.
+	if (!tonnes || !(*tonnes >= 0.0) || !std::isfinite(*tonnes))
+		return std::nullopt;
+	const auto hull = rules.hulls.find(ship.hullId);
+	return World::Fuel{
+	    *tonnes * kKilogramsPerTonne,
+	    hull == rules.hulls.end() ? 0.0 : hull->second->pelletMagazine.value_or(0.0)};
 }
 
 
@@ -209,6 +239,9 @@ Result Provisioned(SimWorld &world, Rules &rules, const Provision &provision)
 	        static_cast<std::size_t>(hull.scrubberCartridges.value_or(0)),
 	        rules.content.tuning.lifeSupport.cartridgeOccupantDays),
 	    venueId);
+	const std::optional<World::Fuel> tanks = FuelTanks(rules, registry.get<World::Ship>(ship), nullptr);
+	JETTISON_VERIFY(tanks.has_value());
+	registry.emplace<World::Fuel>(ship, *tanks);
 	rules.fleet.Park(world, ship, pad, rules.scenario.starterHull, companyId);
 	return Result::Succeeded;
 }
@@ -832,6 +865,8 @@ void RegisterCommands(
 			    hull.baseStats.at(Core::EffectStat::CargoVolume), Core::kMaxHoldTotes)};
 	identities.SetHolds([rules](const World::Ship &ship, const World::Systems *pSystems)
 	                    { return Hold(*rules, ship, pSystems); });
+	identities.SetFuelTanks([rules](const World::Ship &ship, const World::Systems *pSystems)
+	                        { return FuelTanks(*rules, ship, pSystems); });
 
 	std::map<std::string, World::Installed, std::less<>> installed;
 	for (const Core::ShipClassSpec &hull : content.hulls)

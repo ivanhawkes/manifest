@@ -47,6 +47,7 @@ Snapshot Observe(
 		{
 			const auto *pJourney = registry.try_get<World::Journey>(entity);
 			const auto *pSystems = registry.try_get<World::Systems>(entity);
+			const auto *pFuel = registry.try_get<World::Fuel>(entity);
 			const World::Cargo &cargo = registry.get<World::Cargo>(entity);
 			owner->ships.push_back(
 			    {identity.id, ship.hullId, ship.dockedAt, cargo.lots,
@@ -54,7 +55,8 @@ Snapshot Observe(
 			     registry.get<World::LifeSupport>(entity), identities.Hold(ship, pSystems).value_or(0),
 			     pSystems ? pSystems->fitted : std::vector<World::Fitting>{},
 			     Copied(registry.try_get<World::Policy>(entity)),
-			     Copied(registry.try_get<World::Job>(entity))});
+			     Copied(registry.try_get<World::Job>(entity)), pFuel ? *pFuel : World::Fuel{},
+			     identities.FuelTanks(ship, pSystems).value_or(World::Fuel{})});
 		}
 	}
 	for (const auto &[entity, identity, order] :

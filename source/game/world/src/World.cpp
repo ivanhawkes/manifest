@@ -43,6 +43,7 @@ Identities &RegisterWorld(Jettison::Sim::SimWorld &world)
 	world.RegisterComponent<Stock>();
 	world.RegisterComponent<Cargo>();
 	world.RegisterComponent<LifeSupport>();
+	world.RegisterComponent<Fuel>();
 	world.RegisterComponent<Systems>();
 	world.RegisterComponent<Broker>();
 	world.RegisterComponent<Order>();

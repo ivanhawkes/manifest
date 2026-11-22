@@ -233,6 +233,21 @@ std::function<void()> Identities::Load(
 			        "a ship of hull '{}' holds tanks or cartridges its hull does not, or more in them",
 			        ship.hullId));
 	}
+	for (const auto [entity, ship, fuel] : loaded.view<const Ship, const Fuel>().each())
+	{
+		if (const std::optional<std::string> problem = Broken(fuel))
+			reader.Fail(*problem);
+		if (!m_fuelTanks)
+			continue;
+		const std::optional<Fuel> tanks = m_fuelTanks(ship, loaded.try_get<Systems>(entity));
+		if (!tanks || fuel.reactionMass > tanks->reactionMass || fuel.pellets > tanks->pellets)
+			reader.Fail(
+			    std::format(
+			        "a ship of hull '{}' holds {} kg of reaction mass and {} kg of pellets, more than "
+			        "its "
+			        "tanks",
+			        ship.hullId, fuel.reactionMass, fuel.pellets));
+	}
 	return [this, counters = std::move(counters), index = std::move(index)]() mutable
 	{
 		m_counters = std::move(counters);

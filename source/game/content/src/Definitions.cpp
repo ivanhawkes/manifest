@@ -166,6 +166,7 @@ void RegisterTypes()
 		    .Field<&Core::ShipClassSpec::occupants>("occupants", kDefined)
 		    .Field<&Core::ShipClassSpec::oxygenTanks>("oxygenTanks", kDefined)
 		    .Field<&Core::ShipClassSpec::scrubberCartridges>("scrubberCartridges", kDefined)
+		    .Field<&Core::ShipClassSpec::pelletMagazine>("pelletMagazine", kDefined)
 		    .Field<&Core::ShipClassSpec::mass>("mass", kDefined);
 		RegisterEnum<OfferTarget>("Manifest.OfferTarget").Value<OfferTarget::Ship>("Ship");
 		RegisterType<OfferDefinition>("Manifest.Offer", Attribute::Moddable)

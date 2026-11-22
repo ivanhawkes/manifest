@@ -175,6 +175,15 @@ std::optional<std::string> Broken(const LifeSupport &lifeSupport)
 }
 
 
+std::optional<std::string> Broken(const Fuel &fuel)
+{
+	for (const double held : {fuel.reactionMass, fuel.pellets})
+		if (!std::isfinite(held) || held < 0.0)
+			return "a ship's fuel is less than nothing, or no number";
+	return std::nullopt;
+}
+
+
 std::optional<std::string> Broken(const Sales &sales)
 {
 	for (std::size_t at = 0; at < sales.recent.size(); ++at)
@@ -406,6 +415,9 @@ void RegisterTypes()
 		    .Field<&LifeSupport::tanks>("tanks", kSaved)
 		    .Field<&LifeSupport::cartridges>("cartridges", kSaved)
 		    .Field<&LifeSupport::connectedTo>("connectedTo", kSaved);
+		RegisterType<Fuel>("Manifest.World.Fuel")
+		    .Field<&Fuel::reactionMass>("reactionMass", kSaved)
+		    .Field<&Fuel::pellets>("pellets", kSaved);
 		RegisterType<Broker>("Manifest.World.Broker").Field<&Broker::operatorId>("operatorId", kSaved);
 		RegisterEnum<Side>("Manifest.World.Side").Value<Side::Buy>("Buy").Value<Side::Sell>("Sell");
 		RegisterType<Order>("Manifest.World.Order")

@@ -4,7 +4,10 @@
 # same section, and the first-draft value converted to the unit where it has none.
 #
 # Charcoal and LPG, both traded by the tonne: LPG at Saudi Aramco's propane contract price, the
-# Asian benchmark.
+# Asian benchmark. A ship's torch burns reaction mass and fusion pellets, its own fuels (D-107,
+# D-108), both traded by the kilogram, the unit of its tanks: reaction mass is purified water ice,
+# 1,000 kg to the cubic metre packed at 0.9, 112.5 kg a tote; pellets are deuterium and helium-3,
+# 100 kg to the cubic metre, 12.5 kg a tote. LPG stays the planets' cooking and vehicle fuel.
 item-base:
 
   - item:
@@ -30,6 +33,30 @@ item-base:
       unitType: Tonne
       density: 0.54
       packFactor: 0.45
+
+  - item:
+      itemId: ItemReactionMass
+      categoryId: CategoryFuels
+      ageId: AgeSpace
+      displayName: Reaction mass
+      description: Purified water ice, the mass a ship's torch throws out behind it
+      unitsPerCubicMetre: 900
+      basePrice: 0.25
+      unitType: Kilogram
+      density: 1
+      packFactor: 0.9
+
+  - item:
+      itemId: ItemFusionPellets
+      categoryId: CategoryFuels
+      ageId: AgeSpace
+      displayName: Fusion pellets
+      description: Deuterium and helium-3, the fuel a ship's torch burns
+      unitsPerCubicMetre: 100
+      basePrice: 1200
+      unitType: Kilogram
+      density: 0.2
+      packFactor: 0.5
 
   - item:
       itemId: ItemCoal

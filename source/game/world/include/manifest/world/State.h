@@ -325,6 +325,17 @@ struct LifeSupport
 	bool operator==(const LifeSupport &) const = default;
 };
 
+// A ship's fuel (D-107, D-108), in kilograms, apart from its hold: the reaction mass in its tanks
+// and the fusion pellets in its drive's magazine, each at most what its hull and the systems fitted
+// to it hold (Identities::FuelTanks). Provisioning fills both once.
+struct Fuel
+{
+	double reactionMass{0.0};
+	double pellets{0.0};
+
+	bool operator==(const Fuel &) const = default;
+};
+
 // The totes of an item a venue's book filled in one step, buyer and seller counted once.
 struct Sold
 {
@@ -587,6 +598,8 @@ std::optional<std::string> Broken(const Production &production);
 std::optional<std::string> Broken(const Pantry &pantry);
 
 std::optional<std::string> Broken(const LifeSupport &lifeSupport);
+
+std::optional<std::string> Broken(const Fuel &fuel);
 
 std::optional<std::string> Broken(const Sales &sales);
 

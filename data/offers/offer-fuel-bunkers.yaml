@@ -1,0 +1,10 @@
+# A tier of fuel bunkers, 18 t of reaction mass tanks (the FuelBunkers effect's), for a company's own
+# ship, bought with the company's credits while the ship is docked, as cargo holds are (D-096, D-107).
+# Its price is a run or two's profit for the starter, so a company chooses between a bigger hold and
+# the range to fly a full one hard. A record of Manifest.Offer.
+version: 1
+offerId: OfferFuelBunkers
+skillId: SkillShipFuelBunkers
+target: Ship
+cost: 30000
+maxTier: 1

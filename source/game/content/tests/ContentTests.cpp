@@ -560,7 +560,7 @@ TEST_CASE("The fixtures are the trading and governance scenarios their plans des
 	// mixed ages (docs/stage-2-content-plan.md, "Initial scenario"), with the essentials every region
 	// trades (W04), the life-support goods a ship's resupply takes (W09) and the wellness goods (W19).
 	const ScenarioDefinition &trading = content.scenarios.at("trading");
-	CHECK(trading.items.size() == 22);
+	CHECK(trading.items.size() == 24);
 	CHECK(trading.systems.size() == 1);
 	CHECK(trading.planets.size() == 2);
 	REQUIRE(trading.regions.size() == 10);
@@ -604,9 +604,36 @@ TEST_CASE("The fixtures are the trading and governance scenarios their plans des
 			           need.items.end();
 		    });
 	};
+	// A torch's fuels are the ships' (D-108): every station of both scenarios makes reaction mass,
+	// 10,000 kg a day, its broker seeded with 800 totes, about nine days, and one station of each
+	// planet refines pellets, 2 kg a day; no household wants either.
+	for (const ScenarioDefinition *scenario : {&trading, &content.scenarios.at("governance")})
+		for (const VenueDefinition &venue : scenario->venues)
+		{
+			CAPTURE(venue.venueId);
+			const auto mass = std::ranges::find(venue.market, "ItemReactionMass", &MarketEntry::itemId);
+			REQUIRE(mass != venue.market.end());
+			CHECK(mass->production == 10000.0);
+			CHECK(mass->demand == 0.0);
+			CHECK(mass->stock == 800);
+			CHECK(mass->regionId == venue.regions[0].regionId);
+			const auto pellets =
+			    std::ranges::find(venue.market, "ItemFusionPellets", &MarketEntry::itemId);
+			const bool refinery = venue.venueId == "VenueOreDeepsStation" ||
+			                      venue.venueId == "VenueBrineSaltworksStation" ||
+			                      venue.venueId == "VenueCassiterDock";
+			CHECK((pellets != venue.market.end()) == refinery);
+			if (pellets != venue.market.end())
+			{
+				CHECK(pellets->production == 2.0);
+				CHECK(pellets->demand == 0.0);
+			}
+		}
 	for (const ItemSelection &item : trading.items)
 	{
 		CAPTURE(item.itemId);
+		if (item.itemId == "ItemReactionMass" || item.itemId == "ItemFusionPellets")
+			continue;
 		// Each venue trades an essential, which each region needs.
 		if (needed(item.itemId))
 		{

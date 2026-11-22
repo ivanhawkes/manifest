@@ -275,9 +275,9 @@ skill-base:
       displayName: Fuel Bunkers
       description: The bunkerage that buys the range to carry a haul the long way
       nodeType: Skill
-      requires:
-        - nodeId: SkillShipEngineThrust
-          requiredTier: 1
+      # No engine first: a torch burns whatever its tanks hold, and the starter has no thrust slot
+      # (D-108).
+      requires: []
       maxTiers: 3
       resourceCostPerTier: 2
       targetEffectID: FuelBunkers

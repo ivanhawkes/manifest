@@ -30,6 +30,8 @@ items:
   - itemId: ItemBronze
   - itemId: ItemOxygen
   - itemId: ItemCarbonScrubberCartridge
+  - itemId: ItemReactionMass
+  - itemId: ItemFusionPellets
 
 systems:
   - {systemId: SystemCrucible, displayName: Crucible}
@@ -137,6 +139,8 @@ venues:
       - {itemId: ItemTin, production: 0, demand: 0.05, stock: 0}
       - {itemId: ItemOxygen, production: 0, demand: 22.8, stock: 2}
       - {itemId: ItemCarbonScrubberCartridge, production: 0, demand: 1, stock: 4}
+      - {itemId: ItemReactionMass, regionId: RegionForgeNorth, production: 10000, demand: 0,
+        stock: 800}
   # A private dock, on its owner's terms.
   - venueId: VenueCassiterDock
     systemId: SystemCrucible
@@ -164,3 +168,6 @@ venues:
       - {itemId: ItemPeas, production: 0, demand: 0, stock: 10}
       - {itemId: ItemSalt, production: 0, demand: 1.25, stock: 10}
       - {itemId: ItemSoap, regionId: RegionCassiterLowlands, production: 4000, demand: 750, stock: 24}
+      - {itemId: ItemReactionMass, regionId: RegionCassiterLowlands, production: 10000, demand: 0,
+        stock: 800}
+      - {itemId: ItemFusionPellets, regionId: RegionCassiterLowlands, production: 2, demand: 0, stock: 2}

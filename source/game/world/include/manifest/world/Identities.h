@@ -79,6 +79,23 @@ class Identities final : public Jettison::Sim::WorldService
 		return m_holds ? m_holds(ship, pSystems) : std::nullopt;
 	}
 
+	// The most of each fuel a ship holds, its tanks' reaction mass and its magazine's pellets, by its
+	// hull and the systems fitted to it; none for systems it cannot carry.
+	using FuelTanksOf = std::function<std::optional<Fuel>(const Ship &, const Systems *)>;
+
+	// The rule FuelTanks answers by and Load holds each ship's Fuel to. Unset, a load checks only that
+	// each ship's fuel is a number of at least 0.
+	void SetFuelTanks(FuelTanksOf tanks)
+	{
+		m_fuelTanks = std::move(tanks);
+	}
+
+	// The ship's tanks by the rule SetFuelTanks gave; none before it has run.
+	std::optional<Fuel> FuelTanks(const Ship &ship, const Systems *pSystems) const
+	{
+		return m_fuelTanks ? m_fuelTanks(ship, pSystems) : std::nullopt;
+	}
+
 	// What each hull's life support holds, by hull ID, and a fresh cartridge's occupant-days, which
 	// Load holds each ship's LifeSupport to; a hull it does not name holds none. Unset, a load checks
 	// only that each reserve is a number of at least 0.
@@ -97,7 +114,8 @@ class Identities final : public Jettison::Sim::WorldService
 	// orders' there, a LifeSupport of no number or less than nothing, or connected to no venue, Systems
 	// that break their rules, or, once SetHolds has run, a ship with no hold or carrying more than it
 	// holds, lots and opened totes together, and once SetLifeSupport has, more in a tank or a cartridge
-	// than its hull's holds.
+	// than its hull's holds; a Fuel of no number or less than nothing, or once SetFuelTanks has run,
+	// more of either than its ship holds.
 	std::function<void()> Load(
 	    Jettison::Serialise::BinaryReader &reader, const entt::registry &loaded,
 	    std::span<const entt::meta_any> queued) override;
@@ -106,6 +124,7 @@ class Identities final : public Jettison::Sim::WorldService
 	std::map<std::pair<Kind, std::string>, entt::entity> m_index;
 	IdentityCounters m_counters;
 	HoldOf m_holds;
+	FuelTanksOf m_fuelTanks;
 	std::optional<std::map<std::string, Installed, std::less<>>> m_installed;
 	double m_freshCartridge{0.0};
 };
