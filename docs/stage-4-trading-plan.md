@@ -1554,7 +1554,18 @@ Slices, each a commit with its suites, the gate after the third and the last:
 5. The fixture, on the manned profile: Ore to Brine with two totes of copper and with a full hold, the
    policy flying the light lot faster and the heavy one slower, each its fuel and time, refuelled as
    it leaves, a leg refused with refuelling off and the tanks short, a save mid-coast, and
-   fast-forwarded to the bytes stepping leaves.
+   fast-forwarded to the bytes stepping leaves. **Done** 2026-11-22, `fixture_burn`, no pin moved:
+   Ada's policy, her reports Ore Highport's and Brine's, carries two totes of copper with her hold
+   otherwise empty at 100% in 4.49 days on the boost, 3,558 kg of reaction mass, and with the rest of
+   it full of copper, 177 t, at the 4.55% its tanks reach (below the 10% listed) in 13.8 days, 3,996
+   kg; each leaves 16 totes short and refuels full, its tanks down by what its job keeps for the
+   lot's charge, its cruise thrusting its job's share. A cruise is 24 million steps at 60 a second,
+   so stepping is compared over two minutes about each switch (the boost's end, the thrust's end
+   into the coast), and a save mid-coast loaded docks to the same bytes. Docked all but dry, a leg
+   back at 1% is refused `InsufficientFuel` with refuelling off, the tanks untouched, and with it
+   on is refuelled and flown. The fixture keeps the ledger of credits alone: a refuel turns totes
+   into kilograms. The policy charges, sells and chooses in one step as it docks, so the lot's
+   charge is the policy suite's to show (slice 4).
 6. Close-out.
 
 ## Handoff to stage 5

@@ -22,6 +22,8 @@
 #include <jettison/sim/SimWorld.h>
 #include <jettison/space/Cruise.h>
 
+#include <glm/geometric.hpp>
+
 #include <manifest/company/Company.h>
 #include <manifest/host/Start.h>
 #include <manifest/policy/Policy.h>
@@ -761,6 +763,213 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 
 	// The same in every build the gate runs; it moves as the fixture's does.
 	CHECK(hosted.world.StateHash() == 0xfa54e27c72cfd4d0ULL);
+}
+
+
+// Fast-forwards the world to the step, passing over what it may.
+void ForwardTo(Hosted &hosted, std::uint64_t step)
+{
+	while (hosted.world.Clock().Step() < step)
+	{
+		hosted.world.FastForward(step);
+		(void)hosted.world.Events().Take();
+	}
+}
+
+// The metres of a cruise's course, waypoints included.
+double Metres(const Jettison::Space::Cruising &cruising)
+{
+	double metres = 0.0;
+	for (std::size_t point = 1; point < cruising.course.size(); ++point)
+		metres += glm::length(cruising.course[point] - cruising.course[point - 1]);
+	return metres;
+}
+
+// Ada provisioned at Ore on the manned drive, her reports Ore's Highport and Brine's alone, as
+// Trader's, so her lot is copper to Brine; the rest of her hold, for a heavy run, full of copper of
+// her own; her tanks 16 totes of reaction mass short, so she refuels as she leaves; and her ship's
+// standing policy on. Its ledger of credits starts after provisioning, as the bootstrap's; a ship
+// refuelling turns totes into its tanks' kilograms, so the ledger of goods is not kept.
+void Manned(Hosted &hosted, bool fullHold)
+{
+	REQUIRE(
+	    hosted.Run(
+	        kHost, Company::kProvision, Company::kVersion,
+	        Company::Provision{"Ada", "Ada", "Ada Co"}) == Result::Succeeded);
+	entt::registry &registry = hosted.world.Registry();
+	hosted.credits = Credits(registry);
+	hosted.creditBreach.reset();
+	const std::uint64_t ballast = fullHold ? hosted.Ship1().hold - 2 : 0;
+	std::erase_if(
+	    registry.get<World::Reports>(hosted.services.identities.Find(Kind::Principal, "Ada")).reports,
+	    [](const World::Report &report) { return report.venueId != kOre && report.venueId != kBrine; });
+	if (ballast > 0)
+		registry.patch<World::Cargo>(
+		    hosted.Ship(),
+		    [&](World::Cargo &cargo) { cargo.lots.push_back({std::string{kGood}, ballast}); });
+	const double tote = 112.5;
+	registry.patch<World::Fuel>(
+	    hosted.Ship(), [&](World::Fuel &fuel) { fuel.reactionMass -= 16 * tote; });
+	REQUIRE(
+	    hosted.Run(
+	        kAda, Manifest::Policy::kSet, Manifest::Policy::kVersion,
+	        Manifest::Policy::Set{"Ship1", true, 0, 0}) == Result::Succeeded);
+}
+
+// The ship's policy's lot, and its cruise to it as it set out.
+struct Departed
+{
+	World::Job job;
+	Jettison::Space::Cruising cruising;
+	World::Fuel fuel;
+	double seconds{0.0};
+};
+
+// Stepped, the ledger of credits kept, until the ship's policy has bought its lot, loaded it and set
+// out on its cruise: refuelled full as it left, its tanks less what the job is to charge to the lot,
+// the share of the cruise it thrusts its job's.
+Departed Depart(Hosted &hosted)
+{
+	const entt::registry &registry = hosted.world.Registry();
+	for (std::uint64_t step = 0;
+	     step < kJourneySteps && !registry.all_of<Jettison::Space::Cruising>(hosted.Ship()); ++step)
+		hosted.Step();
+	REQUIRE(registry.all_of<Jettison::Space::Cruising>(hosted.Ship()));
+	CHECK_FALSE(hosted.creditBreach);
+	const Departed departed{
+	    registry.get<const World::Job>(hosted.Ship()),
+	    registry.get<const Jettison::Space::Cruising>(hosted.Ship()), hosted.Ship1().fuel};
+	const World::Job &job = departed.job;
+	CHECK(job.itemId == kGood);
+	CHECK(job.sourceId == kOre);
+	CHECK(job.destinationId == kBrine);
+	CHECK(job.totes == 2);
+	const World::Fuel tanks = hosted.Ship1().fuelTanks;
+	CHECK(job.reactionMassKilograms > 0.0);
+	CHECK(
+	    departed.fuel.reactionMass + job.reactionMassKilograms == doctest::Approx(tanks.reactionMass));
+	CHECK(job.pelletKilograms > 0.0);
+	CHECK(departed.fuel.pellets + job.pelletKilograms == doctest::Approx(tanks.pellets));
+	REQUIRE(departed.cruising.profile);
+	CHECK(
+	    departed.cruising.profile->thrustShare.value_or(1.0f) ==
+	    doctest::Approx(job.thrustBps / double{World::kFullThrustBps}));
+	Departed timed = departed;
+	timed.seconds =
+	    static_cast<double>(departed.cruising.arrivalStep - departed.cruising.departureStep) *
+	    hosted.world.FixedStep();
+	return timed;
+}
+
+// Two minutes about the step, stepped in a world loaded from the save before them, are the world
+// fast-forwarded across them, to the byte.
+void Across(Hosted &forwarded, std::uint64_t step)
+{
+	const std::uint64_t minute = std::uint64_t{60} * 60;
+	ForwardTo(forwarded, step - minute);
+	Hosted stepped{MANIFEST_MOD_DIRECTORY};
+	stepped.world.Load(forwarded.world.Save());
+	while (stepped.world.Clock().Step() < step + minute)
+	{
+		stepped.world.Step();
+		(void)stepped.world.Events().Take();
+	}
+	ForwardTo(forwarded, step + minute);
+	CHECK(forwarded.world.Save() == stepped.world.Save());
+}
+
+// Fast-forwarded until the ship's journey has docked at Brine.
+void Arrive(Hosted &hosted, const Departed &departed)
+{
+	const std::uint64_t end = departed.cruising.arrivalStep + kJourneySteps;
+	while (!hosted.Ship1().journey->Ended() && hosted.world.Clock().Step() < end)
+	{
+		hosted.world.FastForward(end);
+		(void)hosted.world.Events().Take();
+	}
+	REQUIRE(hosted.Ship1().journey->leg == Leg::Arrived);
+	CHECK(hosted.Ship1().dockedAt == kBrine);
+}
+
+
+// The burn a hard run is a decision of (W21, D-107, D-108), on the manned drive rather than the
+// fixture's power law: Ada's policy carries two totes of copper from Ore to Brine, once with her
+// hold otherwise empty and once with it full, and, choosing the most an hour, flies the light lot
+// at full thrust and the heavy one at the little its tanks reach, each refuelled as it leaves, the
+// fuel it burns kept for the lot's charge and its time as long as its thrust makes it. Days of cruise
+// are passed over, so stepping is compared across each switch of thrust and a save mid-coast.
+TEST_CASE(
+    "On the manned drive a policy flies a light lot faster than a heavy one, fast-forwarded to "
+    "the bytes stepping leaves")
+{
+	Hosted light{MANIFEST_MOD_DIRECTORY};
+	Manned(light, false);
+	const Departed fast = Depart(light);
+	CHECK(fast.job.thrustBps == World::kFullThrustBps);
+	// Across its boost's end, at 2 g for its first hours and 1 g after.
+	const Jettison::Space::CruiseThrustSeconds fastThrust =
+	    Jettison::Space::CruiseThrust(*fast.cruising.profile, Metres(fast.cruising));
+	REQUIRE(fastThrust.boost > 0.0);
+	Across(
+	    light, fast.cruising.departureStep + static_cast<std::uint64_t>(std::llround(
+	                                             fastThrust.boost / light.world.FixedStep())));
+	// Docked, its policy charges the lot its fuel and sells it.
+	Arrive(light, fast);
+	for (std::uint64_t step = 0; step < kJourneySteps && Aboard(light.Ship1(), kGood) > 0; ++step)
+		light.Step();
+	CHECK(Aboard(light.Ship1(), kGood) == 0);
+	CHECK_FALSE(light.creditBreach);
+
+	Hosted heavy{MANIFEST_MOD_DIRECTORY};
+	Manned(heavy, true);
+	const Departed slow = Depart(heavy);
+	// Below the least of the shares listed: the most its tanks reach.
+	CHECK(slow.job.thrustBps < 1000);
+	CHECK(slow.job.reactionMassKilograms > fast.job.reactionMassKilograms);
+	CHECK(slow.seconds > 2 * fast.seconds);
+	MESSAGE(
+	    "light at " << fast.job.thrustBps << " bps, " << fast.seconds / 86400 << " days, "
+	                << fast.job.reactionMassKilograms << " kg; heavy at " << slow.job.thrustBps
+	                << " bps, " << slow.seconds / 86400 << " days, " << slow.job.reactionMassKilograms
+	                << " kg");
+	// Across its thrust's end, where it starts to coast.
+	const Jettison::Space::CruiseThrustSeconds slowThrust =
+	    Jettison::Space::CruiseThrust(*slow.cruising.profile, Metres(slow.cruising));
+	Across(
+	    heavy, slow.cruising.departureStep +
+	               static_cast<std::uint64_t>(std::llround(
+	                   (slowThrust.boost + slowThrust.sustained) / heavy.world.FixedStep())));
+
+	// Its policy off, so that it leaves Brine on its owner's command alone.
+	REQUIRE(
+	    heavy.Run(
+	        kAda, Manifest::Policy::kSet, Manifest::Policy::kVersion,
+	        Manifest::Policy::Set{"Ship1", false, 0, 0}) == Result::Succeeded);
+
+	// Saved mid-coast and loaded, it docks to the world it would have.
+	const std::uint64_t midway = (slow.cruising.departureStep + slow.cruising.arrivalStep) / 2;
+	ForwardTo(heavy, midway);
+	Hosted loaded{MANIFEST_MOD_DIRECTORY};
+	loaded.world.Load(heavy.world.Save());
+	Arrive(heavy, slow);
+	ForwardTo(loaded, heavy.world.Clock().Step());
+	CHECK(loaded.world.Save() == heavy.world.Save());
+
+	// Docked with its tanks all but dry, a leg back is refused with refuelling off, and with it on is
+	// refuelled and flown.
+	REQUIRE(
+	    heavy.Run(kAda, Company::kSetRefuel, Company::kVersion, Company::SetRefuel{"Ship1", false}) ==
+	    Result::Succeeded);
+	const Travel::Travel back{"Ship1", std::string{kOre}, 100};
+	const World::Fuel dry = heavy.Ship1().fuel;
+	CHECK(heavy.Run(kAda, Travel::kTravel, Travel::kVersion, back) == Result::InsufficientFuel);
+	CHECK(heavy.Ship1().fuel == dry);
+	REQUIRE(
+	    heavy.Run(kAda, Company::kSetRefuel, Company::kVersion, Company::SetRefuel{"Ship1", true}) ==
+	    Result::Succeeded);
+	CHECK(heavy.Run(kAda, Travel::kTravel, Travel::kVersion, back) == Result::Succeeded);
+	CHECK(heavy.Ship1().fuel.reactionMass > dry.reactionMass);
+	CHECK_FALSE(heavy.creditBreach);
 }
 
 

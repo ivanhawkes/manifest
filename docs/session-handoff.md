@@ -10,7 +10,8 @@ Jettison coast phase, is done on pin `a9b8305` (2026-11-22), every Manifest pin 
 are designed ([D-108](decision-ledger.md#d-108): a torch burning reaction mass and fusion pellets,
 the hauler and pulse drives booked as W22), slices 2 and 3, the fuels and the tanks, the burn and
 refuelling, are done and gated (2026-11-22, `344058a`, pushed), and slice 4, the policy choosing
-the burn per hour, is done on pin `2b3cfce` (2026-11-22), so slice 5, the fixture, is next. Then W12, competitive procurement on the
+the burn per hour, is done on pin `2b3cfce` (2026-11-22), and slice 5, the fixture on the manned drive, is done
+(`fixture_burn`, 2026-11-22), so slice 6, the close-out, is next. Then W12, competitive procurement on the
 [tender contract](stage-4-trading-plan.md#tender-contract-w11-2026-11-21), its AI issuer spending
 `Trade::Budget` and calling `Trade::Reliefs`. A commit is gated in
 the second checkout, `build/gate-tree`, with `--tidy`, editing alone beside it
