@@ -8,10 +8,10 @@
 #include <string_view>
 #include <vector>
 
-#include <jettison/celestial/StarSystem.h>
 #include <jettison/dock/Definitions.h>
-#include <jettison/space/Cruise.h>
 #include <jettison/vfs/Mount.h>
+#include <manifest/space/Cruise.h>
+#include <manifest/space/StarSystem.h>
 
 #include <manifest/config/SimulationConfig.h>
 #include <manifest/content/ContentIdentity.h>
@@ -58,7 +58,7 @@ struct ContentSet
 	// cruise drive, by its Manifest.Hull's record name, and the station layouts.
 	Jettison::Dock::BerthClasses padClasses;
 	std::map<std::string, Jettison::Dock::VehicleDefinition, std::less<>> dockHulls;
-	std::map<std::string, Jettison::Space::CruiseDrive, std::less<>> drives;
+	std::map<std::string, Manifest::Space::CruiseDrive, std::less<>> drives;
 	std::map<std::string, Jettison::Dock::PlatformLayout, std::less<>> layouts;
 	// The balance record, tuning/balance.
 	TuningDefinition tuning;
@@ -67,7 +67,7 @@ struct ContentSet
 	// The scenario selected, by its name; empty for a set selected by game mode alone.
 	std::string scenario;
 	// The scenario's star systems, resolved, in its order; none with no scenario selected.
-	std::vector<Jettison::Celestial::StarSystem> systems;
+	std::vector<Manifest::Space::StarSystem> systems;
 	// Over every definition loaded, the mode's or not, and the scenario selected.
 	ContentIdentity identity;
 };

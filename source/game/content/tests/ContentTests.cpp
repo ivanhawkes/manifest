@@ -24,9 +24,9 @@
 #include <jettison/reflect/Reflect.h>
 #include <jettison/serialise/Archive.h>
 #include <jettison/sim/DefinitionRegistry.h>
-#include <jettison/space/Cruise.h>
 #include <jettison/transit/Profile.h>
 #include <jettison/vfs/FileSystem.h>
+#include <manifest/space/Cruise.h>
 
 #include <manifest/config/SimulationConfig.h>
 #include <manifest/content/Content.h>
@@ -694,14 +694,14 @@ TEST_CASE("The Manifest mode cruises by acceleration, by occupants, and Astralis
 	for (const auto &[name, drive] : astralis.drives)
 	{
 		CAPTURE(name);
-		CHECK(drive == *loaded.registry.Find<Jettison::Space::CruiseDrive>(name));
+		CHECK(drive == *loaded.registry.Find<Manifest::Space::CruiseDrive>(name));
 		CHECK_FALSE(drive.profile);
 	}
 
 	// The starter and the compact carry one; the long-haul trader's occupants are open, so manned.
 	const auto profile = [&](const ContentSet &content, std::string_view hull)
 	{
-		const Jettison::Space::CruiseDrive &drive = content.drives.at(std::string{hull});
+		const Manifest::Space::CruiseDrive &drive = content.drives.at(std::string{hull});
 		REQUIRE(drive.profile);
 		return *drive.profile;
 	};
@@ -718,12 +718,12 @@ TEST_CASE("The Manifest mode cruises by acceleration, by occupants, and Astralis
 
 	// A local trip, between two highports on opposite sides of one planet, is at 2 g throughout: the
 	// boost lasts any trip under about a million kilometres.
-	const Jettison::Space::CruiseDrive starter = manifest.drives.at("hull-lone-trader-starter");
+	const Manifest::Space::CruiseDrive starter = manifest.drives.at("hull-lone-trader-starter");
 	CHECK(
-	    Jettison::Space::CruiseSeconds(starter, 8.4e7) ==
+	    Manifest::Space::CruiseSeconds(starter, 8.4e7) ==
 	    doctest::Approx(2.0 * std::sqrt(8.4e7 / (2.0 * g))));
 	CHECK(
-	    Jettison::Space::CruiseSeconds(starter, 1.0e9) ==
+	    Manifest::Space::CruiseSeconds(starter, 1.0e9) ==
 	    doctest::Approx(2.0 * std::sqrt(1.0e9 / (2.0 * g))));
 
 	// A hull with no one aboard, 12 g throughout.
@@ -735,7 +735,7 @@ TEST_CASE("The Manifest mode cruises by acceleration, by occupants, and Astralis
 	CHECK(unmanned.boostAcceleration == doctest::Approx(12.0 * g));
 	CHECK(unmanned.sustainedAcceleration == doctest::Approx(12.0 * g));
 	CHECK(
-	    Jettison::Space::CruiseSeconds({.profile = unmanned}, 3.8e11) ==
+	    Manifest::Space::CruiseSeconds({.profile = unmanned}, 3.8e11) ==
 	    doctest::Approx(2.0 * std::sqrt(3.8e11 / (12.0 * g))));
 }
 

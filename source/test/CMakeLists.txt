@@ -8,7 +8,7 @@ add_test(NAME effects COMMAND manifest_effects_tests)
 
 # The trading fixture's whole loop, from the directory and the pack (W09).
 add_executable(manifest_fixture_tests FixtureTests.cpp)
-target_link_libraries(manifest_fixture_tests PRIVATE Manifest::Game manifest_host Jettison::Space manifest_test_helpers doctest::doctest_with_main manifest_warnings)
+target_link_libraries(manifest_fixture_tests PRIVATE Manifest::Game manifest_host Manifest::Space manifest_test_helpers doctest::doctest_with_main manifest_warnings)
 target_compile_options(manifest_fixture_tests PRIVATE -ffp-contract=off)
 target_compile_definitions(manifest_fixture_tests PRIVATE
     MANIFEST_MOD_DIRECTORY="${MANIFEST_MOD_DIRECTORY}"

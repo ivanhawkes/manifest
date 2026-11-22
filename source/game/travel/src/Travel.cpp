@@ -16,7 +16,6 @@
 #include <glm/geometric.hpp>
 
 #include <jettison/ai/Steering.h>
-#include <jettison/celestial/StarSystem.h>
 #include <jettison/core/Assert.h>
 #include <jettison/dock/Docks.h>
 #include <jettison/physics/Components.h>
@@ -24,12 +23,13 @@
 #include <jettison/physics/PhysicsWorld.h>
 #include <jettison/reflect/Reflect.h>
 #include <jettison/sim/Snapshot.h>
-#include <jettison/space/Cruise.h>
-#include <jettison/space/Lanes.h>
-#include <jettison/space/StarSystemFrame.h>
-#include <jettison/space/Types.h>
 #include <jettison/spatial/FrameIndices.h>
 #include <jettison/transit/Profile.h>
+#include <manifest/space/Cruise.h>
+#include <manifest/space/Lanes.h>
+#include <manifest/space/StarSystem.h>
+#include <manifest/space/StarSystemFrame.h>
+#include <manifest/space/Types.h>
 
 #include <manifest/config/SimulationConfig.h>
 #include <manifest/content/Content.h>
@@ -47,11 +47,9 @@ using World::Failure;
 using World::Kind;
 using World::Leg;
 namespace Ai = Jettison::Ai;
-namespace Celestial = Jettison::Celestial;
 namespace Dock = Jettison::Dock;
 namespace Physics = Jettison::Physics;
 namespace Sim = Jettison::Sim;
-namespace Space = Jettison::Space;
 
 constexpr std::string_view kCompanyPrefix = "Company";
 constexpr double kKilogramsPerTonne = 1000.0;
@@ -77,7 +75,7 @@ const Content::VenueDefinition *FindVenue(const Content::ContentSet &content, st
 
 
 // The star system a ship is in, or null.
-const Celestial::StarSystem *SystemOf(
+const Space::StarSystem *SystemOf(
     const entt::registry &registry, const Content::ContentSet &content, entt::entity ship)
 {
 	const auto *inSystem = registry.try_get<Sim::InFrame>(ship);
@@ -85,7 +83,7 @@ const Celestial::StarSystem *SystemOf(
 		return nullptr;
 	const auto system = std::ranges::find(
 	    content.systems, inSystem->frame,
-	    [](const Celestial::StarSystem &each) { return Sim::FrameId(each.name); });
+	    [](const Space::StarSystem &each) { return Sim::FrameId(each.name); });
 	return system == content.systems.end() ? nullptr : &*system;
 }
 
@@ -222,7 +220,7 @@ void Ask(
 
 // Whether the ship is where a cruise to the station would bring it, or nearer.
 bool Near(
-    const entt::registry &registry, const Celestial::StarSystem &system, entt::entity ship,
+    const entt::registry &registry, const Space::StarSystem &system, entt::entity ship,
     entt::entity station)
 {
 	const int body = system.Find(registry.get<Physics::OnRails>(station).body);
@@ -267,7 +265,7 @@ void Advance(SimWorld &world, const Rules &rules, entt::entity ship)
 		}
 		case Leg::Clearing:
 		{
-			const Celestial::StarSystem *system = SystemOf(registry, rules.content, ship);
+			const Space::StarSystem *system = SystemOf(registry, rules.content, ship);
 			if (!system)
 				return Fail(journey, Failure::CruiseRefused);
 			if (Near(registry, *system, ship, station))
@@ -571,7 +569,7 @@ Fleet &Register(
 		docks.DefineVehicle(name, hull);
 	for (const auto &[name, layout] : content.layouts)
 		docks.DefineLayout(name, layout);
-	for (const Celestial::StarSystem &system : content.systems)
+	for (const Space::StarSystem &system : content.systems)
 	{
 		Space::DefineStarSystem(physics, system);
 		lanes.DefineStarSystem(system);

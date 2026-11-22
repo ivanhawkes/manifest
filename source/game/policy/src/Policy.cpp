@@ -22,8 +22,8 @@
 #include <jettison/physics/Components.h>
 #include <jettison/reflect/Reflect.h>
 #include <jettison/sim/Snapshot.h>
-#include <jettison/space/Cruise.h>
 #include <jettison/spatial/FrameIndices.h>
+#include <manifest/space/Cruise.h>
 
 #include <manifest/company/Company.h>
 #include <manifest/config/SimulationConfig.h>
@@ -233,8 +233,8 @@ Route Priced(
 	// The drive as Travel::Travel flies it: the authored one, on a profile at the thrust where the
 	// ship's drive has one.
 	const auto authored = content.drives.find(Content::RegistryName(record.hullId));
-	const auto *pDrive = registry.try_get<const Jettison::Space::CruiseDrive>(ship);
-	std::optional<Jettison::Space::CruiseDrive> flown;
+	const auto *pDrive = registry.try_get<const Manifest::Space::CruiseDrive>(ship);
+	std::optional<Manifest::Space::CruiseDrive> flown;
 	if (authored != content.drives.end())
 		flown = authored->second;
 	else if (pDrive)
@@ -262,7 +262,7 @@ Route Priced(
 	World::Fuel left = current;
 	for (const Leg &leg : legs)
 	{
-		const double seconds = flown ? Jettison::Space::CruiseSeconds(*flown, leg.metres) : 0.0;
+		const double seconds = flown ? Manifest::Space::CruiseSeconds(*flown, leg.metres) : 0.0;
 		route.seconds += seconds + tuning.legAllowanceSeconds;
 		const double occupantDays = occupants * seconds / kSecondsPerDay;
 		route.charges = Added(

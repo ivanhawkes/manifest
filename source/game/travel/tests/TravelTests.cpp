@@ -16,8 +16,8 @@
 #include <jettison/serialise/Archive.h>
 #include <jettison/sim/SimWorld.h>
 #include <jettison/sim/Snapshot.h>
-#include <jettison/space/Cruise.h>
 #include <jettison/transit/Profile.h>
+#include <manifest/space/Cruise.h>
 
 #include <manifest/company/Company.h>
 #include <manifest/host/Start.h>
@@ -37,7 +37,7 @@ using Manifest::World::Kind;
 using Manifest::World::Leg;
 namespace Company = Manifest::Company;
 namespace Dock = Jettison::Dock;
-namespace Space = Jettison::Space;
+namespace Space = Manifest::Space;
 namespace Travel = Manifest::Travel;
 namespace World = Manifest::World;
 

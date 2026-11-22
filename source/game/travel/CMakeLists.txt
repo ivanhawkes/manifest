@@ -19,11 +19,10 @@ manifest_add_module(travel
 		Jettison::Transit
 	PRIVATE_LIBRARIES
 		Jettison::Ai
-		Jettison::Celestial
 		Jettison::Core
 		Jettison::Physics
 		Jettison::Reflect
-		Jettison::Space
+		Manifest::Space
 		Jettison::Spatial
 )
 if(TARGET manifest_travel_tests)

@@ -4,12 +4,12 @@
 #include <string>
 #include <vector>
 
-#include <jettison/celestial/StarSystem.h>
 #include <jettison/dock/Definitions.h>
 #include <jettison/reflect/Reflect.h>
 #include <jettison/sim/DefinitionRegistry.h>
-#include <jettison/space/Cruise.h>
-#include <jettison/space/Types.h>
+#include <manifest/space/Cruise.h>
+#include <manifest/space/StarSystem.h>
+#include <manifest/space/Types.h>
 
 #include <manifest/effects/ShipEffectEngine.h>
 
@@ -52,8 +52,8 @@ void RegisterTypes()
 	static const bool registered = []
 	{
 		Jettison::Dock::RegisterTypes();
-		Jettison::Celestial::RegisterTypes();
-		Jettison::Space::RegisterTypes();
+		Manifest::Space::RegisterSystemTypes();
+		Manifest::Space::RegisterTypes();
 		using namespace Jettison::Reflect;
 		constexpr Attribute kDefined = Attribute::Saved | Attribute::Moddable;
 
@@ -406,9 +406,9 @@ std::span<const DefinitionType> DefinitionTypes()
 		    {YamlMigrations{"Dock.StationLayout", {Jettison::Dock::kDefinitionVersion}},
 		     "manifest/definitions/stations", entt::resolve<Jettison::Dock::PlatformLayout>(), nullptr},
 		    {YamlMigrations{"Ai.CruiseDrive", kVersion1}, "manifest/definitions/drives",
-		     entt::resolve<Jettison::Space::CruiseDrive>(), nullptr},
-		    {YamlMigrations{"Celestial.StarSystem", {Jettison::Celestial::kStarSystemFormatVersion}},
-		     "manifest/definitions/systems", entt::resolve<Jettison::Celestial::StarSystem>(), nullptr},
+		     entt::resolve<Manifest::Space::CruiseDrive>(), nullptr},
+		    {YamlMigrations{"Celestial.StarSystem", {Manifest::Space::kStarSystemFormatVersion}},
+		     "manifest/definitions/systems", entt::resolve<Manifest::Space::StarSystem>(), nullptr},
 		    {YamlMigrations{"Manifest.NamePool", kVersion1}, "manifest/definitions/name-pools",
 		     entt::resolve<NamePoolDefinition>(), &IdOf<NamePoolDefinition, &NamePoolDefinition::pool>},
 		    {YamlMigrations{"Manifest.GameMode", kVersion1}, "manifest/definitions/game-modes",

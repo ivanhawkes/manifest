@@ -10,8 +10,8 @@
 #include <vector>
 
 #include <jettison/serialise/Migration.h>
-#include <jettison/space/Cruise.h>
 #include <jettison/transit/Profile.h>
+#include <manifest/space/Cruise.h>
 
 #include <manifest/config/SimulationConfig.h>
 

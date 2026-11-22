@@ -10,8 +10,8 @@
 
 #include <jettison/sim/Controller.h>
 #include <jettison/sim/SimWorld.h>
-#include <jettison/space/Cruise.h>
 #include <jettison/transit/Profile.h>
+#include <manifest/space/Cruise.h>
 
 #include <manifest/command/Requests.h>
 #include <manifest/content/Content.h>

@@ -18,9 +18,9 @@
 #include <jettison/sim/DefinitionRegistry.h>
 #include <jettison/sim/SimWorld.h>
 #include <jettison/sim/Snapshot.h>
-#include <jettison/space/Cruise.h>
 #include <jettison/transit/Profile.h>
 #include <jettison/vfs/FileSystem.h>
+#include <manifest/space/Cruise.h>
 
 #include <manifest/company/Company.h>
 #include <manifest/policy/Policy.h>
@@ -614,7 +614,7 @@ TEST_CASE(
 	};
 	const double days =
 	    hull->occupants.value_or(0) *
-	    Jettison::Space::CruiseSeconds(
+	    Manifest::Space::CruiseSeconds(
 	        hosted.content.drives.at(Manifest::Content::RegistryName(record.hullId)),
 	        glm::distance(registry.get<const Jettison::Sim::Transform>(ship).position, at(brine))) /
 	    86'400.0;
@@ -796,7 +796,7 @@ TEST_CASE("Choosing, a policy takes the thrust that makes the most an hour, or i
 		CHECK(job.phase == World::Phase::ToDestination);
 		CHECK(job.thrustBps == 2500);
 		const auto &drive =
-		    hosted->world.Registry().get<const Jettison::Space::CruiseDrive>(hosted->Ship("Ship1"));
+		    hosted->world.Registry().get<const Manifest::Space::CruiseDrive>(hosted->Ship("Ship1"));
 		REQUIRE(drive.profile);
 		REQUIRE(drive.profile->thrustShare);
 		CHECK(*drive.profile->thrustShare == doctest::Approx(0.25));

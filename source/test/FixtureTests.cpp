@@ -24,8 +24,8 @@
 #include <jettison/physics/PhysicsWorld.h>
 #include <jettison/serialise/Archive.h>
 #include <jettison/sim/SimWorld.h>
-#include <jettison/space/Cruise.h>
 #include <jettison/transit/Profile.h>
+#include <manifest/space/Cruise.h>
 
 #include <glm/geometric.hpp>
 
@@ -181,7 +181,7 @@ struct Hosted
 		REQUIRE(
 		    Run(kHost, Company::kProvision, Company::kVersion,
 		        Company::Provision{"Ada", "Ada", "Ada Co"}) == Result::Succeeded);
-		world.Registry().get<Jettison::Space::CruiseDrive>(Ship()).profile.reset();
+		world.Registry().get<Manifest::Space::CruiseDrive>(Ship()).profile.reset();
 		// The company's starting credits are made by provisioning, so the ledger starts after it.
 		credits = Credits(world.Registry());
 		creditBreach.reset();
@@ -675,7 +675,7 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 	{ return on.services.identities.Find(Kind::Ship, id); };
 	// Both cruises on the drive's power law, as the bootstrap's, so that a trade is minutes (D-090).
 	for (const std::string &id : kTraderShips)
-		registry.get<Jettison::Space::CruiseDrive>(ship(hosted, id)).profile.reset();
+		registry.get<Manifest::Space::CruiseDrive>(ship(hosted, id)).profile.reset();
 	const std::vector<std::byte> start = hosted.world.Save();
 	const std::uint64_t first = hosted.world.Clock().Step();
 	hosted.world.SetRecording(true);
@@ -782,7 +782,7 @@ void ForwardTo(Hosted &hosted, std::uint64_t step)
 }
 
 // The metres of a cruise's course, waypoints included.
-double Metres(const Jettison::Space::Cruising &cruising)
+double Metres(const Manifest::Space::Cruising &cruising)
 {
 	double metres = 0.0;
 	for (std::size_t point = 1; point < cruising.course.size(); ++point)
@@ -825,7 +825,7 @@ void Manned(Hosted &hosted, bool fullHold)
 struct Departed
 {
 	World::Job job;
-	Jettison::Space::Cruising cruising;
+	Manifest::Space::Cruising cruising;
 	World::Fuel fuel;
 	double seconds{0.0};
 };
@@ -837,13 +837,13 @@ Departed Depart(Hosted &hosted)
 {
 	const entt::registry &registry = hosted.world.Registry();
 	for (std::uint64_t step = 0;
-	     step < kJourneySteps && !registry.all_of<Jettison::Space::Cruising>(hosted.Ship()); ++step)
+	     step < kJourneySteps && !registry.all_of<Manifest::Space::Cruising>(hosted.Ship()); ++step)
 		hosted.Step();
-	REQUIRE(registry.all_of<Jettison::Space::Cruising>(hosted.Ship()));
+	REQUIRE(registry.all_of<Manifest::Space::Cruising>(hosted.Ship()));
 	CHECK_FALSE(hosted.creditBreach);
 	const Departed departed{
 	    registry.get<const World::Job>(hosted.Ship()),
-	    registry.get<const Jettison::Space::Cruising>(hosted.Ship()), hosted.Ship1().fuel};
+	    registry.get<const Manifest::Space::Cruising>(hosted.Ship()), hosted.Ship1().fuel};
 	const World::Job &job = departed.job;
 	CHECK(job.itemId == kGood);
 	CHECK(job.sourceId == kOre);
@@ -1072,7 +1072,7 @@ std::string Trader(Hosted &hosted)
 		        .principalId == "Ada")
 		{
 			shipId = identity.id;
-			registry.get<Jettison::Space::CruiseDrive>(entity).profile.reset();
+			registry.get<Manifest::Space::CruiseDrive>(entity).profile.reset();
 		}
 	REQUIRE_FALSE(shipId.empty());
 	std::erase_if(
@@ -1180,7 +1180,7 @@ TEST_CASE("Eight days of two traders keep every broker's stock within half and t
 	(void)Trader(hosted);
 	entt::registry &registry = hosted.world.Registry();
 	for (const std::string &id : kTraderShips)
-		registry.get<Jettison::Space::CruiseDrive>(hosted.services.identities.Find(Kind::Ship, id))
+		registry.get<Manifest::Space::CruiseDrive>(hosted.services.identities.Find(Kind::Ship, id))
 		    .profile.reset();
 	std::map<std::string, std::uint64_t> targets;
 	for (const auto &[entity, identity, broker, stock] :
@@ -1313,7 +1313,7 @@ TEST_CASE("Ships flown both ways between neighbouring stations of one orbit keep
 	send({&ships[1], &ships[3]}, kOre);
 	const auto radius = [&](entt::entity ship)
 	{
-		if (const auto *cruising = registry.try_get<const Jettison::Space::Cruising>(ship))
+		if (const auto *cruising = registry.try_get<const Manifest::Space::Cruising>(ship))
 			return physics.ShapeRadius(cruising->body.shape);
 		return physics.ShapeRadius(registry.get<const Jettison::Physics::Body>(ship).shape);
 	};
@@ -1335,7 +1335,7 @@ TEST_CASE("Ships flown both ways between neighbouring stations of one orbit keep
 		const std::uint64_t now = hosted.world.Clock().Step();
 		for (Flown &flown : ships)
 		{
-			const bool cruising = registry.all_of<Jettison::Space::Cruising>(flown.ship);
+			const bool cruising = registry.all_of<Manifest::Space::Cruising>(flown.ship);
 			if (cruising && flown.cruised == 0 && flown.sent != 0)
 				flown.cruised = now;
 			if (!cruising && flown.cruised != 0 && flown.came == 0)
