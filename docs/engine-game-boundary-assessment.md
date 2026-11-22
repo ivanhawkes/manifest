@@ -18,6 +18,14 @@ the consumer matrix and the neutral-startup registration check. The evidence tab
 2026-11-15 baseline, and the lines it cites no longer exist. Manifest's side of these checks
 arrives with H06 and later stages.
 
+**Status, 2026-11-23:** the space extraction
+([Jettison's plan](../../jettison/docs/space-extraction-plan.md)) is done. The engine keeps only
+what has a neutral name and serves more than one genre; the space setting, star systems, their
+orbits and the galaxy, cruising, jump lanes, gates and routes, is Manifest's `space` module
+([architecture](architecture.md#space)), which tests all space code, and the engine's space sample
+is retired. Jettison's `neutral_words` suite holds its modules to none of the setting's words.
+Every Manifest suite and pinned hash held on the local engine at Jettison `359ad42`.
+
 ## User's required boundary
 
 Manifest owns its production game code and content. Jettison supplies reusable engine

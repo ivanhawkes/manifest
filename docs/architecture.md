@@ -124,6 +124,92 @@ and existing credit balances and fees remain integers. These are development API
 script or save ABI. Engine API conversions, VFS-only content and capability-limited scripts
 remain integration work; see the roadmap.
 
+## Space
+
+The `space` module is the space setting, moved here from Jettison in its space extraction
+(2026-11-23, [Jettison's plan](../../jettison/docs/space-extraction-plan.md)). It builds on the engine's neutral
+capabilities, frames and rails, transit, portals and slots, steering and the docks
+([Jettison's architecture](../../jettison/docs/architecture.md#transit)), and the engine names none of it. Its
+reflected names are `Space.*` since the extraction's seventh slice.
+
+### Star systems and the galaxy
+
+A star system (`space/StarSystem.h`) is a physics frame (`Space::DefineStarSystem`,
+`StarSystemFrame.h`): its bodies on Kepler orbits (`Orbit.h`) are the frame model's rails, a
+station's kinematic body follows its orbit, and each body with a gravitational parameter pulls as a
+point mass. The galaxy (`Galaxy.h`) is a graph: each system by name, with its system file and its
+position in light years, and each lane joining a jump point in one system to a jump point in
+another, travelled both ways, with a transit time in simulation seconds. A jump point is the end of
+one lane, so a gate says where it leads. A lane's toll, in whole credits, is the light years between
+its systems at the galaxy's toll per light year. Each system's file is checked against the lanes
+that end in it when it is loaded.
+
+### Jumps
+
+A jump carries an entity along a lane (`Lanes.h`), a portal of the engine's: `Space::EnterLane`,
+from a sender that commands it (a gate sends a ship it cleared as no one in particular), takes it out
+of its system through a jump point (its `InFrame` none, a `Space::OnLane` saying where it is going
+and the step it arrives), gives up its destination (`Transit::Depart`), and the system `lanes`,
+after physics, brings it out (`Transit::ComeOut`) at the far jump point when the transit's whole
+steps are run. A body comes out at rest in the gate's own frame (or that of a station it keeps by),
+facing the way the gate faces (`Space::JumpPointFacing`: its planet), with its flight controls
+taken against nothing; ahead of the ring, clear of its sensor by half the ring's 60 m depth, its hull
+and 20 m, so the gate does not see it pass through; and clear of every body already there and of
+what came out before it in the step, on rings about the place across the way the gate faces, each a
+hull's breadth and 20 m further out, so two ships through one gate a moment apart do not come out in
+each other.
+
+### Gates
+
+A gate sends the ships it has cleared (`Gates.h`), a gated portal of the engine's: each jump point's
+gate is an entity, `Space::Gate`, made at the start (`Gates::MakeGates`) and saved, a kinematic
+sensor on the jump point's rails, a cylinder of the ring's radius and 60 m deep (`Gates::RingShape`),
+turned as the jump point faces (`Space::BodyOrientation`). It is given in command order, as a pad
+is: `Space::RequestTransit`, with its sender, clears a ship at once if the gate is free or puts it at
+the back of the queue, the gate's clearance a slot and the ship's `Space::Transit` its claim. The
+checks are the sender's command of the ship, the ship flying and in the gate's system and frame, a
+lane leaving through the gate, the hull fitting the ring, and the game's toll rule
+(`Space::TollRule`), asked whether the ship's owner can pay and told to charge it. Each step the
+system `gates`, after the lanes', gives up a clearance whose ship has gone, left the frame or is
+cruising; sends a cleared ship touching its ring along the lane, charging its owner as it enters;
+lets every other body that began to touch a ring pass through, saying why (`Space::GatePassed`);
+lapses a clearance unused for two minutes; and clears the next in each free gate's queue. A ring is
+placed, not swept, so a ship crossing it at under its depth a step, 3.6 km/s, is seen.
+
+A route across the galaxy (`Routes.h`) is A* (`Ai::FindPath`) over its jump points, each lane an
+edge at its transit time and each pair of a system's gates an edge at what crossing the system
+costs, which the caller says; `Space::CrossingByCourse` says it from a course through the system's
+waypoints, round its star, planets and moons.
+
+### Cruising
+
+A system is crossed by cruising: a station 1.4 × 10⁸ m from its planet and the planet 3 × 10¹⁰ m from
+the next are days apart at a flight model's 150 m/s. `Space::Cruise`, with its sender, takes a ship
+to a body of its system (`Cruise.h`), a passage of the engine's: it leaves physics and its frame, its
+body kept in its `Space::Cruising` until it arrives, placed each step along its course by the system
+`cruise`, after the lanes', and arrives at rest facing the body, a quarter of the body's radius and
+4 km beyond it, in the body's frame or, for a gate kept by a station, the station's. A cruise to a
+body with gravity arrives no nearer than where it pulls at 1 m/s², which a ship's assist holds
+against. A frame changes at a cruise's ends and a lane's and nowhere else. A cruise does not engage
+within a station's reach, so docking stays in physics; `Space::ClearOf` flies a ship out of it first.
+
+How long a cruise takes is the ship's drive (`Space::CruiseDrive`): the seconds a cruise of 10⁸ m
+takes, rising as the distance's fourth root, or a motion profile (`Transit::MotionProfile`), a boost
+acceleration for at most a time, half at each end, and a sustained one between, which may thrust for
+only a share of the time (`thrustShare`) and coast between, `Transit::Thrust` giving each end's
+seconds, which fuel is priced from. Where the target will be on arrival is solved rather than
+chased, the time and the target's place each from the other in eight rounds. The course is a few
+straight legs round the stars, planets and moons in the way (`Ai::Waypoints`, 2 km clear of each),
+plotted relative to its carrier, the nearest body both ends orbit, and carried with it; a body in
+the way is placed where the ship passes it by its time. Along its course a ship eases out and in, or
+covers it as its profile does, slowed to whole steps, and faces along its leg. Arrivals, the lanes'
+and the cruises', share one placement (`Transit::ClearPlace`), clear of every body in the system by
+both radii and `kArrivalClearance`, in entity order, a gate's ring being no body an arrival keeps
+clear of.
+
+The retired sample's presentation of these, the jump's transition behind a fade, the galaxy panel
+and the flight panel, is in [Jettison's history](../../jettison/docs/history.md), for the graphical client (L15).
+
 ## Dedicated server and administration (planned)
 
 The [gameplay and persistent server plan](gameplay-and-server-plan.md) defines the planned
