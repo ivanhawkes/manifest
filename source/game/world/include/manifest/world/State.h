@@ -507,14 +507,19 @@ struct Arrears
 	bool operator==(const Arrears &) const = default;
 };
 
+// A journey's thrust when its engines thrust to the midpoint, in basis points of its cruise's time.
+inline constexpr std::uint32_t kFullThrustBps = 10000;
+
 // A ship's standing trade policy (D-097), which its owner sets: whether its job runs, the whole credits
 // a trade's estimate must be above and a sale must recover beyond its lot's cost and charges, and the
-// whole credits below that the owner allows a lot to sell for, each at least 0.
+// whole credits below that the owner allows a lot to sell for, each at least 0; and the thrust every
+// leg flies (D-107), at most kFullThrustBps, 0 for the job to choose one with each trade.
 struct Policy
 {
 	bool enabled{false};
 	std::int64_t targetProfit{0};
 	std::int64_t lossAllowance{0};
+	std::uint32_t thrustBps{0};
 
 	bool operator==(const Policy &) const = default;
 };
@@ -569,6 +574,12 @@ struct Job
 	// occupant-days.
 	double oxygenKilograms{0.0};
 	double cartridgeDays{0.0};
+	// The thrust its trade was chosen at, which its legs fly, above 0 and at most kFullThrustBps; and
+	// the fuel its ship's journeys have burned while the lot is aboard and its job has not yet charged
+	// to the lot (W21), in kilograms, each finite and at least 0.
+	std::uint32_t thrustBps{kFullThrustBps};
+	double reactionMassKilograms{0.0};
+	double pelletKilograms{0.0};
 
 	bool operator==(const Job &) const = default;
 };

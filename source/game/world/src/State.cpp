@@ -274,6 +274,8 @@ std::optional<std::string> Broken(const Policy &policy)
 {
 	if (policy.targetProfit < 0 || policy.lossAllowance < 0)
 		return "a policy's target or allowance is below 0";
+	if (policy.thrustBps > kFullThrustBps)
+		return "a policy's thrust is past full";
 	return std::nullopt;
 }
 
@@ -300,6 +302,12 @@ std::optional<std::string> Broken(const Job &job)
 	    job.oxygenKilograms < 0.0 || job.cartridgeDays < 0.0 ||
 	    (job.totes == 0 && (job.oxygenKilograms != 0.0 || job.cartridgeDays != 0.0)))
 		return "a job's life support drawn is below 0, not finite, or of no lot";
+	if (job.thrustBps == 0 || job.thrustBps > kFullThrustBps)
+		return "a job's thrust is not above 0 or is past full";
+	if (!std::isfinite(job.reactionMassKilograms) || !std::isfinite(job.pelletKilograms) ||
+	    job.reactionMassKilograms < 0.0 || job.pelletKilograms < 0.0 ||
+	    (job.totes == 0 && (job.reactionMassKilograms != 0.0 || job.pelletKilograms != 0.0)))
+		return "a job's fuel burned is below 0, not finite, or of no lot";
 	return std::nullopt;
 }
 
@@ -502,7 +510,8 @@ void RegisterTypes()
 		RegisterType<Policy>("Manifest.World.Policy")
 		    .Field<&Policy::enabled>("enabled", kSaved)
 		    .Field<&Policy::targetProfit>("targetProfit", kSaved)
-		    .Field<&Policy::lossAllowance>("lossAllowance", kSaved);
+		    .Field<&Policy::lossAllowance>("lossAllowance", kSaved)
+		    .Field<&Policy::thrustBps>("thrustBps", kSaved);
 		RegisterEnum<Phase>("Manifest.World.Phase")
 		    .Value<Phase::Choosing>("Choosing")
 		    .Value<Phase::ToSource>("ToSource")
@@ -529,7 +538,10 @@ void RegisterTypes()
 		    .Field<&Job::blockedSince>("blockedSince", kSaved)
 		    .Field<&Job::retry>("retry", kSaved)
 		    .Field<&Job::oxygenKilograms>("oxygenKilograms", kSaved)
-		    .Field<&Job::cartridgeDays>("cartridgeDays", kSaved);
+		    .Field<&Job::cartridgeDays>("cartridgeDays", kSaved)
+		    .Field<&Job::thrustBps>("thrustBps", kSaved)
+		    .Field<&Job::reactionMassKilograms>("reactionMassKilograms", kSaved)
+		    .Field<&Job::pelletKilograms>("pelletKilograms", kSaved);
 		RegisterType<PaidPrice>("Manifest.World.PaidPrice")
 		    .Field<&PaidPrice::itemId>("itemId", kSaved)
 		    .Field<&PaidPrice::price>("price", kSaved);

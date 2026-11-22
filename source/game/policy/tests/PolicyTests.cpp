@@ -3,8 +3,10 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <map>
+#include <memory>
 #include <numeric>
 #include <string>
 #include <string_view>
@@ -223,10 +225,21 @@ TEST_CASE("A ship's owner sets its policy, which gives it a job, and no one else
 	CHECK(hosted.SetPolicy(kAda, {"Ship9", true, 0, 0}) == Result::UnknownTarget);
 	CHECK(hosted.SetPolicy(kAda, {"Ship1", true, -1, 0}) == Result::InvalidQuantity);
 	CHECK(hosted.SetPolicy(kAda, {"Ship1", true, 0, -1}) == Result::InvalidQuantity);
+	CHECK(
+	    hosted.SetPolicy(kAda, {"Ship1", true, 0, 0, World::kFullThrustBps + 1}) ==
+	    Result::InvalidQuantity);
 	CHECK_FALSE(registry.all_of<World::Policy>(ship));
 
-	CHECK(hosted.SetPolicy(kAda, {"Ship1", false, 250, 100}) == Result::Succeeded);
-	CHECK(registry.get<World::Policy>(ship) == World::Policy{false, 250, 100});
+	// A version-1 Set, before the thrust, is refused as one of no registered version is.
+	const std::vector<std::byte> bytes =
+	    BinaryArchive::Write(Set{"Ship1", true, 0, 0}, FormatVersion{1});
+	const Receipt old = hosted.requests.Admit(
+	    hosted.world, kAda, hosted.requests.NextSequence(kAda), std::string{kSet}, 1, bytes);
+	CHECK(old.status == Receipt::Status::Refused);
+	CHECK(old.result == Result::UnsupportedCommand);
+
+	CHECK(hosted.SetPolicy(kAda, {"Ship1", false, 250, 100, 2500}) == Result::Succeeded);
+	CHECK(registry.get<World::Policy>(ship) == World::Policy{false, 250, 100, 2500});
 	CHECK(registry.get<World::Job>(ship) == World::Job{});
 
 	// An edit keeps the job where it is, the allowance it has spent with it.
@@ -267,7 +280,25 @@ TEST_CASE("A saved policy and job load, and a broken one does not")
 	hosted.world.Registry().replace<World::Job>(ship, drawn);
 	Hosted lotless;
 	CHECK_THROWS(lotless.world.Load(hosted.world.Save()));
+	// Fuel burned with no lot, and a thrust of none or past full.
+	World::Job burned;
+	burned.reactionMassKilograms = 1.0;
+	World::Job stopped;
+	stopped.thrustBps = 0;
+	World::Job past;
+	past.thrustBps = World::kFullThrustBps + 1;
+	for (const World::Job &job : {burned, stopped, past})
+	{
+		hosted.world.Registry().replace<World::Job>(ship, job);
+		Hosted refusedJob;
+		CHECK_THROWS(refusedJob.world.Load(hosted.world.Save()));
+	}
 	hosted.world.Registry().replace<World::Job>(ship, World::Job{});
+	hosted.world.Registry().replace<World::Policy>(
+	    ship, World::Policy{true, 5, 7, World::kFullThrustBps + 1});
+	Hosted pastFull;
+	CHECK_THROWS(pastFull.world.Load(hosted.world.Save()));
+	hosted.world.Registry().replace<World::Policy>(ship, World::Policy{true, 5, 7});
 
 	// A company's last prices, each of one item in name order and above 0.
 	const entt::entity company = hosted.Find(Kind::Company, "Company1");
@@ -332,26 +363,27 @@ TEST_CASE(
 	const std::int64_t before = hosted.Balance("Company1");
 	REQUIRE(hosted.SetPolicy(kAda, {"Ship1", true, 0, 0}) == Result::Succeeded);
 
-	// Brine's report is the starting one, stale; the job's trade is to it, shown with its estimate:
-	// copper, which Ore makes and Brine's broker, holding two totes, bids well over Ore's ask for.
+	// Ore Vale's report is a starting one, stale; the job's trade is to it, shown with its estimate:
+	// lentils, which Vale bids over Highport's ask for, a hop round Ore's orbit that makes more an hour
+	// than a run to another planet (W21).
 	const Manifest::Query::Snapshot seen =
 	    Manifest::Query::Observe(hosted.world, hosted.identities, kAda);
-	const auto brine = std::ranges::find_if(
+	const auto vale = std::ranges::find_if(
 	    seen.markets, [](const Manifest::Query::MarketView &market)
-	    { return market.report.venueId == "VenueBrineHighport"; });
-	REQUIRE(brine != seen.markets.end());
-	CHECK_FALSE(brine->live);
+	    { return market.report.venueId == "VenueOreValeStation"; });
+	REQUIRE(vale != seen.markets.end());
+	CHECK_FALSE(vale->live);
 	const Manifest::Query::ShipView &ship = seen.companies.at(0).ships.at(0);
 	REQUIRE(ship.policy);
 	REQUIRE(ship.job);
-	// Docked at Ore, its source, it buys there and pays Brine's docking fee to go.
+	// Docked at Highport, its source, it buys there and pays Vale's docking fee to go.
 	CHECK(ship.job->phase == World::Phase::ToDestination);
-	CHECK(ship.job->itemId == "ItemCopper");
+	CHECK(ship.job->itemId == "ItemLentils");
 	CHECK(ship.job->sourceId == "VenueOreHighport");
-	CHECK(ship.job->destinationId == "VenueBrineHighport");
+	CHECK(ship.job->destinationId == "VenueOreValeStation");
 	CHECK(ship.job->estimate > 0);
 	REQUIRE(ship.journey);
-	CHECK(ship.journey->venueId == "VenueBrineHighport");
+	CHECK(ship.journey->venueId == "VenueOreValeStation");
 	CHECK(ship.job->totes > 0);
 	CHECK(ship.job->charges == 100);
 	CHECK(hosted.Balance("Company1") == before - ship.job->cost - 100);
@@ -542,11 +574,17 @@ TEST_CASE(
 	entt::registry &registry = hosted.world.Registry();
 	const entt::entity ship = hosted.Ship("Ship1");
 	const World::Ship &record = registry.get<const World::Ship>(ship);
-	const std::string ore = "VenueOreHighport";
 	const std::string brine = "VenueBrineHighport";
 	const Manifest::Content::LifeSupportTuning &tuning = hosted.content.tuning.lifeSupport;
+	// Refuelling off and no fuel ever bought, so the fuel's estimate is nothing (W21).
+	registry.emplace_or_replace<World::Refuel>(ship, false);
 	const auto charges = [&]
-	{ return Charges(registry, hosted.identities, hosted.content, ship, {}, brine); };
+	{
+		return EstimateRoute(
+		           registry, hosted.identities, hosted.content, ship, {}, brine, World::kFullThrustBps,
+		           0.0)
+		    .charges;
+	};
 	const auto worth = [&](double kilograms, double occupantDays)
 	{
 		return static_cast<std::int64_t>(std::ceil(
@@ -573,11 +611,12 @@ TEST_CASE(
 		        Manifest::Travel::StationOf(registry, hosted.content, venueId))
 		    .position;
 	};
-	const double days = hull->occupants.value_or(0) *
-	                    Jettison::Space::CruiseSeconds(
-	                        hosted.content.drives.at(Manifest::Content::RegistryName(record.hullId)),
-	                        glm::distance(at(ore), at(brine))) /
-	                    86'400.0;
+	const double days =
+	    hull->occupants.value_or(0) *
+	    Jettison::Space::CruiseSeconds(
+	        hosted.content.drives.at(Manifest::Content::RegistryName(record.hullId)),
+	        glm::distance(registry.get<const Jettison::Sim::Transform>(ship).position, at(brine))) /
+	    86'400.0;
 	REQUIRE(days > 0.0);
 	const std::int64_t estimated = worth(days * tuning.oxygenKilogramsPerOccupantDay, days);
 	CHECK(estimated > 0);
@@ -621,6 +660,179 @@ TEST_CASE(
 	CHECK(job.cartridgeDays == 0.0);
 	CHECK(job.totes == 4);
 	CHECK(worth(kilograms, occupantDays) >= estimated);
+}
+
+
+// The starter's mode profile, the fuel tuning and the distance from the ship to a station now.
+struct Burn
+{
+	const Jettison::Space::CruiseProfile &mode;
+	const Manifest::Content::FuelTuning &tuning;
+	double metres{0.0};
+};
+Burn BurnOf(Hosted &hosted, entt::entity ship, const std::string &to)
+{
+	const entt::registry &registry = hosted.world.Registry();
+	const World::Ship &record = registry.get<const World::Ship>(ship);
+	const auto at = [&](const std::string &venueId)
+	{
+		return registry
+		    .get<const Jettison::Sim::Transform>(
+		        Manifest::Travel::StationOf(registry, hosted.content, venueId))
+		    .position;
+	};
+	return {
+	    *hosted.content.drives.at(Manifest::Content::RegistryName(record.hullId)).profile,
+	    hosted.content.tuning.fuel,
+	    glm::distance(registry.get<const Jettison::Sim::Transform>(ship).position, at(to))};
+}
+
+
+TEST_CASE("Fuel burned with a lot aboard is charged to it at the company's last prices, as estimated")
+{
+	Hosted hosted;
+	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
+	hosted.Lot(4, 400);
+	entt::registry &registry = hosted.world.Registry();
+	const entt::entity ship = hosted.Ship("Ship1");
+	const World::Ship &record = registry.get<const World::Ship>(ship);
+	const std::string brine = "VenueBrineHighport";
+	registry.emplace_or_replace<World::Refuel>(ship, false);
+	const auto route = [&](std::uint32_t thrustBps)
+	{
+		return EstimateRoute(
+		    registry, hosted.identities, hosted.content, ship, {}, brine, thrustBps, 0.0);
+	};
+
+	// With no fuel ever bought the fuel is estimated at nothing, at any thrust; a slower burn takes
+	// longer.
+	CHECK(route(World::kFullThrustBps).charges == 100);
+	CHECK(route(2500).charges == 100);
+	CHECK(route(2500).seconds > route(World::kFullThrustBps).seconds);
+	CHECK(route(World::kFullThrustBps).fuelled);
+
+	// At the company's last prices, 0.25 a kilogram of reaction mass and 1,200 of pellets, the burn
+	// at everything aboard for the cruise to Brine, rounded up; less at a quarter's thrust.
+	constexpr std::int64_t kMassPrice = 250'000;
+	constexpr std::int64_t kPelletPrice = 1'200'000'000;
+	const Burn burn = BurnOf(hosted, ship, brine);
+	registry.emplace<World::Paid>(
+	    hosted.Find(Kind::Company, "Company1"),
+	    std::vector<World::PaidPrice>{
+	        {burn.tuning.pelletItemId, kPelletPrice}, {burn.tuning.reactionMassItemId, kMassPrice}});
+	const auto worth = [&](const World::Fuel &fuel)
+	{
+		return static_cast<std::int64_t>(std::ceil(
+		    (fuel.reactionMass * static_cast<double>(kMassPrice) +
+		     fuel.pellets * static_cast<double>(kPelletPrice)) /
+		    1e6));
+	};
+	const World::Fuel full = Manifest::Travel::Burned(
+	    burn.tuning,
+	    Manifest::Travel::Profile(burn.mode, World::kFullThrustBps, Manifest::Travel::kMilliGPerG),
+	    Manifest::Travel::TonnesAboard(registry, hosted.identities, hosted.content, ship), burn.metres);
+	REQUIRE(full.reactionMass > 0.0);
+	CHECK(route(World::kFullThrustBps).charges == 100 + worth(full));
+	CHECK(route(2500).charges < route(World::kFullThrustBps).charges);
+
+	// Flown to Brine at full thrust with its lot aboard, its policy off: what its tanks gave is the
+	// job's, and charged as its job next decides docked.
+	World::Job &job = hosted.Job();
+	job.phase = World::Phase::ToDestination;
+	job.destinationId = brine;
+	const World::Fuel before = registry.get<const World::Fuel>(ship);
+	REQUIRE(
+	    hosted.Run(
+	        kAda, Manifest::Travel::kTravel, Manifest::Travel::kVersion,
+	        Manifest::Travel::Travel{"Ship1", brine}) == Result::Succeeded);
+	const World::Fuel &after = registry.get<const World::Fuel>(ship);
+	CHECK(job.reactionMassKilograms == doctest::Approx(before.reactionMass - after.reactionMass));
+	CHECK(job.pelletKilograms == doctest::Approx(before.pellets - after.pellets));
+	CHECK(job.reactionMassKilograms == doctest::Approx(full.reactionMass).epsilon(0.01));
+	const World::Fuel tallied{job.reactionMassKilograms, job.pelletKilograms};
+	const auto ended = [&] { return registry.get<const World::Journey>(ship).Ended(); };
+	const std::uint64_t limit = hosted.world.Clock().Step() + std::uint64_t{60} * 86'400 * 8;
+	while (!ended() && hosted.world.Clock().Step() < limit)
+		hosted.world.FastForward(limit);
+	REQUIRE(ended());
+	REQUIRE(record.dockedAt == brine);
+	const std::int64_t charged = job.charges;
+	REQUIRE(
+	    hosted.SetPolicy(kAda, {"Ship1", true, std::numeric_limits<std::int64_t>::max() / 2, 0}) ==
+	    Result::Succeeded);
+	// No life support was ever bought, so the fuel is all that is charged.
+	CHECK(job.charges == charged + worth(tallied));
+	CHECK(job.reactionMassKilograms == 0.0);
+	CHECK(job.pelletKilograms == 0.0);
+}
+
+
+TEST_CASE("Choosing, a policy takes the thrust that makes the most an hour, or its owner's own")
+{
+	const auto chosen =
+	    [](const std::function<void(Hosted &, entt::entity)> &setUp, std::uint32_t thrustBps)
+	{
+		auto hosted = std::make_unique<Hosted>();
+		REQUIRE(hosted->Provision("Ada") == Result::Succeeded);
+		const entt::entity ship = hosted->Ship("Ship1");
+		hosted->world.Registry().emplace_or_replace<World::Refuel>(ship, false);
+		setUp(*hosted, ship);
+		REQUIRE(hosted->SetPolicy(kAda, {"Ship1", true, 0, 0, thrustBps}) == Result::Succeeded);
+		return hosted;
+	};
+	const auto nothing = [](Hosted &, entt::entity) {};
+
+	// With its fuel at no price, every thrust's trade estimates alike and the fastest makes the most.
+	{
+		const auto hosted = chosen(nothing, 0);
+		CHECK(hosted->Job().phase == World::Phase::ToDestination);
+		CHECK(hosted->Job().thrustBps == World::kFullThrustBps);
+	}
+	// Its owner's thrust, which its journey flies.
+	{
+		const auto hosted = chosen(nothing, 2500);
+		const World::Job &job = hosted->Job();
+		CHECK(job.phase == World::Phase::ToDestination);
+		CHECK(job.thrustBps == 2500);
+		const auto &drive =
+		    hosted->world.Registry().get<const Jettison::Space::CruiseDrive>(hosted->Ship("Ship1"));
+		REQUIRE(drive.profile);
+		REQUIRE(drive.profile->thrustShare);
+		CHECK(*drive.profile->thrustShare == doctest::Approx(0.25));
+	}
+	// Reaction mass dear, at 12 credits a kilogram, slower is worth more an hour, still a trade.
+	{
+		const auto hosted = chosen(
+		    [](Hosted &on, entt::entity)
+		    {
+			    on.world.Registry().emplace<World::Paid>(
+			        on.Find(Kind::Company, "Company1"),
+			        std::vector<World::PaidPrice>{
+			            {on.content.tuning.fuel.reactionMassItemId, 12'000'000}});
+		    },
+		    0);
+		CHECK(hosted->Job().phase == World::Phase::ToDestination);
+		CHECK(hosted->Job().thrustBps < World::kFullThrustBps);
+		CHECK(hosted->Job().estimate > 0);
+	}
+	// Its tanks nearly dry and not refuelled, no thrust listed reaches, so it flies at the most they
+	// allow, and its journey is accepted; held to full thrust, it has no trade.
+	const auto dry = [](Hosted &on, entt::entity ship)
+	{ on.world.Registry().get<World::Fuel>(ship).reactionMass = 5.0; };
+	{
+		const auto hosted = chosen(dry, 0);
+		const World::Job &job = hosted->Job();
+		CHECK(job.phase == World::Phase::ToDestination);
+		CHECK(job.thrustBps < 1000);
+		CHECK(hosted->world.Registry().all_of<World::Journey>(hosted->Ship("Ship1")));
+		CHECK(
+		    hosted->world.Registry().get<const World::Fuel>(hosted->Ship("Ship1")).reactionMass >= 0.0);
+	}
+	{
+		const auto hosted = chosen(dry, World::kFullThrustBps);
+		CHECK(hosted->Job().phase == World::Phase::Blocked);
+		CHECK(hosted->Job().blockage == World::Blockage::NoTrade);
+	}
 }
 
 
@@ -764,12 +976,12 @@ TEST_CASE("A scenario's NPC traders start provisioned, the world's own, their jo
 	CHECK(starting(ada) == 9);
 	CHECK(starting(ada) == starting(nia));
 
-	// By the first economic turn's end, its reports show a trade from Brine, Coast's glassware for
-	// Ore's Vale: it sets off for the source.
+	// By the first economic turn's end, its reports show the trade that makes the most an hour, from
+	// Ore's Vale, a hop round the orbit its starter shares: it sets off for the source.
 	hosted.StepTo(3600);
 	const World::Job &job = hosted.Job();
 	CHECK(job.phase == World::Phase::ToSource);
-	CHECK(job.sourceId == "VenueBrineHighport");
+	CHECK(job.sourceId == "VenueOreValeStation");
 	CHECK(job.estimate > 0);
 	CHECK(registry.get<World::Journey>(hosted.Ship("Ship1")).venueId == job.sourceId);
 

@@ -186,6 +186,11 @@ Result Started(SimWorld &world, const Rules &rules, const Actor &actor, const Tr
 			pFuel->reactionMass -= burned.reactionMass;
 			pFuel->pellets -= burned.pellets;
 		}
+		if (auto *pJob = registry.try_get<World::Job>(ship); pJob && pJob->totes > 0)
+		{
+			pJob->reactionMassKilograms += burned.reactionMass;
+			pJob->pelletKilograms += burned.pellets;
+		}
 	}
 	registry.emplace_or_replace<World::Journey>(
 	    ship, travel.venueId, Leg::Departing, Failure::None, world.Clock().Step());

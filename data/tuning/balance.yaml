@@ -118,6 +118,10 @@ fuel:
   # the hold, which fill the magazine (W21).
   reactionMassItemId: ItemReactionMass
   pelletItemId: ItemFusionPellets
+  # The thrusts a standing policy choosing its burn prices each trade at, in basis points, and the
+  # seconds it allows each leg beside its cruise, for leaving and docking (W21).
+  thrustSharesBps: [10000, 5000, 2500, 1000]
+  legAllowanceSeconds: 1800
 
 company:
   # A new player's trading company's account, in whole credits (D-077): about a full hold of grain

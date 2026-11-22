@@ -664,6 +664,13 @@ void CheckTuning(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 		checker.Require(
 		    NotNegative(fuel.occupantKilograms), "fuel.occupantKilograms", "must not be below 0");
 		checker.Require(
+		    !fuel.thrustSharesBps.empty() &&
+		        std::ranges::all_of(
+		            fuel.thrustSharesBps, [](std::uint32_t bps) { return bps > 0 && bps <= 10000; }),
+		    "fuel.thrustSharesBps", "must name at least one, each in [1, 10000]");
+		checker.Require(
+		    Positive(fuel.legAllowanceSeconds), "fuel.legAllowanceSeconds", "must be above 0");
+		checker.Require(
 		    tuning.company.startingCredits > 0, "company.startingCredits", "must be above 0");
 		checker.Require(
 		    tuning.market.listingFeeBps >= 0 && tuning.market.listingFeeBps <= 10000,

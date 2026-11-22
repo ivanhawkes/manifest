@@ -1478,7 +1478,7 @@ a starting point (mine, the user's to review). One engine provision: the coast p
   ask of the venue the ship refuels at, the last price paid where it has none, and its life support
   for the burn's longer cruise. `Manifest.Policy.Set` takes `thrustBps` (version 2): 0, the default,
   chooses; otherwise every leg flies that share. Choosing, the policy prices each trade at 1 g and each
-  of `fuel.thrustShares` (100%, 50%, 25% and 10%) whose legs the tanks can finish, the most the
+  of `fuel.thrustSharesBps` (100%, 50%, 25% and 10%) whose legs the tanks can finish, the most the
   tanks allow where it is below them, and the mode's boost at the full burn, and takes the most
   an hour: the estimate over the legs' cruise hours, each leg's `fuel.legAllowanceSeconds` (1,800,
   for leaving and docking) added; its target profit still bounds a job's estimate. Choosing per hour
@@ -1538,7 +1538,19 @@ Slices, each a commit with its suites, the gate after the third and the last:
    `SetRefuel`. Three pins moved by `World::Refuel`'s registration alone (without it each holds).
    The console has no `SetRefuel` yet: refuelling stays on there.
 4. The policy: the lot's charge, the estimate at a burn and the choice per hour, a fixed share
-   (`policy`), the pins moved and why.
+   (`policy`), the pins moved and why. **Done** 2026-11-22. A journey's fuel is added to its job
+   while the lot is aboard and charged to it at `World::Paid` as it docks; `Policy::EstimateRoute`,
+   for `Charges`, prices each leg's burn at its thrust and 1 g for everything aboard and the lot's
+   tonnes, at the ask where the ship refuels, and gives the route's seconds and whether the tanks
+   reach, a gram to spare; `Manifest.Policy.Set` version 2 takes `thrustBps`. Choosing per hour,
+   the policies hop round Ore's one orbit, Highport's lentils to Vale, which found a Jettison gap
+   provisioned on pin `2b3cfce`: ships leaving Vale stayed at `ClearOf`'s point, measured a step
+   before physics placed them, some 500 m back round the star. That pin moved two pins by its
+   measurement alone (with both measurements back at `Now` in the fetched engine, both held). This
+   slice moved the zero-client run's again, by the policy's saved fields and its traders' hops, every
+   other check of it held; the run now passes over less, flown mostly in a station's frame. The
+   trading fixture's shortage and glut keep Ada to Highport's and Brine's reports. The station traffic
+   lanes are booked in Jettison after W21 (the user's).
 5. The fixture, on the manned profile: Ore to Brine with two totes of copper and with a full hold, the
    policy flying the light lot faster and the heavy one slower, each its fuel and time, refuelled as
    it leaves, a leg refused with refuelling off and the tanks short, a save mid-coast, and

@@ -730,8 +730,9 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 	const std::uint64_t steps = end - first;
 	MESSAGE(steps << " steps in " << calls << " calls");
 	// The cruises passed over. A ship flown in a station's frame is steered every step, and here each
-	// docked wait has the other ship so flown.
-	CHECK(calls * 3 < steps * 2);
+	// docked wait has the other ship so flown: choosing per hour, both hop between the stations of
+	// Ore's one orbit (W21), so most of the run is flown so.
+	CHECK(calls < steps);
 
 	// Loaded mid-job, it goes on to the same world.
 	Hosted loaded{MANIFEST_MOD_DIRECTORY, overlays};
@@ -759,7 +760,7 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 	CHECK(replayed.world.StateHash() == hosted.world.StateHash());
 
 	// The same in every build the gate runs; it moves as the fixture's does.
-	CHECK(hosted.world.StateHash() == 0x2488984f6ecaccf8ULL);
+	CHECK(hosted.world.StateHash() == 0xfa54e27c72cfd4d0ULL);
 }
 
 
@@ -838,8 +839,9 @@ std::uint64_t BrokerTotes(const Hosted &hosted, std::string_view venueId, std::s
 }
 
 
-// Ada provisioned at Ore, her starting reports the markets as they stand, and her ship's standing
-// policy on: the ship's ID, its cruise the drive's power law.
+// Ada provisioned at Ore, her starting reports the markets as they stand, Ore's Highport and Brine's
+// alone, so her trades are between the planets rather than hops round Ore's orbit, which make more an
+// hour (W21), and her ship's standing policy on: the ship's ID, its cruise the drive's power law.
 std::string Trader(Hosted &hosted)
 {
 	REQUIRE(
@@ -859,6 +861,9 @@ std::string Trader(Hosted &hosted)
 			registry.get<Jettison::Space::CruiseDrive>(entity).profile.reset();
 		}
 	REQUIRE_FALSE(shipId.empty());
+	std::erase_if(
+	    registry.get<World::Reports>(hosted.services.identities.Find(Kind::Principal, "Ada")).reports,
+	    [](const World::Report &report) { return report.venueId != kOre && report.venueId != kBrine; });
 	REQUIRE(
 	    hosted.Run(
 	        kAda, Manifest::Policy::kSet, Manifest::Policy::kVersion,

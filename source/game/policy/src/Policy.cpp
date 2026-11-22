@@ -4,6 +4,8 @@
 #include <cmath>
 #include <cstdint>
 #include <format>
+#include <functional>
+#include <initializer_list>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -41,6 +43,11 @@ using World::Phase;
 
 constexpr std::int64_t kMaxCredits = std::numeric_limits<std::int64_t>::max();
 constexpr double kSecondsPerDay = 86400.0;
+constexpr double kKilogramsPerTonne = 1000.0;
+constexpr double kMicrocreditsPerCredit = 1e6;
+// The fuel a leg is estimated to leave in its tanks at the least, a gram, so that Travel::Burned's
+// rounding up of its own sums never refuses a thrust chosen as the most the tanks allow.
+constexpr double kFuelMarginKilograms = 0.001;
 // A job's decisions in one step: choosing leads at once to buying where its ship is docked, or to
 // selling, and a blocked job's retry to choosing.
 constexpr int kMaxDecisions = 4;
@@ -52,9 +59,16 @@ struct Rules
 	Command::Requests &requests;
 	World::Identities &identities;
 	const Content::ContentSet &content;
-	// The scenario's venues and items, in its order, each item the count of its units a tote holds.
+	// The scenario's venues and items, in its order, each item with the count of its units a tote holds
+	// and a tote's tonnes, packed.
+	struct Item
+	{
+		std::string itemId;
+		double unitsPerTote{0.0};
+		double tonnesPerTote{0.0};
+	};
 	std::vector<std::string> venues;
-	std::vector<std::pair<std::string, double>> items;
+	std::vector<Item> items;
 	int feeBps{0};
 	std::uint64_t turnSteps{0};
 	std::uint64_t daySteps{0};
@@ -74,9 +88,10 @@ Result Sets(SimWorld &world, const World::Identities &identities, const Actor &a
 	JETTISON_VERIFY(company != entt::null);
 	if (registry.get<const World::Company>(company).principalId != actor.id)
 		return Result::NotAuthorised;
-	if (set.targetProfit < 0 || set.lossAllowance < 0)
+	if (set.targetProfit < 0 || set.lossAllowance < 0 || set.thrustBps > World::kFullThrustBps)
 		return Result::InvalidQuantity;
-	registry.emplace_or_replace<World::Policy>(ship, set.enabled, set.targetProfit, set.lossAllowance);
+	registry.emplace_or_replace<World::Policy>(
+	    ship, set.enabled, set.targetProfit, set.lossAllowance, set.thrustBps);
 	if (!registry.all_of<World::Job>(ship))
 		registry.emplace<World::Job>(ship);
 	return Result::Succeeded;
@@ -110,43 +125,190 @@ std::int64_t Added(std::int64_t left, std::int64_t right)
 }
 
 
-// What the life support is worth at the company's last prices for its goods (World::Paid), in whole
-// credits rounded up: the oxygen in kilograms, its unit, and the cartridges' occupant-days, a
-// cartridge for each cartridgeOccupantDays; nothing for a good the company never bought (D-100).
+const World::Line *LineOf(
+    const World::Reports &reports, std::string_view venueId, std::string_view itemId)
+{
+	const auto report = std::ranges::find(reports.reports, venueId, &World::Report::venueId);
+	if (report == reports.reports.end())
+		return nullptr;
+	const auto line = std::ranges::find(report->lines, itemId, &World::Line::itemId);
+	return line == report->lines.end() ? nullptr : &*line;
+}
+
+
+// The company's last price for the item (World::Paid), raw microcredits per its unit; 0 for a good
+// it never bought (D-100).
+std::int64_t LastPaid(
+    const entt::registry &registry, const World::Identities &identities, const std::string &companyId,
+    std::string_view itemId)
+{
+	const auto *pPaid =
+	    registry.try_get<const World::Paid>(Required(identities, Kind::Company, companyId));
+	const World::PaidPrice *pPrice = pPaid ? World::Find(*pPaid, itemId) : nullptr;
+	return pPrice ? pPrice->price : 0;
+}
+
+
+// What the quantities come to at their prices, raw microcredits per unit, in whole credits rounded up.
+std::int64_t Worth(std::initializer_list<std::pair<double, std::int64_t>> amounts)
+{
+	double micro = 0.0;
+	for (const auto &[quantity, price] : amounts)
+		micro += quantity * static_cast<double>(price);
+	const double credits = std::ceil(micro / kMicrocreditsPerCredit);
+	return credits >= 0x1p63 ? kMaxCredits : static_cast<std::int64_t>(credits);
+}
+
+
+// What the life support is worth at the company's last prices for its goods: the oxygen in
+// kilograms, its unit, and the cartridges' occupant-days, a cartridge for each cartridgeOccupantDays.
 std::int64_t Upkeep(
     const entt::registry &registry, const World::Identities &identities,
     const Content::ContentSet &content, const std::string &companyId, double oxygenKilograms,
     double cartridgeDays)
 {
 	const Content::LifeSupportTuning &tuning = content.tuning.lifeSupport;
-	const auto *pPaid =
-	    registry.try_get<const World::Paid>(Required(identities, Kind::Company, companyId));
-	const auto price = [pPaid](std::string_view itemId)
-	{
-		const World::PaidPrice *pPrice = pPaid ? World::Find(*pPaid, itemId) : nullptr;
-		return pPrice ? static_cast<double>(pPrice->price) : 0.0;
-	};
-	const double micro = oxygenKilograms * price(tuning.oxygenItemId) +
-	                     cartridgeDays / tuning.cartridgeOccupantDays * price(tuning.cartridgeItemId);
-	const double credits = std::ceil(micro / 1e6);
-	return credits >= 0x1p63 ? kMaxCredits : static_cast<std::int64_t>(credits);
+	return Worth(
+	    {{oxygenKilograms, LastPaid(registry, identities, companyId, tuning.oxygenItemId)},
+	     {cartridgeDays / tuning.cartridgeOccupantDays,
+	      LastPaid(registry, identities, companyId, tuning.cartridgeItemId)}});
 }
 
 
-// The life support of a cruise of that many metres for the ship's occupants, as Upkeep values it.
-std::int64_t LegUpkeep(
-    const entt::registry &registry, const World::Identities &identities,
-    const Content::ContentSet &content, const World::Ship &ship, double metres)
+// A leg of a route: the venue it leaves, empty from space, its metres, the docking fee of the venue it
+// flies to, and whether a trade's lot is aboard.
+struct Leg
 {
-	const auto hull = std::ranges::find(content.hulls, ship.hullId, &Core::ShipClassSpec::hullId);
-	const auto drive = content.drives.find(Content::RegistryName(ship.hullId));
-	if (hull == content.hulls.end() || drive == content.drives.end())
-		return 0;
-	const double occupantDays = hull->occupants.value_or(0) *
-	                            Jettison::Space::CruiseSeconds(drive->second, metres) / kSecondsPerDay;
-	return Upkeep(
-	    registry, identities, content, ship.companyId,
-	    occupantDays * content.tuning.lifeSupport.oxygenKilogramsPerOccupantDay, occupantDays);
+	std::string fromId;
+	double metres{0.0};
+	std::int64_t fee{0};
+	bool laden{false};
+};
+
+
+// The legs from where the ship is to the destination, by the source
+// where there is one and the ship is not docked there; none docked at the destination.
+std::vector<Leg> Legs(
+    const entt::registry &registry, const World::Identities &identities,
+    const Content::ContentSet &content, entt::entity ship, std::string_view sourceId,
+    std::string_view destinationId)
+{
+	const World::Ship &record = registry.get<const World::Ship>(ship);
+	const auto at = [&](std::string_view venueId)
+	{
+		const entt::entity station = Travel::StationOf(registry, content, venueId);
+		JETTISON_VERIFY(station != entt::null);
+		return registry.get<const Jettison::Sim::Transform>(station).position;
+	};
+	// Where the ship is, its pad's place while docked, as Travel::Travel measures a leg from.
+	const glm::dvec3 here = registry.get<const Jettison::Sim::Transform>(ship).position;
+	const bool atSource = sourceId.empty() || record.dockedAt == sourceId;
+	if (atSource && record.dockedAt == destinationId)
+		return {};
+	std::vector<Leg> legs;
+	if (!atSource)
+		legs.push_back(
+		    {record.dockedAt, glm::distance(here, at(sourceId)),
+		     DockingFee(registry, identities, content, record, sourceId), false});
+	legs.push_back(
+	    {atSource ? record.dockedAt : std::string{sourceId},
+	     glm::distance(atSource ? here : at(sourceId), at(destinationId)),
+	     DockingFee(registry, identities, content, record, destinationId), true});
+	return legs;
+}
+
+
+// The route's legs flown at the thrust, as EstimateRoute is.
+Route Priced(
+    const entt::registry &registry, const World::Identities &identities,
+    const Content::ContentSet &content, entt::entity ship, const std::vector<Leg> &legs,
+    std::uint32_t thrustBps, double lotTonnes)
+{
+	const World::Ship &record = registry.get<const World::Ship>(ship);
+	const Content::FuelTuning &tuning = content.tuning.fuel;
+	const Content::LifeSupportTuning &lifeSupport = content.tuning.lifeSupport;
+	const auto hull = std::ranges::find(content.hulls, record.hullId, &Core::ShipClassSpec::hullId);
+	const int occupants = hull == content.hulls.end() ? 0 : hull->occupants.value_or(0);
+
+	// The drive as Travel::Travel flies it: the authored one, on a profile at the thrust where the
+	// ship's drive has one.
+	const auto authored = content.drives.find(Content::RegistryName(record.hullId));
+	const auto *pDrive = registry.try_get<const Jettison::Space::CruiseDrive>(ship);
+	std::optional<Jettison::Space::CruiseDrive> flown;
+	if (authored != content.drives.end())
+		flown = authored->second;
+	else if (pDrive)
+		flown = *pDrive;
+	const bool burns = flown && pDrive && pDrive->profile;
+	if (burns)
+		flown->profile = Travel::Profile(
+		    flown->profile ? *flown->profile : *pDrive->profile, thrustBps, Travel::kMilliGPerG);
+
+	const auto *pFuel = registry.try_get<const World::Fuel>(ship);
+	const World::Fuel current = pFuel ? *pFuel : World::Fuel{};
+	const std::optional<World::Fuel> tanks =
+	    identities.FuelTanks(record, registry.try_get<const World::Systems>(ship));
+	const double dry = Travel::TonnesAboard(registry, identities, content, ship) -
+	                   (current.reactionMass + current.pellets) / kKilogramsPerTonne;
+	const auto *pRefuel = registry.try_get<const World::Refuel>(ship);
+	const bool refuels = !pRefuel || pRefuel->enabled;
+	const std::string &principalId =
+	    registry.get<const World::Company>(Required(identities, Kind::Company, record.companyId))
+	        .principalId;
+	const auto *pReports =
+	    registry.try_get<const World::Reports>(Required(identities, Kind::Principal, principalId));
+
+	Route route;
+	World::Fuel left = current;
+	for (const Leg &leg : legs)
+	{
+		const double seconds = flown ? Jettison::Space::CruiseSeconds(*flown, leg.metres) : 0.0;
+		route.seconds += seconds + tuning.legAllowanceSeconds;
+		const double occupantDays = occupants * seconds / kSecondsPerDay;
+		route.charges = Added(
+		    route.charges,
+		    Added(
+		        leg.fee, Upkeep(
+		                     registry, identities, content, record.companyId,
+		                     occupantDays * lifeSupport.oxygenKilogramsPerOccupantDay, occupantDays)));
+		if (!burns)
+			continue;
+
+		// Each fuel the venue the leg leaves sells, where the ship refuels, at its ask and filling its
+		// tanks; at the last price paid with what is left in them where not.
+		const auto sold = [&](const std::string &itemId) -> const World::Line *
+		{
+			const World::Line *pLine = refuels && pReports && !leg.fromId.empty()
+			                               ? LineOf(*pReports, leg.fromId, itemId)
+			                               : nullptr;
+			return pLine && !pLine->asks.empty() ? pLine : nullptr;
+		};
+		const World::Line *pMass = sold(tuning.reactionMassItemId);
+		const World::Line *pPellets = sold(tuning.pelletItemId);
+		// shortcut: a venue selling pellets is taken to fill the magazine, which takes a tote in the
+		// hold; refine when a policy's estimate is seen refused for its pellets.
+		const World::Fuel start{
+		    pMass && tanks ? tanks->reactionMass : left.reactionMass,
+		    pPellets && tanks ? tanks->pellets : left.pellets};
+		const World::Fuel burned = Travel::Burned(
+		    tuning, *flown->profile,
+		    dry + (start.reactionMass + start.pellets) / kKilogramsPerTonne +
+		        (leg.laden ? lotTonnes : 0.0),
+		    leg.metres);
+		route.fuelled = route.fuelled &&
+		                burned.reactionMass + kFuelMarginKilograms <= start.reactionMass &&
+		                burned.pellets + kFuelMarginKilograms <= start.pellets;
+		left = {
+		    std::max(0.0, start.reactionMass - burned.reactionMass),
+		    std::max(0.0, start.pellets - burned.pellets)};
+		const auto price = [&](const World::Line *pLine, const std::string &itemId)
+		{ return pLine ? pLine->Ask() : LastPaid(registry, identities, record.companyId, itemId); };
+		route.charges = Added(
+		    route.charges, Worth(
+		                       {{burned.reactionMass, price(pMass, tuning.reactionMassItemId)},
+		                        {burned.pellets, price(pPellets, tuning.pelletItemId)}}));
+	}
+	return route;
 }
 
 
@@ -190,17 +352,6 @@ std::optional<std::int64_t> Outlay(std::int64_t price, double units, int feeBps)
 }
 
 
-const World::Line *LineOf(
-    const World::Reports &reports, std::string_view venueId, std::string_view itemId)
-{
-	const auto report = std::ranges::find(reports.reports, venueId, &World::Report::venueId);
-	if (report == reports.reports.end())
-		return nullptr;
-	const auto line = std::ranges::find(report->lines, itemId, &World::Line::itemId);
-	return line == report->lines.end() ? nullptr : &*line;
-}
-
-
 // One ship's job, with what its decisions read and send.
 struct Context
 {
@@ -227,6 +378,25 @@ struct Context
 	const World::Policy &Policy() const
 	{
 		return Registry().get<const World::Policy>(ship);
+	}
+
+	// The thrust the job's legs fly: its policy's own, or the one chosen with its trade.
+	std::uint32_t Thrust() const
+	{
+		return Policy().thrustBps != 0 ? Policy().thrustBps : Job().thrustBps;
+	}
+
+	// What the route from where the ship is comes to at the thrust, with that many tonnes of lot.
+	Route Priced(const std::vector<Leg> &legs, std::uint32_t thrustBps, double lotTonnes) const
+	{
+		return ::Manifest::Policy::Priced(
+		    Registry(), rules.identities, rules.content, ship, legs, thrustBps, lotTonnes);
+	}
+
+	std::vector<Leg> Legs(std::string_view sourceId, std::string_view destinationId) const
+	{
+		return ::Manifest::Policy::Legs(
+		    Registry(), rules.identities, rules.content, ship, sourceId, destinationId);
 	}
 
 	const World::Ship &Record() const
@@ -270,12 +440,16 @@ struct Context
 		return free - std::min<std::uint64_t>(free, cargo.opened.size());
 	}
 
+	const Rules::Item &Item(const std::string &itemId) const
+	{
+		const auto item = std::ranges::find(rules.items, itemId, &Rules::Item::itemId);
+		JETTISON_VERIFY(item != rules.items.end());
+		return *item;
+	}
+
 	double UnitsPerTote(const std::string &itemId) const
 	{
-		const auto item =
-		    std::ranges::find(rules.items, itemId, &std::pair<std::string, double>::first);
-		JETTISON_VERIFY(item != rules.items.end());
-		return item->second;
+		return Item(itemId).unitsPerTote;
 	}
 
 	template <typename T>
@@ -316,8 +490,8 @@ struct Context
 	{
 		const std::int64_t fee =
 		    DockingFee(Registry(), rules.identities, rules.content, Record(), venueId);
-		if (Act(Travel::kTravel, Travel::kVersion, Travel::Travel{shipId, venueId}) !=
-		    Result::Succeeded)
+		if (Act(Travel::kTravel, Travel::kVersion,
+		        Travel::Travel{shipId, venueId, Thrust(), Travel::kMilliGPerG}) != Result::Succeeded)
 			return Block(World::Blockage::Refused);
 		World::Job &job = Job();
 		if (job.totes > 0)
@@ -328,7 +502,7 @@ struct Context
 
 
 // A trade a job may make: its item, from the source to the destination, the totes, what it is
-// estimated to make after charges, and the limit its buy walks the asks to.
+// estimated to make after charges, the limit its buy walks the asks to, and the thrust it flies.
 struct Deal
 {
 	std::string itemId;
@@ -337,7 +511,21 @@ struct Deal
 	std::uint64_t totes{0};
 	std::int64_t estimate{0};
 	std::int64_t limit{0};
+	std::uint32_t thrustBps{World::kFullThrustBps};
 };
+
+
+// A route's charges with that many totes of the lot aboard, none where its tanks cannot fly it.
+using ChargesOf = std::function<std::optional<std::int64_t>(std::uint64_t totes)>;
+
+
+std::uint64_t Totes(const std::vector<World::Level> &side)
+{
+	std::uint64_t totes = 0;
+	for (const World::Level &level : side)
+		totes += level.totes;
+	return totes;
+}
 
 
 // What a side's levels, best first, come to for the totes, each level estimated as one fill: a buy's
@@ -371,51 +559,82 @@ std::optional<Walked> Walk(
 
 
 // The trade between a source's asks and a destination's bids, walking both (D-102): of the totes both
-// sides hold, the hold's free totes and what the account covers after the charges at the deepest
-// ask's escrow, the count estimated to make the most, the fewest of equals. None for no totes.
+// sides hold, the hold's free totes and what the account covers after the charges with them aboard at
+// the deepest ask's escrow, the count estimated to make the most, the fewest of equals. None for no
+// totes, or none the tanks can fly.
 std::optional<Deal> Estimate(
     const Context &context, const std::string &itemId, const World::Line &ask, const World::Line &bid,
-    std::int64_t charges, std::int64_t balance, std::uint64_t free)
+    const ChargesOf &chargesOf, std::int64_t balance, std::uint64_t free)
 {
-	if (balance <= charges)
+	const std::optional<std::int64_t> unladen = chargesOf(0);
+	if (!unladen || balance <= *unladen)
 		return std::nullopt;
 	const double units = context.UnitsPerTote(itemId);
 	const int feeBps = context.rules.feeBps;
+	const std::uint64_t most = std::min({Totes(ask.asks), Totes(bid.bids), free});
 	// Each tote further fills at a worse price on both sides, so the best count is at a level's edge
-	// or a cap: what the hold, either side or the funds at a level's escrow allow.
+	// or a cap: what the hold, either side or the funds at a level's escrow allow, the lot's fuel
+	// rising with its mass.
 	std::vector<std::uint64_t> counts{free};
 	std::uint64_t asked = 0;
 	for (const World::Level &level : ask.asks)
 	{
 		counts.push_back(asked += level.totes);
-		if (const std::optional<std::int64_t> perTote = Trade::PerTote(level.price, units, feeBps);
-		    perTote && *perTote > 0)
-			counts.push_back(static_cast<std::uint64_t>((balance - charges) / *perTote));
+		const std::optional<std::int64_t> perTote = Trade::PerTote(level.price, units, feeBps);
+		if (!perTote || *perTote <= 0)
+			continue;
+		const auto covered = [&](std::int64_t charges)
+		{ return static_cast<std::uint64_t>((balance - charges) / *perTote); };
+		const std::uint64_t cap = covered(*unladen);
+		counts.push_back(cap);
+		if (const std::optional<std::int64_t> laden = chargesOf(std::min(cap, most));
+		    laden && balance > *laden)
+			counts.push_back(covered(*laden));
 	}
 	std::uint64_t bidden = 0;
 	for (const World::Level &level : bid.bids)
 		counts.push_back(bidden += level.totes);
-	const std::uint64_t most = std::min({asked, bidden, free});
 
 	std::optional<Deal> best;
 	for (std::uint64_t totes : counts)
 	{
 		totes = std::min(totes, most);
+		const std::optional<std::int64_t> charges = totes > 0 ? chargesOf(totes) : std::nullopt;
 		const std::optional<Walked> buy =
-		    totes > 0 ? Walk(ask.asks, totes, units, feeBps, true) : std::nullopt;
+		    charges && balance > *charges ? Walk(ask.asks, totes, units, feeBps, true) : std::nullopt;
 		const std::optional<Walked> sale =
 		    buy ? Walk(bid.bids, totes, units, feeBps, false) : std::nullopt;
 		const std::optional<std::int64_t> perTote =
 		    sale ? Trade::PerTote(buy->limit, units, feeBps) : std::nullopt;
 		if (!perTote || *perTote <= 0 ||
-		    totes > static_cast<std::uint64_t>((balance - charges) / *perTote))
+		    totes > static_cast<std::uint64_t>((balance - *charges) / *perTote))
 			continue;
-		const std::int64_t estimate = sale->total - buy->total - charges;
+		const std::int64_t estimate = sale->total - buy->total - *charges;
 		if (best && (estimate < best->estimate || (estimate == best->estimate && totes >= best->totes)))
 			continue;
 		best = Deal{itemId, {}, {}, totes, estimate, buy->limit};
 	}
 	return best;
+}
+
+
+// The most thrust, in basis points, at which the route is fuelled; none for not even the least.
+// Fuel rises with the thrust, so a halving search finds it.
+std::optional<std::uint32_t> MostThrust(const std::function<bool(std::uint32_t)> &fuelled)
+{
+	if (!fuelled(1))
+		return std::nullopt;
+	std::uint32_t low = 1;
+	std::uint32_t high = World::kFullThrustBps;
+	while (low < high)
+	{
+		const std::uint32_t middle = low + ((high - low + 1) / 2);
+		if (fuelled(middle))
+			low = middle;
+		else
+			high = middle - 1;
+	}
+	return low;
 }
 
 
@@ -464,41 +683,79 @@ std::optional<std::int64_t> WalkLimit(
 }
 
 
-// The best trade from the owner's reports above the target: the highest estimate, then a source the
-// ship is docked at, then the scenario's order of source, destination and item.
+// The best trade from the owner's reports above the target: the most an hour, its estimate over its
+// route's seconds, at the policy's thrust or, choosing, at the best of each of fuel.thrustSharesBps and
+// the most the tanks can fly below one they cannot; then a source the ship is docked at, then the
+// scenario's order of source, item, destination and thrust.
 std::optional<Deal> ChooseTrade(const Context &context)
 {
 	const World::Reports &reports = context.Reports();
 	const World::Ship &record = context.Record();
 	const std::int64_t balance = context.Balance();
 	const std::uint64_t free = context.FreeHold();
+	const std::vector<std::string> &venues = context.rules.venues;
+	const std::uint32_t fixed = context.Policy().thrustBps;
+	const std::vector<std::uint32_t> listed =
+	    fixed != 0 ? std::vector{fixed} : context.rules.content.tuning.fuel.thrustSharesBps;
+	// Each route's legs, by source and destination.
+	std::vector<std::vector<Leg>> routes(venues.size() * venues.size());
+	for (std::size_t source = 0; source < venues.size(); ++source)
+		for (std::size_t destination = 0; destination < venues.size(); ++destination)
+			if (source != destination)
+				routes[(source * venues.size()) + destination] =
+				    context.Legs(venues[source], venues[destination]);
+
 	std::optional<Deal> best;
-	for (const std::string &sourceId : context.rules.venues)
-		for (const auto &[itemId, units] : context.rules.items)
+	double bestRate = 0.0;
+	for (std::size_t source = 0; source < venues.size(); ++source)
+		for (const Rules::Item &item : context.rules.items)
 		{
-			const World::Line *pAsk = LineOf(reports, sourceId, itemId);
+			const World::Line *pAsk = LineOf(reports, venues[source], item.itemId);
 			if (!pAsk || pAsk->asks.empty())
 				continue;
-			for (const std::string &destinationId : context.rules.venues)
+			for (std::size_t destination = 0; destination < venues.size(); ++destination)
 			{
-				const World::Line *pBid = LineOf(reports, destinationId, itemId);
-				if (destinationId == sourceId || !pBid || pBid->bids.empty())
+				const World::Line *pBid = LineOf(reports, venues[destination], item.itemId);
+				if (destination == source || !pBid || pBid->bids.empty())
 					continue;
-				const std::int64_t charges = Charges(
-				    context.Registry(), context.rules.identities, context.rules.content, context.ship,
-				    sourceId, destinationId);
-				std::optional<Deal> trade =
-				    Estimate(context, itemId, *pAsk, *pBid, charges, balance, free);
-				if (!trade || trade->estimate <= context.Policy().targetProfit)
-					continue;
-				const bool docked = record.dockedAt == sourceId;
-				if (best && (trade->estimate < best->estimate ||
-				             (trade->estimate == best->estimate &&
-				              (!docked || record.dockedAt == best->sourceId))))
-					continue;
-				trade->sourceId = sourceId;
-				trade->destinationId = destinationId;
-				best = std::move(trade);
+				const std::vector<Leg> &legs = routes[(source * venues.size()) + destination];
+				const auto priced = [&](std::uint32_t thrustBps, std::uint64_t totes)
+				{
+					return context.Priced(
+					    legs, thrustBps, static_cast<double>(totes) * item.tonnesPerTote);
+				};
+				std::vector<std::uint32_t> thrusts = listed;
+				const std::uint64_t most = std::min({Totes(pAsk->asks), Totes(pBid->bids), free});
+				if (fixed == 0 &&
+				    std::ranges::any_of(
+				        listed, [&](std::uint32_t bps) { return !priced(bps, most).fuelled; }))
+					if (const std::optional<std::uint32_t> thrust =
+					        MostThrust([&](std::uint32_t bps) { return priced(bps, most).fuelled; });
+					    thrust && std::ranges::find(thrusts, *thrust) == thrusts.end())
+						thrusts.push_back(*thrust);
+				for (const std::uint32_t thrustBps : thrusts)
+				{
+					const ChargesOf chargesOf = [&](std::uint64_t totes)
+					{
+						const Route route = priced(thrustBps, totes);
+						return route.fuelled ? std::optional{route.charges} : std::nullopt;
+					};
+					std::optional<Deal> trade =
+					    Estimate(context, item.itemId, *pAsk, *pBid, chargesOf, balance, free);
+					if (!trade || trade->estimate <= context.Policy().targetProfit)
+						continue;
+					const double rate =
+					    static_cast<double>(trade->estimate) / priced(thrustBps, 0).seconds;
+					const bool docked = record.dockedAt == venues[source];
+					if (best && (rate < bestRate ||
+					             (rate == bestRate && (!docked || record.dockedAt == best->sourceId))))
+						continue;
+					trade->sourceId = venues[source];
+					trade->destinationId = venues[destination];
+					trade->thrustBps = thrustBps;
+					best = std::move(trade);
+					bestRate = rate;
+				}
 			}
 		}
 	return best;
@@ -520,9 +777,10 @@ std::optional<std::string> ChooseDestination(const Context &context)
 		const World::Line *pBid = LineOf(context.Reports(), venueId, job.itemId);
 		if (!pBid || pBid->bids.empty())
 			continue;
-		const std::int64_t charges = Charges(
-		    context.Registry(), context.rules.identities, context.rules.content, context.ship, {},
-		    venueId);
+		const Route route = context.Priced(context.Legs({}, venueId), context.Thrust(), 0.0);
+		if (!route.fuelled)
+			continue;
+		const std::int64_t charges = route.charges;
 		const std::optional<std::int64_t> limit = WalkLimit(
 		    pBid, Added(Floor(job, context.Policy()).first, charges), job.totes, units,
 		    context.rules.feeBps);
@@ -581,6 +839,7 @@ bool Choose(const Context &context)
 	job.sourceId = trade->sourceId;
 	job.destinationId = trade->destinationId;
 	job.estimate = trade->estimate;
+	job.thrustBps = trade->thrustBps;
 	if (docked == job.sourceId)
 	{
 		job.phase = Phase::Buying;
@@ -600,13 +859,19 @@ void Buy(const Context &context)
 	const World::Reports &reports = context.Reports();
 	const World::Line *pAsk = LineOf(reports, job.sourceId, job.itemId);
 	const World::Line *pBid = LineOf(reports, job.destinationId, job.itemId);
-	const std::int64_t charges = Charges(
-	    context.Registry(), context.rules.identities, context.rules.content, context.ship, job.sourceId,
-	    job.destinationId);
+	const std::vector<Leg> legs = context.Legs(job.sourceId, job.destinationId);
+	const double tonnesPerTote = context.Item(job.itemId).tonnesPerTote;
+	const std::uint32_t thrustBps = context.Thrust();
+	const ChargesOf chargesOf = [&](std::uint64_t totes)
+	{
+		const Route route = context.Priced(legs, thrustBps, static_cast<double>(totes) * tonnesPerTote);
+		return route.fuelled ? std::optional{route.charges} : std::nullopt;
+	};
 	const std::int64_t before = context.Balance();
 	const std::optional<Deal> trade =
-	    pAsk && pBid ? Estimate(context, job.itemId, *pAsk, *pBid, charges, before, context.FreeHold())
-	                 : std::nullopt;
+	    pAsk && pBid
+	        ? Estimate(context, job.itemId, *pAsk, *pBid, chargesOf, before, context.FreeHold())
+	        : std::nullopt;
 	if (!trade || trade->estimate <= context.Policy().targetProfit)
 	{
 		job = World::Job{};
@@ -712,16 +977,29 @@ bool Decide(Context &context)
 				context.Block(World::Blockage::JourneyFailed);
 				return false;
 			}
-			// The life support drawn on the way, charged to the lot as the ship docks (D-100).
-			if (!record.dockedAt.empty() && (job.oxygenKilograms > 0.0 || job.cartridgeDays > 0.0))
+			// The life support drawn and the fuel burned on the way, charged to the lot at the
+			// company's last prices as the ship docks (D-100, W21).
+			if (!record.dockedAt.empty() &&
+			    (job.oxygenKilograms > 0.0 || job.cartridgeDays > 0.0 ||
+			     job.reactionMassKilograms > 0.0 || job.pelletKilograms > 0.0))
 			{
+				const entt::registry &registry = context.Registry();
+				const World::Identities &identities = context.rules.identities;
+				const Content::FuelTuning &fuel = context.rules.content.tuning.fuel;
 				job.charges = Added(
-				    job.charges,
-				    Upkeep(
-				        context.Registry(), context.rules.identities, context.rules.content,
-				        record.companyId, job.oxygenKilograms, job.cartridgeDays));
+				    Added(
+				        job.charges, Upkeep(
+				                         registry, identities, context.rules.content, record.companyId,
+				                         job.oxygenKilograms, job.cartridgeDays)),
+				    Worth(
+				        {{job.reactionMassKilograms,
+				          LastPaid(registry, identities, record.companyId, fuel.reactionMassItemId)},
+				         {job.pelletKilograms,
+				          LastPaid(registry, identities, record.companyId, fuel.pelletItemId)}}));
 				job.oxygenKilograms = 0.0;
 				job.cartridgeDays = 0.0;
+				job.reactionMassKilograms = 0.0;
+				job.pelletKilograms = 0.0;
 			}
 			const std::string &target = toSource ? job.sourceId : job.destinationId;
 			if (record.dockedAt != target)
@@ -906,33 +1184,14 @@ std::uint64_t RunNext(const SimWorld &world)
 } // namespace
 
 
-std::int64_t Charges(
+Route EstimateRoute(
     const entt::registry &registry, const World::Identities &identities,
     const Content::ContentSet &content, entt::entity ship, std::string_view sourceId,
-    std::string_view destinationId)
+    std::string_view destinationId, std::uint32_t thrustBps, double lotTonnes)
 {
-	const World::Ship &record = registry.get<const World::Ship>(ship);
-	const auto at = [&](std::string_view venueId)
-	{
-		const entt::entity station = Travel::StationOf(registry, content, venueId);
-		JETTISON_VERIFY(station != entt::null);
-		return registry.get<const Jettison::Sim::Transform>(station).position;
-	};
-	const auto leg = [&](const glm::dvec3 &from, std::string_view venueId)
-	{
-		return Added(
-		    DockingFee(registry, identities, content, record, venueId),
-		    LegUpkeep(registry, identities, content, record, glm::distance(from, at(venueId))));
-	};
-	const glm::dvec3 here = record.dockedAt.empty()
-	                            ? registry.get<const Jettison::Sim::Transform>(ship).position
-	                            : at(record.dockedAt);
-	const bool atSource = sourceId.empty() || record.dockedAt == sourceId;
-	if (atSource && record.dockedAt == destinationId)
-		return 0;
-	if (atSource)
-		return leg(here, destinationId);
-	return Added(leg(here, sourceId), leg(at(sourceId), destinationId));
+	return Priced(
+	    registry, identities, content, ship,
+	    Legs(registry, identities, content, ship, sourceId, destinationId), thrustBps, lotTonnes);
 }
 
 
@@ -1001,7 +1260,8 @@ void RegisterTypes()
 		    .Field<&Set::shipId>("shipId", kSaved)
 		    .Field<&Set::enabled>("enabled", kSaved)
 		    .Field<&Set::targetProfit>("targetProfit", kSaved)
-		    .Field<&Set::lossAllowance>("lossAllowance", kSaved);
+		    .Field<&Set::lossAllowance>("lossAllowance", kSaved)
+		    .Field<&Set::thrustBps>("thrustBps", kSaved);
 		return true;
 	}();
 	(void)registered;
@@ -1023,8 +1283,10 @@ void Register(
 		const auto item =
 		    std::ranges::find(content.gameMode.items, selection.itemId, &Core::ItemNode::itemId);
 		JETTISON_VERIFY(item != content.gameMode.items.end());
-		rules->items.emplace_back(
-		    selection.itemId, item->unitsPerCubicMetre / static_cast<double>(Core::kTotesPerIbc));
+		const auto totes = static_cast<double>(Core::kTotesPerIbc);
+		rules->items.push_back(
+		    {selection.itemId, item->unitsPerCubicMetre / totes,
+		     item->density * item->packFactor / totes});
 	}
 	rules->feeBps = content.tuning.market.listingFeeBps;
 	const double turn = std::round(content.tuning.economy.intervalSeconds / world.FixedStep());

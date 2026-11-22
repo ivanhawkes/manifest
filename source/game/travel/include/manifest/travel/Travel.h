@@ -33,7 +33,7 @@ namespace Manifest::Travel
 // A journey's burn (D-107): the share of its cruise's time the engines thrust, half at each end, in
 // basis points, 100% thrusting to the midpoint; and its acceleration, in thousandths of standard
 // gravity, from 0.1 g to the sustained acceleration of its hull's mode (D-090). Never seconds.
-inline constexpr std::uint32_t kFullThrustBps = 10000;
+inline constexpr std::uint32_t kFullThrustBps = World::kFullThrustBps;
 inline constexpr std::uint32_t kMilliGPerG = 1000;
 inline constexpr std::uint32_t kLeastAccelerationMilliG = 100;
 inline constexpr double kStandardGravity = 9.80665;
@@ -52,7 +52,8 @@ inline constexpr double kStandardGravity = 9.80665;
 // World::Fuel cannot fly after refuelling (Fleet::Refuel, from a venue; Burned, at the distance to the
 // venue's station now and everything aboard);
 // one with none, the power law, burns nothing. As it starts it pays the fee to the venue's account and
-// the arrears to the account of the venue it leaves (D-097), and takes the leg's fuel from the tanks.
+// the arrears to the account of the venue it leaves (D-097), and takes the leg's fuel from the tanks,
+// adding it to the ship's World::Job while the job's lot is aboard, for the job to charge to the lot.
 struct Travel
 {
 	std::string shipId;

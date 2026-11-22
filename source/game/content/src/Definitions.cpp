@@ -227,7 +227,9 @@ void RegisterTypes()
 		    .Field<&FuelTuning::tankTonnesPerTonne>("tankTonnesPerTonne", kDefined)
 		    .Field<&FuelTuning::occupantKilograms>("occupantKilograms", kDefined)
 		    .Field<&FuelTuning::reactionMassItemId>("reactionMassItemId", kDefined)
-		    .Field<&FuelTuning::pelletItemId>("pelletItemId", kDefined);
+		    .Field<&FuelTuning::pelletItemId>("pelletItemId", kDefined)
+		    .Field<&FuelTuning::thrustSharesBps>("thrustSharesBps", kDefined)
+		    .Field<&FuelTuning::legAllowanceSeconds>("legAllowanceSeconds", kDefined);
 		RegisterType<CompanyTuning>("Manifest.CompanyTuning")
 		    .Field<&CompanyTuning::startingCredits>("startingCredits", kDefined);
 		RegisterType<MarketTuning>("Manifest.MarketTuning")

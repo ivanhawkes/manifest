@@ -153,6 +153,10 @@ struct FuelTuning
 	// The goods a ship refuels with, each by the kilogram.
 	std::string reactionMassItemId{};
 	std::string pelletItemId{};
+	// The thrusts a policy choosing its burn prices each trade at, in basis points, each above 0 and at
+	// most full; and the seconds it allows each leg beside its cruise, for leaving and docking.
+	std::vector<std::uint32_t> thrustSharesBps{};
+	double legAllowanceSeconds{0.0};
 };
 
 // Who an offer is bought for: a company's own ship, the one target so far.
