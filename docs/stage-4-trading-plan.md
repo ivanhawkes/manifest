@@ -1361,9 +1361,9 @@ Slices, each a commit with its suites:
    work out the market's rules again on each call, as `Quote` does (a `shortcut:` comment), for W12
    to keep if a profile shows it; water's drift is the balance's.
 
-## W21 plan
+## Delivered: W21, 2026-11-22
 
-Fuel burn, on [D-107](decision-ledger.md#d-107) (the user's, 2026-11-22), booked at high priority
+Fuel burn, on [D-107](decision-ledger.md#d-107) (the user's, 2026-11-22), built at high priority
 ahead of W12, its choices settled with the user as it was planned (2026-11-22): the ships' own fuel,
 burned on a curve that rises steeply with the acceleration, and with everything the ship carries, its
 tanks and their fuel included; tanks apart from the hold, grown on the tech tree; a slow run coasts;
@@ -1371,9 +1371,10 @@ stations refuel a ship automatically, as they connect its life support, while it
 and its funds last; and a standing policy picks the burn that makes the most an hour unless its owner
 fixes one. The drive is a clean fusion torch burning two goods, reaction mass and fusion pellets, at
 an exhaust of 10% of light speed, and a hard burn is a decision, not a default ([D-108](decision-ledger.md#d-108),
-the user's, 2026-11-22). W21 builds the torch alone; the hauler's fusion drive, the pulse drive and
-their exclusion radii are designed below and built with the first larger hull. Every number below is
-a starting point (mine, the user's to review). One engine provision: the coast phase.
+the user's, 2026-11-22). W21 built the torch alone; the hauler's fusion drive, the pulse drive and
+their exclusion radii are designed below and built with the first larger hull (W22). Every number below is
+a starting point (mine, the user's to review). Two engine provisions: the coast phase, planned (pin
+`a9b8305`), and a station's reach measured where physics placed the ship, found in slice 4 (pin `2b3cfce`).
 
 - **The torch (D-108).** The ships of the 2170s, a skiff to a corvette of a few hundred tonnes, fly a
   clean fusion torch: aneutronic deuterium and helium-3 fusion heating reaction mass through a
@@ -1513,9 +1514,9 @@ a starting point (mine, the user's to review). One engine provision: the coast p
   greedy player makes, its numbers the build's.
 - **What it changes.** Travel, the company's provisioning and the policy's estimates; the saves' ship
   state and the drive's profile. The fixtures' ships fly the power law and burn nothing, so their
-  trades stand; each moved pin is shown to be bytes, then the fuel and refuel state.
+  trades stood; each moved pin was shown to be bytes, then the fuel and refuel state (slices 2 to 4).
 
-Slices, each a commit with its suites, the gate after the third and the last:
+Slices, each a commit with its suites:
 
 1. Jettison: the coast phase, its times, covered metres and refusals, a world saved mid-coast; the
    pin moved in Manifest, every Manifest pin held. **Done** 2026-11-22: `thrustShare` and
@@ -1523,12 +1524,12 @@ Slices, each a commit with its suites, the gate after the third and the last:
 2. The fuels, the tanks and the magazine: the two items, every station making reaction mass and the
    two refineries pellets, `World::Fuel`, the hull's `pelletMagazine`, provisioning and saves, and
    the starter's `FuelBunkers` slot and offer (`content`, `data`, `company`). **Done**
-   2026-11-22: the player's ship view shows its fuel and what holds it; three pins moved, each test's
+   2026-11-22 (`4128191`): the player's ship view shows its fuel and what holds it; three pins moved, each test's
    every other check held, by the ships' `World::Fuel` and the stations' reaction mass and pellets.
 3. The burn: `Travel`'s `thrustBps` and `accelerationMilliG`, the profile for them, the console's
    operands and the TUI's stepped controls, reaction mass and pellets burned by mass and speed change,
    `InsufficientFuel`; refuelling and `SetRefuel`, the account short and the flag off (`travel`,
-   `company`). Two commits. **Done** 2026-11-22. The burn: `Travel` version 2, its profile, the console's
+   `company`). Two commits. **Done** 2026-11-22 (`a8078f3`, `344058a`). The burn: `Travel` version 2, its profile, the console's
    operands and the leg's fuel taken as it starts, `InsufficientFuel`; a power-law ship burns none.
    Two pins moved: the fixture's by the request's version and two fields alone (with both taken out
    it is the old hash), and the no-client run's by the fuel Nia's first journey takes, started in the
@@ -1538,7 +1539,7 @@ Slices, each a commit with its suites, the gate after the third and the last:
    `SetRefuel`. Three pins moved by `World::Refuel`'s registration alone (without it each holds).
    The console has no `SetRefuel` yet: refuelling stays on there.
 4. The policy: the lot's charge, the estimate at a burn and the choice per hour, a fixed share
-   (`policy`), the pins moved and why. **Done** 2026-11-22. A journey's fuel is added to its job
+   (`policy`), the pins moved and why. **Done** 2026-11-22 (`0e7f896`, the pin `a91ff3f`). A journey's fuel is added to its job
    while the lot is aboard and charged to it at `World::Paid` as it docks; `Policy::EstimateRoute`,
    for `Charges`, prices each leg's burn at its thrust and 1 g for everything aboard and the lot's
    tonnes, at the ask where the ship refuels, and gives the route's seconds and whether the tanks
@@ -1554,7 +1555,7 @@ Slices, each a commit with its suites, the gate after the third and the last:
 5. The fixture, on the manned profile: Ore to Brine with two totes of copper and with a full hold, the
    policy flying the light lot faster and the heavy one slower, each its fuel and time, refuelled as
    it leaves, a leg refused with refuelling off and the tanks short, a save mid-coast, and
-   fast-forwarded to the bytes stepping leaves. **Done** 2026-11-22, `fixture_burn`, no pin moved:
+   fast-forwarded to the bytes stepping leaves. **Done** 2026-11-22 (`d2ff6b9`), `fixture_burn`, no pin moved:
    Ada's policy, her reports Ore Highport's and Brine's, carries two totes of copper with her hold
    otherwise empty at 100% in 4.49 days on the boost, 3,558 kg of reaction mass, and with the rest of
    it full of copper, 177 t, at the 4.55% its tanks reach (below the 10% listed) in 13.8 days, 3,996
@@ -1566,7 +1567,11 @@ Slices, each a commit with its suites, the gate after the third and the last:
    on is refuelled and flown. The fixture keeps the ledger of credits alone: a refuel turns totes
    into kilograms. The policy charges, sells and chooses in one step as it docks, so the lot's
    charge is the policy suite's to show (slice 4).
-6. Close-out.
+6. Close-out, done 2026-11-22: the delivered section replaces the plan, D-107 implemented and
+   D-108's torch built. Left: the console has no `SetRefuel`, so refuelling stays on there; a fuel
+   with no reported ask and never bought is priced at 0 in an estimate; the policy's cost a choice,
+   four shares a trade, is unprofiled; the drives past the torch and the exclusion radius are W22's,
+   and the station traffic lanes Jettison's, next.
 
 ## Handoff to stage 5
 

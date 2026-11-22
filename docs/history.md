@@ -110,6 +110,21 @@ reservations and W12's slices. The project's authored 90 kg and 10 kg were each 
 D-087 had made the least that moves. Reservations are accounts of their own, so a reserved budget or
 bond is no one else's money and the ledgers sum as before.
 
+## W21: fuel burn — 2026-11-22
+
+On two Jettison provisions, a cruise's coast phase (pin `a9b8305`) and a station's reach measured
+where physics placed the ship (`2b3cfce`). Ships fly a clean fusion torch burning reaction mass and
+fusion pellets from tanks apart from the hold, refuel as they leave a venue while their owner allows
+it, charge the fuel to the lot, and a standing policy picks the thrust share that makes the most an
+hour ([what it chose and its evidence](stage-4-trading-plan.md#delivered-w21-2026-11-22)). Choosing per hour sent the
+policies hopping round Ore's one orbit, which showed ships leaving Vale held at `ClearOf`'s point,
+measured a step before physics placed them, and departures, arrivals and cruises sharing one line,
+booked as Jettison's station traffic lanes (the user's). A cruise is 24 million steps, so
+`fixture_burn` compares stepping with the fast-forward over two minutes about each switch of
+thrust; Brine's copper bids take two or three totes, so the full hold is the test's own copper.
+The policy charges, sells and chooses in the step it docks, so the fixture sees no charge, and a
+refuel turns totes into kilograms, so it keeps the credit ledger alone.
+
 ## W19: supply and demand pricing — 2026-11-22
 
 With no engine edit; the pin moved to `f14c288` for the shell's profilers alone. Each broker posts

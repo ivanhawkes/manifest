@@ -234,8 +234,8 @@ connection procedures and station resource accounting remain open.
 
 Add LPG as a distinct tradable commodity under Fuels, using kilograms for inventory and
 trading. The stage 2 content plan records the addition; prices, availability, physical
-storage/packing, production and consumption uses remain open. A ship's drive burns fuel
-([D-107](decision-ledger.md#d-107), W21); which fuel is open.
+storage/packing, production and consumption uses remain open. A ship's drive burns its own
+reaction mass and fusion pellets, not LPG ([D-108](decision-ledger.md#d-108), W21).
 
 Inner map worlds start at higher civilisation technology with depleted natural reserves;
 outer worlds are generally resource-rich and less developed, creating a frontier gold rush.

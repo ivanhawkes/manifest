@@ -1,24 +1,16 @@
 # Session handoff
 
-## Next, on resuming — 2026-11-22 (after W19)
+## Next, on resuming — 2026-11-22 (after W21)
 
-W19 is done: [supply and demand pricing](stage-4-trading-plan.md#delivered-w19-2026-11-22), on
-[D-102](decision-ledger.md#d-102), pin `f14c288` with no engine edit. The user then booked fuel
-burn ([D-107](decision-ledger.md#d-107)) as W21, at high priority. Next: W21, on the
-[W21 plan](stage-4-trading-plan.md#w21-plan), its choices settled with the user; slice 1, the
-Jettison coast phase, is done on pin `a9b8305` (2026-11-22), every Manifest pin held; the drives
-are designed ([D-108](decision-ledger.md#d-108): a torch burning reaction mass and fusion pellets,
-the hauler and pulse drives booked as W22), slices 2 and 3, the fuels and the tanks, the burn and
-refuelling, are done and gated (2026-11-22, `344058a`, pushed), and slice 4, the policy choosing
-the burn per hour, is done on pin `2b3cfce` (2026-11-22), and slice 5, the fixture on the manned drive, is done
-(`fixture_burn`, 2026-11-22), so slice 6, the close-out, is next. Then W12, competitive procurement on the
+W21 is done: [fuel burn](stage-4-trading-plan.md#delivered-w21-2026-11-22), on [D-107](decision-ledger.md#d-107) and
+[D-108](decision-ledger.md#d-108)'s torch, the SDK pin `2b3cfce`. Next: Jettison's station traffic
+lanes (the user's, 2026-11-22), then W12, competitive procurement on the
 [tender contract](stage-4-trading-plan.md#tender-contract-w11-2026-11-21), its AI issuer spending
-`Trade::Budget` and calling `Trade::Reliefs`. A commit is gated in
-the second checkout, `build/gate-tree`, with `--tidy`, editing alone beside it
-([gating beside the work](build-and-gates.md#gating-beside-the-work)). A ship steered in a station's
-frame still runs every step, which is most of the zero-client run's steps, more so since per hour
-the policies hop between the stations of Ore's one orbit. Jettison's station traffic lanes follow
-W21 (the user's, 2026-11-22).
+`Trade::Budget` and calling `Trade::Reliefs`. W22, the drives past the torch, waits for the first
+larger hull. A commit is gated in the second checkout, `build/gate-tree`, with `--tidy`, editing
+alone beside it ([gating beside the work](build-and-gates.md#gating-beside-the-work)). A ship steered
+in a station's frame still runs every step, which is most of the zero-client run's steps, more so
+since per hour the policies hop between the stations of Ore's one orbit.
 The planning documents' home-region allocation (scope, the roadmap's region supply and D-076) waits
 for W13 to restate it as founding.
 
