@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <map>
 #include <memory>
 #include <optional>
@@ -17,7 +18,10 @@
 #include <utility>
 #include <vector>
 
+#include <jettison/ai/Steering.h>
 #include <jettison/host/Session.h>
+#include <jettison/physics/Components.h>
+#include <jettison/physics/PhysicsWorld.h>
 #include <jettison/serialise/Archive.h>
 #include <jettison/sim/SimWorld.h>
 #include <jettison/space/Cruise.h>
@@ -1206,4 +1210,180 @@ TEST_CASE("Eight days of two traders keep every broker's stock within half and t
 				CHECK_MESSAGE(held <= 2 * targets[key], key << " day " << days << ": " << held);
 			}
 	}
+}
+
+
+// Jettison's station traffic lanes, measured (2026-11-22): ships flown both ways between two
+// neighbouring stations of Ore's one orbit, two sent in one step as a policy sends them, and two
+// leaving one station as two come in, none within a steered hull's clearance of another, between
+// steps as well as at them. While this holds, the lanes are not built.
+namespace
+{
+constexpr std::string_view kVale = "VenueOreValeStation";
+
+struct Flown
+{
+	Actor actor;
+	std::string shipId;
+	entt::entity ship{entt::null};
+	std::uint64_t sent{0};
+	std::uint64_t cruised{0};
+	std::uint64_t came{0};
+	std::uint64_t docked{0};
+};
+
+Flown Provisioned(Hosted &hosted, const std::string &principal)
+{
+	REQUIRE(
+	    hosted.Run(
+	        kHost, Company::kProvision, Company::kVersion,
+	        Company::Provision{principal, principal, principal + " Co"}) == Result::Succeeded);
+	const entt::registry &registry = hosted.world.Registry();
+	for (const auto &[entity, identity, ship] :
+	     registry.view<const World::Identity, const World::Ship>().each())
+		if (registry
+		        .get<const World::Company>(
+		            hosted.services.identities.Find(Kind::Company, ship.companyId))
+		        .principalId == principal)
+			return {Actor{ActorKind::Principal, principal}, identity.id, entity};
+	FAIL("no ship of " << principal);
+	return {};
+}
+
+// The travel admitted as the actor's next, to run in the next step.
+void Admit(Hosted &hosted, const Flown &flown, std::string_view venueId)
+{
+	const std::vector<std::byte> bytes = BinaryArchive::Write(
+	    Travel::Travel{flown.shipId, std::string{venueId}}, FormatVersion{Travel::kVersion});
+	REQUIRE(
+	    hosted.services.requests
+	        .Admit(
+	            hosted.world, flown.actor, hosted.services.requests.NextSequence(flown.actor),
+	            std::string{Travel::kTravel}, Travel::kVersion, bytes)
+	        .status == Receipt::Status::Queued);
+}
+
+bool Arrived(const Hosted &hosted, const Flown &flown)
+{
+	const auto *journey = hosted.world.Registry().try_get<const World::Journey>(flown.ship);
+	return journey && journey->leg == Leg::Arrived;
+}
+} // namespace
+
+
+TEST_CASE("Ships flown both ways between neighbouring stations of one orbit keep clear of each other")
+{
+	Hosted hosted{MANIFEST_MOD_DIRECTORY};
+	const entt::registry &registry = hosted.world.Registry();
+	const Jettison::Physics::PhysicsWorld &physics = hosted.services.fleet.Physics();
+	std::vector<Flown> ships;
+	ships.reserve(6);
+	for (const std::string principal : {"Ada", "Bo", "Cy", "Di"})
+		ships.push_back(Provisioned(hosted, principal));
+	const auto send = [&](std::initializer_list<Flown *> sent, std::string_view venueId)
+	{
+		for (Flown *flown : sent)
+			Admit(hosted, *flown, venueId);
+		hosted.Step();
+		for (Flown *flown : sent)
+		{
+			REQUIRE(registry.get<const World::Journey>(flown->ship).leg != Leg::Failed);
+			flown->sent = hosted.world.Clock().Step();
+			flown->cruised = flown->came = flown->docked = 0;
+		}
+	};
+	// Three hours of steps.
+	constexpr std::uint64_t kBound = std::uint64_t{60} * 60 * 60 * 3;
+
+	// Bo and Di first flown to Vale; Highport's pads hold four starters, so Eve and Fay are
+	// provisioned once they have gone.
+	send({&ships[1], &ships[3]}, kVale);
+	for (std::uint64_t step = 0;
+	     step < kBound && !(Arrived(hosted, ships[1]) && Arrived(hosted, ships[3])); ++step)
+		hosted.world.Step();
+	REQUIRE(Arrived(hosted, ships[1]));
+	REQUIRE(Arrived(hosted, ships[3]));
+	for (const std::string principal : {"Eve", "Fay"})
+		ships.push_back(Provisioned(hosted, principal));
+
+	// Ada and Cy to Vale in one step, as Bo and Di leave it for Highport; Eve and Fay from Highport
+	// as Bo comes out of its cruise there, leaving as the two come in.
+	send({&ships[0], &ships[2]}, kVale);
+	send({&ships[1], &ships[3]}, kOre);
+	const auto radius = [&](entt::entity ship)
+	{
+		if (const auto *cruising = registry.try_get<const Jettison::Space::Cruising>(ship))
+			return physics.ShapeRadius(cruising->body.shape);
+		return physics.ShapeRadius(registry.get<const Jettison::Physics::Body>(ship).shape);
+	};
+	const auto where = [&](const Flown &flown)
+	{ return registry.get<const Jettison::Sim::Transform>(flown.ship).position; };
+	std::vector<glm::dvec3> was;
+	was.reserve(ships.size());
+	for (const Flown &flown : ships)
+		was.push_back(where(flown));
+	double nearest = std::numeric_limits<double>::max();
+	std::string nearestPair;
+	bool late = false;
+	const auto all = [&]
+	{ return std::ranges::all_of(ships, [&](const Flown &flown) { return Arrived(hosted, flown); }); };
+	for (std::uint64_t step = 0; step < kBound && !all(); ++step)
+	{
+		hosted.world.Step();
+		(void)hosted.world.Events().Take();
+		const std::uint64_t now = hosted.world.Clock().Step();
+		for (Flown &flown : ships)
+		{
+			const bool cruising = registry.all_of<Jettison::Space::Cruising>(flown.ship);
+			if (cruising && flown.cruised == 0 && flown.sent != 0)
+				flown.cruised = now;
+			if (!cruising && flown.cruised != 0 && flown.came == 0)
+				flown.came = now;
+			if (Arrived(hosted, flown) && flown.came != 0 && flown.docked == 0)
+				flown.docked = now;
+		}
+		// Each pair's nearest between the step's ends, as their relative motion is straight over a
+		// step, neither clamped to a pad.
+		std::vector<glm::dvec3> is;
+		is.reserve(ships.size());
+		for (const Flown &flown : ships)
+			is.push_back(where(flown));
+		for (std::size_t a = 0; a < ships.size(); ++a)
+			for (std::size_t b = a + 1; b < ships.size(); ++b)
+			{
+				if (registry.all_of<Jettison::Physics::OnRails>(ships[a].ship) ||
+				    registry.all_of<Jettison::Physics::OnRails>(ships[b].ship))
+					continue;
+				const glm::dvec3 from = was[a] - was[b];
+				const glm::dvec3 along = (is[a] - is[b]) - from;
+				const double length = glm::dot(along, along);
+				const double share =
+				    length > 0.0 ? std::clamp(-glm::dot(from, along) / length, 0.0, 1.0) : 0.0;
+				const double gap =
+				    glm::length(from + (along * share)) - radius(ships[a].ship) - radius(ships[b].ship);
+				if (gap < nearest)
+				{
+					nearest = gap;
+					nearestPair = ships[a].actor.id + " and " + ships[b].actor.id;
+				}
+			}
+		was = std::move(is);
+		if (!late && ships[1].came != 0)
+		{
+			late = true;
+			send({&ships[4], &ships[5]}, kVale);
+			was[4] = where(ships[4]);
+			was[5] = where(ships[5]);
+		}
+	}
+	REQUIRE(all());
+	const double second = hosted.world.FixedStep();
+	for (const Flown &flown : ships)
+		MESSAGE(
+		    flown.actor.id << ": out " << static_cast<double>(flown.cruised - flown.sent) * second
+		                   << " s, cruise " << static_cast<double>(flown.came - flown.cruised) * second
+		                   << " s, in " << static_cast<double>(flown.docked - flown.came) * second
+		                   << " s");
+	MESSAGE("nearest hulls " << nearest << " m, " << nearestPair);
+	CHECK(nearest >= registry.get<const Jettison::Ai::Steered>(ships[0].ship).clearance);
 }

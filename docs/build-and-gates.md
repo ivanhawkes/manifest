@@ -32,7 +32,7 @@ skips a unit that was clean and whose compile command, includes (`ninja -t deps`
 
 The CTest suites are `types`, `config`, `universe`, `progression`, `sim`, `ecs`, `market`,
 `host`, `content`, `effects`, `remote`, `data`, `packaging`, `mod`, `fixture` (its longest cases
-apart, as `fixture_cruise`, `fixture_alone`, `fixture_prices` and `fixture_burn`, so the five run side by side) and `sdk_import`, plus `console` when the TUI is enabled. The
+apart, as `fixture_cruise`, `fixture_alone`, `fixture_prices`, `fixture_burn` and `fixture_traffic`, so the six run side by side) and `sdk_import`, plus `console` when the TUI is enabled. The
 `cli_*` tests run the `manifest` executable from an unrelated directory with no display: both
 content forms start, and a missing source and bad command lines fail. `cli_serve` runs the server
 with no client, checks that it stepped, and stops it with SIGINT; the `token_*` tests run

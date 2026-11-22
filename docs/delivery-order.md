@@ -107,8 +107,10 @@ long runs, on pin `f14c288` with no engine edit. The user then booked fuel burn
 pellets from tanks apart from the hold ([D-108](decision-ledger.md#d-108)), refuelled as a ship leaves
 a venue while its owner allows it, the fuel charged to the lot and a standing policy choosing the
 thrust share for the most an hour, on Jettison's coast phase (pin `a9b8305`) and a station's reach
-measured where physics placed the ship (`2b3cfce`). Next: Jettison's station traffic lanes (the
-user's, after W21); then W12, on the [tender contract](stage-4-trading-plan.md#tender-contract-w11-2026-11-21).
+measured where physics placed the ship (`2b3cfce`). Jettison's station traffic lanes, booked after it, were measured and
+parked: no two hulls came within a steered ship's clearance without them (`fixture_traffic`,
+2026-11-22, [Jettison's roadmap](../../jettison/docs/roadmap.md#then-robustness-tools-and-what-a-mod-can-reach)). Next: W12, on the
+[tender contract](stage-4-trading-plan.md#tender-contract-w11-2026-11-21).
 
 ## Priority 0: maintenance before Stage 1
 
