@@ -75,7 +75,7 @@ struct Hosted
 	    : content{set}, identities{(RegisterAllTypes(), World::RegisterWorld(world))},
 	      requests{Manifest::Command::RegisterRequests(world, identities)}
 	{
-		const Manifest::Travel::Fleet &fleet =
+		Manifest::Travel::Fleet &fleet =
 		    Manifest::Travel::Register(world, requests, identities, content);
 		Manifest::Company::RegisterCommands(world, requests, identities, fleet, content);
 		Manifest::Trade::Register(world, requests, identities, content);

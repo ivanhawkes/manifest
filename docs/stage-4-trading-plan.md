@@ -1528,12 +1528,15 @@ Slices, each a commit with its suites, the gate after the third and the last:
 3. The burn: `Travel`'s `thrustBps` and `accelerationMilliG`, the profile for them, the console's
    operands and the TUI's stepped controls, reaction mass and pellets burned by mass and speed change,
    `InsufficientFuel`; refuelling and `SetRefuel`, the account short and the flag off (`travel`,
-   `company`). Two commits. **The burn done** 2026-11-22: `Travel` version 2, its profile, the
-   console's operands and the leg's fuel taken as it starts, `InsufficientFuel`; a power-law ship
-   burns none. Two pins moved: the fixture's by the request's version and two fields alone (with
-   both taken out it is the old hash), and the no-client run's by the fuel Nia's first journey takes,
-   started in the step Ada is provisioned, before the test puts both ships on the power law. Refuelling next, on an
-   immediate buy through the venue's book that `trade` gives `company`.
+   `company`). Two commits. **Done** 2026-11-22. The burn: `Travel` version 2, its profile, the console's
+   operands and the leg's fuel taken as it starts, `InsufficientFuel`; a power-law ship burns none.
+   Two pins moved: the fixture's by the request's version and two fields alone (with both taken out
+   it is the old hash), and the no-client run's by the fuel Nia's first journey takes, started in the
+   step Ada is provisioned, before the test puts both ships on the power law. Refuelling: a ship with
+   a profile leaving a venue first refuels through `Trade::MakeBuyer`, a buy at the venue's asks that
+   rests nothing, the fuel it buys kept though the leg is then refused; `World::Refuel` and
+   `SetRefuel`. Three pins moved by `World::Refuel`'s registration alone (without it each holds).
+   The console has no `SetRefuel` yet: refuelling stays on there.
 4. The policy: the lot's charge, the estimate at a burn and the choice per hour, a fixed share
    (`policy`), the pins moved and why.
 5. The fixture, on the manned profile: Ore to Brine with two totes of copper and with a full hold, the

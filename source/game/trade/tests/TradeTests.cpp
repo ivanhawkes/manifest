@@ -93,7 +93,7 @@ struct Hosted
 	          Manifest::Company::RegisterTypes(), RegisterTypes(), World::RegisterWorld(world))},
 	      requests{Manifest::Command::RegisterRequests(world, identities)}
 	{
-		const Manifest::Travel::Fleet &fleet =
+		Manifest::Travel::Fleet &fleet =
 		    Manifest::Travel::Register(world, requests, identities, Trading());
 		Manifest::Company::RegisterCommands(world, requests, identities, fleet, Trading());
 		Register(world, requests, identities, Trading());

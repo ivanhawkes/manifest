@@ -62,6 +62,10 @@ struct Rules
 	std::map<std::string, int, std::less<>> connections;
 	double oxygenPerTote{0.0};
 	double cartridgesPerTote{0.0};
+	double reactionMassPerTote{0.0};
+	double pelletsPerTote{0.0};
+	// What refuelling buys through (Trade::MakeBuyer).
+	Trade::Buyer buy{};
 	std::uint64_t windowSteps{0};
 	// A simulation hour in the world's steps, which the berth fee is charged by.
 	std::uint64_t hourSteps{0};
@@ -446,6 +450,87 @@ Result Replaced(SimWorld &world, const Rules &rules, const Actor &actor, const S
 }
 
 
+// A journey's refuelling at the venue the ship is docked at (SetRefuel), within its company's account
+// less the reserve.
+void Refuelled(SimWorld &world, const Rules &rules, entt::entity ship, std::int64_t reserve)
+{
+	entt::registry &registry = world.Registry();
+	if (const auto *pRefuel = registry.try_get<const World::Refuel>(ship); pRefuel && !pRefuel->enabled)
+		return;
+	const World::Ship &record = registry.get<World::Ship>(ship);
+	const std::optional<World::Fuel> tanks =
+	    rules.identities.FuelTanks(record, registry.try_get<World::Systems>(ship));
+	if (!tanks || !registry.all_of<World::Fuel>(ship) || record.dockedAt.empty())
+		return;
+	const entt::entity company = rules.identities.Find(Kind::Company, record.companyId);
+	const entt::entity account = rules.identities.Find(Kind::CompanyAccount, record.companyId);
+	JETTISON_VERIFY(company != entt::null && account != entt::null);
+	const auto budget = [&] { return registry.get<World::Account>(account).balance - reserve; };
+	const Content::FuelTuning &fuel = rules.content.tuning.fuel;
+
+	// Whole totes of reaction mass, straight from the warehouse into the tanks.
+	const double room = tanks->reactionMass - registry.get<World::Fuel>(ship).reactionMass;
+	if (const auto totes =
+	        static_cast<std::uint64_t>(std::max(0.0, std::floor(room / rules.reactionMassPerTote)));
+	    totes > 0)
+		if (const std::uint64_t bought = rules.buy(
+		        world, record.companyId, record.dockedAt, fuel.reactionMassItemId, totes, budget());
+		    bought > 0)
+		{
+			World::Stock &stock = registry.get<World::Stock>(company);
+			const World::Holding key{record.dockedAt, fuel.reactionMassItemId};
+			const auto holding = std::ranges::lower_bound(
+			    stock.holdings, HoldingKey(key), std::less<>{},
+			    [](const World::Holding &held) { return HoldingKey(held); });
+			JETTISON_VERIFY(
+			    holding != stock.holdings.end() && HoldingKey(*holding) == HoldingKey(key) &&
+			    holding->available >= bought);
+			holding->available -= bought;
+			if (holding->available == 0 && holding->reserved == 0)
+				stock.holdings.erase(holding);
+			World::Fuel &held = registry.get<World::Fuel>(ship);
+			held.reactionMass = std::min(
+			    tanks->reactionMass,
+			    held.reactionMass + (static_cast<double>(bought) * rules.reactionMassPerTote));
+		}
+
+	// A tote of pellets into a hold with none and room for it, loaded as Load would.
+	const std::uint64_t free =
+	    rules.identities.Hold(record, registry.try_get<World::Systems>(ship)).value_or(0);
+	if (Aboard(registry.get<World::Cargo>(ship), fuel.pelletItemId, rules.pelletsPerTote) <= 0.0 &&
+	    Carried(registry.get<World::Cargo>(ship)) < free &&
+	    rules.buy(world, record.companyId, record.dockedAt, fuel.pelletItemId, 1, budget()) > 0)
+	{
+		const Actor owner{
+		    Command::ActorKind::Principal, registry.get<World::Company>(company).principalId};
+		const Move move{registry.get<World::Identity>(ship).id, record.dockedAt, fuel.pelletItemId, 1};
+		JETTISON_VERIFY(Moved(world, rules, owner, move, true) == Result::Succeeded);
+	}
+
+	// The magazine filled from the hold, a tote opened at a time.
+	World::Cargo &cargo = registry.get<World::Cargo>(ship);
+	World::Fuel &held = registry.get<World::Fuel>(ship);
+	const double space = tanks->pellets - held.pellets;
+	if (const double given = std::min(space, Aboard(cargo, fuel.pelletItemId, rules.pelletsPerTote));
+	    given > 0.0)
+	{
+		Take(cargo, fuel.pelletItemId, rules.pelletsPerTote, given, 0.0);
+		held.pellets = given == space ? tanks->pellets : held.pellets + given;
+	}
+}
+
+
+Result RefuelSet(SimWorld &world, const Rules &rules, const Actor &actor, const SetRefuel &set)
+{
+	entt::registry &registry = world.Registry();
+	const auto owned = Owned(registry, rules, actor, set.shipId);
+	if (const Result *refused = std::get_if<Result>(&owned))
+		return *refused;
+	registry.emplace_or_replace<World::Refuel>(std::get<entt::entity>(owned), set.enabled);
+	return Result::Succeeded;
+}
+
+
 Result Upgraded(SimWorld &world, const Rules &rules, const Actor &actor, const Upgrade &upgrade)
 {
 	entt::registry &registry = world.Registry();
@@ -824,6 +909,9 @@ void RegisterTypes()
 		RegisterType<SetFees>("Manifest.Company.SetFees")
 		    .Field<&SetFees::venueId>("venueId", kSaved)
 		    .Field<&SetFees::fees>("fees", kSaved);
+		RegisterType<SetRefuel>("Manifest.Company.SetRefuel")
+		    .Field<&SetRefuel::shipId>("shipId", kSaved)
+		    .Field<&SetRefuel::enabled>("enabled", kSaved);
 		return true;
 	}();
 	(void)registered;
@@ -831,8 +919,8 @@ void RegisterTypes()
 
 
 void RegisterCommands(
-    SimWorld &world, Command::Requests &requests, World::Identities &identities,
-    const Travel::Fleet &fleet, const Content::ContentSet &content)
+    SimWorld &world, Command::Requests &requests, World::Identities &identities, Travel::Fleet &fleet,
+    const Content::ContentSet &content)
 {
 	const auto selected = content.scenarios.find(content.scenario);
 	if (selected == content.scenarios.end())
@@ -889,6 +977,11 @@ void RegisterCommands(
 	};
 	rules->oxygenPerTote = perTote(lifeSupport.oxygenItemId);
 	rules->cartridgesPerTote = perTote(lifeSupport.cartridgeItemId);
+	rules->reactionMassPerTote = perTote(content.tuning.fuel.reactionMassItemId);
+	rules->pelletsPerTote = perTote(content.tuning.fuel.pelletItemId);
+	rules->buy = Trade::MakeBuyer(world, identities, content);
+	fleet.SetRefueller([rules](SimWorld &target, entt::entity ship, std::int64_t reserve)
+	                   { Refuelled(target, *rules, ship, reserve); });
 
 	requests.Register<Provision>(
 	    std::string{kProvision}, kVersion, Command::ActorKind::Administrator,
@@ -914,6 +1007,10 @@ void RegisterCommands(
 	    std::string{kUpgrade}, kVersion, Command::ActorKind::Principal,
 	    [rules](SimWorld &target, const Actor &actor, const Upgrade &upgrade)
 	    { return Upgraded(target, *rules, actor, upgrade); });
+	requests.Register<SetRefuel>(
+	    std::string{kSetRefuel}, kVersion, Command::ActorKind::Principal,
+	    [rules](SimWorld &target, const Actor &actor, const SetRefuel &set)
+	    { return RefuelSet(target, *rules, actor, set); });
 	requests.Register<SetFees>(
 	    std::string{kSetFees}, kVersion, Command::ActorKind::Principal,
 	    [rules](SimWorld &target, const Actor &actor, const SetFees &set)

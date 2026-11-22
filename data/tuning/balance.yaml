@@ -114,6 +114,10 @@ fuel:
   curveExponent: 2
   tankTonnesPerTonne: 0.25
   occupantKilograms: 100
+  # What a journey refuels with as it leaves a venue: reaction mass into the tanks, and pellets into
+  # the hold, which fill the magazine (W21).
+  reactionMassItemId: ItemReactionMass
+  pelletItemId: ItemFusionPellets
 
 company:
   # A new player's trading company's account, in whole credits (D-077): about a full hold of grain

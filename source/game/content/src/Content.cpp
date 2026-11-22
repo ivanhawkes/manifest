@@ -644,7 +644,9 @@ void CheckTuning(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 		          tuning.lifeSupport.oxygenItemId, Core::TradeUnit::Kilogram,
 		          "lifeSupport.oxygenItemId"},
 		      {tuning.lifeSupport.cartridgeItemId, Core::TradeUnit::Unit,
-		       "lifeSupport.cartridgeItemId"}})
+		       "lifeSupport.cartridgeItemId"},
+		      {tuning.fuel.reactionMassItemId, Core::TradeUnit::Kilogram, "fuel.reactionMassItemId"},
+		      {tuning.fuel.pelletItemId, Core::TradeUnit::Kilogram, "fuel.pelletItemId"}})
 		{
 			const auto *pItem = registry.Find<Core::ItemNode>(RegistryName(itemId));
 			checker.Require(

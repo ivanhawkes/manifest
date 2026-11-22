@@ -87,6 +87,19 @@ struct SetFees
 	World::Fees fees;
 };
 
+// The players' command that sets whether a journey from a venue first refuels their company's ship
+// (World::Refuel), on until set off. Refuelling buys, at the venue's asks through its book
+// (Trade::MakeBuyer) and within the company's account after what the journey still pays, the whole
+// totes of the fuel tuning's reaction mass its tanks have room for, straight into them; where its hold
+// has no pellets, a tote of them into its hold, as Load would, the hold's room allowing; and then fills
+// the magazine from the pellets in its hold, opening a tote at a time (D-108). It checks the ship
+// (UnknownTarget) and that the sender's company owns it (NotAuthorised).
+struct SetRefuel
+{
+	std::string shipId;
+	bool enabled{true};
+};
+
 inline constexpr std::string_view kProvision = "Manifest.Company.Provision";
 inline constexpr std::string_view kLoad = "Manifest.Company.Load";
 inline constexpr std::string_view kUnload = "Manifest.Company.Unload";
@@ -94,6 +107,7 @@ inline constexpr std::string_view kRefill = "Manifest.Company.Refill";
 inline constexpr std::string_view kReplace = "Manifest.Company.Replace";
 inline constexpr std::string_view kUpgrade = "Manifest.Company.Upgrade";
 inline constexpr std::string_view kSetFees = "Manifest.Company.SetFees";
+inline constexpr std::string_view kSetRefuel = "Manifest.Company.SetRefuel";
 
 // The system, by the name the step's table gives it: after manifest.travel, it lets go of the
 // life-support connection of each ship no longer docked at its venue, connects each docked ship while
@@ -124,10 +138,11 @@ inline constexpr std::uint32_t kVersion = 1;
 void RegisterTypes();
 
 // Registers the commands with the requests, the life-support, pricing and berth systems after
-// manifest.travel, and the ships' holds with the identities (World::Identities::SetHolds). The
+// manifest.travel, the ships' holds with the identities (World::Identities::SetHolds), and their
+// refuelling with the fleet (Travel::Fleet::SetRefueller, SetRefuel). The
 // identities, the fleet and the content, whose scenario they run on, must outlive the world. Throws
 // std::invalid_argument for a content set with no scenario selected.
 void RegisterCommands(
     Jettison::Sim::SimWorld &world, Command::Requests &requests, World::Identities &identities,
-    const Travel::Fleet &fleet, const Content::ContentSet &content);
+    Travel::Fleet &fleet, const Content::ContentSet &content);
 } // namespace Manifest::Company

@@ -45,7 +45,7 @@ struct Hosted
 		files.AddMount({"manifest", MANIFEST_MOD_DIRECTORY});
 		Jettison::Sim::DefinitionRegistry definitions{files};
 		content = Manifest::Content::LoadScenario(files, definitions, scenario);
-		const Manifest::Travel::Fleet &fleet =
+		Manifest::Travel::Fleet &fleet =
 		    Manifest::Travel::Register(world, requests, identities, content);
 		Company::RegisterCommands(world, requests, identities, fleet, content);
 		World::CreateInitialState(world, identities, content);

@@ -336,6 +336,15 @@ struct Fuel
 	bool operator==(const Fuel &) const = default;
 };
 
+// Whether a journey from a venue refuels the ship first (Travel::Fleet::Refuel), set by its owner's
+// Company::SetRefuel; a ship without one does.
+struct Refuel
+{
+	bool enabled{true};
+
+	bool operator==(const Refuel &) const = default;
+};
+
 // The totes of an item a venue's book filled in one step, buyer and seller counted once.
 struct Sold
 {

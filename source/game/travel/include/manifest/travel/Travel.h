@@ -3,8 +3,10 @@
 #include <entt/entt.hpp>
 
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <string_view>
+#include <utility>
 
 #include <jettison/sim/Controller.h>
 #include <jettison/sim/SimWorld.h>
@@ -47,7 +49,8 @@ inline constexpr double kStandardGravity = 9.80665;
 // (InsufficientFunds), or a venue whose account cannot hold what it is paid (InvalidQuantity). A ship
 // whose drive has a profile flies the burn (Profile), refused InvalidQuantity for a thrust not above 0
 // or past kFullThrustBps or an acceleration outside its bounds, and InsufficientFuel for a leg its
-// World::Fuel cannot fly (Burned, at the distance to the venue's station now and everything aboard);
+// World::Fuel cannot fly after refuelling (Fleet::Refuel, from a venue; Burned, at the distance to the
+// venue's station now and everything aboard);
 // one with none, the power law, burns nothing. As it starts it pays the fee to the venue's account and
 // the arrears to the account of the venue it leaves (D-097), and takes the leg's fuel from the tanks.
 struct Travel
@@ -143,6 +146,22 @@ class Fleet
 		return m_physics;
 	}
 
+	// What a journey from a venue first buys for a ship whose drive has a profile, keeping back the
+	// credits it still pays as it starts: the company's refuelling, which stays bought though the
+	// journey is then refused for its fuel. Unset, nothing.
+	using Refueller =
+	    std::function<void(Jettison::Sim::SimWorld &, entt::entity ship, std::int64_t reserve)>;
+	void SetRefueller(Refueller refueller)
+	{
+		m_refueller = std::move(refueller);
+	}
+
+	void Refuel(Jettison::Sim::SimWorld &world, entt::entity ship, std::int64_t reserve) const
+	{
+		if (m_refueller)
+			m_refueller(world, ship, reserve);
+	}
+
 	const Content::ContentSet &Content() const
 	{
 		return m_content;
@@ -152,6 +171,7 @@ class Fleet
 	Jettison::Dock::Docks &m_docks;
 	Jettison::Physics::PhysicsWorld &m_physics;
 	const Content::ContentSet &m_content;
+	Refueller m_refueller;
 };
 
 // Attaches Jettison's physics, its spatial index, steering, the docks, the lanes and cruising, as the

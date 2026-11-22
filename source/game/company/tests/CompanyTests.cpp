@@ -70,7 +70,7 @@ struct Hosted
 	    : content{set}, identities{(RegisterTypes(), World::RegisterWorld(world))},
 	      requests{Manifest::Command::RegisterRequests(world, identities)}
 	{
-		const Manifest::Travel::Fleet &fleet =
+		Manifest::Travel::Fleet &fleet =
 		    Manifest::Travel::Register(world, requests, identities, content);
 		RegisterCommands(world, requests, identities, fleet, content);
 		World::CreateInitialState(world, identities, content);
@@ -562,7 +562,7 @@ TEST_CASE("The commands refuse a hull whose hold is not a whole number of totes 
 		SimWorld world{1.0, 0};
 		World::Identities &identities = World::RegisterWorld(world);
 		Manifest::Command::Requests &requests = Manifest::Command::RegisterRequests(world, identities);
-		const Manifest::Travel::Fleet &fleet =
+		Manifest::Travel::Fleet &fleet =
 		    Manifest::Travel::Register(world, requests, identities, content);
 		CHECK_THROWS_AS(
 		    RegisterCommands(world, requests, identities, fleet, content), std::invalid_argument);
@@ -1168,7 +1168,7 @@ TEST_CASE("A save with work pending, and a replay from the start, carry the comp
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves only
 	// with what a save holds or the engine's save format, and a change that moves it says so.
-	CHECK(hosted.world.StateHash() == 0xbbba40bbb4a1da0bULL);
+	CHECK(hosted.world.StateHash() == 0xcf8c38c028cc2ea3ULL);
 }
 
 

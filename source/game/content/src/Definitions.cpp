@@ -225,7 +225,9 @@ void RegisterTypes()
 		    .Field<&FuelTuning::pelletMilligramsPerTonneKms>("pelletMilligramsPerTonneKms", kDefined)
 		    .Field<&FuelTuning::curveExponent>("curveExponent", kDefined)
 		    .Field<&FuelTuning::tankTonnesPerTonne>("tankTonnesPerTonne", kDefined)
-		    .Field<&FuelTuning::occupantKilograms>("occupantKilograms", kDefined);
+		    .Field<&FuelTuning::occupantKilograms>("occupantKilograms", kDefined)
+		    .Field<&FuelTuning::reactionMassItemId>("reactionMassItemId", kDefined)
+		    .Field<&FuelTuning::pelletItemId>("pelletItemId", kDefined);
 		RegisterType<CompanyTuning>("Manifest.CompanyTuning")
 		    .Field<&CompanyTuning::startingCredits>("startingCredits", kDefined);
 		RegisterType<MarketTuning>("Manifest.MarketTuning")

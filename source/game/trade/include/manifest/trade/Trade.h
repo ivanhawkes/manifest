@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -116,6 +117,18 @@ void Seed(
 void Register(
     Jettison::Sim::SimWorld &world, Command::Requests &requests, World::Identities &identities,
     const Content::ContentSet &content);
+
+// Buys for the company at the venue at the asks resting on its book now, best price first and then
+// oldest, as many of the totes as the budget, in whole credits, holds the reservation of a buy at the
+// limit of the dearest ask it takes (PerTote): a buy that rests nothing, its fills in the company's
+// holding there, recorded as any fill is. Gives the totes bought, none for a venue or item the
+// scenario does not trade or nothing on offer. A ship's refuelling (W21). Made from the content once,
+// as Register's rules are; throws as Register does.
+using Buyer = std::function<std::uint64_t(
+    Jettison::Sim::SimWorld &, const std::string &companyId, const std::string &venueId,
+    const std::string &itemId, std::uint64_t totes, std::int64_t budget)>;
+Buyer MakeBuyer(
+    Jettison::Sim::SimWorld &world, World::Identities &identities, const Content::ContentSet &content);
 
 // Every broker's requote (D-084), venue by venue in the scenario's order: its resting orders
 // cancelled, then for each good of the venue's market in its order, half the spread either side of

@@ -554,9 +554,11 @@ void Record(
 
 
 // The order reserved, then matched against the book, the whole planned in one ledger and written only
-// when every check holds; what is left rests under a new ID.
-Result Post(SimWorld &world, const Rules &rules, World::Order order)
+// when every check holds; what is left rests under a new ID, or for a buy that does not rest, its
+// escrow goes back.
+Result Post(SimWorld &world, const Rules &rules, World::Order order, bool rests = true)
 {
+	JETTISON_VERIFY(rests || order.side == Side::Buy);
 	JETTISON_PROFILE_ZONE("Manifest.Trade.Post");
 	entt::registry &registry = world.Registry();
 	const std::uint64_t step = world.Clock().Step();
@@ -673,7 +675,7 @@ Result Post(SimWorld &world, const Rules &rules, World::Order order)
 			paid.emplace_back(buy.ownerId, maker.limit);
 	}
 
-	if (order.remaining == 0)
+	if (order.remaining == 0 || !rests)
 	{
 		if (!ledger.Credit(World::AccountOf(order.ownerKind), order.ownerId, order.escrow))
 			return Result::InvalidQuantity;
@@ -696,7 +698,7 @@ Result Post(SimWorld &world, const Rules &rules, World::Order order)
 		else
 			prices.insert(at, {order.itemId, price});
 	}
-	if (order.remaining > 0)
+	if (order.remaining > 0 && rests)
 	{
 		std::optional<std::string> id = rules.identities.Issue(Kind::Order);
 		// No refusal can give back what the commit wrote.
@@ -708,6 +710,63 @@ Result Post(SimWorld &world, const Rules &rules, World::Order order)
 		registry.emplace<World::Order>(created, std::move(order));
 	}
 	return Result::Succeeded;
+}
+
+
+std::uint64_t BoughtNow(
+    SimWorld &world, const Rules &rules, const std::string &companyId, const std::string &venueId,
+    const std::string &itemId, std::uint64_t totes, std::int64_t budget)
+{
+	const auto perUnits = rules.unitsPerTote.find(itemId);
+	if (!rules.venues.contains(venueId) || perUnits == rules.unitsPerTote.end() || totes == 0 ||
+	    budget <= 0)
+		return 0;
+	entt::registry &registry = world.Registry();
+	const std::uint64_t step = world.Clock().Step();
+	// The asks it would cross, best first, as Post orders them.
+	std::vector<const World::Order *> asks;
+	for (const entt::entity entity : Listing(registry, venueId, itemId))
+		if (const auto &resting = registry.get<const World::Order>(entity);
+		    resting.side == Side::Sell && (resting.expiresStep == 0 || step < resting.expiresStep))
+			asks.push_back(&resting);
+	std::ranges::sort(
+	    asks,
+	    [](const World::Order *pLeft, const World::Order *pRight)
+	    {
+		    return std::pair{pLeft->limit, pLeft->sequence} <
+		           std::pair{pRight->limit, pRight->sequence};
+	    });
+	// The most totes a limit at one of them reserves within the budget, the asks up to it offer and
+	// one pass fills.
+	std::uint64_t best = 0;
+	std::uint64_t offered = 0;
+	std::int64_t limit = 0;
+	for (std::size_t each = 0; each < asks.size() && each < kMaxFills; ++each)
+	{
+		offered += asks[each]->remaining;
+		const std::optional<std::int64_t> perTote =
+		    PerTote(asks[each]->limit, perUnits->second, rules.feeBps);
+		if (!perTote)
+			break;
+		const std::uint64_t affordable =
+		    static_cast<std::uint64_t>(budget / std::max<std::int64_t>(*perTote, 1));
+		if (const std::uint64_t most = std::min({offered, affordable, totes}); most > best)
+		{
+			best = most;
+			limit = asks[each]->limit;
+		}
+	}
+	if (best == 0)
+		return 0;
+	World::Order order;
+	order.ownerKind = Kind::Company;
+	order.ownerId = companyId;
+	order.venueId = venueId;
+	order.itemId = itemId;
+	order.side = Side::Buy;
+	order.limit = limit;
+	order.totes = best;
+	return Post(world, rules, std::move(order), false) == Result::Succeeded ? best : 0;
 }
 
 
@@ -1751,6 +1810,16 @@ void RegisterTypes()
 		return true;
 	}();
 	(void)registered;
+}
+
+
+Buyer MakeBuyer(SimWorld &world, World::Identities &identities, const Content::ContentSet &content)
+{
+	std::shared_ptr<const Rules> rules = MakeRules(world, identities, content);
+	return [rules](
+	           SimWorld &on, const std::string &companyId, const std::string &venueId,
+	           const std::string &itemId, std::uint64_t totes, std::int64_t budget)
+	{ return BoughtNow(on, *rules, companyId, venueId, itemId, totes, budget); };
 }
 
 

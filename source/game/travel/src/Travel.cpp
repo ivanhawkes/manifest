@@ -119,7 +119,22 @@ Result Started(SimWorld &world, const Rules &rules, const Actor &actor, const Tr
 	    travel.accelerationMilliG < kLeastAccelerationMilliG)
 		return Result::InvalidQuantity;
 
-	// The burn and the leg's fuel, for a drive with a profile (D-107, D-108).
+	// The destination's docking fee for the ship's fee class and the ship's arrears where it is, paid
+	// as it starts (D-097, D-100).
+	const World::ClassFees *pFees = World::Find(
+	    registry.get<World::Fees>(Required(rules, Kind::Market, travel.venueId)),
+	    Content::FeeClass(rules.content, record.hullId));
+	JETTISON_VERIFY(pFees != nullptr);
+	const std::int64_t fee = pFees->docking;
+	const auto *pArrears = registry.try_get<World::Arrears>(ship);
+	const std::int64_t owed = pArrears ? pArrears->owed : 0;
+	const entt::entity payer = Required(rules, Kind::CompanyAccount, record.companyId);
+	if (const std::int64_t balance = registry.get<World::Account>(payer).balance;
+	    balance < fee || balance - fee < owed)
+		return Result::InsufficientFunds;
+
+	// The burn and the leg's fuel, for a drive with a profile (D-107, D-108), refuelled first at the
+	// venue it leaves, keeping back what it pays as it starts.
 	auto *pDrive = registry.try_get<Space::CruiseDrive>(ship);
 	std::optional<Space::CruiseProfile> flown;
 	World::Fuel burned{};
@@ -132,6 +147,8 @@ Result Started(SimWorld &world, const Rules &rules, const Actor &actor, const Tr
 		        : *pDrive->profile;
 		if (travel.accelerationMilliG > MostMilliG(mode))
 			return Result::InvalidQuantity;
+		if (!record.dockedAt.empty())
+			rules.fleet.Refuel(world, ship, fee + owed);
 		flown = Profile(mode, travel.thrustBps, travel.accelerationMilliG);
 		const double metres = glm::distance(
 		    registry.get<Sim::Transform>(ship).position,
@@ -145,19 +162,7 @@ Result Started(SimWorld &world, const Rules &rules, const Actor &actor, const Tr
 			return Result::InsufficientFuel;
 	}
 
-	// The destination's docking fee for the ship's fee class and the ship's arrears where it is, paid
-	// as it starts (D-097, D-100).
-	const World::ClassFees *pFees = World::Find(
-	    registry.get<World::Fees>(Required(rules, Kind::Market, travel.venueId)),
-	    Content::FeeClass(rules.content, record.hullId));
-	JETTISON_VERIFY(pFees != nullptr);
-	const std::int64_t fee = pFees->docking;
-	const auto *pArrears = registry.try_get<World::Arrears>(ship);
-	const std::int64_t owed = pArrears ? pArrears->owed : 0;
-	World::Account &account =
-	    registry.get<World::Account>(Required(rules, Kind::CompanyAccount, record.companyId));
-	if (account.balance < fee || account.balance - fee < owed)
-		return Result::InsufficientFunds;
+	World::Account &account = registry.get<World::Account>(payer);
 	World::Account &destination =
 	    registry.get<World::Account>(Required(rules, Kind::VenueAccount, travel.venueId));
 	World::Account *pLeft =

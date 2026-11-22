@@ -115,6 +115,43 @@ struct Hosted
 		    Travel::Travel{"Ship1", std::string{venueId}, thrustBps, accelerationMilliG});
 	}
 
+	Result Refuel(bool enabled)
+	{
+		return Run(kAda, Company::kSetRefuel, Company::kVersion, Company::SetRefuel{"Ship1", enabled});
+	}
+
+	World::Account &Account()
+	{
+		return world.Registry().get<World::Account>(
+		    services.identities.Find(Kind::CompanyAccount, "Company1"));
+	}
+
+	std::int64_t Balance()
+	{
+		return Account().balance;
+	}
+
+	void SetBalance(std::int64_t balance)
+	{
+		Account().balance = balance;
+	}
+
+	// The venue's docking fee for the ship's fee class, as posted now.
+	std::int64_t DockingFee(std::string_view venueId) const
+	{
+		const entt::registry &registry = world.Registry();
+		return Manifest::World::Find(
+		           registry.get<World::Fees>(
+		               services.identities.Find(Kind::Market, std::string{venueId})),
+		           Manifest::Content::FeeClass(fleet->Content(), Record().hullId))
+		    ->docking;
+	}
+
+	World::Stock &Stock()
+	{
+		return world.Registry().get<World::Stock>(services.identities.Find(Kind::Company, "Company1"));
+	}
+
 	World::Fuel &Fuel()
 	{
 		return world.Registry().get<World::Fuel>(Ship());
@@ -545,7 +582,6 @@ TEST_CASE("A journey flies the burn chosen and takes its leg's fuel from the tan
 TEST_CASE("Travel is refused, writing nothing, for a burn out of bounds or a leg its fuel cannot fly")
 {
 	Hosted hosted{MANIFEST_MOD_DIRECTORY, Cruise::Profiled};
-	const World::Fuel full = hosted.Fuel();
 	for (const auto &[thrustBps, milliG] :
 	     {std::pair{0U, 1000U}, {10001U, 1000U}, {10000U, 99U}, {10000U, 1001U}})
 	{
@@ -553,6 +589,7 @@ TEST_CASE("Travel is refused, writing nothing, for a burn out of bounds or a leg
 		CAPTURE(milliG);
 		CHECK(hosted.Burn(kBrine, thrustBps, milliG) == Result::InvalidQuantity);
 	}
+	REQUIRE(hosted.Refuel(false) == Result::Succeeded);
 	hosted.Fuel().reactionMass = 100.0;
 	CHECK(hosted.Burn(kBrine, 10000, 1000) == Result::InsufficientFuel);
 	hosted.Fuel() = {4000.0, 0.1};
@@ -561,8 +598,94 @@ TEST_CASE("Travel is refused, writing nothing, for a burn out of bounds or a leg
 	CHECK_FALSE(hosted.world.Registry().all_of<World::Journey>(hosted.Ship()));
 	CHECK(hosted.Record().dockedAt == kOre);
 	// A slow enough burn flies on what is left.
-	hosted.Fuel() = full;
+	hosted.Fuel() = {100.0, 0.1};
 	CHECK(hosted.Burn(kBrine, 100, 100) == Result::Succeeded);
+}
+
+
+TEST_CASE(
+    "A journey refuels first: whole totes of reaction mass at the venue's asks, the magazine from the "
+    "hold")
+{
+	Hosted hosted{MANIFEST_MOD_DIRECTORY, Cruise::Profiled};
+	entt::registry &registry = hosted.world.Registry();
+	const Manifest::Content::ContentSet &content = hosted.fleet->Content();
+	World::Cargo &cargo = registry.get<World::Cargo>(hosted.Ship());
+	// Tanks with room for 26 totes of 112.5 kg and a magazine for 7.5 kg of a tote aboard.
+	const auto start = [&]
+	{
+		hosted.Fuel() = {1000.0, 5.0};
+		cargo = {{{"ItemFusionPellets", 1}}, {}};
+	};
+	hosted.Fuel() = {1000.0 + (26 * 112.5), 12.5};
+	cargo = {{}, {{"ItemFusionPellets", 5.0}}};
+	const Space::CruiseProfile flown =
+	    Travel::Profile(*content.drives.at("hull-lone-trader-starter").profile, 10000, 1000);
+	const World::Fuel burned = Travel::Burned(
+	    content.tuning.fuel, flown,
+	    Travel::TonnesAboard(registry, hosted.services.identities, content, hosted.Ship()),
+	    hosted.Metres(kBrine));
+	start();
+	const std::int64_t before = hosted.Balance();
+
+	REQUIRE(hosted.Go(kAda, kBrine) == Result::Succeeded);
+	CHECK(hosted.Fuel().reactionMass == doctest::Approx(1000.0 + (26 * 112.5) - burned.reactionMass));
+	CHECK(hosted.Fuel().pellets == doctest::Approx(12.5 - burned.pellets));
+	CHECK(cargo == World::Cargo{{}, {{"ItemFusionPellets", 5.0}}});
+	// Paid for, past the docking fee; nothing of it left in the warehouse.
+	CHECK(before - hosted.Balance() > hosted.DockingFee(kBrine));
+	CHECK(
+	    std::ranges::none_of(
+	        hosted.Stock().holdings,
+	        [](const World::Holding &holding) { return holding.itemId == "ItemReactionMass"; }));
+}
+
+
+TEST_CASE("Refuelling buys a tote of pellets for a hold with none, where the venue has them on offer")
+{
+	Hosted hosted{MANIFEST_MOD_DIRECTORY, Cruise::Profiled};
+	entt::registry &registry = hosted.world.Registry();
+	REQUIRE(
+	    hosted.Run(
+	        kHost, Company::kProvision, Company::kVersion,
+	        Company::Provision{"Bea", "Bea", "Bea Co"}) == Result::Succeeded);
+	registry.get<World::Stock>(hosted.services.identities.Find(Kind::Company, "Company2")).holdings = {
+	    {std::string{kOre}, "ItemFusionPellets", 1, 0}};
+	constexpr std::int64_t kPelletPrice = 1200'000'000;
+	REQUIRE(
+	    hosted.Run(
+	        kBea, Manifest::Trade::kPlace, Manifest::Trade::kVersion,
+	        Manifest::Trade::Place{
+	            std::string{kOre}, "ItemFusionPellets", World::Side::Sell, 1, kPelletPrice}) ==
+	    Result::Succeeded);
+	hosted.Fuel().pellets = 2.5;
+
+	REQUIRE(hosted.Go(kAda, kBrine) == Result::Succeeded);
+	// The tote bought, loaded and opened for the 10 kg the magazine had room for.
+	CHECK(registry.get<World::Cargo>(hosted.Ship()) == World::Cargo{{}, {{"ItemFusionPellets", 2.5}}});
+	CHECK(hosted.Fuel().pellets < 12.5);
+	CHECK(hosted.Fuel().pellets > 10.0);
+}
+
+
+TEST_CASE("A ship's owner turns refuelling off, and an account short buys only what it covers")
+{
+	Hosted hosted{MANIFEST_MOD_DIRECTORY, Cruise::Profiled};
+	REQUIRE(hosted.Refuel(false) == Result::Succeeded);
+	CHECK(hosted.world.Registry().get<World::Refuel>(hosted.Ship()) == World::Refuel{false});
+	hosted.Fuel().reactionMass = 100.0;
+	CHECK(hosted.Burn(kBrine, 10000, 1000) == Result::InsufficientFuel);
+	CHECK(hosted.Fuel().reactionMass == 100.0);
+
+	// Back on, with a few totes' credits past the docking fee: it buys them, and the leg is still
+	// refused, the credits the journey pays kept back.
+	REQUIRE(hosted.Refuel(true) == Result::Succeeded);
+	const std::int64_t fee = hosted.DockingFee(kBrine);
+	hosted.SetBalance(fee + 10);
+	CHECK(hosted.Burn(kBrine, 10000, 1000) == Result::InsufficientFuel);
+	CHECK(hosted.Fuel().reactionMass > 100.0);
+	CHECK(hosted.Fuel().reactionMass < 1000.0);
+	CHECK(hosted.Balance() >= fee);
 }
 
 

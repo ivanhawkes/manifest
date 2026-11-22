@@ -418,6 +418,7 @@ void RegisterTypes()
 		RegisterType<Fuel>("Manifest.World.Fuel")
 		    .Field<&Fuel::reactionMass>("reactionMass", kSaved)
 		    .Field<&Fuel::pellets>("pellets", kSaved);
+		RegisterType<Refuel>("Manifest.World.Refuel").Field<&Refuel::enabled>("enabled", kSaved);
 		RegisterType<Broker>("Manifest.World.Broker").Field<&Broker::operatorId>("operatorId", kSaved);
 		RegisterEnum<Side>("Manifest.World.Side").Value<Side::Buy>("Buy").Value<Side::Sell>("Sell");
 		RegisterType<Order>("Manifest.World.Order")

@@ -150,6 +150,9 @@ struct FuelTuning
 	int curveExponent{0};
 	double tankTonnesPerTonne{0.0};
 	double occupantKilograms{0.0};
+	// The goods a ship refuels with, each by the kilogram.
+	std::string reactionMassItemId{};
+	std::string pelletItemId{};
 };
 
 // Who an offer is bought for: a company's own ship, the one target so far.
