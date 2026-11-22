@@ -1457,7 +1457,8 @@ engine provision: the coast phase.
 Slices, each a commit with its suites, the gate after the third and the last:
 
 1. Jettison: the coast phase, its times, covered metres and refusals, a world saved mid-coast; the
-   pin moved in Manifest, every Manifest pin held.
+   pin moved in Manifest, every Manifest pin held. **Done** 2026-11-22: `thrustShare` and
+   `CruiseThrust` on pin `a9b8305`, every Manifest suite and pin held.
 2. The drive fuel and the tanks: the item, the stations making it, `World::Fuel`, provisioning and
    saves, and the starter's `FuelBunkers` slot and offer (`content`, `data`, `company`).
 3. The burn: `Travel`'s `thrustBps` and `accelerationMilliG`, the profile for them, the console's

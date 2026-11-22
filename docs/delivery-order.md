@@ -103,7 +103,8 @@ a curve of its stock, households bidding up with a need's pressure, makers selli
 and tenders priced by need; a shortage pulls a cargo in, a glut sends one away and prices settle over
 long runs, on pin `f14c288` with no engine edit. The user then booked fuel burn
 ([D-107](decision-ledger.md#d-107)) as W21, at high priority. Next: W21, on the
-[W21 plan](stage-4-trading-plan.md#w21-plan); then W12, on the [tender contract](stage-4-trading-plan.md#tender-contract-w11-2026-11-21).
+[W21 plan](stage-4-trading-plan.md#w21-plan), its slice 1, Jettison's coast phase, done on pin
+`a9b8305` (2026-11-22); then W12, on the [tender contract](stage-4-trading-plan.md#tender-contract-w11-2026-11-21).
 
 ## Priority 0: maintenance before Stage 1
 
