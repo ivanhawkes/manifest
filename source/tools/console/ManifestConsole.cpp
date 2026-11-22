@@ -297,9 +297,10 @@ void ManifestConsole::RegisterCommands()
 	    1, 2, [this](Arguments arguments) { return CommandCancel(arguments); });
 	RegisterCommand(
 	    "travel",
-	    "travel [principal] <ship> <venue>: queues a player's journey; the principal only when not "
-	    "connected",
-	    2, 3, [this](Arguments arguments) { return CommandTravel(arguments); });
+	    "travel [principal] <ship> <venue> [thrust%] [g]: queues a player's journey, the engines "
+	    "thrusting for that share of its cruise, half at each end (100 by default), at that many g in "
+	    "tenths (1 by default); the principal only when not connected",
+	    2, 5, [this](Arguments arguments) { return CommandTravel(arguments); });
 	RegisterCommand(
 	    "service",
 	    "service refill|replace [principal] <ship>: queues a player's oxygen refill or cartridge "
@@ -803,11 +804,32 @@ std::string ManifestConsole::CommandCancel(Arguments arguments)
 
 std::string ManifestConsole::CommandTravel(Arguments arguments)
 {
+	constexpr std::size_t kLeast = 2;
+	constexpr std::size_t kMost = 4;
+	constexpr unsigned kPercent = 100;
+	// A tenth of g, in the Decimal's raw millionths.
+	constexpr std::int64_t kRawTenthG = 100000;
+	constexpr std::int64_t kRawPerMilliG = 1000;
+	const std::size_t given = arguments.size() - (m_pRemote ? 0 : 1);
 	const Arguments operands = Operands(
-	    arguments, 0, 2, m_pRemote ? "travel <ship> <venue>" : "travel <principal> <ship> <venue>");
+	    arguments, 0, std::clamp(given, kLeast, kMost),
+	    m_pRemote ? "travel <ship> <venue> [thrust%] [g]"
+	              : "travel <principal> <ship> <venue> [thrust%] [g]");
+	Travel::Travel travel{operands[0], operands[1]};
+	travel.thrustBps =
+	    ParseCount(operands, 2, kPercent, 1, kPercent) * (Travel::kFullThrustBps / kPercent);
+	if (operands.size() > 3)
+	{
+		const std::optional<sim::Decimal> g = sim::Decimal::TryParse(operands[3]);
+		if (!g || g->Raw() <= 0 || g->Raw() % kRawTenthG != 0 ||
+		    g->Raw() / kRawPerMilliG > std::numeric_limits<std::uint32_t>::max())
+			throw std::runtime_error{std::format(
+			    "expected an acceleration in tenths of g such as 0.5, got '{}'", operands[3])};
+		travel.accelerationMilliG = static_cast<std::uint32_t>(g->Raw() / kRawPerMilliG);
+	}
 	using Jettison::Serialise::BinaryArchive;
-	const std::vector<std::byte> payload = BinaryArchive::Write(
-	    Travel::Travel{operands[0], operands[1]}, Jettison::Serialise::FormatVersion{Travel::kVersion});
+	const std::vector<std::byte> payload =
+	    BinaryArchive::Write(travel, Jettison::Serialise::FormatVersion{Travel::kVersion});
 	return Queue(arguments, 0, Travel::kTravel, Travel::kVersion, payload);
 }
 

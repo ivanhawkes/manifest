@@ -78,18 +78,24 @@ struct Hosted
 	}
 
 	// The request admitted as the actor's next.
-	template <typename T> Receipt Admit(const Actor &actor, std::string_view command, const T &payload)
+	template <typename T>
+	Receipt Admit(
+	    const Actor &actor, std::string_view command, const T &payload,
+	    std::uint32_t version = kVersion)
 	{
-		const std::vector<std::byte> bytes = BinaryArchive::Write(payload, FormatVersion{kVersion});
+		const std::vector<std::byte> bytes = BinaryArchive::Write(payload, FormatVersion{version});
 		return requests.Admit(
-		    world, actor, requests.NextSequence(actor), std::string{command}, kVersion, bytes);
+		    world, actor, requests.NextSequence(actor), std::string{command}, version, bytes);
 	}
 
 	// The request admitted, as the actor's next, and run in the next step.
-	template <typename T> Result Run(const Actor &actor, std::string_view command, const T &payload)
+	template <typename T>
+	Result Run(
+	    const Actor &actor, std::string_view command, const T &payload,
+	    std::uint32_t version = kVersion)
 	{
 		const std::uint64_t sequence = requests.NextSequence(actor);
-		REQUIRE(Admit(actor, command, payload).status == Receipt::Status::Queued);
+		REQUIRE(Admit(actor, command, payload, version).status == Receipt::Status::Queued);
 		world.Step();
 		return Outcome(actor, sequence);
 	}
@@ -1233,12 +1239,18 @@ TEST_CASE(
 		if (fees.padClass != "skiff")
 			fees.docking = 1;
 	const Manifest::Travel::Travel toBrine{"Ship1", "VenueBrineHighport"};
-	CHECK(hosted.Run(kAda, Manifest::Travel::kTravel, toBrine) == Result::InsufficientFunds);
+	CHECK(
+	    hosted.Run(kAda, Manifest::Travel::kTravel, toBrine, Manifest::Travel::kVersion) ==
+	    Result::InsufficientFunds);
 	account.balance = 365'370 + 99;
-	CHECK(hosted.Run(kAda, Manifest::Travel::kTravel, toBrine) == Result::InsufficientFunds);
+	CHECK(
+	    hosted.Run(kAda, Manifest::Travel::kTravel, toBrine, Manifest::Travel::kVersion) ==
+	    Result::InsufficientFunds);
 	const std::int64_t oreBefore = ore.balance;
 	account.balance = 365'370 + 100;
-	CHECK(hosted.Run(kAda, Manifest::Travel::kTravel, toBrine) == Result::Succeeded);
+	CHECK(
+	    hosted.Run(kAda, Manifest::Travel::kTravel, toBrine, Manifest::Travel::kVersion) ==
+	    Result::Succeeded);
 	CHECK(account.balance == 0);
 	CHECK(ore.balance == oreBefore + 365'370);
 	CHECK(brine.balance == 100);
@@ -1323,8 +1335,8 @@ TEST_CASE("The principal directing a venue's operator sets its fees, charged fro
 	REQUIRE(set(kBea, "VenueBrineHighport", defaults) == Result::Succeeded);
 	REQUIRE(
 	    hosted.Run(
-	        kAda, Manifest::Travel::kTravel, Manifest::Travel::Travel{"Ship1", "VenueBrineHighport"}) ==
-	    Result::Succeeded);
+	        kAda, Manifest::Travel::kTravel, Manifest::Travel::Travel{"Ship1", "VenueBrineHighport"},
+	        Manifest::Travel::kVersion) == Result::Succeeded);
 	CHECK(brine.balance == 100);
 	usurious.arrearsRateBps = 3500;
 	CHECK(set(kBea, "VenueBrineHighport", usurious) == Result::Succeeded);

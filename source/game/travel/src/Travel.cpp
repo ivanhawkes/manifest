@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <charconv>
+#include <cmath>
 #include <cstdint>
 #include <format>
 #include <limits>
@@ -9,6 +10,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <glm/geometric.hpp>
@@ -28,6 +30,7 @@
 #include <jettison/space/Types.h>
 #include <jettison/spatial/SystemIndices.h>
 
+#include <manifest/config/SimulationConfig.h>
 #include <manifest/content/Content.h>
 #include <manifest/content/Definitions.h>
 #include <manifest/world/State.h>
@@ -50,6 +53,10 @@ namespace Sim = Jettison::Sim;
 namespace Space = Jettison::Space;
 
 constexpr std::string_view kCompanyPrefix = "Company";
+constexpr double kKilogramsPerTonne = 1000.0;
+constexpr double kGramsPerKilogram = 1000.0;
+constexpr double kMilligramsPerKilogram = 1.0e6;
+constexpr double kMetresPerKilometre = 1000.0;
 
 // What the command and the system run on.
 struct Rules
@@ -108,6 +115,35 @@ Result Started(SimWorld &world, const Rules &rules, const Actor &actor, const Tr
 		return Result::Travelling;
 	if (record.dockedAt == travel.venueId)
 		return Result::AlreadyThere;
+	if (travel.thrustBps == 0 || travel.thrustBps > kFullThrustBps ||
+	    travel.accelerationMilliG < kLeastAccelerationMilliG)
+		return Result::InvalidQuantity;
+
+	// The burn and the leg's fuel, for a drive with a profile (D-107, D-108).
+	auto *pDrive = registry.try_get<Space::CruiseDrive>(ship);
+	std::optional<Space::CruiseProfile> flown;
+	World::Fuel burned{};
+	if (pDrive && pDrive->profile)
+	{
+		const auto authored = rules.content.drives.find(Content::RegistryName(record.hullId));
+		const Space::CruiseProfile &mode =
+		    authored != rules.content.drives.end() && authored->second.profile
+		        ? *authored->second.profile
+		        : *pDrive->profile;
+		if (travel.accelerationMilliG > MostMilliG(mode))
+			return Result::InvalidQuantity;
+		flown = Profile(mode, travel.thrustBps, travel.accelerationMilliG);
+		const double metres = glm::distance(
+		    registry.get<Sim::Transform>(ship).position,
+		    registry.get<Sim::Transform>(rules.fleet.StationOf(registry, travel.venueId)).position);
+		burned = Burned(
+		    rules.content.tuning.fuel, *flown,
+		    TonnesAboard(registry, rules.identities, rules.content, ship), metres);
+		const auto *pFuel = registry.try_get<World::Fuel>(ship);
+		const World::Fuel tanks = pFuel ? *pFuel : World::Fuel{};
+		if (tanks.reactionMass < burned.reactionMass || tanks.pellets < burned.pellets)
+			return Result::InsufficientFuel;
+	}
 
 	// The destination's docking fee for the ship's fee class and the ship's arrears where it is, paid
 	// as it starts (D-097, D-100).
@@ -136,6 +172,15 @@ Result Started(SimWorld &world, const Rules &rules, const Actor &actor, const Tr
 	{
 		pLeft->balance += owed;
 		registry.remove<World::Arrears>(ship);
+	}
+	if (flown)
+	{
+		pDrive->profile = flown;
+		if (auto *pFuel = registry.try_get<World::Fuel>(ship))
+		{
+			pFuel->reactionMass -= burned.reactionMass;
+			pFuel->pellets -= burned.pellets;
+		}
 	}
 	registry.emplace_or_replace<World::Journey>(
 	    ship, travel.venueId, Leg::Departing, Failure::None, world.Clock().Step());
@@ -318,10 +363,101 @@ void RegisterTypes()
 		using namespace Jettison::Reflect;
 		RegisterType<Travel>("Manifest.Travel.Travel")
 		    .Field<&Travel::shipId>("shipId", Attribute::Saved)
-		    .Field<&Travel::venueId>("venueId", Attribute::Saved);
+		    .Field<&Travel::venueId>("venueId", Attribute::Saved)
+		    .Field<&Travel::thrustBps>("thrustBps", Attribute::Saved)
+		    .Field<&Travel::accelerationMilliG>("accelerationMilliG", Attribute::Saved);
 		return true;
 	}();
 	(void)registered;
+}
+
+
+std::uint32_t MostMilliG(const Space::CruiseProfile &mode)
+{
+	return static_cast<std::uint32_t>(
+	    std::lround(static_cast<double>(mode.sustainedAcceleration) / kStandardGravity * kMilliGPerG));
+}
+
+
+Space::CruiseProfile Profile(
+    const Space::CruiseProfile &mode, std::uint32_t thrustBps, std::uint32_t accelerationMilliG)
+{
+	const auto acceleration = static_cast<float>(accelerationMilliG * kStandardGravity / kMilliGPerG);
+	Space::CruiseProfile profile = accelerationMilliG >= MostMilliG(mode)
+	                                   ? mode
+	                                   : Space::CruiseProfile{acceleration, 0.0f, acceleration, {}};
+	profile.thrustShare =
+	    thrustBps < kFullThrustBps
+	        ? std::optional{static_cast<float>(thrustBps) / static_cast<float>(kFullThrustBps)}
+	        : std::nullopt;
+	return profile;
+}
+
+
+World::Fuel Burned(
+    const Content::FuelTuning &tuning, const Space::CruiseProfile &profile, double tonnes,
+    double metres)
+{
+	const Space::CruiseThrustSeconds thrust = Space::CruiseThrust(profile, metres);
+	double kms = 0.0;
+	double pelletKms = 0.0;
+	for (const auto &[acceleration, seconds] :
+	     {std::pair{static_cast<double>(profile.boostAcceleration), thrust.boost},
+	      std::pair{static_cast<double>(profile.sustainedAcceleration), thrust.sustained}})
+	{
+		// Speeding up at one end and slowing down at the other.
+		const double change = 2.0 * acceleration * seconds / kMetresPerKilometre;
+		const double g = acceleration / kStandardGravity;
+		double factor = 1.0;
+		for (int power = 0; g > 1.0 && power < tuning.curveExponent; ++power)
+			factor *= g;
+		kms += change;
+		pelletKms += change * factor;
+	}
+	const auto grams = [](double kilograms)
+	{ return std::ceil(kilograms * kGramsPerKilogram) / kGramsPerKilogram; };
+	return {
+	    grams(tonnes * kms * kKilogramsPerTonne / tuning.exhaustKms),
+	    grams(tonnes * pelletKms * tuning.pelletMilligramsPerTonneKms / kMilligramsPerKilogram)};
+}
+
+
+double TonnesAboard(
+    const entt::registry &registry, const World::Identities &identities,
+    const Content::ContentSet &content, entt::entity ship)
+{
+	const World::Ship &record = registry.get<World::Ship>(ship);
+	const Content::FuelTuning &tuning = content.tuning.fuel;
+	const auto hull = std::ranges::find(content.hulls, record.hullId, &Core::ShipClassSpec::hullId);
+	JETTISON_VERIFY(hull != content.hulls.end());
+	double kilograms =
+	    hull->mass.value_or(0.0) + (hull->occupants.value_or(0) * tuning.occupantKilograms);
+	if (const auto *pFuel = registry.try_get<World::Fuel>(ship))
+		kilograms += pFuel->reactionMass + pFuel->pellets;
+	if (const std::optional<World::Fuel> tanks =
+	        identities.FuelTanks(record, registry.try_get<World::Systems>(ship)))
+		kilograms += tanks->reactionMass * tuning.tankTonnesPerTonne;
+	const auto item = [&content](std::string_view itemId) -> const Core::ItemNode &
+	{
+		const auto found = std::ranges::find(content.gameMode.items, itemId, &Core::ItemNode::itemId);
+		JETTISON_VERIFY(found != content.gameMode.items.end());
+		return *found;
+	};
+	// A cubic metre of the item as packed, in kilograms: its density, water's 1 a tonne to it.
+	const auto packed = [](const Core::ItemNode &each)
+	{ return each.density * each.packFactor * kKilogramsPerTonne; };
+	if (const auto *pCargo = registry.try_get<World::Cargo>(ship))
+	{
+		for (const World::Lot &lot : pCargo->lots)
+			kilograms += static_cast<double>(lot.totes) * packed(item(lot.itemId)) /
+			             static_cast<double>(Core::kTotesPerIbc);
+		for (const World::Opened &opened : pCargo->opened)
+		{
+			const Core::ItemNode &each = item(opened.itemId);
+			kilograms += opened.quantity * packed(each) / each.unitsPerCubicMetre;
+		}
+	}
+	return kilograms / kKilogramsPerTonne;
 }
 
 

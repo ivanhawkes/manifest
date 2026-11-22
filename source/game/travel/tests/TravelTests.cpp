@@ -108,6 +108,27 @@ struct Hosted
 		    Travel::Travel{std::move(shipId), std::string{venueId}});
 	}
 
+	Result Burn(std::string_view venueId, std::uint32_t thrustBps, std::uint32_t accelerationMilliG)
+	{
+		return Run(
+		    kAda, Travel::kTravel, Travel::kVersion,
+		    Travel::Travel{"Ship1", std::string{venueId}, thrustBps, accelerationMilliG});
+	}
+
+	World::Fuel &Fuel()
+	{
+		return world.Registry().get<World::Fuel>(Ship());
+	}
+
+	// From the ship to the venue's station now, as a journey prices its leg.
+	double Metres(std::string_view venueId) const
+	{
+		const entt::registry &registry = world.Registry();
+		return glm::distance(
+		    registry.get<Jettison::Sim::Transform>(Ship()).position,
+		    registry.get<Jettison::Sim::Transform>(fleet->StationOf(registry, venueId)).position);
+	}
+
 	Result Load(std::string_view venueId, std::uint64_t totes = 1)
 	{
 		return Run(
@@ -446,6 +467,112 @@ TEST_CASE("A world saved mid-cruise on the manned profile flies on as the one sa
 	const auto &flown = hosted.world.Registry().get<Space::Cruising>(hosted.Ship());
 	CHECK(loaded.world.Registry().get<Space::Cruising>(loaded.Ship()) == flown);
 	CHECK(loaded.world.StateHash() == hosted.world.StateHash());
+}
+
+
+TEST_CASE("A burn is its mode's profile at the most it sustains, and that acceleration below it")
+{
+	const Space::CruiseProfile manned{19.6133f, 14400.0f, 9.80665f, {}};
+	const Space::CruiseProfile unmanned{117.6798f, 0.0f, 117.6798f, {}};
+	CHECK(Travel::MostMilliG(manned) == 1000);
+	CHECK(Travel::MostMilliG(unmanned) == 12000);
+	CHECK(Travel::Profile(manned, Travel::kFullThrustBps, 1000) == manned);
+	CHECK(
+	    Travel::Profile(manned, 2500, 1000) ==
+	    Space::CruiseProfile{19.6133f, 14400.0f, 9.80665f, 0.25f});
+	const auto half = static_cast<float>(0.5 * kGravity);
+	CHECK(
+	    Travel::Profile(manned, Travel::kFullThrustBps, 500) ==
+	    Space::CruiseProfile{half, 0.0f, half, {}});
+	CHECK(
+	    Travel::Profile(unmanned, 100, 12000) ==
+	    Space::CruiseProfile{117.6798f, 0.0f, 117.6798f, 0.01f});
+}
+
+
+TEST_CASE("A burn's fuel is the plan's: the starter to Brine at 1 g, all its rates rising above it")
+{
+	const Manifest::Content::FuelTuning tuning{29979.0, 16.5, 2, 0.25, 100.0};
+	const auto g = static_cast<float>(kGravity);
+	// 27 t, two totes of copper aboard, 396 million km at 1 g: 3,941 km/s.
+	const World::Fuel full = Travel::Burned(tuning, {g, 0.0f, g, {}}, 27.0, 3.96e11);
+	CHECK(full.reactionMass == doctest::Approx(3549.0).epsilon(0.002));
+	CHECK(full.pellets == doctest::Approx(1.756).epsilon(0.002));
+	// Each rounded up to the gram.
+	CHECK(full.reactionMass * 1000.0 == std::ceil(full.reactionMass * 1000.0));
+	// A share f reaches s = sqrt(f / (2 - f)) of the speed: at 50%, 0.577 of the fuel.
+	const World::Fuel half = Travel::Burned(tuning, {g, 0.0f, g, 0.5f}, 27.0, 3.96e11);
+	CHECK(
+	    half.reactionMass == doctest::Approx(full.reactionMass * std::sqrt(1.0 / 3.0)).epsilon(0.001));
+	// At 2 g the speed change rises as sqrt(2) and the pellets' factor is 4.
+	const World::Fuel hard = Travel::Burned(tuning, {2.0f * g, 0.0f, 2.0f * g, {}}, 27.0, 3.96e11);
+	CHECK(hard.reactionMass == doctest::Approx(full.reactionMass * std::sqrt(2.0)).epsilon(0.001));
+	CHECK(hard.pellets == doctest::Approx(full.pellets * 4.0 * std::sqrt(2.0)).epsilon(0.002));
+	CHECK(Travel::Burned(tuning, {g, 0.0f, g, {}}, 27.0, 0.0) == World::Fuel{});
+}
+
+
+TEST_CASE("A journey flies the burn chosen and takes its leg's fuel from the tanks as it starts")
+{
+	Hosted hosted{MANIFEST_MOD_DIRECTORY, Cruise::Profiled};
+	entt::registry &registry = hosted.world.Registry();
+	const Manifest::Content::ContentSet &content = hosted.fleet->Content();
+	registry.get<World::Cargo>(hosted.Ship()).lots = {{"ItemCopper", 2}};
+	const World::Fuel before = hosted.Fuel();
+	CHECK(before == World::Fuel{4000.0, 12.5});
+	const Space::CruiseProfile mode = *content.drives.at("hull-lone-trader-starter").profile;
+	const Space::CruiseProfile flown = Travel::Profile(mode, 5000, 1000);
+	const World::Fuel burned = Travel::Burned(
+	    content.tuning.fuel, flown,
+	    Travel::TonnesAboard(registry, hosted.services.identities, content, hosted.Ship()),
+	    hosted.Metres(kBrine));
+	MESSAGE(
+	    "Ore to Brine at 50%, 1 g: " << burned.reactionMass << " kg and " << burned.pellets
+	                                 << " kg of pellets");
+	CHECK(burned.reactionMass > 1000.0);
+	CHECK(burned.pellets > 0.5);
+
+	REQUIRE(hosted.Burn(kBrine, 5000, 1000) == Result::Succeeded);
+	CHECK(registry.get<Space::CruiseDrive>(hosted.Ship()).profile == flown);
+	CHECK(hosted.Fuel().reactionMass == before.reactionMass - burned.reactionMass);
+	CHECK(hosted.Fuel().pellets == before.pellets - burned.pellets);
+	while (hosted.Journey().leg != Leg::Cruising)
+		hosted.Step();
+	CHECK(registry.get<Space::Cruising>(hosted.Ship()).profile == flown);
+}
+
+
+TEST_CASE("Travel is refused, writing nothing, for a burn out of bounds or a leg its fuel cannot fly")
+{
+	Hosted hosted{MANIFEST_MOD_DIRECTORY, Cruise::Profiled};
+	const World::Fuel full = hosted.Fuel();
+	for (const auto &[thrustBps, milliG] :
+	     {std::pair{0U, 1000U}, {10001U, 1000U}, {10000U, 99U}, {10000U, 1001U}})
+	{
+		CAPTURE(thrustBps);
+		CAPTURE(milliG);
+		CHECK(hosted.Burn(kBrine, thrustBps, milliG) == Result::InvalidQuantity);
+	}
+	hosted.Fuel().reactionMass = 100.0;
+	CHECK(hosted.Burn(kBrine, 10000, 1000) == Result::InsufficientFuel);
+	hosted.Fuel() = {4000.0, 0.1};
+	CHECK(hosted.Burn(kBrine, 10000, 1000) == Result::InsufficientFuel);
+	CHECK(hosted.Fuel() == World::Fuel{4000.0, 0.1});
+	CHECK_FALSE(hosted.world.Registry().all_of<World::Journey>(hosted.Ship()));
+	CHECK(hosted.Record().dockedAt == kOre);
+	// A slow enough burn flies on what is left.
+	hosted.Fuel() = full;
+	CHECK(hosted.Burn(kBrine, 100, 100) == Result::Succeeded);
+}
+
+
+TEST_CASE("A ship on the power law burns nothing")
+{
+	Hosted hosted;
+	const World::Fuel full = hosted.Fuel();
+	REQUIRE(hosted.Burn(kBrine, 2500, 500) == Result::Succeeded);
+	CHECK(hosted.Fuel() == full);
+	CHECK_FALSE(hosted.world.Registry().get<Space::CruiseDrive>(hosted.Ship()).profile);
 }
 
 

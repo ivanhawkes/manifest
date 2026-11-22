@@ -651,6 +651,16 @@ void CheckTuning(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 			    pItem != nullptr && pItem->itemId == itemId && pItem->unitType == unit, field,
 			    std::format("'{}' names no item traded in its unit", itemId));
 		}
+		const FuelTuning &fuel = tuning.fuel;
+		checker.Require(Positive(fuel.exhaustKms), "fuel.exhaustKms", "must be above 0");
+		checker.Require(
+		    Positive(fuel.pelletMilligramsPerTonneKms), "fuel.pelletMilligramsPerTonneKms",
+		    "must be above 0");
+		checker.Require(fuel.curveExponent >= 0, "fuel.curveExponent", "must not be below 0");
+		checker.Require(
+		    NotNegative(fuel.tankTonnesPerTonne), "fuel.tankTonnesPerTonne", "must not be below 0");
+		checker.Require(
+		    NotNegative(fuel.occupantKilograms), "fuel.occupantKilograms", "must not be below 0");
 		checker.Require(
 		    tuning.company.startingCredits > 0, "company.startingCredits", "must be above 0");
 		checker.Require(

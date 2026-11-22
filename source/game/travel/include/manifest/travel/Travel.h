@@ -8,10 +8,13 @@
 
 #include <jettison/sim/Controller.h>
 #include <jettison/sim/SimWorld.h>
+#include <jettison/space/Cruise.h>
 
 #include <manifest/command/Requests.h>
 #include <manifest/content/Content.h>
+#include <manifest/content/Definitions.h>
 #include <manifest/world/Identities.h>
+#include <manifest/world/State.h>
 
 namespace Jettison::Dock
 {
@@ -25,6 +28,14 @@ class PhysicsWorld;
 
 namespace Manifest::Travel
 {
+// A journey's burn (D-107): the share of its cruise's time the engines thrust, half at each end, in
+// basis points, 100% thrusting to the midpoint; and its acceleration, in thousandths of standard
+// gravity, from 0.1 g to the sustained acceleration of its hull's mode (D-090). Never seconds.
+inline constexpr std::uint32_t kFullThrustBps = 10000;
+inline constexpr std::uint32_t kMilliGPerG = 1000;
+inline constexpr std::uint32_t kLeastAccelerationMilliG = 100;
+inline constexpr double kStandardGravity = 9.80665;
+
 // A player's command that sends their company's ship to a venue (D-086): a saved World::Journey on
 // the ship, which manifest.travel drives through the pad let go of, the flight out of the station's
 // reach, the cruise and the pad asked for at the destination, one leg a step, to the ship docked and
@@ -33,17 +44,49 @@ namespace Manifest::Travel
 // journey is under way (Travelling), one docked at the venue already (AlreadyThere), and a company
 // whose account lacks the venue's docking fee for the ship's fee class (World::Fees, Content::FeeClass)
 // and the ship's World::Arrears together
-// (InsufficientFunds), or a venue whose account cannot hold what it is paid (InvalidQuantity). As it
-// starts it pays the fee to the venue's account and the arrears to the account of the venue it leaves
-// (D-097).
+// (InsufficientFunds), or a venue whose account cannot hold what it is paid (InvalidQuantity). A ship
+// whose drive has a profile flies the burn (Profile), refused InvalidQuantity for a thrust not above 0
+// or past kFullThrustBps or an acceleration outside its bounds, and InsufficientFuel for a leg its
+// World::Fuel cannot fly (Burned, at the distance to the venue's station now and everything aboard);
+// one with none, the power law, burns nothing. As it starts it pays the fee to the venue's account and
+// the arrears to the account of the venue it leaves (D-097), and takes the leg's fuel from the tanks.
 struct Travel
 {
 	std::string shipId;
 	std::string venueId;
+	std::uint32_t thrustBps{kFullThrustBps};
+	std::uint32_t accelerationMilliG{kMilliGPerG};
 };
 
 inline constexpr std::string_view kTravel = "Manifest.Travel.Travel";
-inline constexpr std::uint32_t kVersion = 1;
+// Version 2 added the burn; a version-1 command is refused as one of no registered version is.
+inline constexpr std::uint32_t kVersion = 2;
+
+// The most a drive of the mode's profile can sustain, in thousandths of g, to the nearest.
+std::uint32_t MostMilliG(const Jettison::Space::CruiseProfile &mode);
+
+// The profile a journey flies at the burn on its hull's mode profile: the mode's own at its sustained
+// acceleration, its boost kept; below it, that acceleration throughout; and a thrust below 100% as the
+// profile's thrust share. The burn must be in bounds.
+Jettison::Space::CruiseProfile Profile(
+    const Jettison::Space::CruiseProfile &mode, std::uint32_t thrustBps,
+    std::uint32_t accelerationMilliG);
+
+// The fuel, in kilograms, a cruise of that many metres on the profile burns for that many tonnes
+// aboard (D-108): each phase's speed change, its acceleration times its seconds at each end
+// (Space::CruiseThrust), burns reaction mass by the rocket equation to first order and pellets by the
+// tuning's rate times the acceleration's factor, 1 up to 1 g and its g to the curve's power above;
+// each rounded up to the gram.
+World::Fuel Burned(
+    const Content::FuelTuning &tuning, const Jettison::Space::CruiseProfile &profile, double tonnes,
+    double metres);
+
+// Everything the ship carries as a leg starts, in tonnes: its hull's mass, its tanks' and the fuel in
+// them, its occupants and its cargo, opened totes included, each unit at its item's density and pack
+// factor over its units to the cubic metre.
+double TonnesAboard(
+    const entt::registry &registry, const World::Identities &identities,
+    const Content::ContentSet &content, entt::entity ship);
 
 // The system, by the name the step's table gives it.
 inline constexpr std::string_view kSystem = "manifest.travel";

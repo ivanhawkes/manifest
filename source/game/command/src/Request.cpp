@@ -41,7 +41,8 @@ void RegisterTypes()
 		    .Value<Result::NoServiceFree>("NoServiceFree")
 		    .Value<Result::AlreadyFitted>("AlreadyFitted")
 		    .Value<Result::NotFittable>("NotFittable")
-		    .Value<Result::RateTooHigh>("RateTooHigh");
+		    .Value<Result::RateTooHigh>("RateTooHigh")
+		    .Value<Result::InsufficientFuel>("InsufficientFuel");
 		RegisterEnum<ActorKind>("Manifest.Command.ActorKind")
 		    .Value<ActorKind::Principal>("Principal")
 		    .Value<ActorKind::Administrator>("Administrator");

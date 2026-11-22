@@ -52,7 +52,9 @@ enum class Result
 	// next or the offer's.
 	NotFittable,
 	// A venue's fees whose arrears rate is above the tuning's usury limit (D-100).
-	RateTooHigh
+	RateTooHigh,
+	// Travel for a leg the ship's fuel cannot fly at the burn chosen (D-107).
+	InsufficientFuel
 };
 
 enum class ActorKind

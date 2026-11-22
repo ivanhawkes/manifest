@@ -1428,9 +1428,9 @@ a starting point (mine, the user's to review). One engine provision: the coast p
   unmanned at 12 g, 1.34 days and 13,653 km/s. A local trip across a planet's orbit, 42,000 km, on the
   boost: under an hour at 100%, 1.2 hours at 25%.
 - **The controls.** The graphical client (L15) shows the thrust as a percentage slider and the
-  acceleration as a separate control in g, bounded as above for the ship chosen. The TUI may be more
-  basic: the two values shown as numbers and stepped with keys (5% and 0.1 g a press), held to the
-  same bounds. The console's `travel` takes them as two optional operands,
+  acceleration as a separate control in g, bounded as above for the ship chosen. The TUI is more
+  basic: it travels by the console's line, so its control is the line's two operands, whole percents
+  and tenths of g; keys that step them wait for a travel panel of its own. The console's `travel` takes them as two optional operands,
   `travel [principal] <ship> <venue> [thrust%] [g]`. Each converts to `thrustBps` and
   `accelerationMilliG`, which the server checks against the ship again.
 - **Fuel burned.** Each phase of a leg burns reaction mass, 0.0334 kg, and pellets, 16.5 mg times
@@ -1458,7 +1458,7 @@ a starting point (mine, the user's to review). One engine provision: the coast p
   and 9.9 kg of pellets, 13,178 credits, for 3.29 days. With its hold full of copper, 177 t, its 4 t
   of tanks reach 677 km/s, a 5.7% share and 13.9 days; with a tier of bunkers, 83%.
 - **The journey.** `Manifest.Travel.Travel` takes `accelerationMilliG` and `thrustBps` (version 2; a
-  version-1 command flies 1 g at 100%), refused `InvalidQuantity` for either past the ship's bounds. It
+  version-1 command is refused `UnsupportedCommand`, as a command of no registered version is), refused `InvalidQuantity` for either past the ship's bounds. It
   sets the ship's drive profile for them, works out the leg's fuel from the
   distance between the stations now, and takes it from the tanks as the journey starts; refused
   `InsufficientFuel`, a new result, for a leg the tanks cannot finish after refuelling. A ship with
@@ -1528,7 +1528,12 @@ Slices, each a commit with its suites, the gate after the third and the last:
 3. The burn: `Travel`'s `thrustBps` and `accelerationMilliG`, the profile for them, the console's
    operands and the TUI's stepped controls, reaction mass and pellets burned by mass and speed change,
    `InsufficientFuel`; refuelling and `SetRefuel`, the account short and the flag off (`travel`,
-   `company`).
+   `company`). Two commits. **The burn done** 2026-11-22: `Travel` version 2, its profile, the
+   console's operands and the leg's fuel taken as it starts, `InsufficientFuel`; a power-law ship
+   burns none. Two pins moved: the fixture's by the request's version and two fields alone (with
+   both taken out it is the old hash), and the no-client run's by the fuel Nia's first journey takes,
+   started in the step Ada is provisioned, before the test puts both ships on the power law. Refuelling next, on an
+   immediate buy through the venue's book that `trade` gives `company`.
 4. The policy: the lot's charge, the estimate at a burn and the choice per hour, a fixed share
    (`policy`), the pins moved and why.
 5. The fixture, on the manned profile: Ore to Brine with two totes of copper and with a full hold, the

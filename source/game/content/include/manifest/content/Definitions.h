@@ -139,6 +139,19 @@ struct LifeSupportTuning
 	std::string cartridgeItemId;
 };
 
+// A torch's fuel (D-108): its reaction mass by the rocket equation to first order at its exhaust speed,
+// in km/s; its pellets in milligrams for each tonne aboard and each km/s of speed change, times the
+// acceleration in g to the curve's power above 1 g; the mass of its tanks for each tonne of reaction
+// mass they hold, and of each occupant with their effects, in kilograms.
+struct FuelTuning
+{
+	double exhaustKms{0.0};
+	double pelletMilligramsPerTonneKms{0.0};
+	int curveExponent{0};
+	double tankTonnesPerTonne{0.0};
+	double occupantKilograms{0.0};
+};
+
 // Who an offer is bought for: a company's own ship, the one target so far.
 enum class OfferTarget
 {
@@ -265,6 +278,7 @@ struct TuningDefinition
 	ConditionTuning condition;
 	ProductionTuning production;
 	LifeSupportTuning lifeSupport;
+	FuelTuning fuel;
 	CompanyTuning company;
 	MarketTuning market;
 	ChargesTuning charges;
