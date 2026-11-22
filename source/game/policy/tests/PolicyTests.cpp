@@ -19,6 +19,7 @@
 #include <jettison/sim/SimWorld.h>
 #include <jettison/sim/Snapshot.h>
 #include <jettison/space/Cruise.h>
+#include <jettison/transit/Profile.h>
 #include <jettison/vfs/FileSystem.h>
 
 #include <manifest/company/Company.h>
@@ -666,7 +667,7 @@ TEST_CASE(
 // The starter's mode profile, the fuel tuning and the distance from the ship to a station now.
 struct Burn
 {
-	const Jettison::Space::CruiseProfile &mode;
+	const Jettison::Transit::MotionProfile &mode;
 	const Manifest::Content::FuelTuning &tuning;
 	double metres{0.0};
 };

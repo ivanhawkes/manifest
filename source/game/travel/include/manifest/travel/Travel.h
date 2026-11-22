@@ -11,6 +11,7 @@
 #include <jettison/sim/Controller.h>
 #include <jettison/sim/SimWorld.h>
 #include <jettison/space/Cruise.h>
+#include <jettison/transit/Profile.h>
 
 #include <manifest/command/Requests.h>
 #include <manifest/content/Content.h>
@@ -67,22 +68,22 @@ inline constexpr std::string_view kTravel = "Manifest.Travel.Travel";
 inline constexpr std::uint32_t kVersion = 2;
 
 // The most a drive of the mode's profile can sustain, in thousandths of g, to the nearest.
-std::uint32_t MostMilliG(const Jettison::Space::CruiseProfile &mode);
+std::uint32_t MostMilliG(const Jettison::Transit::MotionProfile &mode);
 
 // The profile a journey flies at the burn on its hull's mode profile: the mode's own at its sustained
 // acceleration, its boost kept; below it, that acceleration throughout; and a thrust below 100% as the
 // profile's thrust share. The burn must be in bounds.
-Jettison::Space::CruiseProfile Profile(
-    const Jettison::Space::CruiseProfile &mode, std::uint32_t thrustBps,
+Jettison::Transit::MotionProfile Profile(
+    const Jettison::Transit::MotionProfile &mode, std::uint32_t thrustBps,
     std::uint32_t accelerationMilliG);
 
 // The fuel, in kilograms, a cruise of that many metres on the profile burns for that many tonnes
 // aboard (D-108): each phase's speed change, its acceleration times its seconds at each end
-// (Space::CruiseThrust), burns reaction mass by the rocket equation to first order and pellets by the
-// tuning's rate times the acceleration's factor, 1 up to 1 g and its g to the curve's power above;
+// (Jettison::Transit::Thrust), burns reaction mass by the rocket equation to first order and pellets by
+// the tuning's rate times the acceleration's factor, 1 up to 1 g and its g to the curve's power above;
 // each rounded up to the gram.
 World::Fuel Burned(
-    const Content::FuelTuning &tuning, const Jettison::Space::CruiseProfile &profile, double tonnes,
+    const Content::FuelTuning &tuning, const Jettison::Transit::MotionProfile &profile, double tonnes,
     double metres);
 
 // Everything the ship carries as a leg starts, in tonnes: its hull's mass, its tanks' and the fuel in

@@ -25,6 +25,7 @@
 #include <jettison/serialise/Archive.h>
 #include <jettison/sim/SimWorld.h>
 #include <jettison/space/Cruise.h>
+#include <jettison/transit/Profile.h>
 
 #include <glm/geometric.hpp>
 
@@ -911,8 +912,8 @@ TEST_CASE(
 	const Departed fast = Depart(light);
 	CHECK(fast.job.thrustBps == World::kFullThrustBps);
 	// Across its boost's end, at 2 g for its first hours and 1 g after.
-	const Jettison::Space::CruiseThrustSeconds fastThrust =
-	    Jettison::Space::CruiseThrust(*fast.cruising.profile, Metres(fast.cruising));
+	const Jettison::Transit::ThrustSeconds fastThrust =
+	    Jettison::Transit::Thrust(*fast.cruising.profile, Metres(fast.cruising));
 	REQUIRE(fastThrust.boost > 0.0);
 	Across(
 	    light, fast.cruising.departureStep + static_cast<std::uint64_t>(std::llround(
@@ -937,8 +938,8 @@ TEST_CASE(
 	                << " bps, " << slow.seconds / 86400 << " days, " << slow.job.reactionMassKilograms
 	                << " kg");
 	// Across its thrust's end, where it starts to coast.
-	const Jettison::Space::CruiseThrustSeconds slowThrust =
-	    Jettison::Space::CruiseThrust(*slow.cruising.profile, Metres(slow.cruising));
+	const Jettison::Transit::ThrustSeconds slowThrust =
+	    Jettison::Transit::Thrust(*slow.cruising.profile, Metres(slow.cruising));
 	Across(
 	    heavy, slow.cruising.departureStep +
 	               static_cast<std::uint64_t>(std::llround(

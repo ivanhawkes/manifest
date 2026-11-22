@@ -11,6 +11,7 @@
 
 #include <jettison/serialise/Migration.h>
 #include <jettison/space/Cruise.h>
+#include <jettison/transit/Profile.h>
 
 #include <manifest/config/SimulationConfig.h>
 
@@ -55,8 +56,8 @@ struct SkillSelection
 // given or left out, and of one whose occupants are 0.
 struct CruiseModel
 {
-	Jettison::Space::CruiseProfile manned;
-	Jettison::Space::CruiseProfile unmanned;
+	Jettison::Transit::MotionProfile manned;
+	Jettison::Transit::MotionProfile unmanned;
 };
 
 // A game mode has no ID field: it is named by its file. Each list is in the order the game uses,

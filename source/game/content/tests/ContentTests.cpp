@@ -25,6 +25,7 @@
 #include <jettison/serialise/Archive.h>
 #include <jettison/sim/DefinitionRegistry.h>
 #include <jettison/space/Cruise.h>
+#include <jettison/transit/Profile.h>
 #include <jettison/vfs/FileSystem.h>
 
 #include <manifest/config/SimulationConfig.h>
@@ -708,7 +709,7 @@ TEST_CASE("The Manifest mode cruises by acceleration, by occupants, and Astralis
 	     {"hull-lone-trader-starter", "hull-compact-single", "hull-trader-long-haul"})
 	{
 		CAPTURE(hull);
-		const Jettison::Space::CruiseProfile manned = profile(manifest, hull);
+		const Jettison::Transit::MotionProfile manned = profile(manifest, hull);
 		CHECK(manned.boostAcceleration == doctest::Approx(2.0 * g));
 		CHECK(manned.boostSeconds == doctest::Approx(4.0 * 3600.0));
 		CHECK(manned.sustainedAcceleration == doctest::Approx(g));
@@ -728,7 +729,7 @@ TEST_CASE("The Manifest mode cruises by acceleration, by occupants, and Astralis
 	const Overlay crewless;
 	crewless.Write(
 	    "manifest/definitions/hulls/hull-lone-trader-starter.patch.yaml", "version: 1\noccupants: 0\n");
-	const Jettison::Space::CruiseProfile unmanned =
+	const Jettison::Transit::MotionProfile unmanned =
 	    profile(LoadWith(crewless), "hull-lone-trader-starter");
 	CHECK(unmanned.boostAcceleration == doctest::Approx(12.0 * g));
 	CHECK(unmanned.sustainedAcceleration == doctest::Approx(12.0 * g));

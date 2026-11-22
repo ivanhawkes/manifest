@@ -17,6 +17,7 @@
 #include <jettison/sim/SimWorld.h>
 #include <jettison/sim/Snapshot.h>
 #include <jettison/space/Cruise.h>
+#include <jettison/transit/Profile.h>
 
 #include <manifest/company/Company.h>
 #include <manifest/host/Start.h>
@@ -475,7 +476,7 @@ TEST_CASE("On the Manifest mode's manned profile, Ore to Brine is days, at 2 g a
 	const auto acceleration = [&](double at)
 	{
 		const auto covered = [&](double time)
-		{ return Space::CruiseCovered(*drive.profile, metres, time * least / seconds); };
+		{ return Jettison::Transit::Covered(*drive.profile, metres, time * least / seconds); };
 		return (covered(at + 1.0) - (2.0 * covered(at)) + covered(at - 1.0));
 	};
 	CHECK(acceleration(7190.0) == doctest::Approx(2.0 * kGravity).epsilon(1.0e-3));
@@ -511,21 +512,21 @@ TEST_CASE("A world saved mid-cruise on the manned profile flies on as the one sa
 
 TEST_CASE("A burn is its mode's profile at the most it sustains, and that acceleration below it")
 {
-	const Space::CruiseProfile manned{19.6133f, 14400.0f, 9.80665f, {}};
-	const Space::CruiseProfile unmanned{117.6798f, 0.0f, 117.6798f, {}};
+	const Jettison::Transit::MotionProfile manned{19.6133f, 14400.0f, 9.80665f, {}};
+	const Jettison::Transit::MotionProfile unmanned{117.6798f, 0.0f, 117.6798f, {}};
 	CHECK(Travel::MostMilliG(manned) == 1000);
 	CHECK(Travel::MostMilliG(unmanned) == 12000);
 	CHECK(Travel::Profile(manned, Travel::kFullThrustBps, 1000) == manned);
 	CHECK(
 	    Travel::Profile(manned, 2500, 1000) ==
-	    Space::CruiseProfile{19.6133f, 14400.0f, 9.80665f, 0.25f});
+	    Jettison::Transit::MotionProfile{19.6133f, 14400.0f, 9.80665f, 0.25f});
 	const auto half = static_cast<float>(0.5 * kGravity);
 	CHECK(
 	    Travel::Profile(manned, Travel::kFullThrustBps, 500) ==
-	    Space::CruiseProfile{half, 0.0f, half, {}});
+	    Jettison::Transit::MotionProfile{half, 0.0f, half, {}});
 	CHECK(
 	    Travel::Profile(unmanned, 100, 12000) ==
-	    Space::CruiseProfile{117.6798f, 0.0f, 117.6798f, 0.01f});
+	    Jettison::Transit::MotionProfile{117.6798f, 0.0f, 117.6798f, 0.01f});
 }
 
 
@@ -559,8 +560,9 @@ TEST_CASE("A journey flies the burn chosen and takes its leg's fuel from the tan
 	registry.get<World::Cargo>(hosted.Ship()).lots = {{"ItemCopper", 2}};
 	const World::Fuel before = hosted.Fuel();
 	CHECK(before == World::Fuel{4000.0, 12.5});
-	const Space::CruiseProfile mode = *content.drives.at("hull-lone-trader-starter").profile;
-	const Space::CruiseProfile flown = Travel::Profile(mode, 5000, 1000);
+	const Jettison::Transit::MotionProfile mode =
+	    *content.drives.at("hull-lone-trader-starter").profile;
+	const Jettison::Transit::MotionProfile flown = Travel::Profile(mode, 5000, 1000);
 	const World::Fuel burned = Travel::Burned(
 	    content.tuning.fuel, flown,
 	    Travel::TonnesAboard(registry, hosted.services.identities, content, hosted.Ship()),
@@ -621,7 +623,7 @@ TEST_CASE(
 	};
 	hosted.Fuel() = {1000.0 + (26 * 112.5), 12.5};
 	cargo = {{}, {{"ItemFusionPellets", 5.0}}};
-	const Space::CruiseProfile flown =
+	const Jettison::Transit::MotionProfile flown =
 	    Travel::Profile(*content.drives.at("hull-lone-trader-starter").profile, 10000, 1000);
 	const World::Fuel burned = Travel::Burned(
 	    content.tuning.fuel, flown,

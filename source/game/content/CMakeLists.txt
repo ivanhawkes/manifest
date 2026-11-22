@@ -24,6 +24,7 @@ manifest_add_module(content
 		Jettison::Dock
 		Jettison::Serialise
 		Jettison::Space
+		Jettison::Transit
 		Jettison::Vfs
 	PRIVATE_LIBRARIES
 		Jettison::Core

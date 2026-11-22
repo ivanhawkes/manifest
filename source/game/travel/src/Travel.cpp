@@ -29,6 +29,7 @@
 #include <jettison/space/StarSystemFrame.h>
 #include <jettison/space/Types.h>
 #include <jettison/spatial/FrameIndices.h>
+#include <jettison/transit/Profile.h>
 
 #include <manifest/config/SimulationConfig.h>
 #include <manifest/content/Content.h>
@@ -136,12 +137,12 @@ Result Started(SimWorld &world, const Rules &rules, const Actor &actor, const Tr
 	// The burn and the leg's fuel, for a drive with a profile (D-107, D-108), refuelled first at the
 	// venue it leaves, keeping back what it pays as it starts.
 	auto *pDrive = registry.try_get<Space::CruiseDrive>(ship);
-	std::optional<Space::CruiseProfile> flown;
+	std::optional<Jettison::Transit::MotionProfile> flown;
 	World::Fuel burned{};
 	if (pDrive && pDrive->profile)
 	{
 		const auto authored = rules.content.drives.find(Content::RegistryName(record.hullId));
-		const Space::CruiseProfile &mode =
+		const Jettison::Transit::MotionProfile &mode =
 		    authored != rules.content.drives.end() && authored->second.profile
 		        ? *authored->second.profile
 		        : *pDrive->profile;
@@ -382,20 +383,22 @@ void RegisterTypes()
 }
 
 
-std::uint32_t MostMilliG(const Space::CruiseProfile &mode)
+std::uint32_t MostMilliG(const Jettison::Transit::MotionProfile &mode)
 {
 	return static_cast<std::uint32_t>(
 	    std::lround(static_cast<double>(mode.sustainedAcceleration) / kStandardGravity * kMilliGPerG));
 }
 
 
-Space::CruiseProfile Profile(
-    const Space::CruiseProfile &mode, std::uint32_t thrustBps, std::uint32_t accelerationMilliG)
+Jettison::Transit::MotionProfile Profile(
+    const Jettison::Transit::MotionProfile &mode, std::uint32_t thrustBps,
+    std::uint32_t accelerationMilliG)
 {
 	const auto acceleration = static_cast<float>(accelerationMilliG * kStandardGravity / kMilliGPerG);
-	Space::CruiseProfile profile = accelerationMilliG >= MostMilliG(mode)
-	                                   ? mode
-	                                   : Space::CruiseProfile{acceleration, 0.0f, acceleration, {}};
+	Jettison::Transit::MotionProfile profile =
+	    accelerationMilliG >= MostMilliG(mode)
+	        ? mode
+	        : Jettison::Transit::MotionProfile{acceleration, 0.0f, acceleration, {}};
 	profile.thrustShare =
 	    thrustBps < kFullThrustBps
 	        ? std::optional{static_cast<float>(thrustBps) / static_cast<float>(kFullThrustBps)}
@@ -405,10 +408,10 @@ Space::CruiseProfile Profile(
 
 
 World::Fuel Burned(
-    const Content::FuelTuning &tuning, const Space::CruiseProfile &profile, double tonnes,
+    const Content::FuelTuning &tuning, const Jettison::Transit::MotionProfile &profile, double tonnes,
     double metres)
 {
-	const Space::CruiseThrustSeconds thrust = Space::CruiseThrust(profile, metres);
+	const Jettison::Transit::ThrustSeconds thrust = Jettison::Transit::Thrust(profile, metres);
 	double kms = 0.0;
 	double pelletKms = 0.0;
 	for (const auto &[acceleration, seconds] :

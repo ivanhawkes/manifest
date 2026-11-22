@@ -16,6 +16,7 @@ manifest_add_module(travel
 	PUBLIC_LIBRARIES
 		Jettison::Dock
 		Jettison::Sim
+		Jettison::Transit
 	PRIVATE_LIBRARIES
 		Jettison::Ai
 		Jettison::Celestial
