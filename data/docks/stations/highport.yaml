@@ -4,13 +4,10 @@
 # (Dock.StationLayout), in the station's axes, metres.
 #
 # Each pier is 660 m long, 120 m wide and 20 m deep, its top 10 m above the station's middle; its
-# pads lie along its middle, noses pointing out, so the road runs down the 20 m strip beside them
-# (Dock::Roads) and a skiff pad's apron joins it square across the pier. A cargo bay's door is in
-# the hub's wall at each pier's root.
+# pads lie along its middle, noses pointing out.
 version: 1
 displayName: Highport
 reservationSeconds: 300
-traffic: {buggies: 3, cratesPerTrip: 4, speed: 8, working: true}
 decks:
   - {centre: [0, 0, 0], size: [200, 60, 200]}
 piers:
@@ -39,8 +36,3 @@ pads:
   - {class: skiff, position: [0, 10, 535], heading: [0, 0, 1]}
   - {class: skiff, position: [0, 10, -325], heading: [0, 0, -1]}
   - {class: skiff, position: [0, 10, -535], heading: [0, 0, -1]}
-bays:
-  - {position: [100, 10, 0], normal: [1, 0, 0]}
-  - {position: [-100, 10, 0], normal: [-1, 0, 0]}
-  - {position: [0, 10, 100], normal: [0, 0, 1]}
-  - {position: [0, 10, -100], normal: [0, 0, -1]}

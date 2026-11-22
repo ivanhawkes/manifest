@@ -337,20 +337,22 @@ TEST_CASE("A journey whose cruise the engine refuses fails, its ship left where 
 }
 
 
-TEST_CASE("A ship held on its pad while cargo crosses the deck fails to depart, keeping its dock")
+TEST_CASE("A ship whose pad the docks will not let go of fails to depart, keeping its dock")
 {
 	Hosted hosted;
 	entt::registry &registry = hosted.world.Registry();
-	// Fixture bootstrap: crates crossing the deck, which Manifest's own transfers never leave.
-	REQUIRE(Dock::Carry(registry, hosted.Ship(), 4));
+	// Fixture bootstrap: the ship commanded by another company, so the docks refuse its owner's
+	// release, as they refused one while cargo crossed the deck until Jettison retired it.
+	auto &controlled = registry.get<Jettison::Sim::ControlledBy>(hosted.Ship());
+	const Jettison::Sim::Controller owner = controlled.controller;
+	controlled.controller = Travel::ControllerOf("Company2");
 	REQUIRE(hosted.Go(kAda, kBrine) == Result::Succeeded);
 	CHECK(hosted.Journey().leg == Leg::Failed);
 	CHECK(hosted.Journey().failure == Failure::DepartureRefused);
 	CHECK(hosted.Record().dockedAt == kOre);
 	CHECK(registry.get<Dock::Docking>(hosted.Ship()).stage == Dock::Stage::Docked);
-	// A failed journey is over, so another may start once the deck is clear.
-	while (Dock::ToCarry(registry, hosted.Ship()) != 0)
-		hosted.Step();
+	// A failed journey is over, so another may start once the docks let it go.
+	registry.get<Jettison::Sim::ControlledBy>(hosted.Ship()).controller = owner;
 	CHECK(hosted.Go(kAda, kBrine) == Result::Succeeded);
 	CHECK(hosted.Journey().leg == Leg::Departing);
 }

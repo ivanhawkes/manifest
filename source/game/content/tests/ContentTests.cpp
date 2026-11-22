@@ -322,7 +322,7 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	    "manifest/definitions/pads/skiff.patch.yaml", "version: 1\npadSize: [4, 10]\n",
 	    "Dock.PadClassDefinition 'skiff': dock Pad class 'skiff' has a largest hull");
 	CheckRefused(
-	    "manifest/definitions/stations/highport.patch.yaml", "version: 1\nbays: []\npiers: []\n",
+	    "manifest/definitions/stations/highport.patch.yaml", "version: 1\npiers: []\n",
 	    "Dock.StationLayout 'highport': dock Station layout 'highport'");
 	CheckRefused(
 	    "manifest/definitions/dock-hulls/hull-nowhere.yaml",
