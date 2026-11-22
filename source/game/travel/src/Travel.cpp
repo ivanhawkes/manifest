@@ -28,7 +28,7 @@
 #include <jettison/space/Lanes.h>
 #include <jettison/space/StarSystemFrame.h>
 #include <jettison/space/Types.h>
-#include <jettison/spatial/SystemIndices.h>
+#include <jettison/spatial/FrameIndices.h>
 
 #include <manifest/config/SimulationConfig.h>
 #include <manifest/content/Content.h>
@@ -558,7 +558,7 @@ Fleet &Register(
 	world.RegisterComponent<Sim::InFrame>();
 	world.RegisterComponent<Sim::ControlledBy>();
 	Physics::PhysicsWorld &physics = Physics::PhysicsWorld::Attach(world);
-	Ai::Steering::Attach(world, physics, Jettison::Spatial::SystemIndices::Attach(world));
+	Ai::Steering::Attach(world, physics, Jettison::Spatial::FrameIndices::Attach(world));
 	Dock::Docks &docks = Dock::Docks::Attach(world, physics);
 	Space::LaneTravel &lanes = Space::LaneTravel::Attach(world, physics);
 	Space::CruiseTravel &cruises = Space::CruiseTravel::Attach(world, physics);

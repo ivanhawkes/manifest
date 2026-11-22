@@ -21,7 +21,7 @@
 #include <jettison/ecs/Scheduler.h>
 #include <jettison/profile/Profile.h>
 #include <jettison/reflect/Reflect.h>
-#include <jettison/spatial/SystemIndices.h>
+#include <jettison/spatial/FrameIndices.h>
 
 #include <manifest/sim/Simulation.h>
 #include <manifest/trade/Economy.h>
@@ -1846,7 +1846,7 @@ void Register(
 	// Ahead of the movement Travel::Register attaches (docs/stage-4-trading-plan.md, "The step, in
 	// order").
 	const std::vector<std::string> beforeMovement{
-	    std::string{Jettison::Spatial::SystemIndices::kSystemName}};
+	    std::string{Jettison::Spatial::FrameIndices::kSystemName}};
 	world.RegisterSystem(
 	    {.name = std::string{kExpiry},
 	     .phase = Jettison::Ecs::TickPhase::Simulation,

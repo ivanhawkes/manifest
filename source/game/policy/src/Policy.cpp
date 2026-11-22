@@ -23,7 +23,7 @@
 #include <jettison/reflect/Reflect.h>
 #include <jettison/sim/Snapshot.h>
 #include <jettison/space/Cruise.h>
-#include <jettison/spatial/SystemIndices.h>
+#include <jettison/spatial/FrameIndices.h>
 
 #include <manifest/company/Company.h>
 #include <manifest/config/SimulationConfig.h>
@@ -1319,7 +1319,7 @@ void Register(
 	                 World::Sales, World::Cargo, World::Journey, World::Arrears, World::Paid>(),
 	     .after = {std::string{Trade::kBrokers}},
 	     .run = [rules, &world](entt::registry &, double) { Run(world, *rules); },
-	     .before = {std::string{Jettison::Spatial::SystemIndices::kSystemName}}},
+	     .before = {std::string{Jettison::Spatial::FrameIndices::kSystemName}}},
 	    {.next = [](const SimWorld &target) { return RunNext(target); }});
 	world.RegisterSystem(
 	    {.name = std::string{kSeizureSystem},
