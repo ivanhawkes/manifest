@@ -317,14 +317,15 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	CheckRefused(
 	    "manifest/definitions/dock-hulls/hull-lone-trader-starter.patch.yaml",
 	    "version: 2\nlength: 12\n",
-	    "Dock.HullDefinition 'hull-lone-trader-starter': dock Hull 'hull-lone-trader-starter' is 12 x "
-	    "6.4 x 1.8 m, larger than its pad's largest hull, 9.8 x 6.4 x 1.8 m");
+	    "Dock.HullDefinition 'hull-lone-trader-starter': dock Vehicle 'hull-lone-trader-starter' is 12 "
+	    "x "
+	    "6.4 x 1.8 m, larger than its berth's largest vehicle, 9.8 x 6.4 x 1.8 m");
 	CheckRefused(
 	    "manifest/definitions/pads/skiff.patch.yaml", "version: 1\npadSize: [4, 10]\n",
-	    "Dock.PadClassDefinition 'skiff': dock Pad class 'skiff' has a largest hull");
+	    "Dock.PadClassDefinition 'skiff': dock Berth class 'skiff' has a largest vehicle");
 	CheckRefused(
 	    "manifest/definitions/stations/highport.patch.yaml", "version: 1\npiers: []\n",
-	    "Dock.StationLayout 'highport': dock Station layout 'highport'");
+	    "Dock.StationLayout 'highport': dock Platform layout 'highport'");
 	CheckRefused(
 	    "manifest/definitions/dock-hulls/hull-nowhere.yaml",
 	    "version: 2\ndisplayName: Nowhere\nlength: 5\nbeam: 3\nheight: 1\npad: skiff\n",
@@ -743,26 +744,27 @@ TEST_CASE("Each hull docks at the highport on the pads its class and size fit (D
 {
 	namespace Dock = Jettison::Dock;
 	const Loaded loaded{kModDirectory};
-	Dock::PadClasses classes;
-	for (const std::string &name : loaded.registry.Names<Dock::PadClassDefinition>())
-		classes.emplace(name, *loaded.registry.Find<Dock::PadClassDefinition>(name));
+	Dock::BerthClasses classes;
+	for (const std::string &name : loaded.registry.Names<Dock::BerthClassDefinition>())
+		classes.emplace(name, *loaded.registry.Find<Dock::BerthClassDefinition>(name));
 	CHECK(classes.size() == 5);
-	const auto hull = [&](std::string_view id) -> const Dock::HullDefinition &
+	const auto hull = [&](std::string_view id) -> const Dock::VehicleDefinition &
 	{
-		const auto *pHull = loaded.registry.Find<Dock::HullDefinition>(RegistryName(id));
+		const auto *pHull = loaded.registry.Find<Dock::VehicleDefinition>(RegistryName(id));
 		REQUIRE_MESSAGE(pHull != nullptr, id);
 		return *pHull;
 	};
-	const Dock::HullDefinition &starter = hull("HullLoneTraderStarter");
-	CHECK(starter.pad == "skiff");
-	CHECK(glm::vec3{starter.length, starter.beam, starter.height} == classes.at("skiff").largestHull);
-	const auto *pLayout = loaded.registry.Find<Dock::StationLayout>("highport");
+	const Dock::VehicleDefinition &starter = hull("HullLoneTraderStarter");
+	CHECK(starter.berthClass == "skiff");
+	CHECK(
+	    glm::vec3{starter.length, starter.beam, starter.height} == classes.at("skiff").largestVehicle);
+	const auto *pLayout = loaded.registry.Find<Dock::PlatformLayout>("highport");
 	REQUIRE(pLayout != nullptr);
-	const auto pads = [&](const Dock::HullDefinition &docked)
+	const auto pads = [&](const Dock::VehicleDefinition &docked)
 	{
 		std::size_t count = 0;
-		for (const Dock::PadLayout &pad : pLayout->pads)
-			count += Dock::Fits(classes, docked, pad.padClass) ? 1 : 0;
+		for (const Dock::BerthLayout &pad : pLayout->berths)
+			count += Dock::Fits(classes, docked, pad.berthClass) ? 1 : 0;
 		return count;
 	};
 	// Eight skiff pads and twelve destroyer pads; a frigate is given a destroyer's.

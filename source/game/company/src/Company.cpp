@@ -773,11 +773,11 @@ void Price(SimWorld &world, const Rules &rules)
 			continue;
 		std::int64_t pads = 0;
 		std::int64_t taken = 0;
-		for (const entt::entity pad : registry.get<const Jettison::Dock::Station>(station).pads)
-			if (const auto &held = registry.get<const Jettison::Dock::Pad>(pad); !held.display)
+		for (const entt::entity pad : registry.get<const Jettison::Dock::Platform>(station).berths)
+			if (const auto &held = registry.get<const Jettison::Dock::Berth>(pad); !held.display)
 			{
 				++pads;
-				taken += held.state != Jettison::Dock::PadState::Free ? 1 : 0;
+				taken += held.state != Jettison::Dock::BerthState::Free ? 1 : 0;
 			}
 		if (pads == 0)
 			continue;
@@ -1031,7 +1031,7 @@ void RegisterCommands(
 	     .phase = Jettison::Ecs::TickPhase::Simulation,
 	     .access =
 	         Jettison::Ecs::Access::Of<
-	             World::Broker, World::Organisation, Jettison::Dock::Station, Jettison::Dock::Pad,
+	             World::Broker, World::Organisation, Jettison::Dock::Platform, Jettison::Dock::Berth,
 	             Jettison::Physics::OnRails, Jettison::Sim::InFrame, World::Fees, World::Pricing>()
 	             .Writing<World::Fees, World::Pricing>(),
 	     .after = {std::string{kLifeSupportSystem}},

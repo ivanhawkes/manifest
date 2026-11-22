@@ -221,10 +221,10 @@ TEST_CASE("Provisioning parks the starter on a pad of its home venue, docked as 
 	const auto *docking = registry.try_get<Dock::Docking>(hosted.Ship());
 	REQUIRE(docking);
 	CHECK(docking->stage == Dock::Stage::Docked);
-	CHECK(Dock::IsDocked(registry, hosted.Ship(), docking->station));
+	CHECK(Dock::IsDocked(registry, hosted.Ship(), docking->platform));
 	// The skiff takes the smallest pad it fits, a skiff pad, the lowest numbered: the thirteenth.
-	CHECK(registry.get<Dock::Pad>(docking->pad).padClass == "skiff");
-	CHECK(registry.get<Dock::Pad>(docking->pad).number == 13);
+	CHECK(registry.get<Dock::Berth>(docking->berth).berthClass == "skiff");
+	CHECK(registry.get<Dock::Berth>(docking->berth).number == 13);
 	CHECK(
 	    registry.get<Jettison::Sim::ControlledBy>(hosted.Ship()).controller ==
 	    Travel::ControllerOf("Company1"));
@@ -398,7 +398,7 @@ TEST_CASE("At a station with every pad taken, a ship waits in its queue, cargo a
 	// One leaves, and the queue's first takes its pad.
 	// One leaves, flying on and out of the way once it has given its pad up, and the queue's first
 	// takes the pad.
-	hosted.world.Apply(Dock::ReleasePad{{}, parked.front(), true});
+	hosted.world.Apply(Dock::ReleaseBerth{{}, parked.front(), true});
 	while (registry.all_of<Dock::Docking>(parked.front()))
 		hosted.Step();
 	registry.destroy(parked.front());
@@ -709,11 +709,11 @@ TEST_CASE("The compact single-seat takes a skiff pad too")
 	const entt::registry &registry = hosted.world.Registry();
 	const entt::entity pad = hosted.fleet->FreePad(registry, kOre, "HullCompactSingle");
 	REQUIRE(pad != entt::null);
-	CHECK(registry.get<Dock::Pad>(pad).padClass == "skiff");
+	CHECK(registry.get<Dock::Berth>(pad).berthClass == "skiff");
 	// The long-haul trader, a frigate, only a destroyer pad.
 	CHECK(
-	    registry.get<Dock::Pad>(hosted.fleet->FreePad(registry, kOre, "HullTraderLongHaul")).padClass ==
-	    "destroyer");
+	    registry.get<Dock::Berth>(hosted.fleet->FreePad(registry, kOre, "HullTraderLongHaul"))
+	        .berthClass == "destroyer");
 }
 
 

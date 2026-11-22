@@ -126,8 +126,8 @@ class Fleet
 	}
 
 	// The smallest free pad of the venue's station, not a display one, that the hull's dock hull fits,
-	// the lowest numbered of those, as the docks give one (Dock::RequestPad); the hull a Manifest.Hull
-	// by ID. Null for none.
+	// the lowest numbered of those, as the docks give one (Dock::RequestBerth); the hull a
+	// Manifest.Hull by ID. Null for none.
 	entt::entity FreePad(
 	    const entt::registry &registry, std::string_view venueId, std::string_view hullId) const;
 

@@ -56,10 +56,10 @@ struct ContentSet
 	std::vector<OfferDefinition> offers;
 	// Jettison's docks as authored (D-062), by record name: the pad classes, each hull's dock hull and
 	// cruise drive, by its Manifest.Hull's record name, and the station layouts.
-	Jettison::Dock::PadClasses padClasses;
-	std::map<std::string, Jettison::Dock::HullDefinition, std::less<>> dockHulls;
+	Jettison::Dock::BerthClasses padClasses;
+	std::map<std::string, Jettison::Dock::VehicleDefinition, std::less<>> dockHulls;
 	std::map<std::string, Jettison::Space::CruiseDrive, std::less<>> drives;
-	std::map<std::string, Jettison::Dock::StationLayout, std::less<>> layouts;
+	std::map<std::string, Jettison::Dock::PlatformLayout, std::less<>> layouts;
 	// The balance record, tuning/balance.
 	TuningDefinition tuning;
 	// Every scenario by its name, checked against its own game mode, which need not be this set's.

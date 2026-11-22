@@ -211,9 +211,9 @@ void Ask(
     SimWorld &world, World::Journey &journey, entt::entity ship, entt::entity station,
     const Sim::Controller &sender)
 {
-	world.Apply(Dock::RequestPad{sender, ship, station, true});
+	world.Apply(Dock::RequestBerth{sender, ship, station, true});
 	const auto *docking = world.Registry().try_get<Dock::Docking>(ship);
-	if (docking && docking->station == station)
+	if (docking && docking->platform == station)
 		journey.leg = Leg::Arriving;
 	else
 		Fail(journey, Failure::PadRefused);
@@ -256,7 +256,7 @@ void Advance(SimWorld &world, const Rules &rules, entt::entity ship)
 				journey.leg = Leg::Clearing;
 			else if (docking->stage != Dock::Stage::Leaving)
 			{
-				world.Apply(Dock::ReleasePad{sender, ship, true});
+				world.Apply(Dock::ReleaseBerth{sender, ship, true});
 				docking = registry.try_get<Dock::Docking>(ship);
 				if (docking && docking->stage != Dock::Stage::Leaving)
 					Fail(journey, Failure::DepartureRefused);
@@ -302,7 +302,7 @@ void Advance(SimWorld &world, const Rules &rules, entt::entity ship)
 		case Leg::Arriving:
 		{
 			const auto *docking = registry.try_get<Dock::Docking>(ship);
-			if (!docking || docking->station != station)
+			if (!docking || docking->platform != station)
 				Fail(journey, Failure::PadLost);
 			else if (docking->stage == Dock::Stage::Docked)
 			{
@@ -340,7 +340,7 @@ std::uint64_t AdvanceNext(const SimWorld &world, const Rules &rules)
 		}
 		const auto *docking = registry.try_get<Dock::Docking>(ship);
 		if (journey.leg != Leg::Arriving || !docking ||
-		    docking->station != rules.fleet.StationOf(registry, journey.venueId) ||
+		    docking->platform != rules.fleet.StationOf(registry, journey.venueId) ||
 		    docking->stage == Dock::Stage::Docked)
 			return now;
 	}
@@ -495,7 +495,7 @@ entt::entity StationOf(
 		return entt::null;
 	const std::uint64_t frame = Sim::FrameId(pVenue->systemId);
 	for (const auto [station, held, rails, inSystem] :
-	     registry.view<const Dock::Station, const Physics::OnRails, const Sim::InFrame>().each())
+	     registry.view<const Dock::Platform, const Physics::OnRails, const Sim::InFrame>().each())
 		if (inSystem.frame == frame && rails.body == venueId)
 			return station;
 	return entt::null;
@@ -506,17 +506,17 @@ entt::entity Fleet::FreePad(
     const entt::registry &registry, std::string_view venueId, std::string_view hullId) const
 {
 	const entt::entity station = StationOf(registry, venueId);
-	const Dock::HullDefinition *pHull = m_docks.FindHull(Content::RegistryName(hullId));
+	const Dock::VehicleDefinition *pHull = m_docks.FindVehicle(Content::RegistryName(hullId));
 	if (station == entt::null || !pHull)
 		return entt::null;
 	entt::entity found = entt::null;
-	for (const entt::entity pad : registry.get<Dock::Station>(station).pads)
-		if (const Dock::Pad &held = registry.get<Dock::Pad>(pad);
-		    held.state == Dock::PadState::Free && !held.display &&
-		    m_docks.Fits(*pHull, held.padClass) &&
+	for (const entt::entity pad : registry.get<Dock::Platform>(station).berths)
+		if (const Dock::Berth &held = registry.get<Dock::Berth>(pad);
+		    held.state == Dock::BerthState::Free && !held.display &&
+		    m_docks.Fits(*pHull, held.berthClass) &&
 		    (found == entt::null ||
-		     m_docks.FindPadClass(held.padClass)->rank <
-		         m_docks.FindPadClass(registry.get<Dock::Pad>(found).padClass)->rank))
+		     m_docks.FindBerthClass(held.berthClass)->rank <
+		         m_docks.FindBerthClass(registry.get<Dock::Berth>(found).berthClass)->rank))
 			found = pad;
 	return found;
 }
@@ -527,7 +527,7 @@ void Fleet::Park(
     std::string_view companyId) const
 {
 	entt::registry &registry = world.Registry();
-	const entt::entity station = registry.get<Dock::Pad>(pad).station;
+	const entt::entity station = registry.get<Dock::Berth>(pad).platform;
 	const std::string hull = Content::RegistryName(hullId);
 	// Content holds a scenario's starter hull to having a mass.
 	const auto spec = std::ranges::find(m_content.hulls, hullId, &Core::ShipClassSpec::hullId);
@@ -536,13 +536,13 @@ void Fleet::Park(
 	registry.emplace<Sim::InFrame>(ship, registry.get<Sim::InFrame>(station).frame);
 	registry.emplace<Physics::LocalFrame>(ship, registry.get<Physics::OnRails>(station).body);
 	Physics::Body body{
-	    Physics::BodyKind::Dynamic, Dock::Docks::HullShape(hull), static_cast<float>(*spec->mass)};
+	    Physics::BodyKind::Dynamic, Dock::Docks::VehicleShape(hull), static_cast<float>(*spec->mass)};
 	body.continuous = true;
 	registry.emplace<Physics::Body>(ship, body);
 	registry.emplace<Physics::Velocity>(ship);
 	registry.emplace<Physics::Handling>(ship);
 	registry.emplace<Physics::FlightControls>(ship, Physics::FlightControls{{}, {}, true, station});
-	registry.emplace<Dock::Hull>(ship, hull);
+	registry.emplace<Dock::Vehicle>(ship, hull);
 	registry.emplace<Space::CruiseDrive>(ship, m_content.drives.at(hull));
 	registry.emplace<Ai::Steered>(ship);
 	registry.emplace<Sim::ControlledBy>(ship, ControllerOf(companyId));
@@ -566,9 +566,9 @@ Fleet &Register(
 	Space::LaneTravel &lanes = Space::LaneTravel::Attach(world, physics);
 	Space::CruiseTravel &cruises = Space::CruiseTravel::Attach(world, physics);
 	for (const auto &[name, padClass] : content.padClasses)
-		docks.DefinePadClass(name, padClass);
+		docks.DefineBerthClass(name, padClass);
 	for (const auto &[name, hull] : content.dockHulls)
-		docks.DefineHull(name, hull);
+		docks.DefineVehicle(name, hull);
 	for (const auto &[name, layout] : content.layouts)
 		docks.DefineLayout(name, layout);
 	for (const Celestial::StarSystem &system : content.systems)
@@ -591,7 +591,7 @@ Fleet &Register(
 	     .access =
 	         Access::Of<World::Journey, World::Ship, Dock::Docking, Space::Cruising, Ai::Destination>()
 	             .Writing<
-	                 World::Journey, World::Ship, Dock::Docking, Dock::Pad, Dock::Station,
+	                 World::Journey, World::Ship, Dock::Docking, Dock::Berth, Dock::Platform,
 	                 Ai::Destination, Space::Cruising, Sim::Transform, Physics::Body, Physics::Velocity,
 	                 Physics::LocalFrame, Physics::OnRails>(),
 	     .after =
@@ -610,7 +610,7 @@ void OpenStations(SimWorld &world, const Fleet &fleet)
 	{
 		if (fleet.StationOf(world.Registry(), venue.venueId) != entt::null)
 			throw std::invalid_argument{std::format("the world already has '{}'", venue.venueId)};
-		fleet.Docks().MakeStation(world, Sim::FrameId(venue.systemId), venue.venueId, venue.layout);
+		fleet.Docks().MakePlatform(world, Sim::FrameId(venue.systemId), venue.venueId, venue.layout);
 	}
 }
 } // namespace Manifest::Travel

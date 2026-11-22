@@ -1313,7 +1313,7 @@ void Register(
 	             World::Policy, World::Job, World::Ship, World::Company, World::Reports, World::Fees,
 	             World::Journey, World::Account, World::Stock, World::Order, World::Identity,
 	             World::Cargo, World::Systems, World::Paid, Jettison::Sim::Transform,
-	             Jettison::Dock::Station, Jettison::Physics::OnRails, Jettison::Sim::InFrame>()
+	             Jettison::Dock::Platform, Jettison::Physics::OnRails, Jettison::Sim::InFrame>()
 	             .Writing<
 	                 World::Job, World::Order, World::Account, World::Stock, World::Identity,
 	                 World::Sales, World::Cargo, World::Journey, World::Arrears, World::Paid>(),
