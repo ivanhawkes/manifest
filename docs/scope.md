@@ -71,6 +71,11 @@ server-running time, pausing in shutdown. Afterwards rival exploitation/ports ar
 including under an incumbent puppet government; starting homes stay protected. This refines
 the initial no-second-port rule.
 
+Player-facing text ships in English, French, German and Japanese (the user's, 2026-11-22): every
+string key in all four tables, partly to test the GUI against each one's hard case (German's long
+words, French's diacritics, Japanese kanji), partly so the tables are ready at release for
+interested native speakers to provide high-quality translations.
+
 The [physical economy/development plan](economy-and-development-plan.md) records instant
 credits, physically transported goods, finite principal brokers, spreads/warehouse charges,
 production-limited supply and scarcity pricing. Regional tech requires resource exploitation,
