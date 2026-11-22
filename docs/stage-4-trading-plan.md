@@ -1383,36 +1383,53 @@ engine provision: the coast phase.
   to `FuelCapacity` a tier at a time (18 t as authored for the long-haul trader), and the starter
   gains a slot for it and an offer of its own, as its cargo holds have (D-096), the tier's size and
   price slice 2's. A save is refused for fuel below 0, not a number, or past the tanks.
-- **The coast (Jettison).** `Space::CruiseProfile` gains an optional `sustainedSeconds`, the
-  sustained acceleration's seconds of the whole cruise, half at each end after the boost's, the ship
-  coasting between; none is today's profile, sustained through the middle, and saves as before.
-  `CruiseSeconds` and `CruiseCovered` take the coast in closed form, and `CheckCruiseDrive`
-  refuses negative or non-finite seconds and a profile that reaches no speed to coast at. A generic
-  burn-coast-burn any space game can use, accepted in the space suite and by the sample's drive.
-- **The burn.** A journey chooses its acceleration (`accelerationMilliG`) and its burn, a share of
-  the leg's full speed change (`burnBps`, 1 to 10,000), and coasts between. The acceleration is
-  capped by the mode's profile (D-090): a manned hull at 1 g, or 2 g for at most 4 h of the trip; an
-  unmanned one at 12 g. The default is 1 g at the full burn. Ore to Brine, 396 million km, at 1 g:
-  100% 4.65 days and 3,941 km/s, 50% 5.8 days, 25% 9.9, 12.5% 18.9; with the 2 g boost hours, 4.49
-  days at full burn; unmanned at 12 g, 1.34 days and 13,653 km/s. A local trip across a planet's
-  orbit, 42,000 km: under an hour at full burn, 1.7 hours at 25%.
+- **The coast (Jettison).** `Space::CruiseProfile` gains an optional `thrustShare`, the share of
+  the cruise's time the drive thrusts, above 0 and at most 1, half at each end, the boost's included,
+  the ship coasting between; none is today's profile, thrusting throughout, and saves as before. A
+  share rather than seconds, since it is what the player chooses and means the same at any distance
+  (the user's, 2026-11-22). `CruiseSeconds` and `CruiseCovered` take the coast in closed form,
+  `CruiseThrust` gives each end's seconds at the boost and at the sustained acceleration, which the
+  fuel is priced from, and `CheckCruiseDrive` refuses a share not above 0, past 1 or not finite. A
+  generic burn-coast-burn any space game can use, accepted in the space suite and by the sample's
+  drive.
+- **The burn.** A journey chooses its acceleration (`accelerationMilliG`) and its thrust, the share
+  of the cruise's time the engines thrust, half at each end (`thrustBps`, 1 to 10,000), and coasts
+  between: 100% thrusts to the midpoint, turns the ship and thrusts to a stop at the destination.
+  Neither is ever shown or entered in seconds (the user's, 2026-11-22). The thrust is a percentage,
+  1% to 100%; the acceleration is in multiples of standard gravity (9.80665 m/s²), in steps of 0.1 g,
+  from 0.1 g to the most the ship can do, its mode's sustained cap (D-090): a manned hull's 1 g, an
+  unmanned one's 12 g. A manned hull at 1 g keeps the mode's boost, 2 g for at most 4 h of the trip,
+  as a choice of its own; below 1 g it flies without it. The default is 1 g at 100%. A share f
+  reaches s = √(f / (2 − f)) of the full thrust's speed, so the cruise takes (1 + s²) / 2s times as
+  long and each end's speed change is s times as much. Ore to Brine, 396 million km, at 1 g: 100% 4.65
+  days and 3,941 km/s, 50% 5.37 days, 25% 7.03, 10% 10.7; with the 2 g boost hours, 4.49 days at 100%;
+  unmanned at 12 g, 1.34 days and 13,653 km/s. A local trip across a planet's orbit, 42,000 km, on the
+  boost: under an hour at 100%, 1.2 hours at 25%.
+- **The controls.** The graphical client (L15) shows the thrust as a percentage slider and the
+  acceleration as a separate control in g, bounded as above for the ship chosen. The TUI may be more
+  basic: the two values shown as numbers and stepped with keys (5% and 0.1 g a press), held to the
+  same bounds. The console's `travel` takes them as two optional operands,
+  `travel [principal] <ship> <venue> [thrust%] [g]`. Each converts to `thrustBps` and
+  `accelerationMilliG`, which the server checks against the ship again.
 - **Fuel burned, on a curve.** Each phase of a leg burns `fuel.kilogramsPerTonneKms` (0.005) times
   the ship's mass in tonnes times the phase's speed change in km/s, times the acceleration's factor:
   1 up to 1 g and the acceleration in g squared above it (`fuel.curveExponent`, 2), so 2 g costs 4
   times a km/s at 1 g, 4 g 16 times and 12 g 144 times: a hard burn empties the tanks far faster and
-  can be punishingly expensive, yet worth it to win a race, such as to colonise a new system. Exact
-  in integers, the factor an integer power. The mass is everything aboard as the leg starts: the
+  can be punishingly expensive, yet worth it to win a race, such as to colonise a new system. Each
+  phase's speed change is its acceleration times its seconds from `CruiseThrust`, the factor an
+  integer power, the kilograms rounded up. The mass is everything aboard as the leg starts: the
   hull's `mass`, its fuel tanks' (`fuel.tankTonnesPerTonne`, 0.25 t of tank to each tonne of
   capacity), the fuel in them, its occupants and passengers (`fuel.occupantKilograms`, 100 each,
   with their effects) and its cargo, each tote its units times the item's density over its units per
   cubic metre (copper's 0.95 t), opened life-support totes included. The fuel's mass counts at the
   leg's start, not as it burns down, a first-order rocket equation. The starter, 23.0 t with two totes
-  of copper and its tanks full, burns 453 kg to Brine at 1 g and the full burn (about 3,600 credits),
-  551 kg with the 2 g boost hours, and 113 kg at 25%; with its hold full of copper, 173 t, 3,410 kg at
-  the full burn and 426 kg at 12.5%, the most its tanks allow, so a heavy cheap cargo goes slow and a
-  light dear one fast. An unmanned 20 t hull at 12 g would burn about 197 t, a racing ship's tanks.
-- **The journey.** `Manifest.Travel.Travel` takes `accelerationMilliG` and `burnBps` (version 2; a
-  version-1 command flies 1 g at the full burn). It sets the ship's drive profile for the burn, works out the leg's fuel from the
+  of copper and its tanks full, burns 453 kg to Brine at 1 g and 100% thrust (about 3,600 credits),
+  551 kg with the 2 g boost hours, and 171 kg at 25%; with its hold full of copper, 173 t, 3,410 kg at
+  100% and 782 kg at 10%, the one share of the policy's its tanks allow, so a heavy cheap cargo goes
+  slow and a light dear one fast. An unmanned 20 t hull at 12 g would burn about 197 t, a racing ship's tanks.
+- **The journey.** `Manifest.Travel.Travel` takes `accelerationMilliG` and `thrustBps` (version 2; a
+  version-1 command flies 1 g at 100%), refused `InvalidQuantity` for either past the ship's bounds. It
+  sets the ship's drive profile for them, works out the leg's fuel from the
   distance between the stations now, and takes it from the tanks as the journey starts; refused
   `InsufficientFuel`, a new result, for a leg the tanks cannot finish after refuelling. A ship with
   no profile (Astralis, and the fixtures' power-law ships) burns none.
@@ -1426,9 +1443,9 @@ engine provision: the coast phase.
   for it (`World::Paid`), rounded up, as transit life support is (W18).
 - **Estimates and the policy.** `Policy::Charges` adds each leg's fuel at a burn, at the reported
   ask of the venue the ship refuels at, the last price paid where it has none, and its life support
-  for the burn's longer cruise. `Manifest.Policy.Set` takes `burnBps` (version 2): 0, the default,
+  for the burn's longer cruise. `Manifest.Policy.Set` takes `thrustBps` (version 2): 0, the default,
   chooses; otherwise every leg flies that share. Choosing, the policy prices each trade at 1 g and each
-  of `fuel.burnShares` (100%, 50%, 25% and 12.5%) whose legs the tanks can finish, and the mode's
+  of `fuel.thrustShares` (100%, 50%, 25% and 10%) whose legs the tanks can finish, and the mode's
   boost at the full burn, and takes the most
   an hour: the estimate over the legs' cruise hours, each leg's `fuel.legAllowanceSeconds` (1,800,
   for leaving and docking) added; its target profit still bounds a job's estimate. Choosing per hour
@@ -1443,7 +1460,8 @@ Slices, each a commit with its suites, the gate after the third and the last:
    pin moved in Manifest, every Manifest pin held.
 2. The drive fuel and the tanks: the item, the stations making it, `World::Fuel`, provisioning and
    saves, and the starter's `FuelBunkers` slot and offer (`content`, `data`, `company`).
-3. The burn: `Travel`'s `burnBps`, the profile for a share, fuel burned by mass and speed change,
+3. The burn: `Travel`'s `thrustBps` and `accelerationMilliG`, the profile for them, the console's
+   operands and the TUI's stepped controls, fuel burned by mass and speed change,
    `InsufficientFuel`; refuelling and `SetRefuel`, the account short and the flag off (`travel`,
    `company`).
 4. The policy: the lot's charge, the estimate at a burn and the choice per hour, a fixed share

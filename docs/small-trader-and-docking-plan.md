@@ -119,7 +119,7 @@ fuel is a drive fuel of the ships' own (LPG stays the planets' cooking and vehic
 curve that rises steeply with the acceleration, so a very hard burn is punishingly expensive but can
 win a race, such as to colonise a new system, and with the mass of everything aboard: hull, fuel
 tanks and their fuel, occupants and passengers, and cargo. The tanks are apart from the cargo hold
-and grow on the tech tree. A slow run coasts between its burns; a station refuels a ship automatically, as it connects its life support, while
+and grow on the tech tree. A slow run coasts between its burns, the player choosing the share of the cruise's time the engines thrust as a percentage, and the acceleration in g up to what the ship can do; a station refuels a ship automatically, as it connects its life support, while
 its owner allows it and its funds last; and a standing policy picks the burn that makes the most an
 hour unless its owner fixes one (the user's, as W21 was planned). The mechanism and its numbers are
 the [W21 plan](stage-4-trading-plan.md#w21-plan).
