@@ -1403,8 +1403,15 @@ TEST_CASE("A save past content's bounds on fees, opened totes or a tax carry doe
 		return source.world.Registry().get<World::Fees>(
 		    source.Find(Kind::Market, "VenueBrineHighport"));
 	};
-	// Fees of no pad class, which travel to the venue would find none of.
+	// Fees of no pad class, or none at all, which travel to the venue would find none of.
 	refused([&](Hosted &source) { fees(source).classes.clear(); }, "not of every pad class");
+	refused(
+	    [](Hosted &source)
+	    {
+		    source.world.Registry().remove<World::Fees>(
+		        source.Find(Kind::Market, "VenueBrineHighport"));
+	    },
+	    "the market 'VenueBrineHighport' has no fees");
 	refused(
 	    [&](Hosted &source) { fees(source).arrearsRateBps = std::numeric_limits<int>::max(); },
 	    "past the highest arrears rate");

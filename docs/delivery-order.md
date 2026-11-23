@@ -120,8 +120,9 @@ and tendered under its governor's standing policy with no client beside the AI n
 joiner founding the last free region (`fixture_development`), with no engine edit. W14 is done
 (2026-11-23): **Stage 4 is closed**, its checks each held by a gated test, the four strands proved
 together in the development fixture, saved with a journey and an order open and continued from the
-pack ([delivered](stage-4-trading-plan.md#delivered-w14-2026-11-23)), with no engine edit. Next: the
-stage's cross-review, then R01; W22 waits for the first larger hull.
+pack ([delivered](stage-4-trading-plan.md#delivered-w14-2026-11-23)), with no engine edit. Its
+[cross-review](history.md#stage-4-cross-review--2026-11-23) is done, two rounds. Next: R01; W22 waits
+for the first larger hull.
 
 ## Priority 0: maintenance before Stage 1
 

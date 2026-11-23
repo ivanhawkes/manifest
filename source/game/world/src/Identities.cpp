@@ -189,6 +189,11 @@ std::function<void()> Identities::Load(
 		     fees.arrearsRateBps > m_maxArrearsRateBps))
 			reader.Fail("a venue's fees are not of every pad class, or past the highest arrears rate");
 	}
+	// Travel and the berths read every market's fees.
+	if (m_padClasses)
+		for (const auto &[key, entity] : index)
+			if (key.first == Kind::Market && !loaded.all_of<Fees>(entity))
+				reader.Fail(std::format("the market '{}' has no fees", key.second));
 	for (const auto [entity, arrears] : loaded.view<const Arrears>().each())
 	{
 		if (const std::optional<std::string> problem = Broken(arrears))

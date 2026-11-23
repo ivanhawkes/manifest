@@ -156,9 +156,9 @@ class Identities final : public Jettison::Sim::WorldService
 	// without its budget in its account, awarded without its total less what it paid (Owed) there or
 	// its bond in its BondAccount or to no company, or closed with either; a TenderAccount or
 	// BondAccount of no tender; and a Bid that breaks its rules, of no company, or on no open tender or
-	// past its budget, or not by its ID; once SetCharges has run, Fees of other pad classes or past
-	// the highest arrears rate, and once SetTotes has, an opened tote holding more than a tote of its
-	// item, or a tax carry not below the gross a withheld credit is for.
+	// past its budget, or not by its ID; once SetCharges has run, a market with no Fees or Fees of
+	// other pad classes or past the highest arrears rate, and once SetTotes has, an opened tote holding
+	// more than a tote of its item, or a tax carry not below the gross a withheld credit is for.
 	std::function<void()> Load(
 	    Jettison::Serialise::BinaryReader &reader, const entt::registry &loaded,
 	    std::span<const entt::meta_any> queued) override;

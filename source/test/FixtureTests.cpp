@@ -214,6 +214,8 @@ struct Hosted
 			now.try_emplace(item, 0);
 		for (const auto &[item, count] : consumed)
 			now.try_emplace(item, 0);
+		for (const auto &[item, count] : delivered)
+			now.try_emplace(item, 0);
 		for (const auto &[item, count] : now)
 		{
 			const auto was = totes.find(item);
@@ -1231,6 +1233,60 @@ TEST_CASE("The ledger finds a tote lost in a step the households consume in")
 	hosted.Step();
 	REQUIRE(lost);
 	CHECK(hosted.consumptions == 1);
+	CHECK(hosted.goodsBreach);
+}
+
+
+TEST_CASE("The ledger finds a batch's totes lost where its item was held nowhere")
+{
+	Hosted hosted{MANIFEST_MOD_DIRECTORY};
+	hosted.Bootstrap();
+	entt::registry &registry = hosted.world.Registry();
+	// Fixture bootstrap: copper held nowhere and none of it on order, and a batch of it a tenth of a
+	// step from done.
+	std::vector<entt::entity> orders;
+	for (const auto [entity, order] : registry.view<World::Order>().each())
+		if (order.itemId == kGood)
+			orders.push_back(entity);
+	for (const entt::entity entity : orders)
+		hosted.services.identities.Destroy(registry, entity);
+	for (auto [entity, stock] : registry.view<World::Stock>().each())
+		std::erase_if(
+		    stock.holdings, [](const World::Holding &holding) { return holding.itemId == kGood; });
+	bool finishing = false;
+	for (auto [entity, production] : registry.view<World::Production>().each())
+		for (World::Batch &batch : production.batches)
+			if (batch.itemId == kGood)
+			{
+				batch.progress = batch.duration - hosted.world.FixedStep() * 0.1;
+				finishing = true;
+			}
+	REQUIRE(finishing);
+	REQUIRE_FALSE(Totes(registry).contains(std::string{kGood}));
+	hosted.credits = Credits(registry);
+	hosted.creditBreach.reset();
+	// A system no sink of the game's: the batch's copper, taken as it is delivered.
+	std::uint64_t lost = 0;
+	hosted.world.RegisterSystem(
+	    {.name = "test.loseFresh",
+	     .phase = Jettison::Ecs::TickPhase::Simulation,
+	     .access = Jettison::Ecs::Access::Of<World::Stock>().Writing<World::Stock>(),
+	     .after = {std::string{Trade::kObserve}},
+	     .run = [&](entt::registry &state, double)
+	     {
+		     for (auto [entity, stock] : state.view<World::Stock>().each())
+			     std::erase_if(
+			         stock.holdings,
+			         [&](const World::Holding &holding)
+			         {
+				         if (holding.itemId != kGood)
+					         return false;
+				         lost += holding.available + holding.reserved;
+				         return true;
+			         });
+	     }});
+	hosted.Step();
+	REQUIRE(lost > 0);
 	CHECK(hosted.goodsBreach);
 }
 

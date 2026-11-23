@@ -100,6 +100,23 @@ cargo's lots are bounded together (`world`), and a ship's cargo against its hull
 `CargoVolume`, whose empty map was taken for none given; a hull the map does not name now carries
 nothing (`company`). Round 7 approved with no finding open.
 
+## Stage 4 cross-review — 2026-11-23
+
+Codex reviewed `78615f9..175f0ad` in two rounds (`build/reviews/stage-4`). Its first attempt was cut
+off by the service's filter before it wrote a review, an unchanged retry running through; the leads it
+had left in its scratch, and a sweep of the stage's modules the user asked for, were fixed first
+(`cfaef5a`): a fill dearer than its escrow aborted settlement, a delivery's payment and procurement's
+other credits were unchecked, `Owed` and a bond's forfeit overflowed for large tenders, a region
+could load with two projects under way, and a policy's floor below 0, near-limit sums and casts, and
+content's turn, tax, funds and totes were unbounded. Round 1's five findings (`830f217`): a policy
+estimated refuelling as tanks filled to the brim, so a laden ship chose a burn whole totes could not
+fly; a save loaded with fees of no pad class, a tax carry past a withheld credit or an opened tote of
+a million kilograms (`Identities::SetCharges`, `SetTotes`); and the fixtures' goods ledger let any
+item fall in a consuming step, now exact against `Trade::Consumed`, which every sink raises. The
+marketplace's order life and fee bps and arrears starting after the clock were bounded as the user
+asked. Round 2 found each resolved and two more, fixed after it and not reviewed again: a market with
+no `Fees` at all loaded, and the ledger skipped an item held nowhere before a batch delivered it.
+
 ## W14: Stage 4 closed — 2026-11-23
 
 **Stage 4 is closed** ([delivered](stage-4-trading-plan.md#delivered-w14-2026-11-23)), each of its
