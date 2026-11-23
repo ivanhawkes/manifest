@@ -1627,5 +1627,219 @@ TEST_CASE("The governance fixture's project, tendered, supplied, worked and unlo
 
 	// The same in every build the gate runs; it moves with what a save holds, the governance
 	// scenario's content or the stream.
-	CHECK(hosted.world.StateHash() == 0x9e18495904a24038ULL);
+	CHECK(hosted.world.StateHash() == 0xfa77f9c61ae433bdULL);
+}
+
+
+namespace
+{
+constexpr std::string_view kNorth = "RegionForgeNorth";
+constexpr std::string_view kGuild = "ProjectSmeltersGuild";
+const Actor kBea{ActorKind::Principal, "Bea"};
+const Actor kCara{ActorKind::Principal, "Cara"};
+
+
+// The phase of the region's project.
+World::ProjectPhase PhaseOf(const Hosted &hosted, std::string_view regionId, std::string_view projectId)
+{
+	const entt::entity project =
+	    hosted.services.identities.Find(Kind::Project, World::ProjectId(regionId, projectId));
+	REQUIRE(project != entt::null);
+	return hosted.world.Registry().get<const World::Project>(project).phase;
+}
+
+
+// Fast-forwarded an hour at a time until the project is done, within the days.
+void Until(Hosted &hosted, std::string_view regionId, std::string_view projectId, std::uint32_t days)
+{
+	const double fixedStep = hosted.world.FixedStep();
+	const std::uint64_t end =
+	    hosted.world.Clock().Step() + Manifest::Procurement::Steps(days, fixedStep);
+	const auto hour = static_cast<std::uint64_t>(std::llround(3'600.0 / fixedStep));
+	while (PhaseOf(hosted, regionId, projectId) != World::ProjectPhase::Done &&
+	       hosted.world.Clock().Step() < end)
+		ForwardTo(hosted, hosted.world.Clock().Step() + hour);
+	REQUIRE(PhaseOf(hosted, regionId, projectId) == World::ProjectPhase::Done);
+}
+
+
+// Fixture bootstrap: the principal's company's credits, the ledger moved with them.
+void Fund(Hosted &hosted, const std::string &principal, std::int64_t credits)
+{
+	entt::registry &registry = hosted.world.Registry();
+	for (const auto [entity, identity, company] :
+	     registry.view<const World::Identity, const World::Company>().each())
+		if (company.principalId == principal)
+		{
+			std::int64_t &balance = registry
+			                            .get<World::Account>(hosted.services.identities.Find(
+			                                Kind::CompanyAccount, identity.id))
+			                            .balance;
+			hosted.credits += credits - balance;
+			balance = credits;
+		}
+}
+
+
+// Ada founds Forge North, queues the guild and Bronze behind it, and leaves her region's policy and
+// her ship's job to develop it with no client: the guild's copper tendered, won and delivered, and
+// smelting taught.
+void Found(Hosted &hosted)
+{
+	const std::string companyId = hosted.Seen().companyId;
+	REQUIRE(
+	    hosted.Run(
+	        kAda, Company::kFound, Company::kVersion,
+	        Company::Found{std::string{kNorth}, companyId, "Northern Republic"}) == Result::Succeeded);
+	namespace Procurement = Manifest::Procurement;
+	for (const std::string_view project : {kGuild, kBronze})
+		REQUIRE(
+		    hosted.Run(
+		        kAda, Procurement::kQueue, Procurement::kVersion,
+		        Procurement::Queue{std::string{kNorth}, std::string{project}}) == Result::Succeeded);
+	REQUIRE(
+	    hosted.Run(
+	        kAda, Procurement::kSetDevelopment, Procurement::kVersion,
+	        Procurement::SetDevelopment{std::string{kNorth}, true, 150'000}) == Result::Succeeded);
+	REQUIRE(
+	    hosted.Run(
+	        kAda, Manifest::Policy::kSet, Manifest::Policy::kVersion,
+	        Manifest::Policy::Set{"Ship1", true, 0, 0, 0, true}) == Result::Succeeded);
+	Until(hosted, kNorth, kGuild, 30);
+	CHECK(
+	    hosted.world.Registry()
+	        .get<const World::Knowledge>(
+	            hosted.services.identities.Find(Kind::Region, std::string{kNorth}))
+	        .skills == std::vector<std::string>{"SkillSmelting"});
+	CHECK(PhaseOf(hosted, kNorth, kBronze) == World::ProjectPhase::Tendering);
+}
+
+
+// Bea joins late and founds Forge South; Cara finds none open.
+void Join(Hosted &hosted)
+{
+	// Their starting credits are made by provisioning, so the ledger takes them in.
+	REQUIRE_FALSE(hosted.creditBreach);
+	const std::int64_t before = Credits(hosted.world.Registry());
+	for (const char *principal : {"Bea", "Cara"})
+		REQUIRE(
+		    hosted.Run(
+		        kHost, Company::kProvision, Company::kVersion,
+		        Company::Provision{principal, principal, principal}) == Result::Succeeded);
+	hosted.credits += Credits(hosted.world.Registry()) - before;
+	hosted.creditBreach.reset();
+	Fund(hosted, "Bea", 250'000);
+	const auto found = [&](const Actor &actor, std::string_view regionId)
+	{
+		const std::string companyId =
+		    Manifest::Query::Observe(hosted.world, hosted.services.identities, actor)
+		        .companies.at(0)
+		        .companyId;
+		return hosted.Run(
+		    actor, Company::kFound, Company::kVersion,
+		    Company::Found{std::string{regionId}, companyId, actor.id});
+	};
+	CHECK(found(kBea, kNorth) == Result::Governed);
+	CHECK(found(kBea, "RegionForgeSouth") == Result::Succeeded);
+	for (const std::string_view region :
+	     {kNorth, std::string_view{"RegionForgeSouth"}, std::string_view{"RegionForgeEast"},
+	      std::string_view{"RegionForgeWest"}, std::string_view{"RegionCassiterLowlands"}})
+		CHECK(found(kCara, region) == Result::Governed);
+	const Manifest::Query::Snapshot caras =
+	    Manifest::Query::Observe(hosted.world, hosted.services.identities, kCara);
+	CHECK(
+	    std::ranges::none_of(
+	        caras.regions,
+	        [](const Manifest::Query::RegionView &region) { return region.governorId.empty(); }));
+}
+
+
+// Bronze, tendered, supplied and worked with no client; Forge East's own Bronze its AI's.
+void Develop(Hosted &hosted)
+{
+	Until(hosted, kNorth, kBronze, 60);
+	const entt::registry &registry = hosted.world.Registry();
+	CHECK(
+	    registry
+	        .get<const World::Knowledge>(
+	            hosted.services.identities.Find(Kind::Region, std::string{kNorth}))
+	        .recipes == std::vector<std::string>{"RecipeBronze"});
+	// Forge East's AI worked its own Bronze, and Forge West, which queued nothing, knows nothing more.
+	CHECK(PhaseOf(hosted, "RegionForgeEast", kBronze) == World::ProjectPhase::Done);
+	CHECK(
+	    registry.get<const World::Knowledge>(
+	        hosted.services.identities.Find(Kind::Region, "RegionForgeWest")) == World::Knowledge{});
+	// Ada's view of her region: its treasury, both projects done in their order, and her policy.
+	const Manifest::Query::Snapshot adas =
+	    Manifest::Query::Observe(hosted.world, hosted.services.identities, kAda);
+	const auto north = std::ranges::find(adas.regions, kNorth, &Manifest::Query::RegionView::regionId);
+	REQUIRE(north != adas.regions.end());
+	CHECK(north->governorName == "Northern Republic");
+	CHECK(north->treasury.has_value());
+	REQUIRE(north->queue.size() == 2);
+	CHECK(north->queue[0].project.projectId == kGuild);
+	CHECK(north->queue[1].project.projectId == kBronze);
+	CHECK(north->development == World::Development{true, 150'000, World::DevelopmentWait::None});
+	const auto south =
+	    std::ranges::find(adas.regions, "RegionForgeSouth", &Manifest::Query::RegionView::regionId);
+	REQUIRE(south != adas.regions.end());
+	CHECK(south->playerGoverned);
+	CHECK_FALSE(south->treasury.has_value());
+	CHECK(Credits(registry) + hosted.sunk == hosted.credits);
+	CHECK_FALSE(hosted.creditBreach);
+	CHECK_FALSE(hosted.goodsBreach);
+}
+} // namespace
+
+
+// The development fixture (W13, D-110): Ada founds a homeworld in the governance scenario and her
+// standing policies develop it with no client, a late joiner founds the last free region and a third
+// finds none, while the AI neighbours run their own.
+TEST_CASE("The development fixture's homeworld, founded and developed with no client, replays alike")
+{
+	Hosted hosted{MANIFEST_MOD_DIRECTORY, {}, "governance"};
+	Governing(hosted);
+	const std::vector<std::byte> start = hosted.world.Save();
+	const std::uint64_t first = hosted.world.Clock().Step();
+	hosted.world.SetRecording(true);
+	Found(hosted);
+	const std::uint64_t joined = hosted.world.Clock().Step();
+	Join(hosted);
+	const std::vector<std::byte> joinedSave = hosted.world.Save();
+	Develop(hosted);
+	const Manifest::Query::Snapshot adas =
+	    Manifest::Query::Observe(hosted.world, hosted.services.identities, kAda);
+
+	// Loaded after the joins, it goes on to the same world.
+	Hosted loaded{MANIFEST_MOD_DIRECTORY, {}, "governance"};
+	loaded.Load(joinedSave);
+	Develop(loaded);
+	CHECK(loaded.world.StateHash() == hosted.world.StateHash());
+	CHECK(Manifest::Query::Observe(loaded.world, loaded.services.identities, kAda) == adas);
+
+	// Replayed from the bootstrap, Bea funded as she was, it reaches the same world.
+	Hosted replayed{MANIFEST_MOD_DIRECTORY, {}, "governance"};
+	replayed.Load(start);
+	REQUIRE(replayed.world.Clock().Step() == first);
+	const std::vector<Jettison::Sim::AppliedCommand> &recorded = hosted.world.Recorded();
+	bool funded = false;
+	for (std::size_t next = 0; next < recorded.size();)
+	{
+		const std::uint64_t step = recorded[next].step;
+		ForwardTo(replayed, step);
+		if (!funded && step > joined + 2)
+		{
+			Fund(replayed, "Bea", 250'000);
+			funded = true;
+		}
+		for (; next < recorded.size() && recorded[next].step == step; ++next)
+			replayed.world.Commands().Push(recorded[next].command);
+		replayed.Step();
+	}
+	ForwardTo(replayed, hosted.world.Clock().Step());
+	CHECK(replayed.world.StateHash() == hosted.world.StateHash());
+
+	// The same in every build the gate runs; it moves with what a save holds, the governance
+	// scenario's content or the stream.
+	CHECK(hosted.world.StateHash() == 0xf7c136ece8c93092ULL);
 }

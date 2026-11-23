@@ -1734,14 +1734,13 @@ systems on the world's services.
   replays nothing.
 - **Saves.** The project phases `Queued` and `Cancelled` and the region's development policy are saved,
   the formats changed in place ([D-109](decision-ledger.md#d-109)).
-- **Acceptance**, `fixture_development`, on the governance scenario: Ada, provisioned and funded,
-  founds Forge North, queues the guild and Bronze, sets the policy and her ship's contracts on, and no
+- **Acceptance**, `fixture_development`, on the governance scenario, Forge North given a workshop:
+  Ada, provisioned and funded, founds Forge North, queues the guild and Bronze, sets the policy and her ship's contracts on, and no
   client is connected. Her region's tenders are issued, her job bids and delivers, the guild teaches
   smelting and Bronze tenders, works and unlocks its recipe, while Forge East's AI works its own Bronze
   and every region's accounts and condition move by its own economy alone. Bea, provisioned late, founds
-  Forge South; Cara's founding of Forge North is refused `Governed` and of Forge East `Governed`, and the
-  view lists none open. Ada's session closed and reopened, her snapshot is the world's and her region
-  hers. Saved mid-run and loaded, and the recorded commands replayed from the bootstrap, it reaches the
+  Forge South; Cara's founding of every region is refused `Governed`, and the view lists none open.
+  Loaded, Ada's snapshot is the one stepped; a reconnect's over the network is the remote suite's. Saved mid-run and loaded, and the recorded commands replayed from the bootstrap, it reaches the
   same world, its hash pinned.
 
 Slices, each gated:
@@ -1775,7 +1774,20 @@ Slices, each gated:
    the Administrator's; it is on the remote protocol's snapshot too, so a reconnecting client has it.
    The query suite founds Forge North and reads it as its founder, a rival and the host; the remote
    suite's reconnect sees the world's regions. No pin moved.
-6. `fixture_development`, then the close-out.
+6. `fixture_development`, then the close-out. **Done** 2026-11-23, with no engine edit: Ada founds
+   Forge North, queues the guild and Bronze, sets her policy (150,000) and her ship's contracts on, and
+   with no client her job wins the guild's third copper tender, its budget risen by need, and smelting
+   is taught about six days in; Bronze's copper and tin follow, the recipe unlocked about fifteen days
+   in, while her job also supplies Forge East's Bronze, which its AI works, and relief tenders. Bea,
+   provisioned and funded late, founds Forge South; Cara is refused in all five regions. Loaded after
+   the joins and replayed from the bootstrap, Bea's funding repeated at its step, it reaches one world,
+   pinned `0xf7c136ece8c93092`, 51 s in Debug. Forge North's workshop moved two pins, the content
+   alone: `fixture_governance` (`0xfa77f9c61ae433bd`) and the company suite's governance world
+   (`0x33e5b74c0da894c9`). D-110 implemented. Left: the console's and TUI's commands and views for
+   founding, the queue and the policy; founding's station, delivery and life-support conditions (the
+   regional plan's), which `Found` does not check; a queue reordered other than by cancelling and
+   queueing again; relief tenders under a player's policy; AI acquisition (L03) and region supply
+   (D-076).
 
 ## Handoff to stage 5
 
