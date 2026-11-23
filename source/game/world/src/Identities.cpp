@@ -32,7 +32,8 @@ std::string_view IssuedPrefix(Kind kind)
 		case Kind::Employer:
 		case Kind::EmployerAccount:
 		case Kind::Household:
-		case Kind::Market: break;
+		case Kind::Market:
+		case Kind::Project: break;
 	}
 	return {};
 }
@@ -77,6 +78,35 @@ std::optional<std::string> Identities::Issue(Kind kind)
 			return id;
 	}
 	return std::nullopt;
+}
+
+
+void Identities::CheckProject(
+    Jettison::Serialise::BinaryReader &reader, const Project &project, const Stock &stock) const
+{
+	const auto needs = m_projects->find(project.projectId);
+	if (needs == m_projects->end())
+		reader.Fail(std::format("'{}' names no project", project.projectId));
+	const ProjectNeeds &needed = needs->second;
+	const bool done = project.phase == ProjectPhase::Done;
+	if (done ? project.worked != needed.workSteps : project.worked >= needed.workSteps)
+		reader.Fail(
+		    std::format(
+		        "the project '{}' is worked {} of its {} steps", project.projectId, project.worked,
+		        needed.workSteps));
+	std::map<std::string, std::uint64_t, std::less<>> held;
+	for (const Holding &holding : stock.holdings)
+		held[holding.itemId] += holding.available + holding.reserved;
+	for (const auto &[itemId, totes] : held)
+	{
+		const auto input = needed.inputs.find(itemId);
+		if (project.phase != ProjectPhase::Tendering || input == needed.inputs.end() ||
+		    totes > input->second)
+			reader.Fail(
+			    std::format(
+			        "the project '{}' holds {} totes of '{}', more than it needs", project.projectId,
+			        totes, itemId));
+	}
 }
 
 
@@ -138,6 +168,28 @@ std::function<void()> Identities::Load(
 	for (const auto [entity, job] : loaded.view<const Job>().each())
 		if (const std::optional<std::string> problem = Broken(job))
 			reader.Fail(*problem);
+	for (const auto [entity, knowledge] : loaded.view<const Knowledge>().each())
+		if (const std::optional<std::string> problem = Broken(knowledge))
+			reader.Fail(*problem);
+	for (const auto [entity, facilities] : loaded.view<const Facilities>().each())
+		if (const std::optional<std::string> problem = Broken(facilities))
+			reader.Fail(*problem);
+	for (const auto [entity, project] : loaded.view<const Project>().each())
+	{
+		if (const std::optional<std::string> problem = Broken(project))
+			reader.Fail(*problem);
+		const auto *pStock = loaded.try_get<const Stock>(entity);
+		if (pStock == nullptr)
+			reader.Fail(std::format("the project '{}' holds no stock", project.projectId));
+		const auto region = index.find({Kind::Region, project.regionId});
+		if (region == index.end() || !loaded.all_of<Knowledge, Facilities>(region->second))
+			reader.Fail(
+			    std::format(
+			        "the project '{}' is of '{}', a region the world does not hold", project.projectId,
+			        project.regionId));
+		if (m_projects)
+			CheckProject(reader, project, *pStock);
+	}
 	for (const auto [entity, paid] : loaded.view<const Paid>().each())
 	{
 		if (const std::optional<std::string> problem = Broken(paid))

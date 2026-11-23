@@ -181,16 +181,17 @@ procurement:
   # The performance security a supplier locks at award, as a share of its winning total offer.
   performanceSecurityRate: 0.1
 
-# The governance scenario's first technology: delivered project inputs, consumed once, unlock
-# the recipe in one region. Work durations and the recipe's wage bill are open.
-# Quantities are in each item's trading unit, tonnes for these metals.
+# The governance scenario's first technology: delivered project inputs, consumed once, then its
+# simulation days of work, unlock the recipe in one region (D-101). The recipe's wage bill is open.
+# Counts are whole totes (D-087), the 9:1 of copper and tin kept.
 projects:
   - projectId: ProjectBronzeMetallurgy
     requires: [{skillId: SkillSmelting}]
-    inputs: [{itemId: ItemCopper, quantity: 0.09}, {itemId: ItemTin, quantity: 0.01}]
+    inputs: [{itemId: ItemCopper, totes: 9}, {itemId: ItemTin, totes: 1}]
+    workDays: 7
     unlocksRecipe: RecipeBronze
 
 recipes:
   - recipeId: RecipeBronze
-    inputs: [{itemId: ItemCopper, quantity: 0.009}, {itemId: ItemTin, quantity: 0.001}]
-    outputs: [{itemId: ItemBronze, quantity: 0.01}]
+    inputs: [{itemId: ItemCopper, totes: 9}, {itemId: ItemTin, totes: 1}]
+    outputs: [{itemId: ItemBronze, totes: 10}]

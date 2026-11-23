@@ -58,6 +58,9 @@ Identities &RegisterWorld(Jettison::Sim::SimWorld &world)
 	world.RegisterComponent<Job>();
 	world.RegisterComponent<Pricing>();
 	world.RegisterComponent<Paid>();
+	world.RegisterComponent<Knowledge>();
+	world.RegisterComponent<Facilities>();
+	world.RegisterComponent<Project>();
 	auto identities = std::make_unique<Identities>();
 	Identities &added = *identities;
 	world.AddService("Manifest.Identities", std::move(identities));
@@ -82,10 +85,20 @@ void CreateInitialState(
 	}
 	for (const Content::RegionDefinition &region : scenario.regions)
 	{
+		const entt::entity created = CreateOrRefuse(world, identities, Kind::Region, region.regionId);
 		registry.emplace<Region>(
-		    CreateOrRefuse(world, identities, Kind::Region, region.regionId), region.planetId,
-		    region.civilisationId, region.governorId, region.population, region.health,
-		    region.happiness);
+		    created, region.planetId, region.civilisationId, region.governorId, region.population,
+		    region.health, region.happiness);
+		Knowledge &knowledge = registry.emplace<Knowledge>(created);
+		for (const Content::SkillSelection &skill : region.skills)
+			knowledge.skills.push_back(skill.skillId);
+		std::ranges::sort(knowledge.skills);
+		Facilities &facilities = registry.emplace<Facilities>(created);
+		for (const Content::FacilityDefinition &facility : region.facilities)
+			// The content set holds every facility to having a kind.
+			facilities.facilities.push_back(
+			    {facility.facilityId, facility.kind.value(), facility.operational});
+		std::ranges::sort(facilities.facilities, {}, &Facility::facilityId);
 		CreateAccount(world, identities, Kind::PublicAccount, region.regionId, region.publicFunds);
 		CreateAccount(
 		    world, identities, Kind::HouseholdAccount, region.regionId, region.householdFunds);
@@ -98,6 +111,13 @@ void CreateInitialState(
 		registry.emplace<Stock>(employer);
 		registry.emplace<Production>(employer);
 		CreateAccount(world, identities, Kind::EmployerAccount, region.regionId, region.employerFunds);
+		for (const Content::ProjectSelection &project : region.projects)
+		{
+			const entt::entity entity = CreateOrRefuse(
+			    world, identities, Kind::Project, ProjectId(region.regionId, project.projectId));
+			registry.emplace<Project>(entity, region.regionId, project.projectId);
+			registry.emplace<Stock>(entity);
+		}
 	}
 	for (const Content::VenueDefinition &venue : scenario.venues)
 	{

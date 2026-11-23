@@ -12,8 +12,9 @@ namespace Manifest::World
 // RegisterTypes must have run.
 Identities &RegisterWorld(Jettison::Sim::SimWorld &world);
 
-// The selected scenario's organisations, then its regions, each region followed by its public and
-// household accounts, its households' goods, and its employer with its account, then its venues, each a
+// The selected scenario's organisations, then its regions, each with its Knowledge and Facilities and
+// followed by its public and household accounts, its households' goods, its employer with its account
+// and its projects, each Tendering with no stock, then its venues, each a
 // broker holding the venue's stock, the broker's account with the authored treasury and the venue's
 // empty account, in the scenario's order, so the same content creates the same entities. Throws
 // std::invalid_argument for a content set with no scenario selected, or a world that already holds any

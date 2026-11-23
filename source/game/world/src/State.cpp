@@ -32,7 +32,8 @@ Kind AccountOf(Kind owner)
 		case Kind::VenueAccount:
 		case Kind::Order:
 		case Kind::EmployerAccount:
-		case Kind::Market: break;
+		case Kind::Market:
+		case Kind::Project: break;
 	}
 	return Kind::CompanyAccount;
 }
@@ -332,6 +333,42 @@ const PaidPrice *Find(const Paid &paid, std::string_view itemId)
 }
 
 
+std::optional<std::string> Broken(const Knowledge &knowledge)
+{
+	for (const std::vector<std::string> *pNames : {&knowledge.skills, &knowledge.recipes})
+		for (auto each = pNames->begin(); each != pNames->end(); ++each)
+			if (each->empty() || (each != pNames->begin() && *std::prev(each) >= *each))
+				return "a region's skills or recipes are not each named once, in name order";
+	return std::nullopt;
+}
+
+
+std::optional<std::string> Broken(const Facilities &facilities)
+{
+	for (auto each = facilities.facilities.begin(); each != facilities.facilities.end(); ++each)
+		if (each->facilityId.empty() ||
+		    (each != facilities.facilities.begin() && std::prev(each)->facilityId >= each->facilityId))
+			return "a region's facilities are not each named once, in name order";
+	return std::nullopt;
+}
+
+
+std::optional<std::string> Broken(const Project &project)
+{
+	if (project.regionId.empty() || project.projectId.empty())
+		return "a project names no region or no project";
+	if (project.phase == ProjectPhase::Tendering && project.worked != 0)
+		return "a project is worked before its inputs are consumed";
+	return std::nullopt;
+}
+
+
+std::string ProjectId(std::string_view regionId, std::string_view projectId)
+{
+	return std::format("{}:{}", regionId, projectId);
+}
+
+
 void RegisterTypes()
 {
 	static const bool registered = []
@@ -356,7 +393,8 @@ void RegisterTypes()
 		    .Value<Kind::Employer>("Employer")
 		    .Value<Kind::EmployerAccount>("EmployerAccount")
 		    .Value<Kind::Household>("Household")
-		    .Value<Kind::Market>("Market");
+		    .Value<Kind::Market>("Market")
+		    .Value<Kind::Project>("Project");
 		RegisterType<Identity>("Manifest.World.Identity")
 		    .Field<&Identity::kind>("kind", kSaved)
 		    .Field<&Identity::id>("id", kSaved);
@@ -546,6 +584,25 @@ void RegisterTypes()
 		    .Field<&PaidPrice::itemId>("itemId", kSaved)
 		    .Field<&PaidPrice::price>("price", kSaved);
 		RegisterType<Paid>("Manifest.World.Paid").Field<&Paid::prices>("prices", kSaved);
+		RegisterType<Knowledge>("Manifest.World.Knowledge")
+		    .Field<&Knowledge::skills>("skills", kSaved)
+		    .Field<&Knowledge::recipes>("recipes", kSaved);
+		RegisterType<Facility>("Manifest.World.Facility")
+		    .Field<&Facility::facilityId>("facilityId", kSaved)
+		    .Field<&Facility::kind>("kind", kSaved)
+		    .Field<&Facility::operational>("operational", kSaved);
+		RegisterType<Facilities>("Manifest.World.Facilities")
+		    .Field<&Facilities::facilities>("facilities", kSaved);
+		RegisterEnum<ProjectPhase>("Manifest.World.ProjectPhase")
+		    .Value<ProjectPhase::Tendering>("Tendering")
+		    .Value<ProjectPhase::Working>("Working")
+		    .Value<ProjectPhase::Paused>("Paused")
+		    .Value<ProjectPhase::Done>("Done");
+		RegisterType<Project>("Manifest.World.Project")
+		    .Field<&Project::regionId>("regionId", kSaved)
+		    .Field<&Project::projectId>("projectId", kSaved)
+		    .Field<&Project::phase>("phase", kSaved)
+		    .Field<&Project::worked>("worked", kSaved);
 		RegisterType<IdentityCounters>("Manifest.World.IdentityCounters")
 		    .Field<&IdentityCounters::issued>("issued", kSaved);
 		return true;

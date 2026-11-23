@@ -480,8 +480,18 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	CheckRefused(
 	    balance,
 	    "version: 1\nrecipes: !merge=recipeId\n  - {recipeId: RecipeBronze, outputs: [{itemId: "
-	    "ItemBronze, quantity: 0}]}\n",
-	    "'ItemBronze' must be a quantity above 0");
+	    "ItemBronze, totes: 0}]}\n",
+	    "'ItemBronze' must be a count of totes above 0");
+	CheckRefused(
+	    balance,
+	    "version: 1\nprojects: !merge=projectId\n  - {projectId: ProjectBronzeMetallurgy, inputs: "
+	    "[{itemId: ItemTin, totes: 1}, {itemId: ItemTin, totes: 2}]}\n",
+	    "'ItemTin' is given twice");
+	CheckRefused(
+	    balance,
+	    "version: 1\nprojects: !merge=projectId\n  - {projectId: ProjectBronzeMetallurgy, workDays: "
+	    "0}\n",
+	    "'ProjectBronzeMetallurgy' workDays must be above 0");
 
 	const std::string mining = patch(skills, "skill-mining");
 	// Nothing requires publishing, so its tiers are its own rule alone.

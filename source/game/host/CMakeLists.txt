@@ -9,6 +9,7 @@ manifest_add_module(host
 		company
 		trade
 		policy
+		procurement
 	HEADERS
 		include/manifest/host/Start.h
 	SOURCES

@@ -88,6 +88,7 @@ registration order, and a test pins `Scheduler().Order(TickPhase::Simulation)`.
 | --- | --- | --- | --- | --- |
 | 0 | each step | the command phase (`Requests::Execute`) | before every system | per command, [below](#transaction-boundaries) |
 | 1 | each step | `manifest.expiry` | before `manifest.economy` | expired orders, their escrow |
+| 1a | each step | `manifest.projects` (W12) | after `manifest.expiry`, before `manifest.economy` | a project's inputs consumed, its work and phase, its region's recipes |
 | 2 | each step; the turn on due steps | `manifest.economy` (W04) | before `spatial` | production, payroll, households, condition |
 | 3 | due steps | `manifest.brokers` | after `manifest.economy`, before `spatial` | each broker's orders, fills |
 | 4 | each step | engine `spatial`, `steering`, `flight`, `physics` | Jettison's own edges | transforms, velocities |
@@ -1215,7 +1216,21 @@ components and systems on the world's services.
 W12's slices, each one commit with its suites, the gate after the third and the last:
 
 1. The restated project and recipe, `Kind::Project` and its stock, consumption and work, paused and
-   resumed, unlocking once (`content`, `world`, a new `procurement` suite).
+   resumed, unlocking once (`content`, `world`, a new `procurement` suite). **Done** 2026-11-23,
+   with no engine edit: a project's and a recipe's goods are whole totes (`Manifest.ItemTotes`), each
+   item once, and a project names its `workDays`. A region saves what it knows, its skills and the
+   recipes unlocked there (`World::Knowledge`), and its facilities (`World::Facilities`), seeded
+   from the scenario; nothing yet puts a workshop out of action, which the suite does by hand.
+   `manifest.projects` consumes a project's inputs, all at once, the step it holds them all with its
+   skills known and a workshop operational, and works it a step at a time, `workDays` at the fixed
+   step, 36,288,000 at 1/60 s; with no workshop it pauses, consuming nothing again, and its last step
+   unlocks the recipe once in its own region, which the workshop's loss does not take back. Its quiet
+   is its next start, pause or resume, else its last step, and fast-forwarded work leaves the bytes
+   stepping does across a start, a pause and the end. A load refuses a project that holds what it
+   does not take, more than it takes or anything once consumed, worked past its steps or done short
+   of them, or of no region. The three pinned hashes moved for the regions' saved knowledge and
+   facilities, every other check of them holding. Repeat production on the unlocked recipe is not
+   W12's: its ownership, facility access and batch timing are to be specified first (D-029).
 2. Tenders and their accounts: `Publish`, `Cancel`, the AI issuer and its budget; refusals and
    bounds.
 3. Bids and the award: sealed bids, revisions, withdrawal, the tie order, the bond's fallback and

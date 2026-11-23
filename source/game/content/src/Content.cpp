@@ -518,20 +518,22 @@ bool NotNegative(double value)
 
 
 // Each quantity names an item, and is above 0.
-void CheckQuantities(
+void CheckTotes(
     Checker &checker, const Jettison::Sim::DefinitionRegistry &registry,
-    const std::vector<ItemQuantity> &quantities, std::string_view field)
+    const std::vector<ItemTotes> &counts, std::string_view field)
 {
-	checker.Require(!quantities.empty(), field, "holds none");
-	for (const ItemQuantity &quantity : quantities)
+	checker.Require(!counts.empty(), field, "holds none");
+	std::set<std::string, std::less<>> items;
+	for (const ItemTotes &count : counts)
 	{
-		const auto *pItem = registry.Find<Core::ItemNode>(RegistryName(quantity.itemId));
+		const auto *pItem = registry.Find<Core::ItemNode>(RegistryName(count.itemId));
 		checker.Require(
-		    pItem != nullptr && pItem->itemId == quantity.itemId, field,
-		    std::format("'{}' names no item", quantity.itemId));
+		    pItem != nullptr && pItem->itemId == count.itemId, field,
+		    std::format("'{}' names no item", count.itemId));
 		checker.Require(
-		    Positive(quantity.quantity), field,
-		    std::format("'{}' must be a quantity above 0", quantity.itemId));
+		    count.totes > 0, field, std::format("'{}' must be a count of totes above 0", count.itemId));
+		checker.Require(
+		    items.insert(count.itemId).second, field, std::format("'{}' is given twice", count.itemId));
 	}
 }
 
@@ -740,8 +742,8 @@ void CheckTuning(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 			checker.Require(
 			    recipes.insert(recipe.recipeId).second, "recipes",
 			    std::format("'{}' is given twice", recipe.recipeId));
-			CheckQuantities(checker, registry, recipe.inputs, "recipes");
-			CheckQuantities(checker, registry, recipe.outputs, "recipes");
+			CheckTotes(checker, registry, recipe.inputs, "recipes");
+			CheckTotes(checker, registry, recipe.outputs, "recipes");
 		}
 		std::set<std::string, std::less<>> projects;
 		for (const ProjectDefinition &project : tuning.projects)
@@ -758,7 +760,10 @@ void CheckTuning(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 				    std::format(
 				        "'{}' requires '{}', which names no skill", project.projectId, skill.skillId));
 			}
-			CheckQuantities(checker, registry, project.inputs, "projects");
+			CheckTotes(checker, registry, project.inputs, "projects");
+			checker.Require(
+			    project.workDays > 0, "projects",
+			    std::format("'{}' workDays must be above 0", project.projectId));
 			checker.Require(
 			    recipes.contains(project.unlocksRecipe), "projects",
 			    std::format(
@@ -888,11 +893,11 @@ void CheckProjects(
 		        "'{}' project '{}' needs an operational workshop", region.regionId,
 		        project->projectId));
 
-		std::vector<ItemQuantity> needed = project->inputs;
+		std::vector<ItemTotes> needed = project->inputs;
 		const auto recipe =
 		    std::ranges::find(tuning.recipes, project->unlocksRecipe, &RecipeDefinition::recipeId);
 		needed.insert(needed.end(), recipe->inputs.begin(), recipe->inputs.end());
-		for (const ItemQuantity &input : needed)
+		for (const ItemTotes &input : needed)
 		{
 			const bool made = std::ranges::any_of(
 			    scenario.venues,

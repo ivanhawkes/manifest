@@ -353,23 +353,24 @@ TEST_CASE("the_balance_tuning_reproduces_the_plans_worked_examples")
 	// A 10,000-credit offer locks a 1,000-credit bond.
 	CHECK(10000.0 * tuning.procurement.performanceSecurityRate == doctest::Approx(1000.0));
 
-	// The Bronze project takes 90 kg of copper and 10 kg of tin, and each batch after it 9 kg and
-	// 1 kg into 10 kg of bronze, in the metals' unit, the tonne.
-	const auto kilograms = [](const auto &quantities)
+	// The Bronze project takes 9 totes of copper and 1 of tin and 7 days' work, and each batch after
+	// it 9 and 1 into 10 of bronze (D-101).
+	const auto totes = [](const auto &counts)
 	{
-		std::vector<std::pair<std::string, double>> result;
-		result.reserve(quantities.size());
-		for (const auto &entry : quantities)
-			result.emplace_back(entry.itemId, entry.quantity * 1000.0);
+		std::vector<std::pair<std::string, std::uint64_t>> result;
+		result.reserve(counts.size());
+		for (const auto &entry : counts)
+			result.emplace_back(entry.itemId, entry.totes);
 		return result;
 	};
-	using Kilograms = std::vector<std::pair<std::string, double>>;
+	using Totes = std::vector<std::pair<std::string, std::uint64_t>>;
 	REQUIRE(tuning.projects.size() == 1);
 	CHECK(tuning.projects[0].unlocksRecipe == "RecipeBronze");
-	CHECK(kilograms(tuning.projects[0].inputs) == Kilograms{{"ItemCopper", 90.0}, {"ItemTin", 10.0}});
+	CHECK(tuning.projects[0].workDays == 7);
+	CHECK(totes(tuning.projects[0].inputs) == Totes{{"ItemCopper", 9}, {"ItemTin", 1}});
 	REQUIRE(tuning.recipes.size() == 1);
-	CHECK(kilograms(tuning.recipes[0].inputs) == Kilograms{{"ItemCopper", 9.0}, {"ItemTin", 1.0}});
-	CHECK(kilograms(tuning.recipes[0].outputs) == Kilograms{{"ItemBronze", 10.0}});
+	CHECK(totes(tuning.recipes[0].inputs) == Totes{{"ItemCopper", 9}, {"ItemTin", 1}});
+	CHECK(totes(tuning.recipes[0].outputs) == Totes{{"ItemBronze", 10}});
 }
 
 TEST_CASE("every_item_carries_its_age_and_category_link")

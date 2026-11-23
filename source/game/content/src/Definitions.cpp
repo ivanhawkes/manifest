@@ -185,9 +185,9 @@ void RegisterTypes()
 		    .Field<&ItemSelection::itemId>("itemId", kDefined);
 		RegisterType<SkillSelection>("Manifest.SkillSelection")
 		    .Field<&SkillSelection::skillId>("skillId", kDefined);
-		RegisterType<ItemQuantity>("Manifest.ItemQuantity")
-		    .Field<&ItemQuantity::itemId>("itemId", kDefined)
-		    .Field<&ItemQuantity::quantity>("quantity", kDefined);
+		RegisterType<ItemTotes>("Manifest.ItemTotes")
+		    .Field<&ItemTotes::itemId>("itemId", kDefined)
+		    .Field<&ItemTotes::totes>("totes", kDefined);
 		RegisterType<EconomyTuning>("Manifest.EconomyTuning")
 		    .Field<&EconomyTuning::intervalSeconds>("intervalSeconds", kDefined)
 		    .Field<&EconomyTuning::wageTaxRate>("wageTaxRate", kDefined);
@@ -264,6 +264,7 @@ void RegisterTypes()
 		    .Field<&ProjectDefinition::projectId>("projectId", kDefined)
 		    .Field<&ProjectDefinition::requiredSkills>("requires", kDefined)
 		    .Field<&ProjectDefinition::inputs>("inputs", kDefined)
+		    .Field<&ProjectDefinition::workDays>("workDays", kDefined)
 		    .Field<&ProjectDefinition::unlocksRecipe>("unlocksRecipe", kDefined);
 		RegisterType<RecipeDefinition>("Manifest.Recipe")
 		    .Field<&RecipeDefinition::recipeId>("recipeId", kDefined)

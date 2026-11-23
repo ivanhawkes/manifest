@@ -50,6 +50,7 @@ The modules, in dependency order:
 | `command` | The one admission path into the hosted world and every actor's saved request ledger: ordering, retries, bounds and structured results (`Requests`) | World, Jettison Serialise and Sim |
 | `company` | A player's company as commands on that path: provisioning (principal, company and credits, the starter docked at the scenario's starter venue) and its ships' cargo loaded and unloaded at their venue | Content, World, Command |
 | `query` | What an actor may see of the hosted world: a value snapshot at a completed step of their own company's credits, stock, ships and cargo (`Observe`); no market yet | World, Command |
+| `procurement` | Regions' public projects (W12): their inputs consumed once, their work at the region's workshop and the recipe it unlocks there | Content, world, trade |
 | `host` | Manifest composed into `Jettison::Host`: package policy and start-up | Content, world, command, Jettison Host |
 
 `Manifest::Host` is outside `Manifest::Game`, so the model never depends on the host that drives

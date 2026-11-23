@@ -15,6 +15,7 @@ add_subdirectory(travel)
 add_subdirectory(trade)
 add_subdirectory(company)
 add_subdirectory(policy)
+add_subdirectory(procurement)
 add_subdirectory(query)
 
 # The complete game model, analogous to Jettison::Engine. Retain the existing
@@ -24,7 +25,7 @@ add_library(Manifest::Game ALIAS manifest_game)
 add_library(Manifest::Core ALIAS manifest_game)
 target_link_libraries(manifest_game INTERFACE
     Manifest::Types Manifest::Config Manifest::Universe Manifest::Progression
-    Manifest::Sim Manifest::Ecs Manifest::Effects Manifest::Market Manifest::Space Manifest::Content Manifest::World Manifest::Command Manifest::Travel Manifest::Company Manifest::Trade Manifest::Policy Manifest::Query)
+    Manifest::Sim Manifest::Ecs Manifest::Effects Manifest::Market Manifest::Space Manifest::Content Manifest::World Manifest::Command Manifest::Travel Manifest::Company Manifest::Trade Manifest::Policy Manifest::Procurement Manifest::Query)
 
 add_subdirectory(host)
 

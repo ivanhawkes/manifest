@@ -35,7 +35,10 @@ enum class Kind
 	EmployerAccount,
 	Household,
 	// A venue's market, by the venue's ID: its Sales (W07).
-	Market
+	Market,
+	// A region's public project, by ProjectId: its Project and the inputs delivered to it, its Stock
+	// (W12).
+	Project
 };
 
 // The account of an owner of goods: a Company's, a Broker's, an Employer's or a Household's.
@@ -81,6 +84,60 @@ struct Region
 	double health{0.0};
 	double happiness{0.0};
 };
+
+// What a region knows, each list sorted and none in it twice: its skills, by Skill node ID, and the
+// recipes its projects have unlocked there (W12), which outlast the facility that worked them.
+struct Knowledge
+{
+	std::vector<std::string> skills;
+	std::vector<std::string> recipes;
+
+	bool operator==(const Knowledge &) const = default;
+};
+
+// One of a region's facilities, as the scenario seeds it.
+struct Facility
+{
+	std::string facilityId;
+	Content::FacilityKind kind{Content::FacilityKind::Workshop};
+	bool operational{false};
+
+	bool operator==(const Facility &) const = default;
+};
+
+// A region's facilities, by ID, none twice.
+struct Facilities
+{
+	std::vector<Facility> facilities;
+
+	bool operator==(const Facilities &) const = default;
+};
+
+enum class ProjectPhase
+{
+	Tendering,
+	Working,
+	Paused,
+	Done
+};
+
+// A region's public project (W12). Tendering, it gathers its inputs in its Stock, at the venues they
+// were accepted at; once every one is held, its region knows its skills and has an operational
+// workshop, they are consumed once and it is Working, a step at a time while the workshop stays
+// operational and Paused while not, worked counting the steps; at its last it is Done, its recipe
+// unlocked in its region's Knowledge.
+struct Project
+{
+	std::string regionId;
+	std::string projectId;
+	ProjectPhase phase{ProjectPhase::Tendering};
+	std::uint64_t worked{0};
+
+	bool operator==(const Project &) const = default;
+};
+
+// The ID of a region's project, its Kind::Project entity's.
+std::string ProjectId(std::string_view regionId, std::string_view projectId);
 
 // The owner is the account entity's Identity: its kind and the owner's ID.
 struct Account
@@ -638,6 +695,12 @@ std::optional<std::string> Broken(const Paid &paid);
 const PaidPrice *Find(const Paid &paid, std::string_view itemId);
 
 std::optional<std::string> Broken(const Policy &policy);
+
+std::optional<std::string> Broken(const Knowledge &knowledge);
+
+std::optional<std::string> Broken(const Facilities &facilities);
+
+std::optional<std::string> Broken(const Project &project);
 
 std::optional<std::string> Broken(const Job &job);
 

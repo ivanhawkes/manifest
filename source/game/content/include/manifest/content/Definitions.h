@@ -71,11 +71,11 @@ struct GameModeDefinition
 	std::optional<CruiseModel> cruise;
 };
 
-struct ItemQuantity
+// Whole totes of an item (D-087), the least of it that moves.
+struct ItemTotes
 {
 	std::string itemId;
-	// In the item's unit.
-	double quantity{0.0};
+	std::uint64_t totes{0};
 };
 
 // The balance inputs (data/tuning/balance.yaml), named by its file: values no rule reads yet, held to
@@ -262,19 +262,22 @@ struct ProcurementTuning
 	double performanceSecurityRate{0.0};
 };
 
+// A region's public project: its inputs, consumed once when every one is held, then its simulation
+// days of work while its workshop is operational, unlocking its recipe in that region.
 struct ProjectDefinition
 {
 	std::string projectId;
 	std::vector<SkillSelection> requiredSkills;
-	std::vector<ItemQuantity> inputs;
+	std::vector<ItemTotes> inputs;
+	std::uint32_t workDays{0};
 	std::string unlocksRecipe;
 };
 
 struct RecipeDefinition
 {
 	std::string recipeId;
-	std::vector<ItemQuantity> inputs;
-	std::vector<ItemQuantity> outputs;
+	std::vector<ItemTotes> inputs;
+	std::vector<ItemTotes> outputs;
 };
 
 struct TuningDefinition

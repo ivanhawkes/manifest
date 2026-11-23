@@ -25,6 +25,13 @@ struct Installed
 	std::size_t cartridges{0};
 };
 
+// What a project needs, by its ID: its inputs' totes, by item, and the steps of its work.
+struct ProjectNeeds
+{
+	std::map<std::string, std::uint64_t, std::less<>> inputs;
+	std::uint64_t workSteps{0};
+};
+
 // The saved part of Identities: how many IDs each issued kind has handed out.
 struct IdentityCounters
 {
@@ -105,6 +112,13 @@ class Identities final : public Jettison::Sim::WorldService
 		m_freshCartridge = freshCartridge;
 	}
 
+	// What each project needs, by project ID, which Load holds each Project and its Stock to. Unset, a
+	// load checks only each Project's own rules (Broken).
+	void SetProjects(std::map<std::string, ProjectNeeds, std::less<>> projects)
+	{
+		m_projects = std::move(projects);
+	}
+
 	void Save(Jettison::Serialise::BinaryWriter &writer) const override;
 
 	// Fails the save for two entities of one kind and ID, an empty ID, a Stock, Cargo, Order,
@@ -115,17 +129,25 @@ class Identities final : public Jettison::Sim::WorldService
 	// that break their rules, or, once SetHolds has run, a ship with no hold or carrying more than it
 	// holds, lots and opened totes together, and once SetLifeSupport has, more in a tank or a cartridge
 	// than its hull's holds; a Fuel of no number or less than nothing, or once SetFuelTanks has run,
-	// more of either than its ship holds.
+	// more of either than its ship holds; Knowledge, Facilities or a Project that break their rules, a
+	// Project with no Stock or of no region with its Knowledge and Facilities, and once SetProjects has
+	// run, a project of no ID it gave, worked past its steps or Done short of them, or holding what it
+	// does not need: an item it does not take, more than it takes, or anything once its inputs are
+	// consumed.
 	std::function<void()> Load(
 	    Jettison::Serialise::BinaryReader &reader, const entt::registry &loaded,
 	    std::span<const entt::meta_any> queued) override;
 
   private:
+	void CheckProject(
+	    Jettison::Serialise::BinaryReader &reader, const Project &project, const Stock &stock) const;
+
 	std::map<std::pair<Kind, std::string>, entt::entity> m_index;
 	IdentityCounters m_counters;
 	HoldOf m_holds;
 	FuelTanksOf m_fuelTanks;
 	std::optional<std::map<std::string, Installed, std::less<>>> m_installed;
 	double m_freshCartridge{0.0};
+	std::optional<std::map<std::string, ProjectNeeds, std::less<>>> m_projects;
 };
 } // namespace Manifest::World

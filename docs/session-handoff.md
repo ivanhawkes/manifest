@@ -1,12 +1,14 @@
 # Session handoff
 
-## Next, on resuming — 2026-11-22 (after W21)
+## Next, on resuming — 2026-11-23 (W12 slice 1)
 
 W21 is done: [fuel burn](stage-4-trading-plan.md#delivered-w21-2026-11-22), on [D-107](decision-ledger.md#d-107) and
 [D-108](decision-ledger.md#d-108)'s torch, the SDK pin `2b3cfce`. Jettison's station traffic lanes were measured
-and parked (`fixture_traffic`, 2026-11-22), to be taken up when it fails. Next: W12, competitive procurement on the
-[tender contract](stage-4-trading-plan.md#tender-contract-w11-2026-11-21), its AI issuer spending
-`Trade::Budget` and calling `Trade::Reliefs`. W22, the drives past the torch, waits for the first
+and parked (`fixture_traffic`, 2026-11-22), to be taken up when it fails; the space extraction is done, the SDK
+pinned to `14fc23a`. W12, competitive procurement on the
+[tender contract](stage-4-trading-plan.md#tender-contract-w11-2026-11-21), is under way: slice 1, the
+project, its work and its unlock, is done (2026-11-23), so slice 2, tenders and their accounts with the
+AI issuer spending `Trade::Budget` and calling `Trade::Reliefs`, is next. W22, the drives past the torch, waits for the first
 larger hull. A commit is gated in the second checkout, `build/gate-tree`, with `--tidy`, editing
 alone beside it ([gating beside the work](build-and-gates.md#gating-beside-the-work)). A ship steered
 in a station's frame still runs every step, which is most of the zero-client run's steps, more so
