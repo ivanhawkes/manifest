@@ -185,8 +185,11 @@ Result Requests::Act(
 	if (!handler->second.decodes(payload))
 		return Result::MalformedPayload;
 	const std::uint64_t running = std::exchange(m_running, 0);
+	const std::uint64_t order =
+	    std::exchange(m_runningOrder, std::numeric_limits<std::uint64_t>::max());
 	const Result result = handler->second.apply(world, actor, payload);
 	m_running = running;
+	m_runningOrder = order;
 	return result;
 }
 
@@ -244,11 +247,13 @@ void Requests::Execute(Jettison::Sim::SimWorld &world, const Request &request)
 	const auto handler = m_handlers.find(request.command);
 	const Actor actor{request.actorKind, request.actorId};
 	m_running = request.sequence;
+	m_runningOrder = request.order;
 	const Result result =
 	    handler == m_handlers.end() || handler->second.version != request.version
 	        ? Result::UnsupportedCommand
 	        : handler->second.apply(world, actor, std::as_bytes(std::span{request.payload}));
 	m_running = 0;
+	m_runningOrder = std::numeric_limits<std::uint64_t>::max();
 	ledger.completed.push_back({request, world.Clock().Step(), result});
 	if (ledger.completed.size() > kRetainedResults)
 	{

@@ -34,6 +34,7 @@ Snapshot Observe(
 		     registry.get<World::Account>(account).balance,
 		     registry.get<World::Stock>(entity).holdings,
 		     {},
+		     {},
 		     {}});
 	}
 	std::ranges::sort(snapshot.companies, {}, &CompanyView::companyId);
@@ -69,9 +70,18 @@ Snapshot Observe(
 		if (owner != snapshot.companies.end() && owner->companyId == order.ownerId)
 			owner->orders.push_back({identity.id, order});
 	}
+	for (const auto &[entity, identity, bid] :
+	     registry.view<const World::Identity, const World::Bid>().each())
+	{
+		const auto owner =
+		    std::ranges::lower_bound(snapshot.companies, bid.companyId, {}, &CompanyView::companyId);
+		if (owner != snapshot.companies.end() && owner->companyId == bid.companyId)
+			owner->bids.push_back({identity.id, bid});
+	}
 	for (CompanyView &company : snapshot.companies)
 	{
 		std::ranges::sort(company.ships, {}, &ShipView::shipId);
+		std::ranges::sort(company.bids, {}, &BidView::bidId);
 		std::ranges::sort(
 		    company.orders, {}, [](const OrderView &view) { return view.order.sequence; });
 	}

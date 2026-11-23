@@ -42,7 +42,11 @@ enum class Kind
 	// A region's call for goods, by its ID (Procurement::Publish), and the budget it reserves from the
 	// region's public account, by the same ID, while it is open (W12).
 	Tender,
-	TenderAccount
+	TenderAccount,
+	// A company's sealed bid on a tender, by BidId (W12).
+	Bid,
+	// The performance security a tender's winner holds while its contract runs, by the tender's ID.
+	BondAccount
 };
 
 // The account of an owner of goods: a Company's, a Broker's, an Employer's or a Household's.
@@ -146,9 +150,24 @@ std::string ProjectId(std::string_view regionId, std::string_view projectId);
 enum class TenderState
 {
 	Open,
+	// Its contract running, with the company its award went to.
+	Awarded,
 	// Closed: cancelled by its issuer before its bid close, or closed with no award.
 	Cancelled,
 	Unawarded
+};
+
+// Why a tender closed its bidding as it did, posted with its award.
+enum class Award
+{
+	// Not yet, or cancelled.
+	None,
+	// To its lowest bid, or past lower ones whose companies could not fund their bonds.
+	Lowest,
+	PastUnbonded,
+	// Unawarded: no bid, or none whose company could fund its bond.
+	NoBids,
+	Unbonded
 };
 
 // A region's tender (W12, D-101): its terms, frozen when published and posted to every player. Its
@@ -173,9 +192,35 @@ struct Tender
 	std::uint32_t deliveryDays{0};
 	TenderState state{TenderState::Open};
 	std::uint64_t closed{0};
+	// Posted at its bid close: why, and for an award its company, its total in whole credits, the bond
+	// that company holds in the BondAccount, and the step its delivery closes at.
+	Award award{Award::None};
+	std::string companyId{};
+	std::int64_t price{0};
+	std::int64_t bond{0};
+	std::uint64_t deliveryClose{0};
 
 	bool operator==(const Tender &) const = default;
 };
+
+// A company's sealed bid on an open tender (D-101), seen by its company's principal alone: its total
+// in whole credits for all the tender's totes by its delivery close, from 1 to its budget; its
+// revision, from 1, the next for each replacement; and the step and the global request order it was
+// last accepted at, by which the earlier of two equal totals wins.
+struct Bid
+{
+	std::string tenderId;
+	std::string companyId;
+	std::int64_t total{0};
+	std::uint64_t revision{0};
+	std::uint64_t step{0};
+	std::uint64_t order{0};
+
+	bool operator==(const Bid &) const = default;
+};
+
+// The ID of a company's bid on a tender, its Kind::Bid entity's.
+std::string BidId(std::string_view tenderId, std::string_view companyId);
 
 // The owner is the account entity's Identity: its kind and the owner's ID.
 struct Account
@@ -741,6 +786,8 @@ std::optional<std::string> Broken(const Facilities &facilities);
 std::optional<std::string> Broken(const Project &project);
 
 std::optional<std::string> Broken(const Tender &tender);
+
+std::optional<std::string> Broken(const Bid &bid);
 
 std::optional<std::string> Broken(const Job &job);
 

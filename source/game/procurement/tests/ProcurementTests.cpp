@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <map>
 #include <string>
 #include <vector>
@@ -75,7 +76,7 @@ struct Hosted
 		Register(world, requests, identities, Governance());
 		World::CreateInitialState(world, identities, Governance());
 		Manifest::Travel::OpenStations(world, fleet);
-		for (const std::string name : {"Ada", "Bea"})
+		for (const std::string name : {"Ada", "Bea", "Cy"})
 			world.Registry().emplace<World::Principal>(
 			    identities.Create(world.Registry(), Kind::Principal, name), name);
 	}
@@ -87,6 +88,46 @@ struct Hosted
 		    .get<World::Organisation>(
 		        identities.Find(Kind::Organisation, "OrganisationForgeEastCouncil"))
 		    .principalId = "Ada";
+	}
+
+	// Fixture bootstrap: a company of the principal's with its credits, as provisioning gives one.
+	void AddCompany(const std::string &principal, const std::string &company, std::int64_t credits)
+	{
+		entt::registry &registry = world.Registry();
+		if (identities.Find(Kind::Principal, principal) == entt::null)
+			registry.emplace<World::Principal>(
+			    identities.Create(registry, Kind::Principal, principal), principal);
+		const entt::entity entity = identities.Create(registry, Kind::Company, company);
+		registry.emplace<World::Company>(entity, principal, company);
+		registry.emplace<World::Stock>(entity);
+		registry.emplace<World::Account>(
+		    identities.Create(registry, Kind::CompanyAccount, company), credits);
+	}
+
+	// The request admitted as the actor's next, to run in the next step; its sequence.
+	template <typename T>
+	std::uint64_t Queue(const Actor &actor, std::string_view command, const T &payload)
+	{
+		const std::uint64_t sequence = requests.NextSequence(actor);
+		const std::vector<std::byte> bytes = BinaryArchive::Write(payload, FormatVersion{kVersion});
+		REQUIRE(
+		    requests.Admit(world, actor, sequence, std::string{command}, kVersion, bytes).status ==
+		    Receipt::Status::Queued);
+		return sequence;
+	}
+
+	Result Outcome(const Actor &actor, std::uint64_t sequence) const
+	{
+		const auto completed = requests.Outcome(actor, sequence);
+		REQUIRE(completed);
+		return completed->result;
+	}
+
+	World::Tender TenderOf(const std::string &id) const
+	{
+		const entt::entity entity = identities.Find(Kind::Tender, id);
+		REQUIRE(entity != entt::null);
+		return world.Registry().get<World::Tender>(entity);
 	}
 
 	// The request admitted as the actor's next and run in the next step.
@@ -699,4 +740,267 @@ TEST_CASE("A save whose tender reserves other than its budget does not load")
 		        .projectId = "ProjectNowhere";
 	    });
 	CHECK(hosted.world.StateHash() == before);
+}
+
+
+TEST_CASE("Sealed bids are placed, replaced at their revision and withdrawn, each its company's alone")
+{
+	Hosted hosted;
+	hosted.Direct();
+	hosted.AddCompany("Ada", "CompanyA", 10'000);
+	hosted.AddCompany("Bea", "CompanyB", 10'000);
+	REQUIRE(hosted.Publishes("ItemTin", 1, 10'000, 1) == Result::Succeeded);
+	const std::string tin = TenderId(kEast, kBronze, "ItemTin", 1);
+	const auto bid = [&](const Actor &actor, const std::string &company, std::int64_t total,
+	                     std::uint64_t revision, const std::string &tender = "")
+	{ return hosted.Run(actor, kBid, Bid{tender.empty() ? tin : tender, company, total, revision}); };
+
+	CHECK(bid(kBea, "CompanyB", 8'000, 0) == Result::Succeeded);
+	CHECK(bid(kBea, "CompanyB", 7'000, 0) == Result::StaleRevision);
+	CHECK(bid(kBea, "CompanyB", 7'000, 1) == Result::Succeeded);
+	CHECK(bid(kBea, "CompanyB", 6'000, 1) == Result::StaleRevision);
+	CHECK(bid(kBea, "CompanyA", 7'000, 0) == Result::NotAuthorised);
+	CHECK(bid(kBea, "CompanyNowhere", 7'000, 0) == Result::UnknownTarget);
+	CHECK(bid(kBea, "CompanyB", 7'000, 2, "TenderNowhere") == Result::UnknownTarget);
+	CHECK(bid(kBea, "CompanyB", 0, 2) == Result::InvalidPrice);
+	CHECK(bid(kBea, "CompanyB", 10'001, 2) == Result::InvalidPrice);
+	// The governor's own company bids as any other.
+	CHECK(bid(kAda, "CompanyA", 9'000, 0) == Result::Succeeded);
+
+	const auto bidsOf = [&](const Actor &actor)
+	{
+		std::vector<Manifest::Query::BidView> bids;
+		for (const Manifest::Query::CompanyView &company :
+		     Manifest::Query::Observe(hosted.world, hosted.identities, actor).companies)
+			bids.insert(bids.end(), company.bids.begin(), company.bids.end());
+		return bids;
+	};
+	const std::vector<Manifest::Query::BidView> beas = bidsOf(kBea);
+	REQUIRE(beas.size() == 1);
+	CHECK(beas[0].bidId == World::BidId(tin, "CompanyB"));
+	CHECK(beas[0].bid.total == 7'000);
+	CHECK(beas[0].bid.revision == 2);
+	const std::vector<Manifest::Query::BidView> adas = bidsOf(kAda);
+	REQUIRE(adas.size() == 1);
+	CHECK(adas[0].bid.companyId == "CompanyA");
+
+	CHECK(hosted.Run(kAda, kWithdraw, Withdraw{tin, "CompanyB"}) == Result::NotAuthorised);
+	CHECK(hosted.Run(kBea, kWithdraw, Withdraw{tin, "CompanyB"}) == Result::Succeeded);
+	CHECK(hosted.Run(kBea, kWithdraw, Withdraw{tin, "CompanyB"}) == Result::UnknownTarget);
+	CHECK(bidsOf(kBea).empty());
+	CHECK(bid(kBea, "CompanyB", 7'000, 0) == Result::Succeeded);
+}
+
+
+TEST_CASE("At its bid close a tender goes to its lowest bid, then the earliest, its bond held")
+{
+	Hosted hosted;
+	hosted.Direct();
+	hosted.AddCompany("Bea", "CompanyB", 10'000);
+	hosted.AddCompany("Cy", "CompanyC", 10'000);
+	hosted.AddCompany("Ada", "CompanyA", 10'000);
+	REQUIRE(hosted.Publishes("ItemTin", 1, 10'000, 1, 30) == Result::Succeeded);
+	const std::string tin = TenderId(kEast, kBronze, "ItemTin", 1);
+	// Cy's is admitted after Bea's, in the same step, at the same total.
+	const std::uint64_t beas = hosted.Queue(kBea, kBid, Bid{tin, "CompanyB", 6'000, 0});
+	const std::uint64_t cys =
+	    hosted.Queue(Actor{ActorKind::Principal, "Cy"}, kBid, Bid{tin, "CompanyC", 6'000, 0});
+	const std::uint64_t adas = hosted.Queue(kAda, kBid, Bid{tin, "CompanyA", 7'000, 0});
+	hosted.world.Step();
+	CHECK(hosted.Outcome(kBea, beas) == Result::Succeeded);
+	CHECK(hosted.Outcome(Actor{ActorKind::Principal, "Cy"}, cys) == Result::Succeeded);
+	CHECK(hosted.Outcome(kAda, adas) == Result::Succeeded);
+
+	const std::uint64_t close = hosted.TenderOf(tin).bidClose;
+	hosted.FastForwardTo(close);
+	const std::int64_t before = hosted.Public();
+	hosted.world.Step();
+	const World::Tender awarded = hosted.TenderOf(tin);
+	CHECK(awarded.state == TenderState::Awarded);
+	CHECK(awarded.award == World::Award::Lowest);
+	CHECK(awarded.companyId == "CompanyB");
+	CHECK(awarded.price == 6'000);
+	CHECK(awarded.bond == 600);
+	CHECK(awarded.deliveryClose == close + 30 * kDay);
+	CHECK(hosted.Public() == before + 4'000);
+	CHECK(hosted.Balance(Kind::TenderAccount, tin) == 6'000);
+	CHECK(hosted.Balance(Kind::BondAccount, tin) == 600);
+	CHECK(hosted.Balance(Kind::CompanyAccount, "CompanyB") == 9'400);
+	CHECK(hosted.Balance(Kind::CompanyAccount, "CompanyC") == 10'000);
+	CHECK(hosted.world.Registry().view<const World::Bid>().empty());
+	// Posted: the winner and its total, seen by a player who did not bid.
+	const Manifest::Query::Snapshot seen =
+	    Manifest::Query::Observe(hosted.world, hosted.identities, kAda);
+	REQUIRE(seen.tenders.size() == 1);
+	CHECK(seen.tenders[0].tender == awarded);
+}
+
+
+TEST_CASE("Equal totals accepted in one step and order go to the company of the lower ID")
+{
+	Hosted hosted;
+	hosted.Direct();
+	hosted.AddCompany("Bea", "CompanyB", 10'000);
+	hosted.AddCompany("Ada", "CompanyA", 10'000);
+	REQUIRE(hosted.Publishes("ItemTin", 1, 10'000, 1) == Result::Succeeded);
+	const std::string tin = TenderId(kEast, kBronze, "ItemTin", 1);
+	// As agents act, after their step's requests: Bea's first.
+	CHECK(
+	    hosted.requests.Act(hosted.world, kBea, kBid, kVersion, Bid{tin, "CompanyB", 5'000, 0}) ==
+	    Result::Succeeded);
+	CHECK(
+	    hosted.requests.Act(hosted.world, kAda, kBid, kVersion, Bid{tin, "CompanyA", 5'000, 0}) ==
+	    Result::Succeeded);
+	hosted.FastForwardTo(hosted.TenderOf(tin).bidClose + 1);
+	CHECK(hosted.TenderOf(tin).companyId == "CompanyA");
+}
+
+
+TEST_CASE("A winner short of its bond is passed over, and an earlier award's bond spends a later one's")
+{
+	Hosted hosted;
+	hosted.Direct();
+	hosted.AddCompany("Bea", "CompanyB", 650);
+	hosted.AddCompany("Cy", "CompanyC", 10'000);
+	const Actor cy{ActorKind::Principal, "Cy"};
+	const std::string east{kEast};
+	const std::string bronze{kBronze};
+	const std::string forge{kForge};
+	for (const char *pItem : {"ItemCopper", "ItemTin", "ItemCopper"})
+		hosted.Queue(kAda, kPublish, Publish{east, bronze, pItem, forge, 1, 10'000, 1, 30});
+	hosted.world.Step();
+	const std::string first = TenderId(kEast, kBronze, "ItemCopper", 1);
+	const std::string second = TenderId(kEast, kBronze, "ItemTin", 2);
+	const std::string third = TenderId(kEast, kBronze, "ItemCopper", 3);
+	for (const std::string &tender : {first, second, third})
+		CHECK(hosted.Run(kBea, kBid, Bid{tender, "CompanyB", 6'000, 0}) == Result::Succeeded);
+	CHECK(hosted.Run(cy, kBid, Bid{second, "CompanyC", 6'500, 0}) == Result::Succeeded);
+	const std::uint64_t close = hosted.TenderOf(first).bidClose;
+	REQUIRE(hosted.TenderOf(third).bidClose == close);
+	hosted.FastForwardTo(close + 1);
+
+	CHECK(hosted.TenderOf(first).companyId == "CompanyB");
+	CHECK(hosted.TenderOf(first).award == World::Award::Lowest);
+	CHECK(hosted.Balance(Kind::CompanyAccount, "CompanyB") == 50);
+	const World::Tender passed = hosted.TenderOf(second);
+	CHECK(passed.companyId == "CompanyC");
+	CHECK(passed.award == World::Award::PastUnbonded);
+	CHECK(passed.price == 6'500);
+	CHECK(passed.bond == 650);
+	const World::Tender unbonded = hosted.TenderOf(third);
+	CHECK(unbonded.state == TenderState::Unawarded);
+	CHECK(unbonded.award == World::Award::Unbonded);
+	CHECK(unbonded.closed == close);
+	CHECK(hosted.identities.Find(Kind::TenderAccount, third) == entt::null);
+	CHECK(hosted.identities.Find(Kind::BondAccount, third) == entt::null);
+}
+
+
+TEST_CASE("A bid or withdrawal at its tender's bid close is refused, and a tender's bids are bounded")
+{
+	Hosted hosted;
+	hosted.Direct();
+	hosted.AddCompany("Bea", "CompanyB", 10'000);
+	REQUIRE(hosted.Publishes("ItemTin", 1, 10'000, 1) == Result::Succeeded);
+	const std::string tin = TenderId(kEast, kBronze, "ItemTin", 1);
+	for (int count = 1; count < 32; ++count)
+	{
+		const std::string principal = std::format("P{}", count);
+		hosted.AddCompany(principal, std::format("CompanyP{:02}", count), 10'000);
+		CHECK(
+		    hosted.Run(
+		        Actor{ActorKind::Principal, principal}, kBid,
+		        Bid{tin, std::format("CompanyP{:02}", count), 9'000, 0}) == Result::Succeeded);
+	}
+	CHECK(hosted.Run(kBea, kBid, Bid{tin, "CompanyB", 9'000, 0}) == Result::Succeeded);
+	hosted.AddCompany("P32", "CompanyP32", 10'000);
+	CHECK(
+	    hosted.Run(Actor{ActorKind::Principal, "P32"}, kBid, Bid{tin, "CompanyP32", 9'000, 0}) ==
+	    Result::LimitReached);
+	// A replacement is no new bid.
+	CHECK(hosted.Run(kBea, kBid, Bid{tin, "CompanyB", 8'000, 1}) == Result::Succeeded);
+
+	hosted.FastForwardTo(hosted.TenderOf(tin).bidClose);
+	const std::uint64_t bid = hosted.Queue(kBea, kBid, Bid{tin, "CompanyB", 7'000, 2});
+	const std::uint64_t withdrawal = hosted.Queue(kBea, kWithdraw, Withdraw{tin, "CompanyB"});
+	hosted.world.Step();
+	CHECK(hosted.Outcome(kBea, bid) == Result::Closed);
+	CHECK(hosted.Outcome(kBea, withdrawal) == Result::Closed);
+	CHECK(hosted.TenderOf(tin).companyId == "CompanyB");
+	CHECK(hosted.TenderOf(tin).price == 8'000);
+}
+
+
+TEST_CASE("The AI tenders again for what closed unawarded, and not for what its contract calls for")
+{
+	Hosted hosted;
+	hosted.AddCompany("Bea", "CompanyB", 1'000'000);
+	hosted.world.Step();
+	const std::string tin = TenderId(kEast, kBronze, "ItemTin", 2);
+	CHECK(hosted.Run(kBea, kBid, Bid{tin, "CompanyB", 100, 0}) == Result::Succeeded);
+	hosted.FastForwardTo(kDay + 1);
+	CHECK(hosted.TenderOf(tin).state == TenderState::Awarded);
+	CHECK(hosted.TenderOf(TenderId(kEast, kBronze, "ItemCopper", 1)).state == TenderState::Unawarded);
+	hosted.FastForwardTo(kDay + 120);
+	std::map<std::string, std::size_t> open;
+	for (const auto &[id, tender] : hosted.Tenders())
+		if (tender.state == TenderState::Open || tender.state == TenderState::Awarded)
+			++open[tender.itemId];
+	CHECK(open == std::map<std::string, std::size_t>{{"ItemCopper", 1}, {"ItemTin", 1}});
+}
+
+
+TEST_CASE("A save whose award or bids break their rules does not load")
+{
+	Hosted hosted;
+	hosted.Direct();
+	hosted.AddCompany("Bea", "CompanyB", 10'000);
+	const std::uint64_t before = hosted.world.StateHash();
+	const std::string tin = TenderId(kEast, kBronze, "ItemTin", 1);
+	const auto awarded = [&](Hosted &broken)
+	{
+		broken.Direct();
+		broken.AddCompany("Bea", "CompanyB", 10'000);
+		REQUIRE(broken.Publishes("ItemTin", 1, 10'000, 1) == Result::Succeeded);
+		REQUIRE(broken.Run(kBea, kBid, Bid{tin, "CompanyB", 6'000, 0}) == Result::Succeeded);
+		broken.FastForwardTo(broken.TenderOf(tin).bidClose + 1);
+		REQUIRE(broken.TenderOf(tin).state == TenderState::Awarded);
+	};
+	const auto refused = [&](auto change)
+	{
+		Hosted broken;
+		awarded(broken);
+		change(broken);
+		CHECK_THROWS_AS(hosted.world.Load(broken.world.Save()), Jettison::Serialise::FormatError);
+	};
+	const auto account = [](Hosted &broken, Kind kind, const std::string &id) -> World::Account &
+	{ return broken.world.Registry().get<World::Account>(broken.identities.Find(kind, id)); };
+	const auto tender = [&](Hosted &broken) -> World::Tender &
+	{ return broken.world.Registry().get<World::Tender>(broken.identities.Find(Kind::Tender, tin)); };
+	refused([&](Hosted &broken) { account(broken, Kind::BondAccount, tin).balance += 1; });
+	refused([&](Hosted &broken) { account(broken, Kind::TenderAccount, tin).balance += 1; });
+	refused([&](Hosted &broken) { tender(broken).companyId = "CompanyNowhere"; });
+	refused([&](Hosted &broken) { tender(broken).price = 10'001; });
+	refused([&](Hosted &broken) { tender(broken).award = World::Award::NoBids; });
+	refused(
+	    [&](Hosted &broken)
+	    {
+		    entt::registry &registry = broken.world.Registry();
+		    registry.emplace<World::Bid>(
+		        broken.identities.Create(registry, Kind::Bid, World::BidId(tin, "CompanyB")), tin,
+		        "CompanyB", 5'000, std::uint64_t{1}, std::uint64_t{0}, std::uint64_t{0});
+	    });
+	refused(
+	    [&](Hosted &broken)
+	    {
+		    entt::registry &registry = broken.world.Registry();
+		    registry.emplace<World::Account>(
+		        broken.identities.Create(registry, Kind::BondAccount, "TenderNowhere"), 1);
+	    });
+	CHECK(hosted.world.StateHash() == before);
+
+	Hosted good;
+	awarded(good);
+	hosted.world.Load(good.world.Save());
+	CHECK(hosted.world.StateHash() == good.world.StateHash());
 }

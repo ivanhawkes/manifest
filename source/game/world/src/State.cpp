@@ -35,7 +35,9 @@ Kind AccountOf(Kind owner)
 		case Kind::Market:
 		case Kind::Project:
 		case Kind::Tender:
-		case Kind::TenderAccount: break;
+		case Kind::TenderAccount:
+		case Kind::Bid:
+		case Kind::BondAccount: break;
 	}
 	return Kind::CompanyAccount;
 }
@@ -374,10 +376,36 @@ std::optional<std::string> Broken(const Tender &tender)
 		return "a tender's totes, budget or delivery window is not above 0";
 	if (tender.bidClose <= tender.published)
 		return "a tender's bids close before it is published";
-	if ((tender.state == TenderState::Open) != (tender.closed == 0) ||
-	    (tender.state != TenderState::Open && tender.closed < tender.published))
+	const bool closed =
+	    tender.state == TenderState::Cancelled || tender.state == TenderState::Unawarded;
+	if (closed == (tender.closed == 0) || (closed && tender.closed < tender.published))
 		return "a tender closes before it is published, or is open with a close";
+	const bool awarded = tender.state == TenderState::Awarded;
+	if (awarded != (tender.award == Award::Lowest || tender.award == Award::PastUnbonded) ||
+	    (tender.state == TenderState::Unawarded) !=
+	        (tender.award == Award::NoBids || tender.award == Award::Unbonded))
+		return "a tender's award is not its state's";
+	if (awarded ? tender.companyId.empty() || tender.price < 1 || tender.price > tender.budget ||
+	                  tender.bond < 0 || tender.deliveryClose <= tender.bidClose
+	            : !tender.companyId.empty() || tender.price != 0 || tender.bond != 0 ||
+	                  tender.deliveryClose != 0)
+		return "a tender's award names no company, a total past its budget or a bond below 0, or "
+		       "one not awarded names one";
 	return std::nullopt;
+}
+
+
+std::optional<std::string> Broken(const Bid &bid)
+{
+	if (bid.tenderId.empty() || bid.companyId.empty() || bid.total < 1 || bid.revision == 0)
+		return "a bid names no tender or company, or has a total below a credit or no revision";
+	return std::nullopt;
+}
+
+
+std::string BidId(std::string_view tenderId, std::string_view companyId)
+{
+	return std::format("{}/{}", tenderId, companyId);
 }
 
 
@@ -414,7 +442,9 @@ void RegisterTypes()
 		    .Value<Kind::Market>("Market")
 		    .Value<Kind::Project>("Project")
 		    .Value<Kind::Tender>("Tender")
-		    .Value<Kind::TenderAccount>("TenderAccount");
+		    .Value<Kind::TenderAccount>("TenderAccount")
+		    .Value<Kind::Bid>("Bid")
+		    .Value<Kind::BondAccount>("BondAccount");
 		RegisterType<Identity>("Manifest.World.Identity")
 		    .Field<&Identity::kind>("kind", kSaved)
 		    .Field<&Identity::id>("id", kSaved);
@@ -623,8 +653,15 @@ void RegisterTypes()
 		    .Field<&Project::projectId>("projectId", kSaved)
 		    .Field<&Project::phase>("phase", kSaved)
 		    .Field<&Project::worked>("worked", kSaved);
+		RegisterEnum<Award>("Manifest.World.Award")
+		    .Value<Award::None>("None")
+		    .Value<Award::Lowest>("Lowest")
+		    .Value<Award::PastUnbonded>("PastUnbonded")
+		    .Value<Award::NoBids>("NoBids")
+		    .Value<Award::Unbonded>("Unbonded");
 		RegisterEnum<TenderState>("Manifest.World.TenderState")
 		    .Value<TenderState::Open>("Open")
+		    .Value<TenderState::Awarded>("Awarded")
 		    .Value<TenderState::Cancelled>("Cancelled")
 		    .Value<TenderState::Unawarded>("Unawarded");
 		RegisterType<Tender>("Manifest.World.Tender")
@@ -639,7 +676,19 @@ void RegisterTypes()
 		    .Field<&Tender::bidClose>("bidClose", kSaved)
 		    .Field<&Tender::deliveryDays>("deliveryDays", kSaved)
 		    .Field<&Tender::state>("state", kSaved)
-		    .Field<&Tender::closed>("closed", kSaved);
+		    .Field<&Tender::closed>("closed", kSaved)
+		    .Field<&Tender::award>("award", kSaved)
+		    .Field<&Tender::companyId>("companyId", kSaved)
+		    .Field<&Tender::price>("price", kSaved)
+		    .Field<&Tender::bond>("bond", kSaved)
+		    .Field<&Tender::deliveryClose>("deliveryClose", kSaved);
+		RegisterType<Bid>("Manifest.World.Bid")
+		    .Field<&Bid::tenderId>("tenderId", kSaved)
+		    .Field<&Bid::companyId>("companyId", kSaved)
+		    .Field<&Bid::total>("total", kSaved)
+		    .Field<&Bid::revision>("revision", kSaved)
+		    .Field<&Bid::step>("step", kSaved)
+		    .Field<&Bid::order>("order", kSaved);
 		RegisterType<IdentityCounters>("Manifest.World.IdentityCounters")
 		    .Field<&IdentityCounters::issued>("issued", kSaved);
 		return true;

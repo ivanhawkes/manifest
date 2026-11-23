@@ -44,7 +44,8 @@ void RegisterTypes()
 		    .Value<Result::RateTooHigh>("RateTooHigh")
 		    .Value<Result::InsufficientFuel>("InsufficientFuel")
 		    .Value<Result::Closed>("Closed")
-		    .Value<Result::LimitReached>("LimitReached");
+		    .Value<Result::LimitReached>("LimitReached")
+		    .Value<Result::StaleRevision>("StaleRevision");
 		RegisterEnum<ActorKind>("Manifest.Command.ActorKind")
 		    .Value<ActorKind::Principal>("Principal")
 		    .Value<ActorKind::Administrator>("Administrator");

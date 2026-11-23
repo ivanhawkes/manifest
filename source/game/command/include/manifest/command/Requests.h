@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <map>
 #include <optional>
 #include <span>
@@ -118,6 +119,13 @@ class Requests final : public Jettison::Sim::WorldService
 		return m_running;
 	}
 
+	// The global order of the request whose handler is running, for a handler to record; past every
+	// request's outside one, as an agent's Act is, which runs after its step's requests.
+	std::uint64_t RunningOrder() const
+	{
+		return m_runningOrder;
+	}
+
 	// The sequence an actor submits next, advertised on reconnect: 1 for one never seen.
 	std::uint64_t NextSequence(const Actor &actor) const;
 
@@ -157,6 +165,7 @@ class Requests final : public Jettison::Sim::WorldService
 	std::uint64_t m_order{0};
 	std::map<Key, ActorLedger> m_actors;
 	std::uint64_t m_running{0};
+	std::uint64_t m_runningOrder{std::numeric_limits<std::uint64_t>::max()};
 };
 
 // Registers the Request command on the world and adds the Requests service, which the world owns

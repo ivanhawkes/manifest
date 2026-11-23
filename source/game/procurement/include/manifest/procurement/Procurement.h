@@ -14,14 +14,15 @@ namespace Manifest::Procurement
 {
 // The players' command that tenders for a project's input (D-101), sent by the principal directing
 // the region's governor (World::Organisation's principalId): the totes, at most what the project still
-// needs of the item, beyond what it holds and its open tenders call for, a budget in whole credits,
-// moved from the region's public account to the tender's own, and whole days of bid and delivery
-// windows within procurement's bounds, at a venue serving the region. Refused, writing nothing, for a
-// region, project or input the world does not have (UnknownTarget); a region no one governs, one the
-// AI runs or another principal directs (NotAuthorised); a venue not serving it (WrongVenue); no totes,
-// more than are still needed, a project past tendering or a window out of bounds (InvalidQuantity); a
-// budget below a credit (InvalidPrice); a region with procurement.maxOpenTenders not yet closed
-// (LimitReached); and a public account short of the budget (InsufficientFunds).
+// needs of the item, beyond what it holds and its open and awarded tenders call for, a budget in whole
+// credits, moved from the region's public account to the tender's own, and whole days of bid and
+// delivery windows within procurement's bounds, at a venue serving the region. Refused, writing
+// nothing, for a region, project or input the world does not have (UnknownTarget); a region no one
+// governs, one the AI runs or another principal directs (NotAuthorised); a venue not serving it
+// (WrongVenue); no totes, more than are still needed, a project past tendering or a window out of
+// bounds (InvalidQuantity); a budget below a credit (InvalidPrice); a region with
+// procurement.maxOpenTenders not yet closed (LimitReached); and a public account short of the budget
+// (InsufficientFunds).
 struct Publish
 {
 	std::string regionId;
@@ -35,28 +36,58 @@ struct Publish
 };
 
 // The players' command that cancels an open tender before its bid close, its budget returned to the
-// region's public account, by the principal Publish is sent by. Refused for a tender the world does
-// not have (UnknownTarget), another's (NotAuthorised), and one closed or run at or past its bid close
-// (Closed).
+// region's public account and its bids dropped, by the principal Publish is sent by. Refused for a
+// tender the world does not have (UnknownTarget), another's (NotAuthorised), and one closed or run at
+// or past its bid close (Closed).
 struct Cancel
 {
 	std::string tenderId;
 };
 
+// The players' command that places or replaces their company's sealed bid on an open tender (D-101):
+// its total in whole credits for all the tender's totes by its delivery close, from 1 to the budget,
+// with no goods or money reserved. A new bid gives revision 0, a replacement the bid's current
+// revision, and each is accepted at its step and request order. Refused, writing nothing, for a tender
+// or company the world does not have (UnknownTarget), another's company (NotAuthorised), a tender
+// closed or run at or past its bid close (Closed), a total outside 1 to the budget (InvalidPrice), a
+// revision not the bid's (StaleRevision), and a new bid on a tender with procurement.maxBids
+// (LimitReached).
+struct Bid
+{
+	std::string tenderId;
+	std::string companyId;
+	std::int64_t total{0};
+	std::uint64_t revision{0};
+};
+
+// The players' command that withdraws their company's bid before the bid close. Refused as Bid is,
+// and UnknownTarget for a company with no bid on the tender.
+struct Withdraw
+{
+	std::string tenderId;
+	std::string companyId;
+};
+
 inline constexpr std::string_view kPublish = "Manifest.Procurement.Publish";
 inline constexpr std::string_view kCancel = "Manifest.Procurement.Cancel";
+inline constexpr std::string_view kBid = "Manifest.Procurement.Bid";
+inline constexpr std::string_view kWithdraw = "Manifest.Procurement.Withdraw";
 inline constexpr std::uint32_t kVersion = 1;
 
 // The tenders' system, by the name the step's table gives it (docs/stage-4-trading-plan.md, "Tender
 // contract (W11)"): after manifest.expiry and before kProjects. Each open tender whose bid close it
-// is, in ID order, closes with no award, its budget returned, and each region keeps its last
-// procurement.keptClosed closed tenders, the oldest closed dropped. Then, as the world starts, on each
-// economic turn's last step and in a step a tender closed, the AI issuer: for each region whose
-// governor the AI runs, in the scenario's order, at the first venue serving it, each input its
-// projects still need, in the project's order, with no tender open for it, is tendered, the totes
-// still needed at Trade::TenderPrice times one and the project's priorityPremium (Trade::Budget), with
-// procurement's AI windows; and on a turn's last step each relief Trade::Reliefs calls for of such a
-// region with no relief tender open for its need. One the region cannot fund or bound is not.
+// is, in ID order, is awarded to its lowest bid, then the earliest accepted, then its company's ID,
+// whose company can fund the bond, procurement's rate of the total rounded up, moved into the tender's
+// BondAccount, the next bid's otherwise, so an earlier award's bond spends what a later one would
+// need; the budget beyond the total returns to the public account and the delivery window runs from
+// the step. With none it closes unawarded, its budget returned. Its bids are dropped either way, and
+// each region keeps its last procurement.keptClosed closed tenders, the oldest closed dropped. Then, as
+// the world starts, on each economic turn's last step and in a step a tender closed, the AI issuer: for
+// each region whose governor the AI runs, in the scenario's order, at the first venue serving it, each
+// input its projects still need, in the project's order, with no tender open for it, is tendered, the
+// totes still needed at Trade::TenderPrice times one and the project's priorityPremium (Trade::Budget),
+// with procurement's AI windows; and on a turn's last step each relief Trade::Reliefs calls for of such
+// a region with no relief tender open for its need. One the region cannot fund or bound is not.
 inline constexpr std::string_view kTenders = "manifest.tenders";
 
 // The projects' system, after kTenders and before manifest.economy, each region's World::Project in

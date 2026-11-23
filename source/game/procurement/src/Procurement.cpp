@@ -34,6 +34,7 @@ using World::ProjectPhase;
 using World::TenderState;
 
 constexpr double kSecondsPerDay = 86'400.0;
+constexpr std::int64_t kWholeBps = 10'000;
 
 // A project as its definition gives it, by project ID: its inputs in its order.
 struct Plan
@@ -56,6 +57,9 @@ struct Area
 struct Rules
 {
 	World::Identities *pIdentities{nullptr};
+	const Command::Requests *pRequests{nullptr};
+	// The bond's rate, in basis points of a winning total.
+	std::int64_t bondBps{0};
 	const Content::ContentSet *pContent{nullptr};
 	Content::ProcurementTuning tuning;
 	std::map<std::string, Plan, std::less<>> plans;
@@ -213,9 +217,10 @@ void WorkSkip(SimWorld &world, std::uint64_t passed)
 
 // ─── Tenders ───
 
+// Open or awarded: calling for its goods.
 bool Live(const World::Tender &tender)
 {
-	return tender.state == TenderState::Open;
+	return tender.state == TenderState::Open || tender.state == TenderState::Awarded;
 }
 
 
@@ -342,6 +347,145 @@ void Prune(SimWorld &world, const Rules &rules, const std::string &regionId)
 }
 
 
+// The bond on a winning total: the rate's share of it, rounded up.
+std::int64_t BondOf(std::int64_t total, std::int64_t bps)
+{
+	return total / kWholeBps * bps + (total % kWholeBps * bps + kWholeBps - 1) / kWholeBps;
+}
+
+
+// An open tender's bidding closed: to its lowest bid, then its earliest accepted, then its company's
+// ID, whose company can fund the bond, moved into the tender's BondAccount, the budget beyond the
+// total returned; unawarded with none. Its bids are dropped either way.
+void AwardAt(SimWorld &world, const Rules &rules, entt::entity entity)
+{
+	entt::registry &registry = world.Registry();
+	const std::string id = registry.get<const World::Identity>(entity).id;
+	std::vector<std::tuple<std::int64_t, std::uint64_t, std::uint64_t, std::string, entt::entity>> bids;
+	for (const auto [bid, placed] : registry.view<const World::Bid>().each())
+		if (placed.tenderId == id)
+			bids.emplace_back(placed.total, placed.step, placed.order, placed.companyId, bid);
+	std::ranges::sort(bids);
+	World::Award award = bids.empty() ? World::Award::NoBids : World::Award::Unbonded;
+	std::optional<std::size_t> won;
+	for (std::size_t at = 0; at < bids.size() && !won; ++at)
+	{
+		const auto &[total, step, order, companyId, bid] = bids[at];
+		if (registry.get<const World::Account>(Required(rules, Kind::CompanyAccount, companyId))
+		        .balance >= BondOf(total, rules.bondBps))
+		{
+			won = at;
+			award = at == 0 ? World::Award::Lowest : World::Award::PastUnbonded;
+		}
+	}
+	std::int64_t total = 0;
+	std::string companyId;
+	if (won)
+	{
+		total = std::get<0>(bids[*won]);
+		companyId = std::get<3>(bids[*won]);
+	}
+	for (const auto &each : bids)
+		rules.pIdentities->Destroy(registry, std::get<4>(each));
+	World::Tender &tender = registry.get<World::Tender>(entity);
+	tender.award = award;
+	if (!won)
+	{
+		Close(world, rules, entity, TenderState::Unawarded);
+		return;
+	}
+	const std::int64_t bond = BondOf(total, rules.bondBps);
+	registry.get<World::Account>(Required(rules, Kind::CompanyAccount, companyId)).balance -= bond;
+	const entt::entity held = rules.pIdentities->Create(registry, Kind::BondAccount, id);
+	JETTISON_VERIFY(held != entt::null);
+	registry.emplace<World::Account>(held, bond);
+	World::Account &reserved = registry.get<World::Account>(Required(rules, Kind::TenderAccount, id));
+	registry.get<World::Account>(Required(rules, Kind::PublicAccount, tender.regionId)).balance +=
+	    reserved.balance - total;
+	reserved.balance = total;
+	tender.state = TenderState::Awarded;
+	tender.companyId = companyId;
+	tender.price = total;
+	tender.bond = bond;
+	tender.deliveryClose = world.Clock().Step() + tender.deliveryDays * rules.stepsPerDay;
+}
+
+
+// The company the actor is principal of, for its bids; none for a company the world does not have,
+// Result's UnknownTarget, or another's, NotAuthorised.
+Result Bidder(
+    const entt::registry &registry, const Rules &rules, const Actor &actor,
+    const std::string &companyId)
+{
+	const entt::entity company = rules.pIdentities->Find(Kind::Company, companyId);
+	if (company == entt::null)
+		return Result::UnknownTarget;
+	return registry.get<const World::Company>(company).principalId == actor.id ? Result::Succeeded
+	                                                                           : Result::NotAuthorised;
+}
+
+
+Result Bids(SimWorld &world, const Rules &rules, const Actor &actor, const Bid &bid)
+{
+	entt::registry &registry = world.Registry();
+	const entt::entity entity = rules.pIdentities->Find(Kind::Tender, bid.tenderId);
+	if (entity == entt::null)
+		return Result::UnknownTarget;
+	if (const Result bidder = Bidder(registry, rules, actor, bid.companyId);
+	    bidder != Result::Succeeded)
+		return bidder;
+	const World::Tender &tender = registry.get<const World::Tender>(entity);
+	const std::uint64_t now = world.Clock().Step();
+	if (tender.state != TenderState::Open || now >= tender.bidClose)
+		return Result::Closed;
+	if (bid.total < 1 || bid.total > tender.budget)
+		return Result::InvalidPrice;
+	const std::string id = World::BidId(bid.tenderId, bid.companyId);
+	const std::uint64_t order = rules.pRequests->RunningOrder();
+	if (const entt::entity placed = rules.pIdentities->Find(Kind::Bid, id); placed != entt::null)
+	{
+		World::Bid &held = registry.get<World::Bid>(placed);
+		if (bid.revision != held.revision)
+			return Result::StaleRevision;
+		held = {bid.tenderId, bid.companyId, bid.total, held.revision + 1, now, order};
+		return Result::Succeeded;
+	}
+	if (bid.revision != 0)
+		return Result::StaleRevision;
+	std::uint32_t placed = 0;
+	for (const auto [other, each] : registry.view<const World::Bid>().each())
+		placed += each.tenderId == bid.tenderId ? 1 : 0;
+	if (placed >= rules.tuning.maxBids)
+		return Result::LimitReached;
+	const entt::entity created = rules.pIdentities->Create(registry, Kind::Bid, id);
+	JETTISON_VERIFY(created != entt::null);
+	registry.emplace<World::Bid>(
+	    created, bid.tenderId, bid.companyId, bid.total, std::uint64_t{1}, now, order);
+	return Result::Succeeded;
+}
+
+
+Result Withdraws(SimWorld &world, const Rules &rules, const Actor &actor, const Withdraw &withdraw)
+{
+	entt::registry &registry = world.Registry();
+	const entt::entity entity = rules.pIdentities->Find(Kind::Tender, withdraw.tenderId);
+	if (entity == entt::null)
+		return Result::UnknownTarget;
+	if (const Result bidder = Bidder(registry, rules, actor, withdraw.companyId);
+	    bidder != Result::Succeeded)
+		return bidder;
+	const World::Tender &tender = registry.get<const World::Tender>(entity);
+	if (tender.state != TenderState::Open || world.Clock().Step() >= tender.bidClose)
+		return Result::Closed;
+	const entt::entity placed =
+	    rules.pIdentities->Find(Kind::Bid, World::BidId(withdraw.tenderId, withdraw.companyId));
+	if (placed == entt::null)
+		return Result::UnknownTarget;
+	rules.pIdentities->Destroy(registry, placed);
+	return Result::Succeeded;
+}
+
+
 // Whether the actor directs the region's governor, so may publish and cancel its tenders.
 bool Directs(
     const entt::registry &registry, const Rules &rules, const Actor &actor, const std::string &regionId)
@@ -392,9 +536,12 @@ Result Cancels(SimWorld &world, const Rules &rules, const Actor &actor, const Ca
 	const World::Tender &tender = world.Registry().get<const World::Tender>(entity);
 	if (!Directs(world.Registry(), rules, actor, tender.regionId))
 		return Result::NotAuthorised;
-	if (!Live(tender) || world.Clock().Step() >= tender.bidClose)
+	if (tender.state != TenderState::Open || world.Clock().Step() >= tender.bidClose)
 		return Result::Closed;
 	const std::string regionId = tender.regionId;
+	for (const auto [bid, placed] : world.Registry().view<const World::Bid>().each())
+		if (placed.tenderId == cancel.tenderId)
+			rules.pIdentities->Destroy(world.Registry(), bid);
 	Close(world, rules, entity, TenderState::Cancelled);
 	Prune(world, rules, regionId);
 	return Result::Succeeded;
@@ -485,14 +632,14 @@ void Tenders(SimWorld &world, const Rules &rules)
 	std::vector<std::pair<std::string, entt::entity>> closing;
 	for (const auto [entity, identity, tender] :
 	     registry.view<const World::Identity, const World::Tender>().each())
-		if (Live(tender) && tender.bidClose <= now)
+		if (tender.state == TenderState::Open && tender.bidClose <= now)
 			closing.emplace_back(identity.id, entity);
 	std::ranges::sort(closing);
 	std::set<std::string, std::less<>> regions;
 	for (const auto &[id, entity] : closing)
 	{
 		regions.insert(registry.get<const World::Tender>(entity).regionId);
-		Close(world, rules, entity, TenderState::Unawarded);
+		AwardAt(world, rules, entity);
 	}
 	for (const std::string &regionId : regions)
 		Prune(world, rules, regionId);
@@ -511,14 +658,15 @@ std::uint64_t TendersNext(const SimWorld &world, const Rules &rules)
 		return now;
 	std::uint64_t next = now + (rules.turnSteps - 1 - now % rules.turnSteps);
 	for (const auto [entity, tender] : world.Registry().view<const World::Tender>().each())
-		if (Live(tender))
+		if (tender.state == TenderState::Open)
 			next = std::min(next, std::max(now, tender.bidClose));
 	return next;
 }
 
 
 std::shared_ptr<Rules> MakeRules(
-    const SimWorld &world, World::Identities &identities, const Content::ContentSet &content)
+    const SimWorld &world, const Command::Requests &requests, World::Identities &identities,
+    const Content::ContentSet &content)
 {
 	const auto selected = content.scenarios.find(content.scenario);
 	if (selected == content.scenarios.end())
@@ -526,8 +674,10 @@ std::shared_ptr<Rules> MakeRules(
 	const Content::ScenarioDefinition &scenario = selected->second;
 	auto rules = std::make_shared<Rules>();
 	rules->pIdentities = &identities;
+	rules->pRequests = &requests;
 	rules->pContent = &content;
 	rules->tuning = content.tuning.procurement;
+	rules->bondBps = std::llround(content.tuning.procurement.performanceSecurityRate * kWholeBps);
 	rules->stepsPerDay = Steps(1, world.FixedStep());
 	rules->turnSteps = std::max<std::uint64_t>(
 	    1, static_cast<std::uint64_t>(
@@ -597,6 +747,14 @@ void RegisterTypes()
 		    .Field<&Publish::deliveryDays>("deliveryDays", kSaved);
 		RegisterType<Cancel>("Manifest.Procurement.Cancel")
 		    .Field<&Cancel::tenderId>("tenderId", kSaved);
+		RegisterType<Bid>("Manifest.Procurement.Bid")
+		    .Field<&Bid::tenderId>("tenderId", kSaved)
+		    .Field<&Bid::companyId>("companyId", kSaved)
+		    .Field<&Bid::total>("total", kSaved)
+		    .Field<&Bid::revision>("revision", kSaved);
+		RegisterType<Withdraw>("Manifest.Procurement.Withdraw")
+		    .Field<&Withdraw::tenderId>("tenderId", kSaved)
+		    .Field<&Withdraw::companyId>("companyId", kSaved);
 		return true;
 	}();
 	(void)registered;
@@ -607,7 +765,7 @@ void Register(
     SimWorld &world, Command::Requests &requests, World::Identities &identities,
     const Content::ContentSet &content)
 {
-	std::shared_ptr<const Rules> rules = MakeRules(world, identities, content);
+	std::shared_ptr<const Rules> rules = MakeRules(world, requests, identities, content);
 	std::map<std::string, World::ProjectNeeds, std::less<>> needs;
 	for (const auto &[projectId, plan] : rules->plans)
 		needs.emplace(projectId, plan.needs);
@@ -621,6 +779,14 @@ void Register(
 	    std::string{kCancel}, kVersion, Command::ActorKind::Principal,
 	    [rules](SimWorld &on, const Actor &actor, const Cancel &cancel)
 	    { return Cancels(on, *rules, actor, cancel); });
+	requests.Register<Bid>(
+	    std::string{kBid}, kVersion, Command::ActorKind::Principal,
+	    [rules](SimWorld &on, const Actor &actor, const Bid &bid)
+	    { return Bids(on, *rules, actor, bid); });
+	requests.Register<Withdraw>(
+	    std::string{kWithdraw}, kVersion, Command::ActorKind::Principal,
+	    [rules](SimWorld &on, const Actor &actor, const Withdraw &withdraw)
+	    { return Withdraws(on, *rules, actor, withdraw); });
 
 	using Jettison::Ecs::Access;
 	world.RegisterSystem(
@@ -628,8 +794,8 @@ void Register(
 	     .phase = Jettison::Ecs::TickPhase::Simulation,
 	     .access = Access::Of<
 	                   World::Region, World::Organisation, World::Project, World::Stock, World::Pantry,
-	                   World::Order, World::Broker>()
-	                   .Writing<World::Tender, World::Account, World::Identity>(),
+	                   World::Order, World::Broker, World::Company>()
+	                   .Writing<World::Tender, World::Account, World::Identity, World::Bid>(),
 	     .after = {std::string{Trade::kExpiry}},
 	     .run = [rules, &world](entt::registry &, double) { Tenders(world, *rules); },
 	     .before = {std::string{Trade::kEconomy}}},

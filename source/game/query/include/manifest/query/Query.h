@@ -47,6 +47,14 @@ struct OrderView
 	bool operator==(const OrderView &) const = default;
 };
 
+struct BidView
+{
+	std::string bidId;
+	World::Bid bid;
+
+	bool operator==(const BidView &) const = default;
+};
+
 struct CompanyView
 {
 	std::string companyId;
@@ -58,6 +66,8 @@ struct CompanyView
 	std::vector<ShipView> ships;
 	// Its resting orders, oldest first.
 	std::vector<OrderView> orders{};
+	// Its sealed bids, by ID, which no other player sees.
+	std::vector<BidView> bids{};
 
 	bool operator==(const CompanyView &) const = default;
 };

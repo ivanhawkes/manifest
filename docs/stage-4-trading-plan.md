@@ -1251,7 +1251,23 @@ W12's slices, each one commit with its suites, the gate after the third and the 
    governor publishes, which `Publish` does not take; the issuer's calls rebuilding the market's rules
    (`Trade::TenderPrice`'s `shortcut:`), each turn's last step.
 3. Bids and the award: sealed bids, revisions, withdrawal, the tie order, the bond's fallback and
-   simultaneous awards competing for funds; `Closed` at the boundary.
+   simultaneous awards competing for funds; `Closed` at the boundary. **Done** 2026-11-23, with no
+   engine edit: `Manifest.Procurement.Bid` and `Withdraw`, a company principal's for its own company,
+   place a sealed bid (`Kind::Bid`, by tender and company) at revision 0, replace it at its current
+   one (`StaleRevision` otherwise) or withdraw it, before the bid close (`Closed` at or past it), a
+   total from 1 to the budget and at most 32 a tender (`LimitReached`); a company sees its own bids
+   in its view and no one another's. A bid keeps the step and global request order it was accepted at
+   (`Command::Requests::RunningOrder`; an agent's `Act`, which runs after its step's requests,
+   ranks after them). At the bid close each tender, in ID order, goes to its lowest total, then the
+   earliest accepted, then the company ID, whose company funds the bond, 10% rounded up, moved into
+   the tender's `Kind::BondAccount`, the next bid's otherwise (`PastUnbonded`), so an earlier award's
+   bond spends what a later one needed; none, and it closes `Unawarded` (`NoBids`, `Unbonded`), its
+   budget back. The budget beyond the total returns to the public account, the delivery window runs
+   from the award, the bids are dropped, and the winner, total, bond and reason are posted. A
+   contracted tender is live, so the AI does not tender again what it calls for. A load refuses an
+   award without its total in the tender's account or its bond in the bond's, or to no company, and a
+   bid on no open tender. The three pins moved again, the trading fixture's for the save's layout
+   alone.
 4. Delivery and default: partial and excess delivery, payment under fragmented deliveries summing to
    `T`, zero, partial and full delivery's bond, abandonment and retendering.
 5. Saved jobs: the policy's `contracts`, a bid estimated and won, delivered with no client, an NPC

@@ -57,8 +57,10 @@ enum class Result
 	InsufficientFuel,
 	// A tender closed, or past the close its command must come before (W12).
 	Closed,
-	// A bound of procurement's reached: a region's tenders not yet closed (W12).
-	LimitReached
+	// A bound of procurement's reached: a region's tenders not yet closed, or a tender's bids (W12).
+	LimitReached,
+	// A bid replaced at other than its current revision (W12).
+	StaleRevision
 };
 
 enum class ActorKind

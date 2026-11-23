@@ -35,7 +35,9 @@ std::string_view IssuedPrefix(Kind kind)
 		case Kind::Household:
 		case Kind::Market:
 		case Kind::Project:
-		case Kind::TenderAccount: break;
+		case Kind::TenderAccount:
+		case Kind::Bid:
+		case Kind::BondAccount: break;
 	}
 	return {};
 }
@@ -205,15 +207,46 @@ std::function<void()> Identities::Load(
 		const auto account = index.find({Kind::TenderAccount, identity.id});
 		const auto *pAccount =
 		    account == index.end() ? nullptr : loaded.try_get<const Account>(account->second);
-		if (tender.state == TenderState::Open
-		        ? pAccount == nullptr || pAccount->balance != tender.budget
+		// Open, its account holds its budget; awarded, its winner's total.
+		const bool open = tender.state == TenderState::Open;
+		const bool awarded = tender.state == TenderState::Awarded;
+		if (open || awarded
+		        ? pAccount == nullptr || pAccount->balance != (open ? tender.budget : tender.price)
 		        : account != index.end())
 			reader.Fail(
-			    std::format("the tender '{}' reserves other than its budget while open", identity.id));
+			    std::format(
+			        "the tender '{}' reserves other than its budget while open, or its total once "
+			        "awarded",
+			        identity.id));
+		const auto bond = index.find({Kind::BondAccount, identity.id});
+		const auto *pBond = bond == index.end() ? nullptr : loaded.try_get<const Account>(bond->second);
+		if (awarded ? pBond == nullptr || pBond->balance != tender.bond ||
+		                  !index.contains({Kind::Company, tender.companyId})
+		            : bond != index.end())
+			reader.Fail(
+			    std::format(
+			        "the tender '{}' holds other than its bond, or is awarded to no company",
+			        identity.id));
 	}
 	for (const auto [entity, identity, account] : loaded.view<const Identity, const Account>().each())
-		if (identity.kind == Kind::TenderAccount && !index.contains({Kind::Tender, identity.id}))
+		if ((identity.kind == Kind::TenderAccount || identity.kind == Kind::BondAccount) &&
+		    !index.contains({Kind::Tender, identity.id}))
 			reader.Fail(std::format("'{}' reserves money for no tender", identity.id));
+	for (const auto [entity, bid] : loaded.view<const Bid>().each())
+	{
+		if (const std::optional<std::string> problem = Broken(bid))
+			reader.Fail(*problem);
+		const auto tender = index.find({Kind::Tender, bid.tenderId});
+		const auto *pTender =
+		    tender == index.end() ? nullptr : loaded.try_get<const Tender>(tender->second);
+		if (pTender == nullptr || pTender->state != TenderState::Open || bid.total > pTender->budget ||
+		    !index.contains({Kind::Company, bid.companyId}) ||
+		    !index.contains({Kind::Bid, BidId(bid.tenderId, bid.companyId)}))
+			reader.Fail(
+			    std::format(
+			        "a bid of '{}' on '{}' is of no company, no open tender or past its budget",
+			        bid.companyId, bid.tenderId));
+	}
 	for (const auto [entity, paid] : loaded.view<const Paid>().each())
 	{
 		if (const std::optional<std::string> problem = Broken(paid))
