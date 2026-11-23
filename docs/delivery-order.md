@@ -125,7 +125,11 @@ pack ([delivered](stage-4-trading-plan.md#delivered-w14-2026-11-23)), with no en
 (2026-11-24): [the save and compatibility contract](stage-5-recovery-plan.md#save-and-compatibility-contract-r01-2026-11-24), a
 planning task, defines the `Manifest.Save` section, exact compatibility
 ([D-111](decision-ledger.md#d-111)) and the inventory of a hosted world's 50 component storages and 3
-services, with no engine edit. Next: R02; W22 waits for the first larger hull.
+services, with no engine edit. R02 is done (2026-11-24):
+[durable I/O, directories and the world lock](stage-5-recovery-plan.md#durable-io-directories-and-the-world-lock-r02-2026-11-24), a world's
+directory made to survive a power cut and held by one server, on Jettison's durable directories and
+file lock (pin `ea66afe`), with a view longer than 64 KiB reaching its client. Next: R03; W22 waits
+for the first larger hull.
 
 ## Priority 0: maintenance before Stage 1
 
@@ -259,7 +263,7 @@ observations, automation and accepted obligations already delivered must be cove
 | Order / ID | Task and completion boundary | Must complete first |
 | --- | --- | --- |
 | 46 / R01 | Define the final versioned Manifest save/compatibility section and exact content/state inventory; cover request outcomes, observations, regional rights, cadence and all active jobs. **Done 2026-11-24**, [the contract](stage-5-recovery-plan.md#save-and-compatibility-contract-r01-2026-11-24), [D-111](decision-ledger.md#d-111). | W14 |
-| 47 / R02 | Prove the required durable I/O, directory creation and world-lock contract; provision any missing reusable primitive in Jettison and consume its committed pin. | R01 |
+| 47 / R02 | Prove the required durable I/O, directory creation and world-lock contract; provision any missing reusable primitive in Jettison and consume its committed pin. **Done 2026-11-24**, [the contract](stage-5-recovery-plan.md#durable-io-directories-and-the-world-lock-r02-2026-11-24). | R01 |
 | 48 / R03 | Implement ordered immutable step journals/catalogue and acknowledge durable acceptance only after the tested commit boundary, including autonomous empty steps. | R02 |
 | 49 / R04 | Implement boundary snapshots, retention and startup replay into a candidate world; prove crash/fault behavior, compatibility rejection and retry preservation. | R03 |
 | 50 / R05 | Implement bounded shutdown and verified backup/restore with storage/retention limits and interrupted-publication tests. | R04 |

@@ -18,6 +18,7 @@ Jettison::Net::ClientConfig Config(std::string address, std::uint16_t port, std:
 	config.address = std::move(address);
 	config.port = port;
 	config.protocol = {std::string{kProtocol}, kVersion};
+	config.limits.maxMessageBytes = kMaxMessageBytes;
 	const auto bytes = std::as_bytes(std::span{token});
 	config.credential.assign(bytes.begin(), bytes.end());
 	return config;

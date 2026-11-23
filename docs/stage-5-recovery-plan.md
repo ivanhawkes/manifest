@@ -209,6 +209,43 @@ value a rule reads from data is in a definition; what a rule reads from code is 
 
 A mechanic that adds authoritative state adds its row here in its own delivery.
 
+## Durable I/O, directories and the world lock (R02), 2026-11-24
+
+What R03 to R05 write on, proved before they write. On Jettison `ea66afe`, which provisioned the two
+primitives that were missing.
+
+- **A file.** Everything under a world's directory is written with `Jettison::Core::WriteFileDurably`:
+  to a partial file beside it, flushed, renamed over the name, and the directory flushed. A reader, a
+  crash or a power cut finds the old file or the new, never part of either. It replaces what is
+  there: a file that must not be overwritten, a committed batch, is looked for first by the world's
+  one writer (R03). The token file is written the same way now, where it was renamed with no flush.
+- **A failure is not a rollback.** A write that throws after its rename has left the new file in
+  place, perhaps not yet on the disk; [the commit model](#commit-model-durable-step-batches) treats
+  every failure as an uncertain commit.
+- **A directory.** One made on the way to a file, or by `Core::CreateDirectoriesDurably`, is flushed
+  into its parent as it is made, outermost first, so a new world's hierarchy survives with its first
+  file. Before `ea66afe` only the file's own directory was flushed.
+- **The world's directory and its lock.** `Manifest::Host::OpenWorldDirectory(root)` makes the root
+  durably, private to its owner (0700) when it makes it and as it was when it was there, and holds
+  `<root>/lock` with `Jettison::Core::FileLock` (the kernel's `flock`) until the `WorldDirectory` is
+  destroyed. A second opener, in the same process or another, is refused with the root named. A
+  holder that is killed leaves nothing to clear: the kernel lets go with the process. The lock is
+  advisory and for a local file system; a world on NFS is not supported.
+- **Where the root is** is the caller's: R03 gives `--serve` its world, and R06 selects the default
+  under `Platform::ResolvePaths("manifest")`.
+
+Evidence. Jettison's `core` suite makes a hierarchy three deep, refuses one through a file, holds a
+lock against its own process and another, and takes it once that process is killed; under `strace`
+each `mkdir` is followed by its parent's `fsync`, and a write is the partial file's `fsync`, the
+`rename`, the directory's `fsync`. Manifest's `host` suite opens a world three directories deep,
+finds it 0700, is refused a second opening by name, and opens it again once let go with its owner's
+permissions kept.
+
+Not proved here: that a disk keeps what `fsync` returned for, which no test on one machine shows; a
+full disk and a failed `fsync` or `rename`, which R03 injects at its own seam, around its commit
+boundaries, where [the evidence](#delivery-and-required-evidence) asks for them; and a server started
+on the world, which waits for something to write (R03).
+
 ## Commit model: durable step batches
 
 Use one writer per world, enforced with a process-held lock in its writable data root.
@@ -280,12 +317,9 @@ Garbage-collect only files no retained recovery point or backup needs, after suc
 catalogue publication. A crash during cleanup must leave every referenced file intact.
 Never truncate journals before the replacement snapshot and catalogue are durable.
 
-The current file writer creates missing directories but only explicitly fsyncs the
-immediate parent after replacement. The implementer must establish and test durable
-creation of the world-directory hierarchy before the first acknowledged commit; do
-not assume that nested newly created directory entries survive a power failure. Ensure
-data-directory permissions follow the engine path policy and all writes stay on the
-intended supported filesystem. Single-writer locking also prevents partial-file clashes.
+The world's hierarchy is made durably, private to its owner and held by one writer, which also
+keeps partial files from clashing ([R02](#durable-io-directories-and-the-world-lock-r02-2026-11-24)).
+All writes stay on that one local file system.
 
 ## Startup and recovery
 

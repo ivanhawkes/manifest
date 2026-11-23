@@ -126,6 +126,26 @@ is 63,567 bytes of 65,536), the user booked for Jettison's next change, a messag
 packets ([Jettison's roadmap](../../jettison/docs/roadmap.md#first-what-saves-and-the-simulations-interface-hold)),
 and delta snapshots in Manifest only if that is not enough.
 
+## R02: durable I/O, directories and the world lock — 2026-11-24
+
+[The contract](stage-5-recovery-plan.md#durable-io-directories-and-the-world-lock-r02-2026-11-24), on pin `ea66afe`. Jettison's `WriteFileDurably` flushed a file and its own
+directory but not the directories it made on the way, and nothing held a directory to one process, so
+Jettison provisioned `Core::CreateDirectoriesDurably` and `Core::FileLock`
+([its history](../../jettison/docs/history.md#neutral-sdk-and-manifest-integration)). Manifest's part is
+small: `Host::OpenWorldDirectory` makes a world's root durably and 0700 and holds its lock, refusing a
+second opener by name (the `host` suite); and the token file, which was renamed into place with no
+flush, goes through `WriteFileDurably`. No server opens a world yet: R03 gives `--serve` the option
+with the first thing to write. Fault injection is R03's too, at its own seam.
+
+The message longer than a packet, booked from Stage 4's review for this engine change, needed no
+splitting of the engine's: a message is an ENet packet, which ENet splits into datagrams and
+reassembles, and the 64 KiB was a limit a game sets. `Remote::kMaxMessageBytes` is 192 KiB on both
+ends, three times the trading scenario's view. Jettison measured where that stops on loopback: an
+unreliable message arrived every time at 256 KiB and never at 384 KiB, its fragments sent at once into
+the receiver's 256 KiB socket buffer, so past that a view wants deltas. The `remote` suite rests 24
+bids on Ada's book in the trading scenario, her view 69,829 bytes, and it arrives; with the limit left
+at the engine's default the server logs it as over the limit and the case fails.
+
 ## R01: the save and compatibility contract — 2026-11-24
 
 A planning task, no code and no engine edit: [the contract](stage-5-recovery-plan.md#save-and-compatibility-contract-r01-2026-11-24) defines the `Manifest.Save`

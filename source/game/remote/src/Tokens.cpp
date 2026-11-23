@@ -5,6 +5,7 @@
 #include <iterator>
 #include <stdexcept>
 
+#include <jettison/core/File.h>
 #include <jettison/net/Token.h>
 #include <jettison/serialise/Archive.h>
 
@@ -40,15 +41,8 @@ TokenFile ReadTokens(const std::filesystem::path &path)
 void WriteTokens(const std::filesystem::path &path, const TokenFile &file)
 {
 	RegisterTypes();
-	std::filesystem::path partial = path;
-	partial += ".partial";
-	{
-		std::ofstream out{partial, std::ios::binary | std::ios::trunc};
-		out << Jettison::Serialise::YamlArchive::Write(file, kTokenFileVersion);
-		if (!out.flush())
-			throw std::runtime_error{std::format("{} cannot be written", partial.string())};
-	}
-	std::filesystem::rename(partial, path);
+	Jettison::Core::WriteFileDurably(
+	    path, std::string_view{Jettison::Serialise::YamlArchive::Write(file, kTokenFileVersion)});
 }
 
 

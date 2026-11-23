@@ -46,6 +46,7 @@ Jettison::Net::ServerConfig Config(std::string address, std::uint16_t port)
 	config.protocol = std::string{kProtocol};
 	config.versions = {kVersion};
 	config.snapshotInterval = kSnapshotInterval;
+	config.limits.maxMessageBytes = kMaxMessageBytes;
 	return config;
 }
 

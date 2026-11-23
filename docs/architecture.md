@@ -235,7 +235,8 @@ server platform. It owns the authoritative simulation and networking and runs un
 a service manager or container platform, without a renderer or interactive terminal. Startup
 uses configuration and command-line arguments; operation provides logs and clean shutdown.
 Its first slice exists (N02): `manifest --serve` steps the world unattended and serves it
-through the `remote` module on Jettison's `net`, with `manifest-token` for its tokens; durability,
+through the `remote` module on Jettison's `net`, with `manifest-token` for its tokens; a world's
+directory is made and held by one server (`Host::OpenWorldDirectory`, R02), and durability,
 recovery and hosting outside a trusted network do not yet.
 
 The existing TUI is to become a required remote gameplay client with `connect <endpoint>` and

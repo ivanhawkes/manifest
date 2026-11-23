@@ -1,17 +1,18 @@
 # Session handoff
 
-## Next, on resuming — 2026-11-24 (R01 done, then R02)
+## Next, on resuming — 2026-11-24 (R02 done, then R03)
 
-R01 is done, a planning task: [the save and compatibility contract](stage-5-recovery-plan.md#save-and-compatibility-contract-r01-2026-11-24)
-defines the `Manifest.Save` section, what a build compares before it loads a save
-([D-111](decision-ledger.md#d-111), mine, the user's to review) and the inventory of what a hosted
-world saves, with no code and no engine edit. Next is R02, the durable I/O, directory creation and
-world-lock contract, the first Stage 5 task likely to provision in Jettison; a message longer than a
-packet is booked for Jettison's next change and rides with it
-([history](history.md#stage-4-cross-review--2026-11-23)). W22, the drives past the torch, waits for
-the first larger hull. Jettison's station traffic lanes were measured and parked (`fixture_traffic`,
-2026-11-22), to be taken up when it fails. The SDK is pinned to `14fc23a`. A commit is gated in the
-second checkout, `build/gate-tree`, with `--tidy`, editing alone beside it
+R02 is done: [durable I/O, directories and the world lock](stage-5-recovery-plan.md#durable-io-directories-and-the-world-lock-r02-2026-11-24),
+on Jettison's durable directories and file lock, pin `ea66afe`. `Host::OpenWorldDirectory` makes and
+holds a world's directory, and nothing opens one yet. Next is R03, the immutable step journals and the
+catalogue: it gives `--serve` its world directory, makes the world's identity, compiles in the game's
+and the SDK's revisions, has `Command::Requests` list its commands, and injects I/O faults at its own
+seam ([what R01 left it](stage-5-recovery-plan.md#what-it-leaves-each-task)). A remote view may be
+192 KiB now (`Remote::kMaxMessageBytes`); past about 256 KiB an unreliable message does not arrive,
+and a view wants deltas ([history](history.md#r02-durable-io-directories-and-the-world-lock--2026-11-24)).
+W22, the drives past the torch, waits for the first larger hull. Jettison's station traffic lanes
+were measured and parked (`fixture_traffic`, 2026-11-22), to be taken up when it fails. A commit is
+gated in the second checkout, `build/gate-tree`, with `--tidy`, editing alone beside it
 ([gating beside the work](build-and-gates.md#gating-beside-the-work)). The development fixture takes
 about 50 s in Debug and six minutes under ASan, most of the gate's sanitised stage.
 

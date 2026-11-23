@@ -18,6 +18,7 @@
 #include <manifest/remote/Client.h>
 #include <manifest/remote/Server.h>
 #include <manifest/remote/Tokens.h>
+#include <manifest/trade/Trade.h>
 #include <manifest/world/State.h>
 
 using namespace Manifest::Remote;
@@ -56,7 +57,8 @@ Jettison::Net::Client RawClient(std::uint16_t port, const std::string &token)
 // operator having issued a token to Ada, to Bea and to an administrator.
 struct Served
 {
-	Served()
+	explicit Served(const std::string &scenario = "governance")
+	    : pSession{Manifest::Host::Start({MANIFEST_MOD_DIRECTORY, {}, scenario})}
 	{
 		Write();
 		pServer = std::make_unique<Server>(*pSession, tokens.Path(), "127.0.0.1", 0);
@@ -148,8 +150,7 @@ struct Served
 	std::string bea = Jettison::Net::GenerateToken();
 	std::string admin = Jettison::Net::GenerateToken();
 	Manifest::Test::TempFile tokens{"", ".tokens.yaml"};
-	std::unique_ptr<Jettison::Host::Session> pSession =
-	    Manifest::Host::Start({MANIFEST_MOD_DIRECTORY, {}, "governance"});
+	std::unique_ptr<Jettison::Host::Session> pSession;
 	std::unique_ptr<Server> pServer;
 	std::vector<Reply> replies;
 };
@@ -452,4 +453,38 @@ TEST_CASE("a full queue answers QueueFull, and a flood past the inbound bound cl
 				closed = event.reason;
 	}
 	CHECK(closed == Reason::InboundOverflow);
+}
+
+
+TEST_CASE("a view longer than the engine's default message arrives whole")
+{
+	using Jettison::Serialise::BinaryArchive;
+	using Jettison::Serialise::FormatVersion;
+	namespace Trade = Manifest::Trade;
+	Served served{"trading"};
+	served.ProvisionPlayers();
+	Client ada = served.Connect(served.ada);
+	REQUIRE(served.Welcome(ada));
+
+	// Each bid rests, a credit a tote crossing no ask, and is a row of its company's view.
+	constexpr std::size_t kBids = 24;
+	std::uint64_t last = 0;
+	for (std::size_t bid = 0; bid < kBids; ++bid)
+		last = ada.Submit(
+		              Trade::kPlace, Trade::kVersion,
+		              BinaryArchive::Write(
+		                  Trade::Place{
+		                      "VenueOreHighport", "ItemFurs", Manifest::World::Side::Buy, 1, 1'000'000},
+		                  FormatVersion{Trade::kVersion}))
+		           .value();
+	REQUIRE(served.Await(ada, last, Receipt::Status::Queued));
+	served.Step();
+
+	const Manifest::Query::Snapshot *pSeen = served.Current(ada);
+	REQUIRE(pSeen != nullptr);
+	REQUIRE(pSeen->companies.size() == 1);
+	CHECK(pSeen->companies[0].orders.size() == kBids);
+	CHECK(
+	    BinaryArchive::Write(*pSeen, FormatVersion{kVersion}).size() >
+	    Jettison::Net::Limits{}.maxMessageBytes);
 }

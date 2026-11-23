@@ -1,6 +1,7 @@
 #include "TestHelpers.h"
 
 #include <manifest/host/Start.h>
+#include <manifest/host/WorldDirectory.h>
 
 #include <atomic>
 #include <cstddef>
@@ -426,4 +427,37 @@ TEST_CASE("Overlays mount over the package in order, each by its mod.yaml name")
 	CheckFails(
 	    OptionsFor(MANIFEST_MOD_DIRECTORY, {needy.Directory(), overlays / "copper"}), Phase::Content,
 	    needy.Directory(), "requires the package 'Copper'");
+}
+
+
+TEST_CASE("A world's directory is made private, and held by one opener at a time")
+{
+	using std::filesystem::perms;
+	const std::filesystem::path scratch =
+	    std::filesystem::temp_directory_path() / std::format("manifest-world-tests-{}", getpid());
+	std::filesystem::remove_all(scratch);
+	const std::filesystem::path root = scratch / "worlds" / "first";
+	{
+		const Manifest::Host::WorldDirectory held = Manifest::Host::OpenWorldDirectory(root);
+		CHECK(held.root == root);
+		CHECK(std::filesystem::status(root).permissions() == perms::owner_all);
+		try
+		{
+			(void)Manifest::Host::OpenWorldDirectory(root);
+			FAIL("a held world opened twice");
+		}
+		catch (const std::runtime_error &error)
+		{
+			CHECK(std::string_view{error.what()}.find(root.string()) != std::string_view::npos);
+		}
+	}
+
+	// One that was there keeps the permissions its owner gave it.
+	std::filesystem::permissions(root, perms::owner_all | perms::group_read);
+	const Manifest::Host::WorldDirectory again = Manifest::Host::OpenWorldDirectory(root);
+	CHECK(std::filesystem::status(root).permissions() == (perms::owner_all | perms::group_read));
+
+	std::ofstream{scratch / "file"} << "x";
+	CHECK_THROWS_AS((void)Manifest::Host::OpenWorldDirectory(scratch / "file"), std::runtime_error);
+	std::filesystem::remove_all(scratch);
 }

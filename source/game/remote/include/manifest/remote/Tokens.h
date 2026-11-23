@@ -28,7 +28,8 @@ struct TokenFile
 // Throws std::runtime_error naming the file when it cannot be read or is not a token file.
 TokenFile ReadTokens(const std::filesystem::path &path);
 
-// Replaces the file whole, through a file beside it, so a server reading it never sees half of one.
+// Replaces the file whole and durably (Jettison::Core::WriteFileDurably), so a server reading it, or a
+// power cut, never leaves half of one. Throws std::runtime_error naming the file when it cannot.
 void WriteTokens(const std::filesystem::path &path, const TokenFile &file);
 
 // The credential the token matches, compared in constant time; none for a token issued to nobody.

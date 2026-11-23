@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <string_view>
@@ -20,6 +21,12 @@ inline constexpr std::string_view kProtocol = "manifest";
 // 4: and its player's market reports (W07).
 // 5: and its ships' holds and systems (W08).
 inline constexpr std::uint32_t kVersion = 5;
+
+// The longest message either end sends or takes, a snapshot being the longest: three times the trading
+// scenario's 63,567 bytes at step 0 (2026-11-23), which the engine's 64 KiB default dropped ten orders
+// later, and under the 256 KiB at which an unreliable message still crosses whole (Jettison's
+// architecture, "Networking"). A longer view is logged and not sent, and wants deltas.
+inline constexpr std::size_t kMaxMessageBytes = std::size_t{192} * 1024;
 
 enum class Kind : Jettison::Net::MessageKind
 {

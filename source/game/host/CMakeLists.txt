@@ -12,11 +12,14 @@ manifest_add_module(host
 		procurement
 	HEADERS
 		include/manifest/host/Start.h
+		include/manifest/host/WorldDirectory.h
 	SOURCES
 		src/Start.cpp
+		src/WorldDirectory.cpp
 	TESTS
 		tests/HostTests.cpp
 	PUBLIC_LIBRARIES
+		Jettison::Core
 		Jettison::Host
 )
 if(TARGET manifest_host_tests)
