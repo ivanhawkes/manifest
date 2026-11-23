@@ -1,6 +1,7 @@
 #include <manifest/remote/Server.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cstddef>
 #include <iterator>
 #include <optional>
@@ -32,6 +33,9 @@ constexpr FormatVersion kFormat{kVersion};
 // shortcut: a real-time variant, where two sessions would both steer, wants one (a Superseded reason in
 // Jettison).
 constexpr std::size_t kSessionsPerActor = 3;
+// How often a session is sent its snapshot: a second, as an idle game's player watches it, where the
+// economy turns hourly and journeys take minutes to days.
+constexpr std::chrono::milliseconds kSnapshotInterval{1'000};
 
 
 Jettison::Net::ServerConfig Config(std::string address, std::uint16_t port)
@@ -41,6 +45,7 @@ Jettison::Net::ServerConfig Config(std::string address, std::uint16_t port)
 	config.port = port;
 	config.protocol = std::string{kProtocol};
 	config.versions = {kVersion};
+	config.snapshotInterval = kSnapshotInterval;
 	return config;
 }
 
