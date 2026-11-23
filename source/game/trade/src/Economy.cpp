@@ -60,9 +60,11 @@ Withholding Withhold(std::int64_t gross, std::int64_t carry, std::int64_t perCre
 {
 	if (perCredit <= 0)
 		return {gross, 0, 0};
-	// The carry is below perCredit, so the sum cannot pass gross by more than it.
-	const std::int64_t total = carry + gross;
-	return {gross - total / perCredit, total / perCredit, total % perCredit};
+	// The carry is below perCredit, so the withheld credits cannot pass gross; the sum may pass the
+	// credits' range, so in 128 bits.
+	const __int128 total = static_cast<__int128>(carry) + gross;
+	const auto withheld = static_cast<std::int64_t>(total / perCredit);
+	return {gross - withheld, withheld, static_cast<std::int64_t>(total % perCredit)};
 }
 
 
@@ -72,9 +74,9 @@ std::int64_t Earned(std::int64_t wages, double progress, double duration)
 		return 0;
 	if (progress >= duration)
 		return wages;
-	return std::min(
-	    wages,
-	    static_cast<std::int64_t>(std::floor(static_cast<double>(wages) * (progress / duration))));
+	// Compared as a double first: near the credits' limit the product can round to 2^63.
+	const double earned = std::floor(static_cast<double>(wages) * (progress / duration));
+	return earned < static_cast<double>(wages) ? static_cast<std::int64_t>(earned) : wages;
 }
 
 

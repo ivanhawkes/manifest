@@ -120,9 +120,12 @@ std::int64_t DockingFee(
 }
 
 
+// The sum, held within the credits' range rather than overflowing: a sale's floor less its
+// allowance can be below 0.
 std::int64_t Added(std::int64_t left, std::int64_t right)
 {
-	return left + std::min(right, kMaxCredits - left);
+	return static_cast<std::int64_t>(std::clamp<__int128>(
+	    static_cast<__int128>(left) + right, std::numeric_limits<std::int64_t>::min(), kMaxCredits));
 }
 
 
@@ -157,7 +160,7 @@ std::int64_t Worth(std::initializer_list<std::pair<double, std::int64_t>> amount
 	for (const auto &[quantity, price] : amounts)
 		micro += quantity * static_cast<double>(price);
 	const double credits = std::ceil(micro / kMicrocreditsPerCredit);
-	return credits >= 0x1p63 ? kMaxCredits : static_cast<std::int64_t>(credits);
+	return credits < 0x1p63 ? static_cast<std::int64_t>(credits) : kMaxCredits;
 }
 
 
@@ -676,8 +679,10 @@ std::optional<std::int64_t> WalkLimit(
 		sold += taken;
 		proceeds += *each;
 		const auto fills = static_cast<std::int64_t>(std::min<std::uint64_t>(sold, Trade::kMaxFills));
-		if (level.price < *limit &&
-		    2 * proceeds - kRoundingHalvesPerFill * fills >= 2 * Share(least, sold, totes))
+		// In half credits, past the credits' range when the least is near its limit.
+		if (level.price < *limit && 2 * static_cast<__int128>(proceeds) -
+		                                    static_cast<__int128>(kRoundingHalvesPerFill) * fills >=
+		                                2 * static_cast<__int128>(Share(least, sold, totes)))
 			limit = level.price;
 	}
 	return limit;
@@ -892,8 +897,8 @@ std::optional<Tendered> ChooseTender(const Context &context, const std::optional
 				continue;
 			const std::int64_t spent = Added(buy->total, context.Priced(legs, *thrust, tonnes).charges);
 			const std::int64_t total = Added(spent, profit);
-			const auto bond =
-			    static_cast<std::int64_t>(std::ceil(static_cast<double>(total) * bondRate));
+			const double bonded = std::ceil(static_cast<double>(total) * bondRate);
+			const std::int64_t bond = bonded < 0x1p63 ? static_cast<std::int64_t>(bonded) : kMaxCredits;
 			if (total > tender.budget || Added(spent, bond) > balance)
 				continue;
 			const std::int64_t headroom = tender.budget - total;

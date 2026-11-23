@@ -517,7 +517,15 @@ bool NotNegative(double value)
 }
 
 
-// Each quantity names an item, and is above 0.
+// The longest economic turn: a year of simulation seconds, so its steps fit any count.
+constexpr double kMaxIntervalSeconds = 365.0 * 24.0 * 3'600.0;
+// The most a starting balance holds: half the credits' range, so no payment into it overflows.
+constexpr std::int64_t kMaxFunds = std::int64_t{1} << 62;
+// The most whole credits of gross a withheld credit is for, within the credits' range.
+constexpr double kMaxPerTaxCredit = 0x1p62;
+
+
+// Each quantity names an item, and is above 0 and within a warehouse.
 void CheckTotes(
     Checker &checker, const Jettison::Sim::DefinitionRegistry &registry,
     const std::vector<ItemTotes> &counts, std::string_view field)
@@ -531,7 +539,8 @@ void CheckTotes(
 		    pItem != nullptr && pItem->itemId == count.itemId, field,
 		    std::format("'{}' names no item", count.itemId));
 		checker.Require(
-		    count.totes > 0, field, std::format("'{}' must be a count of totes above 0", count.itemId));
+		    count.totes > 0 && count.totes <= Core::kMaxWarehouseTotes, field,
+		    std::format("'{}' must be a count of totes above 0 and within a warehouse", count.itemId));
 		checker.Require(
 		    items.insert(count.itemId).second, field, std::format("'{}' is given twice", count.itemId));
 	}
@@ -545,16 +554,19 @@ void CheckTuning(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 		const TuningDefinition &tuning = *registry.Find<TuningDefinition>(name);
 		At<TuningDefinition>(checker, name, name);
 		checker.Require(
-		    Positive(tuning.economy.intervalSeconds), "economy.intervalSeconds", "must be above 0");
+		    Positive(tuning.economy.intervalSeconds) &&
+		        tuning.economy.intervalSeconds <= kMaxIntervalSeconds,
+		    "economy.intervalSeconds", "must be above 0 and at most a year");
 		checker.Require(
 		    Fraction(tuning.economy.wageTaxRate) && tuning.economy.wageTaxRate < 1.0,
 		    "economy.wageTaxRate", "must be in [0, 1)");
 		// A credit is withheld for each whole 1 / rate of gross paid, carried between payments.
 		checker.Require(
 		    tuning.economy.wageTaxRate <= 0.0 ||
-		        std::abs(
-		            1.0 / tuning.economy.wageTaxRate - std::round(1.0 / tuning.economy.wageTaxRate)) <
-		            1e-9,
+		        (1.0 / tuning.economy.wageTaxRate <= kMaxPerTaxCredit &&
+		         std::abs(
+		             1.0 / tuning.economy.wageTaxRate - std::round(1.0 / tuning.economy.wageTaxRate)) <
+		             1e-9),
 		    "economy.wageTaxRate", "must be 0 or one credit in a whole number of credits");
 
 		checker.Require(!tuning.needs.empty(), "needs", "holds none");
@@ -726,7 +738,9 @@ void CheckTuning(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 		        pricing.maxLevelBps <= 1'000'000,
 		    "charges.pricing",
 		    "needs stepBps in [0, 1000000] and 0 <= minLevelBps <= 10000 <= maxLevelBps <= 1000000");
-		checker.Require(tuning.brokers.treasury >= 0, "brokers.treasury", "must not be below 0");
+		checker.Require(
+		    tuning.brokers.treasury >= 0 && tuning.brokers.treasury <= kMaxFunds, "brokers.treasury",
+		    "must be in [0, 2^62]");
 		checker.Require(
 		    tuning.brokers.spreadBps >= 0 && tuning.brokers.spreadBps < 20000, "brokers.spreadBps",
 		    "must be in [0, 20000)");
@@ -1076,8 +1090,10 @@ void CheckScenarios(
 			    NotNegative(region.population), "regions",
 			    problem("population must be finite and not below 0"));
 			checker.Require(
-			    region.householdFunds >= 0 && region.publicFunds >= 0 && region.employerFunds >= 0,
-			    "regions", problem("funds must not be below 0"));
+			    region.householdFunds >= 0 && region.publicFunds >= 0 && region.employerFunds >= 0 &&
+			        region.householdFunds <= kMaxFunds && region.publicFunds <= kMaxFunds &&
+			        region.employerFunds <= kMaxFunds,
+			    "regions", problem("funds must be in [0, 2^62]"));
 			for (const double condition : {region.health, region.happiness})
 				checker.Require(
 				    NotNegative(condition) && condition <= 100.0, "regions",

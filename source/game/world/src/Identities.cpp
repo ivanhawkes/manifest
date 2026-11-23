@@ -2,7 +2,9 @@
 
 #include <cstdint>
 #include <format>
+#include <functional>
 #include <limits>
+#include <set>
 #include <stdexcept>
 #include <string_view>
 #include <tuple>
@@ -188,10 +190,16 @@ std::function<void()> Identities::Load(
 	for (const auto [entity, facilities] : loaded.view<const Facilities>().each())
 		if (const std::optional<std::string> problem = Broken(facilities))
 			reader.Fail(*problem);
+	// A region works one project at a time, its queue's head (D-110).
+	std::set<std::string, std::less<>> underWay;
 	for (const auto [entity, project] : loaded.view<const Project>().each())
 	{
 		if (const std::optional<std::string> problem = Broken(project))
 			reader.Fail(*problem);
+		if ((project.phase == ProjectPhase::Tendering || project.phase == ProjectPhase::Working ||
+		     project.phase == ProjectPhase::Paused) &&
+		    !underWay.insert(project.regionId).second)
+			reader.Fail(std::format("the region '{}' has two projects under way", project.regionId));
 		const auto *pStock = loaded.try_get<const Stock>(entity);
 		if (pStock == nullptr)
 			reader.Fail(std::format("the project '{}' holds no stock", project.projectId));

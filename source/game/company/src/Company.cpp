@@ -523,8 +523,9 @@ void Refuelled(SimWorld &world, const Rules &rules, entt::entity ship, std::int6
 
 	// Whole totes of reaction mass, straight from the warehouse into the tanks.
 	const double room = tanks->reactionMass - registry.get<World::Fuel>(ship).reactionMass;
-	if (const auto totes =
-	        static_cast<std::uint64_t>(std::max(0.0, std::floor(room / rules.reactionMassPerTote)));
+	if (const auto totes = static_cast<std::uint64_t>(std::clamp(
+	        std::floor(room / rules.reactionMassPerTote), 0.0,
+	        static_cast<double>(Core::kMaxWarehouseTotes)));
 	    totes > 0)
 		if (const std::uint64_t bought = rules.buy(
 		        world, record.companyId, record.dockedAt, fuel.reactionMassItemId, totes, budget());

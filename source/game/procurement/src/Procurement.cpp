@@ -322,7 +322,7 @@ std::uint64_t StillNeeded(
 // What a tender's issuer may not publish, whoever it is: Succeeded for one it may.
 Result Check(const entt::registry &registry, const Rules &rules, const Terms &terms)
 {
-	if (terms.totes == 0 ||
+	if (terms.totes == 0 || terms.totes > Core::kMaxWarehouseTotes ||
 	    (!terms.projectId.empty() &&
 	     terms.totes > StillNeeded(registry, rules, terms.regionId, terms.projectId, terms.itemId)))
 		return Result::InvalidQuantity;
@@ -337,6 +337,18 @@ Result Check(const entt::registry &registry, const Rules &rules, const Terms &te
 	        .balance < terms.budget)
 		return Result::InsufficientFunds;
 	return Result::Succeeded;
+}
+
+
+constexpr std::int64_t kMaxCredits = std::numeric_limits<std::int64_t>::max();
+
+// Credits the account. What procurement returns or pays out was the world's already, so only a
+// balance near the limit overflows, an invariant breach that stops the step rather than wrap.
+void Credit(World::Account &account, std::int64_t amount)
+{
+	if (amount > kMaxCredits - account.balance)
+		throw std::overflow_error{"a procurement payment exceeds its account"};
+	account.balance += amount;
 }
 
 
@@ -371,8 +383,9 @@ void Close(SimWorld &world, const Rules &rules, entt::entity entity, TenderState
 	World::Tender &tender = registry.get<World::Tender>(entity);
 	const std::string &id = registry.get<const World::Identity>(entity).id;
 	const entt::entity account = Required(rules, Kind::TenderAccount, id);
-	registry.get<World::Account>(Required(rules, Kind::PublicAccount, tender.regionId)).balance +=
-	    registry.get<const World::Account>(account).balance;
+	Credit(
+	    registry.get<World::Account>(Required(rules, Kind::PublicAccount, tender.regionId)),
+	    registry.get<const World::Account>(account).balance);
 	rules.pIdentities->Destroy(registry, account);
 	tender.state = state;
 	tender.closed = world.Clock().Step();
@@ -450,8 +463,9 @@ void AwardAt(SimWorld &world, const Rules &rules, entt::entity entity)
 	JETTISON_VERIFY(held != entt::null);
 	registry.emplace<World::Account>(held, bond);
 	World::Account &reserved = registry.get<World::Account>(Required(rules, Kind::TenderAccount, id));
-	registry.get<World::Account>(Required(rules, Kind::PublicAccount, tender.regionId)).balance +=
-	    reserved.balance - total;
+	Credit(
+	    registry.get<World::Account>(Required(rules, Kind::PublicAccount, tender.regionId)),
+	    reserved.balance - total);
 	reserved.balance = total;
 	tender.state = TenderState::Awarded;
 	tender.companyId = companyId;
@@ -474,11 +488,14 @@ void Settle(SimWorld &world, const Rules &rules, entt::entity entity)
 	const auto whole = static_cast<std::int64_t>(tender.totes);
 	const auto missing = static_cast<std::int64_t>(tender.totes - tender.delivered);
 	// Exactly, as World::Owed: the bond's remainder times the missing totes is below Q squared.
-	const std::int64_t forfeit = held / whole * missing + held % whole * missing / whole;
-	registry.get<World::Account>(Required(rules, Kind::PublicAccount, tender.regionId)).balance +=
-	    forfeit;
-	registry.get<World::Account>(Required(rules, Kind::CompanyAccount, tender.companyId)).balance +=
-	    held - forfeit;
+	const std::int64_t forfeit =
+	    held / whole * missing +
+	    static_cast<std::int64_t>(static_cast<__int128>(held % whole) * missing / whole);
+	Credit(
+	    registry.get<World::Account>(Required(rules, Kind::PublicAccount, tender.regionId)), forfeit);
+	Credit(
+	    registry.get<World::Account>(Required(rules, Kind::CompanyAccount, tender.companyId)),
+	    held - forfeit);
 	rules.pIdentities->Destroy(registry, bond);
 	Close(world, rules, entity, missing == 0 ? TenderState::Fulfilled : TenderState::Defaulted);
 }
@@ -606,6 +623,19 @@ Result Delivers(SimWorld &world, const Rules &rules, const Actor &actor, const D
 	const std::uint64_t accepted = std::min({lot->totes, tender.totes - tender.delivered, room});
 	if (accepted == 0)
 		return Result::CapacityExceeded;
+	// Its payment, and the bond back with the last tote, planned before anything is written.
+	World::Tender after = tender;
+	after.delivered += accepted;
+	const std::int64_t paid = World::Owed(after) - World::Owed(tender);
+	const std::string &id = registry.get<const World::Identity>(entity).id;
+	const std::int64_t bond =
+	    after.delivered == after.totes
+	        ? registry.get<const World::Account>(Required(rules, Kind::BondAccount, id)).balance
+	        : 0;
+	World::Account &supplier =
+	    registry.get<World::Account>(Required(rules, Kind::CompanyAccount, tender.companyId));
+	if (paid > kMaxCredits - supplier.balance || bond > kMaxCredits - supplier.balance - paid)
+		return Result::CapacityExceeded;
 
 	lot->totes -= accepted;
 	if (lot->totes == 0)
@@ -614,13 +644,9 @@ Result Delivers(SimWorld &world, const Rules &rules, const Actor &actor, const D
 		holding->available += accepted;
 	else
 		stock.holdings.insert(holding, {tender.venueId, tender.itemId, accepted, 0});
-	const std::int64_t before = World::Owed(tender);
-	tender.delivered += accepted;
-	const std::int64_t paid = World::Owed(tender) - before;
-	const std::string &id = registry.get<const World::Identity>(entity).id;
+	tender.delivered = after.delivered;
 	registry.get<World::Account>(Required(rules, Kind::TenderAccount, id)).balance -= paid;
-	registry.get<World::Account>(Required(rules, Kind::CompanyAccount, tender.companyId)).balance +=
-	    paid;
+	supplier.balance += paid;
 	if (tender.delivered == tender.totes)
 	{
 		const std::string regionId = tender.regionId;
@@ -860,7 +886,7 @@ void Issue(SimWorld &world, const Rules &rules, bool reliefs)
 				                  budget.value_or(0), tuning.aiBidDays,    tuning.aiDeliveryDays};
 				if (!budget)
 					continue;
-				if (pPolicy != nullptr && committed + *budget > pPolicy->limit)
+				if (pPolicy != nullptr && *budget > pPolicy->limit - committed)
 				{
 					pPolicy->wait = World::DevelopmentWait::SpendingLimit;
 					continue;

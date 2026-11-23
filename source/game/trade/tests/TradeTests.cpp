@@ -564,6 +564,35 @@ TEST_CASE("An order life or a turn that is not whole steps refuses to start")
 }
 
 
+TEST_CASE("A fill dearer than its buy's escrow is refused, and a buy short of escrow does not load")
+{
+	// Past a double's exact range, a whole fill of these totes costs more than their escrow.
+	constexpr std::int64_t kLimit = 8'701'630'661'466'666'692;
+	constexpr std::uint64_t kTotes = 33'072;
+	Hosted hosted;
+	hosted.Give("CompanyB", kTotes);
+	hosted.world.Registry()
+	    .get<World::Account>(hosted.identities.Find(Kind::CompanyAccount, "CompanyA"))
+	    .balance = std::numeric_limits<std::int64_t>::max();
+	REQUIRE(hosted.Place(kBea, Side::Sell, kTotes, kLimit) == Result::Succeeded);
+	const auto before = hosted.Now();
+	CHECK(hosted.Place(kAda, Side::Buy, kTotes, kLimit) == Result::InvalidPrice);
+	CHECK(hosted.Now() == before);
+
+	Hosted resting;
+	REQUIRE(resting.Place(kAda, Side::Buy, 1, Credits(100)) == Result::Succeeded);
+	const auto placed = resting.Placed("CompanyA", 1);
+	REQUIRE(placed);
+	resting.world.Registry()
+	    .get<World::Order>(resting.identities.Find(Kind::Order, placed->first))
+	    .escrow = 0;
+	Hosted loaded;
+	CHECK_THROWS_WITH_AS(
+	    loaded.world.Load(resting.world.Save()), doctest::Contains("holds escrow it cannot"),
+	    Jettison::Serialise::FormatError);
+}
+
+
 TEST_CASE("A save with an open order loads and carries on as the world it came from")
 {
 	Hosted hosted{true};

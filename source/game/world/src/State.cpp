@@ -105,7 +105,9 @@ std::optional<std::string> Broken(const Order &order)
 		return std::format("order {} has no price, fee or place in the book", order.sequence);
 	if (order.remaining == 0 || order.remaining > order.totes || order.totes > Core::kMaxWarehouseTotes)
 		return std::format("order {} has nothing left or more than it was placed for", order.sequence);
-	if (order.escrow < 0 || (order.side == Side::Sell && order.escrow != 0))
+	// A buy reserves at least a credit for each tote it may still fill (Trade::PerTote).
+	if (order.escrow < 0 || (order.side == Side::Sell && order.escrow != 0) ||
+	    (order.side == Side::Buy && order.escrow < static_cast<std::int64_t>(order.remaining)))
 		return std::format("order {} holds escrow it cannot", order.sequence);
 	return std::nullopt;
 }
@@ -384,8 +386,10 @@ std::optional<std::string> Broken(const Tender &tender)
 	if (tender.regionId.empty() || tender.itemId.empty() || tender.venueId.empty() ||
 	    tender.projectId.empty() == tender.needId.empty())
 		return "a tender names no region, item or venue, or not one of a project and a need";
-	if (tender.totes == 0 || tender.budget <= 0 || tender.deliveryDays == 0)
-		return "a tender's totes, budget or delivery window is not above 0";
+	if (tender.totes == 0 || tender.totes > Core::kMaxWarehouseTotes || tender.budget <= 0 ||
+	    tender.deliveryDays == 0)
+		return "a tender's totes, budget or delivery window is not above 0, or its totes past a "
+		       "warehouse's";
 	if (tender.bidClose <= tender.published)
 		return "a tender's bids close before it is published";
 	const bool closed = tender.state != TenderState::Open && tender.state != TenderState::Awarded;
@@ -417,11 +421,12 @@ std::int64_t Owed(const Tender &tender)
 {
 	if (tender.totes == 0)
 		return 0;
-	// Exactly, with T = a Q + b: T q / Q = a q + b q / Q, and b q is below Q squared.
+	// Exactly, with T = a Q + b: T q / Q = a q + b q / Q, b q below Q squared, so in 128 bits.
 	const auto whole = static_cast<std::int64_t>(tender.totes);
 	const auto part = static_cast<std::int64_t>(tender.delivered);
-	const std::int64_t rest = tender.price % whole * part;
-	return tender.price / whole * part + (2 * rest + whole) / (2 * whole);
+	const __int128 rest = static_cast<__int128>(tender.price % whole) * part;
+	return tender.price / whole * part +
+	       static_cast<std::int64_t>((2 * rest + whole) / (2 * static_cast<__int128>(whole)));
 }
 
 

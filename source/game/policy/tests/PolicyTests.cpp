@@ -430,6 +430,23 @@ TEST_CASE("A live ask past the target is skipped, and the job replans from its r
 }
 
 
+TEST_CASE("An allowance past all a lot cost sells it, its floor below 0")
+{
+	Hosted hosted{Scenario("trading")};
+	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
+	REQUIRE(hosted.Line("Ada", "VenueOreHighport", "ItemFurs").Bid() > 0);
+	hosted.Lot(10, 100);
+	const std::int64_t before = hosted.Balance("Company1");
+	REQUIRE(
+	    hosted.SetPolicy(kAda, {"Ship1", true, 0, std::numeric_limits<std::int64_t>::max()}) ==
+	    Result::Succeeded);
+	hosted.world.Step();
+	// The floor less the allowance once overflowed as the route's charges were added to it, which the
+	// sanitised build stops on.
+	CHECK(hosted.Balance("Company1") > before);
+}
+
+
 TEST_CASE("A lot no bid clears is kept, and the allowance is shared across its sales, never multiplied")
 {
 	// Furs made at every station that trades them and wanted at none, so no bid elsewhere is over

@@ -374,6 +374,12 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	CheckRefused(
 	    balance, "version: 1\neconomy: {wageTaxRate: 1}\n", "economy.wageTaxRate must be in [0, 1)");
 	CheckRefused(
+	    balance, "version: 1\neconomy: {intervalSeconds: 31536001}\n",
+	    "economy.intervalSeconds must be above 0 and at most a year");
+	CheckRefused(
+	    balance, "version: 1\neconomy: {wageTaxRate: 1e-300}\n",
+	    "economy.wageTaxRate must be 0 or one credit in a whole number of credits");
+	CheckRefused(
 	    balance, "version: 1\ncompany: {startingCredits: 0}\n",
 	    "company.startingCredits must be above 0");
 	CheckRefused(
@@ -436,7 +442,10 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	    balance, "version: 1\nmarket: {salesWindowSeconds: 0}\n",
 	    "market.salesWindowSeconds must be above 0");
 	CheckRefused(
-	    balance, "version: 1\nbrokers: {treasury: -1}\n", "brokers.treasury must not be below 0");
+	    balance, "version: 1\nbrokers: {treasury: -1}\n", "brokers.treasury must be in [0, 2^62]");
+	CheckRefused(
+	    balance, "version: 1\nbrokers: {treasury: 4611686018427387905}\n",
+	    "brokers.treasury must be in [0, 2^62]");
 	CheckRefused(
 	    balance, "version: 1\nbrokers: {spreadBps: 20000}\n",
 	    "brokers.spreadBps must be in [0, 20000)");
@@ -499,6 +508,11 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	    "version: 1\nrecipes: !merge=recipeId\n  - {recipeId: RecipeBronze, outputs: [{itemId: "
 	    "ItemBronze, totes: 0}]}\n",
 	    "'ItemBronze' must be a count of totes above 0");
+	CheckRefused(
+	    balance,
+	    "version: 1\nrecipes: !merge=recipeId\n  - {recipeId: RecipeBronze, outputs: [{itemId: "
+	    "ItemBronze, totes: 9223372036854775808}]}\n",
+	    "'ItemBronze' must be a count of totes above 0 and within a warehouse");
 	CheckRefused(
 	    balance,
 	    "version: 1\nprojects: !merge=projectId\n  - {projectId: ProjectBronzeMetallurgy, inputs: "
@@ -904,8 +918,11 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	    trading, region("governorId: OrganisationNowhere"),
 	    "'RegionBrineCoast' governor 'OrganisationNowhere' names no organisation");
 	CheckRefused(trading, region("population: -1"), "'RegionBrineCoast' population must be finite");
-	CheckRefused(trading, region("publicFunds: -1"), "'RegionBrineCoast' funds must not be below 0");
-	CheckRefused(trading, region("employerFunds: -1"), "'RegionBrineCoast' funds must not be below 0");
+	CheckRefused(trading, region("publicFunds: -1"), "'RegionBrineCoast' funds must be in [0, 2^62]");
+	CheckRefused(trading, region("employerFunds: -1"), "'RegionBrineCoast' funds must be in [0, 2^62]");
+	CheckRefused(
+	    trading, region("householdFunds: 4611686018427387905"),
+	    "'RegionBrineCoast' funds must be in [0, 2^62]");
 	const auto ore = [](std::string_view market)
 	{
 		return std::format(

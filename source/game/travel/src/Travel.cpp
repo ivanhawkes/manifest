@@ -383,8 +383,10 @@ void RegisterTypes()
 
 std::uint32_t MostMilliG(const Jettison::Transit::MotionProfile &mode)
 {
-	return static_cast<std::uint32_t>(
-	    std::lround(static_cast<double>(mode.sustainedAcceleration) / kStandardGravity * kMilliGPerG));
+	const double milliG = std::clamp(
+	    static_cast<double>(mode.sustainedAcceleration) / kStandardGravity * kMilliGPerG, 0.0,
+	    static_cast<double>(std::numeric_limits<std::uint32_t>::max()));
+	return static_cast<std::uint32_t>(std::lround(milliG));
 }
 
 

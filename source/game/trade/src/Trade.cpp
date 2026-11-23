@@ -647,9 +647,10 @@ Result Post(SimWorld &world, const Rules &rules, World::Order order, bool rests 
 		    Cost(maker.limit, unitsPerTote * static_cast<double>(totes), false);
 		const std::optional<std::int64_t> buyerFee = gross ? Fee(*gross, buy.feeBps) : std::nullopt;
 		const std::optional<std::int64_t> sellerFee = gross ? Fee(*gross, sell.feeBps) : std::nullopt;
-		if (!buyerFee || !sellerFee)
+		// Past a double's exact range a whole fill can cost more than the escrow its totes reserved,
+		// as can a loaded buy's: refused, the ledger not yet committed.
+		if (!buyerFee || !sellerFee || *gross > buy.escrow || *buyerFee > buy.escrow - *gross)
 			return Result::InvalidPrice;
-		JETTISON_VERIFY(*gross <= buy.escrow && *buyerFee <= buy.escrow - *gross);
 		buy.escrow -= *gross + *buyerFee;
 		if (!ledger.Credit(World::AccountOf(sell.ownerKind), sell.ownerId, *gross - *sellerFee) ||
 		    !ledger.Credit(Kind::VenueAccount, order.venueId, *buyerFee) ||
@@ -1005,7 +1006,7 @@ void Requote(SimWorld &world, const Rules &rules)
 				    order.ownerKind == Kind::Broker)
 				{
 					resting[index].emplace_back(order.sequence, entity);
-					funds += order.escrow;
+					funds = order.escrow > kMaxCredits - funds ? kMaxCredits : funds + order.escrow;
 				}
 		// What it holds of each good, available and reserved, in one pass of its stock.
 		std::vector<std::uint64_t> stocked(goods.size(), 0);

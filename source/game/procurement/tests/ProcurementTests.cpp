@@ -454,6 +454,18 @@ TEST_CASE("A save whose project holds or has worked what it may not does not loa
 		    broken.Project().phase = ProjectPhase::Done;
 	    });
 	refused([](Hosted &broken) { broken.Project().projectId = "ProjectNowhere"; });
+	// Two projects of one region under way.
+	refused(
+	    [](Hosted &broken)
+	    {
+		    broken.Direct();
+		    const std::string guild{"ProjectSmeltersGuild"};
+		    REQUIRE(broken.Run(kAda, kQueue, Queue{std::string{kEast}, guild}) == Result::Succeeded);
+		    broken.world.Registry()
+		        .get<World::Project>(
+		            broken.identities.Find(Kind::Project, World::ProjectId(kEast, guild)))
+		        .phase = ProjectPhase::Tendering;
+	    });
 	refused([](Hosted &broken) { broken.Project().regionId = "RegionNowhere"; });
 	refused([](Hosted &broken)
 	        { broken.world.Registry().remove<World::Stock>(broken.ProjectEntity()); });
@@ -759,6 +771,13 @@ TEST_CASE("A save whose tender reserves other than its budget does not load")
 		    broken.world.Registry()
 		        .get<World::Tender>(broken.identities.Find(Kind::Tender, copper))
 		        .totes = 0;
+	    });
+	refused(
+	    [&](Hosted &broken)
+	    {
+		    broken.world.Registry()
+		        .get<World::Tender>(broken.identities.Find(Kind::Tender, copper))
+		        .totes = Manifest::Core::kMaxWarehouseTotes + 1;
 	    });
 	refused(
 	    [&](Hosted &broken)
@@ -1125,6 +1144,34 @@ TEST_CASE(
 	CHECK(hosted.Balance(Kind::TenderAccount, tin) == 500);
 	CHECK(hosted.Cargo("Ship1").lots == std::vector<World::Lot>{{"ItemCopper", 1}});
 	CHECK(hosted.Held().holdings.empty());
+}
+
+
+TEST_CASE("A delivery its supplier's account cannot be paid for is refused, and what is owed is exact")
+{
+	Hosted hosted;
+	hosted.Direct();
+	hosted.AddHauler("Di", {{"ItemCopper", 2}});
+	REQUIRE(hosted.Publishes("ItemCopper", 9, 10'000, 1, 30) == Result::Succeeded);
+	const std::string copper = TenderId(kEast, kBronze, "ItemCopper", 1);
+	hosted.Award(copper, kDi, "Company1", 100);
+	World::Account &company = hosted.world.Registry().get<World::Account>(
+	    hosted.identities.Find(Kind::CompanyAccount, "Company1"));
+	constexpr std::int64_t kNearLimit = std::numeric_limits<std::int64_t>::max() - 10;
+	company.balance = kNearLimit;
+	// 2 of 9 of 100 is 22 credits, past the account's room of 10: nothing delivered or paid.
+	CHECK(hosted.Run(kDi, kDeliver, Deliver{copper, "Ship1"}) == Result::CapacityExceeded);
+	CHECK(hosted.TenderOf(copper).delivered == 0);
+	CHECK(company.balance == kNearLimit);
+	CHECK(hosted.Balance(Kind::TenderAccount, copper) == 100);
+	CHECK(hosted.Cargo("Ship1").lots == std::vector<World::Lot>{{"ItemCopper", 2}});
+
+	// Half of a tender of four billion totes is half its total, to the nearest credit.
+	World::Tender large;
+	large.totes = 4'000'000'000;
+	large.price = 3'999'999'999;
+	large.delivered = 2'000'000'000;
+	CHECK(World::Owed(large) == 2'000'000'000);
 }
 
 
