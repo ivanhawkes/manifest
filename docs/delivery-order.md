@@ -121,7 +121,7 @@ joiner founding the last free region (`fixture_development`), with no engine edi
 (2026-11-23): **Stage 4 is closed**, its checks each held by a gated test, the four strands proved
 together in the development fixture, saved with a journey and an order open and continued from the
 pack ([delivered](stage-4-trading-plan.md#delivered-w14-2026-11-23)), with no engine edit. Its
-[cross-review](history.md#stage-4-cross-review--2026-11-23) is done, two rounds. Next: R01; W22 waits
+[cross-review](history.md#stage-4-cross-review--2026-11-23) is done, three rounds. Next: R01; W22 waits
 for the first larger hull.
 
 ## Priority 0: maintenance before Stage 1

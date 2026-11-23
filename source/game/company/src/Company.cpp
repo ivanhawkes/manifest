@@ -576,8 +576,21 @@ void Refuelled(SimWorld &world, const Rules &rules, entt::entity ship, std::int6
 	if (const double given = std::min(space, Aboard(cargo, fuel.pelletItemId, rules.pelletsPerTote));
 	    given > 0.0)
 	{
+		const auto sealed = [&]
+		{
+			const auto lot = std::ranges::find(cargo.lots, fuel.pelletItemId, &World::Lot::itemId);
+			return lot == cargo.lots.end() ? std::uint64_t{0} : lot->totes;
+		};
+		const std::uint64_t before = sealed();
 		Take(world, cargo, fuel.pelletItemId, rules.pelletsPerTote, given, 0.0);
 		held.pellets = given == space ? tanks->pellets : held.pellets + given;
+		// The sealed totes opened leave a job's lot of pellets, after any aboard beyond it.
+		if (auto *pJob = registry.try_get<World::Job>(ship); pJob != nullptr)
+		{
+			const std::uint64_t opened = before - sealed();
+			const std::uint64_t spare = before > pJob->totes ? before - pJob->totes : 0;
+			World::LeaveLot(*pJob, fuel.pelletItemId, opened > spare ? opened - spare : 0);
+		}
 	}
 }
 

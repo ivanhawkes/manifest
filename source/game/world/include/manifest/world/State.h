@@ -772,6 +772,14 @@ struct Job
 	bool operator==(const Job &) const = default;
 };
 
+// The part of a whole for n of all t, rounded up; the whole for all of them.
+std::int64_t Share(std::int64_t whole, std::uint64_t n, std::uint64_t t);
+
+// Totes of the item leaving the job's lot other than by a sale, seized or opened for its ship's
+// magazine, as a sale's do, with their shares of its cost and charges; a job left with no lot
+// chooses again. None for a job whose lot is of another item.
+void LeaveLot(Job &job, std::string_view itemId, std::uint64_t totes);
+
 // The last price a company paid for an item, a Core::Decimal's raw microcredits per the item's unit,
 // above 0.
 struct PaidPrice

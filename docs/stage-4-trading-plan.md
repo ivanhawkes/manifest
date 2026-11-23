@@ -1841,3 +1841,8 @@ Stage 5 is handed what Stage 4 closed on, each where it is defined:
 
 Stage 5 adds durable acknowledgement, journal and snapshot recovery, backup and restore and
 relocation. No Stage 4 success response claims durability.
+
+Left open: a snapshot longer than a network packet (64 KiB) is dropped, so a remote client's view
+freezes while it is; Jettison is to split a message across packets with its next change, and
+Manifest moves to delta snapshots only if that is not enough
+([history](history.md#stage-4-cross-review--2026-11-23)).

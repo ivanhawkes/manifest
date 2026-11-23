@@ -267,6 +267,28 @@ const ClassFees *Find(const Fees &fees, std::string_view padClass)
 }
 
 
+std::int64_t Share(std::int64_t whole, std::uint64_t n, std::uint64_t t)
+{
+	if (n >= t || whole <= 0)
+		return n >= t ? whole : 0;
+	return static_cast<std::int64_t>(
+	    (static_cast<__int128>(whole) * n + static_cast<__int128>(t) - 1) / t);
+}
+
+
+void LeaveLot(Job &job, std::string_view itemId, std::uint64_t totes)
+{
+	if (job.totes == 0 || job.itemId != itemId || totes == 0)
+		return;
+	const std::uint64_t left = std::min(totes, job.totes);
+	job.cost -= Share(job.cost, left, job.totes);
+	job.charges -= Share(job.charges, left, job.totes);
+	job.totes -= left;
+	if (job.totes == 0)
+		job = Job{};
+}
+
+
 std::optional<std::string> Broken(const Arrears &arrears)
 {
 	if (arrears.owed <= 0)

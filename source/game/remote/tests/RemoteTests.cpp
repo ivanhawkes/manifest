@@ -164,6 +164,44 @@ std::vector<std::byte> Provision(const std::string &principal)
 } // namespace
 
 
+TEST_CASE("a snapshot crosses the wire whole, its policies, jobs, bids and tenders with the rest")
+{
+	namespace World = Manifest::World;
+	namespace Query = Manifest::Query;
+	RegisterTypes();
+	World::Job job;
+	job.itemId = "ItemCopper";
+	job.totes = 3;
+	job.tenderId = "Tender1";
+	Query::ShipView ship;
+	ship.shipId = "Ship1";
+	ship.policy = World::Policy{true, 5, 6, 2'500, true};
+	ship.job = job;
+	World::Bid bid;
+	bid.tenderId = "Tender1";
+	bid.companyId = "Company1";
+	bid.total = 100;
+	bid.revision = 1;
+	Query::CompanyView company;
+	company.companyId = "Company1";
+	company.ships = {ship};
+	company.bids = {{"Tender1/Company1", bid}};
+	World::Tender tender;
+	tender.regionId = "RegionForgeEast";
+	tender.itemId = "ItemCopper";
+	tender.totes = 3;
+	tender.budget = 500;
+	Query::Snapshot snapshot;
+	snapshot.step = 7;
+	snapshot.companies = {company};
+	snapshot.tenders = {{"Tender1", tender}};
+	const Jettison::Serialise::FormatVersion version{kVersion};
+	CHECK(
+	    Jettison::Serialise::BinaryArchive::Read<Query::Snapshot>(
+	        Jettison::Serialise::BinaryArchive::Write(snapshot, version), version) == snapshot);
+}
+
+
 TEST_CASE("a token file keeps digests and resolves only the tokens it was issued")
 {
 	const std::string token = Jettison::Net::GenerateToken();

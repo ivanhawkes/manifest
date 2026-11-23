@@ -37,18 +37,27 @@ void RegisterTypes()
 		    .Field<&Query::ShipView::lifeSupport>("lifeSupport", kSaved)
 		    .Field<&Query::ShipView::hold>("hold", kSaved)
 		    .Field<&Query::ShipView::systems>("systems", kSaved)
+		    .Field<&Query::ShipView::policy>("policy", kSaved)
+		    .Field<&Query::ShipView::job>("job", kSaved)
 		    .Field<&Query::ShipView::fuel>("fuel", kSaved)
 		    .Field<&Query::ShipView::fuelTanks>("fuelTanks", kSaved);
 		RegisterType<Query::OrderView>("Manifest.Query.OrderView")
 		    .Field<&Query::OrderView::orderId>("orderId", kSaved)
 		    .Field<&Query::OrderView::order>("order", kSaved);
+		RegisterType<Query::BidView>("Manifest.Query.BidView")
+		    .Field<&Query::BidView::bidId>("bidId", kSaved)
+		    .Field<&Query::BidView::bid>("bid", kSaved);
+		RegisterType<Query::TenderView>("Manifest.Query.TenderView")
+		    .Field<&Query::TenderView::tenderId>("tenderId", kSaved)
+		    .Field<&Query::TenderView::tender>("tender", kSaved);
 		RegisterType<Query::CompanyView>("Manifest.Query.CompanyView")
 		    .Field<&Query::CompanyView::companyId>("companyId", kSaved)
 		    .Field<&Query::CompanyView::displayName>("displayName", kSaved)
 		    .Field<&Query::CompanyView::credits>("credits", kSaved)
 		    .Field<&Query::CompanyView::holdings>("holdings", kSaved)
 		    .Field<&Query::CompanyView::ships>("ships", kSaved)
-		    .Field<&Query::CompanyView::orders>("orders", kSaved);
+		    .Field<&Query::CompanyView::orders>("orders", kSaved)
+		    .Field<&Query::CompanyView::bids>("bids", kSaved);
 		RegisterType<Query::MarketView>("Manifest.Query.MarketView")
 		    .Field<&Query::MarketView::report>("report", kSaved)
 		    .Field<&Query::MarketView::live>("live", kSaved);
@@ -71,6 +80,7 @@ void RegisterTypes()
 		    .Field<&Query::Snapshot::step>("step", kSaved)
 		    .Field<&Query::Snapshot::companies>("companies", kSaved)
 		    .Field<&Query::Snapshot::markets>("markets", kSaved)
+		    .Field<&Query::Snapshot::tenders>("tenders", kSaved)
 		    .Field<&Query::Snapshot::regions>("regions", kSaved);
 		RegisterType<Welcome>("Manifest.Remote.Welcome")
 		    .Field<&Welcome::actorKind>("actorKind", kSaved)

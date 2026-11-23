@@ -332,16 +332,6 @@ Route Priced(
 }
 
 
-// The part of a whole for n of all t, rounded up; the whole for all of them.
-std::int64_t Share(std::int64_t whole, std::uint64_t n, std::uint64_t t)
-{
-	if (n >= t || whole <= 0)
-		return n >= t ? whole : 0;
-	return static_cast<std::int64_t>(
-	    (static_cast<__int128>(whole) * n + static_cast<__int128>(t) - 1) / t);
-}
-
-
 // a * n / t rounded up, for an a of either sign.
 std::int64_t CeilDiv(std::int64_t a, std::uint64_t n, std::uint64_t t)
 {
@@ -698,7 +688,7 @@ std::optional<std::int64_t> WalkLimit(
 		// In half credits, past the credits' range when the least is near its limit.
 		if (level.price < *limit && 2 * static_cast<__int128>(proceeds) -
 		                                    static_cast<__int128>(kRoundingHalvesPerFill) * fills >=
-		                                2 * static_cast<__int128>(Share(least, sold, totes)))
+		                                2 * static_cast<__int128>(World::Share(least, sold, totes)))
 			limit = level.price;
 	}
 	return limit;
@@ -911,7 +901,11 @@ std::optional<Tendered> ChooseTender(const Context &context, const std::optional
 			                                                : MostThrust(fuelled);
 			if (!thrust || !fuelled(*thrust))
 				continue;
-			const std::int64_t spent = Added(buy->total, context.Priced(legs, *thrust, tonnes).charges);
+			const Route route = context.Priced(legs, *thrust, tonnes);
+			// A contract it could not deliver within its window is not bid on: won, it would default.
+			if (route.seconds > static_cast<double>(tender.deliveryDays) * kSecondsPerDay)
+				continue;
+			const std::int64_t spent = Added(buy->total, route.charges);
 			const std::int64_t total = Added(spent, profit);
 			const double bonded = std::ceil(static_cast<double>(total) * bondRate);
 			const std::int64_t bond = bonded < 0x1p63 ? static_cast<std::int64_t>(bonded) : kMaxCredits;
@@ -1102,10 +1096,11 @@ void Sell(const Context &context)
 	const std::int64_t net = context.Balance() - before;
 
 	const std::int64_t left = whole - least;
-	const std::int64_t shortfall = std::max<std::int64_t>(0, Share(whole, sold, job.totes) - net);
+	const std::int64_t shortfall =
+	    std::max<std::int64_t>(0, World::Share(whole, sold, job.totes) - net);
 	job.allowanceSpent += std::min(shortfall, left);
-	job.cost -= Share(job.cost, sold, job.totes);
-	job.charges -= Share(job.charges, sold, job.totes);
+	job.cost -= World::Share(job.cost, sold, job.totes);
+	job.charges -= World::Share(job.charges, sold, job.totes);
 	job.totes -= sold;
 	if (job.totes == 0)
 	{
@@ -1190,8 +1185,8 @@ void DeliverLot(const Context &context)
 		return;
 	}
 	const std::uint64_t delivered = std::min(job.totes, before - aboard());
-	job.cost -= Share(job.cost, delivered, job.totes);
-	job.charges -= Share(job.charges, delivered, job.totes);
+	job.cost -= World::Share(job.cost, delivered, job.totes);
+	job.charges -= World::Share(job.charges, delivered, job.totes);
 	job.totes -= delivered;
 	if (job.totes > 0)
 		job.tenderId.clear();
@@ -1318,21 +1313,6 @@ void Run(SimWorld &world, const Rules &rules)
 }
 
 
-// The seized totes of the item leaving the ship's job's lot, as a sale's do, with their shares of its
-// cost and charges; a job left with no lot chooses again.
-void Seized(World::Job &job, const std::string &itemId, std::uint64_t seized)
-{
-	if (job.totes == 0 || job.itemId != itemId || seized == 0)
-		return;
-	const std::uint64_t totes = std::min(seized, job.totes);
-	job.cost -= Share(job.cost, totes, job.totes);
-	job.charges -= Share(job.charges, totes, job.totes);
-	job.totes -= totes;
-	if (job.totes == 0)
-		job = World::Job{};
-}
-
-
 // As the day's last step ends, each ship whose arrears have stood the grace, in entity order, has its
 // cargo sold for them through its owner's commands (kSeizureSystem): lot by lot in hold order, a tote
 // at a time at the venue's live bids, until the proceeds cover what is owed or the bids run out, the
@@ -1393,7 +1373,7 @@ void Seize(SimWorld &world, const Rules &rules)
 				        Company::Move{context.shipId, venueId, lot.itemId, lot.totes - sold}) ==
 				    Result::Succeeded);
 			if (auto *pJob = registry.try_get<World::Job>(ship))
-				Seized(*pJob, lot.itemId, sold);
+				World::LeaveLot(*pJob, lot.itemId, sold);
 		}
 
 		World::Arrears &arrears = registry.get<World::Arrears>(ship);

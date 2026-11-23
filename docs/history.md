@@ -116,6 +116,15 @@ item fall in a consuming step, now exact against `Trade::Consumed`, which every 
 marketplace's order life and fee bps and arrears starting after the clock were bounded as the user
 asked. Round 2 found each resolved and two more, fixed after it and not reviewed again: a market with
 no `Fees` at all loaded, and the ledger skipped an item held nowhere before a batch delivered it.
+A third round the user asked for, aimed at what the first two had not examined, found four: the
+wire left out ships' policies and jobs, companies' bids and the tenders, so a remote client saw none
+of them; refuelling opened a job's lot of pellets for the magazine without the job knowing, so it
+blocked trying to unload what was gone (`World::LeaveLot` now shrinks the lot, as a seizure does);
+and a job bid on contracts it could not deliver within their window, defaulting on its bond. Those
+three are fixed. The fourth, a snapshot longer than a network packet dropped (the trading scenario's
+is 63,567 bytes of 65,536), the user booked for Jettison's next change, a message split across
+packets ([Jettison's roadmap](../../jettison/docs/roadmap.md#first-what-saves-and-the-simulations-interface-hold)),
+and delta snapshots in Manifest only if that is not enough.
 
 ## W14: Stage 4 closed — 2026-11-23
 

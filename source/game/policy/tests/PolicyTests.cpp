@@ -1150,3 +1150,61 @@ TEST_CASE("A saved bidding job loads, and one that names no tender does not")
 	broken.Job("Ship2").tenderId.clear();
 	CHECK_THROWS_AS(loaded.world.Load(broken.world.Save()), Jettison::Serialise::FormatError);
 }
+
+
+TEST_CASE("A contract the job could not deliver within its window is not bid on")
+{
+	// Every AI tender a day to deliver in, and the cheapest source a week's flight from the tender.
+	Manifest::Content::ContentSet content = Governed();
+	content.tuning.procurement.aiDeliveryDays = 1;
+	Hosted hosted{content};
+	REQUIRE(
+	    hosted.SetPolicy(Actor{ActorKind::Principal, "Nia"}, {"Ship1", false, 0, 0, 0, false}) ==
+	    Result::Succeeded);
+	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
+	hosted.Forget("Ada", kForge);
+	hosted.Fund("Company2", 200'000);
+	REQUIRE(hosted.SetPolicy(kAda, {"Ship2", true, 0, 0, 0, true}) == Result::Succeeded);
+	// Once it bid, won and defaulted, forfeiting its bond.
+	CHECK(hosted.Job("Ship2").phase != World::Phase::Bidding);
+	CHECK(hosted.Job("Ship2").tenderId.empty());
+}
+
+
+TEST_CASE("Pellets of a job's lot opened for its magazine leave the lot, which then sells whole")
+{
+	Hosted hosted;
+	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
+	REQUIRE(hosted.SetPolicy(kAda, {"Ship1", false, 0, 0}) == Result::Succeeded);
+	entt::registry &registry = hosted.world.Registry();
+	const entt::entity ship = hosted.Ship("Ship1");
+	const std::string destination = "VenueOreValeStation";
+	// Fixture bootstrap: a magazine part spent, and a job carrying two totes of pellets to sell.
+	registry.get<World::Fuel>(ship).pellets = 2.5;
+	registry.get<World::Cargo>(ship).lots = {{"ItemFusionPellets", 2}};
+	World::Job &job = hosted.Job();
+	job.phase = World::Phase::ToDestination;
+	job.itemId = "ItemFusionPellets";
+	job.sourceId = "VenueOreHighport";
+	job.destinationId = destination;
+	job.totes = 2;
+	job.cost = 20'000;
+	REQUIRE(
+	    hosted.Run(
+	        kAda, Manifest::Travel::kTravel, Manifest::Travel::kVersion,
+	        Manifest::Travel::Travel{"Ship1", destination, 10'000, 1'000}) == Result::Succeeded);
+	// Refuelled as it left: a tote opened for the magazine, the lot and its cost one tote less.
+	const World::Cargo &cargo = registry.get<World::Cargo>(ship);
+	REQUIRE(cargo.lots.size() == 1);
+	CHECK(cargo.lots[0].totes == 1);
+	CHECK(hosted.Job().totes == 1);
+	CHECK(hosted.Job().cost == 10'000);
+	for (int calls = 0; calls < 100'000 && !registry.get<World::Journey>(ship).Ended(); ++calls)
+		hosted.world.FastForward(hosted.world.Clock().Step() + 3'600);
+	REQUIRE(registry.get<World::Journey>(ship).leg == World::Leg::Arrived);
+	// Once it tried to unload the two totes it no longer held, refused at every retry.
+	REQUIRE(hosted.SetPolicy(kAda, {"Ship1", true, 0, 100'000}) == Result::Succeeded);
+	const bool refused = hosted.Job().phase == World::Phase::Blocked &&
+	                     hosted.Job().blockage == World::Blockage::Refused;
+	CHECK_FALSE(refused);
+}
