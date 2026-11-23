@@ -277,6 +277,7 @@ std::shared_ptr<const Rules> MakeRules(
 		rules->perTaxCredit = std::llround(1.0 / content.tuning.economy.wageTaxRate);
 	rules->production = content.tuning.production;
 	rules->condition = content.tuning.condition;
+	identities.SetTotes(rules->unitsPerTote, rules->perTaxCredit);
 
 	// The whole market's scarcity (Simulation::MarketPrice), then each venue's own making and needing,
 	// up to kLocalBias of it either way: a venue that only makes a good prices it lowest, one that only
@@ -1374,7 +1375,7 @@ void Buy(
 // What the households consume of the quantity, in the items' unit, from what is opened and then whole
 // totes opened in turn, in the items' order: all of it when they hold enough, exactly.
 double Consume(
-    Ledger &ledger, World::Pantry &pantry, const Rules &rules, const Economy &economy,
+    SimWorld &world, Ledger &ledger, World::Pantry &pantry, const Rules &rules, const Economy &economy,
     std::span<const std::string> items, double quantity)
 {
 	double left = quantity;
@@ -1383,6 +1384,7 @@ double Consume(
 		auto opened = std::ranges::find(pantry.opened, itemId, &World::Opened::itemId);
 		World::Holding &holding =
 		    ledger.Holding(Kind::Household, economy.regionId, economy.venueId, itemId);
+		const std::uint64_t held = holding.available;
 		while (left > 0.0)
 		{
 			if (opened == pantry.opened.end() || opened->quantity <= 0.0)
@@ -1400,6 +1402,8 @@ double Consume(
 			opened->quantity -= taken;
 			left -= taken;
 		}
+		if (holding.available < held)
+			world.Events().Emit(Consumed{itemId, held - holding.available});
 	}
 	std::erase_if(pantry.opened, [](const World::Opened &opened) { return opened.quantity <= 0.0; });
 	return left <= 0.0 ? quantity : quantity - left;
@@ -1448,7 +1452,7 @@ void Households(SimWorld &world, const Rules &rules)
 				if (const double held = have(items); held < required)
 					Buy(world, rules, economy, items, required - held, markup);
 				Ledger ledger{registry, rules.identities};
-				const double consumed = Consume(ledger, pantry, rules, economy, items, required);
+				const double consumed = Consume(world, ledger, pantry, rules, economy, items, required);
 				ledger.Commit();
 				return consumed;
 			};

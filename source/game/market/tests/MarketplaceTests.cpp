@@ -1327,6 +1327,25 @@ TEST_CASE("a_market_effect_moves_the_charge_of_the_venue_it_lands_on")
 	CHECK_EQ(service.Fills(world, "Civ-99").size(), 0u);
 }
 
+TEST_CASE("an_order_whose_life_runs_past_the_tick_range_is_refused")
+{
+	MarketplaceService service;
+	EntityStore world;
+	std::string errorMessage;
+	std::string orderId;
+
+	CHECK(AddWorld(world, "Civ-01", "Abigail Prime", 1000, {{"iron_ore", 100.0}}).empty());
+	CHECK(service.Open(world, "Civ-01", errorMessage));
+	CHECK_FALSE(service.PostOrder(
+	    world,
+	    Order(
+	        "Civ-01", "Civ-01", "iron_ore", OrderSide::Buy, 1.0, 10.0_dec,
+	        std::numeric_limits<long long>::max() - 1),
+	    orderId, errorMessage));
+	CHECK(errorMessage.find("past the tick range") != std::string::npos);
+}
+
+
 TEST_CASE("an_order_that_outlives_its_life_leaves_the_book")
 {
 	MarketplaceService service;

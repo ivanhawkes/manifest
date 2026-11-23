@@ -417,24 +417,29 @@ double Aboard(const World::Cargo &cargo, std::string_view itemId, double perTote
 
 // Takes the quantity of the item from the hold, at most Aboard's: its opened tote's first, then whole
 // totes opened one at a time. What the last tote opened has left stays opened, unless it is below
-// `least`, which is thrown away.
-void Take(World::Cargo &cargo, const std::string &itemId, double perTote, double quantity, double least)
+// `least`, which is thrown away. The totes used up, raised as Trade::Consumed.
+void Take(
+    SimWorld &world, World::Cargo &cargo, const std::string &itemId, double perTote, double quantity,
+    double least)
 {
 	const auto opened =
 	    std::ranges::lower_bound(cargo.opened, itemId, std::less<>{}, &World::Opened::itemId);
 	const bool wasOpened = opened != cargo.opened.end() && opened->itemId == itemId;
 	double left = wasOpened ? opened->quantity : 0.0;
 	const auto lot = std::ranges::find(cargo.lots, itemId, &World::Lot::itemId);
+	const std::uint64_t before = lot == cargo.lots.end() ? 0 : lot->totes;
 	while (left < quantity && lot != cargo.lots.end() && lot->totes > 0)
 	{
 		--lot->totes;
 		left += perTote;
 	}
+	std::uint64_t used = (wasOpened ? 1 : 0) + (lot == cargo.lots.end() ? 0 : before - lot->totes);
 	if (lot != cargo.lots.end() && lot->totes == 0)
 		cargo.lots.erase(lot);
 	left = std::max(0.0, left - quantity);
 	if (left > 0.0 && left >= least)
 	{
+		--used;
 		if (wasOpened)
 			opened->quantity = left;
 		else
@@ -442,6 +447,8 @@ void Take(World::Cargo &cargo, const std::string &itemId, double perTote, double
 	}
 	else if (wasOpened)
 		cargo.opened.erase(opened);
+	if (used > 0)
+		world.Events().Emit(Trade::Consumed{itemId, used});
 }
 
 
@@ -468,7 +475,7 @@ Result Refilled(SimWorld &world, const Rules &rules, const Actor &actor, const S
 		return Result::InsufficientStock;
 
 	double given = std::min(room, aboard);
-	Take(cargo, oxygen, rules.oxygenPerTote, given, 0.0);
+	Take(world, cargo, oxygen, rules.oxygenPerTote, given, 0.0);
 	for (std::size_t tank = 0; tank < capacities.size() && given > 0.0; ++tank)
 	{
 		const double space = capacities[tank] - lifeSupport.tanks[tank];
@@ -496,7 +503,7 @@ Result Replaced(SimWorld &world, const Rules &rules, const Actor &actor, const S
 		return Result::InsufficientStock;
 
 	// A piece is a whole cartridge: less than one left of a tote is none.
-	Take(cargo, cartridge, rules.cartridgesPerTote, 1.0, 1.0);
+	Take(world, cargo, cartridge, rules.cartridgesPerTote, 1.0, 1.0);
 	*std::ranges::min_element(lifeSupport.cartridges) =
 	    rules.content.tuning.lifeSupport.cartridgeOccupantDays;
 	return Result::Succeeded;
@@ -542,6 +549,7 @@ void Refuelled(SimWorld &world, const Rules &rules, entt::entity ship, std::int6
 			holding->available -= bought;
 			if (holding->available == 0 && holding->reserved == 0)
 				stock.holdings.erase(holding);
+			world.Events().Emit(Trade::Consumed{fuel.reactionMassItemId, bought});
 			World::Fuel &held = registry.get<World::Fuel>(ship);
 			held.reactionMass = std::min(
 			    tanks->reactionMass,
@@ -568,7 +576,7 @@ void Refuelled(SimWorld &world, const Rules &rules, entt::entity ship, std::int6
 	if (const double given = std::min(space, Aboard(cargo, fuel.pelletItemId, rules.pelletsPerTote));
 	    given > 0.0)
 	{
-		Take(cargo, fuel.pelletItemId, rules.pelletsPerTote, given, 0.0);
+		Take(world, cargo, fuel.pelletItemId, rules.pelletsPerTote, given, 0.0);
 		held.pellets = given == space ? tanks->pellets : held.pellets + given;
 	}
 }
@@ -1009,6 +1017,12 @@ void RegisterCommands(
 			throw std::invalid_argument{std::format(
 			    "hull '{}' has a CargoVolume of {}, not a whole number of totes up to {}", hull.hullId,
 			    hull.baseStats.at(Core::EffectStat::CargoVolume), Core::kMaxHoldTotes)};
+	std::vector<std::string> padClasses;
+	padClasses.reserve(content.tuning.charges.padClasses.size());
+	for (const Content::ClassChargesTuning &charged : content.tuning.charges.padClasses)
+		padClasses.push_back(charged.padClass);
+	std::ranges::sort(padClasses);
+	identities.SetCharges(std::move(padClasses), content.tuning.charges.maxArrearsRateBps);
 	identities.SetHolds([rules](const World::Ship &ship, const World::Systems *pSystems)
 	                    { return Hold(*rules, ship, pSystems); });
 	identities.SetFuelTanks([rules](const World::Ship &ship, const World::Systems *pSystems)

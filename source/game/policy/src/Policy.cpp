@@ -262,6 +262,22 @@ Route Priced(
 	const auto *pReports =
 	    registry.try_get<const World::Reports>(Required(identities, Kind::Principal, principalId));
 
+	// What refuelling where reaction mass is sold leaves in the tanks: whole totes up to their room, as
+	// Company's refuel buys it.
+	const auto massItem =
+	    std::ranges::find(content.gameMode.items, tuning.reactionMassItemId, &Core::ItemNode::itemId);
+	const double massPerTote =
+	    massItem == content.gameMode.items.end()
+	        ? 0.0
+	        : massItem->unitsPerCubicMetre / static_cast<double>(Core::kTotesPerIbc);
+	const auto refuelled = [&](double held)
+	{
+		return massPerTote > 0.0 && tanks
+		           ? held + std::max(0.0, std::floor((tanks->reactionMass - held) / massPerTote)) *
+		                        massPerTote
+		           : held;
+	};
+
 	Route route;
 	World::Fuel left = current;
 	for (const Leg &leg : legs)
@@ -278,8 +294,8 @@ Route Priced(
 		if (!burns)
 			continue;
 
-		// Each fuel the venue the leg leaves sells, where the ship refuels, at its ask and filling its
-		// tanks; at the last price paid with what is left in them where not.
+		// Each fuel the venue the leg leaves sells, where the ship refuels, at its ask, its tanks
+		// filled by whole totes; at the last price paid with what is left in them where not.
 		const auto sold = [&](const std::string &itemId) -> const World::Line *
 		{
 			const World::Line *pLine = refuels && pReports && !leg.fromId.empty()
@@ -292,7 +308,7 @@ Route Priced(
 		// shortcut: a venue selling pellets is taken to fill the magazine, which takes a tote in the
 		// hold; refine when a policy's estimate is seen refused for its pellets.
 		const World::Fuel start{
-		    pMass && tanks ? tanks->reactionMass : left.reactionMass,
+		    pMass && tanks ? refuelled(left.reactionMass) : left.reactionMass,
 		    pPellets && tanks ? tanks->pellets : left.pellets};
 		const World::Fuel burned = Travel::Burned(
 		    tuning, *flown->profile,
@@ -1329,7 +1345,8 @@ void Seize(SimWorld &world, const Rules &rules)
 	entt::registry &registry = world.Registry();
 	std::vector<entt::entity> ships;
 	for (const auto [ship, arrears] : registry.view<const World::Arrears>().each())
-		if (now - arrears.since >= rules.graceSteps)
+		// A start after the clock, as only a broken save can hold, waits rather than wraps.
+		if (arrears.since <= now && now - arrears.since >= rules.graceSteps)
 			ships.push_back(ship);
 	std::ranges::sort(ships, {}, [](entt::entity ship) { return entt::to_integral(ship); });
 	for (const entt::entity ship : ships)

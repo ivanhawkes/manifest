@@ -142,18 +142,39 @@ std::function<void()> Identities::Load(
 	for (const auto [entity, stock] : loaded.view<const Stock>().each())
 		if (const std::optional<std::string> problem = Broken(stock))
 			reader.Fail(*problem);
+	// An opened tote holds at most a tote of its item.
+	const auto checkOpened = [&](const std::vector<Opened> &opened)
+	{
+		if (!m_unitsPerTote)
+			return;
+		for (const Opened &each : opened)
+			if (const auto perTote = m_unitsPerTote->find(each.itemId);
+			    perTote == m_unitsPerTote->end() || each.quantity > perTote->second)
+				reader.Fail(std::format("an opened tote holds more than a tote of '{}'", each.itemId));
+	};
 	for (const auto [entity, cargo] : loaded.view<const Cargo>().each())
+	{
 		if (const std::optional<std::string> problem = Broken(cargo))
 			reader.Fail(*problem);
+		checkOpened(cargo.opened);
+	}
 	for (const auto [entity, systems] : loaded.view<const Systems>().each())
 		if (const std::optional<std::string> problem = Broken(systems))
 			reader.Fail(*problem);
 	for (const auto [entity, production] : loaded.view<const Production>().each())
+	{
 		if (const std::optional<std::string> problem = Broken(production))
 			reader.Fail(*problem);
+		if (m_unitsPerTote &&
+		    (m_perTaxCredit > 0 ? production.taxCarry >= m_perTaxCredit : production.taxCarry != 0))
+			reader.Fail("a production's tax carry is a withheld credit or more");
+	}
 	for (const auto [entity, pantry] : loaded.view<const Pantry>().each())
+	{
 		if (const std::optional<std::string> problem = Broken(pantry))
 			reader.Fail(*problem);
+		checkOpened(pantry.opened);
+	}
 	for (const auto [entity, sales] : loaded.view<const Sales>().each())
 		if (const std::optional<std::string> problem = Broken(sales))
 			reader.Fail(*problem);
@@ -163,6 +184,10 @@ std::function<void()> Identities::Load(
 			reader.Fail(*problem);
 		if (!loaded.all_of<Pricing>(entity))
 			reader.Fail("a venue's fees have no pricing level");
+		if (m_padClasses &&
+		    (!std::ranges::equal(fees.classes, *m_padClasses, {}, &ClassFees::padClass) ||
+		     fees.arrearsRateBps > m_maxArrearsRateBps))
+			reader.Fail("a venue's fees are not of every pad class, or past the highest arrears rate");
 	}
 	for (const auto [entity, arrears] : loaded.view<const Arrears>().each())
 	{

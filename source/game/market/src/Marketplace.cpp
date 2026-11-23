@@ -22,6 +22,15 @@ namespace
 // and the arithmetic of doubles leaves a residue under the dust of a fill.
 constexpr double quantityEpsilon = 1e-9;
 
+// The most basis points a fee, premium or rebate is taken at, a hundredfold, so each sum of them
+// fits an int; one that is no number is none.
+constexpr double kMaxBps = 1'000'000.0;
+
+double BoundedBps(double bps)
+{
+	return std::isfinite(bps) ? std::clamp(bps, -kMaxBps, kMaxBps) : 0.0;
+}
+
 std::optional<long long> CheckedFeeFor(long long gross, int feeBps)
 {
 	if (gross <= 0 || feeBps <= 0)
@@ -859,6 +868,12 @@ bool MarketplaceService::CreateOrder(
 	// rests without a life is an order that rests until it trades, is cancelled, or the
 	// venue closes, which is the reading AdvanceTick keeps and the reason the expiry of an
 	// order is read against the tick it was posted at and not against nothing.
+	if (m_options.orderLifeTicks > 0 &&
+	    request.tick > std::numeric_limits<long long>::max() - m_options.orderLifeTicks)
+	{
+		errorMessage = "Marketplace: the order's life runs past the tick range";
+		return false;
+	}
 	info.expiresTick = request.tick + m_options.orderLifeTicks;
 
 	if (!WholeCost(request.limitPrice, request.quantity, true))
@@ -1409,7 +1424,7 @@ int MarketplaceService::RiskPremiumBps(
 		risk += ReadEffectStat(lanes->values, EffectStat::RouteRiskPremium);
 	}
 
-	return static_cast<int>(std::llround(risk));
+	return static_cast<int>(std::llround(BoundedBps(risk)));
 }
 
 
@@ -1422,7 +1437,8 @@ int MarketplaceService::ListingFeeBps(const EntityStore &entityStore, const std:
 		return m_options.listingFeeBps;
 	}
 
-	int fee = venue->baseListingFeeBps + RiskPremiumBps(entityStore, marketId);
+	long long fee =
+	    static_cast<long long>(venue->baseListingFeeBps) + RiskPremiumBps(entityStore, marketId);
 
 	// The credit for the berth: one basis point off the fee for every two berths a day
 	// the licence and the warrant clear, because a licence that clears the deck faster
@@ -1431,24 +1447,25 @@ int MarketplaceService::ListingFeeBps(const EntityStore &entityStore, const std:
 	{
 		const double clearance = ReadEffectStat(effects->values, EffectStat::MarketClearance);
 
-		fee -= static_cast<int>(clearance / 2.0);
+		fee -= static_cast<long long>(BoundedBps(clearance / 2.0));
 	}
 
-	return fee > 0 ? fee : 0;
+	return static_cast<int>(std::clamp<long long>(fee, 0, static_cast<long long>(kMaxBps)));
 }
 
 
 int MarketplaceService::InsuranceBps(const EntityStore &entityStore, const std::string &marketId) const
 {
 	const auto *venue = entityStore.Get<MarketplaceInfo>(marketId);
-	int bps = venue != nullptr ? m_options.insuranceBps : 0;
+	long long bps = venue != nullptr ? m_options.insuranceBps : 0;
 
 	if (const auto *effects = entityStore.Get<MarketEffects>(marketId))
 	{
-		bps += static_cast<int>(ReadEffectStat(effects->values, EffectStat::MarketInsurance));
+		bps += static_cast<long long>(
+		    BoundedBps(ReadEffectStat(effects->values, EffectStat::MarketInsurance)));
 	}
 
-	return bps > 0 ? bps : 0;
+	return static_cast<int>(std::clamp<long long>(bps, 0, static_cast<long long>(kMaxBps)));
 }
 
 

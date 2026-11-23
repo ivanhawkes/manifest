@@ -138,22 +138,6 @@ std::map<std::string, std::int64_t> Delivered(const Batches &before, const Batch
 	return made;
 }
 
-std::vector<World::Pantry> Pantries(const entt::registry &registry)
-{
-	std::vector<World::Pantry> pantries;
-	for (const auto &[entity, pantry] : registry.view<const World::Pantry>().each())
-		pantries.push_back(pantry);
-	return pantries;
-}
-
-std::vector<World::ProjectPhase> Phases(const entt::registry &registry)
-{
-	std::vector<World::ProjectPhase> phases;
-	for (const auto &[entity, project] : registry.view<const World::Project>().each())
-		phases.push_back(project.phase);
-	return phases;
-}
-
 
 // The trading scenario as the host starts it, from the staged directory or its pack under the overlay
 // whose batches are minutes, stepped only through Step, which checks the ledger as it goes.
@@ -169,8 +153,8 @@ struct Hosted
 	// The first step at which credits or goods appeared or went unaccounted for.
 	std::optional<std::uint64_t> creditBreach;
 	std::optional<std::uint64_t> goodsBreach;
-	// The totes batches delivered, and the steps households used goods up in: each source and sink the
-	// ledger allows for, there to be seen happening.
+	// The totes batches delivered, and the steps something used goods up in (Trade::Consumed): each
+	// source and sink the ledger allows for, there to be seen happening.
 	std::int64_t made{0};
 	std::uint64_t consumptions{0};
 
@@ -209,32 +193,36 @@ struct Hosted
 		const entt::registry &registry = world.Registry();
 		const std::map<std::string, std::int64_t> totes = Totes(registry);
 		const Batches batches = Underway(registry);
-		const std::vector<World::Pantry> pantries = Pantries(registry);
-		const std::vector<World::ProjectPhase> phases = Phases(registry);
 
 		world.Step();
-		(void)world.Events().Take();
+		// What the step used up, as each sink raised it.
+		std::map<std::string, std::int64_t> consumed;
+		for (const Jettison::Sim::SimEvent &raised : world.Events().Take())
+			if (const auto *pConsumed = raised.event.try_cast<Manifest::Trade::Consumed>())
+				consumed[pConsumed->itemId] += static_cast<std::int64_t>(pConsumed->totes);
 
 		const std::uint64_t step = world.Clock().Step();
 		if (Credits(registry) + sunk != credits && !creditBreach)
 			creditBreach = step;
-		// Only a batch makes goods, and only the households' turn uses them up, when their pantries
-		// take what they open, and a project's start, its inputs consumed.
+		// Each item's totes change by exactly what batches delivered less what the step used up.
 		const std::map<std::string, std::int64_t> delivered = Delivered(batches, Underway(registry));
-		const bool consumed = Pantries(registry) != pantries || Phases(registry) != phases;
-		consumptions += consumed ? 1 : 0;
+		consumptions += consumed.empty() ? 0 : 1;
 		for (const auto &[item, count] : delivered)
 			made += count;
 		std::map<std::string, std::int64_t> now = Totes(registry);
 		for (const auto &[item, count] : totes)
+			now.try_emplace(item, 0);
+		for (const auto &[item, count] : consumed)
 			now.try_emplace(item, 0);
 		for (const auto &[item, count] : now)
 		{
 			const auto was = totes.find(item);
 			const std::int64_t change = count - (was == totes.end() ? 0 : was->second);
 			const auto found = delivered.find(item);
-			const std::int64_t expected = found == delivered.end() ? 0 : found->second;
-			if ((consumed ? change > expected : change != expected) && !goodsBreach)
+			const auto used = consumed.find(item);
+			const std::int64_t expected = (found == delivered.end() ? 0 : found->second) -
+			                              (used == consumed.end() ? 0 : used->second);
+			if (change != expected && !goodsBreach)
 				goodsBreach = step;
 		}
 	}
@@ -1183,6 +1171,70 @@ TEST_CASE(
 // Prices settling over a long run (D-102): with Ada and Nia trading on their standing policies,
 // eight days leave every broker's stock of every good, so its prices, about its target, the
 // seeded stock: never below half of it, a tote spared a small target's rounding, nor past twice it.
+TEST_CASE("A laden policy's burn is one its tanks fly once refuelled by whole totes")
+{
+	Hosted hosted{MANIFEST_MOD_DIRECTORY};
+	REQUIRE(
+	    hosted.Run(
+	        kHost, Company::kProvision, Company::kVersion,
+	        Company::Provision{"Ada", "Ada", "Ada Co"}) == Result::Succeeded);
+	entt::registry &registry = hosted.world.Registry();
+	hosted.credits = Credits(registry);
+	hosted.creditBreach.reset();
+	// Fixture bootstrap: Ore and Brine her only reports, her hold all but full and her tanks low, so
+	// whole totes of reaction mass leave them short of full.
+	std::erase_if(
+	    registry.get<World::Reports>(hosted.services.identities.Find(Kind::Principal, "Ada")).reports,
+	    [](const World::Report &report) { return report.venueId != kOre && report.venueId != kBrine; });
+	registry.get<World::Cargo>(hosted.Ship())
+	    .lots.push_back({std::string{kGood}, hosted.Ship1().hold - 2});
+	registry.get<World::Fuel>(hosted.Ship()).reactionMass = 2'140.0;
+	REQUIRE(
+	    hosted.Run(
+	        kAda, Manifest::Policy::kSet, Manifest::Policy::kVersion,
+	        Manifest::Policy::Set{"Ship1", true, 0, 0}) == Result::Succeeded);
+	const World::Job job = registry.get<World::Job>(hosted.Ship());
+	// Once estimated as tanks filled to the brim, it chose a burn the whole totes could not fly and
+	// was refused at every retry.
+	CHECK(job.phase != World::Phase::Blocked);
+	REQUIRE(registry.all_of<World::Journey>(hosted.Ship()));
+	CHECK(registry.get<World::Journey>(hosted.Ship()).leg != Leg::Failed);
+	CHECK(job.thrustBps > 0);
+}
+
+
+TEST_CASE("The ledger finds a tote lost in a step the households consume in")
+{
+	Hosted hosted{MANIFEST_MOD_DIRECTORY};
+	hosted.Bootstrap();
+	const auto turn = static_cast<std::uint64_t>(std::llround(
+	    hosted.services.fleet.Content().tuning.economy.intervalSeconds / hosted.world.FixedStep()));
+	ForwardTo(hosted, turn * 10 - 1);
+	REQUIRE_FALSE(hosted.goodsBreach);
+	// A system no sink of the game's: a tote of the first holding with one, taken.
+	bool lost = false;
+	hosted.world.RegisterSystem(
+	    {.name = "test.lose",
+	     .phase = Jettison::Ecs::TickPhase::Simulation,
+	     .access = Jettison::Ecs::Access::Of<World::Stock>().Writing<World::Stock>(),
+	     .after = {std::string{Trade::kObserve}},
+	     .run = [&](entt::registry &registry, double)
+	     {
+		     for (auto [entity, stock] : registry.view<World::Stock>().each())
+			     for (World::Holding &holding : stock.holdings)
+				     if (!lost && holding.available > 0)
+				     {
+					     --holding.available;
+					     lost = true;
+				     }
+	     }});
+	hosted.Step();
+	REQUIRE(lost);
+	CHECK(hosted.consumptions == 1);
+	CHECK(hosted.goodsBreach);
+}
+
+
 TEST_CASE("Eight days of two traders keep every broker's stock within half and twice its target")
 {
 	const std::vector<std::filesystem::path> overlays{

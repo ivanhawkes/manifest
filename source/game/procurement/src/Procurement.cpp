@@ -194,6 +194,9 @@ void Work(SimWorld &world, const Rules &rules)
 			    !Startable(plan, stock, registry.get<const World::Knowledge>(region.entity)))
 				continue;
 			// A project holds no more than its inputs (Identities::Load, and delivery owes no more).
+			for (const World::Holding &holding : stock.holdings)
+				world.Events().Emit(
+				    Trade::Consumed{holding.itemId, holding.available + holding.reserved});
 			stock.holdings.clear();
 		}
 		if (!region.operational)

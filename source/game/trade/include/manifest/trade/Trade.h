@@ -47,6 +47,16 @@ struct Cancel
 	std::string orderId;
 };
 
+// Raised (SimWorld::Events) as whole totes leave the world: a household's opened into its pantry, a
+// project's inputs as its work starts, a hold's opened totes used up for its ship's life support or
+// magazine, and reaction mass bought straight into a ship's tanks. Presentation's, and a ledger's that
+// counts the world's goods; not state.
+struct Consumed
+{
+	std::string itemId;
+	std::uint64_t totes{0};
+};
+
 inline constexpr std::string_view kPlace = "Manifest.Trade.Place";
 inline constexpr std::string_view kCancel = "Manifest.Trade.Cancel";
 inline constexpr std::uint32_t kVersion = 1;

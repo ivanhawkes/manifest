@@ -18,6 +18,7 @@
 
 #include <manifest/company/Company.h>
 #include <manifest/query/Query.h>
+#include <manifest/trade/Trade.h>
 #include <manifest/travel/Travel.h>
 #include <manifest/world/World.h>
 
@@ -1380,6 +1381,53 @@ TEST_CASE("Saved fees and arrears load, and broken ones do not")
 	registry.remove<World::Pricing>(hosted.Find(Kind::Market, "VenueOreHighport"));
 	Hosted unpriced;
 	CHECK_THROWS(unpriced.world.Load(hosted.world.Save()));
+}
+
+
+TEST_CASE("A save past content's bounds on fees, opened totes or a tax carry does not load")
+{
+	const auto refused = [](auto change, std::string_view why)
+	{
+		Hosted source;
+		Manifest::Trade::Register(source.world, source.requests, source.identities, source.content);
+		REQUIRE(source.Provision("Ada") == Result::Succeeded);
+		change(source);
+		Hosted loaded;
+		Manifest::Trade::Register(loaded.world, loaded.requests, loaded.identities, loaded.content);
+		CHECK_THROWS_WITH_AS(
+		    loaded.world.Load(source.world.Save()), doctest::Contains(std::string{why}),
+		    Jettison::Serialise::FormatError);
+	};
+	const auto fees = [](Hosted &source) -> World::Fees &
+	{
+		return source.world.Registry().get<World::Fees>(
+		    source.Find(Kind::Market, "VenueBrineHighport"));
+	};
+	// Fees of no pad class, which travel to the venue would find none of.
+	refused([&](Hosted &source) { fees(source).classes.clear(); }, "not of every pad class");
+	refused(
+	    [&](Hosted &source) { fees(source).arrearsRateBps = std::numeric_limits<int>::max(); },
+	    "past the highest arrears rate");
+	refused(
+	    [](Hosted &source) { source.Hold("Ship1").opened = {{"ItemOxygen", 1'000'000.0}}; },
+	    "more than a tote of 'ItemOxygen'");
+	refused(
+	    [](Hosted &source)
+	    {
+		    source.world.Registry()
+		        .get<World::Production>(source.Find(Kind::Employer, "RegionOreHighlands"))
+		        .taxCarry = std::numeric_limits<std::int64_t>::max();
+	    },
+	    "tax carry is a withheld credit or more");
+
+	// Within them, it loads.
+	Hosted source;
+	Manifest::Trade::Register(source.world, source.requests, source.identities, source.content);
+	REQUIRE(source.Provision("Ada") == Result::Succeeded);
+	Hosted loaded;
+	Manifest::Trade::Register(loaded.world, loaded.requests, loaded.identities, loaded.content);
+	loaded.world.Load(source.world.Save());
+	CHECK(loaded.world.StateHash() == source.world.StateHash());
 }
 
 
