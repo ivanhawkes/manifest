@@ -62,6 +62,15 @@ struct CompanyView
 	bool operator==(const CompanyView &) const = default;
 };
 
+// A tender's terms, as posted to every player (W12).
+struct TenderView
+{
+	std::string tenderId;
+	World::Tender tender;
+
+	bool operator==(const TenderView &) const = default;
+};
+
 // A player's report of a venue's market: live while a ship of their fleet is docked there, so
 // observed at the snapshot's own step, and otherwise stale, its age the steps since it was observed.
 struct MarketView
@@ -84,6 +93,8 @@ struct Snapshot
 	std::vector<CompanyView> companies;
 	// By venue ID, a player's; none for the Administrator, which has no fleet to observe with.
 	std::vector<MarketView> markets{};
+	// Every tender the world holds, open and kept closed, by ID.
+	std::vector<TenderView> tenders{};
 
 	bool operator==(const Snapshot &) const = default;
 };

@@ -91,6 +91,7 @@ class Game final : public Jettison::Host::Game
 		Company::RegisterTypes();
 		Trade::RegisterTypes();
 		Policy::RegisterTypes();
+		Procurement::RegisterTypes();
 	}
 
 
@@ -112,7 +113,7 @@ class Game final : public Jettison::Host::Game
 		Company::RegisterCommands(world, *m_pRequests, *m_pIdentities, *m_pFleet, m_content);
 		Trade::Register(world, *m_pRequests, *m_pIdentities, m_content);
 		Policy::Register(world, *m_pRequests, *m_pIdentities, m_content);
-		Procurement::Register(world, *m_pIdentities, m_content);
+		Procurement::Register(world, *m_pRequests, *m_pIdentities, m_content);
 	}
 
 

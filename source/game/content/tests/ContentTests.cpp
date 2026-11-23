@@ -492,6 +492,20 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	    "version: 1\nprojects: !merge=projectId\n  - {projectId: ProjectBronzeMetallurgy, workDays: "
 	    "0}\n",
 	    "'ProjectBronzeMetallurgy' workDays must be above 0");
+	CheckRefused(
+	    balance,
+	    "version: 1\nprojects: !merge=projectId\n  - {projectId: ProjectBronzeMetallurgy, "
+	    "priorityPremium: -0.5}\n",
+	    "'ProjectBronzeMetallurgy' priorityPremium must be 0 or above");
+	CheckRefused(
+	    balance, "version: 1\nprocurement: {aiBidDays: 8}\n",
+	    "needs 1 <= minBidDays <= aiBidDays <= maxBidDays and the same of the delivery days");
+	CheckRefused(
+	    balance, "version: 1\nprocurement: {minDeliveryDays: 0}\n",
+	    "needs 1 <= minBidDays <= aiBidDays <= maxBidDays and the same of the delivery days");
+	CheckRefused(
+	    balance, "version: 1\nprocurement: {keptClosed: 0}\n",
+	    "needs maxOpenTenders, maxBids and keptClosed above 0");
 
 	const std::string mining = patch(skills, "skill-mining");
 	// Nothing requires publishing, so its tiers are its own rule alone.

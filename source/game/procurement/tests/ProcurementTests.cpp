@@ -1,6 +1,8 @@
 #include "TestHelpers.h"
 
+#include <cstddef>
 #include <cstdint>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -13,15 +15,23 @@
 #include <manifest/command/Requests.h>
 #include <manifest/company/Company.h>
 #include <manifest/procurement/Procurement.h>
+#include <manifest/query/Query.h>
 #include <manifest/trade/Economy.h>
 #include <manifest/trade/Trade.h>
 #include <manifest/travel/Travel.h>
 #include <manifest/world/World.h>
 
 using namespace Manifest::Procurement;
+using Jettison::Serialise::BinaryArchive;
+using Jettison::Serialise::FormatVersion;
 using Jettison::Sim::SimWorld;
+using Manifest::Command::Actor;
+using Manifest::Command::ActorKind;
+using Manifest::Command::Receipt;
+using Manifest::Command::Result;
 using Manifest::World::Kind;
 using Manifest::World::ProjectPhase;
+using Manifest::World::TenderState;
 namespace World = Manifest::World;
 
 namespace
@@ -41,6 +51,10 @@ const Manifest::Content::ContentSet &Governance()
 
 constexpr std::string_view kEast = "RegionForgeEast";
 constexpr std::string_view kForge = "VenueForgeHighport";
+constexpr std::string_view kBronze = "ProjectBronzeMetallurgy";
+constexpr std::uint64_t kDay = 86'400;
+const Actor kAda{ActorKind::Principal, "Ada"};
+const Actor kBea{ActorKind::Principal, "Bea"};
 // Seven days of one-second steps.
 constexpr std::uint64_t kWorkSteps = 7ULL * 86'400;
 
@@ -50,7 +64,7 @@ struct Hosted
 {
 	Hosted()
 	    : identities{(
-	          Manifest::Company::RegisterTypes(), Manifest::Trade::RegisterTypes(),
+	          Manifest::Company::RegisterTypes(), Manifest::Trade::RegisterTypes(), RegisterTypes(),
 	          World::RegisterWorld(world))},
 	      requests{Manifest::Command::RegisterRequests(world, identities)}
 	{
@@ -58,9 +72,74 @@ struct Hosted
 		    Manifest::Travel::Register(world, requests, identities, Governance());
 		Manifest::Company::RegisterCommands(world, requests, identities, fleet, Governance());
 		Manifest::Trade::Register(world, requests, identities, Governance());
-		Register(world, identities, Governance());
+		Register(world, requests, identities, Governance());
 		World::CreateInitialState(world, identities, Governance());
 		Manifest::Travel::OpenStations(world, fleet);
+		for (const std::string name : {"Ada", "Bea"})
+			world.Registry().emplace<World::Principal>(
+			    identities.Create(world.Registry(), Kind::Principal, name), name);
+	}
+
+	// Fixture bootstrap: Ada directs Forge East's council, as W13's founding will let a player.
+	void Direct()
+	{
+		world.Registry()
+		    .get<World::Organisation>(
+		        identities.Find(Kind::Organisation, "OrganisationForgeEastCouncil"))
+		    .principalId = "Ada";
+	}
+
+	// The request admitted as the actor's next and run in the next step.
+	template <typename T> Result Run(const Actor &actor, std::string_view command, const T &payload)
+	{
+		const std::uint64_t sequence = requests.NextSequence(actor);
+		const std::vector<std::byte> bytes = BinaryArchive::Write(payload, FormatVersion{kVersion});
+		REQUIRE(
+		    requests.Admit(world, actor, sequence, std::string{command}, kVersion, bytes).status ==
+		    Receipt::Status::Queued);
+		world.Step();
+		const auto completed = requests.Outcome(actor, sequence);
+		REQUIRE(completed);
+		return completed->result;
+	}
+
+	Result Publishes(
+	    std::string_view item, std::uint64_t totes, std::int64_t budget = 1'000,
+	    std::uint32_t bidDays = 2, std::uint32_t deliveryDays = 30, const Actor &actor = kAda)
+	{
+		return Run(
+		    actor, kPublish,
+		    Publish{
+		        std::string{kEast}, std::string{kBronze}, std::string{item}, std::string{kForge}, totes,
+		        budget, bidDays, deliveryDays});
+	}
+
+	std::int64_t Balance(Kind kind, const std::string &id) const
+	{
+		const entt::entity account = identities.Find(kind, id);
+		REQUIRE(account != entt::null);
+		return world.Registry().get<World::Account>(account).balance;
+	}
+
+	std::int64_t Public() const
+	{
+		return Balance(Kind::PublicAccount, std::string{kEast});
+	}
+
+	// Every tender, by ID.
+	std::map<std::string, World::Tender> Tenders() const
+	{
+		std::map<std::string, World::Tender> tenders;
+		for (const auto [entity, identity, tender] :
+		     world.Registry().view<const World::Identity, const World::Tender>().each())
+			tenders.emplace(identity.id, tender);
+		return tenders;
+	}
+
+	void FastForwardTo(std::uint64_t step)
+	{
+		while (world.Clock().Step() < step)
+			world.FastForward(step);
 	}
 
 	entt::entity ProjectEntity() const
@@ -116,11 +195,11 @@ struct Hosted
 } // namespace
 
 
-TEST_CASE("A project's work is its days at the fixed step")
+TEST_CASE("Whole days are their steps at the fixed step")
 {
-	CHECK(WorkSteps(7, 1.0) == kWorkSteps);
-	CHECK(WorkSteps(7, 1.0 / 60.0) == 36'288'000);
-	CHECK(WorkSteps(1, 1.0e6) == 1);
+	CHECK(Steps(7, 1.0) == kWorkSteps);
+	CHECK(Steps(7, 1.0 / 60.0) == 36'288'000);
+	CHECK(Steps(1, 1.0e6) == 1);
 }
 
 
@@ -140,11 +219,11 @@ TEST_CASE("A region's project starts tendering with nothing held, its region's k
 
 	const Jettison::Ecs::Scheduler &scheduler = hosted.world.Scheduler();
 	const std::vector<std::string> order = scheduler.Order(Jettison::Ecs::TickPhase::Simulation);
-	REQUIRE(order.size() >= 3);
+	REQUIRE(order.size() >= 4);
 	CHECK(
-	    std::vector<std::string>{order.begin(), order.begin() + 3} ==
+	    std::vector<std::string>{order.begin(), order.begin() + 4} ==
 	    std::vector<std::string>{
-	        std::string{Manifest::Trade::kExpiry}, std::string{kProjects},
+	        std::string{Manifest::Trade::kExpiry}, std::string{kTenders}, std::string{kProjects},
 	        std::string{Manifest::Trade::kEconomy}});
 	CHECK(scheduler.Ambiguities(Jettison::Ecs::TickPhase::Simulation).empty());
 }
@@ -320,4 +399,304 @@ TEST_CASE("A save whose project holds or has worked what it may not does not loa
 	partial.Deliver({{forge, "ItemCopper", 9, 0}});
 	hosted.world.Load(partial.world.Save());
 	CHECK(hosted.world.StateHash() == partial.world.StateHash());
+}
+
+
+TEST_CASE("As the world starts the AI issuer tenders each input its project needs, priced by need")
+{
+	Hosted hosted;
+	const std::int64_t funds = hosted.Public();
+	const auto unitsPerTote = [](std::string_view itemId)
+	{
+		const auto &items = Governance().gameMode.items;
+		const auto item = std::ranges::find(items, itemId, &Manifest::Core::ItemNode::itemId);
+		REQUIRE(item != items.end());
+		return item->unitsPerCubicMetre / static_cast<double>(Manifest::Core::kTotesPerIbc);
+	};
+	const auto budget = [&](std::string_view itemId, std::uint64_t totes)
+	{
+		const std::optional<std::int64_t> price =
+		    Manifest::Trade::TenderPrice(hosted.world, hosted.identities, Governance(), kForge, itemId);
+		REQUIRE(price);
+		const std::optional<std::int64_t> priced =
+		    Manifest::Trade::Budget(*price, static_cast<double>(totes) * unitsPerTote(itemId), 0.5);
+		REQUIRE(priced);
+		return *priced;
+	};
+	const std::int64_t copper = budget("ItemCopper", 9);
+	const std::int64_t tin = budget("ItemTin", 1);
+	hosted.world.Step();
+
+	const std::string east{kEast};
+	const std::string bronze{kBronze};
+	const std::string forge{kForge};
+	const std::map<std::string, World::Tender> expected{
+	    {TenderId(kEast, kBronze, "ItemCopper", 1),
+	     {east, bronze, "", "ItemCopper", forge, 9, copper, 0, kDay, 14, TenderState::Open, 0}},
+	    {TenderId(kEast, kBronze, "ItemTin", 2),
+	     {east, bronze, "", "ItemTin", forge, 1, tin, 0, kDay, 14, TenderState::Open, 0}}};
+	CHECK(hosted.Tenders() == expected);
+	CHECK(hosted.Public() == funds - copper - tin);
+	CHECK(hosted.Balance(Kind::TenderAccount, TenderId(kEast, kBronze, "ItemCopper", 1)) == copper);
+	CHECK(hosted.Balance(Kind::TenderAccount, TenderId(kEast, kBronze, "ItemTin", 2)) == tin);
+
+	// Posted: a player with no company reads every tender's terms.
+	const Manifest::Query::Snapshot seen =
+	    Manifest::Query::Observe(hosted.world, hosted.identities, kBea);
+	REQUIRE(seen.tenders.size() == 2);
+	CHECK(seen.tenders[0].tenderId == TenderId(kEast, kBronze, "ItemCopper", 1));
+	CHECK(seen.tenders[0].tender == expected.begin()->second);
+}
+
+
+TEST_CASE("A tender with no award closes at its bid close, its budget back, and the AI tenders again")
+{
+	Hosted hosted;
+	const std::int64_t funds = hosted.Public();
+	hosted.FastForwardTo(kDay);
+	CHECK(hosted.Tenders().size() == 2);
+	hosted.world.Step();
+
+	const std::map<std::string, World::Tender> tenders = hosted.Tenders();
+	REQUIRE(tenders.size() == 4);
+	for (const char *pItem : {"ItemCopper", "ItemTin"})
+	{
+		const World::Tender &closed =
+		    tenders.at(TenderId(kEast, kBronze, pItem, pItem == std::string{"ItemCopper"} ? 1 : 2));
+		CHECK(closed.state == TenderState::Unawarded);
+		CHECK(closed.closed == kDay);
+	}
+	CHECK(
+	    hosted.identities.Find(Kind::TenderAccount, TenderId(kEast, kBronze, "ItemCopper", 1)) ==
+	    entt::null);
+	std::int64_t reserved = 0;
+	for (const auto &[id, tender] : tenders)
+		if (tender.state == TenderState::Open)
+		{
+			CHECK(tender.published == kDay);
+			CHECK(tender.bidClose == 2 * kDay);
+			reserved += tender.budget;
+		}
+	CHECK(tenders.contains(TenderId(kEast, kBronze, "ItemCopper", 3)));
+	CHECK(tenders.contains(TenderId(kEast, kBronze, "ItemTin", 4)));
+	// The public account has had its tax since, and holds back only the open budgets.
+	CHECK(hosted.Public() >= funds - reserved);
+}
+
+
+TEST_CASE("The governor's director publishes and cancels, and every refusal writes nothing")
+{
+	Hosted hosted;
+	hosted.Direct();
+	const std::int64_t funds = hosted.Public();
+	hosted.world.Step();
+	CHECK(hosted.Tenders().empty());
+
+	const auto unchanged = [&](Result result, auto send)
+	{
+		const std::map<std::string, World::Tender> before = hosted.Tenders();
+		const std::int64_t balance = hosted.Public();
+		CHECK(send() == result);
+		CHECK(hosted.Tenders() == before);
+		CHECK(hosted.Public() == balance);
+	};
+	const std::string east{kEast};
+	const std::string bronze{kBronze};
+	const std::string forge{kForge};
+	const auto publish = [&](Publish payload)
+	{ return [&hosted, payload] { return hosted.Run(kAda, kPublish, payload); }; };
+	unchanged(
+	    Result::NotAuthorised, [&] { return hosted.Publishes("ItemCopper", 1, 1'000, 2, 30, kBea); });
+	unchanged(
+	    Result::UnknownTarget,
+	    publish({"RegionNowhere", bronze, "ItemCopper", forge, 1, 1'000, 2, 30}));
+	unchanged(
+	    Result::UnknownTarget, publish({east, "ProjectNowhere", "ItemCopper", forge, 1, 1'000, 2, 30}));
+	unchanged(Result::UnknownTarget, [&] { return hosted.Publishes("ItemOats", 1); });
+	// Forge West has no project, and its governor is the AI's.
+	unchanged(
+	    Result::UnknownTarget,
+	    publish({"RegionForgeWest", bronze, "ItemCopper", forge, 1, 1'000, 2, 30}));
+	unchanged(
+	    Result::WrongVenue,
+	    publish({east, bronze, "ItemCopper", "VenueCassiterDock", 1, 1'000, 2, 30}));
+	unchanged(Result::InvalidQuantity, [&] { return hosted.Publishes("ItemCopper", 0); });
+	unchanged(Result::InvalidQuantity, [&] { return hosted.Publishes("ItemCopper", 10); });
+	unchanged(Result::InvalidQuantity, [&] { return hosted.Publishes("ItemCopper", 1, 1'000, 0, 30); });
+	unchanged(Result::InvalidQuantity, [&] { return hosted.Publishes("ItemCopper", 1, 1'000, 8, 30); });
+	unchanged(Result::InvalidQuantity, [&] { return hosted.Publishes("ItemCopper", 1, 1'000, 2, 61); });
+	unchanged(Result::InvalidPrice, [&] { return hosted.Publishes("ItemCopper", 1, 0); });
+	unchanged(Result::InsufficientFunds, [&] { return hosted.Publishes("ItemCopper", 1, funds + 1); });
+
+	const std::uint64_t published = hosted.world.Clock().Step();
+	CHECK(hosted.Publishes("ItemCopper", 4, 2'000, 7, 60) == Result::Succeeded);
+	const std::string first = TenderId(kEast, kBronze, "ItemCopper", 1);
+	CHECK(
+	    hosted.Tenders().at(first) == World::Tender{
+	                                      east, bronze, "", "ItemCopper", forge, 4, 2'000, published,
+	                                      published + 7 * kDay, 60, TenderState::Open, 0});
+	CHECK(hosted.Public() == funds - 2'000);
+	// Five copper are left to call for.
+	unchanged(Result::InvalidQuantity, [&] { return hosted.Publishes("ItemCopper", 6); });
+	CHECK(hosted.Publishes("ItemCopper", 5) == Result::Succeeded);
+	unchanged(Result::InvalidQuantity, [&] { return hosted.Publishes("ItemCopper", 1); });
+
+	unchanged(Result::NotAuthorised, [&] { return hosted.Run(kBea, kCancel, Cancel{first}); });
+	unchanged(
+	    Result::UnknownTarget, [&] { return hosted.Run(kAda, kCancel, Cancel{"TenderNowhere"}); });
+	CHECK(hosted.Run(kAda, kCancel, Cancel{first}) == Result::Succeeded);
+	CHECK(hosted.Tenders().at(first).state == TenderState::Cancelled);
+	CHECK(hosted.Tenders().at(first).closed == hosted.world.Clock().Step() - 1);
+	CHECK(hosted.identities.Find(Kind::TenderAccount, first) == entt::null);
+	CHECK(hosted.Public() == funds - 1'000);
+	unchanged(Result::Closed, [&] { return hosted.Run(kAda, kCancel, Cancel{first}); });
+	// The copper it called for can be called for again.
+	CHECK(hosted.Publishes("ItemCopper", 4) == Result::Succeeded);
+}
+
+
+TEST_CASE("A cancel at its tender's bid close is refused, and the step before it is not")
+{
+	Hosted hosted;
+	hosted.Direct();
+	CHECK(hosted.Publishes("ItemCopper", 1, 1'000, 1) == Result::Succeeded);
+	CHECK(hosted.Publishes("ItemCopper", 1, 1'000, 1) == Result::Succeeded);
+	const std::string early = TenderId(kEast, kBronze, "ItemCopper", 1);
+	const std::string late = TenderId(kEast, kBronze, "ItemCopper", 2);
+	hosted.FastForwardTo(hosted.Tenders().at(early).bidClose - 1);
+	CHECK(hosted.Run(kAda, kCancel, Cancel{early}) == Result::Succeeded);
+	REQUIRE(hosted.world.Clock().Step() <= hosted.Tenders().at(late).bidClose);
+	hosted.FastForwardTo(hosted.Tenders().at(late).bidClose);
+	CHECK(hosted.Run(kAda, kCancel, Cancel{late}) == Result::Closed);
+	CHECK(hosted.Tenders().at(late).state == TenderState::Unawarded);
+}
+
+
+TEST_CASE("A region's open tenders are bounded, and it keeps its last closed ones")
+{
+	Hosted hosted;
+	hosted.Direct();
+	for (int count = 0; count < 8; ++count)
+		CHECK(hosted.Publishes("ItemCopper", 1) == Result::Succeeded);
+	const std::int64_t balance = hosted.Public();
+	CHECK(hosted.Publishes("ItemTin", 1) == Result::LimitReached);
+	CHECK(hosted.Public() == balance);
+
+	for (std::uint64_t count = 1; count <= 8; ++count)
+		CHECK(
+		    hosted.Run(kAda, kCancel, Cancel{TenderId(kEast, kBronze, "ItemCopper", count)}) ==
+		    Result::Succeeded);
+	for (std::uint64_t count = 9; count <= 17; ++count)
+	{
+		CHECK(hosted.Publishes("ItemCopper", 1) == Result::Succeeded);
+		CHECK(
+		    hosted.Run(kAda, kCancel, Cancel{TenderId(kEast, kBronze, "ItemCopper", count)}) ==
+		    Result::Succeeded);
+	}
+	const std::map<std::string, World::Tender> tenders = hosted.Tenders();
+	CHECK(tenders.size() == 16);
+	CHECK(!tenders.contains(TenderId(kEast, kBronze, "ItemCopper", 1)));
+	CHECK(tenders.contains(TenderId(kEast, kBronze, "ItemCopper", 2)));
+	CHECK(tenders.contains(TenderId(kEast, kBronze, "ItemCopper", 17)));
+}
+
+
+TEST_CASE("On a turn's last step the AI calls a relief tender for a need its households are short of")
+{
+	Hosted hosted;
+	hosted.world.Step();
+	const std::string needId = Governance().tuning.needs.front().needId;
+	World::Pantry &pantry = hosted.world.Registry().get<World::Pantry>(
+	    hosted.identities.Find(Kind::Household, std::string{kEast}));
+	pantry.unmet.push_back({needId, 1.0, 0.5});
+	hosted.FastForwardTo(59);
+	std::vector<Manifest::Trade::Relief> reliefs =
+	    Manifest::Trade::Reliefs(hosted.world, hosted.identities, Governance());
+	std::erase_if(
+	    reliefs, [](const Manifest::Trade::Relief &relief) { return relief.regionId != kEast; });
+	REQUIRE(reliefs.size() == 1);
+	const Manifest::Trade::Relief relief = reliefs.front();
+	hosted.world.Step();
+
+	std::vector<World::Tender> called;
+	for (const auto &[id, tender] : hosted.Tenders())
+		if (!tender.needId.empty())
+			called.push_back(tender);
+	REQUIRE(called.size() == 1);
+	CHECK(
+	    called.front() == World::Tender{
+	                          relief.regionId, "", needId, relief.itemId, relief.venueId, relief.totes,
+	                          relief.budget, 59, 59 + kDay, 14, TenderState::Open, 0});
+
+	// Open, it is not called again on the next turn.
+	hosted.FastForwardTo(120);
+	std::size_t reliefTenders = 0;
+	for (const auto &[id, tender] : hosted.Tenders())
+		reliefTenders += tender.needId.empty() ? 0 : 1;
+	CHECK(reliefTenders == 1);
+}
+
+
+TEST_CASE("A save whose tender reserves other than its budget does not load")
+{
+	Hosted hosted;
+	hosted.world.Step();
+	const std::uint64_t before = hosted.world.StateHash();
+	const std::string copper = TenderId(kEast, kBronze, "ItemCopper", 1);
+	const auto refused = [&](auto change)
+	{
+		Hosted broken;
+		broken.world.Step();
+		change(broken);
+		CHECK_THROWS_AS(hosted.world.Load(broken.world.Save()), Jettison::Serialise::FormatError);
+	};
+	refused(
+	    [&](Hosted &broken)
+	    {
+		    broken.world.Registry()
+		        .get<World::Account>(broken.identities.Find(Kind::TenderAccount, copper))
+		        .balance -= 1;
+	    });
+	refused(
+	    [&](Hosted &broken)
+	    {
+		    broken.identities.Destroy(
+		        broken.world.Registry(), broken.identities.Find(Kind::TenderAccount, copper));
+	    });
+	refused(
+	    [&](Hosted &broken)
+	    {
+		    World::Tender &tender = broken.world.Registry().get<World::Tender>(
+		        broken.identities.Find(Kind::Tender, copper));
+		    tender.state = TenderState::Unawarded;
+		    tender.closed = 1;
+	    });
+	refused(
+	    [&](Hosted &broken)
+	    {
+		    broken.identities.Destroy(
+		        broken.world.Registry(), broken.identities.Find(Kind::Tender, copper));
+	    });
+	refused(
+	    [&](Hosted &broken)
+	    {
+		    broken.world.Registry()
+		        .get<World::Tender>(broken.identities.Find(Kind::Tender, copper))
+		        .totes = 0;
+	    });
+	refused(
+	    [&](Hosted &broken)
+	    {
+		    broken.world.Registry()
+		        .get<World::Tender>(broken.identities.Find(Kind::Tender, copper))
+		        .needId = "NeedAnything";
+	    });
+	refused(
+	    [&](Hosted &broken)
+	    {
+		    broken.world.Registry()
+		        .get<World::Tender>(broken.identities.Find(Kind::Tender, copper))
+		        .projectId = "ProjectNowhere";
+	    });
+	CHECK(hosted.world.StateHash() == before);
 }

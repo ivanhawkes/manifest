@@ -22,6 +22,7 @@ std::string_view IssuedPrefix(Kind kind)
 		case Kind::Organisation: return "Organisation";
 		case Kind::Ship: return "Ship";
 		case Kind::Order: return "Order";
+		case Kind::Tender: return "Tender";
 		case Kind::Broker:
 		case Kind::BrokerAccount:
 		case Kind::VenueAccount:
@@ -33,7 +34,8 @@ std::string_view IssuedPrefix(Kind kind)
 		case Kind::EmployerAccount:
 		case Kind::Household:
 		case Kind::Market:
-		case Kind::Project: break;
+		case Kind::Project:
+		case Kind::TenderAccount: break;
 	}
 	return {};
 }
@@ -190,6 +192,28 @@ std::function<void()> Identities::Load(
 		if (m_projects)
 			CheckProject(reader, project, *pStock);
 	}
+	for (const auto [entity, identity, tender] : loaded.view<const Identity, const Tender>().each())
+	{
+		if (const std::optional<std::string> problem = Broken(tender))
+			reader.Fail(*problem);
+		if (!index.contains({Kind::Region, tender.regionId}) ||
+		    (!tender.projectId.empty() &&
+		     !index.contains({Kind::Project, ProjectId(tender.regionId, tender.projectId)})))
+			reader.Fail(
+			    std::format(
+			        "the tender '{}' is of a region or project the world does not hold", identity.id));
+		const auto account = index.find({Kind::TenderAccount, identity.id});
+		const auto *pAccount =
+		    account == index.end() ? nullptr : loaded.try_get<const Account>(account->second);
+		if (tender.state == TenderState::Open
+		        ? pAccount == nullptr || pAccount->balance != tender.budget
+		        : account != index.end())
+			reader.Fail(
+			    std::format("the tender '{}' reserves other than its budget while open", identity.id));
+	}
+	for (const auto [entity, identity, account] : loaded.view<const Identity, const Account>().each())
+		if (identity.kind == Kind::TenderAccount && !index.contains({Kind::Tender, identity.id}))
+			reader.Fail(std::format("'{}' reserves money for no tender", identity.id));
 	for (const auto [entity, paid] : loaded.view<const Paid>().each())
 	{
 		if (const std::optional<std::string> problem = Broken(paid))

@@ -133,7 +133,8 @@ class Identities final : public Jettison::Sim::WorldService
 	// Project with no Stock or of no region with its Knowledge and Facilities, and once SetProjects has
 	// run, a project of no ID it gave, worked past its steps or Done short of them, or holding what it
 	// does not need: an item it does not take, more than it takes, or anything once its inputs are
-	// consumed.
+	// consumed; a Tender that breaks its rules, of a region or project the world does not hold, or open
+	// without its budget in its account or closed with one; and a TenderAccount of no tender.
 	std::function<void()> Load(
 	    Jettison::Serialise::BinaryReader &reader, const entt::registry &loaded,
 	    std::span<const entt::meta_any> queued) override;

@@ -5,6 +5,7 @@ manifest_add_module(procurement
 	DEPENDS
 		content
 		world
+		command
 		trade
 	HEADERS
 		include/manifest/procurement/Procurement.h
@@ -17,9 +18,10 @@ manifest_add_module(procurement
 	PRIVATE_LIBRARIES
 		Jettison::Core
 		Jettison::Profile
+		Jettison::Reflect
 )
 if(TARGET manifest_procurement_tests)
-	target_link_libraries(manifest_procurement_tests PRIVATE manifest_company Jettison::Vfs)
+	target_link_libraries(manifest_procurement_tests PRIVATE manifest_company manifest_query Jettison::Vfs)
 	target_compile_definitions(manifest_procurement_tests PRIVATE MANIFEST_MOD_DIRECTORY="${MANIFEST_MOD_DIRECTORY}")
 	add_dependencies(manifest_procurement_tests manifest_validate_pack)
 endif()

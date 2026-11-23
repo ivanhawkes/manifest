@@ -734,6 +734,19 @@ void CheckTuning(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 		checker.Require(
 		    Fraction(tuning.procurement.performanceSecurityRate), "procurement.performanceSecurityRate",
 		    "must be in [0, 1]");
+		const ProcurementTuning &procurement = tuning.procurement;
+		const auto window = [](std::uint32_t days, std::uint32_t least, std::uint32_t most)
+		{ return least >= 1 && least <= days && days <= most; };
+		checker.Require(
+		    window(procurement.aiBidDays, procurement.minBidDays, procurement.maxBidDays) &&
+		        window(
+		            procurement.aiDeliveryDays, procurement.minDeliveryDays,
+		            procurement.maxDeliveryDays),
+		    "procurement",
+		    "needs 1 <= minBidDays <= aiBidDays <= maxBidDays and the same of the delivery days");
+		checker.Require(
+		    procurement.maxOpenTenders >= 1 && procurement.maxBids >= 1 && procurement.keptClosed >= 1,
+		    "procurement", "needs maxOpenTenders, maxBids and keptClosed above 0");
 
 		std::set<std::string, std::less<>> recipes;
 		for (const RecipeDefinition &recipe : tuning.recipes)
@@ -764,6 +777,9 @@ void CheckTuning(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 			checker.Require(
 			    project.workDays > 0, "projects",
 			    std::format("'{}' workDays must be above 0", project.projectId));
+			checker.Require(
+			    std::isfinite(project.priorityPremium) && project.priorityPremium >= 0.0, "projects",
+			    std::format("'{}' priorityPremium must be 0 or above", project.projectId));
 			checker.Require(
 			    recipes.contains(project.unlocksRecipe), "projects",
 			    std::format(

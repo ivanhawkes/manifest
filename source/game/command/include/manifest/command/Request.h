@@ -54,7 +54,11 @@ enum class Result
 	// A venue's fees whose arrears rate is above the tuning's usury limit (D-100).
 	RateTooHigh,
 	// Travel for a leg the ship's fuel cannot fly at the burn chosen (D-107).
-	InsufficientFuel
+	InsufficientFuel,
+	// A tender closed, or past the close its command must come before (W12).
+	Closed,
+	// A bound of procurement's reached: a region's tenders not yet closed (W12).
+	LimitReached
 };
 
 enum class ActorKind

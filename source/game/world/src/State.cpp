@@ -33,7 +33,9 @@ Kind AccountOf(Kind owner)
 		case Kind::Order:
 		case Kind::EmployerAccount:
 		case Kind::Market:
-		case Kind::Project: break;
+		case Kind::Project:
+		case Kind::Tender:
+		case Kind::TenderAccount: break;
 	}
 	return Kind::CompanyAccount;
 }
@@ -363,6 +365,22 @@ std::optional<std::string> Broken(const Project &project)
 }
 
 
+std::optional<std::string> Broken(const Tender &tender)
+{
+	if (tender.regionId.empty() || tender.itemId.empty() || tender.venueId.empty() ||
+	    tender.projectId.empty() == tender.needId.empty())
+		return "a tender names no region, item or venue, or not one of a project and a need";
+	if (tender.totes == 0 || tender.budget <= 0 || tender.deliveryDays == 0)
+		return "a tender's totes, budget or delivery window is not above 0";
+	if (tender.bidClose <= tender.published)
+		return "a tender's bids close before it is published";
+	if ((tender.state == TenderState::Open) != (tender.closed == 0) ||
+	    (tender.state != TenderState::Open && tender.closed < tender.published))
+		return "a tender closes before it is published, or is open with a close";
+	return std::nullopt;
+}
+
+
 std::string ProjectId(std::string_view regionId, std::string_view projectId)
 {
 	return std::format("{}:{}", regionId, projectId);
@@ -394,7 +412,9 @@ void RegisterTypes()
 		    .Value<Kind::EmployerAccount>("EmployerAccount")
 		    .Value<Kind::Household>("Household")
 		    .Value<Kind::Market>("Market")
-		    .Value<Kind::Project>("Project");
+		    .Value<Kind::Project>("Project")
+		    .Value<Kind::Tender>("Tender")
+		    .Value<Kind::TenderAccount>("TenderAccount");
 		RegisterType<Identity>("Manifest.World.Identity")
 		    .Field<&Identity::kind>("kind", kSaved)
 		    .Field<&Identity::id>("id", kSaved);
@@ -603,6 +623,23 @@ void RegisterTypes()
 		    .Field<&Project::projectId>("projectId", kSaved)
 		    .Field<&Project::phase>("phase", kSaved)
 		    .Field<&Project::worked>("worked", kSaved);
+		RegisterEnum<TenderState>("Manifest.World.TenderState")
+		    .Value<TenderState::Open>("Open")
+		    .Value<TenderState::Cancelled>("Cancelled")
+		    .Value<TenderState::Unawarded>("Unawarded");
+		RegisterType<Tender>("Manifest.World.Tender")
+		    .Field<&Tender::regionId>("regionId", kSaved)
+		    .Field<&Tender::projectId>("projectId", kSaved)
+		    .Field<&Tender::needId>("needId", kSaved)
+		    .Field<&Tender::itemId>("itemId", kSaved)
+		    .Field<&Tender::venueId>("venueId", kSaved)
+		    .Field<&Tender::totes>("totes", kSaved)
+		    .Field<&Tender::budget>("budget", kSaved)
+		    .Field<&Tender::published>("published", kSaved)
+		    .Field<&Tender::bidClose>("bidClose", kSaved)
+		    .Field<&Tender::deliveryDays>("deliveryDays", kSaved)
+		    .Field<&Tender::state>("state", kSaved)
+		    .Field<&Tender::closed>("closed", kSaved);
 		RegisterType<IdentityCounters>("Manifest.World.IdentityCounters")
 		    .Field<&IdentityCounters::issued>("issued", kSaved);
 		return true;

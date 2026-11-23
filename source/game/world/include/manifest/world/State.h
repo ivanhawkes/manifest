@@ -38,7 +38,11 @@ enum class Kind
 	Market,
 	// A region's public project, by ProjectId: its Project and the inputs delivered to it, its Stock
 	// (W12).
-	Project
+	Project,
+	// A region's call for goods, by its ID (Procurement::Publish), and the budget it reserves from the
+	// region's public account, by the same ID, while it is open (W12).
+	Tender,
+	TenderAccount
 };
 
 // The account of an owner of goods: a Company's, a Broker's, an Employer's or a Household's.
@@ -138,6 +142,40 @@ struct Project
 
 // The ID of a region's project, its Kind::Project entity's.
 std::string ProjectId(std::string_view regionId, std::string_view projectId);
+
+enum class TenderState
+{
+	Open,
+	// Closed: cancelled by its issuer before its bid close, or closed with no award.
+	Cancelled,
+	Unawarded
+};
+
+// A region's tender (W12, D-101): its terms, frozen when published and posted to every player. Its
+// goods are a project's input or, for a relief tender, an essential need's, for its region's
+// households (D-102), accepted at its venue, one serving the region. Its steps, by the clock's count:
+// the one it was published at and its bid close, the bid window's days after; its delivery window's
+// days run from its award. Open, its budget is reserved in its TenderAccount; closed, it is kept for
+// the record with the step it closed at.
+struct Tender
+{
+	std::string regionId;
+	// One of the two: the project, or the relief's need.
+	std::string projectId;
+	std::string needId;
+	std::string itemId;
+	std::string venueId;
+	std::uint64_t totes{0};
+	// Whole credits.
+	std::int64_t budget{0};
+	std::uint64_t published{0};
+	std::uint64_t bidClose{0};
+	std::uint32_t deliveryDays{0};
+	TenderState state{TenderState::Open};
+	std::uint64_t closed{0};
+
+	bool operator==(const Tender &) const = default;
+};
 
 // The owner is the account entity's Identity: its kind and the owner's ID.
 struct Account
@@ -701,6 +739,8 @@ std::optional<std::string> Broken(const Knowledge &knowledge);
 std::optional<std::string> Broken(const Facilities &facilities);
 
 std::optional<std::string> Broken(const Project &project);
+
+std::optional<std::string> Broken(const Tender &tender);
 
 std::optional<std::string> Broken(const Job &job);
 

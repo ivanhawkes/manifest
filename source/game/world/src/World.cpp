@@ -61,6 +61,7 @@ Identities &RegisterWorld(Jettison::Sim::SimWorld &world)
 	world.RegisterComponent<Knowledge>();
 	world.RegisterComponent<Facilities>();
 	world.RegisterComponent<Project>();
+	world.RegisterComponent<Tender>();
 	auto identities = std::make_unique<Identities>();
 	Identities &added = *identities;
 	world.AddService("Manifest.Identities", std::move(identities));

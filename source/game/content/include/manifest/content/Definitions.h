@@ -257,9 +257,21 @@ struct ConcessionTuning
 	double termHours{0.0};
 };
 
+// Tenders' terms and bounds (D-101). Windows are whole simulation days: those an issuer may set, and
+// those an AI issuer sets.
 struct ProcurementTuning
 {
 	double performanceSecurityRate{0.0};
+	std::uint32_t minBidDays{0};
+	std::uint32_t maxBidDays{0};
+	std::uint32_t minDeliveryDays{0};
+	std::uint32_t maxDeliveryDays{0};
+	std::uint32_t aiBidDays{0};
+	std::uint32_t aiDeliveryDays{0};
+	// A region's tenders not yet closed, a tender's bids, and the closed tenders a region keeps.
+	std::uint32_t maxOpenTenders{0};
+	std::uint32_t maxBids{0};
+	std::uint32_t keptClosed{0};
 };
 
 // A region's public project: its inputs, consumed once when every one is held, then its simulation
@@ -270,6 +282,9 @@ struct ProjectDefinition
 	std::vector<SkillSelection> requiredSkills;
 	std::vector<ItemTotes> inputs;
 	std::uint32_t workDays{0};
+	// The urgency its tenders' budgets are priced at by need (D-102): their goods at the venue's price
+	// times one and this.
+	double priorityPremium{0.0};
 	std::string unlocksRecipe;
 };
 

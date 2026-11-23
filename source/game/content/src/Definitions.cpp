@@ -259,12 +259,22 @@ void RegisterTypes()
 		RegisterType<ConcessionTuning>("Manifest.ConcessionTuning")
 		    .Field<&ConcessionTuning::termHours>("termHours", kDefined);
 		RegisterType<ProcurementTuning>("Manifest.ProcurementTuning")
-		    .Field<&ProcurementTuning::performanceSecurityRate>("performanceSecurityRate", kDefined);
+		    .Field<&ProcurementTuning::performanceSecurityRate>("performanceSecurityRate", kDefined)
+		    .Field<&ProcurementTuning::minBidDays>("minBidDays", kDefined)
+		    .Field<&ProcurementTuning::maxBidDays>("maxBidDays", kDefined)
+		    .Field<&ProcurementTuning::minDeliveryDays>("minDeliveryDays", kDefined)
+		    .Field<&ProcurementTuning::maxDeliveryDays>("maxDeliveryDays", kDefined)
+		    .Field<&ProcurementTuning::aiBidDays>("aiBidDays", kDefined)
+		    .Field<&ProcurementTuning::aiDeliveryDays>("aiDeliveryDays", kDefined)
+		    .Field<&ProcurementTuning::maxOpenTenders>("maxOpenTenders", kDefined)
+		    .Field<&ProcurementTuning::maxBids>("maxBids", kDefined)
+		    .Field<&ProcurementTuning::keptClosed>("keptClosed", kDefined);
 		RegisterType<ProjectDefinition>("Manifest.Project")
 		    .Field<&ProjectDefinition::projectId>("projectId", kDefined)
 		    .Field<&ProjectDefinition::requiredSkills>("requires", kDefined)
 		    .Field<&ProjectDefinition::inputs>("inputs", kDefined)
 		    .Field<&ProjectDefinition::workDays>("workDays", kDefined)
+		    .Field<&ProjectDefinition::priorityPremium>("priorityPremium", kDefined)
 		    .Field<&ProjectDefinition::unlocksRecipe>("unlocksRecipe", kDefined);
 		RegisterType<RecipeDefinition>("Manifest.Recipe")
 		    .Field<&RecipeDefinition::recipeId>("recipeId", kDefined)

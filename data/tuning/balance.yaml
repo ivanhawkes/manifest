@@ -180,6 +180,17 @@ concessions:
 procurement:
   # The performance security a supplier locks at award, as a share of its winning total offer.
   performanceSecurityRate: 0.1
+  # Whole simulation days (D-101): the bid and delivery windows an issuer may set, and an AI's.
+  minBidDays: 1
+  maxBidDays: 7
+  minDeliveryDays: 1
+  maxDeliveryDays: 60
+  aiBidDays: 1
+  aiDeliveryDays: 14
+  # A region's tenders not yet closed, a tender's bids, and the closed tenders a region keeps.
+  maxOpenTenders: 8
+  maxBids: 32
+  keptClosed: 16
 
 # The governance scenario's first technology: delivered project inputs, consumed once, then its
 # simulation days of work, unlock the recipe in one region (D-101). The recipe's wage bill is open.
@@ -189,6 +200,8 @@ projects:
     requires: [{skillId: SkillSmelting}]
     inputs: [{itemId: ItemCopper, totes: 9}, {itemId: ItemTin, totes: 1}]
     workDays: 7
+    # Its tenders' urgency, priced by need (D-102).
+    priorityPremium: 0.5
     unlocksRecipe: RecipeBronze
 
 recipes:

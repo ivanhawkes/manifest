@@ -88,7 +88,8 @@ registration order, and a test pins `Scheduler().Order(TickPhase::Simulation)`.
 | --- | --- | --- | --- | --- |
 | 0 | each step | the command phase (`Requests::Execute`) | before every system | per command, [below](#transaction-boundaries) |
 | 1 | each step | `manifest.expiry` | before `manifest.economy` | expired orders, their escrow |
-| 1a | each step | `manifest.projects` (W12) | after `manifest.expiry`, before `manifest.economy` | a project's inputs consumed, its work and phase, its region's recipes |
+| 1a | the world's first step, bid closes and each turn's last | `manifest.tenders` (W12) | after `manifest.expiry`, before `manifest.projects` | tenders closed and pruned, their accounts, the AI issuer's tenders |
+| 1b | each step | `manifest.projects` (W12) | after `manifest.tenders`, before `manifest.economy` | a project's inputs consumed, its work and phase, its region's recipes |
 | 2 | each step; the turn on due steps | `manifest.economy` (W04) | before `spatial` | production, payroll, households, condition |
 | 3 | due steps | `manifest.brokers` | after `manifest.economy`, before `spatial` | each broker's orders, fills |
 | 4 | each step | engine `spatial`, `steering`, `flight`, `physics` | Jettison's own edges | transforms, velocities |
@@ -1232,7 +1233,23 @@ W12's slices, each one commit with its suites, the gate after the third and the 
    facilities, every other check of them holding. Repeat production on the unlocked recipe is not
    W12's: its ownership, facility access and batch timing are to be specified first (D-029).
 2. Tenders and their accounts: `Publish`, `Cancel`, the AI issuer and its budget; refusals and
-   bounds.
+   bounds. **Done** 2026-11-23, with no engine edit: a tender (`Kind::Tender`, by its region, its
+   project or need, its item and the count the identities issue) posts its terms in every player's
+   snapshot, and its budget is moved into its `Kind::TenderAccount`, returned as it closes.
+   `Manifest.Procurement.Publish` and `Cancel` are the governor's director's, refused
+   `NotAuthorised` for anyone else or an AI-run governor, `Closed` for a cancel at or past the bid
+   close, and `LimitReached` at a region's 8 open; `procurement` holds the windows (bids 1 to 7 days,
+   delivery 1 to 60, the AI's 1 and 14) and bounds (8 open, 32 bids, 16 closed kept), and the project its
+   `priorityPremium` (0.5). `manifest.tenders`, after `manifest.expiry` and before
+   `manifest.projects`, closes an open tender at its bid close with no award, its budget back, keeps a
+   region's last 16 closed, and runs the AI issuer as the world starts, on each turn's last step and in
+   a step a tender closed: each input still needed with no tender open for it, at its region's first
+   venue, at `Trade::Budget` of `Trade::TenderPrice` and the premium, and on a turn's last step each
+   relief `Trade::Reliefs` calls for with none open for its need. The governance pin moved for the
+   budgets reserved from the first step; the trading fixture's two, which hold no tender, for the
+   save's new component alone, its fast-forward's calls unchanged. Left: a relief tender a player's
+   governor publishes, which `Publish` does not take; the issuer's calls rebuilding the market's rules
+   (`Trade::TenderPrice`'s `shortcut:`), each turn's last step.
 3. Bids and the award: sealed bids, revisions, withdrawal, the tie order, the bond's fallback and
    simultaneous awards competing for funds; `Closed` at the boundary.
 4. Delivery and default: partial and excess delivery, payment under fragmented deliveries summing to

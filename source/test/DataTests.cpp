@@ -367,6 +367,18 @@ TEST_CASE("the_balance_tuning_reproduces_the_plans_worked_examples")
 	REQUIRE(tuning.projects.size() == 1);
 	CHECK(tuning.projects[0].unlocksRecipe == "RecipeBronze");
 	CHECK(tuning.projects[0].workDays == 7);
+	CHECK(tuning.projects[0].priorityPremium == 0.5);
+	// D-101's windows and bounds.
+	const Manifest::Content::ProcurementTuning &procurement = tuning.procurement;
+	CHECK(procurement.minBidDays == 1);
+	CHECK(procurement.maxBidDays == 7);
+	CHECK(procurement.minDeliveryDays == 1);
+	CHECK(procurement.maxDeliveryDays == 60);
+	CHECK(procurement.aiBidDays == 1);
+	CHECK(procurement.aiDeliveryDays == 14);
+	CHECK(procurement.maxOpenTenders == 8);
+	CHECK(procurement.maxBids == 32);
+	CHECK(procurement.keptClosed == 16);
 	CHECK(totes(tuning.projects[0].inputs) == Totes{{"ItemCopper", 9}, {"ItemTin", 1}});
 	REQUIRE(tuning.recipes.size() == 1);
 	CHECK(totes(tuning.recipes[0].inputs) == Totes{{"ItemCopper", 9}, {"ItemTin", 1}});

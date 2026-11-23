@@ -84,6 +84,10 @@ Snapshot Observe(
 		for (const World::Report &report : pReports->reports)
 			snapshot.markets.push_back(
 			    {report, report.source == World::Source::Docked && report.observed == snapshot.step});
+	for (const auto &[entity, identity, tender] :
+	     registry.view<const World::Identity, const World::Tender>().each())
+		snapshot.tenders.push_back({identity.id, tender});
+	std::ranges::sort(snapshot.tenders, {}, &TenderView::tenderId);
 	return snapshot;
 }
 } // namespace Manifest::Query
