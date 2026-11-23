@@ -377,6 +377,8 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	    balance, "version: 1\ncompany: {startingCredits: 0}\n",
 	    "company.startingCredits must be above 0");
 	CheckRefused(
+	    balance, "version: 1\ncompany: {foundingPrice: 0}\n", "company.foundingPrice must be above 0");
+	CheckRefused(
 	    balance, "version: 1\nmarket: {listingFeeBps: 10001}\n",
 	    "market.listingFeeBps must be in [0, 10000]");
 	const auto classes = [](std::string_view skiff)

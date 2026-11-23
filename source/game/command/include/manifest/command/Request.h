@@ -60,7 +60,10 @@ enum class Result
 	// A bound of procurement's reached: a region's tenders not yet closed, or a tender's bids (W12).
 	LimitReached,
 	// A bid replaced at other than its current revision (W12).
-	StaleRevision
+	StaleRevision,
+	// Founding in a region that has a governor, or by a principal who directs one's already (D-110).
+	Governed,
+	AlreadyFounded
 };
 
 enum class ActorKind

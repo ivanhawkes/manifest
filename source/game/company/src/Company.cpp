@@ -251,6 +251,59 @@ Result Provisioned(SimWorld &world, Rules &rules, const Provision &provision)
 }
 
 
+// Whether the principal directs the governor of a region.
+bool Governs(const entt::registry &registry, const Rules &rules, const std::string &principalId)
+{
+	for (const auto [entity, region] : registry.view<const World::Region>().each())
+	{
+		if (region.governorId.empty())
+			continue;
+		const entt::entity governor = rules.identities.Find(Kind::Organisation, region.governorId);
+		JETTISON_VERIFY(governor != entt::null);
+		if (registry.get<const World::Organisation>(governor).principalId == principalId)
+			return true;
+	}
+	return false;
+}
+
+
+Result Founded(SimWorld &world, const Rules &rules, const Actor &actor, const Found &found)
+{
+	entt::registry &registry = world.Registry();
+	World::Identities &identities = rules.identities;
+	const entt::entity region = identities.Find(Kind::Region, found.regionId);
+	const entt::entity company = identities.Find(Kind::Company, found.companyId);
+	if (region == entt::null || company == entt::null)
+		return Result::UnknownTarget;
+	if (registry.get<const World::Company>(company).principalId != actor.id)
+		return Result::NotAuthorised;
+	if (found.displayName.empty())
+		return Result::MalformedPayload;
+	if (!registry.get<const World::Region>(region).governorId.empty())
+		return Result::Governed;
+	if (Governs(registry, rules, actor.id))
+		return Result::AlreadyFounded;
+	World::Account &paying =
+	    registry.get<World::Account>(identities.Find(Kind::CompanyAccount, found.companyId));
+	World::Account &treasury =
+	    registry.get<World::Account>(identities.Find(Kind::PublicAccount, found.regionId));
+	const std::int64_t price = rules.content.tuning.company.foundingPrice;
+	if (paying.balance < price)
+		return Result::InsufficientFunds;
+	if (treasury.balance > kMaxCredits - price)
+		return Result::CapacityExceeded;
+
+	const std::string organisationId = Issued(identities, Kind::Organisation);
+	registry.emplace<World::Organisation>(
+	    Created(world, identities, Kind::Organisation, organisationId),
+	    Content::OrganisationKind::Polity, found.displayName, actor.id);
+	registry.get<World::Region>(region).governorId = organisationId;
+	paying.balance -= price;
+	treasury.balance += price;
+	return Result::Succeeded;
+}
+
+
 auto HoldingKey(const World::Holding &holding)
 {
 	return std::tie(holding.venueId, holding.itemId);
@@ -896,6 +949,10 @@ void RegisterTypes()
 		    .Field<&Provision::principalId>("principalId", kSaved)
 		    .Field<&Provision::displayName>("displayName", kSaved)
 		    .Field<&Provision::companyName>("companyName", kSaved);
+		RegisterType<Found>("Manifest.Company.Found")
+		    .Field<&Found::regionId>("regionId", kSaved)
+		    .Field<&Found::companyId>("companyId", kSaved)
+		    .Field<&Found::displayName>("displayName", kSaved);
 		RegisterType<Move>("Manifest.Company.Move")
 		    .Field<&Move::shipId>("shipId", kSaved)
 		    .Field<&Move::venueId>("venueId", kSaved)
@@ -987,6 +1044,10 @@ void RegisterCommands(
 	    std::string{kProvision}, kVersion, Command::ActorKind::Administrator,
 	    [rules](SimWorld &target, const Actor & /*actor*/, const Provision &provision)
 	    { return Provisioned(target, *rules, provision); });
+	requests.Register<Found>(
+	    std::string{kFound}, kVersion, Command::ActorKind::Principal,
+	    [rules](SimWorld &target, const Actor &actor, const Found &found)
+	    { return Founded(target, *rules, actor, found); });
 	requests.Register<Move>(
 	    std::string{kLoad}, kVersion, Command::ActorKind::Principal,
 	    [rules](SimWorld &target, const Actor &actor, const Move &move)

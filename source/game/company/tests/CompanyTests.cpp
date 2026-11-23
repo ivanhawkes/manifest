@@ -1457,3 +1457,70 @@ TEST_CASE("An AI operator's fees follow its station's occupancy each day, within
 	CHECK(level(forwarded, ore) == 15'000);
 	CHECK(skiff(forwarded, ore) == held);
 }
+
+
+TEST_CASE("A company founds its principal's one homeworld in a region no one governs, and keeps it")
+{
+	Hosted hosted{"governance"};
+	CHECK(hosted.Provision("Ada") == Result::Succeeded);
+	CHECK(hosted.Provision("Bea") == Result::Succeeded);
+	Credits(hosted, "Company1").balance = 300'000;
+	const entt::registry &registry = hosted.world.Registry();
+	const auto region = [&](const std::string &regionId)
+	{ return registry.get<World::Region>(hosted.Find(Kind::Region, regionId)); };
+	const auto treasury = [&](const std::string &regionId)
+	{ return registry.get<World::Account>(hosted.Find(Kind::PublicAccount, regionId)).balance; };
+	const auto found =
+	    [&](const Actor &actor, const std::string &regionId, const std::string &companyId)
+	{ return hosted.Run(actor, kFound, Found{regionId, companyId, "Northern Republic"}); };
+
+	// Refused, writing nothing.
+	CHECK(found(kAda, "RegionNowhere", "Company1") == Result::UnknownTarget);
+	CHECK(found(kAda, "RegionForgeNorth", "Company9") == Result::UnknownTarget);
+	CHECK(found(kBea, "RegionForgeNorth", "Company1") == Result::NotAuthorised);
+	CHECK(
+	    hosted.Run(kAda, kFound, Found{"RegionForgeNorth", "Company1", ""}) ==
+	    Result::MalformedPayload);
+	CHECK(found(kAda, "RegionForgeEast", "Company1") == Result::Governed);
+	CHECK(found(kBea, "RegionForgeSouth", "Company2") == Result::InsufficientFunds);
+	CHECK(hosted.identities.Find(Kind::Organisation, "Organisation1") == entt::null);
+	CHECK(Credits(hosted, "Company1").balance == 300'000);
+
+	// Founded: the price into the treasury, a polity she directs governing, the rest as it was.
+	World::Region before = region("RegionForgeNorth");
+	CHECK(found(kAda, "RegionForgeNorth", "Company1") == Result::Succeeded);
+	CHECK(Credits(hosted, "Company1").balance == 100'000);
+	CHECK(treasury("RegionForgeNorth") == 1'200'000);
+	const World::Organisation &polity =
+	    registry.get<World::Organisation>(hosted.Find(Kind::Organisation, "Organisation1"));
+	CHECK(polity.kind == Manifest::Content::OrganisationKind::Polity);
+	CHECK(polity.displayName == "Northern Republic");
+	CHECK(polity.principalId == "Ada");
+	before.governorId = "Organisation1";
+	CHECK(region("RegionForgeNorth") == before);
+
+	// One homeworld each, and no one founds in hers.
+	CHECK(found(kAda, "RegionForgeSouth", "Company1") == Result::AlreadyFounded);
+	Credits(hosted, "Company2").balance = 500'000;
+	CHECK(found(kBea, "RegionForgeNorth", "Company2") == Result::Governed);
+	CHECK(region("RegionForgeNorth").governorId == "Organisation1");
+
+	// Two founders of the last free region in one step: the first accepted founds it.
+	Hosted race{"governance"};
+	for (const char *principal : {"Ada", "Bea"})
+		CHECK(race.Provision(principal) == Result::Succeeded);
+	Credits(race, "Company1").balance = 200'000;
+	Credits(race, "Company2").balance = 200'000;
+	race.Admit(kBea, kFound, Found{"RegionForgeSouth", "Company2", "South"});
+	race.Admit(kAda, kFound, Found{"RegionForgeSouth", "Company1", "South"});
+	race.world.Step();
+	CHECK(race.Outcome(kBea, 1) == Result::Succeeded);
+	CHECK(race.Outcome(kAda, 1) == Result::Governed);
+	CHECK(Credits(race, "Company1").balance == 200'000);
+
+	// Saved and loaded, she still governs it.
+	Hosted loaded{"governance"};
+	loaded.world.Load(hosted.world.Save());
+	CHECK(loaded.world.StateHash() == hosted.world.StateHash());
+	CHECK(found(kAda, "RegionForgeSouth", "Company1") == Result::AlreadyFounded);
+}

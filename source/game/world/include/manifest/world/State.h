@@ -91,6 +91,8 @@ struct Region
 	double population{0.0};
 	double health{0.0};
 	double happiness{0.0};
+
+	bool operator==(const Region &) const = default;
 };
 
 // What a region knows, each list sorted and none in it twice: its skills, by Skill node ID, and the

@@ -231,7 +231,8 @@ void RegisterTypes()
 		    .Field<&FuelTuning::thrustSharesBps>("thrustSharesBps", kDefined)
 		    .Field<&FuelTuning::legAllowanceSeconds>("legAllowanceSeconds", kDefined);
 		RegisterType<CompanyTuning>("Manifest.CompanyTuning")
-		    .Field<&CompanyTuning::startingCredits>("startingCredits", kDefined);
+		    .Field<&CompanyTuning::startingCredits>("startingCredits", kDefined)
+		    .Field<&CompanyTuning::foundingPrice>("foundingPrice", kDefined);
 		RegisterType<MarketTuning>("Manifest.MarketTuning")
 		    .Field<&MarketTuning::listingFeeBps>("listingFeeBps", kDefined)
 		    .Field<&MarketTuning::orderLifeSeconds>("orderLifeSeconds", kDefined)

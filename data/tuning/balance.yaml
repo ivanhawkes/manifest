@@ -127,6 +127,9 @@ company:
   # A new player's trading company's account, in whole credits (D-077): about a full hold of grain
   # in the starter; totes of furs, salt, lime, glassware, soap or copper (D-087).
   startingCredits: 25000
+  # What a company pays into a region's public account to found its homeworld there (D-110): a test
+  # value, some eight starters' worth, so a player trades a while before founding.
+  foundingPrice: 200000
 
 market:
   # What a venue takes from each side of a fill, in basis points of its gross (D-083).

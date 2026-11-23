@@ -184,6 +184,9 @@ struct CompanyTuning
 {
 	// Whole credits, in its account.
 	std::int64_t startingCredits{0};
+	// Whole credits a company pays into a region's public account to found its homeworld there
+	// (D-110).
+	std::int64_t foundingPrice{0};
 };
 
 // The hosted order book (D-083, D-085).

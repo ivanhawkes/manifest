@@ -1690,11 +1690,11 @@ pilot; where they differ, this holds. From Manifest `feature-base` at `7d1dd6a` 
 engine edit is expected: founding, queues and the region view are Manifest's commands, components and
 systems on the world's services.
 
-- **Founding.** `Manifest.Region.Found` names a region, the founder's company and the new polity's
+- **Founding.** `Manifest.Company.Found` names a region, the founder's company and the new polity's
   display name, sent by the company's principal. The region must be governed by no one (its
   `governorId` empty), refused `Governed` otherwise, and the principal must direct no polity that
   governs one, refused `AlreadyFounded`: one homeworld each. The company pays `balance.yaml`'s
-  `founding.price` (200,000, a test value) into the region's `PublicAccount`, refused
+  `company.foundingPrice` (200,000, a test value) into the region's `PublicAccount`, refused
   `InsufficientFunds` without it: an explicit one-way transfer, never a treasury alias. In the same
   step a new `Polity` organisation, its ID issued by `Identities`, directed by the principal, becomes
   the region's governor. Two founders of one region in a step: the first accepted founds it, the
@@ -1747,7 +1747,11 @@ systems on the world's services.
 Slices, each gated:
 
 1. The contract: this section, D-110, the delivery order and the handoff. **Done** 2026-11-23.
-2. Founding: `Found`, `founding.price`, the polity, `Governed` and `AlreadyFounded`, protection.
+2. Founding: `Found`, `company.foundingPrice`, the polity, `Governed` and `AlreadyFounded`, protection.
+   **Done** 2026-11-23, with no engine edit: `Manifest.Company.Found` in `company`, beside
+   provisioning, the polity's ID issued as `Organisation<n>`; the company suite founds Forge North,
+   refuses each case writing nothing, races two founders for Forge South in one step and loads the
+   save. No pin moved.
 3. The queue: `Queued` and `Cancelled`, `Queue` and `Cancel`, `teachesSkill`, the guild, the issuer
    tendering the head alone.
 4. Unattended development: `SetPolicy`, the issuer for a player's region within its limit, the

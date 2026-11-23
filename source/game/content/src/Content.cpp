@@ -676,6 +676,7 @@ void CheckTuning(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 		    Positive(fuel.legAllowanceSeconds), "fuel.legAllowanceSeconds", "must be above 0");
 		checker.Require(
 		    tuning.company.startingCredits > 0, "company.startingCredits", "must be above 0");
+		checker.Require(tuning.company.foundingPrice > 0, "company.foundingPrice", "must be above 0");
 		checker.Require(
 		    tuning.market.listingFeeBps >= 0 && tuning.market.listingFeeBps <= 10000,
 		    "market.listingFeeBps", "must be in [0, 10000]");

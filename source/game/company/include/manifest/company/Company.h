@@ -100,7 +100,24 @@ struct SetRefuel
 	bool enabled{true};
 };
 
+// The players' command by which their company founds their homeworld (D-110): in a region no one
+// governs, the company pays company.foundingPrice into the region's public account, and a new polity
+// of the display name, its ID issued, directed by the sender, governs the region from this step. The
+// region's population, accounts, condition, knowledge, facilities and projects carry on as they were.
+// No command takes a governed region's governor away. It checks before it writes: the region and the
+// company (UnknownTarget), that the sender's principal owns the company (NotAuthorised), a display
+// name (MalformedPayload), a region with no governor (Governed), a sender who directs no region's
+// governor yet (AlreadyFounded), the price in the company's account (InsufficientFunds) and room for
+// it in the public account (CapacityExceeded).
+struct Found
+{
+	std::string regionId;
+	std::string companyId;
+	std::string displayName;
+};
+
 inline constexpr std::string_view kProvision = "Manifest.Company.Provision";
+inline constexpr std::string_view kFound = "Manifest.Company.Found";
 inline constexpr std::string_view kLoad = "Manifest.Company.Load";
 inline constexpr std::string_view kUnload = "Manifest.Company.Unload";
 inline constexpr std::string_view kRefill = "Manifest.Company.Refill";
