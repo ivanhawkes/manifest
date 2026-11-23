@@ -767,7 +767,7 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 	CHECK(replayed.world.StateHash() == hosted.world.StateHash());
 
 	// The same in every build the gate runs; it moves as the fixture's does.
-	CHECK(hosted.world.StateHash() == 0x0926f27539ca8f5cULL);
+	CHECK(hosted.world.StateHash() == 0xa997f24a4d53e8ffULL);
 }
 
 

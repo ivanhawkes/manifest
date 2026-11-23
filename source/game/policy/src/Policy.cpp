@@ -27,6 +27,7 @@
 
 #include <manifest/company/Company.h>
 #include <manifest/config/SimulationConfig.h>
+#include <manifest/procurement/Procurement.h>
 #include <manifest/trade/Trade.h>
 #include <manifest/travel/Travel.h>
 #include <manifest/world/State.h>
@@ -91,7 +92,7 @@ Result Sets(SimWorld &world, const World::Identities &identities, const Actor &a
 	if (set.targetProfit < 0 || set.lossAllowance < 0 || set.thrustBps > World::kFullThrustBps)
 		return Result::InvalidQuantity;
 	registry.emplace_or_replace<World::Policy>(
-	    ship, set.enabled, set.targetProfit, set.lossAllowance, set.thrustBps);
+	    ship, set.enabled, set.targetProfit, set.lossAllowance, set.thrustBps, set.contracts);
 	if (!registry.all_of<World::Job>(ship))
 		registry.emplace<World::Job>(ship);
 	return Result::Succeeded;
@@ -806,12 +807,144 @@ std::optional<std::string> ChooseDestination(const Context &context)
 }
 
 
-// A decision of a choosing job: a trade, or with a lot aboard a destination for it, and the journey or
-// the trading it leads to. Whether the job can go on at once.
+// The job's tender while it is its company's contract, awarded and its delivery still open; none
+// otherwise.
+const World::Tender *Contracted(const Context &context)
+{
+	const entt::entity entity = context.rules.identities.Find(Kind::Tender, context.Job().tenderId);
+	const auto *pTender =
+	    entity == entt::null ? nullptr : context.Registry().try_get<const World::Tender>(entity);
+	if (pTender == nullptr || pTender->state != World::TenderState::Awarded ||
+	    pTender->companyId != context.Record().companyId ||
+	    context.world.Clock().Step() >= pTender->deliveryClose)
+		return nullptr;
+	return pTender;
+}
+
+
+// A tender a job may bid on: its ID, item, venue and bid close, the source its totes are bought at,
+// the bid's total, what it is estimated to make, and the budget beyond the total.
+struct Tendered
+{
+	std::string tenderId;
+	std::string itemId;
+	std::string venueId;
+	std::uint64_t bidClose{0};
+	std::string sourceId;
+	std::int64_t total{0};
+	std::int64_t profit{0};
+	std::int64_t headroom{0};
+	std::uint32_t thrustBps{World::kFullThrustBps};
+};
+
+
+// The tender a job bids on (D-101): of the open tenders before their bid close, of an item of the
+// scenario and none its company has bid on, whose totes the hold takes, the source of the owner's
+// reports whose asks hold them at the least, walked; the route from where the ship is through it to
+// the tender's venue fuelled with them aboard, at the policy's thrust or else full, or the most below
+// it the tanks can fly; and its total their cost, the route's charges and the profit, the target or a
+// credit above the best trade's estimate, whichever is more. Bid where the total is at most the budget
+// and the account holds what it spends and its bond. The most budget left beyond the total, then the
+// tender's ID, then the scenario's order of source.
+std::optional<Tendered> ChooseTender(const Context &context, const std::optional<Deal> &trade)
+{
+	const entt::registry &registry = context.Registry();
+	const World::Reports &reports = context.Reports();
+	const std::string &companyId = context.Record().companyId;
+	const std::uint64_t now = context.world.Clock().Step();
+	const std::uint64_t free = context.FreeHold();
+	const std::int64_t balance = context.Balance();
+	const std::int64_t profit =
+	    std::max(context.Policy().targetProfit, trade ? Added(trade->estimate, 1) : 0);
+	const double bondRate = context.rules.content.tuning.procurement.performanceSecurityRate;
+	std::optional<Tendered> best;
+	for (const auto [entity, identity, tender] :
+	     registry.view<const World::Identity, const World::Tender>().each())
+	{
+		if (tender.state != World::TenderState::Open || now >= tender.bidClose || tender.totes > free ||
+		    std::ranges::find(context.rules.items, tender.itemId, &Rules::Item::itemId) ==
+		        context.rules.items.end() ||
+		    context.rules.identities.Find(Kind::Bid, World::BidId(identity.id, companyId)) !=
+		        entt::null)
+			continue;
+		const Rules::Item &item = context.Item(tender.itemId);
+		const double tonnes = static_cast<double>(tender.totes) * item.tonnesPerTote;
+		for (const std::string &sourceId : context.rules.venues)
+		{
+			const World::Line *pAsk = LineOf(reports, sourceId, tender.itemId);
+			const std::optional<Walked> buy =
+			    pAsk ? Walk(pAsk->asks, tender.totes, item.unitsPerTote, context.rules.feeBps, true)
+			         : std::nullopt;
+			if (!buy)
+				continue;
+			// Bought at the venue itself, the one leg is there from where the ship is.
+			const std::vector<Leg> legs = sourceId == tender.venueId
+			                                  ? context.Legs({}, tender.venueId)
+			                                  : context.Legs(sourceId, tender.venueId);
+			const auto fuelled = [&](std::uint32_t bps)
+			{ return context.Priced(legs, bps, tonnes).fuelled; };
+			const std::uint32_t fixed = context.Policy().thrustBps;
+			const std::optional<std::uint32_t> thrust = fixed != 0 ? std::optional{fixed}
+			                                            : fuelled(World::kFullThrustBps)
+			                                                ? std::optional{World::kFullThrustBps}
+			                                                : MostThrust(fuelled);
+			if (!thrust || !fuelled(*thrust))
+				continue;
+			const std::int64_t spent = Added(buy->total, context.Priced(legs, *thrust, tonnes).charges);
+			const std::int64_t total = Added(spent, profit);
+			const auto bond =
+			    static_cast<std::int64_t>(std::ceil(static_cast<double>(total) * bondRate));
+			if (total > tender.budget || Added(spent, bond) > balance)
+				continue;
+			const std::int64_t headroom = tender.budget - total;
+			if (best && (headroom < best->headroom ||
+			             (headroom == best->headroom && identity.id >= best->tenderId)))
+				continue;
+			best = Tendered{identity.id, tender.itemId, tender.venueId, tender.bidClose, sourceId,
+			                total,       profit,        headroom,       *thrust};
+		}
+	}
+	return best;
+}
+
+
+// A decision of a choosing job with a contract: with its lot aboard, to its tender's venue to
+// deliver, and without, to its source to buy what is still owed. A tender no longer its contract
+// leaves the job a trade's, its lot aboard to sell. Whether it had a contract to work, and whether the
+// job can go on at once.
+std::pair<bool, bool> ChooseContract(const Context &context)
+{
+	World::Job &job = context.Job();
+	if (job.tenderId.empty())
+		return {false, false};
+	if (Contracted(context) == nullptr)
+	{
+		job.tenderId.clear();
+		return {false, false};
+	}
+	const std::string &docked = context.Record().dockedAt;
+	const bool laden = job.totes > 0;
+	const std::string &target = laden ? job.destinationId : job.sourceId;
+	if (docked == target)
+	{
+		job.phase = laden ? Phase::Selling : Phase::Buying;
+		return {true, true};
+	}
+	context.Go(target, laden ? Phase::ToDestination : Phase::ToSource);
+	return {true, false};
+}
+
+
+// A decision of a choosing job: a contract's next leg, a trade, or with a lot aboard a destination
+// for it, and the journey or the trading it leads to; with its policy's contracts on and no contract,
+// a bid on a tender (ChooseTender), waited on at its bid close, before a trade. Whether the job can go
+// on at once.
 bool Choose(const Context &context)
 {
 	World::Job &job = context.Job();
 	const std::string &docked = context.Record().dockedAt;
+	if (const auto [contracted, goesOn] = ChooseContract(context); contracted)
+		return goesOn;
 	if (job.totes > 0)
 	{
 		const std::optional<std::string> destination = ChooseDestination(context);
@@ -830,6 +963,24 @@ bool Choose(const Context &context)
 		return false;
 	}
 	const std::optional<Deal> trade = ChooseTrade(context);
+	if (context.Policy().contracts)
+		if (const std::optional<Tendered> tendered = ChooseTender(context, trade);
+		    tendered &&
+		    context.Act(
+		        Procurement::kBid, Procurement::kVersion,
+		        Procurement::Bid{tendered->tenderId, context.Record().companyId, tendered->total, 0}) ==
+		        Result::Succeeded)
+		{
+			job.phase = Phase::Bidding;
+			job.tenderId = tendered->tenderId;
+			job.itemId = tendered->itemId;
+			job.sourceId = tendered->sourceId;
+			job.destinationId = tendered->venueId;
+			job.estimate = tendered->profit;
+			job.thrustBps = tendered->thrustBps;
+			job.retry = tendered->bidClose;
+			return false;
+		}
 	if (!trade)
 	{
 		context.Block(World::Blockage::NoTrade);
@@ -948,6 +1099,87 @@ void Sell(const Context &context)
 }
 
 
+// Docked at its source, a contract's job walks the live asks for what its tender still owes, as far as
+// the hold goes, the rest cancelled, loads what it bought and flies to the tender's venue, or delivers
+// there at once where that is the source. A tender no longer its contract ends the job; nothing
+// bought, it blocks until the next turn, and chooses its contract's next leg then.
+void BuyOwed(const Context &context)
+{
+	World::Job &job = context.Job();
+	const World::Tender *pTender = Contracted(context);
+	if (pTender == nullptr)
+	{
+		job = World::Job{};
+		return;
+	}
+	const World::Line *pAsk = LineOf(context.Reports(), job.sourceId, job.itemId);
+	const std::uint64_t totes = std::min(
+	    {pTender->totes - pTender->delivered, context.FreeHold(), pAsk ? Totes(pAsk->asks) : 0});
+	const std::optional<Walked> walked =
+	    totes > 0
+	        ? Walk(pAsk->asks, totes, context.UnitsPerTote(job.itemId), context.rules.feeBps, true)
+	        : std::nullopt;
+	if (!walked)
+		return context.Block(World::Blockage::NoTrade);
+
+	const std::int64_t before = context.Balance();
+	const std::uint64_t held = context.Available(job.sourceId, job.itemId);
+	(void)context.Act(
+	    Trade::kPlace, Trade::kVersion,
+	    Trade::Place{job.sourceId, job.itemId, World::Side::Buy, totes, walked->limit});
+	context.CancelRest(job.sourceId, job.itemId);
+	const std::uint64_t bought = context.Available(job.sourceId, job.itemId) - held;
+	if (bought == 0)
+		return context.Block(World::Blockage::NoTrade);
+	if (context.Act(
+	        Company::kLoad, Company::kVersion,
+	        Company::Move{context.shipId, job.sourceId, job.itemId, bought}) != Result::Succeeded)
+		return context.Block(World::Blockage::Refused);
+	job.totes = bought;
+	job.cost = before - context.Balance();
+	job.charges = 0;
+	job.allowanceSpent = 0;
+	if (context.Record().dockedAt == job.destinationId)
+		job.phase = Phase::Selling;
+	else
+		context.Go(job.destinationId, Phase::ToDestination);
+}
+
+
+// Docked at its tender's venue, a contract's job delivers its lot (Procurement::Deliver), what is
+// delivered taking its share of the lot's cost and charges. Then fulfilled, the job chooses again;
+// still owed, it goes back to its source; and with totes left aboard past what was owed, or its
+// delivery refused, the tender no longer its contract, the lot is a trade's, to sell where it best can.
+void DeliverLot(const Context &context)
+{
+	World::Job &job = context.Job();
+	const auto aboard = [&]
+	{
+		const World::Cargo &cargo = context.Registry().get<const World::Cargo>(context.ship);
+		const auto lot = std::ranges::find(cargo.lots, job.itemId, &World::Lot::itemId);
+		return lot == cargo.lots.end() ? std::uint64_t{0} : lot->totes;
+	};
+	const std::uint64_t before = aboard();
+	if (context.Act(
+	        Procurement::kDeliver, Procurement::kVersion,
+	        Procurement::Deliver{job.tenderId, context.shipId}) != Result::Succeeded)
+	{
+		job.tenderId.clear();
+		job.phase = Phase::Choosing;
+		return;
+	}
+	const std::uint64_t delivered = std::min(job.totes, before - aboard());
+	job.cost -= Share(job.cost, delivered, job.totes);
+	job.charges -= Share(job.charges, delivered, job.totes);
+	job.totes -= delivered;
+	if (job.totes > 0)
+		job.tenderId.clear();
+	else if (Contracted(context) == nullptr)
+		job = World::Job{};
+	job.phase = Phase::Choosing;
+}
+
+
 // One decision of the job. Whether it can go on to the next at once.
 bool Decide(Context &context)
 {
@@ -1009,17 +1241,30 @@ bool Decide(Context &context)
 			return true;
 		}
 		case Phase::Choosing: return Choose(context);
+		case Phase::Bidding:
+			if (context.world.Clock().Step() < job.retry)
+				return false;
+			// Won, its contract's next leg; lost, or unawarded, a trade.
+			if (Contracted(context) == nullptr)
+				job = World::Job{};
+			job.phase = Phase::Choosing;
+			job.retry = 0;
+			return true;
 		case Phase::Buying:
 			if (record.dockedAt != job.sourceId)
 				job.phase = Phase::Choosing;
-			else
+			else if (job.tenderId.empty())
 				Buy(context);
+			else
+				BuyOwed(context);
 			return false;
 		case Phase::Selling:
 			if (record.dockedAt != job.destinationId)
 				job.phase = Phase::Choosing;
-			else
+			else if (job.tenderId.empty())
 				Sell(context);
+			else
+				DeliverLot(context);
 			return false;
 	}
 	return false;
@@ -1168,7 +1413,7 @@ std::uint64_t RunNext(const SimWorld &world)
 	{
 		if (!policy.enabled)
 			continue;
-		if (job.phase == Phase::Blocked)
+		if (job.phase == Phase::Blocked || job.phase == Phase::Bidding)
 			next = std::min(next, std::max(job.retry, now));
 		else if (job.phase == Phase::ToSource || job.phase == Phase::ToDestination)
 		{
@@ -1244,7 +1489,8 @@ void ProvisionTraders(
 		const Actor npc{Command::ActorKind::Principal, trader.principalId};
 		for (const std::string &shipId : ships)
 			JETTISON_VERIFY(
-			    requests.Act(world, npc, kSet, kVersion, Set{shipId, true, 0, 0}) == Result::Succeeded);
+			    requests.Act(world, npc, kSet, kVersion, Set{shipId, true, 0, 0, 0, true}) ==
+			    Result::Succeeded);
 	}
 }
 
@@ -1261,7 +1507,8 @@ void RegisterTypes()
 		    .Field<&Set::enabled>("enabled", kSaved)
 		    .Field<&Set::targetProfit>("targetProfit", kSaved)
 		    .Field<&Set::lossAllowance>("lossAllowance", kSaved)
-		    .Field<&Set::thrustBps>("thrustBps", kSaved);
+		    .Field<&Set::thrustBps>("thrustBps", kSaved)
+		    .Field<&Set::contracts>("contracts", kSaved);
 		return true;
 	}();
 	(void)registered;
@@ -1308,15 +1555,16 @@ void Register(
 	    {.name = std::string{kSystem},
 	     .phase = Jettison::Ecs::TickPhase::Simulation,
 	     // What the commands it sends write, besides its own.
-	     .access =
-	         Access::Of<
-	             World::Policy, World::Job, World::Ship, World::Company, World::Reports, World::Fees,
-	             World::Journey, World::Account, World::Stock, World::Order, World::Identity,
-	             World::Cargo, World::Systems, World::Paid, Jettison::Sim::Transform,
-	             Jettison::Dock::Platform, Jettison::Physics::OnRails, Jettison::Sim::InFrame>()
-	             .Writing<
-	                 World::Job, World::Order, World::Account, World::Stock, World::Identity,
-	                 World::Sales, World::Cargo, World::Journey, World::Arrears, World::Paid>(),
+	     .access = Access::Of<
+	                   World::Policy, World::Job, World::Ship, World::Company, World::Reports,
+	                   World::Fees, World::Journey, World::Account, World::Stock, World::Order,
+	                   World::Identity, World::Cargo, World::Systems, World::Paid, World::Tender,
+	                   World::Bid, Jettison::Sim::Transform, Jettison::Dock::Platform,
+	                   Jettison::Physics::OnRails, Jettison::Sim::InFrame>()
+	                   .Writing<
+	                       World::Job, World::Order, World::Account, World::Stock, World::Identity,
+	                       World::Sales, World::Cargo, World::Journey, World::Arrears, World::Paid,
+	                       World::Tender, World::Bid>(),
 	     .after = {std::string{Trade::kBrokers}},
 	     .run = [rules, &world](entt::registry &, double) { Run(world, *rules); },
 	     .before = {std::string{Jettison::Spatial::FrameIndices::kSystemName}}},

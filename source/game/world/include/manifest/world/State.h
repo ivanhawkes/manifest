@@ -662,14 +662,16 @@ inline constexpr std::uint32_t kFullThrustBps = 10000;
 
 // A ship's standing trade policy (D-097), which its owner sets: whether its job runs, the whole credits
 // a trade's estimate must be above and a sale must recover beyond its lot's cost and charges, and the
-// whole credits below that the owner allows a lot to sell for, each at least 0; and the thrust every
-// leg flies (D-107), at most kFullThrustBps, 0 for the job to choose one with each trade.
+// whole credits below that the owner allows a lot to sell for, each at least 0; the thrust every
+// leg flies (D-107), at most kFullThrustBps, 0 for the job to choose one with each trade; and whether
+// the job bids on tenders and works the contracts it wins (D-101).
 struct Policy
 {
 	bool enabled{false};
 	std::int64_t targetProfit{0};
 	std::int64_t lossAllowance{0};
 	std::uint32_t thrustBps{0};
+	bool contracts{false};
 
 	bool operator==(const Policy &) const = default;
 };
@@ -684,7 +686,9 @@ enum class Phase
 	Buying,
 	ToDestination,
 	Selling,
-	Blocked
+	Blocked,
+	// Its bid placed on its tender, waiting for the award at its retry step, the bid close.
+	Bidding
 };
 
 enum class Blockage
@@ -730,6 +734,9 @@ struct Job
 	std::uint32_t thrustBps{kFullThrustBps};
 	double reactionMassKilograms{0.0};
 	double pelletKilograms{0.0};
+	// A contract's tender (W12): bid on, or awarded to its company, its totes bought at the source and
+	// delivered at the destination, its venue; empty for a trade.
+	std::string tenderId{};
 
 	bool operator==(const Job &) const = default;
 };

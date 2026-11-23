@@ -24,6 +24,7 @@
 
 #include <manifest/company/Company.h>
 #include <manifest/policy/Policy.h>
+#include <manifest/procurement/Procurement.h>
 #include <manifest/query/Query.h>
 #include <manifest/trade/Trade.h>
 #include <manifest/travel/Travel.h>
@@ -68,6 +69,7 @@ void RegisterAllTypes()
 	Manifest::Company::RegisterTypes();
 	Manifest::Trade::RegisterTypes();
 	RegisterTypes();
+	Manifest::Procurement::RegisterTypes();
 }
 
 
@@ -83,6 +85,7 @@ struct Hosted
 		Manifest::Company::RegisterCommands(world, requests, identities, fleet, content);
 		Manifest::Trade::Register(world, requests, identities, content);
 		Register(world, requests, identities, content);
+		Manifest::Procurement::Register(world, requests, identities, content);
 		World::CreateInitialState(world, identities, content);
 		Manifest::Travel::OpenStations(world, fleet);
 		Manifest::Trade::Quote(world, identities, content);
@@ -201,6 +204,19 @@ struct Hosted
 	{
 		while (world.Clock().Step() < step)
 			world.Step();
+	}
+
+	// The steps to the one given, passed over where the systems allow.
+	void PassTo(std::uint64_t step)
+	{
+		while (world.Clock().Step() < step)
+			world.FastForward(step);
+	}
+
+	// Fixture bootstrap: the company's account holds the credits, as trading would have left it.
+	void Fund(const std::string &companyId, std::int64_t credits)
+	{
+		world.Registry().get<World::Account>(Find(Kind::CompanyAccount, companyId)).balance = credits;
 	}
 
 	const Manifest::Content::ContentSet &content;
@@ -961,7 +977,7 @@ TEST_CASE("A scenario's NPC traders start provisioned, the world's own, their jo
 	const entt::registry &registry = hosted.world.Registry();
 	const entt::entity nia = hosted.Find(Kind::Principal, "Nia");
 	CHECK(registry.get<World::Principal>(nia).npc);
-	CHECK(registry.get<World::Policy>(hosted.Ship("Ship1")) == World::Policy{true, 0, 0});
+	CHECK(registry.get<World::Policy>(hosted.Ship("Ship1")) == World::Policy{true, 0, 0, 0, true});
 	CHECK(hosted.Job().phase == World::Phase::Choosing);
 
 	// A player provisioned beside it is not the world's, and was seeded reports as it was.
@@ -994,4 +1010,126 @@ TEST_CASE("A scenario's NPC traders start provisioned, the world's own, their jo
 	    {"Quy", "Quy", "Co"},
 	    {"Rua", "Rua", "Co"}};
 	CHECK_THROWS_AS(Hosted{content}, std::runtime_error);
+}
+
+
+namespace
+{
+constexpr std::string_view kForge = "VenueForgeHighport";
+constexpr std::string_view kCassiter = "VenueCassiterDock";
+const std::string kCopper = "RegionForgeEast:ProjectBronzeMetallurgy:ItemCopper:1";
+
+
+// The governance scenario with an NPC trader, Nia, its policy's target 1,000 credits, and Ada
+// provisioned beside it, her policy's contracts on and her target 0, both docked at Forge Highport
+// knowing it alone, so the copper tender, bought and delivered there, is the one either can source,
+// and both funded to buy its nine totes. Ada bids in the second step, Nia in the first.
+void Contracting(Hosted &hosted)
+{
+	hosted.Fund("Company1", 200'000);
+	hosted.world.Registry().get<World::Policy>(hosted.Ship("Ship1")).targetProfit = 1'000;
+	hosted.Forget("Nia", kCassiter);
+	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
+	hosted.Fund("Company2", 200'000);
+	hosted.Forget("Ada", kCassiter);
+	REQUIRE(hosted.SetPolicy(kAda, {"Ship2", true, 0, 0, 0, true}) == Result::Succeeded);
+}
+
+
+const Manifest::Content::ContentSet &Governed()
+{
+	static const Manifest::Content::ContentSet content = []
+	{
+		Manifest::Content::ContentSet set = Scenario("governance");
+		set.scenarios.at(set.scenario).traders = {{"Nia", "Nia", "Nia Freight"}};
+		return set;
+	}();
+	return content;
+}
+} // namespace
+
+
+TEST_CASE(
+    "A job bids on the tender it can estimate, wins against an NPC's, and delivers what it bought")
+{
+	Hosted hosted{Governed()};
+	Contracting(hosted);
+	const entt::registry &registry = hosted.world.Registry();
+	const entt::entity tender = hosted.Find(Kind::Tender, kCopper);
+	const std::uint64_t close = registry.get<World::Tender>(tender).bidClose;
+
+	// Each bids its cost at Forge's asks and its target, Nia's the higher, and waits for the close.
+	const World::Job &adas = hosted.Job("Ship2");
+	CHECK(adas.phase == World::Phase::Bidding);
+	CHECK(adas.tenderId == kCopper);
+	CHECK(adas.sourceId == kForge);
+	CHECK(adas.destinationId == kForge);
+	CHECK(adas.retry == close);
+	CHECK(adas.estimate == 0);
+	// Nia's first choice, before its reports of Forge were observed live, found nothing; it chooses
+	// again as the first economic turn ends.
+	CHECK(hosted.Job("Ship1").blockage == World::Blockage::NoTrade);
+	hosted.PassTo(hosted.Job("Ship1").retry + 1);
+	CHECK(hosted.Job("Ship1").phase == World::Phase::Bidding);
+	CHECK(hosted.Job("Ship1").tenderId == kCopper);
+	CHECK(hosted.Job("Ship1").estimate == 1'000);
+	const std::int64_t adasTotal =
+	    registry.get<World::Bid>(hosted.Find(Kind::Bid, World::BidId(kCopper, "Company2"))).total;
+	CHECK(
+	    registry.get<World::Bid>(hosted.Find(Kind::Bid, World::BidId(kCopper, "Company1"))).total ==
+	    adasTotal + 1'000);
+	CHECK(adasTotal <= registry.get<World::Tender>(tender).budget);
+
+	// At the close the award is Ada's; her job buys the nine totes at Forge, loads them and delivers
+	// them there, and Nia's, lost, chooses again.
+	hosted.PassTo(close + 2);
+	const World::Tender &fulfilled = registry.get<World::Tender>(tender);
+	CHECK(fulfilled.state == World::TenderState::Fulfilled);
+	CHECK(fulfilled.companyId == "Company2");
+	CHECK(fulfilled.price == adasTotal);
+	CHECK(fulfilled.delivered == 9);
+	CHECK(
+	    registry
+	        .get<World::Stock>(hosted.Find(Kind::Project, "RegionForgeEast:ProjectBronzeMetallurgy"))
+	        .holdings == std::vector<World::Holding>{{std::string{kForge}, "ItemCopper", 9, 0}});
+	CHECK(registry.get<World::Cargo>(hosted.Ship("Ship2")).lots.empty());
+	CHECK(hosted.Job("Ship2").tenderId != kCopper);
+	CHECK(hosted.Job("Ship2").totes == 0);
+	CHECK(hosted.Job("Ship1").tenderId != kCopper);
+}
+
+
+TEST_CASE("A contract's award, buying and delivery passed over leave the bytes stepping does")
+{
+	Hosted stepped{Governed()};
+	Hosted passed{Governed()};
+	Contracting(stepped);
+	Contracting(passed);
+	const std::uint64_t close =
+	    stepped.world.Registry().get<World::Tender>(stepped.Find(Kind::Tender, kCopper)).bidClose;
+	stepped.PassTo(close - 50);
+	for (int step = 0; step < 100; ++step)
+		stepped.world.Step();
+	passed.PassTo(close + 50);
+	CHECK(
+	    stepped.world.Registry().get<World::Tender>(stepped.Find(Kind::Tender, kCopper)).state ==
+	    World::TenderState::Fulfilled);
+	CHECK(passed.world.StateHash() == stepped.world.StateHash());
+}
+
+
+TEST_CASE("A saved bidding job loads, and one that names no tender does not")
+{
+	Hosted hosted{Governed()};
+	Contracting(hosted);
+	REQUIRE(hosted.Job("Ship2").phase == World::Phase::Bidding);
+	Hosted loaded{Governed()};
+	loaded.world.Load(hosted.world.Save());
+	CHECK(loaded.Job("Ship2") == hosted.Job("Ship2"));
+	CHECK(loaded.world.StateHash() == hosted.world.StateHash());
+
+	Hosted broken{Governed()};
+	Contracting(broken);
+	broken.Job("Ship2").tenderId.clear();
+	CHECK_THROWS_AS(loaded.world.Load(broken.world.Save()), Jettison::Serialise::FormatError);
 }

@@ -14,8 +14,8 @@ add_subdirectory(command)
 add_subdirectory(travel)
 add_subdirectory(trade)
 add_subdirectory(company)
-add_subdirectory(policy)
 add_subdirectory(procurement)
+add_subdirectory(policy)
 add_subdirectory(query)
 
 # The complete game model, analogous to Jettison::Engine. Retain the existing

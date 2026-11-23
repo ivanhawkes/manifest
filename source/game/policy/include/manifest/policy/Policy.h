@@ -18,7 +18,8 @@ namespace Manifest::Policy
 // The players' command that sets their company's ship's standing trade policy (D-097), which its job
 // reads at its next decision, a lot aboard included; allowance the lot has spent stays spent. A ship
 // with no job is given one, choosing. Its thrust, in basis points, is every leg's (D-107), or 0 for
-// the job to choose one with each trade. Refused, writing nothing, for a ship the world does not have
+// the job to choose one with each trade; and whether the job bids on tenders and works the contracts it
+// wins (D-101). Refused, writing nothing, for a ship the world does not have
 // (UnknownTarget), one of another company (NotAuthorised), and a target or an allowance below 0 or a
 // thrust past World::kFullThrustBps (InvalidQuantity).
 struct Set
@@ -28,6 +29,7 @@ struct Set
 	std::int64_t targetProfit{0};
 	std::int64_t lossAllowance{0};
 	std::uint32_t thrustBps{0};
+	bool contracts{false};
 };
 
 inline constexpr std::string_view kSet = "Manifest.Policy.Set";
@@ -42,8 +44,14 @@ inline constexpr std::uint32_t kVersion = 2;
 // destination; and selling there at no less than the lot's floor, the rest cancelled and loaded back.
 // A policy with no thrust of its own chooses the trade and thrust that make the most an hour, its
 // estimate over its route's seconds (EstimateRoute), of each of fuel.thrustSharesBps the tanks can fly
-// and, below one they cannot, the most they can; its legs then fly that thrust (W21).
-// A job with nothing it can do blocks, keeping its cargo, until the next economic turn's last step.
+// and, below one they cannot, the most they can; its legs then fly that thrust (W21). With the policy's
+// contracts on, a job choosing a trade first bids on the open tender it can estimate from its owner's
+// reports to make the target or a credit more than its best trade, whichever is more, within the
+// budget, through Procurement::Bid, and waits for the award at the bid close (W12, D-101); won, it buys
+// what the tender still owes at its source, walking the live asks, carries it to the tender's venue and
+// delivers it there (Procurement::Deliver), again while the delivery close allows, a ship one contract
+// at a time; lost, it chooses again. A job with nothing it can do blocks, keeping its cargo, until the
+// next economic turn's last step.
 inline constexpr std::string_view kSystem = "manifest.policy";
 
 // The system after manifest.berths that seizes cargo for arrears (D-100): as each simulation day's
@@ -91,7 +99,8 @@ std::optional<std::int64_t> SellLimit(
 // Provisions the scenario's NPC traders (Content::TraderDefinition), in its order, as the initial
 // state's last part, after the brokers' first quotes, as a player is provisioned: through
 // Company::Provision sent by the host, each principal then marked the world's own (World::Principal's
-// npc), and its ship's policy enabled through Set sent as it, its target and allowance 0. Throws
+// npc), and its ship's policy enabled through Set sent as it, its target and allowance 0, its
+// contracts on. Throws
 // std::runtime_error for a trader the starter venue cannot take, and std::invalid_argument for a
 // content set with no scenario selected.
 void ProvisionTraders(
@@ -103,8 +112,9 @@ void RegisterTypes();
 
 // Registers the command with the requests, the system with the world, after manifest.brokers and
 // before the movement Travel::Register attaches, and the seizure after manifest.berths and before
-// manifest.observe, all of which must be registered, as must the trade and company commands they send.
-// The world, the requests, the identities and the content must outlive the world's last step.
+// manifest.observe, all of which must be registered, as must the trade, company and procurement
+// commands they send. The world, the requests, the identities and the content must outlive the world's
+// last step.
 void Register(
     Jettison::Sim::SimWorld &world, Command::Requests &requests, World::Identities &identities,
     const Content::ContentSet &content);

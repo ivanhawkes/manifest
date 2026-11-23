@@ -1287,9 +1287,31 @@ W12's slices, each one commit with its suites, the gate after the third and the 
    ended in runs the AI issuer, which tenders the totes still needed again; what a live contract has
    delivered counts once, as held. A load refuses an awarded tender whose account is not its total
    less `Owed`, more delivered than its totes, or one fulfilled other than at its last tote. No pin
-   moved: the pinned worlds hold tenders, and none has delivered a tote.
+   moved: no pinned world holds a tender, the trading fixture's having none and the company suite's
+   governance world registering no procurement (corrected with slice 5).
 5. Saved jobs: the policy's `contracts`, a bid estimated and won, delivered with no client, an NPC
-   competing; fast-forwarded to the bytes stepping leaves.
+   competing; fast-forwarded to the bytes stepping leaves. **Done** 2026-11-23, with no engine edit:
+   `World::Policy` gains `contracts`, set by `Manifest.Policy.Set` and on for NPC traders. A choosing
+   job with it on and no contract first bids, through `Manifest.Procurement.Bid`, on the open tender
+   it can estimate from its owner's reports: of an item of the scenario, none its company has bid on,
+   whose totes its hold takes, at the source whose asks hold them for the least, walked, the route from
+   where the ship is through it to the tender's venue fuelled at the policy's thrust, else full or the
+   most below it the tanks fly; its total that cost, the route's charges and the profit, the target or a
+   credit above the best trade's estimate, whichever is more, bid at most the budget with the account
+   holding what it spends and the bond; the most budget left over first, then the tender's ID. It waits
+   in the new `Bidding` phase, its quiet the bid close (`retry`). Won, the job, its `tenderId` the
+   contract's, buys what is still owed at its source, walking the live asks as far as the hold goes,
+   loads it, flies to the tender's venue and delivers there (`Manifest.Procurement.Deliver`), going
+   back for the rest while the delivery close allows; a contract ended, or totes left past what was
+   owed, leave the lot a trade's to sell; lost, it chooses again. `policy` now depends on
+   `procurement`, and its suite registers it as the host does. The suite's governance world with an
+   NPC: Ada's job, knowing Forge Highport alone, bids its copper's cost there and wins against the
+   NPC's bid, its target 1,000 higher, buys and delivers the nine totes with no client, and the NPC
+   chooses again; passed over the award, the purchase and the delivery, the bytes are stepping's. A load
+   refuses a bidding job that names no tender, item, source or venue, or holds a lot. The zero-client
+   trading fixture's pin moved for the save's layout, the job's `tenderId` and the policy's
+   `contracts`: with its NPC's contracts off it moves too, and the trading scenario holds no tender
+   for a job to bid on.
 6. The governance fixture: Forge East's project tendered, tin bought at Cassiter and copper at Forge
    delivered physically, worked and unlocked; saved and replayed to one hash. Then the close-out.
 

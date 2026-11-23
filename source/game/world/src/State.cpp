@@ -301,6 +301,10 @@ std::optional<std::string> Broken(const Job &job)
 		return "a job buying names no source or already has its lot";
 	if (selling && job.totes == 0)
 		return "a job selling has no lot";
+	if (job.phase == Phase::Bidding &&
+	    (job.tenderId.empty() || job.itemId.empty() || job.sourceId.empty() ||
+	     job.destinationId.empty() || job.totes != 0))
+		return "a job bidding names no tender, item, source or venue, or has a lot";
 	if (job.totes > 0 && job.itemId.empty())
 		return "a job's lot names no item";
 	if (!std::isfinite(job.oxygenKilograms) || !std::isfinite(job.cartridgeDays) ||
@@ -617,14 +621,16 @@ void RegisterTypes()
 		    .Field<&Policy::enabled>("enabled", kSaved)
 		    .Field<&Policy::targetProfit>("targetProfit", kSaved)
 		    .Field<&Policy::lossAllowance>("lossAllowance", kSaved)
-		    .Field<&Policy::thrustBps>("thrustBps", kSaved);
+		    .Field<&Policy::thrustBps>("thrustBps", kSaved)
+		    .Field<&Policy::contracts>("contracts", kSaved);
 		RegisterEnum<Phase>("Manifest.World.Phase")
 		    .Value<Phase::Choosing>("Choosing")
 		    .Value<Phase::ToSource>("ToSource")
 		    .Value<Phase::Buying>("Buying")
 		    .Value<Phase::ToDestination>("ToDestination")
 		    .Value<Phase::Selling>("Selling")
-		    .Value<Phase::Blocked>("Blocked");
+		    .Value<Phase::Blocked>("Blocked")
+		    .Value<Phase::Bidding>("Bidding");
 		RegisterEnum<Blockage>("Manifest.World.Blockage")
 		    .Value<Blockage::None>("None")
 		    .Value<Blockage::NoTrade>("NoTrade")
@@ -647,7 +653,8 @@ void RegisterTypes()
 		    .Field<&Job::cartridgeDays>("cartridgeDays", kSaved)
 		    .Field<&Job::thrustBps>("thrustBps", kSaved)
 		    .Field<&Job::reactionMassKilograms>("reactionMassKilograms", kSaved)
-		    .Field<&Job::pelletKilograms>("pelletKilograms", kSaved);
+		    .Field<&Job::pelletKilograms>("pelletKilograms", kSaved)
+		    .Field<&Job::tenderId>("tenderId", kSaved);
 		RegisterType<PaidPrice>("Manifest.World.PaidPrice")
 		    .Field<&PaidPrice::itemId>("itemId", kSaved)
 		    .Field<&PaidPrice::price>("price", kSaved);

@@ -8,6 +8,7 @@ manifest_add_module(policy
 		trade
 		travel
 		company
+		procurement
 	HEADERS
 		include/manifest/policy/Policy.h
 	SOURCES
