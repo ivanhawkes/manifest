@@ -42,6 +42,9 @@ compatibility policy and acknowledgement semantics belong to Manifest.
 
 ## State and compatibility contract
 
+The proposal; [R01](#save-and-compatibility-contract-r01-2026-11-24) defines the section and the
+inventory.
+
 Every authoritative value belongs in registered world state or a world service: account
 balances, venue inventory, cargo, reservations, orders, fills needed for decisions,
 company/civilisation progression, allocation counters, command sequencing/retry state,
@@ -67,6 +70,144 @@ supported source/target versions. Migrate outstanding journal commands as well a
 snapshot state when their formats change. Do not promise downgrade support or permit
 an old binary to mutate a migrated world. Test migration with fixtures when real
 versions exist; test-format migration coverage does not establish production support.
+
+## Save and compatibility contract (R01), 2026-11-24
+
+What a Manifest save holds and what a build checks before it loads one, for R02 to R09 to build;
+where the proposal above differs, this holds. Read from Manifest `feature-base` at `3f97171` on pin
+`14fc23a`, the inventory taken from a hosted trading world's own save: 50 component storages and 3
+services, 461,719 bytes at step 0. A planning task: no code, and nothing below is enforced yet.
+
+### The file
+
+A snapshot is one Jettison save game (`Sim::SaveGame`, `Jettison.Save` 2): its `SaveInfo`, the
+world's save (`SimWorld::Save`, `Jettison.World` 5) and one section of Manifest's, `Manifest.Save`.
+
+- **`SaveInfo`** is for a list and a report, never the check: the engine's version, the clock's step
+  and time, when it was written by the wall clock (the caller's, no part of the state), the packages
+  mounted with their `mod.yaml` releases, and two details, `scenario` and `content`, the
+  fingerprint. Packages that differ are reported (`Sim::ModDifferences`) and not refused: a release
+  string does not change a rule, and the manifest below holds what does.
+- **The world's save** names every component storage with its version first, then holds the clock's
+  step and time, the generator's state, the queued commands, the entities, each storage and each
+  service. `SimWorld::Load` refuses by name, leaving the world as it was, a component at a version its
+  chain does not reach, a component or service the world does not register, a service with no state
+  and a queued command the world does not apply. The section repeats none of that.
+- **`Manifest.Save`**, version 1, is a reflected record in the binary archive's layout:
+
+| Field | Holds | Compared with |
+| --- | --- | --- |
+| `world` | The world's identity: 128 bits from the operating system as the world is created, in hex. Never from the simulation's generator, and no part of the state or its hash. | The recovery catalogue's and each batch's (R03, R04). |
+| `game` | The Manifest build: its version and its source's revision. | The running build's. |
+| `sdk` | The Jettison revision the build was made on. | The running build's. |
+| `fixedStep` | The step in seconds, which the world's save does not hold: a save made at 1/60 s loads today into a world stepping at any other. | The hosted world's, to the bit. |
+| `commands` | Each command registered on `Command::Requests`, its name and version, in name order: 22 today ([Stage 4's handoff](stage-4-trading-plan.md#handoff-to-stage-5)). | The running registrations. |
+| `content` | The canonical content manifest's bytes (`Content::ContentIdentity::manifest`, `Manifest.ContentManifest` 1), which carry their own format and version. | The loaded content's, byte for byte. |
+| `batch`, `batchId` | The last journal batch this snapshot has applied: its sequence and the identity R03's chain gives it, 0 and empty for none. | The catalogue's chain (R04). |
+
+The global command order needs no field: it is `RequestLedger::order`, in the world's save. Neither
+does a schema version: each storage's is in the world's save, and the world's and the save game's
+are their formats'.
+
+### Compatibility
+
+A build loads a save only when `game`, `sdk`, `fixedStep`, `commands` and `content` each equal its
+own ([D-111](decision-ledger.md#d-111)), checked from the section before the world's save is read,
+so a refusal installs nothing. The refusal names the field and both values: for `commands` the
+first that differs, for `content` both fingerprints and the first definition type and record that
+differ.
+
+The build is compared exactly because nothing else tells two builds apart. Formats change in place
+until player testing ([D-109](decision-ledger.md#d-109)), so equal versions do not mean equal
+layouts or equal rules, and a journal replayed under other rules gives other outcomes than the ones
+it acknowledged. So a world does not outlive the build that hosts it until D-109 ends. From then a
+build names the earlier builds whose saves a migration brings up, offline and against a copy, as
+[above](#state-and-compatibility-contract).
+
+Two builds whose simulation could differ never share an identity. Today the executable knows only
+the project's version, 0.0.1, and the SDK pin is a CMake variable: R03 selects how both revisions
+are compiled in, a build from changed sources included.
+
+### The state inventory
+
+Every authoritative value is in a registered component or a world service; registration order is the
+save's. Manifest's 32 components (`World::RegisterWorld`, all at version 1), by the entity that
+carries them:
+
+| On | Components | Holds |
+| --- | --- | --- |
+| Every hosted entity | `Identity` | Its kind and ID, never changed. |
+| A principal | `Principal`, `Reports` | The player or NPC; their market reports by venue, each with its source (docked or starting), the step it was observed at and its window. |
+| A company | `Company`, `Stock`, `Paid` | Its principal; its goods by venue and item, available and reserved; the last price it paid for each item. |
+| An organisation | `Organisation` | Its kind and the principal who directs it, empty for the AI's. |
+| A region | `Region`, `Knowledge`, `Facilities`, `Development` | Its planet, civilisation and governor, population, health and happiness; its skills and the recipes unlocked there; its facilities; its governor's standing development policy. |
+| An account | `Account` | Whole credits, one entity for each kind and owner: company, public, household, employer, broker, venue, a tender's reserved budget and a contract's bond. |
+| A ship | `Ship`, `Journey`, `Cargo`, `LifeSupport`, `Fuel`, `Refuel`, `Systems`, `Arrears`, `Policy`, `Job` | Its company, hull and venue; its journey's leg; its lots and opened totes; its reserves and tanks; the systems bought for it; what it owes its venue; its standing policy and the job working it. |
+| A broker, an employer, a household | `Broker`, `Stock`, `Production`, `Pantry` | A broker's operator; each one's goods; an employer's batches, their progress and wages paid, and its tax carry; a household's opened totes, unmet needs and pressure. |
+| A market | `Sales`, `Fees`, `Pricing` | The window's fills and each item's last sale; the posted charges; the fee level. |
+| An order | `Order` | Its terms, what remains, its escrow, its expiry step and the request that placed it. |
+| A project, a tender, a bid | `Project`, `Stock`, `Tender`, `Bid` | A project's phase, work done, place in its region's queue and delivered inputs; a tender's terms, steps, award and deliveries; a bid's total, revision and the step and order it was accepted at. |
+
+The 18 that `Travel::Register` attaches after them are a ship in space: `Sim.Transform`,
+`Sim.InFrame` (2) and `Sim.ControlledBy`; `Physics.Body` (2), `.Velocity`, `.OnRails`,
+`.LocalFrame`, `.Handling` and `.FlightControls`; `Ai.Steered` and `Ai.Destination` (2);
+`Dock.Vehicle`, `.Platform` (2), `.Berth` (3) and `.Docking` (2); and Manifest's `Space.OnLane`,
+`Space.CruiseDrive` and `Space.Cruising`. A journey's leg is Manifest's; where the ship is within it
+is these.
+
+The three services, in the order they are added: `Manifest.Identities`, the count of IDs each
+issued kind has handed out, so none is reused; `Manifest.Requests`, the ledger below; and `physics`,
+Jolt's bodies and contacts.
+
+What the delivery order names, each where it is saved:
+
+| Required | Saved as |
+| --- | --- |
+| Request outcomes | `Manifest.Requests`: the last global order, and for each actor the next sequence, the floor, up to 256 completed requests with their bytes, step and result, and up to 32 pending. A pruned sequence stays below the floor, so it is too old after a restart as before it. The limits (`command/Request.h`) and `Command::Result`'s values are the build's. |
+| Observations | `Reports` on the principal and `Sales` on the market. A starting report is a report as any other, its source `Starting`, so a load gives none again. |
+| Regional rights | `Region::governorId` and `Organisation::principalId`; `Development`, `Knowledge`, `Facilities`; each `Project`'s phase and queue place; `Tender` and `Bid`; the public, tender and bond accounts. |
+| Cadence | The clock's step, and steps held in state: an order's expiry, a tender's closes, a job's retry, arrears' start, a sale's step, a batch's progress. Hourly and daily turns fall on the clock's count. No system keeps a timer of its own: each one's `Quiet` is computed from the state. The step's length is the section's `fixedStep`. |
+| Active jobs | `Policy` and `Job` on the ship (phase, lot, costs, retry step, tender), its `Journey` and the engine's components above. An NPC trader is a principal, a company and a ship as a player's are; a region's AI issuer and a governor's policy act from the state each step. |
+
+Manifest queues only `Command::Request` on the world (`Requests::Admit`); every engine command its
+systems send is applied at once. So a snapshot taken after a step, admission closed, has an empty
+queue and no pending request in any ledger, and R04 refuses one that has either.
+
+Not saved, and rebuilt from the content at start-up, which is why the content is compared exactly:
+each module's rules and lookup tables, the pad classes, dock hulls, station layouts and star systems
+defined in the engine's services, the spatial index, and `Identities`' lookup and the limits it
+holds a load to. Not authoritative, and in no save: the token file and `Remote::Server`'s sessions
+and unsent replies (a client that lost one retries its sequence), the pause and time compression,
+the event queue, the world's recording, which the journal replaces, the console's and TUI's own
+state, and every wall-clock time.
+
+### The content inventory
+
+The manifest holds, for each of the 15 definition types in `Content::DefinitionTypes`' order
+(`Manifest.Age`, `.Category`, `.Item`, `.Skill`, `.Hull`, `.Offer`, `Dock.BerthClassDefinition`,
+`Dock.VehicleDefinition`, `Dock.PlatformLayout`, `Space.CruiseDrive`, `Space.StarSystem`,
+`Manifest.NamePool`, `.GameMode`, `.Tuning`, `.Scenario`), its format's version and every loaded
+record as layered, an overlay's effect included and whether the scenario uses it or not, then the
+selected scenario's name. Paths, mount names, packaging, times and `mod.yaml` are not in it. Every
+value a rule reads from data is in a definition; what a rule reads from code is the build's, under
+`game` and `sdk`.
+
+### What it leaves each task
+
+- **R02.** A hosted session mounts its content read-only and refuses a writable mount
+  (`Jettison::Host::Options`), so `SaveGame`'s write through the VFS's user mount is not the host's
+  path: a snapshot's bytes (`SaveGame::Write`) go through `Core::WriteFileDurably` under
+  `Platform::ResolvePaths("manifest")`, with the directories and the lock [below](#snapshot-boundary-and-retention).
+- **R03.** Makes the world's identity; compiles in `game` and `sdk`; has `Command::Requests` list
+  its commands, which it keeps private today. A batch carries these fields; whether it repeats the
+  manifest or names it through the catalogue is R03's.
+- **R04.** Writes, reads and checks the section. No load compares content today: the fixtures compare
+  manifests in the tests themselves. Refuses a snapshot with a queued or pending request. Adds the
+  gated test that pins this inventory to the names the world's save lists.
+- **Jettison.** R01 names no gap. A world cannot list what it registers except through its save's
+  first bytes; R04's inventory test may ask for that, with the engine's next change.
+
+A mechanic that adds authoritative state adds its row here in its own delivery.
 
 ## Commit model: durable step batches
 

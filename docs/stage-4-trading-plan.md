@@ -1832,8 +1832,9 @@ Stage 5 is handed what Stage 4 closed on, each where it is defined:
   nine, `.Trade`'s two and `.Procurement`'s nine at version 1, `.Travel.Travel` and
   `.Policy.Set` at version 2; and `Command::Result`
   (`command/Request.h`), its values appended, never reordered.
-- **The content manifest:** C06 and C07's ([stage 2](stage-2-content-plan.md)), a save refused under
-  other content by its fingerprint.
+- **The content manifest:** C06 and C07's ([stage 2](stage-2-content-plan.md)), which no load compares
+  yet: R04 refuses a save under other content, by the manifest's bytes
+  ([R01](stage-5-recovery-plan.md#save-and-compatibility-contract-r01-2026-11-24)).
 - **The saved state:** the components `World::RegisterWorld` registers (`world/World.cpp`), accounts by kind
   and owner, escrow as reserved holdings and order escrow, tender bonds and budgets as
   [accounts](#tender-contract-w11-2026-11-21), and `World::Identities`' counters; a journey's legs,

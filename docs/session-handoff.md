@@ -1,16 +1,17 @@
 # Session handoff
 
-## Next, on resuming — 2026-11-23 (Stage 4 cross-review, then R01)
+## Next, on resuming — 2026-11-24 (R01 done, then R02)
 
-W14 is done: **Stage 4 is closed** ([delivered](stage-4-trading-plan.md#delivered-w14-2026-11-23)),
-with no engine edit, and [Stage 5's handoff](stage-4-trading-plan.md#handoff-to-stage-5) names
-where each contract is. The stage's cross-review is done, three rounds
-([history](history.md#stage-4-cross-review--2026-11-23)); round 2's and round 3's findings were fixed
-after them, but for a snapshot longer than a packet, which waits for Jettison's next change.
-Next is R01, Stage 5's save and compatibility inventory. W22, the drives past the torch, waits for the first larger hull.
-Jettison's station traffic lanes were measured and parked (`fixture_traffic`, 2026-11-22), to be
-taken up when it fails. The SDK is pinned to `14fc23a`. A commit is gated in the second checkout,
-`build/gate-tree`, with `--tidy`, editing alone beside it
+R01 is done, a planning task: [the save and compatibility contract](stage-5-recovery-plan.md#save-and-compatibility-contract-r01-2026-11-24)
+defines the `Manifest.Save` section, what a build compares before it loads a save
+([D-111](decision-ledger.md#d-111), mine, the user's to review) and the inventory of what a hosted
+world saves, with no code and no engine edit. Next is R02, the durable I/O, directory creation and
+world-lock contract, the first Stage 5 task likely to provision in Jettison; a message longer than a
+packet is booked for Jettison's next change and rides with it
+([history](history.md#stage-4-cross-review--2026-11-23)). W22, the drives past the torch, waits for
+the first larger hull. Jettison's station traffic lanes were measured and parked (`fixture_traffic`,
+2026-11-22), to be taken up when it fails. The SDK is pinned to `14fc23a`. A commit is gated in the
+second checkout, `build/gate-tree`, with `--tidy`, editing alone beside it
 ([gating beside the work](build-and-gates.md#gating-beside-the-work)). The development fixture takes
 about 50 s in Debug and six minutes under ASan, most of the gate's sanitised stage.
 

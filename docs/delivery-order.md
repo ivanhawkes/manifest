@@ -121,8 +121,11 @@ joiner founding the last free region (`fixture_development`), with no engine edi
 (2026-11-23): **Stage 4 is closed**, its checks each held by a gated test, the four strands proved
 together in the development fixture, saved with a journey and an order open and continued from the
 pack ([delivered](stage-4-trading-plan.md#delivered-w14-2026-11-23)), with no engine edit. Its
-[cross-review](history.md#stage-4-cross-review--2026-11-23) is done, three rounds. Next: R01; W22 waits
-for the first larger hull.
+[cross-review](history.md#stage-4-cross-review--2026-11-23) is done, three rounds. R01 is done
+(2026-11-24): [the save and compatibility contract](stage-5-recovery-plan.md#save-and-compatibility-contract-r01-2026-11-24), a
+planning task, defines the `Manifest.Save` section, exact compatibility
+([D-111](decision-ledger.md#d-111)) and the inventory of a hosted world's 50 component storages and 3
+services, with no engine edit. Next: R02; W22 waits for the first larger hull.
 
 ## Priority 0: maintenance before Stage 1
 
@@ -255,7 +258,7 @@ observations, automation and accepted obligations already delivered must be cove
 
 | Order / ID | Task and completion boundary | Must complete first |
 | --- | --- | --- |
-| 46 / R01 | Define the final versioned Manifest save/compatibility section and exact content/state inventory; cover request outcomes, observations, regional rights, cadence and all active jobs. | W14 |
+| 46 / R01 | Define the final versioned Manifest save/compatibility section and exact content/state inventory; cover request outcomes, observations, regional rights, cadence and all active jobs. **Done 2026-11-24**, [the contract](stage-5-recovery-plan.md#save-and-compatibility-contract-r01-2026-11-24), [D-111](decision-ledger.md#d-111). | W14 |
 | 47 / R02 | Prove the required durable I/O, directory creation and world-lock contract; provision any missing reusable primitive in Jettison and consume its committed pin. | R01 |
 | 48 / R03 | Implement ordered immutable step journals/catalogue and acknowledge durable acceptance only after the tested commit boundary, including autonomous empty steps. | R02 |
 | 49 / R04 | Implement boundary snapshots, retention and startup replay into a candidate world; prove crash/fault behavior, compatibility rejection and retry preservation. | R03 |

@@ -126,6 +126,18 @@ is 63,567 bytes of 65,536), the user booked for Jettison's next change, a messag
 packets ([Jettison's roadmap](../../jettison/docs/roadmap.md#first-what-saves-and-the-simulations-interface-hold)),
 and delta snapshots in Manifest only if that is not enough.
 
+## R01: the save and compatibility contract — 2026-11-24
+
+A planning task, no code and no engine edit: [the contract](stage-5-recovery-plan.md#save-and-compatibility-contract-r01-2026-11-24) defines the `Manifest.Save`
+section, exact compatibility ([D-111](decision-ledger.md#d-111)) and the inventory. The inventory was
+taken from a hosted trading world's own save, whose first bytes name its storages: 50 components, 32
+of them Manifest's, and 3 services, 461,719 bytes at step 0. Three things the plans had assumed were
+not so. No load compares content: Stage 4's handoff said a save was refused by its fingerprint, and
+only the fixtures' own tests compare manifests. The world's save does not hold its step's length, so
+a save made at 1/60 s loads into a world stepping at any other. And the executable knows neither its
+own revision nor the SDK's. A hosted session refuses a writable mount, so a snapshot is written
+through `Core::WriteFileDurably`, not the VFS's user mount, which is R02's to prove.
+
 ## W14: Stage 4 closed — 2026-11-23
 
 **Stage 4 is closed** ([delivered](stage-4-trading-plan.md#delivered-w14-2026-11-23)), each of its
