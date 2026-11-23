@@ -1272,7 +1272,22 @@ W12's slices, each one commit with its suites, the gate after the third and the 
    bid on no open tender. The three pins moved again, the trading fixture's for the save's layout
    alone.
 4. Delivery and default: partial and excess delivery, payment under fragmented deliveries summing to
-   `T`, zero, partial and full delivery's bond, abandonment and retendering.
+   `T`, zero, partial and full delivery's bond, abandonment and retendering. **Done** 2026-11-23, with
+   no engine edit: `Manifest.Procurement.Deliver`, a company principal's for its own ship and its
+   company's contract, unloads the tender's item from the ship docked at its venue before the delivery
+   close straight into the project's `Stock`, or a relief tender's region's households', at most the
+   totes still owed and the room the warehouse there has, the rest staying aboard (`Closed` at or past
+   the close, `NotDocked`, `WrongVenue`, `InsufficientStock`). The tender keeps the totes
+   `delivered`, and each delivery is paid what it adds to `World::Owed`, `T q / Q` to the nearest
+   credit, a half up, from the tender's account; at `Q` the bond returns and the tender is
+   `Fulfilled`. At its delivery close, after commands and before the step's awards, a contract short
+   of its totes is `Defaulted`, as `Manifest.Procurement.Abandon` makes it at once: the account's
+   rest returns to the public account, the bond's undelivered share, rounded down, is forfeit to it,
+   the rest goes back, and the goods and payments accepted stand. A step a tender closed or a contract
+   ended in runs the AI issuer, which tenders the totes still needed again; what a live contract has
+   delivered counts once, as held. A load refuses an awarded tender whose account is not its total
+   less `Owed`, more delivered than its totes, or one fulfilled other than at its last tote. No pin
+   moved: the pinned worlds hold tenders, and none has delivered a tote.
 5. Saved jobs: the policy's `contracts`, a bid estimated and won, delivered with no client, an NPC
    competing; fast-forwarded to the bytes stepping leaves.
 6. The governance fixture: Forge East's project tendered, tin bought at Cassiter and copper at Forge

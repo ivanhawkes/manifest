@@ -68,26 +68,55 @@ struct Withdraw
 	std::string companyId;
 };
 
+// The players' command that delivers to their company's contract (D-101) from its ship docked at the
+// tender's venue: the tender's item aboard, at most the totes still owed and the room its recipient's
+// warehouse there has, unloaded straight into the project's Stock, or a relief tender's region's
+// households', the rest staying aboard. Each delivery is paid what it adds to Owed from the tender's
+// account; the last fulfils the contract, its bond returned. Refused, writing nothing, for a tender or
+// ship the world does not have (UnknownTarget), another's ship (NotAuthorised), a tender not awarded
+// or run at or past its delivery close (Closed), a ship not of the contract's company
+// (NotAuthorised), not docked (NotDocked) or docked elsewhere (WrongVenue), none of the item aboard
+// (InsufficientStock), and no room for a tote (CapacityExceeded).
+struct Deliver
+{
+	std::string tenderId;
+	std::string shipId;
+};
+
+// The players' command that abandons their company's contract, in default at once: accepted goods
+// and payments stand, the tender's account's rest returns to the public account, the bond's share of
+// the totes undelivered, rounded down, is forfeit to it and the rest returned. Refused for a tender
+// the world does not have (UnknownTarget), one not awarded or whose contract has ended, or run at or
+// past its delivery close (Closed), and another company's (NotAuthorised).
+struct Abandon
+{
+	std::string tenderId;
+};
+
 inline constexpr std::string_view kPublish = "Manifest.Procurement.Publish";
 inline constexpr std::string_view kCancel = "Manifest.Procurement.Cancel";
 inline constexpr std::string_view kBid = "Manifest.Procurement.Bid";
 inline constexpr std::string_view kWithdraw = "Manifest.Procurement.Withdraw";
+inline constexpr std::string_view kDeliver = "Manifest.Procurement.Deliver";
+inline constexpr std::string_view kAbandon = "Manifest.Procurement.Abandon";
 inline constexpr std::uint32_t kVersion = 1;
 
 // The tenders' system, by the name the step's table gives it (docs/stage-4-trading-plan.md, "Tender
-// contract (W11)"): after manifest.expiry and before kProjects. Each open tender whose bid close it
-// is, in ID order, is awarded to its lowest bid, then the earliest accepted, then its company's ID,
+// contract (W11)"): after manifest.expiry and before kProjects. Each awarded tender whose delivery
+// close it is, in ID order, ends in default, as Abandon ends it. Then each open tender whose bid close
+// it is, in ID order, is awarded to its lowest bid, then the earliest accepted, then its company's ID,
 // whose company can fund the bond, procurement's rate of the total rounded up, moved into the tender's
 // BondAccount, the next bid's otherwise, so an earlier award's bond spends what a later one would
 // need; the budget beyond the total returns to the public account and the delivery window runs from
 // the step. With none it closes unawarded, its budget returned. Its bids are dropped either way, and
 // each region keeps its last procurement.keptClosed closed tenders, the oldest closed dropped. Then, as
-// the world starts, on each economic turn's last step and in a step a tender closed, the AI issuer: for
-// each region whose governor the AI runs, in the scenario's order, at the first venue serving it, each
-// input its projects still need, in the project's order, with no tender open for it, is tendered, the
-// totes still needed at Trade::TenderPrice times one and the project's priorityPremium (Trade::Budget),
-// with procurement's AI windows; and on a turn's last step each relief Trade::Reliefs calls for of such
-// a region with no relief tender open for its need. One the region cannot fund or bound is not.
+// the world starts, on each economic turn's last step, in a step a tender's bidding closed and in one
+// a tender closed or its contract ended, the AI issuer: for each region whose governor the AI runs, in
+// the scenario's order, at the first venue serving it, each input its projects still need, in the
+// project's order, with no tender open for it, is tendered, the totes still needed at
+// Trade::TenderPrice times one and the project's priorityPremium (Trade::Budget), with procurement's
+// AI windows; and on a turn's last step each relief Trade::Reliefs calls for of such a region with no
+// relief tender open for its need. One the region cannot fund or bound is not.
 inline constexpr std::string_view kTenders = "manifest.tenders";
 
 // The projects' system, after kTenders and before manifest.economy, each region's World::Project in
@@ -107,9 +136,9 @@ std::string TenderId(
 
 void RegisterTypes();
 
-// Registers Publish and Cancel, adds kTenders and kProjects, after Trade::Register has added the
-// systems they run among, and gives the identities what each project needs
-// (World::Identities::SetProjects). The content must outlive the world.
+// Registers Publish, Cancel, Bid, Withdraw, Deliver and Abandon, adds kTenders and kProjects, after
+// Trade::Register has added the systems they run among, and gives the identities what each project
+// needs (World::Identities::SetProjects). The content must outlive the world.
 void Register(
     Jettison::Sim::SimWorld &world, Command::Requests &requests, World::Identities &identities,
     const Content::ContentSet &content);

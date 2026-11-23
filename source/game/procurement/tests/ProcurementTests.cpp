@@ -56,6 +56,8 @@ constexpr std::string_view kBronze = "ProjectBronzeMetallurgy";
 constexpr std::uint64_t kDay = 86'400;
 const Actor kAda{ActorKind::Principal, "Ada"};
 const Actor kBea{ActorKind::Principal, "Bea"};
+const Actor kDi{ActorKind::Principal, "Di"};
+const Actor kHost{ActorKind::Administrator, "Host"};
 // Seven days of one-second steps.
 constexpr std::uint64_t kWorkSteps = 7ULL * 86'400;
 
@@ -216,10 +218,43 @@ struct Hosted
 		    .operational = operational;
 	}
 
-	// Fixture bootstrap: what delivery (W12's fourth slice) will put in the project's stock.
+	// Fixture bootstrap: what deliveries would put in the project's stock.
 	void Deliver(std::vector<World::Holding> holdings)
 	{
 		Held().holdings = std::move(holdings);
+	}
+
+	// A company of the principal's, provisioned as a player's is, its starter ship docked at Forge
+	// Highport carrying the lots (fixture bootstrap, as buying and loading would).
+	void AddHauler(const std::string &principal, std::vector<World::Lot> lots)
+	{
+		REQUIRE(
+		    Run(kHost, Manifest::Company::kProvision,
+		        Manifest::Company::Provision{principal, principal, principal}) == Result::Succeeded);
+		const std::string shipId = std::format("Ship{}", identities.LastIssued(Kind::Ship));
+		REQUIRE(Ship(shipId).dockedAt == kForge);
+		Cargo(shipId).lots = std::move(lots);
+	}
+
+	World::Ship &Ship(const std::string &shipId)
+	{
+		return world.Registry().get<World::Ship>(identities.Find(Kind::Ship, shipId));
+	}
+
+	World::Cargo &Cargo(const std::string &shipId)
+	{
+		return world.Registry().get<World::Cargo>(identities.Find(Kind::Ship, shipId));
+	}
+
+	// The tender awarded to the company at the total: its bid placed and its bid close run.
+	void Award(
+	    const std::string &tenderId, const Actor &actor, const std::string &companyId,
+	    std::int64_t total)
+	{
+		REQUIRE(Run(actor, kBid, Bid{tenderId, companyId, total, 0}) == Result::Succeeded);
+		FastForwardTo(TenderOf(tenderId).bidClose + 1);
+		REQUIRE(TenderOf(tenderId).state == TenderState::Awarded);
+		REQUIRE(TenderOf(tenderId).companyId == companyId);
 	}
 
 	void Start()
@@ -1003,4 +1038,271 @@ TEST_CASE("A save whose award or bids break their rules does not load")
 	awarded(good);
 	hosted.world.Load(good.world.Save());
 	CHECK(hosted.world.StateHash() == good.world.StateHash());
+}
+
+
+TEST_CASE("Deliveries are paid their share of the total, an excess stays aboard, and the last fulfils")
+{
+	Hosted hosted;
+	hosted.Direct();
+	hosted.AddHauler("Di", {{"ItemCopper", 4}});
+	REQUIRE(hosted.Publishes("ItemCopper", 9, 10'000, 1, 30) == Result::Succeeded);
+	const std::string copper = TenderId(kEast, kBronze, "ItemCopper", 1);
+	hosted.Award(copper, kDi, "Company1", 1'000);
+	CHECK(hosted.Balance(Kind::BondAccount, copper) == 100);
+	const std::int64_t credits = hosted.Balance(Kind::CompanyAccount, "Company1");
+	const std::int64_t publicFunds = hosted.Public();
+	const Deliver deliver{copper, "Ship1"};
+
+	// 4 of 9: 444.4 credits, to the nearest 444.
+	CHECK(hosted.Run(kDi, kDeliver, deliver) == Result::Succeeded);
+	CHECK(hosted.TenderOf(copper).delivered == 4);
+	CHECK(hosted.Balance(Kind::TenderAccount, copper) == 556);
+	CHECK(hosted.Balance(Kind::CompanyAccount, "Company1") == credits + 444);
+	CHECK(hosted.Cargo("Ship1").lots.empty());
+	CHECK(hosted.Run(kDi, kDeliver, deliver) == Result::InsufficientStock);
+	// 7 of 9: 777.8, to the nearest 778, so this one is paid 334.
+	hosted.Cargo("Ship1").lots = {{"ItemCopper", 3}};
+	CHECK(hosted.Run(kDi, kDeliver, deliver) == Result::Succeeded);
+	CHECK(hosted.Balance(Kind::CompanyAccount, "Company1") == credits + 778);
+	CHECK(hosted.TenderOf(copper).state == TenderState::Awarded);
+
+	// Five aboard for the two still owed: three stay aboard, and the total and the bond are paid.
+	hosted.Cargo("Ship1").lots = {{"ItemCopper", 5}, {"ItemTin", 1}};
+	CHECK(hosted.Run(kDi, kDeliver, deliver) == Result::Succeeded);
+	const World::Tender fulfilled = hosted.TenderOf(copper);
+	CHECK(fulfilled.state == TenderState::Fulfilled);
+	CHECK(fulfilled.delivered == 9);
+	CHECK(fulfilled.closed == hosted.world.Clock().Step() - 1);
+	CHECK(hosted.Balance(Kind::CompanyAccount, "Company1") == credits + 1'000 + 100);
+	CHECK(hosted.Public() == publicFunds);
+	CHECK(hosted.identities.Find(Kind::TenderAccount, copper) == entt::null);
+	CHECK(hosted.identities.Find(Kind::BondAccount, copper) == entt::null);
+	CHECK(hosted.Cargo("Ship1").lots == std::vector<World::Lot>{{"ItemCopper", 3}, {"ItemTin", 1}});
+	CHECK(
+	    hosted.Held().holdings ==
+	    std::vector<World::Holding>{{std::string{kForge}, "ItemCopper", 9, 0}});
+	CHECK(hosted.Run(kDi, kDeliver, deliver) == Result::Closed);
+	CHECK(hosted.Run(kDi, kAbandon, Abandon{copper}) == Result::Closed);
+	// Posted, its deliveries with it.
+	const Manifest::Query::Snapshot seen =
+	    Manifest::Query::Observe(hosted.world, hosted.identities, kAda);
+	REQUIRE(seen.tenders.size() == 1);
+	CHECK(seen.tenders[0].tender == fulfilled);
+}
+
+
+TEST_CASE(
+    "A delivery is its contract's company's, from its ship docked at the venue, and refusals write "
+    "nothing")
+{
+	Hosted hosted;
+	hosted.Direct();
+	hosted.AddHauler("Di", {{"ItemTin", 1}});
+	hosted.AddHauler("Eve", {{"ItemTin", 1}});
+	const Actor eve{ActorKind::Principal, "Eve"};
+	REQUIRE(hosted.Publishes("ItemTin", 1, 10'000, 1, 1) == Result::Succeeded);
+	const std::string tin = TenderId(kEast, kBronze, "ItemTin", 1);
+	CHECK(hosted.Run(kDi, kDeliver, Deliver{tin, "Ship1"}) == Result::Closed);
+	CHECK(hosted.Run(kDi, kAbandon, Abandon{tin}) == Result::Closed);
+	hosted.Award(tin, kDi, "Company1", 500);
+	const World::Tender awarded = hosted.TenderOf(tin);
+
+	CHECK(hosted.Run(kDi, kDeliver, Deliver{"TenderNowhere", "Ship1"}) == Result::UnknownTarget);
+	CHECK(hosted.Run(kDi, kDeliver, Deliver{tin, "ShipNowhere"}) == Result::UnknownTarget);
+	CHECK(hosted.Run(kDi, kDeliver, Deliver{tin, "Ship2"}) == Result::NotAuthorised);
+	CHECK(hosted.Run(eve, kDeliver, Deliver{tin, "Ship2"}) == Result::NotAuthorised);
+	CHECK(hosted.Run(eve, kAbandon, Abandon{tin}) == Result::NotAuthorised);
+	CHECK(hosted.Run(kDi, kAbandon, Abandon{"TenderNowhere"}) == Result::UnknownTarget);
+	hosted.Ship("Ship1").dockedAt = "VenueCassiterDock";
+	CHECK(hosted.Run(kDi, kDeliver, Deliver{tin, "Ship1"}) == Result::WrongVenue);
+	hosted.Ship("Ship1").dockedAt.clear();
+	CHECK(hosted.Run(kDi, kDeliver, Deliver{tin, "Ship1"}) == Result::NotDocked);
+	hosted.Ship("Ship1").dockedAt = kForge;
+	hosted.Cargo("Ship1").lots = {{"ItemCopper", 1}};
+	CHECK(hosted.Run(kDi, kDeliver, Deliver{tin, "Ship1"}) == Result::InsufficientStock);
+	CHECK(hosted.TenderOf(tin) == awarded);
+	CHECK(hosted.Balance(Kind::TenderAccount, tin) == 500);
+	CHECK(hosted.Cargo("Ship1").lots == std::vector<World::Lot>{{"ItemCopper", 1}});
+	CHECK(hosted.Held().holdings.empty());
+}
+
+
+TEST_CASE("At its delivery close a contract short of its totes is in default, its deliveries kept")
+{
+	Hosted hosted;
+	hosted.Direct();
+	hosted.AddHauler("Di", {{"ItemCopper", 4}});
+	REQUIRE(hosted.Publishes("ItemCopper", 9, 10'000, 1, 1) == Result::Succeeded);
+	const std::string copper = TenderId(kEast, kBronze, "ItemCopper", 1);
+	hosted.Award(copper, kDi, "Company1", 1'000);
+	REQUIRE(hosted.Run(kDi, kDeliver, Deliver{copper, "Ship1"}) == Result::Succeeded);
+	hosted.Cargo("Ship1").lots = {{"ItemCopper", 5}};
+
+	const std::uint64_t close = hosted.TenderOf(copper).deliveryClose;
+	hosted.FastForwardTo(close);
+	const std::int64_t credits = hosted.Balance(Kind::CompanyAccount, "Company1");
+	const std::int64_t publicFunds = hosted.Public();
+	const std::uint64_t delivery = hosted.Queue(kDi, kDeliver, Deliver{copper, "Ship1"});
+	const std::uint64_t abandon = hosted.Queue(kDi, kAbandon, Abandon{copper});
+	hosted.world.Step();
+	CHECK(hosted.Outcome(kDi, delivery) == Result::Closed);
+	CHECK(hosted.Outcome(kDi, abandon) == Result::Closed);
+
+	const World::Tender defaulted = hosted.TenderOf(copper);
+	CHECK(defaulted.state == TenderState::Defaulted);
+	CHECK(defaulted.closed == close);
+	CHECK(defaulted.delivered == 4);
+	// The total's 556 unpaid and the bond's share of the five missing, 55.6 rounded down, are the
+	// public account's; the bond's other 45 is the supplier's again.
+	CHECK(hosted.Public() == publicFunds + 556 + 55);
+	CHECK(hosted.Balance(Kind::CompanyAccount, "Company1") == credits + 45);
+	CHECK(hosted.identities.Find(Kind::TenderAccount, copper) == entt::null);
+	CHECK(hosted.identities.Find(Kind::BondAccount, copper) == entt::null);
+	CHECK(
+	    hosted.Held().holdings ==
+	    std::vector<World::Holding>{{std::string{kForge}, "ItemCopper", 4, 0}});
+	CHECK(hosted.Cargo("Ship1").lots == std::vector<World::Lot>{{"ItemCopper", 5}});
+	// What its default leaves the project needing may be tendered again.
+	CHECK(hosted.Publishes("ItemCopper", 6) == Result::InvalidQuantity);
+	CHECK(hosted.Publishes("ItemCopper", 5) == Result::Succeeded);
+}
+
+
+TEST_CASE("A contract passed over to its delivery close leaves the bytes stepping does")
+{
+	Hosted stepped;
+	Hosted passed;
+	const std::string copper = TenderId(kEast, kBronze, "ItemCopper", 1);
+	// A player's tender, published in the world's second step, so its closes fall on no turn's end.
+	for (Hosted *pHosted : {&stepped, &passed})
+	{
+		pHosted->Direct();
+		pHosted->AddHauler("Di", {{"ItemCopper", 4}});
+		REQUIRE(pHosted->Publishes("ItemCopper", 9, 10'000, 1, 1) == Result::Succeeded);
+		pHosted->Award(copper, kDi, "Company1", 1'000);
+		REQUIRE(pHosted->Run(kDi, kDeliver, Deliver{copper, "Ship1"}) == Result::Succeeded);
+	}
+	const std::uint64_t close = stepped.TenderOf(copper).deliveryClose;
+	stepped.FastForwardTo(close - 50);
+	for (int step = 0; step < 100; ++step)
+		stepped.world.Step();
+	passed.FastForwardTo(close + 50);
+	CHECK(stepped.TenderOf(copper).state == TenderState::Defaulted);
+	CHECK(passed.TenderOf(copper).closed == close);
+	CHECK(passed.world.StateHash() == stepped.world.StateHash());
+}
+
+
+TEST_CASE(
+    "An abandoned contract forfeits its bond's undelivered share, and the AI tenders again at once")
+{
+	Hosted hosted;
+	hosted.AddHauler("Di", {});
+	const std::string copper = TenderId(kEast, kBronze, "ItemCopper", 1);
+	REQUIRE(hosted.TenderOf(copper).totes == 9);
+	hosted.Award(copper, kDi, "Company1", 1'000);
+	const std::int64_t credits = hosted.Balance(Kind::CompanyAccount, "Company1");
+	const std::int64_t publicFunds = hosted.Public();
+	CHECK(hosted.Run(kBea, kAbandon, Abandon{copper}) == Result::NotAuthorised);
+	CHECK(hosted.Run(kDi, kAbandon, Abandon{copper}) == Result::Succeeded);
+	const std::uint64_t now = hosted.world.Clock().Step() - 1;
+
+	const World::Tender abandoned = hosted.TenderOf(copper);
+	CHECK(abandoned.state == TenderState::Defaulted);
+	CHECK(abandoned.closed == now);
+	CHECK(hosted.Balance(Kind::CompanyAccount, "Company1") == credits);
+	std::vector<World::Tender> again;
+	for (const auto &[id, tender] : hosted.Tenders())
+		if (tender.itemId == "ItemCopper" && tender.state == TenderState::Open)
+			again.push_back(tender);
+	REQUIRE(again.size() == 1);
+	CHECK(again[0].published == now);
+	CHECK(again[0].totes == 9);
+	// The whole total and the whole bond back, the new tender's budget reserved.
+	CHECK(hosted.Public() == publicFunds + 1'000 + 100 - again[0].budget);
+	CHECK(hosted.Run(kDi, kAbandon, Abandon{copper}) == Result::Closed);
+}
+
+
+TEST_CASE("A relief tender's goods are delivered into its region's households' stock")
+{
+	Hosted hosted;
+	hosted.AddHauler("Di", {});
+	const std::string needId = Governance().tuning.needs.front().needId;
+	hosted.world.Registry()
+	    .get<World::Pantry>(hosted.identities.Find(Kind::Household, std::string{kEast}))
+	    .unmet.push_back({needId, 1.0, 0.5});
+	hosted.FastForwardTo(60);
+	std::string reliefId;
+	for (const auto &[id, tender] : hosted.Tenders())
+		if (tender.needId == needId && tender.regionId == kEast)
+			reliefId = id;
+	REQUIRE(!reliefId.empty());
+	const World::Tender relief = hosted.TenderOf(reliefId);
+	hosted.Award(reliefId, kDi, "Company1", 1);
+	hosted.Ship("Ship1").dockedAt = relief.venueId;
+	hosted.Cargo("Ship1").lots = {{relief.itemId, relief.totes}};
+
+	CHECK(hosted.Run(kDi, kDeliver, Deliver{reliefId, "Ship1"}) == Result::Succeeded);
+	CHECK(hosted.TenderOf(reliefId).state == TenderState::Fulfilled);
+	const World::Stock &households = hosted.world.Registry().get<World::Stock>(
+	    hosted.identities.Find(Kind::Household, std::string{kEast}));
+	const auto held = std::ranges::find_if(
+	    households.holdings, [&](const World::Holding &holding)
+	    { return holding.venueId == relief.venueId && holding.itemId == relief.itemId; });
+	REQUIRE(held != households.holdings.end());
+	CHECK(held->available >= relief.totes);
+	CHECK(hosted.Held().holdings.empty());
+}
+
+
+TEST_CASE(
+    "A save part-way through a contract loads, and one whose deliveries break their rules does not")
+{
+	const std::string copper = TenderId(kEast, kBronze, "ItemCopper", 1);
+	const auto delivering = [&](Hosted &hosted)
+	{
+		hosted.Direct();
+		hosted.AddHauler("Di", {{"ItemCopper", 4}});
+		REQUIRE(hosted.Publishes("ItemCopper", 9, 10'000, 1, 30) == Result::Succeeded);
+		hosted.Award(copper, kDi, "Company1", 1'000);
+		REQUIRE(hosted.Run(kDi, kDeliver, Deliver{copper, "Ship1"}) == Result::Succeeded);
+	};
+	Hosted hosted;
+	delivering(hosted);
+	Hosted loaded;
+	loaded.world.Load(hosted.world.Save());
+	CHECK(loaded.TenderOf(copper) == hosted.TenderOf(copper));
+	CHECK(loaded.world.StateHash() == hosted.world.StateHash());
+
+	const std::uint64_t before = hosted.world.StateHash();
+	const auto refused = [&](auto change)
+	{
+		Hosted broken;
+		delivering(broken);
+		change(broken);
+		CHECK_THROWS_AS(hosted.world.Load(broken.world.Save()), Jettison::Serialise::FormatError);
+	};
+	const auto tender = [&](Hosted &broken) -> World::Tender &
+	{
+		return broken.world.Registry().get<World::Tender>(broken.identities.Find(Kind::Tender, copper));
+	};
+	// Its account holds the total less the 444 paid.
+	refused(
+	    [&](Hosted &broken)
+	    {
+		    broken.world.Registry()
+		        .get<World::Account>(broken.identities.Find(Kind::TenderAccount, copper))
+		        .balance += 444;
+	    });
+	refused([&](Hosted &broken) { tender(broken).delivered = 10; });
+	refused([&](Hosted &broken) { tender(broken).state = TenderState::Fulfilled; });
+	refused(
+	    [&](Hosted &broken)
+	    {
+		    tender(broken).state = TenderState::Defaulted;
+		    tender(broken).closed = broken.world.Clock().Step();
+	    });
+	CHECK(hosted.world.StateHash() == before);
 }

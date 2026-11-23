@@ -152,9 +152,12 @@ enum class TenderState
 	Open,
 	// Its contract running, with the company its award went to.
 	Awarded,
-	// Closed: cancelled by its issuer before its bid close, or closed with no award.
+	// Closed: cancelled by its issuer before its bid close, or closed with no award; or its contract
+	// ended, every tote delivered, or in default at its delivery close or abandoned short of them.
 	Cancelled,
-	Unawarded
+	Unawarded,
+	Fulfilled,
+	Defaulted
 };
 
 // Why a tender closed its bidding as it did, posted with its award.
@@ -174,8 +177,9 @@ enum class Award
 // goods are a project's input or, for a relief tender, an essential need's, for its region's
 // households (D-102), accepted at its venue, one serving the region. Its steps, by the clock's count:
 // the one it was published at and its bid close, the bid window's days after; its delivery window's
-// days run from its award. Open, its budget is reserved in its TenderAccount; closed, it is kept for
-// the record with the step it closed at.
+// days run from its award. Open, its budget is reserved in its TenderAccount, and awarded, the total
+// less what its deliveries were paid (Owed); closed, it is kept for the record with the step it closed
+// at.
 struct Tender
 {
 	std::string regionId;
@@ -199,9 +203,15 @@ struct Tender
 	std::int64_t price{0};
 	std::int64_t bond{0};
 	std::uint64_t deliveryClose{0};
+	// The totes its contract has accepted, all of them once Fulfilled.
+	std::uint64_t delivered{0};
 
 	bool operator==(const Tender &) const = default;
 };
+
+// What a contracted tender's supplier is owed for the totes delivered, q of Q: its total T q / Q to
+// the nearest credit, a half up (D-101), T once every tote is delivered.
+std::int64_t Owed(const Tender &tender);
 
 // A company's sealed bid on an open tender (D-101), seen by its company's principal alone: its total
 // in whole credits for all the tender's totes by its delivery close, from 1 to its budget; its

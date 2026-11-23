@@ -376,11 +376,13 @@ std::optional<std::string> Broken(const Tender &tender)
 		return "a tender's totes, budget or delivery window is not above 0";
 	if (tender.bidClose <= tender.published)
 		return "a tender's bids close before it is published";
-	const bool closed =
-	    tender.state == TenderState::Cancelled || tender.state == TenderState::Unawarded;
+	const bool closed = tender.state != TenderState::Open && tender.state != TenderState::Awarded;
 	if (closed == (tender.closed == 0) || (closed && tender.closed < tender.published))
 		return "a tender closes before it is published, or is open with a close";
-	const bool awarded = tender.state == TenderState::Awarded;
+	// Awarded, or its contract ended: the award is posted for the record.
+	const bool awarded = tender.state == TenderState::Awarded ||
+	                     tender.state == TenderState::Fulfilled ||
+	                     tender.state == TenderState::Defaulted;
 	if (awarded != (tender.award == Award::Lowest || tender.award == Award::PastUnbonded) ||
 	    (tender.state == TenderState::Unawarded) !=
 	        (tender.award == Award::NoBids || tender.award == Award::Unbonded))
@@ -391,7 +393,23 @@ std::optional<std::string> Broken(const Tender &tender)
 	                  tender.deliveryClose != 0)
 		return "a tender's award names no company, a total past its budget or a bond below 0, or "
 		       "one not awarded names one";
+	if (tender.delivered > (awarded ? tender.totes : 0) ||
+	    (tender.state == TenderState::Fulfilled) != (awarded && tender.delivered == tender.totes))
+		return "a tender is delivered more than its totes or before its award, or is fulfilled other "
+		       "than when every tote is delivered";
 	return std::nullopt;
+}
+
+
+std::int64_t Owed(const Tender &tender)
+{
+	if (tender.totes == 0)
+		return 0;
+	// Exactly, with T = a Q + b: T q / Q = a q + b q / Q, and b q is below Q squared.
+	const auto whole = static_cast<std::int64_t>(tender.totes);
+	const auto part = static_cast<std::int64_t>(tender.delivered);
+	const std::int64_t rest = tender.price % whole * part;
+	return tender.price / whole * part + (2 * rest + whole) / (2 * whole);
 }
 
 
@@ -663,7 +681,9 @@ void RegisterTypes()
 		    .Value<TenderState::Open>("Open")
 		    .Value<TenderState::Awarded>("Awarded")
 		    .Value<TenderState::Cancelled>("Cancelled")
-		    .Value<TenderState::Unawarded>("Unawarded");
+		    .Value<TenderState::Unawarded>("Unawarded")
+		    .Value<TenderState::Fulfilled>("Fulfilled")
+		    .Value<TenderState::Defaulted>("Defaulted");
 		RegisterType<Tender>("Manifest.World.Tender")
 		    .Field<&Tender::regionId>("regionId", kSaved)
 		    .Field<&Tender::projectId>("projectId", kSaved)
@@ -681,7 +701,8 @@ void RegisterTypes()
 		    .Field<&Tender::companyId>("companyId", kSaved)
 		    .Field<&Tender::price>("price", kSaved)
 		    .Field<&Tender::bond>("bond", kSaved)
-		    .Field<&Tender::deliveryClose>("deliveryClose", kSaved);
+		    .Field<&Tender::deliveryClose>("deliveryClose", kSaved)
+		    .Field<&Tender::delivered>("delivered", kSaved);
 		RegisterType<Bid>("Manifest.World.Bid")
 		    .Field<&Bid::tenderId>("tenderId", kSaved)
 		    .Field<&Bid::companyId>("companyId", kSaved)

@@ -261,10 +261,11 @@ std::uint64_t StillNeeded(
 	if (input == rules.plans.at(projectId).needs.inputs.end())
 		return 0;
 	std::uint64_t called = Held(registry.get<const World::Stock>(entity), itemId);
+	// What a contract has delivered is held already.
 	for (const auto [other, tender] : registry.view<const World::Tender>().each())
 		if (Live(tender) && tender.regionId == regionId && tender.projectId == projectId &&
 		    tender.itemId == itemId)
-			called += tender.totes;
+			called += tender.totes - tender.delivered;
 	return input->second > called ? input->second - called : 0;
 }
 
@@ -411,6 +412,29 @@ void AwardAt(SimWorld &world, const Rules &rules, entt::entity entity)
 }
 
 
+// Ends an awarded tender's contract: what its account holds returned to the public account, the
+// bond's share of the totes undelivered, rounded down, forfeit to it and the rest returned to the
+// supplier, all of it once every tote is delivered. Fulfilled then, in default otherwise.
+void Settle(SimWorld &world, const Rules &rules, entt::entity entity)
+{
+	entt::registry &registry = world.Registry();
+	const World::Tender &tender = registry.get<const World::Tender>(entity);
+	const entt::entity bond =
+	    Required(rules, Kind::BondAccount, registry.get<const World::Identity>(entity).id);
+	const std::int64_t held = registry.get<const World::Account>(bond).balance;
+	const auto whole = static_cast<std::int64_t>(tender.totes);
+	const auto missing = static_cast<std::int64_t>(tender.totes - tender.delivered);
+	// Exactly, as World::Owed: the bond's remainder times the missing totes is below Q squared.
+	const std::int64_t forfeit = held / whole * missing + held % whole * missing / whole;
+	registry.get<World::Account>(Required(rules, Kind::PublicAccount, tender.regionId)).balance +=
+	    forfeit;
+	registry.get<World::Account>(Required(rules, Kind::CompanyAccount, tender.companyId)).balance +=
+	    held - forfeit;
+	rules.pIdentities->Destroy(registry, bond);
+	Close(world, rules, entity, missing == 0 ? TenderState::Fulfilled : TenderState::Defaulted);
+}
+
+
 // The company the actor is principal of, for its bids; none for a company the world does not have,
 // Result's UnknownTarget, or another's, NotAuthorised.
 Result Bidder(
@@ -482,6 +506,99 @@ Result Withdraws(SimWorld &world, const Rules &rules, const Actor &actor, const 
 	if (placed == entt::null)
 		return Result::UnknownTarget;
 	rules.pIdentities->Destroy(registry, placed);
+	return Result::Succeeded;
+}
+
+
+// The stock a tender's goods are delivered into: its project's, or its region's households' for a
+// relief tender.
+entt::entity Recipient(const Rules &rules, const World::Tender &tender)
+{
+	return tender.projectId.empty()
+	           ? Required(rules, Kind::Household, tender.regionId)
+	           : Required(rules, Kind::Project, World::ProjectId(tender.regionId, tender.projectId));
+}
+
+
+Result Delivers(SimWorld &world, const Rules &rules, const Actor &actor, const Deliver &deliver)
+{
+	entt::registry &registry = world.Registry();
+	const entt::entity entity = rules.pIdentities->Find(Kind::Tender, deliver.tenderId);
+	const entt::entity shipEntity = rules.pIdentities->Find(Kind::Ship, deliver.shipId);
+	if (entity == entt::null || shipEntity == entt::null)
+		return Result::UnknownTarget;
+	const World::Ship &ship = registry.get<const World::Ship>(shipEntity);
+	if (const Result bidder = Bidder(registry, rules, actor, ship.companyId);
+	    bidder != Result::Succeeded)
+		return bidder;
+	World::Tender &tender = registry.get<World::Tender>(entity);
+	if (tender.state != TenderState::Awarded || world.Clock().Step() >= tender.deliveryClose)
+		return Result::Closed;
+	if (ship.companyId != tender.companyId)
+		return Result::NotAuthorised;
+	if (ship.dockedAt.empty())
+		return Result::NotDocked;
+	if (ship.dockedAt != tender.venueId)
+		return Result::WrongVenue;
+	World::Cargo &cargo = registry.get<World::Cargo>(shipEntity);
+	const auto lot = std::ranges::find(cargo.lots, tender.itemId, &World::Lot::itemId);
+	if (lot == cargo.lots.end())
+		return Result::InsufficientStock;
+	World::Stock &stock = registry.get<World::Stock>(Recipient(rules, tender));
+	const auto key = std::tie(tender.venueId, tender.itemId);
+	const auto holding = std::ranges::lower_bound(
+	    stock.holdings, key, std::less<>{},
+	    [](const World::Holding &held) { return std::tie(held.venueId, held.itemId); });
+	const bool held =
+	    holding != stock.holdings.end() && std::tie(holding->venueId, holding->itemId) == key;
+	const std::uint64_t warehoused = held ? holding->available + holding->reserved : 0;
+	const std::uint64_t room =
+	    Core::kMaxWarehouseTotes > warehoused ? Core::kMaxWarehouseTotes - warehoused : 0;
+	const std::uint64_t accepted = std::min({lot->totes, tender.totes - tender.delivered, room});
+	if (accepted == 0)
+		return Result::CapacityExceeded;
+
+	lot->totes -= accepted;
+	if (lot->totes == 0)
+		cargo.lots.erase(lot);
+	if (held)
+		holding->available += accepted;
+	else
+		stock.holdings.insert(holding, {tender.venueId, tender.itemId, accepted, 0});
+	const std::int64_t before = World::Owed(tender);
+	tender.delivered += accepted;
+	const std::int64_t paid = World::Owed(tender) - before;
+	const std::string &id = registry.get<const World::Identity>(entity).id;
+	registry.get<World::Account>(Required(rules, Kind::TenderAccount, id)).balance -= paid;
+	registry.get<World::Account>(Required(rules, Kind::CompanyAccount, tender.companyId)).balance +=
+	    paid;
+	if (tender.delivered == tender.totes)
+	{
+		const std::string regionId = tender.regionId;
+		Settle(world, rules, entity);
+		Prune(world, rules, regionId);
+	}
+	return Result::Succeeded;
+}
+
+
+Result Abandons(SimWorld &world, const Rules &rules, const Actor &actor, const Abandon &abandon)
+{
+	entt::registry &registry = world.Registry();
+	const entt::entity entity = rules.pIdentities->Find(Kind::Tender, abandon.tenderId);
+	if (entity == entt::null)
+		return Result::UnknownTarget;
+	const World::Tender &tender = registry.get<const World::Tender>(entity);
+	if (tender.companyId.empty())
+		return Result::Closed;
+	if (const Result bidder = Bidder(registry, rules, actor, tender.companyId);
+	    bidder != Result::Succeeded)
+		return bidder;
+	if (tender.state != TenderState::Awarded || world.Clock().Step() >= tender.deliveryClose)
+		return Result::Closed;
+	const std::string regionId = tender.regionId;
+	Settle(world, rules, entity);
+	Prune(world, rules, regionId);
 	return Result::Succeeded;
 }
 
@@ -618,6 +735,16 @@ void Issue(SimWorld &world, const Rules &rules, bool reliefs)
 }
 
 
+// Whether a tender closed, or its contract ended, at the step.
+bool AnyClosedAt(const entt::registry &registry, std::uint64_t step)
+{
+	for (const auto [entity, tender] : registry.view<const World::Tender>().each())
+		if (!Live(tender) && tender.closed == step)
+			return true;
+	return false;
+}
+
+
 bool TurnEnds(std::uint64_t step, const Rules &rules)
 {
 	return (step + 1) % rules.turnSteps == 0;
@@ -629,13 +756,25 @@ void Tenders(SimWorld &world, const Rules &rules)
 	JETTISON_PROFILE_ZONE("Manifest.Procurement.Tenders");
 	entt::registry &registry = world.Registry();
 	const std::uint64_t now = world.Clock().Step();
+	std::vector<std::pair<std::string, entt::entity>> lapsing;
 	std::vector<std::pair<std::string, entt::entity>> closing;
 	for (const auto [entity, identity, tender] :
 	     registry.view<const World::Identity, const World::Tender>().each())
+	{
+		if (tender.state == TenderState::Awarded && tender.deliveryClose <= now)
+			lapsing.emplace_back(identity.id, entity);
 		if (tender.state == TenderState::Open && tender.bidClose <= now)
 			closing.emplace_back(identity.id, entity);
+	}
+	std::ranges::sort(lapsing);
 	std::ranges::sort(closing);
 	std::set<std::string, std::less<>> regions;
+	// Defaults first, so a bond returned can fund an award closing in the same step.
+	for (const auto &[id, entity] : lapsing)
+	{
+		regions.insert(registry.get<const World::Tender>(entity).regionId);
+		Settle(world, rules, entity);
+	}
 	for (const auto &[id, entity] : closing)
 	{
 		regions.insert(registry.get<const World::Tender>(entity).regionId);
@@ -643,23 +782,29 @@ void Tenders(SimWorld &world, const Rules &rules)
 	}
 	for (const std::string &regionId : regions)
 		Prune(world, rules, regionId);
+	// Ended now, by this system or by a command before it: a default's totes are tendered again.
+	const bool ended = AnyClosedAt(registry, now);
 	const bool turnEnds = TurnEnds(now, rules);
-	if (now == 0 || !closing.empty() || turnEnds)
+	if (now == 0 || !closing.empty() || ended || turnEnds)
 		Issue(world, rules, turnEnds);
 }
 
 
-// The first step the tenders have to run in: the world's first, the next bid close or the turn's
-// last step.
+// The first step the tenders have to run in: the world's first, one a tender closed in, the next bid
+// or delivery close or the turn's last step.
 std::uint64_t TendersNext(const SimWorld &world, const Rules &rules)
 {
 	const std::uint64_t now = world.Clock().Step();
-	if (now == 0)
+	if (now == 0 || AnyClosedAt(world.Registry(), now))
 		return now;
 	std::uint64_t next = now + (rules.turnSteps - 1 - now % rules.turnSteps);
 	for (const auto [entity, tender] : world.Registry().view<const World::Tender>().each())
+	{
 		if (tender.state == TenderState::Open)
 			next = std::min(next, std::max(now, tender.bidClose));
+		if (tender.state == TenderState::Awarded)
+			next = std::min(next, std::max(now, tender.deliveryClose));
+	}
 	return next;
 }
 
@@ -755,6 +900,11 @@ void RegisterTypes()
 		RegisterType<Withdraw>("Manifest.Procurement.Withdraw")
 		    .Field<&Withdraw::tenderId>("tenderId", kSaved)
 		    .Field<&Withdraw::companyId>("companyId", kSaved);
+		RegisterType<Deliver>("Manifest.Procurement.Deliver")
+		    .Field<&Deliver::tenderId>("tenderId", kSaved)
+		    .Field<&Deliver::shipId>("shipId", kSaved);
+		RegisterType<Abandon>("Manifest.Procurement.Abandon")
+		    .Field<&Abandon::tenderId>("tenderId", kSaved);
 		return true;
 	}();
 	(void)registered;
@@ -783,6 +933,14 @@ void Register(
 	    std::string{kBid}, kVersion, Command::ActorKind::Principal,
 	    [rules](SimWorld &on, const Actor &actor, const Bid &bid)
 	    { return Bids(on, *rules, actor, bid); });
+	requests.Register<Deliver>(
+	    std::string{kDeliver}, kVersion, Command::ActorKind::Principal,
+	    [rules](SimWorld &on, const Actor &actor, const Deliver &deliver)
+	    { return Delivers(on, *rules, actor, deliver); });
+	requests.Register<Abandon>(
+	    std::string{kAbandon}, kVersion, Command::ActorKind::Principal,
+	    [rules](SimWorld &on, const Actor &actor, const Abandon &abandon)
+	    { return Abandons(on, *rules, actor, abandon); });
 	requests.Register<Withdraw>(
 	    std::string{kWithdraw}, kVersion, Command::ActorKind::Principal,
 	    [rules](SimWorld &on, const Actor &actor, const Withdraw &withdraw)

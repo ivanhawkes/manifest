@@ -207,16 +207,17 @@ std::function<void()> Identities::Load(
 		const auto account = index.find({Kind::TenderAccount, identity.id});
 		const auto *pAccount =
 		    account == index.end() ? nullptr : loaded.try_get<const Account>(account->second);
-		// Open, its account holds its budget; awarded, its winner's total.
+		// Open, its account holds its budget; awarded, its winner's total less what it was paid.
 		const bool open = tender.state == TenderState::Open;
 		const bool awarded = tender.state == TenderState::Awarded;
 		if (open || awarded
-		        ? pAccount == nullptr || pAccount->balance != (open ? tender.budget : tender.price)
+		        ? pAccount == nullptr ||
+		              pAccount->balance != (open ? tender.budget : tender.price - Owed(tender))
 		        : account != index.end())
 			reader.Fail(
 			    std::format(
-			        "the tender '{}' reserves other than its budget while open, or its total once "
-			        "awarded",
+			        "the tender '{}' reserves other than its budget while open, or its total less "
+			        "what it paid once awarded",
 			        identity.id));
 		const auto bond = index.find({Kind::BondAccount, identity.id});
 		const auto *pBond = bond == index.end() ? nullptr : loaded.try_get<const Account>(bond->second);
