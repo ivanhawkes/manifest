@@ -1327,6 +1327,13 @@ W12's slices, each one commit with its suites, the gate after the third and the 
    recorded commands replayed from the bootstrap, each in its step and what is between them passed
    over, reach it too; credits are kept throughout, the goods' ledger allowing a project's start, and
    the final hash is pinned. Nine seconds in Debug.
+7. Close-out, done 2026-11-23: D-101 implemented. Left: the console's and the TUI's procurement
+   commands and views, which have none yet; a relief tender a player's governor publishes; repeat
+   production on the unlocked recipe, its ownership, facility access and batch timing to be specified
+   first (D-029); anything that puts a workshop out of action, which only the suite does; and the
+   policy's contracts weighed by their total, not by the hour the bid window adds, tenders past the
+   free hold skipped rather than delivered in parts, the bond estimated at the configured rate, and a
+   contract's cargo, seized for arrears, left to default.
 
 ## Delivered: W19, 2026-11-22
 

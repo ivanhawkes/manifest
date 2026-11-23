@@ -100,6 +100,21 @@ cargo's lots are bounded together (`world`), and a ship's cargo against its hull
 `CargoVolume`, whose empty map was taken for none given; a hull the map does not name now carries
 nothing (`company`). Round 7 approved with no finding open.
 
+## W12: competitive procurement — 2026-11-23
+
+In six slices with no engine edit, on the [tender contract](stage-4-trading-plan.md#tender-contract-w11-2026-11-21):
+a region's project, its tenders and their accounts, sealed bids and the award, delivery by the tote
+with the bond and default, saved jobs that bid and deliver, and the governance fixture's Bronze
+project supplied from Forge and Cassiter, worked and unlocked. The issuer rebuilt the market's rules
+each turn, which put the console's Ore to Brine at 4.29 s against its 3.56 s budget, so it keeps
+them; the budget, nearly spent by the economy since L27, was measured again at 3.50 s. The first
+fast-forward test of delivery missed a broken quiet, the AI's closes falling on day boundaries the
+system runs at anyway, so it uses a directed tender. Slice 4 wrongly said the pinned worlds hold
+tenders; none does, and slice 5 corrected the plan. A probe saw an NPC default on tin when another
+trader bought out its source's asks, the default and retender working as designed. A starter's
+credits buy no project's goods, so the fixture funds its company, and its goods ledger allows a
+project's start.
+
 ## W11: the clean tender lifecycle's choices — 2026-11-21
 
 A planning task, no code: the user settled the Bronze project's totes and work time, the tender
