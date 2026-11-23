@@ -1396,3 +1396,82 @@ TEST_CASE("A governor's queue runs its projects in order, and a cancel keeps wha
 	CHECK(project(kBronze).phase == ProjectPhase::Tendering);
 	CHECK(queue(kAda, kWest, kGuild) == Result::AlreadyQueued);
 }
+
+
+TEST_CASE("A player's development policy tenders the head's inputs within its limit, and says why not")
+{
+	constexpr std::string_view kWest = "RegionForgeWest";
+	const std::string west{kWest};
+	Hosted hosted;
+	entt::registry &registry = hosted.world.Registry();
+	// Fixture bootstrap: Ada directs Forge West's council, and its guild is queued.
+	registry
+	    .get<World::Organisation>(
+	        hosted.identities.Find(Kind::Organisation, "OrganisationForgeWestCouncil"))
+	    .principalId = "Ada";
+	CHECK(hosted.Run(kAda, kQueue, Queue{west, "ProjectSmeltersGuild"}) == Result::Succeeded);
+	const auto set = [&](const Actor &actor, std::string regionId, bool tender, std::int64_t limit)
+	{ return hosted.Run(actor, kSetDevelopment, SetDevelopment{std::move(regionId), tender, limit}); };
+	const auto wests = [&]
+	{
+		std::vector<World::Tender> tenders;
+		for (const auto &[id, tender] : hosted.Tenders())
+			if (tender.regionId == kWest)
+				tenders.push_back(tender);
+		return tenders;
+	};
+	const entt::entity region = hosted.identities.Find(Kind::Region, west);
+	const auto policy = [&] { return registry.get<World::Development>(region); };
+
+	// With no policy, a player's region is not the AI's to tender for.
+	hosted.FastForwardTo(120);
+	CHECK(wests().empty());
+	CHECK_FALSE(registry.all_of<World::Development>(region));
+
+	CHECK(set(kBea, west, true, 1'000'000) == Result::NotAuthorised);
+	CHECK(set(kAda, std::string{kEast}, true, 1'000'000) == Result::NotAuthorised);
+	CHECK(set(kAda, "RegionNowhere", true, 1'000'000) == Result::UnknownTarget);
+	CHECK(set(kAda, west, true, -1) == Result::InvalidQuantity);
+	CHECK_FALSE(registry.all_of<World::Development>(region));
+
+	// Past its limit it waits, and says so.
+	CHECK(set(kAda, west, true, 10) == Result::Succeeded);
+	hosted.FastForwardTo(180);
+	CHECK(wests().empty());
+	CHECK(policy() == World::Development{true, 10, World::DevelopmentWait::SpendingLimit});
+
+	// Within it but with its treasury empty, it waits for the funds.
+	World::Account &treasury =
+	    registry.get<World::Account>(hosted.identities.Find(Kind::PublicAccount, west));
+	const std::int64_t funds = treasury.balance;
+	treasury.balance = 0;
+	CHECK(set(kAda, west, true, 1'000'000) == Result::Succeeded);
+	CHECK(policy().wait == World::DevelopmentWait::None);
+	hosted.FastForwardTo(240);
+	CHECK(wests().empty());
+	CHECK(policy().wait == World::DevelopmentWait::InsufficientFunds);
+
+	// Funded, the guild's copper is tendered at the turn's end as an AI region's would be.
+	treasury.balance = funds;
+	hosted.FastForwardTo(300);
+	REQUIRE(wests().size() == 1);
+	const World::Tender tendered = wests()[0];
+	CHECK(tendered.projectId == "ProjectSmeltersGuild");
+	CHECK(tendered.itemId == "ItemCopper");
+	CHECK(tendered.totes == 3);
+	CHECK(tendered.bidClose == tendered.published + kDay);
+	CHECK(policy().wait == World::DevelopmentWait::None);
+
+	// Saved and loaded alike; turned off, a cancelled tender is not tendered again.
+	Hosted loaded;
+	loaded.world.Load(hosted.world.Save());
+	CHECK(loaded.world.StateHash() == hosted.world.StateHash());
+	CHECK(set(kAda, west, false, 1'000'000) == Result::Succeeded);
+	std::string tenderId;
+	for (const auto &[id, tender] : hosted.Tenders())
+		if (tender.regionId == kWest)
+			tenderId = id;
+	CHECK(hosted.Run(kAda, kCancel, Cancel{tenderId}) == Result::Succeeded);
+	hosted.FastForwardTo(360);
+	CHECK(wests().size() == 1);
+}

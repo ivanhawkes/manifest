@@ -117,7 +117,22 @@ struct CancelProject
 	std::string projectId;
 };
 
+// The players' command that sets a region's standing development policy (World::Development, D-110),
+// by the principal Queue is sent by, its wait cleared: with tender on, the AI issuer tenders the
+// region's head project's inputs as for an AI-run region, priced the same, while the budgets of its
+// live tenders together stay within the limit, in whole credits; one that would pass it, or that the
+// public account cannot fund, waits, the reason kept until an input is tendered. Off, the default, the
+// player publishes by command. Refused for a region the world does not have (UnknownTarget), one the
+// sender does not direct (NotAuthorised), and a limit below 0 (InvalidQuantity).
+struct SetDevelopment
+{
+	std::string regionId;
+	bool tender{false};
+	std::int64_t limit{0};
+};
+
 inline constexpr std::string_view kQueue = "Manifest.Procurement.Queue";
+inline constexpr std::string_view kSetDevelopment = "Manifest.Procurement.SetDevelopment";
 inline constexpr std::string_view kCancelProject = "Manifest.Procurement.CancelProject";
 inline constexpr std::string_view kPublish = "Manifest.Procurement.Publish";
 inline constexpr std::string_view kCancel = "Manifest.Procurement.Cancel";
@@ -137,12 +152,13 @@ inline constexpr std::uint32_t kVersion = 1;
 // the step. With none it closes unawarded, its budget returned. Its bids are dropped either way, and
 // each region keeps its last procurement.keptClosed closed tenders, the oldest closed dropped. Then, as
 // the world starts, on each economic turn's last step, in a step a tender's bidding closed and in one
-// a tender closed or its contract ended, the AI issuer: for each region whose governor the AI runs, in
-// the scenario's order, at the first venue serving it, each input its head project still needs, in the
-// project's order, with no tender open for it, is tendered, the totes still needed at
-// Trade::TenderPrice times one and the project's priorityPremium (Trade::Budget), with procurement's
-// AI windows; and on a turn's last step each relief Trade::Reliefs calls for of such a region with no
-// relief tender open for its need. One the region cannot fund or bound is not.
+// a tender closed or its contract ended, the AI issuer: for each region whose governor the AI runs, or
+// whose player's development policy tenders within its limit (SetDevelopment), in the scenario's order,
+// at the first venue serving it, each input its head project still needs, in the project's order, with
+// no tender open for it, is tendered, the totes still needed at Trade::TenderPrice times one and the
+// project's priorityPremium (Trade::Budget), with procurement's AI windows; and on a turn's last step
+// each relief Trade::Reliefs calls for of such a region with no relief tender open for its need. One
+// the region cannot fund or bound is not.
 inline constexpr std::string_view kTenders = "manifest.tenders";
 
 // The projects' system, after kTenders and before manifest.economy, each region's World::Project in
@@ -163,9 +179,10 @@ std::string TenderId(
 
 void RegisterTypes();
 
-// Registers Queue, CancelProject, Publish, Cancel, Bid, Withdraw, Deliver and Abandon, adds kTenders
-// and kProjects, after Trade::Register has added the systems they run among, and gives the identities
-// what each project needs (World::Identities::SetProjects). The content must outlive the world.
+// Registers Queue, CancelProject, SetDevelopment, Publish, Cancel, Bid, Withdraw, Deliver and Abandon,
+// adds kTenders and kProjects, after Trade::Register has added the systems they run among, and gives
+// the identities what each project needs (World::Identities::SetProjects). The content must outlive the
+// world.
 void Register(
     Jettison::Sim::SimWorld &world, Command::Requests &requests, World::Identities &identities,
     const Content::ContentSet &content);

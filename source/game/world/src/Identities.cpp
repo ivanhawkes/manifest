@@ -172,6 +172,13 @@ std::function<void()> Identities::Load(
 	for (const auto [entity, policy] : loaded.view<const Policy>().each())
 		if (const std::optional<std::string> problem = Broken(policy))
 			reader.Fail(*problem);
+	for (const auto [entity, development] : loaded.view<const Development>().each())
+	{
+		if (const std::optional<std::string> problem = Broken(development))
+			reader.Fail(*problem);
+		if (!loaded.all_of<Region>(entity))
+			reader.Fail("a development policy is no region's");
+	}
 	for (const auto [entity, job] : loaded.view<const Job>().each())
 		if (const std::optional<std::string> problem = Broken(job))
 			reader.Fail(*problem);

@@ -754,6 +754,22 @@ Result Queues(SimWorld &world, const Rules &rules, const Actor &actor, const Que
 }
 
 
+Result DevelopmentSet(
+    SimWorld &world, const Rules &rules, const Actor &actor, const SetDevelopment &set)
+{
+	entt::registry &registry = world.Registry();
+	const entt::entity region = rules.pIdentities->Find(Kind::Region, set.regionId);
+	if (region == entt::null)
+		return Result::UnknownTarget;
+	if (!Directs(registry, rules, actor, set.regionId))
+		return Result::NotAuthorised;
+	if (set.limit < 0)
+		return Result::InvalidQuantity;
+	registry.emplace_or_replace<World::Development>(region, set.tender, set.limit);
+	return Result::Succeeded;
+}
+
+
 Result ProjectCancels(
     SimWorld &world, const Rules &rules, const Actor &actor, const CancelProject &cancel)
 {
@@ -795,12 +811,25 @@ bool AiRun(const entt::registry &registry, const Rules &rules, const std::string
 void Issue(SimWorld &world, const Rules &rules, bool reliefs)
 {
 	JETTISON_PROFILE_ZONE("Manifest.Procurement.Issue");
-	const entt::registry &registry = world.Registry();
+	entt::registry &registry = world.Registry();
 	const Content::ProcurementTuning &tuning = rules.tuning;
 	for (const Area &area : rules.areas)
 	{
-		if (area.venues.empty() || !AiRun(registry, rules, area.regionId))
+		if (area.venues.empty())
 			continue;
+		// A player's region tenders under its policy, within its limit (D-110).
+		World::Development *pPolicy = nullptr;
+		std::int64_t committed = 0;
+		if (!AiRun(registry, rules, area.regionId))
+		{
+			pPolicy =
+			    registry.try_get<World::Development>(Required(rules, Kind::Region, area.regionId));
+			if (pPolicy == nullptr || !pPolicy->tender)
+				continue;
+			for (const auto [entity, tender] : registry.view<const World::Tender>().each())
+				if (Live(tender) && tender.regionId == area.regionId)
+					committed += tender.budget;
+		}
 		if (const World::Project *pHead = Head(registry, area.regionId); pHead != nullptr)
 		{
 			const std::string &projectId = pHead->projectId;
@@ -829,8 +858,22 @@ void Issue(SimWorld &world, const Rules &rules, bool reliefs)
 				const Terms terms{area.regionId,      projectId,           "",
 				                  input.itemId,       area.venues.front(), totes,
 				                  budget.value_or(0), tuning.aiBidDays,    tuning.aiDeliveryDays};
-				if (budget && Check(registry, rules, terms) == Result::Succeeded)
-					Published(world, rules, terms);
+				if (!budget)
+					continue;
+				if (pPolicy != nullptr && committed + *budget > pPolicy->limit)
+				{
+					pPolicy->wait = World::DevelopmentWait::SpendingLimit;
+					continue;
+				}
+				const Result checked = Check(registry, rules, terms);
+				if (pPolicy != nullptr && checked == Result::InsufficientFunds)
+					pPolicy->wait = World::DevelopmentWait::InsufficientFunds;
+				if (checked != Result::Succeeded)
+					continue;
+				Published(world, rules, terms);
+				committed += *budget;
+				if (pPolicy != nullptr)
+					pPolicy->wait = World::DevelopmentWait::None;
 			}
 		}
 	}
@@ -1000,6 +1043,10 @@ void RegisterTypes()
 		RegisterType<Queue>("Manifest.Procurement.Queue")
 		    .Field<&Queue::regionId>("regionId", kSaved)
 		    .Field<&Queue::projectId>("projectId", kSaved);
+		RegisterType<SetDevelopment>("Manifest.Procurement.SetDevelopment")
+		    .Field<&SetDevelopment::regionId>("regionId", kSaved)
+		    .Field<&SetDevelopment::tender>("tender", kSaved)
+		    .Field<&SetDevelopment::limit>("limit", kSaved);
 		RegisterType<CancelProject>("Manifest.Procurement.CancelProject")
 		    .Field<&CancelProject::regionId>("regionId", kSaved)
 		    .Field<&CancelProject::projectId>("projectId", kSaved);
@@ -1047,6 +1094,10 @@ void Register(
 	    std::string{kQueue}, kVersion, Command::ActorKind::Principal,
 	    [rules](SimWorld &on, const Actor &actor, const Queue &queue)
 	    { return Queues(on, *rules, actor, queue); });
+	requests.Register<SetDevelopment>(
+	    std::string{kSetDevelopment}, kVersion, Command::ActorKind::Principal,
+	    [rules](SimWorld &on, const Actor &actor, const SetDevelopment &set)
+	    { return DevelopmentSet(on, *rules, actor, set); });
 	requests.Register<CancelProject>(
 	    std::string{kCancelProject}, kVersion, Command::ActorKind::Principal,
 	    [rules](SimWorld &on, const Actor &actor, const CancelProject &cancel)
@@ -1080,10 +1131,12 @@ void Register(
 	world.RegisterSystem(
 	    {.name = std::string{kTenders},
 	     .phase = Jettison::Ecs::TickPhase::Simulation,
-	     .access = Access::Of<
-	                   World::Region, World::Organisation, World::Project, World::Stock, World::Pantry,
-	                   World::Order, World::Broker, World::Company>()
-	                   .Writing<World::Tender, World::Account, World::Identity, World::Bid>(),
+	     .access =
+	         Access::Of<
+	             World::Region, World::Organisation, World::Project, World::Stock, World::Pantry,
+	             World::Order, World::Broker, World::Company, World::Development>()
+	             .Writing<
+	                 World::Tender, World::Account, World::Identity, World::Bid, World::Development>(),
 	     .after = {std::string{Trade::kExpiry}},
 	     .run = [rules, &world](entt::registry &, double) { Tenders(world, *rules); },
 	     .before = {std::string{Trade::kEconomy}}},

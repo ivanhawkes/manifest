@@ -684,6 +684,29 @@ struct Policy
 	bool operator==(const Policy &) const = default;
 };
 
+// Why a player's region's development policy last left one of its head project's inputs untendered.
+enum class DevelopmentWait
+{
+	None,
+	// Its tender would take its live tenders' budgets past the policy's limit.
+	SpendingLimit,
+	// Its public account cannot fund it.
+	InsufficientFunds
+};
+
+// A player's region's standing development policy (D-110), none before its governor's director first
+// sets one: whether the AI issuer tenders its head project's inputs as for an AI-run region, while its
+// live tenders' budgets together stay within the limit, whole credits at least 0; and why it last
+// waited, kept until an input is tendered.
+struct Development
+{
+	bool tender{false};
+	std::int64_t limit{0};
+	DevelopmentWait wait{DevelopmentWait::None};
+
+	bool operator==(const Development &) const = default;
+};
+
 // Where a ship's job has got (docs/stage-4-trading-plan.md, "W10 plan").
 enum class Phase
 {
@@ -798,6 +821,8 @@ const ClassFees *Find(const Fees &fees, std::string_view padClass);
 std::optional<std::string> Broken(const Arrears &arrears);
 
 std::optional<std::string> Broken(const Paid &paid);
+
+std::optional<std::string> Broken(const Development &development);
 
 // The company's last price for the item, or null for an item it never bought.
 const PaidPrice *Find(const Paid &paid, std::string_view itemId);

@@ -55,6 +55,7 @@ Identities &RegisterWorld(Jettison::Sim::SimWorld &world)
 	world.RegisterComponent<Fees>();
 	world.RegisterComponent<Arrears>();
 	world.RegisterComponent<Policy>();
+	world.RegisterComponent<Development>();
 	world.RegisterComponent<Job>();
 	world.RegisterComponent<Pricing>();
 	world.RegisterComponent<Paid>();

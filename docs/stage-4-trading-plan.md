@@ -1717,8 +1717,8 @@ systems on the world's services.
   its region alone. The pilot's second project, `ProjectSmeltersGuild` (3 totes of copper, 3 work
   days, test values), teaches `SkillSmelting`, so Bronze queued behind it in a region that lacks the
   skill starts only after. Forge North is given a workshop in the scenario so it can work either.
-- **Unattended development.** `Manifest.Development.SetPolicy`, by the same principal, sets the
-  region's standing policy: `tender` and a `limit` in whole credits. On, the AI issuer tenders the
+- **Unattended development.** `Manifest.Procurement.SetDevelopment`, by the same principal, sets the
+  region's standing policy (`World::Development`): `tender` and a `limit` in whole credits. On, the AI issuer tenders the
   head project's inputs for the region as for an AI-run one, priced the same, while its open and
   awarded tenders' budgets together stay within `limit`; one that would pass it, or that the public
   account cannot fund, waits, its reason (`SpendingLimit`, `InsufficientFunds`) kept on the region and
@@ -1761,8 +1761,15 @@ Slices, each gated:
    its copper through a save, and works it to teach smelting before Bronze is the head. Two pins moved
    for the project's new field alone, every other check of theirs unchanged: the company suite's
    governance world (`0xa8a6a8164aad2192`) and `fixture_governance` (`0xda825a474fa85952`).
-4. Unattended development: `SetPolicy`, the issuer for a player's region within its limit, the
-   reason kept.
+4. Unattended development: `SetDevelopment`, the issuer for a player's region within its limit, the
+   reason kept. **Done** 2026-11-23, with no engine edit: the limit bounds the budgets of the region's
+   live tenders, open and awarded, the one to be issued's included; a set clears the wait. The
+   procurement suite has Forge West's policy wait past its limit and on an empty treasury, then
+   tender the guild's copper at a turn's end on the AI's windows, and stop when turned off. Four pins
+   moved for the save's new component storage alone, every other check of theirs unchanged: the
+   company suite's governance world (`0x38e37debf6c681a2`), the trading fixture's loop
+   (`0xf6bc2a278ee8d60c`), `fixture_alone` (`0x07ca71f6577f7997`) and `fixture_governance`
+   (`0x9e18495904a24038`).
 5. The region view in the snapshot.
 6. `fixture_development`, then the close-out.
 

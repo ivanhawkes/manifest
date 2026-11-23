@@ -285,6 +285,14 @@ std::optional<std::string> Broken(const Policy &policy)
 }
 
 
+std::optional<std::string> Broken(const Development &development)
+{
+	if (development.limit < 0)
+		return "a development policy's limit is below 0";
+	return std::nullopt;
+}
+
+
 std::optional<std::string> Broken(const Job &job)
 {
 	if (job.cost < 0 || job.charges < 0 || job.allowanceSpent < 0)
@@ -617,6 +625,14 @@ void RegisterTypes()
 		    .Field<&Arrears::owed>("owed", kSaved)
 		    .Field<&Arrears::carry>("carry", kSaved)
 		    .Field<&Arrears::since>("since", kSaved);
+		RegisterEnum<DevelopmentWait>("Manifest.World.DevelopmentWait")
+		    .Value<DevelopmentWait::None>("None")
+		    .Value<DevelopmentWait::SpendingLimit>("SpendingLimit")
+		    .Value<DevelopmentWait::InsufficientFunds>("InsufficientFunds");
+		RegisterType<Development>("Manifest.World.Development")
+		    .Field<&Development::tender>("tender", kSaved)
+		    .Field<&Development::limit>("limit", kSaved)
+		    .Field<&Development::wait>("wait", kSaved);
 		RegisterType<Policy>("Manifest.World.Policy")
 		    .Field<&Policy::enabled>("enabled", kSaved)
 		    .Field<&Policy::targetProfit>("targetProfit", kSaved)
