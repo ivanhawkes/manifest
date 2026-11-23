@@ -100,6 +100,19 @@ cargo's lots are bounded together (`world`), and a ship's cargo against its hull
 `CargoVolume`, whose empty map was taken for none given; a hull the map does not name now carries
 nothing (`company`). Round 7 approved with no finding open.
 
+## W13: regional governance — 2026-11-23
+
+In six slices with no engine edit, on [D-110](decision-ledger.md#d-110) and the
+[plan](stage-4-trading-plan.md#regional-governance-w13-2026-11-23): a company founds its principal's one
+homeworld in a region no one governs, paying the founding price into its treasury; a region's projects
+run in queue order, cancelled with what was delivered kept; a governor's standing policy tenders the
+head's inputs within a limit; the snapshot shows every region, its treasury, queue and policy its
+governor's alone, on the wire too; and `fixture_development`, a homeworld developed with no client
+beside the AI's, a late joiner founding the last free region and a third refused. The fixture's first
+run passed over every bid close: its days were counted in one-second steps on a host stepping at 1/60
+s. A new saved component moves every pin, its storage listed in the save even empty: four moved with
+the policy, two with the queue's field and two with Forge North's workshop, bytes alone each time.
+
 ## W12: competitive procurement — 2026-11-23
 
 In six slices with no engine edit, on the [tender contract](stage-4-trading-plan.md#tender-contract-w11-2026-11-21):

@@ -30,9 +30,10 @@ see [architecture](architecture.md#dedicated-server-and-administration-planned) 
 The [gameplay/server plan](gameplay-and-server-plan.md) retains a tiny one-system/two-venue
 trading fixture. The [regional correction](regional-economy-and-governance-plan.md) and
 [development plan](planetary-development-plan.md) require multiple governed economic regions
-on one planet, one controlled home region per player alongside a separate trading company,
-regional population/household/public accounts and AI neighbours. Allocate enough eligible
-regions for the group and later joiners. Player-governed regions are protected from AI
+on one planet, one homeworld region per player, founded once trading has paid for it
+([D-110](decision-ledger.md#d-110)), alongside a separate trading company, regional
+population/household/public accounts and AI neighbours. Leave enough regions open to founding
+for the group and later joiners. Player-governed regions are protected from AI
 acquisition; otherwise eligible AI neighbours on the same planet remain purchasable without
 a sibling governor's veto. Treasury stays public and private asset owners retain ownership.
 Frontier resource concessions cover eligible resources in one named region, leaving neighbours

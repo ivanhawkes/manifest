@@ -134,8 +134,11 @@ from planet count. A one-planet world can contain many independently active econ
 
 ## Control, construction and discovery boundaries
 
-Onboarding allocates no region since W16 ([D-089](decision-ledger.md#d-089)): a player
-founds one by acquisition later, and what follows is to be restated for founding in W13.
+Onboarding allocates no region since W16 ([D-089](decision-ledger.md#d-089)): a player founds one
+homeworld in a region no one governs ([D-110](decision-ledger.md#d-110), W13). Below, read
+allocation as founding: the eligible, reserve and acquisition counts are of regions open to
+founding, and the station, delivery and life-support conditions are founding's, which `Found`
+does not yet check.
 Onboarding allocates a region rather than an entire planet. Count eligible home regions,
 late-join reserve regions and an AI economy separately; reserved entries cannot also be
 sold as the acquisition pool. Allocate a starting region only when an operational public
