@@ -622,9 +622,10 @@ constexpr bool kOptimised = true;
 constexpr bool kOptimised = false;
 #endif
 // Ore to Brine on the manned profile through the console's long step, its quiet steps passed over
-// (Jettison::Sim::Quiet), in seconds: the best of three in Lythir's release build, measured 2026-11-20
-// (L27). Stepped, it took 4 min 50 s.
-constexpr double kJourneySeconds = 2.37;
+// (Jettison::Sim::Quiet), in seconds: the best of three in Lythir's release build, measured again
+// 2026-11-23 at W12's slice 3 (3.48 to 3.52 s over five runs). L27's 2.37 s had grown to 3.46 s with
+// the economy built since, leaving under 3% before the limit. Stepped, it took 4 min 50 s.
+constexpr double kJourneySeconds = 3.50;
 } // namespace
 
 // A journey dearer than half as much again as it was fails. Timed only in an optimised build without
