@@ -5,7 +5,7 @@
 W12 is done: [competitive procurement](stage-4-trading-plan.md#tender-contract-w11-2026-11-21), on
 [D-101](decision-ledger.md#d-101), with no engine edit; its six slices, the governance fixture
 (`fixture_governance`) last, and what is left are in the plan. W13, the multi-region governance
-scenario, is next. The planning documents' home-region allocation (scope, the roadmap's region supply
+scenario, is next, its contract settled ([D-110](decision-ledger.md#d-110), [plan](stage-4-trading-plan.md#regional-governance-w13-2026-11-23)) and slice 2, founding, to build. The planning documents' home-region allocation (scope, the roadmap's region supply
 and D-076) waits for W13 to restate it as founding. W22, the drives past the torch, waits for the first
 larger hull. Jettison's station traffic lanes were measured and parked (`fixture_traffic`,
 2026-11-22), to be taken up when it fails. The SDK is pinned to `14fc23a`. A commit is gated in the

@@ -1681,6 +1681,80 @@ Slices, each a commit with its suites:
    four shares a trade, is unprofiled; the drives past the torch and the exclusion radius are W22's,
    and the station traffic lanes Jettison's, next.
 
+## Regional governance (W13), 2026-11-23
+
+The multi-region idle governance scenario, on [D-110](decision-ledger.md#d-110) (the user's,
+2026-11-23), settling [D-089](decision-ledger.md#d-089)'s founding and the
+[planetary plan](planetary-development-plan.md#development-and-unattended-operation)'s queue for the
+pilot; where they differ, this holds. From Manifest `feature-base` at `7d1dd6a` on pin `14fc23a`; no
+engine edit is expected: founding, queues and the region view are Manifest's commands, components and
+systems on the world's services.
+
+- **Founding.** `Manifest.Region.Found` names a region, the founder's company and the new polity's
+  display name, sent by the company's principal. The region must be governed by no one (its
+  `governorId` empty), refused `Governed` otherwise, and the principal must direct no polity that
+  governs one, refused `AlreadyFounded`: one homeworld each. The company pays `balance.yaml`'s
+  `founding.price` (200,000, a test value) into the region's `PublicAccount`, refused
+  `InsufficientFunds` without it: an explicit one-way transfer, never a treasury alias. In the same
+  step a new `Polity` organisation, its ID issued by `Identities`, directed by the principal, becomes
+  the region's governor. Two founders of one region in a step: the first accepted founds it, the
+  second is refused `Governed`. Its population, accounts, condition, knowledge, facilities and
+  projects carry on as they were; nothing resets.
+- **Protection.** No command changes a governed region's governor, so a founded region stays its
+  player's through disconnection and absence (abandonment is unresolved server policy). AI acquisition
+  (L03) and voluntary transfers are not built. With no ungoverned region left, founding is refused and
+  the region view lists none open: an explicit result, never another's region.
+- **The queue.** A region's projects run in its queue's order, the scenario's seeded first: only the
+  first not done tenders and works, and the rest are `Queued` behind it. `Manifest.Development.Queue`
+  appends a tuning project, and `Manifest.Development.Cancel` takes out a `Queued` or `Tendering` one,
+  each sent by the principal directing the region's governor, refused `NotAuthorised` from anyone else
+  or for an AI-run region. Cancelled, its open tenders are cancelled with their budgets back, its awarded
+  contracts run on into its `Stock`, and the project is `Cancelled`, holding what was delivered; a later
+  `Queue` of it takes it up again, at the back, with that stock. `Working`, `Paused` or `Done` it is
+  refused `Closed`, and a queue of one queued, under way or done `AlreadyQueued`. No reordering:
+  cancel and queue again.
+- **What a project does.** It unlocks a recipe (W12) or teaches a skill (`teachesSkill`), once, in
+  its region alone. The pilot's second project, `ProjectSmeltersGuild` (3 totes of copper, 3 work
+  days, test values), teaches `SkillSmelting`, so Bronze queued behind it in a region that lacks the
+  skill starts only after. Forge North is given a workshop in the scenario so it can work either.
+- **Unattended development.** `Manifest.Development.SetPolicy`, by the same principal, sets the
+  region's standing policy: `tender` and a `limit` in whole credits. On, the AI issuer tenders the
+  head project's inputs for the region as for an AI-run one, priced the same, while its open and
+  awarded tenders' budgets together stay within `limit`; one that would pass it, or that the public
+  account cannot fund, waits, its reason (`SpendingLimit`, `InsufficientFunds`) kept on the region and
+  cleared when it is issued. Off, the default, the player publishes by command as in W12. The executor
+  spends the public account alone, never company funds, and never founds or queues. Relief tenders stay
+  the AI's.
+- **The region view.** The snapshot gains `regions`, every region by ID: its planet, its governor (the
+  organisation's ID and name, and whether a player directs it), population, health, happiness, and
+  whether it is open to founding, posted to every player. To the principal directing its governor it
+  also shows the public account, the queue (each project's phase, work and stock), the policy and its
+  reason. Household and employer accounts, and another governor's queue and policy, are not shown. A
+  reconnecting player's snapshot is computed from the world as any other, so reconnecting loses and
+  replays nothing.
+- **Saves.** The project phases `Queued` and `Cancelled` and the region's development policy are saved,
+  the formats changed in place ([D-109](decision-ledger.md#d-109)).
+- **Acceptance**, `fixture_development`, on the governance scenario: Ada, provisioned and funded,
+  founds Forge North, queues the guild and Bronze, sets the policy and her ship's contracts on, and no
+  client is connected. Her region's tenders are issued, her job bids and delivers, the guild teaches
+  smelting and Bronze tenders, works and unlocks its recipe, while Forge East's AI works its own Bronze
+  and every region's accounts and condition move by its own economy alone. Bea, provisioned late, founds
+  Forge South; Cara's founding of Forge North is refused `Governed` and of Forge East `Governed`, and the
+  view lists none open. Ada's session closed and reopened, her snapshot is the world's and her region
+  hers. Saved mid-run and loaded, and the recorded commands replayed from the bootstrap, it reaches the
+  same world, its hash pinned.
+
+Slices, each gated:
+
+1. The contract: this section, D-110, the delivery order and the handoff. **Done** 2026-11-23.
+2. Founding: `Found`, `founding.price`, the polity, `Governed` and `AlreadyFounded`, protection.
+3. The queue: `Queued` and `Cancelled`, `Queue` and `Cancel`, `teachesSkill`, the guild, the issuer
+   tendering the head alone.
+4. Unattended development: `SetPolicy`, the issuer for a player's region within its limit, the
+   reason kept.
+5. The region view in the snapshot.
+6. `fixture_development`, then the close-out.
+
 ## Handoff to stage 5
 
 Carry forward the exact scheduler order, command/result schema, content manifest,
