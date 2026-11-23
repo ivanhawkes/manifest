@@ -100,6 +100,17 @@ cargo's lots are bounded together (`world`), and a ship's cargo against its hull
 `CargoVolume`, whose empty map was taken for none given; a hull the map does not name now carries
 nothing (`company`). Round 7 approved with no finding open.
 
+## W14: Stage 4 closed — 2026-11-23
+
+**Stage 4 is closed** ([delivered](stage-4-trading-plan.md#delivered-w14-2026-11-23)), each of its
+checks held by a gated test, with no engine edit on pin `14fc23a`. The four strands are proved
+together in `fixture_development`: the late joiner trades by hand in her own view of the markets
+beside Ada's automated homeworld, and the world is saved with Ada's journey and the joiner's bid open
+and continued from the pack to the same hash and views. The first save point fell with Ada's ship
+docked, so the fixture now passes over a minute at a time until her job's journey is under way. The
+step's table lacked `manifest.policy` (W10), which the `travel` suite's pin had all along; the
+table is now the order the stage closed on, and Stage 5's handoff names where each contract is.
+
 ## W13: regional governance — 2026-11-23
 
 In six slices with no engine edit, on [D-110](decision-ledger.md#d-110) and the

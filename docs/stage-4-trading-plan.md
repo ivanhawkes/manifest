@@ -92,6 +92,7 @@ registration order, and a test pins `Scheduler().Order(TickPhase::Simulation)`.
 | 1b | each step | `manifest.projects` (W12) | after `manifest.tenders`, before `manifest.economy` | a project's inputs consumed, its work and phase, its region's recipes |
 | 2 | each step; the turn on due steps | `manifest.economy` (W04) | before `spatial` | production, payroll, households, condition |
 | 3 | due steps | `manifest.brokers` | after `manifest.economy`, before `spatial` | each broker's orders, fills |
+| 3a | each step | `manifest.policy` (W10) | after `manifest.brokers`, before `spatial` | each ship's job, through its owner's commands: orders, bids, loads, deliveries, journeys |
 | 4 | each step | engine `spatial`, `steering`, `flight`, `physics` | Jettison's own edges | transforms, velocities |
 | 5 | each step | engine `dock` | after `physics`; before `lanes` (Jettison `bc5dc1a`) | pads, docking, transfers |
 | 6 | each step | engine `lanes`, then `cruise` | Jettison's own edges | lane and cruise state |
@@ -102,8 +103,8 @@ registration order, and a test pins `Scheduler().Order(TickPhase::Simulation)`.
 | 7d | each day's last step | `manifest.seizure` (W18) | after `manifest.berths`, before `manifest.observe` | a held ship's cargo sold through its owner's commands, arrears, a job's lot |
 | 8 | each step | `manifest.observe` (W07) | after `manifest.travel` | players' market reports |
 
-Jettison's movement systems are registered without its `behaviour` system (no behaviour trees
-until W10), without `gates` (the fixture is one system) and without the sample's traders. Jettison
+Jettison's movement systems are registered without its `behaviour` system (a ship's job is
+`manifest.policy`'s, W10), without `gates` (the fixture is one system) and without the sample's traders. Jettison
 orders `lanes` after `dock` when both are attached (`bc5dc1a`, the one engine gap W02 named), and
 the hosted registration's `Scheduler::Ambiguities` holds no pair that writes what the other touches;
 the `travel` suite pins the order and the empty ambiguities.
@@ -131,8 +132,8 @@ the `travel` suite pins the order and the empty ambiguities.
   selected [observation timing](market-information-plan.md#observation-timing-selected) and
   simulation-time age rules; do not publish unseen current market rows in an actor's snapshot.
 
-W03 and W15 register 0, 1, 3 and, with W05, 4 to 7; W04 adds 2, W06 7a and W07 adds 8, each into
-the edges above. A task that needs another place in the step changes this table first.
+W03 and W15 register 0, 1, 3 and, with W05, 4 to 7; W04 adds 2, W06 7a, W07 8, W10 3a, W12 1a and
+1b and W18 7b to 7d, each into the edges above, the order Stage 4 closed on (W14). A task that needs another place in the step changes this table first.
 
 ### Transaction boundaries
 
@@ -1789,9 +1790,54 @@ Slices, each gated:
    queueing again; relief tenders under a player's policy; AI acquisition (L03) and region supply
    (D-076).
 
+## Delivered: W14, 2026-11-23
+
+**Stage 4 is closed.** Trading, market fog, automation and regional development are proved together
+in the development fixture (`fixture_development`, [W13](#regional-governance-w13-2026-11-23)), on pin
+`14fc23a` with no engine edit. There Ada's region is founded and developed with no client, her
+ship's job bidding, buying and delivering through her own commands beside the AI neighbours' and
+their tenders. Bea, joining late, sees the highport live, where her ship is docked, and Cassiter as
+her starting report, her region's treasury and not Ada's. She buys a tote of rice at her report's
+ask and leaves a bid under the market. The world is saved with Ada's journey under way and Bea's bid
+resting, and loaded into a world hosted from the pack, whose content manifest is the directory's.
+It goes on to the same hash and to the same views for Ada, Bea and the host, and her bid expires in
+its day, its escrow back. Replayed from the bootstrap, the recorded commands reach the same world,
+whose hash is pinned in every gate build, and the fixture's credits and goods ledger holds throughout.
+
+Each part of [the stage's exit criterion](development-stages.md#stage-4-complete-the-local-trading-loop)
+is held by a gated test:
+
+| Check | Held by |
+| --- | --- |
+| The scenario through commands | `fixture`: buy, load, travel, dock, unload, sell and the upgrade ([W09](#delivered-w09-2026-11-20)); the console's play of it, `console` ([W15](#delivered-w15-2026-11-20)) |
+| Partial fills, cancellation, expiry, rejected actions | `trade`, `company` and `travel`, each where its mechanic is ([W09](#delivered-w09-2026-11-20)); expiry and refused founding in the regional world, `fixture_development` |
+| No teleporting goods, no reservation spent twice | the fixtures' ledger, every step: credits change only by named sinks and provisioning, goods only by batches, households and projects' inputs (`fixture`, `fixture_alone`, `fixture_governance`, `fixture_development`); escrow and tender reservations as accounts (`trade`, `procurement`) |
+| Market fog | `trade` (W07's cases), each fixture's views; jobs read their owner's reports alone (`policy`, `fixture_alone`) |
+| Automation with no client | `fixture_alone` (W10), `fixture_prices` (W19), `fixture_burn` (W21), `fixture_governance` (W12), `fixture_development` (W13) |
+| Identical streams, identical hashes; in-memory continuation | each fixture saved mid-run and replayed from its bootstrap, its hash pinned; `fixture_cruise` the fast-forward against stepping |
+| Directory and pack | `fixture` step for step; `fixture_development` continued from the pack; `validate_pack`, `cli_pack` |
+| Cross-build determinism | the pins, the same in `clang-debug`, `clang-release`, `clang-asan` and `clang-notui` |
+
+Evidence, on Lythir: `./scripts/ci.sh --werror --asan --tidy` at 24 workers passed every suite in
+the four presets, the pins holding in each, and tidy clean.
+
 ## Handoff to stage 5
 
-Carry forward the exact scheduler order, command/result schema, content manifest,
-owner/venue ledger layout, allocation counters, escrow representation and travel states.
-Stage 5 adds durable acknowledgement, journal/snapshot recovery, backup/restore and
-distribution relocation. No stage 4 success response should claim durability yet.
+Stage 5 is handed what Stage 4 closed on, each where it is defined:
+
+- **The scheduler order:** [the step](#the-step-in-order) and its
+  [transaction boundaries](#transaction-boundaries), pinned with its empty ambiguities by the
+  `travel` suite.
+- **Commands and results:** the 22 commands registered on `Command::Requests`: `Manifest.Company`'s
+  nine, `.Trade`'s two and `.Procurement`'s nine at version 1, `.Travel.Travel` and
+  `.Policy.Set` at version 2; and `Command::Result`
+  (`command/Request.h`), its values appended, never reordered.
+- **The content manifest:** C06 and C07's ([stage 2](stage-2-content-plan.md)), a save refused under
+  other content by its fingerprint.
+- **The saved state:** the components `World::RegisterWorld` registers (`world/World.cpp`), accounts by kind
+  and owner, escrow as reserved holdings and order escrow, tender bonds and budgets as
+  [accounts](#tender-contract-w11-2026-11-21), and `World::Identities`' counters; a journey's legs,
+  `World::Leg`.
+
+Stage 5 adds durable acknowledgement, journal and snapshot recovery, backup and restore and
+relocation. No Stage 4 success response claims durability.

@@ -1635,6 +1635,7 @@ namespace
 {
 constexpr std::string_view kNorth = "RegionForgeNorth";
 constexpr std::string_view kGuild = "ProjectSmeltersGuild";
+constexpr std::string_view kRice = "ItemRice";
 const Actor kBea{ActorKind::Principal, "Bea"};
 const Actor kCara{ActorKind::Principal, "Cara"};
 
@@ -1715,6 +1716,15 @@ void Found(Hosted &hosted)
 }
 
 
+// Bea's buy of a tote of rice at the highport, at the limit.
+Result BuyRice(Hosted &hosted, std::int64_t limit)
+{
+	return hosted.Run(
+	    kBea, Trade::kPlace, Trade::kVersion,
+	    Trade::Place{std::string{kForge}, std::string{kRice}, Side::Buy, 1, limit});
+}
+
+
 // Bea joins late and founds Forge South; Cara finds none open.
 void Join(Hosted &hosted)
 {
@@ -1751,6 +1761,70 @@ void Join(Hosted &hosted)
 	    std::ranges::none_of(
 	        caras.regions,
 	        [](const Manifest::Query::RegionView &region) { return region.governorId.empty(); }));
+
+	// Bea trades by hand beside the policies (W14): the highport, where her ship is docked, live in her
+	// view and Cassiter her starting report; her own region's treasury hers to see and Ada's not.
+	const auto beas = [&]
+	{ return Manifest::Query::Observe(hosted.world, hosted.services.identities, kBea); };
+	const auto market = [&](std::string_view venueId)
+	{
+		const Manifest::Query::Snapshot snapshot = beas();
+		const auto found = std::ranges::find(
+		    snapshot.markets, venueId,
+		    [](const MarketView &view) -> const auto & { return view.report.venueId; });
+		REQUIRE(found != snapshot.markets.end());
+		return *found;
+	};
+	CHECK(market(kForge).live);
+	CHECK(market(kCassiter).report.source == World::Source::Starting);
+	CHECK_FALSE(market(kCassiter).live);
+	const Manifest::Query::Snapshot joined = beas();
+	REQUIRE(joined.companies.size() == 1);
+	const auto treasury = [&](std::string_view regionId)
+	{
+		const auto region =
+		    std::ranges::find(joined.regions, regionId, &Manifest::Query::RegionView::regionId);
+		REQUIRE(region != joined.regions.end());
+		return region->treasury;
+	};
+	CHECK(treasury("RegionForgeSouth").has_value());
+	CHECK_FALSE(treasury(kNorth).has_value());
+
+	// A tote of rice bought at the ask of her live report, hers at the highport.
+	std::int64_t ask = 0;
+	for (const World::Line &line : market(kForge).report.lines)
+		if (line.itemId == kRice)
+			ask = line.Ask();
+	REQUIRE(ask > 0);
+	REQUIRE(BuyRice(hosted, ask) == Result::Succeeded);
+	const CompanyView bea = beas().companies.at(0);
+	CHECK(Held(bea, kForge, kRice).available == 1);
+	CHECK(bea.ships.at(0).cargo.empty());
+	CHECK(bea.orders.empty());
+	CHECK_FALSE(hosted.creditBreach);
+}
+
+
+// Passed over a minute at a time until Ada's ship is out on a journey of her job's, then a bid of Bea's
+// under the market left resting, so the save is taken with both open.
+void Away(Hosted &hosted)
+{
+	const auto out = [&]
+	{
+		const std::optional<World::Journey> journey = hosted.Ship1().journey;
+		return journey && !journey->Ended();
+	};
+	const double fixedStep = hosted.world.FixedStep();
+	const std::uint64_t end = hosted.world.Clock().Step() + Manifest::Procurement::Steps(10, fixedStep);
+	const auto minute = static_cast<std::uint64_t>(std::llround(60.0 / fixedStep));
+	while (!out() && hosted.world.Clock().Step() < end)
+		ForwardTo(hosted, hosted.world.Clock().Step() + minute);
+	REQUIRE(BuyRice(hosted, 1) == Result::Succeeded);
+	REQUIRE(out());
+	const CompanyView bea =
+	    Manifest::Query::Observe(hosted.world, hosted.services.identities, kBea).companies.at(0);
+	REQUIRE(bea.orders.size() == 1);
+	CHECK(bea.orders[0].order.escrow > 0);
 }
 
 
@@ -1788,13 +1862,20 @@ void Develop(Hosted &hosted)
 	CHECK(Credits(registry) + hosted.sunk == hosted.credits);
 	CHECK_FALSE(hosted.creditBreach);
 	CHECK_FALSE(hosted.goodsBreach);
+	// Bea's resting bid expired within its day, its escrow back, and her rice is where she bought it.
+	const CompanyView bea =
+	    Manifest::Query::Observe(hosted.world, hosted.services.identities, kBea).companies.at(0);
+	CHECK(bea.orders.empty());
+	CHECK(Held(bea, kForge, kRice).available == 1);
 }
 } // namespace
 
 
 // The development fixture (W13, D-110): Ada founds a homeworld in the governance scenario and her
 // standing policies develop it with no client, a late joiner founds the last free region and a third
-// finds none, while the AI neighbours run their own.
+// finds none, while the AI neighbours run their own. Closing Stage 4 (W14), the joiner trades by hand
+// in her own view of the markets beside them, and the world is saved with Ada's journey and the
+// joiner's bid open and loaded into a world hosted from the pack.
 TEST_CASE("The development fixture's homeworld, founded and developed with no client, replays alike")
 {
 	Hosted hosted{MANIFEST_MOD_DIRECTORY, {}, "governance"};
@@ -1805,17 +1886,23 @@ TEST_CASE("The development fixture's homeworld, founded and developed with no cl
 	Found(hosted);
 	const std::uint64_t joined = hosted.world.Clock().Step();
 	Join(hosted);
+	Away(hosted);
 	const std::vector<std::byte> joinedSave = hosted.world.Save();
 	Develop(hosted);
-	const Manifest::Query::Snapshot adas =
-	    Manifest::Query::Observe(hosted.world, hosted.services.identities, kAda);
+	const auto observed = [](const Hosted &of, const Actor &actor)
+	{ return Manifest::Query::Observe(of.world, of.services.identities, actor); };
 
-	// Loaded after the joins, it goes on to the same world.
-	Hosted loaded{MANIFEST_MOD_DIRECTORY, {}, "governance"};
+	// Loaded after the joins, Bea's bid resting, into a world hosted from the pack, whose content is
+	// the directory's, it goes on to the same world and views.
+	const auto identity = [](const std::string &content)
+	{ return Manifest::Host::Validate({content, {}, "governance"}).identity.manifest; };
+	CHECK(identity(MANIFEST_MOD_PACK) == identity(MANIFEST_MOD_DIRECTORY));
+	Hosted loaded{MANIFEST_MOD_PACK, {}, "governance"};
 	loaded.Load(joinedSave);
 	Develop(loaded);
 	CHECK(loaded.world.StateHash() == hosted.world.StateHash());
-	CHECK(Manifest::Query::Observe(loaded.world, loaded.services.identities, kAda) == adas);
+	for (const Actor &actor : {kAda, kBea, kHost})
+		CHECK(observed(loaded, actor) == observed(hosted, actor));
 
 	// Replayed from the bootstrap, Bea funded as she was, it reaches the same world.
 	Hosted replayed{MANIFEST_MOD_DIRECTORY, {}, "governance"};
@@ -1841,5 +1928,5 @@ TEST_CASE("The development fixture's homeworld, founded and developed with no cl
 
 	// The same in every build the gate runs; it moves with what a save holds, the governance
 	// scenario's content or the stream.
-	CHECK(hosted.world.StateHash() == 0xf7c136ece8c93092ULL);
+	CHECK(hosted.world.StateHash() == 0xa78c569537d6dabaULL);
 }

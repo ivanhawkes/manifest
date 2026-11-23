@@ -117,8 +117,11 @@ project supplied from Forge and Cassiter (`fixture_governance`), with no engine 
 (2026-11-23): [regional governance](stage-4-trading-plan.md#regional-governance-w13-2026-11-23) on
 [D-110](decision-ledger.md#d-110), a homeworld founded in a region no one governs, its projects queued
 and tendered under its governor's standing policy with no client beside the AI neighbours', a late
-joiner founding the last free region (`fixture_development`), with no engine edit. Next: W14, closing
-Stage 4; W22 waits for the first larger hull.
+joiner founding the last free region (`fixture_development`), with no engine edit. W14 is done
+(2026-11-23): **Stage 4 is closed**, its checks each held by a gated test, the four strands proved
+together in the development fixture, saved with a journey and an order open and continued from the
+pack ([delivered](stage-4-trading-plan.md#delivered-w14-2026-11-23)), with no engine edit. Next: the
+stage's cross-review, then R01; W22 waits for the first larger hull.
 
 ## Priority 0: maintenance before Stage 1
 
@@ -235,7 +238,7 @@ Canonical scope: [Stage 4](stage-4-trading-plan.md), with the
 | 42c / W22 | Drives past the torch ([D-108](decision-ledger.md#d-108), designed 2026-11-22 in [W21](stage-4-trading-plan.md#delivered-w21-2026-11-22)): a hull names its drive class, a `Manifest.Drive` record; the hauler's deuterium fusion drive and the pulse drive, their fuels (deuterium pellets, pulse units made under a polity's licence) and caps, and the exclusion radius a dirty drive may not thrust within, crossed on thrusters or by a venue's tug, with a pulse ship's emergency override fined and felt by the regions it passes. One Jettison provision: a cruise drive's clearance and `ClearOf`'s reach. Built with the first larger hull a player can fly. Prove a hauler and a pulse carrier each leaving and reaching a station through its radius, the fuel and time of each, and an override's fine and harm. | W21, W12 |
 | 43 / W12 | Implement competitive procurement, partial delivery/payment, performance security and a material-gated regional project through physical fulfilment. **Done 2026-11-23**, [delivered](stage-4-trading-plan.md#tender-contract-w11-2026-11-21), with no engine edit. | W11, W19 |
 | 44 / W13 | Prove the multi-region idle governance scenario: independent accounts/condition, AI neighbours, a homeworld region per participant founded by acquisition ([D-089](decision-ledger.md#d-089)), development queues, protected late joining and reconnect continuity. **Done 2026-11-23**, [delivered](stage-4-trading-plan.md#regional-governance-w13-2026-11-23) on [D-110](decision-ledger.md#d-110), with no engine edit. | W12, W10 |
-| 45 / W14 | Close Stage 4: verify trading, market fog, automation and regional development together, in-memory continuation and final repository gates; record the actual schedule and state contracts. | W09, W13 |
+| 45 / W14 | Close Stage 4: verify trading, market fog, automation and regional development together, in-memory continuation and final repository gates; record the actual schedule and state contracts. **Done 2026-11-23**, [delivered](stage-4-trading-plan.md#delivered-w14-2026-11-23). | W09, W13 |
 
 W01 is technically independent of N01–N03; its later placement is the default priority,
 not a dependency on transport. Likewise, W05, W07 and W08 can be developed separately

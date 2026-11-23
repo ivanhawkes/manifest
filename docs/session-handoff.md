@@ -1,17 +1,15 @@
 # Session handoff
 
-## Next, on resuming — 2026-11-23 (W14)
+## Next, on resuming — 2026-11-23 (Stage 4 cross-review, then R01)
 
-W13 is done: [regional governance](stage-4-trading-plan.md#regional-governance-w13-2026-11-23), on
-[D-110](decision-ledger.md#d-110), with no engine edit; its six slices, the development fixture
-(`fixture_development`) last, and what is left are in the plan, the planning documents' home-region
-allocation restated as founding. W14, closing Stage 4, is next: trading, market fog, automation and
-regional development verified together, and the stage's cross-review. W22, the drives past the torch, waits for the first
-larger hull. Jettison's station traffic lanes were measured and parked (`fixture_traffic`,
-2026-11-22), to be taken up when it fails. The SDK is pinned to `14fc23a`. A commit is gated in the
-second checkout, `build/gate-tree`, with `--tidy`, editing alone beside it
-([gating beside the work](build-and-gates.md#gating-beside-the-work)). A ship steered in a station's
-frame still runs every step, which is most of the zero-client run's steps, more so since per hour the
-policies hop between the stations of Ore's one orbit.
+W14 is done: **Stage 4 is closed** ([delivered](stage-4-trading-plan.md#delivered-w14-2026-11-23)),
+with no engine edit, and [Stage 5's handoff](stage-4-trading-plan.md#handoff-to-stage-5) names
+where each contract is. Next is the stage's cross-review, Codex over its commits, then R01, Stage 5's
+save and compatibility inventory. W22, the drives past the torch, waits for the first larger hull.
+Jettison's station traffic lanes were measured and parked (`fixture_traffic`, 2026-11-22), to be
+taken up when it fails. The SDK is pinned to `14fc23a`. A commit is gated in the second checkout,
+`build/gate-tree`, with `--tidy`, editing alone beside it
+([gating beside the work](build-and-gates.md#gating-beside-the-work)). The development fixture takes
+about 50 s in Debug and six minutes under ASan, most of the gate's sanitised stage.
 
 What each task found and left, and how each was closed, is in [history](history.md), newest first.
