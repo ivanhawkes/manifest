@@ -300,6 +300,8 @@ patches apply in mount order above the winning whole file; an orphan patch fails
 mapping fields merge; untagged sequences replace; `!append` appends; `!merge=<field>`
 merges by identity; null removes a field. Never reproduce these operations in Manifest.
 
+Until player testing a format changes in place, its files rewritten and no step added
+([D-109](decision-ledger.md#d-109)); the rest of this paragraph applies from then on.
 Register a migration chain for each evolving reflected format. Future steps transform
 only fields present in a document, because patches migrate independently and must not
 acquire defaults that overwrite the lower layer. Unsupported versions fail with path,

@@ -316,20 +316,20 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	// Jettison's ship and station records, checked as the engine checks them (D-062).
 	CheckRefused(
 	    "manifest/definitions/dock-hulls/hull-lone-trader-starter.patch.yaml",
-	    "version: 2\nlength: 12\n",
+	    "version: 3\nlength: 12\n",
 	    "Dock.VehicleDefinition 'hull-lone-trader-starter': dock Vehicle 'hull-lone-trader-starter' is "
 	    "12 "
 	    "x "
 	    "6.4 x 1.8 m, larger than its berth's largest vehicle, 9.8 x 6.4 x 1.8 m");
 	CheckRefused(
-	    "manifest/definitions/pads/skiff.patch.yaml", "version: 1\npadSize: [4, 10]\n",
+	    "manifest/definitions/pads/skiff.patch.yaml", "version: 2\nberthSize: [4, 10]\n",
 	    "Dock.BerthClassDefinition 'skiff': dock Berth class 'skiff' has a largest vehicle");
 	CheckRefused(
-	    "manifest/definitions/stations/highport.patch.yaml", "version: 1\npiers: []\n",
+	    "manifest/definitions/stations/highport.patch.yaml", "version: 2\npiers: []\n",
 	    "Dock.PlatformLayout 'highport': dock Platform layout 'highport'");
 	CheckRefused(
 	    "manifest/definitions/dock-hulls/hull-nowhere.yaml",
-	    "version: 2\ndisplayName: Nowhere\nlength: 5\nbeam: 3\nheight: 1\npad: skiff\n",
+	    "version: 3\ndisplayName: Nowhere\nlength: 5\nbeam: 3\nheight: 1\nberth: skiff\n",
 	    "Dock.VehicleDefinition 'hull-nowhere': dock is the dock hull of no Manifest.Hull of its name");
 	CheckRefused(
 	    "manifest/definitions/hulls/hull-extra.yaml",
@@ -1017,10 +1017,10 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	// A layout whose only pad is of a class the starter does not fit, by size though not by rank.
 	CheckRefused(
 	    {{"manifest/definitions/pads/tender.yaml",
-	      "version: 1\nrank: 0\nlargestHull: [5, 3, 1]\npadSize: [4, 6]\n"},
+	      "version: 2\nrank: 0\nlargestVehicle: [5, 3, 1]\nberthSize: [4, 6]\n"},
 	     {"manifest/definitions/stations/tender-dock.yaml",
-	      "version: 1\ndisplayName: Tender dock\ndecks: [{centre: [0, 0, 0], size: [40, 10, 40]}]\n"
-	      "pads: [{class: tender, position: [0, 5, 0]}]\n"},
+	      "version: 2\ndisplayName: Tender dock\ndecks: [{centre: [0, 0, 0], size: [40, 10, 40]}]\n"
+	      "berths: [{class: tender, position: [0, 5, 0]}]\n"},
 	     {trading, "version: 1\nvenues: !merge=venueId\n  - {venueId: VenueOreHighport, layout: "
 	               "tender-dock}\n"},
 	     {"manifest/definitions/tuning/balance.patch.yaml",
