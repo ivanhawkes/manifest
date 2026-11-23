@@ -194,6 +194,16 @@ Result Requests::Act(
 }
 
 
+std::vector<Registered> Requests::Commands() const
+{
+	std::vector<Registered> commands;
+	commands.reserve(m_handlers.size());
+	for (const auto &[name, handler] : m_handlers)
+		commands.push_back({name, handler.version});
+	return commands;
+}
+
+
 std::uint64_t Requests::NextSequence(const Actor &actor) const
 {
 	const auto known = m_actors.find({actor.kind, actor.id});

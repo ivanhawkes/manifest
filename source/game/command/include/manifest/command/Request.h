@@ -127,6 +127,15 @@ struct RequestLedger
 	std::vector<ActorLedger> actors;
 };
 
+// A command as it is registered: what a world's identity holds a build to (D-111).
+struct Registered
+{
+	std::string name;
+	std::uint32_t version{1};
+
+	bool operator==(const Registered &) const = default;
+};
+
 // The limits are part of the command-state contract: a save made under one set is checked against it.
 inline constexpr std::size_t kRetainedResults = 256;
 inline constexpr std::size_t kPendingPerActor = 32;

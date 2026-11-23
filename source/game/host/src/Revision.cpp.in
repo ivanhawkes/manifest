@@ -1,0 +1,7 @@
+#include "Revision.h"
+
+namespace Manifest::Host
+{
+const std::string_view kGameRevision = "@VERSION@+@game@";
+const std::string_view kSdkRevision = "@sdk@";
+} // namespace Manifest::Host

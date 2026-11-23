@@ -236,8 +236,10 @@ a service manager or container platform, without a renderer or interactive termi
 uses configuration and command-line arguments; operation provides logs and clean shutdown.
 Its first slice exists (N02): `manifest --serve` steps the world unattended and serves it
 through the `remote` module on Jettison's `net`, with `manifest-token` for its tokens; a world's
-directory is made and held by one server (`Host::OpenWorldDirectory`, R02), and durability,
-recovery and hosting outside a trusted network do not yet.
+directory is made and held by one server (`Host::OpenWorldDirectory`, R02), which commits each run
+of steps to the world's journal before taking it and acknowledges a request only then
+(`Host::Journal`, R03, [the journal](stage-5-recovery-plan.md#step-journals-and-the-catalogue-r03-2026-11-24)).
+Snapshots, retention, backup and hosting outside a trusted network do not exist yet.
 
 The existing TUI is to become a required remote gameplay client with `connect <endpoint>` and
 `disconnect`. Extract its authoritative state into the server, retain useful FTXUI/console

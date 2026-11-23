@@ -127,7 +127,7 @@ class Game final : public Jettison::Host::Game
 
 	Services WorldServices() const
 	{
-		return {*m_pIdentities, *m_pRequests, *m_pFleet};
+		return {*m_pIdentities, *m_pRequests, *m_pFleet, m_content.identity};
 	}
 
   private:

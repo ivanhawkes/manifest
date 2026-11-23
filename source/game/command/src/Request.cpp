@@ -71,6 +71,9 @@ void RegisterTypes()
 		    .Field<&ActorLedger::floor>("floor", kSaved)
 		    .Field<&ActorLedger::completed>("completed", kSaved)
 		    .Field<&ActorLedger::pending>("pending", kSaved);
+		RegisterType<Registered>("Manifest.Command.Registered")
+		    .Field<&Registered::name>("name", kSaved)
+		    .Field<&Registered::version>("version", kSaved);
 		RegisterType<RequestLedger>("Manifest.Command.RequestLedger")
 		    .Field<&RequestLedger::order>("order", kSaved)
 		    .Field<&RequestLedger::actors>("actors", kSaved);

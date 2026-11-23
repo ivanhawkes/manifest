@@ -61,6 +61,7 @@ struct Services
 	World::Identities &identities;
 	Command::Requests &requests;
 	const Travel::Fleet &fleet;
+	const Content::ContentIdentity &content;
 };
 Services HostedServices(Jettison::Host::Session &session);
 

@@ -128,8 +128,11 @@ planning task, defines the `Manifest.Save` section, exact compatibility
 services, with no engine edit. R02 is done (2026-11-24):
 [durable I/O, directories and the world lock](stage-5-recovery-plan.md#durable-io-directories-and-the-world-lock-r02-2026-11-24), a world's
 directory made to survive a power cut and held by one server, on Jettison's durable directories and
-file lock (pin `ea66afe`), with a view longer than 64 KiB reaching its client. Next: R03; W22 waits
-for the first larger hull.
+file lock (pin `ea66afe`), with a view longer than 64 KiB reaching its client. R03 is done
+(2026-11-24): [the step journals and the catalogue](stage-5-recovery-plan.md#step-journals-and-the-catalogue-r03-2026-11-24),
+each run of steps committed before it is taken and a request acknowledged only then
+([D-112](decision-ledger.md#d-112)), `--serve` on a world's directory and a killed server taking up at
+its committed step, with no engine edit. Next: R04; W22 waits for the first larger hull.
 
 ## Priority 0: maintenance before Stage 1
 
@@ -264,7 +267,7 @@ observations, automation and accepted obligations already delivered must be cove
 | --- | --- | --- |
 | 46 / R01 | Define the final versioned Manifest save/compatibility section and exact content/state inventory; cover request outcomes, observations, regional rights, cadence and all active jobs. **Done 2026-11-24**, [the contract](stage-5-recovery-plan.md#save-and-compatibility-contract-r01-2026-11-24), [D-111](decision-ledger.md#d-111). | W14 |
 | 47 / R02 | Prove the required durable I/O, directory creation and world-lock contract; provision any missing reusable primitive in Jettison and consume its committed pin. **Done 2026-11-24**, [the contract](stage-5-recovery-plan.md#durable-io-directories-and-the-world-lock-r02-2026-11-24). | R01 |
-| 48 / R03 | Implement ordered immutable step journals/catalogue and acknowledge durable acceptance only after the tested commit boundary, including autonomous empty steps. | R02 |
+| 48 / R03 | Implement ordered immutable step journals/catalogue and acknowledge durable acceptance only after the tested commit boundary, including autonomous empty steps. **Done 2026-11-24**, [the journal](stage-5-recovery-plan.md#step-journals-and-the-catalogue-r03-2026-11-24), [D-112](decision-ledger.md#d-112). | R02 |
 | 49 / R04 | Implement boundary snapshots, retention and startup replay into a candidate world; prove crash/fault behavior, compatibility rejection and retry preservation. | R03 |
 | 50 / R05 | Implement bounded shutdown and verified backup/restore with storage/retention limits and interrupted-publication tests. | R04 |
 | 51 / R06 | Select and document the supported runtime distribution contract, dependencies and writable-data locations. | R05 |

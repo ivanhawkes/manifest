@@ -351,6 +351,7 @@ TEST_CASE("Manifest console: connect plays on a server as the token's actor, and
 		while (std::chrono::steady_clock::now() < deadline)
 		{
 			server.Poll(std::chrono::milliseconds{1});
+			server.Acknowledge();
 			for (const std::string &line : session.Poll())
 				if (line.find(expected) != std::string::npos)
 					return line;

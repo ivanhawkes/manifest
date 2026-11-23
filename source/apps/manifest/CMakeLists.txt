@@ -1,7 +1,7 @@
 add_executable(manifest main.cpp)
 set_target_properties(manifest PROPERTIES FOLDER "Apps")
 target_link_libraries(manifest PRIVATE
-    Manifest::Host Manifest::Remote Jettison::Core Jettison::Time manifest_warnings)
+    Manifest::Host Manifest::Remote Jettison::Core Jettison::Sim Jettison::Time manifest_warnings)
 
 # The server's CLI for its token file: issues and revokes bearer tokens, keeping their digests.
 add_executable(manifest-token token.cpp)
@@ -41,8 +41,15 @@ if(MANIFEST_BUILD_TESTS AND BUILD_TESTING)
         WORKING_DIRECTORY "${elsewhere}")
     add_test(NAME cli_serve_no_tokens COMMAND ${run} ${directory} --serve
         WORKING_DIRECTORY "${elsewhere}")
-    add_test(NAME cli_serve_missing_tokens COMMAND ${run} ${directory} --serve
+    add_test(NAME cli_serve_no_world COMMAND ${run} ${directory} --serve
         --tokens "${elsewhere}/none.yaml" WORKING_DIRECTORY "${elsewhere}")
+    # A world is its build's (D-111), so one left by an earlier build is cleared first.
+    add_test(NAME cli_serve_fresh_world COMMAND "${CMAKE_COMMAND}" -E rm -rf "${elsewhere}/world")
+    set_tests_properties(cli_serve_fresh_world PROPERTIES FIXTURES_SETUP fresh_world)
+    add_test(NAME cli_serve_missing_tokens COMMAND ${run} ${directory} --serve
+        --world "${elsewhere}/world" --tokens "${elsewhere}/none.yaml"
+        WORKING_DIRECTORY "${elsewhere}")
+    set_tests_properties(cli_serve_missing_tokens PROPERTIES FIXTURES_REQUIRED fresh_world)
     add_test(NAME cli_serve COMMAND "${BASH_PROGRAM}" "${CMAKE_CURRENT_SOURCE_DIR}/serve-smoke.sh"
         $<TARGET_FILE:manifest> $<TARGET_FILE:manifest-token> "${MANIFEST_MOD_DIRECTORY}"
         WORKING_DIRECTORY "${elsewhere}")
@@ -73,7 +80,7 @@ if(MANIFEST_BUILD_TESTS AND BUILD_TESTING)
         --manifest "${elsewhere}/none/trading.manifest" WORKING_DIRECTORY "${elsewhere}")
 
     set_tests_properties(cli_no_arguments cli_no_path cli_no_scenario cli_no_check
-        cli_unknown_argument cli_serve_no_tokens token_no_arguments validate_no_arguments validate_unknown_argument validate_no_manifest_path
+        cli_unknown_argument cli_serve_no_tokens cli_serve_no_world token_no_arguments validate_no_arguments validate_unknown_argument validate_no_manifest_path
         PROPERTIES WILL_FAIL TRUE)
     # Each failure is the one expected, not a crash: only a failed start-up logs its phase.
     set(missing "Start-up failed in the mount phase, at ${elsewhere}/none")

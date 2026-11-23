@@ -120,7 +120,7 @@ bool Server::Verify(Jettison::Net::SessionId id, std::span<const std::byte> cred
 		    return entry.second.credential.kind == resolved->kind &&
 		           entry.second.credential.id == resolved->id;
 	    }));
-	m_sessions[id] = {std::move(*resolved), {}, held >= kSessionsPerActor};
+	m_sessions[id] = {std::move(*resolved), {}, held >= kSessionsPerActor, {}};
 	return true;
 }
 
@@ -192,9 +192,25 @@ void Server::Admit(Jettison::Net::SessionId id, Session &session)
 		const Command::Receipt receipt = requests.Admit(
 		    m_hosted.World(), actor, submit.sequence, submit.command, submit.version,
 		    std::as_bytes(std::span{submit.payload}));
-		if (receipt.status == Command::Receipt::Status::Queued)
-			session.pending.push_back(submit.sequence);
-		Send(m_net, id, Reply{submit.sequence, receipt, requests.NextSequence(actor)});
+		const Reply reply{submit.sequence, receipt, requests.NextSequence(actor)};
+		if (receipt.status != Command::Receipt::Status::Queued)
+		{
+			Send(m_net, id, reply);
+			continue;
+		}
+		session.pending.push_back(submit.sequence);
+		session.unacknowledged.push_back(reply);
+	}
+}
+
+
+void Server::Acknowledge()
+{
+	for (auto &[id, session] : m_sessions)
+	{
+		for (const Reply &reply : session.unacknowledged)
+			Send(m_net, id, reply);
+		session.unacknowledged.clear();
 	}
 }
 

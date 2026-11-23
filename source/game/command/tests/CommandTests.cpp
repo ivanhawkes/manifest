@@ -476,6 +476,13 @@ TEST_CASE(
 	CHECK(upgraded.Balance() == 110);
 }
 
+TEST_CASE("The registered commands are listed in name order, each with its version")
+{
+	const Hosted hosted{3};
+	CHECK(hosted.requests.Commands() == std::vector<Registered>{{"Test.Audit", 1}, {"Test.Grant", 3}});
+}
+
+
 TEST_CASE("An act runs the handler at once, with no sequence, ledger or recording")
 {
 	Hosted hosted;

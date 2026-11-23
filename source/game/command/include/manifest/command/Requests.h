@@ -23,7 +23,8 @@
 namespace Manifest::Command
 {
 // What admission answers: queued, with its global order; completed, for a retry of one that has
-// run; or refused, with why. Neither queued nor completed is a durable acknowledgement yet.
+// run; or refused, with why. Neither is durable of itself: a server with a journal sends a queued
+// receipt only once the batch that holds the request is committed (Remote::Server::Acknowledge).
 struct Receipt
 {
 	enum class Status
@@ -125,6 +126,9 @@ class Requests final : public Jettison::Sim::WorldService
 	{
 		return m_runningOrder;
 	}
+
+	// Every command registered, in name order.
+	std::vector<Registered> Commands() const;
 
 	// The sequence an actor submits next, advertised on reconnect: 1 for one never seen.
 	std::uint64_t NextSequence(const Actor &actor) const;

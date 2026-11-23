@@ -126,6 +126,25 @@ is 63,567 bytes of 65,536), the user booked for Jettison's next change, a messag
 packets ([Jettison's roadmap](../../jettison/docs/roadmap.md#first-what-saves-and-the-simulations-interface-hold)),
 and delta snapshots in Manifest only if that is not enough.
 
+## R03: the step journals and the catalogue — 2026-11-24
+
+[The journal](stage-5-recovery-plan.md#step-journals-and-the-catalogue-r03-2026-11-24), on pin
+`ea66afe` with no engine edit: the engine's durable write, FNV-1a and binary archive were enough.
+`Host::Journal` commits a run of steps, a batch file then the catalogue that names it, before the
+server takes them; `Remote::Server` holds a queued receipt until the host acknowledges, so the
+receipt is the durable one; `manifest --serve` takes `--world`, makes the world there or replays its
+committed batches from the first step, and exits on a commit that fails. A world's `identity` file
+is D-111's fields, the build named by git's tree hash of each checkout's build inputs, taken at
+every build (`cmake/Revision.cmake`), and `Command::Requests` lists its commands.
+
+What it found. One batch a step, as proposed, would have queued batches behind a slow disk; a run of
+steps to a batch needs no queue, and `FastForward` already ran a wait's requests at the start of its
+first step. The checksum a file needs is also the identity the chain needs. Measured on Lythir, a
+commit is about 11 ms and an idle server makes 47 a second, 16 GB of 4 KiB blocks a day, which
+nothing removes until R04; whether an idle server should commit a second's steps ahead instead is
+left to the user. The replay from the first step was not R03's by the delivery order, and is here
+because a journal nothing has read is not evidence: R04 starts it from a snapshot.
+
 ## R02: durable I/O, directories and the world lock — 2026-11-24
 
 [The contract](stage-5-recovery-plan.md#durable-io-directories-and-the-world-lock-r02-2026-11-24), on pin `ea66afe`. Jettison's `WriteFileDurably` flushed a file and its own
