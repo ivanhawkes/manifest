@@ -32,6 +32,7 @@
 #include <manifest/company/Company.h>
 #include <manifest/host/Start.h>
 #include <manifest/policy/Policy.h>
+#include <manifest/procurement/Procurement.h>
 #include <manifest/query/Query.h>
 #include <manifest/trade/Trade.h>
 #include <manifest/travel/Travel.h>
@@ -145,6 +146,14 @@ std::vector<World::Pantry> Pantries(const entt::registry &registry)
 	return pantries;
 }
 
+std::vector<World::ProjectPhase> Phases(const entt::registry &registry)
+{
+	std::vector<World::ProjectPhase> phases;
+	for (const auto &[entity, project] : registry.view<const World::Project>().each())
+		phases.push_back(project.phase);
+	return phases;
+}
+
 
 // The trading scenario as the host starts it, from the staged directory or its pack under the overlay
 // whose batches are minutes, stepped only through Step, which checks the ledger as it goes.
@@ -167,8 +176,9 @@ struct Hosted
 
 	explicit Hosted(
 	    const std::string &content,
-	    std::vector<std::filesystem::path> overlays = {MANIFEST_FIXTURE_OVERLAY})
-	    : session{Manifest::Host::Start({content, std::move(overlays), "trading"})},
+	    std::vector<std::filesystem::path> overlays = {MANIFEST_FIXTURE_OVERLAY},
+	    std::string scenario = "trading")
+	    : session{Manifest::Host::Start({content, std::move(overlays), std::move(scenario)})},
 	      credits{Credits(world.Registry())}
 	{
 	}
@@ -200,6 +210,7 @@ struct Hosted
 		const std::map<std::string, std::int64_t> totes = Totes(registry);
 		const Batches batches = Underway(registry);
 		const std::vector<World::Pantry> pantries = Pantries(registry);
+		const std::vector<World::ProjectPhase> phases = Phases(registry);
 
 		world.Step();
 		(void)world.Events().Take();
@@ -208,9 +219,9 @@ struct Hosted
 		if (Credits(registry) + sunk != credits && !creditBreach)
 			creditBreach = step;
 		// Only a batch makes goods, and only the households' turn uses them up, when their pantries
-		// take what they open.
+		// take what they open, and a project's start, its inputs consumed.
 		const std::map<std::string, std::int64_t> delivered = Delivered(batches, Underway(registry));
-		const bool consumed = Pantries(registry) != pantries;
+		const bool consumed = Pantries(registry) != pantries || Phases(registry) != phases;
 		consumptions += consumed ? 1 : 0;
 		for (const auto &[item, count] : delivered)
 			made += count;
@@ -1387,4 +1398,234 @@ TEST_CASE("Ships flown both ways between neighbouring stations of one orbit keep
 		                   << " s");
 	MESSAGE("nearest hulls " << nearest << " m, " << nearestPair);
 	CHECK(nearest >= registry.get<const Jettison::Ai::Steered>(ships[0].ship).clearance);
+}
+
+
+namespace
+{
+constexpr std::string_view kForge = "VenueForgeHighport";
+constexpr std::string_view kCassiter = "VenueCassiterDock";
+constexpr std::string_view kTin = "ItemTin";
+constexpr std::string_view kBronze = "ProjectBronzeMetallurgy";
+const std::string kProject = World::ProjectId("RegionForgeEast", kBronze);
+// Beyond a starter's credits: the project's ten totes bought, and the two bonds held as they are.
+constexpr std::int64_t kFunds = 300'000;
+// A cruise across the Crucible system on the power law is minutes; this bounds one at a day.
+constexpr std::uint64_t kCrossing = std::uint64_t{60} * 60 * 60 * 24;
+
+// The governance scenario as the host starts it, with no overlay: Ada provisioned at Forge Highport,
+// her cruise the drive's power law, as the trading fixture's bootstrap, and her company funded for the
+// project's goods and bonds, beyond a starter's credits. The ledger of credits starts after it.
+void Governing(Hosted &hosted)
+{
+	REQUIRE(
+	    hosted.Run(
+	        kHost, Company::kProvision, Company::kVersion,
+	        Company::Provision{"Ada", "Ada", "Ada Co"}) == Result::Succeeded);
+	entt::registry &registry = hosted.world.Registry();
+	registry.get<Manifest::Space::CruiseDrive>(hosted.Ship()).profile.reset();
+	registry
+	    .get<World::Account>(hosted.services.identities.Find(
+	        Kind::CompanyAccount, registry.get<const World::Ship>(hosted.Ship()).companyId))
+	    .balance = kFunds;
+	hosted.credits = Credits(registry);
+	hosted.creditBreach.reset();
+}
+
+// The project's tender of the item, as Ada's snapshot posts it.
+Manifest::Query::TenderView Tendered(const Hosted &hosted, std::string_view itemId)
+{
+	for (const Manifest::Query::TenderView &view :
+	     Manifest::Query::Observe(hosted.world, hosted.services.identities, kAda).tenders)
+		if (view.tender.projectId == kBronze && view.tender.itemId == itemId)
+			return view;
+	FAIL("no tender of " << itemId);
+	return {};
+}
+
+// The limit of a buy that reaches the totes down the asks of Ada's report.
+std::int64_t Reach(
+    const Hosted &hosted, std::string_view venueId, std::string_view itemId, std::uint64_t totes)
+{
+	std::uint64_t reach = 0;
+	std::int64_t limit = 0;
+	for (const World::Level &level : hosted.Quote(venueId, itemId).asks)
+		if (reach < totes)
+		{
+			reach += level.totes;
+			limit = level.price;
+		}
+	REQUIRE(reach >= totes);
+	return limit;
+}
+
+Result Send(Hosted &hosted, std::string_view venueId)
+{
+	return hosted.Run(
+	    kAda, Travel::kTravel, Travel::kVersion, Travel::Travel{"Ship1", std::string{venueId}});
+}
+
+// Fast-forwarded until the ship's journey has ended, docked at the venue.
+void Fly(Hosted &hosted, std::string_view venueId)
+{
+	const std::uint64_t end = hosted.world.Clock().Step() + kCrossing;
+	while (!hosted.Ship1().journey->Ended() && hosted.world.Clock().Step() < end)
+	{
+		hosted.world.FastForward(end);
+		(void)hosted.world.Events().Take();
+	}
+	REQUIRE(hosted.Ship1().journey->leg == Leg::Arrived);
+	REQUIRE(hosted.Ship1().dockedAt == venueId);
+}
+
+// At Forge: the AI's two tenders for the project's inputs bid at their budgets, the copper bought and
+// loaded, and the ship sent to Cassiter, run until its cruise begins.
+void ToCassiter(Hosted &hosted)
+{
+	// As the world started, Forge East's AI tendered what its project needs, at Forge.
+	for (const std::string_view item : {kGood, kTin})
+	{
+		const World::Tender tender = Tendered(hosted, item).tender;
+		CHECK(tender.state == World::TenderState::Open);
+		CHECK(tender.regionId == "RegionForgeEast");
+		CHECK(tender.venueId == kForge);
+		CHECK(tender.totes == (item == kGood ? 9 : 1));
+		CHECK(tender.budget > 0);
+		REQUIRE(
+		    hosted.Run(
+		        kAda, Manifest::Procurement::kBid, Manifest::Procurement::kVersion,
+		        Manifest::Procurement::Bid{
+		            Tendered(hosted, item).tenderId, hosted.Seen().companyId, tender.budget, 0}) ==
+		    Result::Succeeded);
+	}
+
+	REQUIRE(
+	    hosted.Place(kForge, kGood, Side::Buy, 9, Reach(hosted, kForge, kGood, 9)) ==
+	    Result::Succeeded);
+	CHECK(Held(hosted.Seen(), kForge, kGood).available == 9);
+	REQUIRE(hosted.Move(Company::kLoad, kForge, kGood, 9) == Result::Succeeded);
+	CHECK(Aboard(hosted.Ship1(), kGood) == 9);
+
+	REQUIRE(Send(hosted, kCassiter) == Result::Succeeded);
+	for (std::uint64_t step = 0; step < kJourneySteps && hosted.Ship1().journey->leg != Leg::Cruising;
+	     ++step)
+		hosted.Step();
+	REQUIRE(hosted.Ship1().journey->leg == Leg::Cruising);
+}
+
+// Docked at Cassiter, the tin bought and loaded and flown to Forge; the two awards Ada's at the bid
+// close, the copper and the tin delivered, the project worked and the recipe unlocked.
+void FromCassiter(Hosted &hosted)
+{
+	Fly(hosted, kCassiter);
+	REQUIRE(
+	    hosted.Place(kCassiter, kTin, Side::Buy, 1, Reach(hosted, kCassiter, kTin, 1)) ==
+	    Result::Succeeded);
+	REQUIRE(hosted.Move(Company::kLoad, kCassiter, kTin, 1) == Result::Succeeded);
+	// Delivered before the bid close, refused: the tender is not yet a contract.
+	CHECK(
+	    hosted.Run(
+	        kAda, Manifest::Procurement::kDeliver, Manifest::Procurement::kVersion,
+	        Manifest::Procurement::Deliver{Tendered(hosted, kTin).tenderId, "Ship1"}) ==
+	    Result::Closed);
+	REQUIRE(Send(hosted, kForge) == Result::Succeeded);
+	Fly(hosted, kForge);
+
+	ForwardTo(hosted, Tendered(hosted, kGood).tender.bidClose + 1);
+	const std::int64_t before = hosted.Seen().credits;
+	std::int64_t paid = 0;
+	for (const std::string_view item : {kGood, kTin})
+	{
+		const Manifest::Query::TenderView awarded = Tendered(hosted, item);
+		REQUIRE(awarded.tender.state == World::TenderState::Awarded);
+		CHECK(awarded.tender.companyId == hosted.Seen().companyId);
+		CHECK(awarded.tender.price == awarded.tender.budget);
+		REQUIRE(
+		    hosted.Run(
+		        kAda, Manifest::Procurement::kDeliver, Manifest::Procurement::kVersion,
+		        Manifest::Procurement::Deliver{awarded.tenderId, "Ship1"}) == Result::Succeeded);
+		const World::Tender fulfilled = Tendered(hosted, item).tender;
+		CHECK(fulfilled.state == World::TenderState::Fulfilled);
+		CHECK(fulfilled.delivered == fulfilled.totes);
+		paid += fulfilled.price;
+	}
+	// Paid each total, the bonds returned, and the hold empty.
+	CHECK(
+	    hosted.Seen().credits ==
+	    before + paid + Tendered(hosted, kGood).tender.bond + Tendered(hosted, kTin).tender.bond);
+	CHECK(hosted.Ship1().cargo.empty());
+
+	// The last delivery's step consumed the inputs and began the work; its last step unlocks the
+	// recipe in Forge East.
+	const entt::registry &registry = hosted.world.Registry();
+	const entt::entity project = hosted.services.identities.Find(Kind::Project, kProject);
+	const entt::entity region = hosted.services.identities.Find(Kind::Region, "RegionForgeEast");
+	CHECK(registry.get<const World::Project>(project).phase == World::ProjectPhase::Working);
+	CHECK(registry.get<const World::Stock>(project).holdings.empty());
+	CHECK(registry.get<const World::Knowledge>(region).recipes.empty());
+	const std::uint64_t worked = registry.get<const World::Project>(project).worked;
+	ForwardTo(
+	    hosted, hosted.world.Clock().Step() +
+	                Manifest::Procurement::Steps(7, hosted.world.FixedStep()) - worked);
+	CHECK(registry.get<const World::Project>(project).phase == World::ProjectPhase::Done);
+	CHECK(
+	    registry.get<const World::Knowledge>(region).recipes ==
+	    std::vector<std::string>{"RecipeBronze"});
+	CHECK(Credits(registry) + hosted.sunk == hosted.credits);
+	CHECK_FALSE(hosted.creditBreach);
+	CHECK_FALSE(hosted.goodsBreach);
+}
+} // namespace
+
+
+// The governance fixture's procurement (W12, D-101): Forge East's AI tenders its Bronze project's
+// copper and tin, Ada bids for both, buys the copper at Forge and the tin at Cassiter, flies them to
+// Forge and delivers them, and the project, its inputs held, is worked and its recipe unlocked.
+TEST_CASE("The governance fixture's project, tendered, supplied, worked and unlocked, replays alike")
+{
+	Hosted hosted{MANIFEST_MOD_DIRECTORY, {}, "governance"};
+	Governing(hosted);
+	const std::vector<std::byte> start = hosted.world.Save();
+	const std::uint64_t first = hosted.world.Clock().Step();
+	hosted.world.SetRecording(true);
+	ToCassiter(hosted);
+	const std::vector<std::byte> inFlight = hosted.world.Save();
+	const std::size_t traced = hosted.trace.size();
+	FromCassiter(hosted);
+
+	// Loaded on its way to Cassiter, it goes on to the same outcomes and world.
+	Hosted loaded{MANIFEST_MOD_DIRECTORY, {}, "governance"};
+	loaded.Load(inFlight);
+	FromCassiter(loaded);
+	CHECK(
+	    loaded.trace ==
+	    std::vector<Outcome>(
+	        hosted.trace.begin() + static_cast<std::ptrdiff_t>(traced), hosted.trace.end()));
+	CHECK(loaded.world.StateHash() == hosted.world.StateHash());
+
+	// Replayed from the bootstrap, the recorded commands each in its step and what is between them
+	// passed over, it reaches the same world.
+	Hosted replayed{MANIFEST_MOD_DIRECTORY, {}, "governance"};
+	replayed.Load(start);
+	REQUIRE(replayed.world.Clock().Step() == first);
+	const std::vector<Jettison::Sim::AppliedCommand> &recorded = hosted.world.Recorded();
+	for (std::size_t next = 0; next < recorded.size();)
+	{
+		const std::uint64_t step = recorded[next].step;
+		ForwardTo(replayed, step);
+		REQUIRE(replayed.world.Clock().Step() == step);
+		for (; next < recorded.size() && recorded[next].step == step; ++next)
+			replayed.world.Commands().Push(recorded[next].command);
+		replayed.Step();
+	}
+	ForwardTo(replayed, hosted.world.Clock().Step());
+	CHECK(replayed.world.StateHash() == hosted.world.StateHash());
+	CHECK_FALSE(replayed.creditBreach);
+	CHECK_FALSE(replayed.goodsBreach);
+
+	CHECK(Credits(replayed.world.Registry()) + replayed.sunk == replayed.credits);
+
+	// The same in every build the gate runs; it moves with what a save holds, the governance
+	// scenario's content or the stream.
+	CHECK(hosted.world.StateHash() == 0xb7d7aaf8ad36247aULL);
 }

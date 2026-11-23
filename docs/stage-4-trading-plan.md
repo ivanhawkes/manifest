@@ -1314,6 +1314,19 @@ W12's slices, each one commit with its suites, the gate after the third and the 
    for a job to bid on.
 6. The governance fixture: Forge East's project tendered, tin bought at Cassiter and copper at Forge
    delivered physically, worked and unlocked; saved and replayed to one hash. Then the close-out.
+   **Done** 2026-11-23, with no engine edit, `fixture_governance`: the host starts the governance
+   scenario with no overlay, Ada provisioned at Forge Highport on the drive's power law, as the trading
+   fixture's bootstrap, and her company funded to 300,000, the project's goods and bonds beyond a
+   starter's 25,000. As the world starts, Forge East's AI tenders the project's 9 totes of copper and
+   1 of tin at Forge; Ada bids each at its budget, buys and loads the copper at Forge's asks, flies to
+   Cassiter, about 27,000 steps, buys and loads the tin there, a delivery before the bid close
+   refused `Closed`, and flies back. At the bid close both awards are hers; delivered, each is
+   `Fulfilled`, paid its total and its bond returned, and in the last delivery's step the project
+   consumes its inputs and works, its seven days passed over, unlocking `RecipeBronze` in Forge East
+   alone. Saved cruising to Cassiter and loaded, it goes on to the same outcomes and world; the
+   recorded commands replayed from the bootstrap, each in its step and what is between them passed
+   over, reach it too; credits are kept throughout, the goods' ledger allowing a project's start, and
+   the final hash is pinned. Nine seconds in Debug.
 
 ## Delivered: W19, 2026-11-22
 

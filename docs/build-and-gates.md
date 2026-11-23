@@ -32,7 +32,7 @@ skips a unit that was clean and whose compile command, includes (`ninja -t deps`
 
 The CTest suites are `types`, `config`, `universe`, `progression`, `sim`, `ecs`, `market`,
 `host`, `content`, `effects`, `remote`, `data`, `packaging`, `mod`, `fixture` (its longest cases
-apart, as `fixture_cruise`, `fixture_alone`, `fixture_prices`, `fixture_burn` and `fixture_traffic`, so the six run side by side) and `sdk_import`, plus `console` when the TUI is enabled. The
+apart, as `fixture_cruise`, `fixture_alone`, `fixture_prices`, `fixture_burn`, `fixture_traffic` and `fixture_governance`, so the seven run side by side) and `sdk_import`, plus `console` when the TUI is enabled. The
 `cli_*` tests run the `manifest` executable from an unrelated directory with no display: both
 content forms start, and a missing source and bad command lines fail. `cli_serve` runs the server
 with no client, checks that it stepped, and stops it with SIGINT; the `token_*` tests run
@@ -45,7 +45,8 @@ stand-in targets, complete and partial (`source/test/sdk-import`), without fetch
 Module libraries publish their own header sets and dependencies;
 integration tests link the aggregate `Manifest::Game`. Existing assertions run under the engine's
 doctest version. The simulation suite pins generated and replayed state hashes, and the fixture suite the trading
-fixture's whole loop ([W09](stage-4-trading-plan.md#delivered-w09-2026-11-20)). The mod suite
+fixture's whole loop ([W09](stage-4-trading-plan.md#delivered-w09-2026-11-20)) and the governance
+fixture's project supplied ([W12](stage-4-trading-plan.md#tender-contract-w11-2026-11-21)). The mod suite
 mounts the staged directory and generated pack through the engine VFS. The default test build
 builds that pack first, validated before and after packing
 ([content identity](stage-2-content-plan.md#content-identity)). The TUI executable is `build/<preset>/source/tools/tui/manifest_tui`.
