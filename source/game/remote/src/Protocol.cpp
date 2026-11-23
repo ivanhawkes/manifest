@@ -52,10 +52,26 @@ void RegisterTypes()
 		RegisterType<Query::MarketView>("Manifest.Query.MarketView")
 		    .Field<&Query::MarketView::report>("report", kSaved)
 		    .Field<&Query::MarketView::live>("live", kSaved);
+		RegisterType<Query::ProjectView>("Manifest.Query.ProjectView")
+		    .Field<&Query::ProjectView::project>("project", kSaved)
+		    .Field<&Query::ProjectView::stock>("stock", kSaved);
+		RegisterType<Query::RegionView>("Manifest.Query.RegionView")
+		    .Field<&Query::RegionView::regionId>("regionId", kSaved)
+		    .Field<&Query::RegionView::planetId>("planetId", kSaved)
+		    .Field<&Query::RegionView::governorId>("governorId", kSaved)
+		    .Field<&Query::RegionView::governorName>("governorName", kSaved)
+		    .Field<&Query::RegionView::playerGoverned>("playerGoverned", kSaved)
+		    .Field<&Query::RegionView::population>("population", kSaved)
+		    .Field<&Query::RegionView::health>("health", kSaved)
+		    .Field<&Query::RegionView::happiness>("happiness", kSaved)
+		    .Field<&Query::RegionView::treasury>("treasury", kSaved)
+		    .Field<&Query::RegionView::queue>("queue", kSaved)
+		    .Field<&Query::RegionView::development>("development", kSaved);
 		RegisterType<Query::Snapshot>("Manifest.Query.Snapshot")
 		    .Field<&Query::Snapshot::step>("step", kSaved)
 		    .Field<&Query::Snapshot::companies>("companies", kSaved)
-		    .Field<&Query::Snapshot::markets>("markets", kSaved);
+		    .Field<&Query::Snapshot::markets>("markets", kSaved)
+		    .Field<&Query::Snapshot::regions>("regions", kSaved);
 		RegisterType<Welcome>("Manifest.Remote.Welcome")
 		    .Field<&Welcome::actorKind>("actorKind", kSaved)
 		    .Field<&Welcome::actorId>("actorId", kSaved)

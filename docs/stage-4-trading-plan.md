@@ -1770,7 +1770,11 @@ Slices, each gated:
    company suite's governance world (`0x38e37debf6c681a2`), the trading fixture's loop
    (`0xf6bc2a278ee8d60c`), `fixture_alone` (`0x07ca71f6577f7997`) and `fixture_governance`
    (`0x9e18495904a24038`).
-5. The region view in the snapshot.
+5. The region view in the snapshot. **Done** 2026-11-23, with no engine edit: `Query::RegionView`, its
+   governor's figures (treasury, queue as `ProjectView`s in queue order, policy) the director's and
+   the Administrator's; it is on the remote protocol's snapshot too, so a reconnecting client has it.
+   The query suite founds Forge North and reads it as its founder, a rival and the host; the remote
+   suite's reconnect sees the world's regions. No pin moved.
 6. `fixture_development`, then the close-out.
 
 ## Handoff to stage 5

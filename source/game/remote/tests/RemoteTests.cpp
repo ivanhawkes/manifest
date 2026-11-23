@@ -371,6 +371,14 @@ TEST_CASE("the world steps with no session, and a reconnect retries the request 
 	CHECK(pSeen->step == left + 6);
 	// Provisioned once, though asked twice.
 	CHECK(pSeen->companies.size() == 1);
+	// The regions as the world has them, the governors' figures the administrator's (D-110).
+	const Manifest::Host::Services services = Manifest::Host::HostedServices(*served.pSession);
+	CHECK_FALSE(pSeen->regions.empty());
+	CHECK(
+	    pSeen->regions ==
+	    Manifest::Query::Observe(
+	        served.pSession->World(), services.identities, {ActorKind::Administrator, "Host"})
+	        .regions);
 }
 
 

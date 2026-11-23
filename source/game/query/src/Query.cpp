@@ -98,6 +98,48 @@ Snapshot Observe(
 	     registry.view<const World::Identity, const World::Tender>().each())
 		snapshot.tenders.push_back({identity.id, tender});
 	std::ranges::sort(snapshot.tenders, {}, &TenderView::tenderId);
+
+	for (const auto &[entity, identity, region] :
+	     registry.view<const World::Identity, const World::Region>().each())
+	{
+		RegionView &view = snapshot.regions.emplace_back();
+		view.regionId = identity.id;
+		view.planetId = region.planetId;
+		view.governorId = region.governorId;
+		view.population = region.population;
+		view.health = region.health;
+		view.happiness = region.happiness;
+		std::string_view director;
+		if (!region.governorId.empty())
+		{
+			const entt::entity governor = identities.Find(World::Kind::Organisation, region.governorId);
+			JETTISON_VERIFY(governor != entt::null);
+			const World::Organisation &organisation = registry.get<World::Organisation>(governor);
+			view.governorName = organisation.displayName;
+			view.playerGoverned = !organisation.principalId.empty();
+			director = organisation.principalId;
+		}
+		if (actor.kind != Command::ActorKind::Administrator &&
+		    (director.empty() || director != actor.id))
+			continue;
+		const entt::entity treasury = identities.Find(World::Kind::PublicAccount, identity.id);
+		JETTISON_VERIFY(treasury != entt::null);
+		view.treasury = registry.get<World::Account>(treasury).balance;
+		view.development = Copied(registry.try_get<World::Development>(entity));
+	}
+	std::ranges::sort(snapshot.regions, {}, &RegionView::regionId);
+	for (const auto &[entity, project, stock] :
+	     registry.view<const World::Project, const World::Stock>().each())
+	{
+		const auto region =
+		    std::ranges::lower_bound(snapshot.regions, project.regionId, {}, &RegionView::regionId);
+		if (region != snapshot.regions.end() && region->regionId == project.regionId &&
+		    region->treasury.has_value())
+			region->queue.push_back({project, stock.holdings});
+	}
+	for (RegionView &region : snapshot.regions)
+		std::ranges::sort(
+		    region.queue, {}, [](const ProjectView &view) { return view.project.queued; });
 	return snapshot;
 }
 } // namespace Manifest::Query

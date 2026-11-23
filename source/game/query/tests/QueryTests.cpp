@@ -90,7 +90,7 @@ struct Hosted
 TEST_CASE("A player sees their own company as it was at the completed step, and the copy stays so")
 {
 	Hosted hosted{"trading"};
-	CHECK(hosted.Observe(kAda) == Snapshot{0, {}});
+	CHECK(hosted.Observe(kAda).companies.empty());
 	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
 	hosted.Stock("Company1").holdings = {{"VenueOreHighport", "ItemCopper", 3, 2}};
 	const Company::Move move{"Ship1", "VenueOreHighport", "ItemCopper", 3};
@@ -113,6 +113,7 @@ TEST_CASE("A player sees their own company as it was at the completed step, and 
 		CHECK_FALSE(market.live);
 	}
 	loaded.markets.clear();
+	loaded.regions.clear();
 	CHECK(
 	    loaded == Snapshot{
 	                  2,
@@ -209,4 +210,65 @@ TEST_CASE("A player's markets are their own reports, live only as observed at th
 	CHECK(beas.markets[0].report.observed == 1);
 	CHECK(hosted.Observe(kHost).markets.empty());
 	CHECK(hosted.Observe({ActorKind::Principal, "Cy"}).markets.empty());
+}
+
+
+TEST_CASE("Every player sees each region and its governor, and its governor its treasury and queue")
+{
+	Hosted hosted{"governance"};
+	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
+	REQUIRE(hosted.Provision("Bea") == Result::Succeeded);
+	entt::registry &registry = hosted.world.Registry();
+	registry.get<World::Account>(hosted.identities.Find(Kind::CompanyAccount, "Company1")).balance =
+	    300'000;
+	REQUIRE(
+	    hosted.Run(kAda, Company::kFound, Company::Found{"RegionForgeNorth", "Company1", "North"}) ==
+	    Result::Succeeded);
+	// Fixture bootstrap: Ada's region's policy, as SetDevelopment would set it.
+	registry.emplace<World::Development>(
+	    hosted.identities.Find(Kind::Region, "RegionForgeNorth"), true, 50'000);
+	const auto region = [](const Snapshot &snapshot, std::string_view regionId)
+	{
+		const auto found = std::ranges::find(snapshot.regions, regionId, &RegionView::regionId);
+		REQUIRE(found != snapshot.regions.end());
+		return *found;
+	};
+
+	const Snapshot adas = hosted.Observe(kAda);
+	const Snapshot beas = hosted.Observe(kBea);
+	const Snapshot hosts = hosted.Observe(kHost);
+	REQUIRE(adas.regions.size() == 5);
+	CHECK(std::ranges::is_sorted(adas.regions, {}, &RegionView::regionId));
+
+	// Hers, with its treasury, its empty queue and its policy.
+	RegionView north = region(adas, "RegionForgeNorth");
+	CHECK(north.planetId == "PlanetForge");
+	CHECK(north.governorId == "Organisation1");
+	CHECK(north.governorName == "North");
+	CHECK(north.playerGoverned);
+	CHECK(north.population == 25'000.0);
+	CHECK(north.health == 100.0);
+	CHECK(north.treasury == 1'200'000);
+	CHECK(north.queue.empty());
+	CHECK(north.development == World::Development{true, 50'000});
+	// Bea sees whose it is, and none of its treasury, queue or policy.
+	RegionView seen = region(beas, "RegionForgeNorth");
+	CHECK(seen.governorName == "North");
+	CHECK(seen.playerGoverned);
+	CHECK_FALSE(seen.treasury.has_value());
+	CHECK_FALSE(seen.development.has_value());
+	// Open to founding, and an AI neighbour's, its figures the AI's alone, which the host sees.
+	CHECK(region(beas, "RegionForgeSouth").governorId.empty());
+	const RegionView east = region(adas, "RegionForgeEast");
+	CHECK(east.governorName == "Forge East Council");
+	CHECK_FALSE(east.playerGoverned);
+	CHECK_FALSE(east.treasury.has_value());
+	CHECK(east.queue.empty());
+	const RegionView hostsEast = region(hosts, "RegionForgeEast");
+	CHECK(hostsEast.treasury == 1'000'000);
+	REQUIRE(hostsEast.queue.size() == 1);
+	CHECK(hostsEast.queue[0].project.projectId == "ProjectBronzeMetallurgy");
+	CHECK(hostsEast.queue[0].stock.empty());
+	// Observed again, nothing has changed: a reconnecting player sees the same.
+	CHECK(hosted.Observe(kAda) == adas);
 }

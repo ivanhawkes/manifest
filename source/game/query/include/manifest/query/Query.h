@@ -81,6 +81,37 @@ struct TenderView
 	bool operator==(const TenderView &) const = default;
 };
 
+// A region's project as its governor sees it (D-110): its phase, work and place in the queue, and what
+// it holds, by (venue, item).
+struct ProjectView
+{
+	World::Project project;
+	std::vector<World::Holding> stock;
+
+	bool operator==(const ProjectView &) const = default;
+};
+
+// A region as every player sees it (D-110): its governor, none for one open to founding, whether a
+// player directs it, and its condition. Its treasury, queue and development policy are its governor's:
+// shown to the principal directing it and the Administrator, and otherwise empty.
+struct RegionView
+{
+	std::string regionId;
+	std::string planetId;
+	std::string governorId;
+	std::string governorName;
+	bool playerGoverned{false};
+	double population{0.0};
+	double health{0.0};
+	double happiness{0.0};
+	std::optional<std::int64_t> treasury{};
+	// Its projects in its queue's order, done and cancelled ones among them.
+	std::vector<ProjectView> queue{};
+	std::optional<World::Development> development{};
+
+	bool operator==(const RegionView &) const = default;
+};
+
 // A player's report of a venue's market: live while a ship of their fleet is docked there, so
 // observed at the snapshot's own step, and otherwise stale, its age the steps since it was observed.
 struct MarketView
@@ -105,6 +136,8 @@ struct Snapshot
 	std::vector<MarketView> markets{};
 	// Every tender the world holds, open and kept closed, by ID.
 	std::vector<TenderView> tenders{};
+	// Every region, by ID.
+	std::vector<RegionView> regions{};
 
 	bool operator==(const Snapshot &) const = default;
 };
