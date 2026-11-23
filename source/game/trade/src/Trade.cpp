@@ -1945,34 +1945,23 @@ std::optional<std::int64_t> Budget(std::int64_t price, double units, double urge
 }
 
 
-// shortcut: each call works out the rules from the content again, as Quote does; W12's issuer keeps
-// them when a profile shows its calls.
-std::optional<std::int64_t> TenderPrice(
-    SimWorld &world, World::Identities &identities, const Content::ContentSet &content,
-    std::string_view venueId, std::string_view itemId)
+namespace
 {
-	return PriceForTender(
-	    world.Registry(), *MakeRules(world, identities, content), std::string{venueId},
-	    std::string{itemId});
-}
-
-
-std::vector<Relief> Reliefs(
-    SimWorld &world, World::Identities &identities, const Content::ContentSet &content)
+// Reliefs, on rules made already.
+std::vector<Relief> ReliefsBy(entt::registry &registry, const Rules &rules)
 {
-	const std::shared_ptr<const Rules> rules = MakeRules(world, identities, content);
-	entt::registry &registry = world.Registry();
+	const Rules *pRules = &rules;
 	std::vector<Relief> reliefs;
-	for (const Economy &economy : rules->economies)
+	for (const Economy &economy : pRules->economies)
 	{
 		if (economy.venueId.empty())
 			continue;
 		const double population =
-		    registry.get<const World::Region>(Require(*rules, Kind::Region, economy.regionId))
+		    registry.get<const World::Region>(Require(*pRules, Kind::Region, economy.regionId))
 		        .population;
 		const World::Pantry &pantry =
-		    registry.get<const World::Pantry>(Require(*rules, Kind::Household, economy.regionId));
-		for (const Need &need : rules->needs)
+		    registry.get<const World::Pantry>(Require(*pRules, Kind::Household, economy.regionId));
+		for (const Need &need : pRules->needs)
 		{
 			const auto unmet = std::ranges::find(pantry.unmet, need.needId, &World::Unmet::needId);
 			if (unmet == pantry.unmet.end() || !(unmet->pressure > kReliefPressure))
@@ -1981,7 +1970,7 @@ std::vector<Relief> Reliefs(
 			const std::string *pItem = nullptr;
 			for (const std::string &itemId : need.items)
 				if (const std::optional<std::int64_t> price =
-				        PriceForTender(registry, *rules, economy.venueId, itemId);
+				        PriceForTender(registry, *pRules, economy.venueId, itemId);
 				    price && (!cheapest || *price < *cheapest))
 				{
 					cheapest = price;
@@ -1989,7 +1978,7 @@ std::vector<Relief> Reliefs(
 				}
 			if (!cheapest)
 				continue;
-			const double unitsPerTote = rules->unitsPerTote.at(*pItem);
+			const double unitsPerTote = pRules->unitsPerTote.at(*pItem);
 			const double shortfall = need.perThousandPerDay * population / 1'000.0 * unmet->pressure;
 			const double totes = std::ceil(shortfall / unitsPerTote);
 			const std::optional<std::int64_t> budget =
@@ -2004,5 +1993,34 @@ std::vector<Relief> Reliefs(
 		}
 	}
 	return reliefs;
+}
+} // namespace
+
+
+// Each call works out the rules from the content again, as Quote does; MakePricer keeps them.
+std::optional<std::int64_t> TenderPrice(
+    SimWorld &world, World::Identities &identities, const Content::ContentSet &content,
+    std::string_view venueId, std::string_view itemId)
+{
+	return PriceForTender(
+	    world.Registry(), *MakeRules(world, identities, content), std::string{venueId},
+	    std::string{itemId});
+}
+
+
+std::vector<Relief> Reliefs(
+    SimWorld &world, World::Identities &identities, const Content::ContentSet &content)
+{
+	return ReliefsBy(world.Registry(), *MakeRules(world, identities, content));
+}
+
+
+Pricer MakePricer(SimWorld &world, World::Identities &identities, const Content::ContentSet &content)
+{
+	std::shared_ptr<const Rules> rules = MakeRules(world, identities, content);
+	return {
+	    [rules](SimWorld &on, std::string_view venueId, std::string_view itemId)
+	    { return PriceForTender(on.Registry(), *rules, std::string{venueId}, std::string{itemId}); },
+	    [rules](SimWorld &on) { return ReliefsBy(on.Registry(), *rules); }};
 }
 } // namespace Manifest::Trade

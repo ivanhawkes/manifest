@@ -1248,8 +1248,9 @@ W12's slices, each one commit with its suites, the gate after the third and the 
    relief `Trade::Reliefs` calls for with none open for its need. The governance pin moved for the
    budgets reserved from the first step; the trading fixture's two, which hold no tender, for the
    save's new component alone, its fast-forward's calls unchanged. Left: a relief tender a player's
-   governor publishes, which `Publish` does not take; the issuer's calls rebuilding the market's rules
-   (`Trade::TenderPrice`'s `shortcut:`), each turn's last step.
+   governor publishes, which `Publish` does not take. The issuer keeps the market's rules
+   (`Trade::MakePricer`, after slice 3's gate measured the console's Ore to Brine at 4.29 s against
+   its 3.56 s budget when each turn's call rebuilt them): 3.46 to 3.48 s, as before W12.
 3. Bids and the award: sealed bids, revisions, withdrawal, the tie order, the bond's fallback and
    simultaneous awards competing for funds; `Closed` at the boundary. **Done** 2026-11-23, with no
    engine edit: `Manifest.Procurement.Bid` and `Withdraw`, a company principal's for its own company,

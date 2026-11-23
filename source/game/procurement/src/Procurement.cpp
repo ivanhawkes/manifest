@@ -60,7 +60,7 @@ struct Rules
 	const Command::Requests *pRequests{nullptr};
 	// The bond's rate, in basis points of a winning total.
 	std::int64_t bondBps{0};
-	const Content::ContentSet *pContent{nullptr};
+	Trade::Pricer pricer;
 	Content::ProcurementTuning tuning;
 	std::map<std::string, Plan, std::less<>> plans;
 	// In the scenario's order.
@@ -584,8 +584,8 @@ void Issue(SimWorld &world, const Rules &rules, bool reliefs)
 				    });
 				if (totes == 0 || open)
 					continue;
-				const std::optional<std::int64_t> price = Trade::TenderPrice(
-				    world, *rules.pIdentities, *rules.pContent, area.venues.front(), input.itemId);
+				const std::optional<std::int64_t> price =
+				    rules.pricer.tenderPrice(world, area.venues.front(), input.itemId);
 				const std::optional<std::int64_t> budget =
 				    price
 				        ? Trade::Budget(
@@ -602,7 +602,7 @@ void Issue(SimWorld &world, const Rules &rules, bool reliefs)
 	}
 	if (!reliefs)
 		return;
-	for (const Trade::Relief &relief : Trade::Reliefs(world, *rules.pIdentities, *rules.pContent))
+	for (const Trade::Relief &relief : rules.pricer.reliefs(world))
 	{
 		if (!AiRun(registry, rules, relief.regionId))
 			continue;
@@ -665,7 +665,7 @@ std::uint64_t TendersNext(const SimWorld &world, const Rules &rules)
 
 
 std::shared_ptr<Rules> MakeRules(
-    const SimWorld &world, const Command::Requests &requests, World::Identities &identities,
+    SimWorld &world, const Command::Requests &requests, World::Identities &identities,
     const Content::ContentSet &content)
 {
 	const auto selected = content.scenarios.find(content.scenario);
@@ -675,7 +675,7 @@ std::shared_ptr<Rules> MakeRules(
 	auto rules = std::make_shared<Rules>();
 	rules->pIdentities = &identities;
 	rules->pRequests = &requests;
-	rules->pContent = &content;
+	rules->pricer = Trade::MakePricer(world, identities, content);
 	rules->tuning = content.tuning.procurement;
 	rules->bondBps = std::llround(content.tuning.procurement.performanceSecurityRate * kWholeBps);
 	rules->stepsPerDay = Steps(1, world.FixedStep());

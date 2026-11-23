@@ -177,4 +177,16 @@ struct Relief
 // cannot hold. Throws as Register does.
 std::vector<Relief> Reliefs(
     Jettison::Sim::SimWorld &world, World::Identities &identities, const Content::ContentSet &content);
+
+// TenderPrice and Reliefs on the market's rules made once, as MakeBuyer's are, for a caller that asks
+// them every turn (W12's issuer). Throws as Register does.
+struct Pricer
+{
+	std::function<std::optional<std::int64_t>(
+	    Jettison::Sim::SimWorld &, std::string_view venueId, std::string_view itemId)>
+	    tenderPrice;
+	std::function<std::vector<Relief>(Jettison::Sim::SimWorld &)> reliefs;
+};
+Pricer MakePricer(
+    Jettison::Sim::SimWorld &world, World::Identities &identities, const Content::ContentSet &content);
 } // namespace Manifest::Trade
