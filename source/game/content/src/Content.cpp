@@ -782,10 +782,22 @@ void CheckTuning(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 			    std::isfinite(project.priorityPremium) && project.priorityPremium >= 0.0, "projects",
 			    std::format("'{}' priorityPremium must be 0 or above", project.projectId));
 			checker.Require(
-			    recipes.contains(project.unlocksRecipe), "projects",
+			    project.unlocksRecipe.empty() != project.teachesSkill.empty(), "projects",
+			    std::format(
+			        "'{}' must unlock a recipe or teach a skill, one of the two", project.projectId));
+			checker.Require(
+			    project.unlocksRecipe.empty() || recipes.contains(project.unlocksRecipe), "projects",
 			    std::format(
 			        "'{}' unlocks '{}', which names no recipe", project.projectId,
 			        project.unlocksRecipe));
+			const auto *pTaught = registry.Find<Core::SkillNode>(RegistryName(project.teachesSkill));
+			checker.Require(
+			    project.teachesSkill.empty() ||
+			        (pTaught != nullptr && pTaught->skillId == project.teachesSkill),
+			    "projects",
+			    std::format(
+			        "'{}' teaches '{}', which names no skill", project.projectId,
+			        project.teachesSkill));
 		}
 	}
 }
@@ -913,7 +925,8 @@ void CheckProjects(
 		std::vector<ItemTotes> needed = project->inputs;
 		const auto recipe =
 		    std::ranges::find(tuning.recipes, project->unlocksRecipe, &RecipeDefinition::recipeId);
-		needed.insert(needed.end(), recipe->inputs.begin(), recipe->inputs.end());
+		if (recipe != tuning.recipes.end())
+			needed.insert(needed.end(), recipe->inputs.begin(), recipe->inputs.end());
 		for (const ItemTotes &input : needed)
 		{
 			const bool made = std::ranges::any_of(

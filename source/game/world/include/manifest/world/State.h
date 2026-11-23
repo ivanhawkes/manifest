@@ -128,20 +128,26 @@ enum class ProjectPhase
 	Tendering,
 	Working,
 	Paused,
-	Done
+	Done,
+	// Behind its region's head in the queue, or taken out of it with what it was delivered (D-110).
+	Queued,
+	Cancelled
 };
 
 // A region's public project (W12). Tendering, it gathers its inputs in its Stock, at the venues they
 // were accepted at; once every one is held, its region knows its skills and has an operational
 // workshop, they are consumed once and it is Working, a step at a time while the workshop stays
 // operational and Paused while not, worked counting the steps; at its last it is Done, its recipe
-// unlocked in its region's Knowledge.
+// unlocked or its skill taught in its region's Knowledge. A region's projects run in its queue's order
+// (D-110), the lowest queued first: one at a time is its head, Tendering, Working or Paused, and the
+// rest are Queued behind it or Cancelled.
 struct Project
 {
 	std::string regionId;
 	std::string projectId;
 	ProjectPhase phase{ProjectPhase::Tendering};
 	std::uint64_t worked{0};
+	std::uint64_t queued{0};
 
 	bool operator==(const Project &) const = default;
 };

@@ -1306,3 +1306,93 @@ TEST_CASE(
 	    });
 	CHECK(hosted.world.StateHash() == before);
 }
+
+
+TEST_CASE("A governor's queue runs its projects in order, and a cancel keeps what was delivered")
+{
+	constexpr std::string_view kWest = "RegionForgeWest";
+	constexpr std::string_view kGuild = "ProjectSmeltersGuild";
+	Hosted hosted;
+	entt::registry &registry = hosted.world.Registry();
+	// Fixture bootstrap: Ada directs Forge West's council, as founding lets a player, and its
+	// workshop stands.
+	registry
+	    .get<World::Organisation>(
+	        hosted.identities.Find(Kind::Organisation, "OrganisationForgeWestCouncil"))
+	    .principalId = "Ada";
+	registry.get<World::Facilities>(hosted.identities.Find(Kind::Region, std::string{kWest}))
+	    .facilities = {{"FacilityForgeWestWorkshop", Manifest::Content::FacilityKind::Workshop, true}};
+	const auto queue = [&](const Actor &actor, std::string_view region, std::string_view project)
+	{ return hosted.Run(actor, kQueue, Queue{std::string{region}, std::string{project}}); };
+	const auto cancel = [&](std::string_view project)
+	{
+		return hosted.Run(
+		    kAda, kCancelProject, CancelProject{std::string{kWest}, std::string{project}});
+	};
+	const auto project = [&](std::string_view id) -> World::Project &
+	{
+		const entt::entity entity = hosted.identities.Find(Kind::Project, World::ProjectId(kWest, id));
+		REQUIRE(entity != entt::null);
+		return registry.get<World::Project>(entity);
+	};
+	const auto treasury = [&] { return hosted.Balance(Kind::PublicAccount, std::string{kWest}); };
+
+	CHECK(queue(kBea, kWest, kGuild) == Result::NotAuthorised);
+	CHECK(queue(kAda, kEast, kGuild) == Result::NotAuthorised);
+	CHECK(queue(kAda, kWest, "ProjectNone") == Result::UnknownTarget);
+	CHECK(queue(kAda, "RegionNowhere", kGuild) == Result::UnknownTarget);
+	CHECK(hosted.identities.Find(Kind::Project, World::ProjectId(kWest, kGuild)) == entt::null);
+
+	// The first queued is the head at once; the next waits behind it.
+	CHECK(queue(kAda, kWest, kGuild) == Result::Succeeded);
+	CHECK(queue(kAda, kWest, kBronze) == Result::Succeeded);
+	CHECK(queue(kAda, kWest, kGuild) == Result::AlreadyQueued);
+	CHECK(project(kGuild).phase == ProjectPhase::Tendering);
+	CHECK(project(kBronze).phase == ProjectPhase::Queued);
+	CHECK(project(kBronze).queued > project(kGuild).queued);
+	const auto publish = [&](std::string_view projectId, std::string_view item, std::uint64_t totes)
+	{
+		return hosted.Run(
+		    kAda, kPublish,
+		    Publish{
+		        std::string{kWest}, std::string{projectId}, std::string{item}, std::string{kForge},
+		        totes, 1'000, 2, 30});
+	};
+	CHECK(publish(kBronze, "ItemCopper", 9) == Result::InvalidQuantity);
+	const std::int64_t funds = treasury();
+	CHECK(publish(kGuild, "ItemCopper", 3) == Result::Succeeded);
+	CHECK(treasury() == funds - 1'000);
+
+	// Cancelled: its open tender closed with its budget back, and Bronze the head.
+	CHECK(cancel(kGuild) == Result::Succeeded);
+	CHECK(treasury() == funds);
+	for (const auto &[id, tender] : hosted.Tenders())
+		if (tender.regionId == kWest)
+			CHECK(tender.state == TenderState::Cancelled);
+	CHECK(project(kGuild).phase == ProjectPhase::Cancelled);
+	CHECK(project(kBronze).phase == ProjectPhase::Tendering);
+	CHECK(cancel(kGuild) == Result::Closed);
+	CHECK(cancel("ProjectNone") == Result::UnknownTarget);
+
+	// What an awarded contract delivered to it is kept, saved, and taken up again behind Bronze.
+	registry.get<World::Stock>(hosted.identities.Find(Kind::Project, World::ProjectId(kWest, kGuild)))
+	    .holdings = {{std::string{kForge}, "ItemCopper", 3, 0}};
+	CHECK(queue(kAda, kWest, kGuild) == Result::Succeeded);
+	CHECK(project(kGuild).phase == ProjectPhase::Queued);
+	Hosted loaded;
+	loaded.world.Load(hosted.world.Save());
+	CHECK(loaded.world.StateHash() == hosted.world.StateHash());
+
+	// Bronze cannot start where smelting is not known; taken out, the guild starts with its copper,
+	// teaches smelting, and Bronze, queued again, is the head.
+	CHECK(cancel(kBronze) == Result::Succeeded);
+	CHECK(queue(kAda, kWest, kBronze) == Result::Succeeded);
+	CHECK(project(kGuild).phase == ProjectPhase::Working);
+	CHECK(project(kBronze).phase == ProjectPhase::Queued);
+	CHECK(cancel(kGuild) == Result::Closed);
+	hosted.FastForwardTo(hosted.world.Clock().Step() + 3 * kDay);
+	CHECK(project(kGuild).phase == ProjectPhase::Done);
+	CHECK(hosted.Knows(kWest).skills == std::vector<std::string>{"SkillSmelting"});
+	CHECK(project(kBronze).phase == ProjectPhase::Tendering);
+	CHECK(queue(kAda, kWest, kGuild) == Result::AlreadyQueued);
+}

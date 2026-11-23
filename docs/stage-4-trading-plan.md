@@ -1705,8 +1705,8 @@ systems on the world's services.
   (L03) and voluntary transfers are not built. With no ungoverned region left, founding is refused and
   the region view lists none open: an explicit result, never another's region.
 - **The queue.** A region's projects run in its queue's order, the scenario's seeded first: only the
-  first not done tenders and works, and the rest are `Queued` behind it. `Manifest.Development.Queue`
-  appends a tuning project, and `Manifest.Development.Cancel` takes out a `Queued` or `Tendering` one,
+  first not done tenders and works, and the rest are `Queued` behind it. `Manifest.Procurement.Queue`
+  appends a tuning project, and `Manifest.Procurement.CancelProject` takes out a `Queued` or `Tendering` one,
   each sent by the principal directing the region's governor, refused `NotAuthorised` from anyone else
   or for an AI-run region. Cancelled, its open tenders are cancelled with their budgets back, its awarded
   contracts run on into its `Stock`, and the project is `Cancelled`, holding what was delivered; a later
@@ -1752,8 +1752,15 @@ Slices, each gated:
    provisioning, the polity's ID issued as `Organisation<n>`; the company suite founds Forge North,
    refuses each case writing nothing, races two founders for Forge South in one step and loads the
    save. No pin moved.
-3. The queue: `Queued` and `Cancelled`, `Queue` and `Cancel`, `teachesSkill`, the guild, the issuer
-   tendering the head alone.
+3. The queue: `Queued` and `Cancelled`, `Queue` and `CancelProject`, `teachesSkill`, the guild, the
+   issuer tendering the head alone. **Done** 2026-11-23, with no engine edit: a project's `queued`
+   is its place, the scenario's seeded from 0 in its order; the head is the region's one project
+   under way, and the next lowest is promoted as one is done or cancelled. Content refuses a project
+   that unlocks a recipe and teaches a skill, or neither, or teaches no skill. The procurement suite
+   queues the guild and Bronze in Forge West, cancels the guild with its tender's budget back, keeps
+   its copper through a save, and works it to teach smelting before Bronze is the head. Two pins moved
+   for the project's new field alone, every other check of theirs unchanged: the company suite's
+   governance world (`0xa8a6a8164aad2192`) and `fixture_governance` (`0xda825a474fa85952`).
 4. Unattended development: `SetPolicy`, the issuer for a player's region within its limit, the
    reason kept.
 5. The region view in the snapshot.

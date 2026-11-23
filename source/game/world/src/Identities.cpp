@@ -104,8 +104,11 @@ void Identities::CheckProject(
 	for (const auto &[itemId, totes] : held)
 	{
 		const auto input = needed.inputs.find(itemId);
-		if (project.phase != ProjectPhase::Tendering || input == needed.inputs.end() ||
-		    totes > input->second)
+		// Delivered to before it starts, and kept when it is taken out of the queue (D-110).
+		const bool holds = project.phase == ProjectPhase::Tendering ||
+		                   project.phase == ProjectPhase::Queued ||
+		                   project.phase == ProjectPhase::Cancelled;
+		if (!holds || input == needed.inputs.end() || totes > input->second)
 			reader.Fail(
 			    std::format(
 			        "the project '{}' holds {} totes of '{}', more than it needs", project.projectId,

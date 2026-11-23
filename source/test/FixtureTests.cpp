@@ -1627,5 +1627,5 @@ TEST_CASE("The governance fixture's project, tendered, supplied, worked and unlo
 
 	// The same in every build the gate runs; it moves with what a save holds, the governance
 	// scenario's content or the stream.
-	CHECK(hosted.world.StateHash() == 0xb7d7aaf8ad36247aULL);
+	CHECK(hosted.world.StateHash() == 0xda825a474fa85952ULL);
 }

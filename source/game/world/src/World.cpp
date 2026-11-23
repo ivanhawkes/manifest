@@ -113,12 +113,17 @@ void CreateInitialState(
 		registry.emplace<Stock>(employer);
 		registry.emplace<Production>(employer);
 		CreateAccount(world, identities, Kind::EmployerAccount, region.regionId, region.employerFunds);
+		// Queued in the scenario's order, the first its head (D-110).
+		std::uint64_t queued = 0;
 		for (const Content::ProjectSelection &project : region.projects)
 		{
 			const entt::entity entity = CreateOrRefuse(
 			    world, identities, Kind::Project, ProjectId(region.regionId, project.projectId));
-			registry.emplace<Project>(entity, region.regionId, project.projectId);
+			registry.emplace<Project>(
+			    entity, region.regionId, project.projectId,
+			    queued == 0 ? ProjectPhase::Tendering : ProjectPhase::Queued, 0, queued);
 			registry.emplace<Stock>(entity);
+			++queued;
 		}
 	}
 	for (const Content::VenueDefinition &venue : scenario.venues)

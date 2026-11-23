@@ -276,7 +276,8 @@ void RegisterTypes()
 		    .Field<&ProjectDefinition::inputs>("inputs", kDefined)
 		    .Field<&ProjectDefinition::workDays>("workDays", kDefined)
 		    .Field<&ProjectDefinition::priorityPremium>("priorityPremium", kDefined)
-		    .Field<&ProjectDefinition::unlocksRecipe>("unlocksRecipe", kDefined);
+		    .Field<&ProjectDefinition::unlocksRecipe>("unlocksRecipe", kDefined)
+		    .Field<&ProjectDefinition::teachesSkill>("teachesSkill", kDefined);
 		RegisterType<RecipeDefinition>("Manifest.Recipe")
 		    .Field<&RecipeDefinition::recipeId>("recipeId", kDefined)
 		    .Field<&RecipeDefinition::inputs>("inputs", kDefined)

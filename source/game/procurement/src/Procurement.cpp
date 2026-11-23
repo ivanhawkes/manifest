@@ -42,16 +42,17 @@ struct Plan
 	World::ProjectNeeds needs;
 	std::vector<Content::ItemTotes> inputs;
 	std::vector<std::string> skills;
+	// What it gives its region once done: a recipe or a skill.
 	std::string recipeId;
+	std::string skillId;
 	double priorityPremium{0.0};
 };
 
-// A region as the scenario gives it: the venues serving it, in the scenario's order, and its projects.
+// A region as the scenario gives it: the venues serving it, in the scenario's order.
 struct Area
 {
 	std::string regionId;
 	std::vector<std::string> venues;
-	std::vector<std::string> projects;
 };
 
 struct Rules
@@ -133,13 +134,57 @@ Region RegionOf(const entt::registry &registry, const Rules &rules, const World:
 }
 
 
+// Adds the ID to the sorted list, once.
+void Learn(std::vector<std::string> &known, const std::string &id)
+{
+	if (const auto at = std::ranges::lower_bound(known, id); at == known.end() || *at != id)
+		known.insert(at, id);
+}
+
+
+bool UnderWay(ProjectPhase phase)
+{
+	return phase == ProjectPhase::Tendering || phase == ProjectPhase::Working ||
+	       phase == ProjectPhase::Paused;
+}
+
+
+// The region's head project, none when it has none under way.
+const World::Project *Head(const entt::registry &registry, std::string_view regionId)
+{
+	for (const auto [entity, project] : registry.view<const World::Project>().each())
+		if (project.regionId == regionId && UnderWay(project.phase))
+			return &project;
+	return nullptr;
+}
+
+
+// With none of the region's projects under way, its lowest queued one is its head, Tendering.
+void Advance(entt::registry &registry, std::string_view regionId)
+{
+	World::Project *pNext = nullptr;
+	for (const auto [entity, project] : registry.view<World::Project>().each())
+	{
+		if (project.regionId != regionId)
+			continue;
+		if (UnderWay(project.phase))
+			return;
+		if (project.phase == ProjectPhase::Queued &&
+		    (pNext == nullptr || project.queued < pNext->queued))
+			pNext = &project;
+	}
+	if (pNext != nullptr)
+		pNext->phase = ProjectPhase::Tendering;
+}
+
+
 void Work(SimWorld &world, const Rules &rules)
 {
 	JETTISON_PROFILE_ZONE("Manifest.Procurement.Work");
 	entt::registry &registry = world.Registry();
 	for (const auto [entity, project, stock] : registry.view<World::Project, World::Stock>().each())
 	{
-		if (project.phase == ProjectPhase::Done)
+		if (!UnderWay(project.phase))
 			continue;
 		const Plan &plan = rules.plans.at(project.projectId);
 		const Region region = RegionOf(registry, rules, project);
@@ -160,10 +205,12 @@ void Work(SimWorld &world, const Rules &rules)
 		if (++project.worked < plan.needs.workSteps)
 			continue;
 		project.phase = ProjectPhase::Done;
-		std::vector<std::string> &recipes = registry.get<World::Knowledge>(region.entity).recipes;
-		if (const auto at = std::ranges::lower_bound(recipes, plan.recipeId);
-		    at == recipes.end() || *at != plan.recipeId)
-			recipes.insert(at, plan.recipeId);
+		World::Knowledge &knowledge = registry.get<World::Knowledge>(region.entity);
+		if (!plan.recipeId.empty())
+			Learn(knowledge.recipes, plan.recipeId);
+		if (!plan.skillId.empty())
+			Learn(knowledge.skills, plan.skillId);
+		Advance(registry, project.regionId);
 	}
 }
 
@@ -199,7 +246,9 @@ std::uint64_t WorkNext(const SimWorld &world, const Rules &rules)
 				    next,
 				    now + (rules.plans.at(project.projectId).needs.workSteps - project.worked - 1));
 				break;
-			case ProjectPhase::Done: break;
+			case ProjectPhase::Done:
+			case ProjectPhase::Queued:
+			case ProjectPhase::Cancelled: break;
 		}
 	}
 	return next;
@@ -645,6 +694,17 @@ Result Publishes(SimWorld &world, const Rules &rules, const Actor &actor, const 
 }
 
 
+// Cancels an open tender, its bids dropped and its budget returned.
+void Withdrawn(SimWorld &world, const Rules &rules, entt::entity entity)
+{
+	const std::string tenderId = world.Registry().get<const World::Identity>(entity).id;
+	for (const auto [bid, placed] : world.Registry().view<const World::Bid>().each())
+		if (placed.tenderId == tenderId)
+			rules.pIdentities->Destroy(world.Registry(), bid);
+	Close(world, rules, entity, TenderState::Cancelled);
+}
+
+
 Result Cancels(SimWorld &world, const Rules &rules, const Actor &actor, const Cancel &cancel)
 {
 	const entt::entity entity = rules.pIdentities->Find(Kind::Tender, cancel.tenderId);
@@ -656,11 +716,67 @@ Result Cancels(SimWorld &world, const Rules &rules, const Actor &actor, const Ca
 	if (tender.state != TenderState::Open || world.Clock().Step() >= tender.bidClose)
 		return Result::Closed;
 	const std::string regionId = tender.regionId;
-	for (const auto [bid, placed] : world.Registry().view<const World::Bid>().each())
-		if (placed.tenderId == cancel.tenderId)
-			rules.pIdentities->Destroy(world.Registry(), bid);
-	Close(world, rules, entity, TenderState::Cancelled);
+	Withdrawn(world, rules, entity);
 	Prune(world, rules, regionId);
+	return Result::Succeeded;
+}
+
+
+Result Queues(SimWorld &world, const Rules &rules, const Actor &actor, const Queue &queue)
+{
+	entt::registry &registry = world.Registry();
+	if (rules.pIdentities->Find(Kind::Region, queue.regionId) == entt::null ||
+	    !rules.plans.contains(queue.projectId))
+		return Result::UnknownTarget;
+	if (!Directs(registry, rules, actor, queue.regionId))
+		return Result::NotAuthorised;
+	const std::string id = World::ProjectId(queue.regionId, queue.projectId);
+	entt::entity entity = rules.pIdentities->Find(Kind::Project, id);
+	if (entity != entt::null &&
+	    registry.get<const World::Project>(entity).phase != ProjectPhase::Cancelled)
+		return Result::AlreadyQueued;
+	std::uint64_t last = 0;
+	for (const auto [other, project] : registry.view<const World::Project>().each())
+		if (project.regionId == queue.regionId)
+			last = std::max(last, project.queued);
+	if (entity == entt::null)
+	{
+		entity = rules.pIdentities->Create(registry, Kind::Project, id);
+		JETTISON_VERIFY(entity != entt::null);
+		registry.emplace<World::Project>(entity, queue.regionId, queue.projectId);
+		registry.emplace<World::Stock>(entity);
+	}
+	World::Project &project = registry.get<World::Project>(entity);
+	project.phase = ProjectPhase::Queued;
+	project.queued = last + 1;
+	Advance(registry, queue.regionId);
+	return Result::Succeeded;
+}
+
+
+Result ProjectCancels(
+    SimWorld &world, const Rules &rules, const Actor &actor, const CancelProject &cancel)
+{
+	entt::registry &registry = world.Registry();
+	const entt::entity entity =
+	    rules.pIdentities->Find(Kind::Project, World::ProjectId(cancel.regionId, cancel.projectId));
+	if (entity == entt::null)
+		return Result::UnknownTarget;
+	if (!Directs(registry, rules, actor, cancel.regionId))
+		return Result::NotAuthorised;
+	World::Project &project = registry.get<World::Project>(entity);
+	if (project.phase != ProjectPhase::Queued && project.phase != ProjectPhase::Tendering)
+		return Result::Closed;
+	std::vector<entt::entity> open;
+	for (const auto [tender, terms] : registry.view<const World::Tender>().each())
+		if (terms.state == TenderState::Open && terms.regionId == cancel.regionId &&
+		    terms.projectId == cancel.projectId)
+			open.push_back(tender);
+	for (const entt::entity tender : open)
+		Withdrawn(world, rules, tender);
+	project.phase = ProjectPhase::Cancelled;
+	Prune(world, rules, cancel.regionId);
+	Advance(registry, cancel.regionId);
 	return Result::Succeeded;
 }
 
@@ -685,8 +801,9 @@ void Issue(SimWorld &world, const Rules &rules, bool reliefs)
 	{
 		if (area.venues.empty() || !AiRun(registry, rules, area.regionId))
 			continue;
-		for (const std::string &projectId : area.projects)
+		if (const World::Project *pHead = Head(registry, area.regionId); pHead != nullptr)
 		{
+			const std::string &projectId = pHead->projectId;
 			const Plan &plan = rules.plans.at(projectId);
 			for (const Content::ItemTotes &input : plan.inputs)
 			{
@@ -837,6 +954,7 @@ std::shared_ptr<Rules> MakeRules(
 		for (const Content::SkillSelection &skill : project.requiredSkills)
 			plan.skills.push_back(skill.skillId);
 		plan.recipeId = project.unlocksRecipe;
+		plan.skillId = project.teachesSkill;
 		plan.priorityPremium = project.priorityPremium;
 		rules->plans.emplace(project.projectId, std::move(plan));
 	}
@@ -849,8 +967,6 @@ std::shared_ptr<Rules> MakeRules(
 			        venue.regions, region.regionId, &Content::RegionSelection::regionId) !=
 			    venue.regions.end())
 				area.venues.push_back(venue.venueId);
-		for (const Content::ProjectSelection &project : region.projects)
-			area.projects.push_back(project.projectId);
 	}
 	for (const Core::ItemNode &item : content.gameMode.items)
 		rules->unitsPerTote.emplace(
@@ -881,6 +997,12 @@ void RegisterTypes()
 		Command::RegisterTypes();
 		using namespace Jettison::Reflect;
 		constexpr Attribute kSaved = Attribute::Saved;
+		RegisterType<Queue>("Manifest.Procurement.Queue")
+		    .Field<&Queue::regionId>("regionId", kSaved)
+		    .Field<&Queue::projectId>("projectId", kSaved);
+		RegisterType<CancelProject>("Manifest.Procurement.CancelProject")
+		    .Field<&CancelProject::regionId>("regionId", kSaved)
+		    .Field<&CancelProject::projectId>("projectId", kSaved);
 		RegisterType<Publish>("Manifest.Procurement.Publish")
 		    .Field<&Publish::regionId>("regionId", kSaved)
 		    .Field<&Publish::projectId>("projectId", kSaved)
@@ -921,6 +1043,14 @@ void Register(
 		needs.emplace(projectId, plan.needs);
 	identities.SetProjects(std::move(needs));
 
+	requests.Register<Queue>(
+	    std::string{kQueue}, kVersion, Command::ActorKind::Principal,
+	    [rules](SimWorld &on, const Actor &actor, const Queue &queue)
+	    { return Queues(on, *rules, actor, queue); });
+	requests.Register<CancelProject>(
+	    std::string{kCancelProject}, kVersion, Command::ActorKind::Principal,
+	    [rules](SimWorld &on, const Actor &actor, const CancelProject &cancel)
+	    { return ProjectCancels(on, *rules, actor, cancel); });
 	requests.Register<Publish>(
 	    std::string{kPublish}, kVersion, Command::ActorKind::Principal,
 	    [rules](SimWorld &on, const Actor &actor, const Publish &publish)

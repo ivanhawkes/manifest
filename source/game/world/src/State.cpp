@@ -672,12 +672,15 @@ void RegisterTypes()
 		    .Value<ProjectPhase::Tendering>("Tendering")
 		    .Value<ProjectPhase::Working>("Working")
 		    .Value<ProjectPhase::Paused>("Paused")
-		    .Value<ProjectPhase::Done>("Done");
+		    .Value<ProjectPhase::Done>("Done")
+		    .Value<ProjectPhase::Queued>("Queued")
+		    .Value<ProjectPhase::Cancelled>("Cancelled");
 		RegisterType<Project>("Manifest.World.Project")
 		    .Field<&Project::regionId>("regionId", kSaved)
 		    .Field<&Project::projectId>("projectId", kSaved)
 		    .Field<&Project::phase>("phase", kSaved)
-		    .Field<&Project::worked>("worked", kSaved);
+		    .Field<&Project::worked>("worked", kSaved)
+		    .Field<&Project::queued>("queued", kSaved);
 		RegisterEnum<Award>("Manifest.World.Award")
 		    .Value<Award::None>("None")
 		    .Value<Award::Lowest>("Lowest")

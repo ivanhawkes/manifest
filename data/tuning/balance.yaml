@@ -206,6 +206,13 @@ projects:
     # Its tenders' urgency, priced by need (D-102).
     priorityPremium: 0.5
     unlocksRecipe: RecipeBronze
+  # A guild of smelters, which a region queues before Bronze where it lacks the skill (D-110): test
+  # values.
+  - projectId: ProjectSmeltersGuild
+    inputs: [{itemId: ItemCopper, totes: 3}]
+    workDays: 3
+    priorityPremium: 0.5
+    teachesSkill: SkillSmelting
 
 recipes:
   - recipeId: RecipeBronze

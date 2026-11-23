@@ -364,8 +364,13 @@ TEST_CASE("the_balance_tuning_reproduces_the_plans_worked_examples")
 		return result;
 	};
 	using Totes = std::vector<std::pair<std::string, std::uint64_t>>;
-	REQUIRE(tuning.projects.size() == 1);
+	REQUIRE(tuning.projects.size() == 2);
 	CHECK(tuning.projects[0].unlocksRecipe == "RecipeBronze");
+	// D-110's guild, queued before Bronze where smelting is not known.
+	CHECK(tuning.projects[1].projectId == "ProjectSmeltersGuild");
+	CHECK(tuning.projects[1].teachesSkill == "SkillSmelting");
+	CHECK(tuning.projects[1].inputs.size() == 1);
+	CHECK(tuning.projects[1].workDays == 3);
 	CHECK(tuning.projects[0].workDays == 7);
 	CHECK(tuning.projects[0].priorityPremium == 0.5);
 	// D-101's windows and bounds.

@@ -278,7 +278,8 @@ struct ProcurementTuning
 };
 
 // A region's public project: its inputs, consumed once when every one is held, then its simulation
-// days of work while its workshop is operational, unlocking its recipe in that region.
+// days of work while its workshop is operational, unlocking its recipe or teaching its skill in that
+// region, one of the two (D-110).
 struct ProjectDefinition
 {
 	std::string projectId;
@@ -289,6 +290,7 @@ struct ProjectDefinition
 	// times one and this.
 	double priorityPremium{0.0};
 	std::string unlocksRecipe;
+	std::string teachesSkill;
 };
 
 struct RecipeDefinition

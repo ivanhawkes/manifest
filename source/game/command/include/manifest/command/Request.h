@@ -63,7 +63,9 @@ enum class Result
 	StaleRevision,
 	// Founding in a region that has a governor, or by a principal who directs one's already (D-110).
 	Governed,
-	AlreadyFounded
+	AlreadyFounded,
+	// A project queued in a region that has it queued, under way or done (D-110).
+	AlreadyQueued
 };
 
 enum class ActorKind

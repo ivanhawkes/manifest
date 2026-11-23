@@ -47,7 +47,8 @@ void RegisterTypes()
 		    .Value<Result::LimitReached>("LimitReached")
 		    .Value<Result::StaleRevision>("StaleRevision")
 		    .Value<Result::Governed>("Governed")
-		    .Value<Result::AlreadyFounded>("AlreadyFounded");
+		    .Value<Result::AlreadyFounded>("AlreadyFounded")
+		    .Value<Result::AlreadyQueued>("AlreadyQueued");
 		RegisterEnum<ActorKind>("Manifest.Command.ActorKind")
 		    .Value<ActorKind::Principal>("Principal")
 		    .Value<ActorKind::Administrator>("Administrator");

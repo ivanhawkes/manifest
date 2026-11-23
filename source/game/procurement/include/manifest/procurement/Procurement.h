@@ -93,6 +93,32 @@ struct Abandon
 	std::string tenderId;
 };
 
+// The players' command that appends a tuning project to a region's queue (D-110), sent by the principal
+// directing its governor: behind every project queued there, its head at once when the region has
+// none, so Tendering. A Cancelled one is taken up again, at the back, with what it was delivered.
+// Refused, writing nothing, for a region or project the world or the tuning does not have
+// (UnknownTarget), a region no one governs, one the AI runs or another directs (NotAuthorised), and
+// a project queued there, under way or done (AlreadyQueued).
+struct Queue
+{
+	std::string regionId;
+	std::string projectId;
+};
+
+// The players' command that takes a Queued or Tendering project out of its region's queue (D-110),
+// by the principal Queue is sent by: its open tenders cancelled, their bids dropped and budgets back
+// in the public account, its awarded contracts running on into its Stock, and the project Cancelled,
+// holding what was delivered; the region's next queued project is then its head. Refused, writing
+// nothing, for a project the region does not have (UnknownTarget), another's (NotAuthorised), and one
+// Working, Paused, Done or Cancelled (Closed).
+struct CancelProject
+{
+	std::string regionId;
+	std::string projectId;
+};
+
+inline constexpr std::string_view kQueue = "Manifest.Procurement.Queue";
+inline constexpr std::string_view kCancelProject = "Manifest.Procurement.CancelProject";
 inline constexpr std::string_view kPublish = "Manifest.Procurement.Publish";
 inline constexpr std::string_view kCancel = "Manifest.Procurement.Cancel";
 inline constexpr std::string_view kBid = "Manifest.Procurement.Bid";
@@ -112,7 +138,7 @@ inline constexpr std::uint32_t kVersion = 1;
 // each region keeps its last procurement.keptClosed closed tenders, the oldest closed dropped. Then, as
 // the world starts, on each economic turn's last step, in a step a tender's bidding closed and in one
 // a tender closed or its contract ended, the AI issuer: for each region whose governor the AI runs, in
-// the scenario's order, at the first venue serving it, each input its projects still need, in the
+// the scenario's order, at the first venue serving it, each input its head project still needs, in the
 // project's order, with no tender open for it, is tendered, the totes still needed at
 // Trade::TenderPrice times one and the project's priorityPremium (Trade::Budget), with procurement's
 // AI windows; and on a turn's last step each relief Trade::Reliefs calls for of such a region with no
@@ -123,8 +149,9 @@ inline constexpr std::string_view kTenders = "manifest.tenders";
 // entity order. A Tendering one holding every input, its region knowing the project's skills and with
 // an operational workshop, has its inputs consumed, all at once, and works from that step. One that
 // is Working or Paused works the step while its region has an operational workshop, and is Paused for
-// a step it has none. The step that makes its work's last it is Done, its recipe unlocked in its
-// region's World::Knowledge once, which no facility's loss takes back.
+// a step it has none. The step that makes its work's last it is Done, its recipe unlocked or its skill
+// taught in its region's World::Knowledge once, which no facility's loss takes back, and its region's
+// next Queued project, the lowest queued, is its head, Tendering. Queued and Cancelled ones wait.
 inline constexpr std::string_view kProjects = "manifest.projects";
 
 // The steps of whole days at the fixed step, rounded to the nearest, at least one.
@@ -136,9 +163,9 @@ std::string TenderId(
 
 void RegisterTypes();
 
-// Registers Publish, Cancel, Bid, Withdraw, Deliver and Abandon, adds kTenders and kProjects, after
-// Trade::Register has added the systems they run among, and gives the identities what each project
-// needs (World::Identities::SetProjects). The content must outlive the world.
+// Registers Queue, CancelProject, Publish, Cancel, Bid, Withdraw, Deliver and Abandon, adds kTenders
+// and kProjects, after Trade::Register has added the systems they run among, and gives the identities
+// what each project needs (World::Identities::SetProjects). The content must outlive the world.
 void Register(
     Jettison::Sim::SimWorld &world, Command::Requests &requests, World::Identities &identities,
     const Content::ContentSet &content);
