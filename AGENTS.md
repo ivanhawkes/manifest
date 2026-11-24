@@ -71,9 +71,9 @@ does not restate it.
   [analysis](docs/project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16) is historical.
 - **CI runs on `feature-base` pushes, PRs to it and manual dispatch, not on `main` (M02).**
   Promote with `scripts/promote.sh`, which fast-forwards `main` only to a commit whose own
-  `feature-base` run passed. Tidy runs last since M01, so its failure no longer hides Release
-  and ASan/UBSan results. Name the stages that actually ran; do not describe a tidy-only
-  failure as a build regression.
+  `feature-base` run passed. CI is not the gate (D-116): it stages the bundle and smoke-tests
+  it on Ubuntu, and the gate, tidy included, runs locally before a push. Name the stages that
+  actually ran.
 - **Next implementer work:** see the [delivery order's status](docs/delivery-order.md#status)
   and the [session handoff](docs/session-handoff.md); how earlier tasks went is in
   [history](docs/history.md).

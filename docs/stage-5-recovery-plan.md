@@ -658,8 +658,8 @@ The CPU-only configure (`clang-notui`) is as it was; its `bundle_smoke` runs wit
 ### What it leaves
 
 - **R09.** Done: [the stage's close](#stage-5-closed-r09-2026-11-25). `test-bundle.sh` needs Docker
-  and is run by hand, not in CI; CI's release stage on its Ubuntu 24.04 runner runs the distributed binaries on
-  that system's glibc 2.39 through `bundle_smoke`.
+  and is run by hand; CI stages the bundle and runs it on its Ubuntu 24.04 runner's glibc 2.39 with
+  `test-bundle.sh <bundle> host` ([D-116](decision-ledger.md#d-116)).
 - **Every machine that runs the release preset** needs a loader at `/lib64/ld-linux-x86-64.so.2`,
   nix-ld on NixOS, since its tests run the distributed binaries.
 - **Debug files.** A release's binaries keep their debug information; stripping them, with the

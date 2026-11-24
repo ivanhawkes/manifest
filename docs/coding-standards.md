@@ -29,7 +29,8 @@ Each game module owns a CMakeLists.txt and its public `include/manifest/<module>
 The development shell and the SDK pin move together ([D-006](decision-ledger.md),
 [D-054](decision-ledger.md#d-054)). Do not add a second version of an engine dependency.
 
-Clang-tidy runs in CI and is opt-in locally ([D-007](decision-ledger.md)), and build
+Clang-tidy is opt-in locally (`--tidy`) and runs at the gate before a push, not in CI
+([D-007](decision-ledger.md), [D-116](decision-ledger.md#d-116)), and build
 concurrency is set per machine ([D-051](decision-ledger.md#d-051)).
 
 ## Differences from the engine's rules

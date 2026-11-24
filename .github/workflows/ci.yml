@@ -1,4 +1,6 @@
 name: ci
+# Every commit has passed ci.sh locally; CI shows only that a clean checkout builds the distribution,
+# stages its bundle and runs it on Ubuntu (D-116, the user's).
 on:
   # Promoting a verified feature-base SHA to main needs no second gate (D-053, scripts/promote.sh).
   push:
@@ -12,13 +14,11 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  gates:
+  bundle:
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 45
     env:
       CMAKE_BUILD_PARALLEL_LEVEL: 2
-      CTEST_PARALLEL_LEVEL: 2
-      MANIFEST_TIDY_JOBS: 2
     steps:
       - uses: actions/checkout@v7
       # Before Nix and the build: the shell must be the pinned SDK's (D-006, D-054).
@@ -35,10 +35,15 @@ jobs:
           skipPush: true
       - name: Install devenv
         run: nix profile add github:cachix/devenv/v2.4.0
-      - name: Gate
+      # The log under build/, which is ignored: the bundle is staged from a clean checkout.
+      - name: Build and stage the bundle (clang-release)
         shell: bash -euo pipefail {0}
-        run: devenv shell -- ./scripts/ci.sh --werror --asan --tidy --log build/ci.log
-      - name: Upload gate log
+        run: mkdir -p build && devenv shell -- ./scripts/stage-bundle.sh 2>&1 | tee build/ci.log
+      # Outside the development shell, as an operator runs it.
+      - name: Smoke test the bundle on the runner's Ubuntu
+        shell: bash -euo pipefail {0}
+        run: ./scripts/test-bundle.sh build/bundle/manifest-*.tar.gz host 2>&1 | tee -a build/ci.log
+      - name: Upload log
         if: always()
         uses: actions/upload-artifact@v7
         with:

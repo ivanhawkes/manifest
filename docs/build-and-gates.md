@@ -18,7 +18,7 @@ tree, generated data and staged mod. `clang-notui` is Debug with `MANIFEST_BUILD
 the terminal interface or the engine's renderer, UI and developer console. The gate
 runs formatting, Debug build and CTest, the same for `clang-notui`, Release build and CTest, and
 optionally ASan/UBSan build and CTest. `--skip-release` supports a shorter local pass;
-CI runs the full gate. `CMAKE_BUILD_PARALLEL_LEVEL`, `CTEST_PARALLEL_LEVEL` and
+CI runs none of it ([D-116](decision-ledger.md#d-116)). `CMAKE_BUILD_PARALLEL_LEVEL`, `CTEST_PARALLEL_LEVEL` and
 `MANIFEST_TIDY_JOBS` control concurrency. Clang-format must be version 21.
 
 A gate that passed is not run again on the same inputs, as Jettison's is: a digest of the working
@@ -174,12 +174,14 @@ the tested tree, full command, presets, suites, replay hashes and log path. Both
 identified in the [historical CI analysis](project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16)
 are fixed. This does not establish engine integration or gameplay acceptance.
 
-The CI [workflow](../.github/workflows/ci.yml) runs the full gate with `--tidy` on each push to
-`feature-base`, on each pull request targeting it and on a manual dispatch, and uploads
-`build/ci.log`. A push to `main` or to another branch runs nothing (M02, 2026-11-18). Report CI
-from the exact commit's run and fetched logs, separately from local evidence. Tidy runs last,
-after every requested build/test preset, and still fails the gate (M01, 2026-11-18). Preserve
-named-stage reporting, and prefer a combined local gate over repeated pushes.
+The CI [workflow](../.github/workflows/ci.yml) is not the gate ([D-116](decision-ledger.md#d-116),
+the user's, 2026-11-25): the full gate ran past the job's hour on the runner's two workers. It checks
+the environment's parity, stages the bundle from the clean checkout (`scripts/stage-bundle.sh`,
+the release build and its glibc check) and runs it on the runner's Ubuntu 24.04 outside the
+development shell (`scripts/test-bundle.sh <bundle> host`), on each push to `feature-base`, on each
+pull request targeting it and on a manual dispatch, and uploads `build/ci.log`. A push to `main` or
+to another branch runs nothing (M02, 2026-11-18). The gate, tidy included, is run locally before a
+push. Report CI from the exact commit's run and fetched logs, separately from local evidence.
 
 ### Promoting to main
 
