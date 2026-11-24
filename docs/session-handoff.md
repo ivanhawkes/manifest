@@ -4,7 +4,8 @@
 
 R06 is done: [the runtime distribution contract](stage-5-recovery-plan.md#the-runtime-distribution-contract-r06-2026-11-24),
 a planning task with no code ([D-114](decision-ledger.md#d-114)). The user chose a standalone tarball for
-x86-64 Linux with glibc 2.43 or newer, nix-ld on NixOS, with the TUI in it. Its one engine gap is
+x86-64 Linux with glibc 2.39 or newer (three newer symbols bound to older versions), nix-ld on
+NixOS, with the TUI in it. Its one engine gap is
 Jettison's `imgui` target, which carries ImGui's GLFW and Vulkan backends, so the TUI links
 `libvulkan.so.1` through `Devtools`. Jettison splits that before R07 stages and tests the bundle.
 

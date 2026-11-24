@@ -519,12 +519,16 @@ and read-only. Nothing is written to it, nor to the working directory.
 
 ### What a host must have
 
-- **x86-64 Linux with glibc 2.43 or newer**, loaded through `/lib64/ld-linux-x86-64.so.2`. 2.43 is
-  the highest symbol version the release binaries ask for (`remainder@GLIBC_2.43`, measured with
-  `objdump -T`). It is not a chosen floor: the binaries are built against nixpkgs' glibc, 2.44 today,
-  so the floor goes up when the development environment's nixpkgs does. R07 checks the staged
-  binaries against the declared floor and fails when they ask for more. The binaries need only
-  glibc's own `libc`, `libm`, `libpthread`, `libdl` and `librt`.
+- **x86-64 Linux with glibc 2.39 or newer**, loaded through `/lib64/ld-linux-x86-64.so.2`: Ubuntu
+  24.04 (2.39) and Debian 13 (2.41) onwards, the oldest the user chose to reach (2026-11-24). The
+  binaries are built against nixpkgs' glibc, 2.44 today, and three of the symbols they import ask
+  for more than 2.38 (`objdump -T`, the release build, 2026-11-24): `remainder` and `sqrtf` at
+  2.43, from `libm`, and `__inet_pton_chk` at 2.42, which `_FORTIFY_SOURCE` puts in place of
+  `inet_pton`. R07 binds each to its older version, and the check fails on any symbol above 2.39,
+  so a nixpkgs bump that brings in another is caught and pinned too. If those pins become a hassle
+  to keep, the release is built instead in an Ubuntu 24.04 container, or with `zig cc` targeting
+  2.39 (the user's, 2026-11-24). The binaries need only glibc's own `libc`, `libm`,
+  `libpthread`, `libdl` and `librt`.
 - **On NixOS**, `programs.nix-ld`, which puts a loader at `/lib64` and the system's glibc behind it
   (2.44 on Lythir, 2026-11-24).
 - **`/proc` mounted.** The default content is found from `/proc/self/exe`
@@ -579,12 +583,12 @@ default because a server run with none has only its world's directory to lose.
   host's options rather than the compiled-in `MANIFEST_MOD_DIRECTORY`, and its transcript moved from
   `build/tui-session.log`. The build tree laid out as the bundle (`bin/`, `share/manifest/`) so a
   development run finds its content the same way. The link flags, the staging script, `BUILD` and
-  the licences. The checks above. Then the bundle unpacked into a read-only directory outside both
+  the licences. The three glibc symbols bound to their versions at or below 2.39, and whatever
+  linking `libstdc++` statically adds. The checks above. Then the bundle unpacked into a read-only directory outside both
   checkouts and run under `env -i` with only `HOME` and `PATH`, outside the devenv shell: a
   start, a server stopped and restored, a validation of the pack, a token issued, and the TUI
-  connected. The CPU-only configure (`clang-notui`) kept as it is.
-- **R09.** The bundle's evidence in the stage's close, and the glibc floor restated from the last
-  build.
+  connected; and the same in Ubuntu 24.04 and Debian 13 containers. The CPU-only configure (`clang-notui`) kept as it is.
+- **R09.** The bundle's evidence in the stage's close, the glibc check among it.
 
 
 ## Commit model: durable step batches

@@ -141,7 +141,7 @@ a stop that runs what it admitted and writes a snapshot, a backup with every sna
 world's directory, the newest 24 kept, `--restore` into an empty directory checked by a full
 recovery, and a snapshot's size bounded as it is written, with no engine edit. R06 is done (2026-11-24):
 [the runtime distribution contract](stage-5-recovery-plan.md#the-runtime-distribution-contract-r06-2026-11-24),
-a planning task, selects a standalone tarball for x86-64 Linux with glibc 2.43 or newer, the TUI in
+a planning task, selects a standalone tarball for x86-64 Linux with glibc 2.39 or newer, the TUI in
 it, content found beside the executable and writable data under the XDG directories
 ([D-114](decision-ledger.md#d-114)), and names one engine gap: the TUI links Vulkan through
 `Devtools`. Next: that provision in Jettison, then R07; W22 waits

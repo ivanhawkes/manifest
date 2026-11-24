@@ -130,12 +130,13 @@ and delta snapshots in Manifest only if that is not enough.
 
 [The runtime distribution contract](stage-5-recovery-plan.md#the-runtime-distribution-contract-r06-2026-11-24),
 a planning task on pin `ea66afe` ([D-114](decision-ledger.md#d-114)). It selects a standalone
-tarball: the four binaries, the packed content and the licences, for x86-64 Linux with glibc 2.43 or
-newer and nix-ld on NixOS. Content is found from the executable, and the world, backups, tokens and
+tarball: the four binaries, the packed content and the licences, for x86-64 Linux with glibc 2.39 or
+newer (Ubuntu 24.04, Debian 13) and nix-ld on NixOS. Content is found from the executable, and the world, backups, tokens and
 the TUI's transcript go under the XDG directories for `manifest`.
 
 What it found. The release binaries' interpreter and `RUNPATH` name the devenv shell's store paths.
-Their glibc floor is whatever nixpkgs builds against, 2.43 today. A binary started through a loader
+Built against nixpkgs' glibc they ask for 2.43, though only `remainder`, `sqrtf` and
+`__inet_pton_chk` need more than 2.38, so R07 binds those three to older versions. A binary started through a loader
 named on its command line would see `/proc/self/exe` as the loader, which rules out a bundled
 `ld.so`. The TUI links `libvulkan.so.1` through the engine's `imgui` target without ever drawing,
 and it reads its content from a source path compiled into it and writes its transcript under
