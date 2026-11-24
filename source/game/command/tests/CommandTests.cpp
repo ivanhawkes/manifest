@@ -296,6 +296,13 @@ TEST_CASE("Pruned results are too old, never run again")
 	CHECK(hosted.Send(kAda, 2, 1).status == Status::Completed);
 	CHECK_FALSE(hosted.requests.Outcome(kAda, 1));
 	CHECK(hosted.Balance() == 100 + static_cast<std::int64_t>(kRetainedResults) + 1);
+
+	// As a restart finds it: the pruned stay too old, and the retained are answered.
+	Hosted loaded;
+	loaded.world.Load(hosted.world.Save());
+	CHECK(loaded.Send(kAda, 1, 1).result == Result::RequestTooOld);
+	CHECK(loaded.Send(kAda, 3, 1).status == Status::Completed);
+	CHECK(loaded.Balance() == hosted.Balance());
 }
 
 

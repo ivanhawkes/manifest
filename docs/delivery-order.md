@@ -153,8 +153,14 @@ set, and `scripts/stage-bundle.sh` stages the tarball, which ran from a read-onl
 [reconnect and recovery](stage-5-recovery-plan.md#reconnect-and-recovery-r08-2026-11-24), with no
 engine edit: clients reconnecting to a server restarted from its journal after a crash are answered
 from the ledger for what it kept and retry what it lost, and the development fixture, through a stop
-and a crash, recovers to the world that ran uninterrupted. Next: R09; W22 waits
-for the first larger hull.
+and a crash, recovers to the world that ran uninterrupted. R09 is done (2026-11-25):
+**Stage 5 is closed** ([the close](stage-5-recovery-plan.md#stage-5-closed-r09-2026-11-25)), on pin
+`13c1bec`, whose one provision lets a world list the names its save holds. Its checks are each held by a
+gated test, the state inventory pinned to those names. A content refusal now names the first
+definition that differs. The bundle has passed on Lythir and in both containers, and the measured
+I/O, recovery and storage limits are recorded. Saves leave the step's thread in future
+([D-115](decision-ledger.md#d-115)). The later workstreams (L01 onwards) wait until the user has
+played the first loop for a day or two; W22 waits for the first larger hull.
 
 ## Priority 0: maintenance before Stage 1
 
@@ -295,7 +301,7 @@ observations, automation and accepted obligations already delivered must be cove
 | 51 / R06 | Select and document the supported runtime distribution contract, dependencies and writable-data locations. **Done 2026-11-24**, [the contract](stage-5-recovery-plan.md#the-runtime-distribution-contract-r06-2026-11-24), [D-114](decision-ledger.md#d-114); one engine gap, ImGui's backends out of `Devtools`, provisioned in Jettison and pinned at `d9f565c` (2026-11-24). | R05 |
 | 52 / R07 | Build and test the relocatable read-only distribution outside both checkouts/development environment; retain graphics-free consumer coverage. **Done 2026-11-24**, [delivered](stage-5-recovery-plan.md#the-distribution-r07-2026-11-24), on pin `d9f565c` with no engine edit. | R06 |
 | 53 / R08 | Prove persistent multi-client reconnect/retry and zero-client recovery across trading, region control, projects, observations and automation. **Done 2026-11-24**, [delivered](stage-5-recovery-plan.md#reconnect-and-recovery-r08-2026-11-24), on pin `d9f565c` with no engine edit. | R04, N03, W14 |
-| 54 / R09 | Close Stage 5: consolidate fault/restart, backup, relocation, cross-build replay and final gate evidence; record measured I/O, recovery and storage limits. | R05, R07, R08 |
+| 54 / R09 | Close Stage 5: consolidate fault/restart, backup, relocation, cross-build replay and final gate evidence; record measured I/O, recovery and storage limits. **Done 2026-11-25**, [the close](stage-5-recovery-plan.md#stage-5-closed-r09-2026-11-25), on pin `13c1bec`. | R05, R07, R08 |
 
 Only after R09 should production deployment readiness be assessed. Authentication and
 network development occur earlier; this resolves the older Stage 5 wording that

@@ -126,6 +126,23 @@ is 63,567 bytes of 65,536), the user booked for Jettison's next change, a messag
 packets ([Jettison's roadmap](../../jettison/docs/roadmap.md#first-what-saves-and-the-simulations-interface-hold)),
 and delta snapshots in Manifest only if that is not enough.
 
+## R09: Stage 5 closed — 2026-11-25
+
+[The close](stage-5-recovery-plan.md#stage-5-closed-r09-2026-11-25), on pin `13c1bec`, whose one
+provision is `SimWorld::ComponentNames` and `ServiceNames`: a world named its components only in
+its save's first bytes, and its services nowhere but inside the save, so the inventory could not be
+pinned to them from outside.
+
+What it found. A content manifest has no count of its types; it relies on the build that wrote it,
+which a world shares by D-111, so `FirstDifference` reads `DefinitionTypes`' count, and a record is
+named by its file (`item-copper`), not its ID. A manifest damaged in memory, as the identity test makes
+one, does not read, and the refusal then stands on the fingerprints as before. No test held a pruned
+sequence too old after a load; the `command` suite's pruning case now loads the world and checks it.
+The trading scenario holds four players, its starter venue's life support having four connections, so
+the larger worlds R04 guessed at could not be built and measured. The figures are for zero, one and
+four players. A save is written on the server's thread, a snapshot holding it about 60 ms; the user
+decided saves leave that thread in future (D-115).
+
 ## R08: reconnect and recovery — 2026-11-24
 
 [Reconnect and recovery](stage-5-recovery-plan.md#reconnect-and-recovery-r08-2026-11-24), on pin

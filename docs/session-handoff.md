@@ -1,6 +1,15 @@
 # Session handoff
 
-## Next, on resuming — 2026-11-24 (R08 done, then R09)
+## Next, on resuming — 2026-11-25 (R09 done, Stage 5 closed)
+
+R09 is done: **Stage 5 is closed** ([the close](stage-5-recovery-plan.md#stage-5-closed-r09-2026-11-25)),
+on pin `13c1bec`. The `host` suite pins the state inventory to the names a world's save lists
+(`SimWorld::ComponentNames`, `ServiceNames`). A world opened under other content is refused naming the
+first definition that differs, and a pruned request sequence is held too old across a load. The
+bundle passed on Lythir and in Ubuntu 24.04 and Debian 13. The Release figures are recorded: a flush
+holds the server's loop about 11 ms, a snapshot about 60. Saves are to leave the step's thread
+([D-115](decision-ledger.md#d-115)), not yet built. The later workstreams (L01 onwards) wait until the
+user has played the first loop for a day or two; W22 waits for the first larger hull.
 
 R08 is done: [reconnect and recovery](stage-5-recovery-plan.md#reconnect-and-recovery-r08-2026-11-24),
 on pin `d9f565c` with no engine edit, in tests alone. The `remote` suite crashes a journalled server

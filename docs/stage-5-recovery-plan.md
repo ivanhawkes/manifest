@@ -418,9 +418,7 @@ build, and how the 76 KB a player splits between their reports and the rest.
 ### What it leaves
 
 - **R05.** Done: [shutdown, backups and limits](#shutdown-backups-and-limits-r05-2026-11-24).
-- **R09.** The gated test that pins [the state inventory](#the-state-inventory) to the names the
-  world's save lists; a content refusal naming the first definition that differs; and the
-  serialising pause of a large world's snapshot, 7.3 ms at 550 KB in Debug and unmeasured in Release.
+- **R09.** Done: [the stage's close](#stage-5-closed-r09-2026-11-25).
 
 ## Shutdown, backups and limits (R05), 2026-11-24
 
@@ -492,8 +490,7 @@ step it stopped at, and is refused restoring it over the world. Measured in Debu
 
 ### What it leaves
 
-- **R09.** A backup verified only as it is restored, not read back as it is written; the snapshot
-  limit reached at 4 GiB rather than at a test's 1 KiB; and how long a stop of a large world takes.
+- **R09.** Done: [the stage's close](#stage-5-closed-r09-2026-11-25).
 
 ## The runtime distribution contract (R06), 2026-11-24
 
@@ -590,7 +587,7 @@ default because a server run with none has only its world's directory to lose.
   checkouts and run under `env -i` with only `HOME` and `PATH`, outside the devenv shell: a
   start, a server stopped and restored, a validation of the pack, a token issued, and the TUI
   connected; and the same in Ubuntu 24.04 and Debian 13 containers. The CPU-only configure (`clang-notui`) kept as it is.
-- **R09.** The bundle's evidence in the stage's close, the glibc check among it.
+- **R09.** Done: [the stage's close](#stage-5-closed-r09-2026-11-25).
 
 
 ## The distribution (R07), 2026-11-24
@@ -660,8 +657,8 @@ The CPU-only configure (`clang-notui`) is as it was; its `bundle_smoke` runs wit
 
 ### What it leaves
 
-- **R09.** The bundle's evidence in the stage's close. `test-bundle.sh` needs Docker and is run by
-  hand, not in CI; CI's release stage on its Ubuntu 24.04 runner runs the distributed binaries on
+- **R09.** Done: [the stage's close](#stage-5-closed-r09-2026-11-25). `test-bundle.sh` needs Docker
+  and is run by hand, not in CI; CI's release stage on its Ubuntu 24.04 runner runs the distributed binaries on
   that system's glibc 2.39 through `bundle_smoke`.
 - **Every machine that runs the release preset** needs a loader at `/lib64/ld-linux-x86-64.so.2`,
   nix-ld on NixOS, since its tests run the distributed binaries.
@@ -710,9 +707,89 @@ and the test takes the 52 s in Debug it took before.
 
 ### What it leaves
 
-- **R09.** The stage's close, this evidence among it.
+- **R09.** Done: [the stage's close](#stage-5-closed-r09-2026-11-25).
 - **The TUI.** Its `connect` retries nothing: a player whose request was lost sends it again by hand.
   Retrying from the TUI wants it to keep what it sent until it hears it complete.
+
+## Stage 5 closed (R09), 2026-11-25
+
+**Stage 5 is closed**, on Jettison `13c1bec` at Manifest `5c4bf68`, with one engine provision:
+a world lists the names its save holds (`SimWorld::ComponentNames`, `ServiceNames`), the gap
+[R01](#what-it-leaves-each-task) named. Where the [delivery and evidence](#delivery-and-required-evidence)
+table below differs, [D-113](decision-ledger.md#d-113) and this hold: nothing is written before a step
+is taken, so a receipt is not a durable acknowledgement, and a crash loses up to 30 s.
+
+### What R09 added
+
+- **The state inventory, pinned.** The `host` suite starts the trading scenario and checks its
+  world's 50 components and 3 services, by the names a save lists them under and in its order,
+  against [the state inventory](#the-state-inventory). A mechanic that adds authoritative state adds
+  its row there and its name in the test.
+- **A content refusal naming its definition.** A world opened under other content was refused by
+  the two manifests' fingerprints alone. `Content::FirstDifference` walks both manifests in step and
+  names the first definition held otherwise, or by one alone, or the scenario; the refusal ends
+  "the first definition that differs is Manifest.Item item-copper". A world's manifest that does
+  not read leaves the refusal as it was.
+
+### The stage's checks
+
+| Boundary | Held by |
+| --- | --- |
+| A batch written, its catalogue not | `host`: the orphan is not run and is written over by the next flush (R04) |
+| A flushed batch replayed | `host`: its requests at the steps they ran at, the ledger rebuilt; `cli_serve` killed outright and started again on a flushed step (R04) |
+| A retry after recovery | `host`: answered from the ledger, not run; `remote`: three clients across a crash, what was kept answered and what was lost retried in each actor's order (R08) |
+| A snapshot cut off, or the newest damaged | `host`: an unnamed file ignored; the older snapshot and its batches reach the same state hash; with neither, the start fails by name (R04) |
+| A batch or catalogue missing, damaged or out of its chain | `host`: each refused by name, nothing skipped (R04) |
+| Disk full, a short write, a write reported failed after it landed | `host`'s failing writer: no batch named, or the head found on opening; the journal takes nothing more (R04) |
+| Another build, SDK, fixed step, command or content | `host`: refused before a world is recovered, naming the field, both values and, for content, the definition (R04, R09) |
+| Retry IDs pruned, and across a restart | `command`: a pruned sequence too old and a retained one answered, before and after the world's save is loaded (R01, R09) |
+| A clean stop | `host`, `cli_serve`: what was admitted runs and is answered, a snapshot of that step, nothing replayed (R05) |
+| A backup restored | `host`, `cli_serve`: into an empty directory at its head and step; refused over a world, of another build or damaged, the directory left empty (R05) |
+| Storage limits | `host`: a save over the snapshot limit is not written and the world keeps its last recovery point (R05) |
+| The whole loop across a stop and a crash | `fixture_development` through its journal, recovered to the uninterrupted world's hash (R08) |
+| The release relocated | `distribution`, `bundle_smoke` at every gate; `scripts/test-bundle.sh` (R07, R09) |
+| Debug, Release and sanitised agree | the same suites and pinned hashes in `clang-debug`, `clang-release`, `clang-asan` and `clang-notui` |
+
+Evidence, on Lythir: `./scripts/ci.sh --werror --asan --tidy` at 24 workers passed every suite in
+the four presets, the pins holding in each, and tidy clean (1,221 s). The bundle `manifest-0.0.1-ba6c9c2a2c99`, staged from `5c4bf68`,
+asks for glibc 2.38 at most in each of its four binaries and passed `bundle-smoke.sh` from a
+read-only directory under `env -i` here and in Ubuntu 24.04 and Debian 13 containers: a start, a
+validation, a token, a server served, the TUI connected, a stop and a restore.
+
+### Measured
+
+In a Release build on Lythir's NVMe (ext4), the trading scenario, each figure one run:
+
+| Measured | No player | One | Four |
+| --- | --- | --- | --- |
+| The world's save | 475 KB | 538 KB | 741 KB |
+| Serialising it, on the server's thread | 6.0 ms | 6.5 ms | 10.9 ms |
+| Loading it | 9.3 ms | 9.7 ms | 12.7 ms |
+| A flush: a batch and the catalogue, each written durably | 10.8 ms | 10.6 ms | 10.6 ms |
+| A clean stop: a step, a snapshot and its backup, six files written durably | 58 ms | 59 ms | 66 ms |
+| Opening and recovering from that snapshot | 53 ms | 53 ms | 56 ms |
+
+A hosted session starts in 52 ms. A batch of one idle step is 230 bytes, and one with a
+provisioning request 638; the journal grows by what runs, not by the time. Debug's figure for
+serialising, 7.3 ms at 550 KB (R04), is about Release's. Four players is the most the trading scenario holds: its starter venue's life support
+has connections for four ships ([D-047](decision-ledger.md#d-047)), and a fifth is refused
+`NoServiceFree`. So a larger world is not measured: at the 14 ms a megabyte these give, R04's guessed
+22 MB for 50 players would serialise in about 0.3 s, a guess on a guess.
+
+### What it leaves
+
+- **Saves off the step's thread** (the user's, 2026-11-25, [D-115](decision-ledger.md#d-115)). A flush
+  holds the server's loop for 11 ms and a snapshot for about 60, against a 16.7 ms step, and the
+  serialising grows with the world. Taken up before a world outgrows a step or a frame is drawn
+  beside one.
+- **The 4 GiB snapshot limit** is reached only at a test's 1 KiB: no scenario makes a world of that
+  size.
+- **A backup read back as it is written** would read the page cache, not the disk, and prove nothing a
+  restore does not; a restore checks every file's checksum before it writes one. Not done.
+- **Durability** is held to the writer's seam and `WriteFileDurably`'s order, and to a process killed
+  outright; no power cut was tested.
+- **The TUI** retries nothing (R08), and `test-bundle.sh` needs Docker and is run by hand.
+- **Debug files**: a release's binaries keep theirs, as R07 left them.
 
 ## Commit model: durable step batches
 
@@ -904,7 +981,7 @@ bounded storage/retention limits and test reaching them before marking the stage
 Stage 5 completes when acknowledged commands survive the tested crash boundaries, retries
 cannot duplicate actions after recovery, the full local loop resumes without downtime
 catch-up, a backup restores successfully and the declared release distribution relocates.
-No checks in this document have yet been executed.
+Met 2026-11-25: [the stage's close](#stage-5-closed-r09-2026-11-25).
 
 The remote-client milestone now begins after minimal authority, as described in the
 [development-stage amendments](development-stages.md). After this recovery stage, harden
