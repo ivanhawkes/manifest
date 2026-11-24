@@ -9,10 +9,13 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
+#include <format>
 #include <limits>
 #include <map>
 #include <memory>
 #include <optional>
+#include <random>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -30,7 +33,9 @@
 #include <glm/geometric.hpp>
 
 #include <manifest/company/Company.h>
+#include <manifest/host/Journal.h>
 #include <manifest/host/Start.h>
+#include <manifest/host/WorldDirectory.h>
 #include <manifest/policy/Policy.h>
 #include <manifest/procurement/Procurement.h>
 #include <manifest/query/Query.h>
@@ -157,6 +162,8 @@ struct Hosted
 	// source and sink the ledger allows for, there to be seen happening.
 	std::int64_t made{0};
 	std::uint64_t consumptions{0};
+	// Steps through the journal when given, as a server does.
+	Manifest::Host::Journal *pJournal{nullptr};
 
 	explicit Hosted(
 	    const std::string &content,
@@ -194,7 +201,10 @@ struct Hosted
 		const std::map<std::string, std::int64_t> totes = Totes(registry);
 		const Batches batches = Underway(registry);
 
-		world.Step();
+		if (pJournal != nullptr)
+			pJournal->Advance(world, 1);
+		else
+			world.Step();
 		// What the step used up, as each sink raised it.
 		std::map<std::string, std::int64_t> consumed;
 		for (const Jettison::Sim::SimEvent &raised : world.Events().Take())
@@ -583,6 +593,69 @@ TEST_CASE("The trading fixture's loop, saved in flight with a bid resting and re
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves with
 	// what a save holds, the fixture's content or stream, or the engine's movement or save format.
 	CHECK(hosted.world.StateHash() == 0xf6bc2a278ee8d60cULL);
+}
+
+
+TEST_CASE("The trading fixture's loop, backed up in flight with a bid resting and restored, ends alike")
+{
+	namespace Host = Manifest::Host;
+	struct Scratch
+	{
+		std::filesystem::path root{
+		    std::filesystem::temp_directory_path() /
+		    std::format("manifest-fixture-backup-{}", std::random_device{}())};
+
+		~Scratch()
+		{
+			std::error_code ignored;
+			std::filesystem::remove_all(root, ignored);
+		}
+	};
+	const Scratch scratch;
+
+	Hosted hosted{MANIFEST_MOD_DIRECTORY};
+	const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.root / "world");
+	Host::Journal journal{
+	    directory, Host::RunningIdentity(*hosted.session), {}, {}, {scratch.root / "backups"}};
+	hosted.pJournal = &journal;
+	hosted.Bootstrap();
+	ToCruise(hosted);
+	// The server stopped in flight: its snapshot, and the backup of it.
+	journal.Stop(hosted.world);
+	std::vector<std::filesystem::path> backups;
+	for (const std::filesystem::directory_entry &entry :
+	     std::filesystem::directory_iterator{scratch.root / "backups"})
+		backups.push_back(entry.path());
+	REQUIRE(backups.size() == 1);
+
+	Hosted restored{MANIFEST_MOD_DIRECTORY};
+	const Host::WorldDirectory into = Host::OpenWorldDirectory(scratch.root / "restored");
+	Host::Journal again =
+	    Host::Restore(backups[0], into, Host::RunningIdentity(*restored.session), restored.world);
+	restored.credits = Credits(restored.world.Registry());
+	restored.pJournal = &again;
+	CHECK(restored.world.StateHash() == hosted.world.StateHash());
+	// The bid resting with its escrow, the ship cruising and every request's outcome as it was.
+	const CompanyView company = restored.Seen();
+	REQUIRE(company.orders.size() == 1);
+	CHECK(company.orders[0].order.escrow == hosted.Seen().orders[0].order.escrow);
+	CHECK(restored.Ship1().journey->leg == Leg::Cruising);
+	const std::uint64_t next = hosted.services.requests.NextSequence(kAda);
+	CHECK(restored.services.requests.NextSequence(kAda) == next);
+	for (std::uint64_t sequence = 1; sequence < next; ++sequence)
+	{
+		const auto was = hosted.services.requests.Outcome(kAda, sequence);
+		const auto is = restored.services.requests.Outcome(kAda, sequence);
+		REQUIRE(was.has_value());
+		REQUIRE(is.has_value());
+		CHECK(is->result == was->result);
+		CHECK(is->step == was->step);
+	}
+
+	// Served on from the restore, through the journal, it reaches the loop's own world.
+	FromCruise(restored);
+	CheckLedger(restored);
+	CHECK(restored.world.StateHash() == 0xf6bc2a278ee8d60cULL);
 }
 
 

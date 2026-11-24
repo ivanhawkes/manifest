@@ -1,5 +1,6 @@
 #include <manifest/host/Journal.h>
 
+#include <algorithm>
 #include <bit>
 #include <charconv>
 #include <exception>
@@ -49,12 +50,10 @@ constexpr std::size_t kMaxBatchRequests = 4'096;
 constexpr std::size_t kChecksumBytes = sizeof(std::uint64_t);
 // The longest file of each kind read: nothing larger is one, so nothing larger is taken into memory.
 // A batch is at most kMaxBatchRequests and a step's full queue of the largest payloads, 21 MiB, and
-// each request's names; a content manifest is a few hundred KiB; a world of 256 players was guessed
-// at 110 MiB (2026-11-24).
+// each request's names; a content manifest is a few hundred KiB. A snapshot's is kMaxSnapshotBytes.
 constexpr std::uintmax_t kMaxCatalogueBytes = std::uintmax_t{4} * 1024;
 constexpr std::uintmax_t kMaxBatchBytes = std::uintmax_t{32} * 1024 * 1024;
 constexpr std::uintmax_t kMaxIdentityBytes = std::uintmax_t{64} * 1024 * 1024;
-constexpr std::uintmax_t kMaxSnapshotBytes = std::uintmax_t{4} * 1024 * 1024 * 1024;
 
 // The steps the world took, from `step`, and the requests that ran in them, in the order they ran.
 struct Batch
@@ -238,6 +237,21 @@ void Take(Jettison::Sim::SimWorld &world, std::uint64_t until)
 }
 
 
+// Whether the path is the directory or within it, as they are on disk.
+bool Within(const std::filesystem::path &path, const std::filesystem::path &directory)
+{
+	const auto resolved = [](const std::filesystem::path &given)
+	{
+		// Without the empty last element a trailing separator leaves.
+		const std::filesystem::path on = std::filesystem::weakly_canonical(given);
+		return on.has_filename() ? on : on.parent_path();
+	};
+	const std::filesystem::path inner = resolved(path);
+	const std::filesystem::path outer = resolved(directory);
+	return std::mismatch(outer.begin(), outer.end(), inner.begin(), inner.end()).first == outer.end();
+}
+
+
 // Removes the directory's files numbered below the bound, a write's leavings among them. A file that
 // will not go is left: the catalogue names none of them.
 void RemoveBelow(const std::filesystem::path &directory, std::uint64_t bound)
@@ -274,15 +288,26 @@ Identity RunningIdentity(Jettison::Host::Session &session)
 }
 
 
-Journal::Journal(const WorldDirectory &directory, Identity running, Cadence cadence, Write write)
+Journal::Journal(
+    const WorldDirectory &directory, Identity running, Cadence cadence, Write write, Storage storage)
     : m_root{directory.root},
       m_write{
           write ? std::move(write)
                 : Write{[](const std::filesystem::path &path, std::span<const std::byte> bytes)
                         { Jettison::Core::WriteFileDurably(path, bytes); }}},
-      m_cadence{cadence}
+      m_cadence{cadence}, m_storage{std::move(storage)}
 {
 	RegisterTypes();
+	if (!m_storage.backups.empty())
+	{
+		if (Within(m_storage.backups, m_root))
+			throw std::runtime_error{std::format(
+			    "the backups at {} are within the world at {}: they go outside it",
+			    m_storage.backups.string(), m_root.string())};
+		// Private to its owner when it is made here, as the world's directory is.
+		if (Jettison::Core::CreateDirectoriesDurably(m_storage.backups))
+			std::filesystem::permissions(m_storage.backups, std::filesystem::perms::owner_all);
+	}
 	const std::filesystem::path identity = m_root / kIdentityName;
 	const std::filesystem::path catalogue = m_root / kCatalogueName;
 	if (!std::filesystem::exists(identity) && !std::filesystem::exists(catalogue) &&
@@ -373,7 +398,7 @@ void Journal::Recover(Jettison::Sim::SimWorld &world) const
 }
 
 
-void Journal::Advance(Jettison::Sim::SimWorld &world, std::uint64_t steps)
+void Journal::Expect(const Jettison::Sim::SimWorld &world) const
 {
 	if (m_uncertain)
 		throw std::logic_error{"a write failed, and the world's journal takes no other"};
@@ -381,6 +406,12 @@ void Journal::Advance(Jettison::Sim::SimWorld &world, std::uint64_t steps)
 		throw std::logic_error{std::format(
 		    "the world is at step {}, where its journal left it at step {}", world.Clock().Step(),
 		    m_at)};
+}
+
+
+void Journal::Advance(Jettison::Sim::SimWorld &world, std::uint64_t steps)
+{
+	Expect(world);
 	for (const entt::meta_any &command : world.Commands().Pending())
 	{
 		// Anything else queued would run now and not in a replay.
@@ -424,18 +455,35 @@ void Journal::Snapshot(Jettison::Sim::SimWorld &world)
 	// holds and a snapshot must not either.
 	JETTISON_VERIFY(world.Commands().Pending().empty());
 	std::vector<std::byte> state = world.Save();
+	if (state.size() + kChecksumBytes > m_storage.snapshotBytes)
+		throw std::runtime_error{std::format(
+		    "the world's save is {} bytes, more than a snapshot may be ({} bytes with its checksum), "
+		    "and is not written",
+		    state.size(), m_storage.snapshotBytes)};
 	Catalogue next = m_catalogue;
 	next.snapshots.push_back(
 	    {next.head, next.headId, Checksum(std::span<const std::byte>{state}), next.step});
 	if (next.snapshots.size() > kKeptSnapshots)
 		next.snapshots.erase(next.snapshots.begin());
-	Publish(
-	    std::move(next), Numbered(m_root, kSnapshotsName, m_catalogue.head), Framed(std::move(state)));
+	const std::vector<std::byte> file = Framed(std::move(state));
+	Publish(std::move(next), Numbered(m_root, kSnapshotsName, m_catalogue.head), file);
 	Prune();
+	Backup(file);
 }
 
 
-void Journal::Publish(Catalogue next, const std::filesystem::path &path, std::vector<std::byte> file)
+void Journal::Stop(Jettison::Sim::SimWorld &world)
+{
+	Expect(world);
+	if (!world.Commands().Pending().empty())
+		Advance(world, 1);
+	if (m_catalogue.snapshots.empty() || m_catalogue.snapshots.back().step != m_at)
+		Snapshot(world);
+}
+
+
+void Journal::Publish(
+    Catalogue next, const std::filesystem::path &path, std::span<const std::byte> file)
 {
 	// Until both are written: a writer that throws may have left either file in place.
 	m_uncertain = true;
@@ -454,5 +502,114 @@ void Journal::Prune() const
 	const std::uint64_t older = m_catalogue.snapshots.front().batch;
 	RemoveBelow(m_root / kSnapshotsName, older);
 	RemoveBelow(m_root / kJournalName, older + 1);
+}
+
+
+void Journal::Backup(std::span<const std::byte> snapshot) const
+{
+	if (m_storage.backups.empty())
+		return;
+	const std::string prefix = m_catalogue.world + ".";
+	const std::string name = std::format("{}{:020}", prefix, m_catalogue.head);
+	const std::filesystem::path into = m_storage.backups / name;
+	try
+	{
+		// One cut off at this batch before, which no catalogue names.
+		std::filesystem::remove_all(into);
+		const Kept &kept = m_catalogue.snapshots.back();
+		const Catalogue alone{
+		    m_catalogue.world, m_catalogue.head, m_catalogue.headId, m_catalogue.step, {kept}};
+		m_write(
+		    into / kIdentityName, Framed(ReadFile(m_root / kIdentityName, kMaxIdentityBytes).bytes));
+		m_write(Numbered(into, kSnapshotsName, kept.batch), snapshot);
+		m_write(into / kCatalogueName, Framed(BinaryArchive::Write(alone, kFormat)));
+	}
+	catch (const std::runtime_error &problem)
+	{
+		// The world's own files are whole: a backup that failed costs the server nothing but itself.
+		Jettison::Core::Log(
+		    Jettison::Core::Severity::Error, kJournal, "the backup {} was not made: {}", into.string(),
+		    problem.what());
+		return;
+	}
+
+	// The world's backups but this one: one with no catalogue is one cut off, and goes; of the rest,
+	// the newest are kept with it. Names sort as their batches do.
+	std::vector<std::filesystem::path> complete;
+	std::error_code error;
+	for (std::filesystem::directory_iterator entry{m_storage.backups, error}, end;
+	     !error && entry != end; entry.increment(error))
+	{
+		const std::string found = entry->path().filename().string();
+		if (found == name || !found.starts_with(prefix))
+			continue;
+		std::uint64_t batch = 0;
+		const char *pLast = found.data() + found.size();
+		const auto [pEnd, problem] = std::from_chars(found.data() + prefix.size(), pLast, batch);
+		if (problem != std::errc{} || pEnd != pLast)
+			continue;
+		std::error_code ignored;
+		if (std::filesystem::exists(entry->path() / kCatalogueName, ignored))
+			complete.push_back(entry->path());
+		else
+			std::filesystem::remove_all(entry->path(), ignored);
+	}
+	std::ranges::sort(complete);
+	const std::size_t others = m_storage.kept == 0 ? 0 : m_storage.kept - 1;
+	for (std::size_t index = 0; index + others < complete.size(); ++index)
+	{
+		std::error_code ignored;
+		std::filesystem::remove_all(complete[index], ignored);
+	}
+}
+
+
+Journal Restore(
+    const std::filesystem::path &backup, const WorldDirectory &directory, Identity running,
+    Jettison::Sim::SimWorld &world)
+{
+	RegisterTypes();
+	const std::filesystem::path &root = directory.root;
+	for (const std::filesystem::directory_entry &entry : std::filesystem::directory_iterator{root})
+		if (entry.path().filename() != kLockName)
+			throw std::runtime_error{std::format(
+			    "the world at {} is not empty: a backup is restored only into an empty directory",
+			    root.string())};
+	// Refused before anything is written: another build's, or a catalogue not the world's.
+	const Identity made = Read<Identity>(backup / kIdentityName, kMaxIdentityBytes).value;
+	Hold(backup, made, running);
+	const Catalogue catalogue = Read<Catalogue>(backup / kCatalogueName, kMaxCatalogueBytes).value;
+	if (catalogue.world != made.world)
+		throw std::runtime_error{
+		    std::format("{} is the catalogue of another world", (backup / kCatalogueName).string())};
+
+	// What a start may need: each snapshot named and every batch after the oldest, or every batch of
+	// a world with none. The catalogue last.
+	std::vector<std::pair<std::filesystem::path, std::uintmax_t>> files{
+	    {kIdentityName, kMaxIdentityBytes}};
+	for (const Kept &kept : catalogue.snapshots)
+		files.emplace_back(Numbered({}, kSnapshotsName, kept.batch), kMaxSnapshotBytes);
+	const std::uint64_t first = catalogue.snapshots.empty() ? 1 : catalogue.snapshots.front().batch + 1;
+	for (std::uint64_t sequence = first; sequence <= catalogue.head; ++sequence)
+		files.emplace_back(Numbered({}, kJournalName, sequence), kMaxBatchBytes);
+	files.emplace_back(kCatalogueName, kMaxCatalogueBytes);
+	try
+	{
+		for (const auto &[name, limit] : files)
+			Jettison::Core::WriteFileDurably(root / name, Framed(ReadFile(backup / name, limit).bytes));
+		Journal journal{directory, std::move(running)};
+		journal.Recover(world);
+		return journal;
+	}
+	catch (const std::runtime_error &)
+	{
+		// The catalogue first: whatever else will not go, a server refuses a world without one.
+		std::error_code ignored;
+		std::filesystem::remove(root / kCatalogueName, ignored);
+		std::filesystem::remove(root / kIdentityName, ignored);
+		std::filesystem::remove_all(root / kSnapshotsName, ignored);
+		std::filesystem::remove_all(root / kJournalName, ignored);
+		throw;
+	}
 }
 } // namespace Manifest::Host

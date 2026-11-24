@@ -54,6 +54,24 @@ struct Ran
 	Command::Request request;
 };
 
+// The largest file of a snapshot a start reads: a world of 256 players was guessed at 110 MiB
+// (2026-11-24).
+inline constexpr std::uintmax_t kMaxSnapshotBytes = std::uintmax_t{4} * 1024 * 1024 * 1024;
+
+// Where a journal keeps its backups, and what a world may store (docs/stage-5-recovery-plan.md,
+// "Shutdown, backups and limits").
+struct Storage
+{
+	// None when empty. Otherwise a backup is written here with every snapshot, as
+	// `<world>.<batch>`, and the newest `kept` of the world's are kept: outside the world's
+	// directory, for a disk that is not the world's.
+	std::filesystem::path backups;
+	std::size_t kept{24};
+	// The largest save a snapshot may be: a larger one is refused as it is written, since a start
+	// would refuse it as it is read.
+	std::uintmax_t snapshotBytes{kMaxSnapshotBytes};
+};
+
 // A snapshot the catalogue keeps: the batch it follows, with that batch's identity, the checksum of
 // the snapshot's file and the step the world was at.
 struct Kept
@@ -82,7 +100,9 @@ struct Catalogue
 // flush and nothing before it, and a clean stop, which flushes, loses nothing. Every
 // Cadence::snapshotSteps the world's save is written beside them, the last two kept with every batch
 // since the older, and what is older than that removed. Every file is followed by its 64-bit
-// FNV-1a, which is also a batch's identity in the chain.
+// FNV-1a, which is also a batch's identity in the chain. Each snapshot is also a backup, when the
+// storage names a directory for them: the world's identity, the snapshot and a catalogue naming it
+// alone, the catalogue written last, so a backup cut off before it is none and is removed by the next.
 class Journal
 {
   public:
@@ -94,8 +114,10 @@ class Journal
 	// an identity, a catalogue nor a journal is a new world: its identity is made and written, and a
 	// catalogue with no head. Throws std::runtime_error naming the file for one that is missing,
 	// damaged or another world's, and naming the field and both values for a world another build or
-	// other content made.
-	Journal(const WorldDirectory &directory, Identity running, Cadence cadence = {}, Write write = {});
+	// other content made, or backups within the world's directory.
+	Journal(
+	    const WorldDirectory &directory, Identity running, Cadence cadence = {}, Write write = {},
+	    Storage storage = {});
 
 	const std::string &World() const
 	{
@@ -124,18 +146,27 @@ class Journal
 	// world stepped other than here since it was recovered.
 	void Advance(Jettison::Sim::SimWorld &world, std::uint64_t steps);
 
-	// Writes the steps taken since the last flush, for a clean stop; nothing when there are none.
-	// Throws as Advance does.
+	// Writes the steps taken since the last flush; nothing when there are none. Throws as Advance
+	// does.
 	void Flush();
+
+	// For a clean stop, once nothing more is admitted: runs the requests queued since the last step in
+	// one more, so none is left unanswered, then writes a snapshot, and its backup, unless the newest
+	// is of this step, so a start loads it and replays nothing. Throws as Advance does, and
+	// std::runtime_error for a save larger than the storage allows, which is not written.
+	void Stop(Jettison::Sim::SimWorld &world);
 
   private:
 	void Snapshot(Jettison::Sim::SimWorld &world);
-	void Publish(Catalogue next, const std::filesystem::path &path, std::vector<std::byte> file);
+	void Expect(const Jettison::Sim::SimWorld &world) const;
+	void Publish(Catalogue next, const std::filesystem::path &path, std::span<const std::byte> file);
 	void Prune() const;
+	void Backup(std::span<const std::byte> snapshot) const;
 
 	std::filesystem::path m_root;
 	Write m_write;
 	Cadence m_cadence;
+	Storage m_storage;
 	Catalogue m_catalogue;
 	// The requests that have run since the last flush, in the order they ran.
 	std::vector<Ran> m_ran;
@@ -143,4 +174,14 @@ class Journal
 	std::uint64_t m_at{0};
 	bool m_uncertain{false};
 };
+
+// Restores the backup (Storage::backups), or a stopped world's directory, into the directory, which
+// must hold nothing but its lock, and recovers it into the world as Host::Start left it, to the head
+// its catalogue names: the journal it returns serves it on from there. The backup is only read. Its
+// catalogue is written last, so a restore cut off leaves a world a server refuses, not a new one.
+// Throws std::runtime_error naming the file or the field as Journal and Journal::Recover do, or the
+// directory when it holds anything; anything written is then removed again, the catalogue first.
+Journal Restore(
+    const std::filesystem::path &backup, const WorldDirectory &directory, Identity running,
+    Jettison::Sim::SimWorld &world);
 } // namespace Manifest::Host

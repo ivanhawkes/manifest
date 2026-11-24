@@ -240,7 +240,10 @@ directory is made and held by one server (`Host::OpenWorldDirectory`, R02), whic
 run to the world's journal every 30 s and its save every hour, and recovers from them at a start,
 a crash losing up to the 30 s ([D-113](decision-ledger.md#d-113), `Host::Journal`,
 [the journal and its snapshots](stage-5-recovery-plan.md#the-journal-and-its-snapshots-r03-r04-2026-11-24)).
-Backup and hosting outside a trusted network do not exist yet.
+A stop runs what it admitted and writes a snapshot, a backup is written beside every snapshot and
+`--restore` restores one into an empty directory
+([R05](stage-5-recovery-plan.md#shutdown-backups-and-limits-r05-2026-11-24)). Hosting outside a
+trusted network does not exist yet.
 
 The existing TUI is to become a required remote gameplay client with `connect <endpoint>` and
 `disconnect`. Extract its authoritative state into the server, retain useful FTXUI/console

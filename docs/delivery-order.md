@@ -135,8 +135,12 @@ on the user's decision that a crash may lose up to 30 s of play ([D-113](decisio
 a killed server recovered from its newest snapshot and the batches after it, and a clean stop losing
 nothing, with no engine edit. The journal R03 first had, a batch committed before every step
 ([D-112](decision-ledger.md#d-112)), was measured and replaced the same day
-([write volume and wear](stage-5-recovery-plan.md#write-volume-and-wear)). Next: R05; W22 waits for
-the first larger hull.
+([write volume and wear](stage-5-recovery-plan.md#write-volume-and-wear)). R05 is done (2026-11-24):
+[shutdown, backups and limits](stage-5-recovery-plan.md#shutdown-backups-and-limits-r05-2026-11-24),
+a stop that runs what it admitted and writes a snapshot, a backup with every snapshot outside the
+world's directory, the newest 24 kept, `--restore` into an empty directory checked by a full
+recovery, and a snapshot's size bounded as it is written, with no engine edit. Next: R06; W22 waits
+for the first larger hull.
 
 ## Priority 0: maintenance before Stage 1
 
@@ -273,7 +277,7 @@ observations, automation and accepted obligations already delivered must be cove
 | 47 / R02 | Prove the required durable I/O, directory creation and world-lock contract; provision any missing reusable primitive in Jettison and consume its committed pin. **Done 2026-11-24**, [the contract](stage-5-recovery-plan.md#durable-io-directories-and-the-world-lock-r02-2026-11-24). | R01 |
 | 48 / R03 | Implement ordered immutable step journals/catalogue and acknowledge durable acceptance only after the tested commit boundary, including autonomous empty steps. **Done 2026-11-24**, [the journal](stage-5-recovery-plan.md#the-journal-and-its-snapshots-r03-r04-2026-11-24), flushed after the fact every 30 s and not before each step, with no durable acknowledgement ([D-113](decision-ledger.md#d-113)). | R02 |
 | 49 / R04 | Implement boundary snapshots, retention and startup replay into a candidate world; prove crash/fault behavior, compatibility rejection and retry preservation. **Done 2026-11-24**, [the journal and its snapshots](stage-5-recovery-plan.md#the-journal-and-its-snapshots-r03-r04-2026-11-24); the inventory's pin and a content refusal's first differing definition go to R09. | R03 |
-| 50 / R05 | Implement bounded shutdown and verified backup/restore with storage/retention limits and interrupted-publication tests. | R04 |
+| 50 / R05 | Implement bounded shutdown and verified backup/restore with storage/retention limits and interrupted-publication tests. | R04. **Done 2026-11-24**, [delivered](stage-5-recovery-plan.md#shutdown-backups-and-limits-r05-2026-11-24). |
 | 51 / R06 | Select and document the supported runtime distribution contract, dependencies and writable-data locations. | R05 |
 | 52 / R07 | Build and test the relocatable read-only distribution outside both checkouts/development environment; retain graphics-free consumer coverage. | R06 |
 | 53 / R08 | Prove persistent multi-client reconnect/retry and zero-client recovery across trading, region control, projects, observations and automation. | R04, N03, W14 |

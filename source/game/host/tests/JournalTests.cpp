@@ -74,6 +74,13 @@ class Scratch
 	}
 
 
+	// Beside the world, not in it.
+	std::filesystem::path Elsewhere(std::string_view name) const
+	{
+		return m_root / name;
+	}
+
+
 	std::filesystem::path Batch(std::uint64_t sequence) const
 	{
 		return Root() / "journal" / std::format("{:020}", sequence);
@@ -216,6 +223,41 @@ void Damage(const std::filesystem::path &path)
 	std::string contents = Bytes(path);
 	contents[contents.size() / 2] ^= 1;
 	Put(path, contents);
+}
+
+
+std::filesystem::path Backup(
+    const std::filesystem::path &backups, const std::string &world, std::uint64_t batch)
+{
+	return backups / std::format("{}.{:020}", world, batch);
+}
+
+
+// What restoring the backup into the directory throws, empty for nothing.
+std::string RestoreRefusal(
+    const std::filesystem::path &backup, const std::filesystem::path &into, Hosted &hosted,
+    const Host::Identity &running)
+{
+	try
+	{
+		const Host::WorldDirectory directory = Host::OpenWorldDirectory(into);
+		(void)Host::Restore(backup, directory, running, hosted.world);
+		return {};
+	}
+	catch (const std::runtime_error &error)
+	{
+		return error.what();
+	}
+}
+
+
+// Whether the directory holds nothing but its lock.
+bool Empty(const std::filesystem::path &directory)
+{
+	return std::ranges::all_of(
+	    std::filesystem::directory_iterator{directory},
+	    [](const std::filesystem::directory_entry &entry)
+	    { return entry.path().filename() == Host::kLockName; });
 }
 } // namespace
 
@@ -519,4 +561,196 @@ TEST_CASE("A batch missing, damaged or out of its chain, or a catalogue so, stop
 	Put(catalogue, named);
 	CHECK(Refusal(scratch, fresh).empty());
 	CHECK(fresh.world.Clock().Step() == 2);
+}
+
+
+TEST_CASE(
+    "A clean stop runs what was queued in one last step and leaves a snapshot a start replays none "
+    "after")
+{
+	const Scratch scratch;
+	std::uint64_t hash = 0;
+	{
+		Hosted hosted;
+		const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.Root());
+		Host::Journal journal{directory, hosted.Identity()};
+		journal.Advance(hosted.world, 10);
+		// Admitted, and the server stopped before its step.
+		REQUIRE(hosted.Provision("Ada").status == Receipt::Status::Queued);
+		journal.Stop(hosted.world);
+		CHECK(hosted.world.Clock().Step() == 11);
+		const std::optional<Completed> outcome = hosted.requests.Outcome(kOperator, 1);
+		REQUIRE(outcome.has_value());
+		CHECK(outcome->result == Result::Succeeded);
+		CHECK(outcome->step == 10);
+		CHECK(journal.Head() == 1);
+		CHECK(std::filesystem::exists(scratch.Snapshot(1)));
+		hash = hosted.world.StateHash();
+		// Stopped again with nothing since: nothing is written.
+		const std::string catalogue = Bytes(scratch.Root() / "catalogue");
+		journal.Stop(hosted.world);
+		CHECK(Bytes(scratch.Root() / "catalogue") == catalogue);
+	}
+	// The start needs no batch: it loads the snapshot, which is of the last step.
+	std::filesystem::remove(scratch.Batch(1));
+	Hosted again;
+	CHECK(Refusal(scratch, again).empty());
+	CHECK(again.world.Clock().Step() == 11);
+	CHECK(again.world.StateHash() == hash);
+	CHECK(again.Provision("Ada", 1).status == Receipt::Status::Completed);
+}
+
+
+TEST_CASE("A backup is written with each snapshot, the newest kept, and one cut off is none and goes")
+{
+	const Scratch scratch;
+	const std::filesystem::path backups = scratch.Elsewhere("backups");
+	Hosted hosted;
+	Disk disk;
+	const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.Root());
+	// A flush every ten steps, a snapshot every forty and two backups kept.
+	Host::Journal journal{directory, hosted.Identity(), {10, 40}, disk.Writer(), {backups, 2}};
+	const std::string world = journal.World();
+	REQUIRE(hosted.Provision("Ada").status == Receipt::Status::Queued);
+	for (int advance = 0; advance < 26; ++advance)
+		journal.Advance(hosted.world, 5);
+	// Snapshots after batches 4, 8 and 12, and the last two backed up.
+	CHECK_FALSE(std::filesystem::exists(Backup(backups, world, 4)));
+	CHECK(std::filesystem::exists(Backup(backups, world, 8) / "catalogue"));
+	CHECK(std::filesystem::exists(Backup(backups, world, 12) / "catalogue"));
+
+	// The next, after batch 16: the batch, the catalogue, the snapshot and the catalogue again, then
+	// the backup's identity, its snapshot and, failing, its catalogue. The world goes on.
+	for (int advance = 0; advance < 5; ++advance)
+		journal.Advance(hosted.world, 5);
+	disk.failIn = 7;
+	journal.Advance(hosted.world, 5);
+	CHECK(journal.Head() == 16);
+	CHECK(std::filesystem::exists(scratch.Snapshot(16)));
+	CHECK(std::filesystem::exists(Backup(backups, world, 16) / "identity"));
+	CHECK_FALSE(std::filesystem::exists(Backup(backups, world, 16) / "catalogue"));
+	CHECK(std::filesystem::exists(Backup(backups, world, 8)));
+
+	// The one after: the one cut off goes, and the oldest.
+	for (int advance = 0; advance < 8; ++advance)
+		journal.Advance(hosted.world, 5);
+	CHECK(journal.Head() == 20);
+	CHECK_FALSE(std::filesystem::exists(Backup(backups, world, 8)));
+	CHECK(std::filesystem::exists(Backup(backups, world, 12) / "catalogue"));
+	CHECK_FALSE(std::filesystem::exists(Backup(backups, world, 16)));
+	CHECK(std::filesystem::exists(Backup(backups, world, 20) / "catalogue"));
+}
+
+
+TEST_CASE("A backup restores into an empty directory, to its head, and is only read")
+{
+	const Scratch scratch;
+	const std::filesystem::path backups = scratch.Elsewhere("backups");
+	std::filesystem::path backup;
+	std::uint64_t step = 0;
+	std::uint64_t hash = 0;
+	std::uint64_t head = 0;
+	{
+		Hosted hosted;
+		const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.Root());
+		Host::Journal journal{directory, hosted.Identity(), {10, 1'000'000}, {}, {backups}};
+		REQUIRE(hosted.Provision("Ada").status == Receipt::Status::Queued);
+		journal.Advance(hosted.world, 25);
+		REQUIRE(hosted.Provision("Bea").status == Receipt::Status::Queued);
+		journal.Stop(hosted.world);
+		step = hosted.world.Clock().Step();
+		hash = hosted.world.StateHash();
+		head = journal.Head();
+		backup = Backup(backups, journal.World(), head);
+	}
+	const std::string catalogue = Bytes(backup / "catalogue");
+	const std::string snapshot = Bytes(backup / "snapshots" / std::format("{:020}", head));
+	{
+		Hosted again;
+		const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.Elsewhere("restored"));
+		Host::Journal journal = Host::Restore(backup, directory, again.Identity(), again.world);
+		CHECK(journal.Head() == head);
+		CHECK(again.world.Clock().Step() == step);
+		CHECK(again.world.StateHash() == hash);
+		// The retry history with it: a retry answered as before, not run again.
+		CHECK(again.Provision("Ada", 1).status == Receipt::Status::Completed);
+		CHECK(again.requests.NextSequence(kOperator) == 3);
+		// And served on from there, and stopped.
+		journal.Advance(again.world, 1);
+		journal.Stop(again.world);
+	}
+	CHECK(Bytes(backup / "catalogue") == catalogue);
+	CHECK(Bytes(backup / "snapshots" / std::format("{:020}", head)) == snapshot);
+	// The restored world is one a server opens.
+	{
+		Hosted served;
+		const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.Elsewhere("restored"));
+		const Host::Journal journal{directory, served.Identity()};
+		journal.Recover(served.world);
+		CHECK(served.world.Clock().Step() == step + 1);
+	}
+
+	Hosted fresh;
+	MANIFEST_CHECK_CONTAINS(
+	    RestoreRefusal(backup, scratch.Root(), fresh, fresh.Identity()),
+	    "is not empty: a backup is restored only into an empty directory");
+	const std::filesystem::path into = scratch.Elsewhere("refused");
+	Host::Identity other = fresh.Identity();
+	other.game += "x";
+	MANIFEST_CHECK_CONTAINS(
+	    RestoreRefusal(backup, into, fresh, other), "was made by another build or other content");
+	CHECK(Empty(into));
+	// Copied, then found damaged as it is recovered: what was written goes again.
+	Damage(backup / "snapshots" / std::format("{:020}", head));
+	MANIFEST_CHECK_CONTAINS(RestoreRefusal(backup, into, fresh, fresh.Identity()), "is damaged");
+	CHECK(Empty(into));
+	CHECK(fresh.world.Clock().Step() == 0);
+}
+
+
+TEST_CASE("A save larger than a snapshot may be is not written, and the journal keeps the world")
+{
+	const Scratch scratch;
+	{
+		Hosted hosted;
+		const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.Root());
+		Host::Journal journal{directory, hosted.Identity(), {10, 40}, {}, {{}, 1, 1024}};
+		journal.Advance(hosted.world, 30);
+		try
+		{
+			journal.Advance(hosted.world, 10);
+			FAIL("a snapshot larger than the storage allows was written");
+		}
+		catch (const std::runtime_error &error)
+		{
+			MANIFEST_CHECK_CONTAINS(error.what(), "more than a snapshot may be (1024 bytes");
+		}
+		CHECK(journal.Head() == 2);
+		CHECK_FALSE(std::filesystem::exists(scratch.Snapshot(2)));
+	}
+	Hosted again;
+	CHECK(Refusal(scratch, again).empty());
+	CHECK(again.world.Clock().Step() == 40);
+}
+
+
+TEST_CASE("Backups within the world's directory are refused before the world is made")
+{
+	const Scratch scratch;
+	Hosted hosted;
+	const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.Root());
+	for (const std::filesystem::path &backups :
+	     {scratch.Root() / "backups", std::filesystem::path{scratch.Root().string() + "/"}})
+	{
+		try
+		{
+			const Host::Journal journal{directory, hosted.Identity(), {}, {}, {backups}};
+			FAIL("backups within the world were taken");
+		}
+		catch (const std::runtime_error &error)
+		{
+			MANIFEST_CHECK_CONTAINS(error.what(), "are within the world at");
+		}
+	}
+	CHECK(Empty(scratch.Root()));
 }

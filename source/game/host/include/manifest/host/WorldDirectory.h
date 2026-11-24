@@ -1,11 +1,15 @@
 #pragma once
 
 #include <filesystem>
+#include <string_view>
 
 #include <jettison/core/FileLock.h>
 
 namespace Manifest::Host
 {
+// The file under a world's directory its lock is held on.
+inline constexpr std::string_view kLockName = "lock";
+
 // A world's writable directory, held by one opener until this is destroyed: the one writer of its
 // snapshots, journal and catalogue (docs/stage-5-recovery-plan.md, "Commit model"). What is written
 // under it goes through Jettison::Core::WriteFileDurably, which makes any directory on the way

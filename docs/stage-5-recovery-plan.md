@@ -260,7 +260,8 @@ proposal below differs ([commit model](#commit-model-durable-step-batches) to
   interval, 30 s unless `--flush-seconds` says otherwise: steps, and requests that were answered.
   Everyone's world goes back to the same step, so nothing is duplicated; a client holds no
   authoritative state, and its reconnection is told the sequence to send next.
-- **A clean stop** (SIGINT, SIGTERM) flushes, and loses nothing.
+- **A clean stop** (SIGINT, SIGTERM) loses nothing: it runs what was admitted and writes a snapshot
+  ([R05](#a-clean-stop)).
 - **A receipt** means the request was queued or ran, as before R03. A request lost with a crash has
   its sequence free again, and a retry of one that was kept is answered from the ledger, not run
   twice.
@@ -416,11 +417,83 @@ build, and how the 76 KB a player splits between their reports and the rest.
 
 ### What it leaves
 
-- **R05.** A backup is the directory copied between a flush and the next; the limits on what a world
-  may store; and a request queued and not yet run at a stop, which gets no answer.
+- **R05.** Done: [shutdown, backups and limits](#shutdown-backups-and-limits-r05-2026-11-24).
 - **R09.** The gated test that pins [the state inventory](#the-state-inventory) to the names the
   world's save lists; a content refusal naming the first definition that differs; and the
   serialising pause of a large world's snapshot, 7.3 ms at 550 KB in Debug and unmeasured in Release.
+
+## Shutdown, backups and limits (R05), 2026-11-24
+
+How a server stops, what it backs up and what a world may store, on Jettison `ea66afe` with no
+engine edit. Where the [shutdown and backups](#shutdown-and-backups) proposal differs, this holds.
+
+### A clean stop
+
+On SIGINT or SIGTERM the server admits nothing more, and `Host::Journal::Stop` runs the requests
+it admitted since the last step in one more step, so none is left with a receipt and no answer; the
+server then sends their answers and a snapshot is written, so the next start loads it and replays
+nothing. The proposal's non-durable stopped answer is not needed: under
+[D-113](decision-ledger.md#d-113) every admitted request runs in the next step, and the step at a
+stop is that step. A stop costs one step and one save, 475 KB today. A write that fails exits 1
+with no stop reported, and the catalogue still names the last recovery point.
+
+### Backups
+
+`--serve --backups <directory>` writes a backup with every snapshot: hourly, and at a stop. The
+directory must be outside the world's, and is made private to its owner. A backup is a directory
+`<world>.<batch>` holding the world's `identity`, the snapshot and a `catalogue` naming that
+snapshot alone, its head the snapshot's batch, written in that order with `WriteFileDurably`. So
+the set is consistent by construction: the bytes are the ones the world's own snapshot was written
+from, between steps, and no changing directory is copied. Its recovery point is its snapshot's
+step, up to an hour behind the world's head, and is the step a restore names.
+
+- **One cut off** before its catalogue is not a backup: it is removed by the next.
+- **A backup that fails** is logged as an error and costs nothing else: the world's own files are
+  already whole, and the server goes on.
+- **The newest 24** of the world's backups are kept, a day of hourly ones and every stop's; older
+  ones go after a backup succeeds. Another world's in the same directory are left alone.
+
+### Restoring
+
+`manifest <options> --restore <backup> --world <directory>` restores into a directory holding
+nothing but its lock, and refuses one that holds anything, a world included. It refuses a backup of
+another build or other content, or whose catalogue is another world's, before writing anything.
+It then copies the identity, every snapshot the catalogue names and every batch after the oldest,
+each read and checked against its checksum, the catalogue last, and recovers the world as a start
+does. Anything it wrote is removed again when any of that fails, the catalogue first. The backup is
+only read. A restore cut off by a crash leaves an identity with no catalogue, which a server refuses
+rather than make a new world over it; clear the directory and restore again. A stopped world's own
+directory restores too, as its catalogue names more.
+
+### What a world stores
+
+| What | Bound |
+| --- | --- |
+| `identity` | Once; 255 KB today, at most 64 MiB read. |
+| `snapshots/` | Two; 475 KB each today. A save larger than `Storage::snapshotBytes`, 4 GiB, is refused as it is written, since a start would refuse it as it is read: the server exits 1 and the world keeps its last recovery point. |
+| `journal/` | The batches since the older snapshot: two hours, 240 at 30 s, more when 4,096 requests flush one early, each at most 32 MiB read. |
+| `catalogue` | Once; 377 bytes today, at most 4 KiB read. |
+| Backups | 24 of 730 KB today, 17.5 MB; at the 110 MiB guessed for 256 players, about 2.6 GiB. |
+
+### Evidence
+
+| Case | Outcome held |
+| --- | --- |
+| A request admitted, then a stop | It runs in one last step and is answered; the snapshot is of that step, and a start loads it with the batch removed. A second stop writes nothing. |
+| A flush every 10 steps, a snapshot every 40, two backups kept | Backups after batches 8 and 12; the one after 16 cut off at its catalogue is none, and the world goes on; after 20, the one cut off and the oldest are gone. |
+| A backup restored | Into an empty directory: the head, step and state hash, a retry answered from the ledger and the request sequence; served on and opened by a server again; the backup's bytes unchanged. Into a world, of another build, or damaged: refused, the directory left empty. |
+| A save over the limit | Not written; the batches before it are, and a start reaches the same step. |
+| Backups inside the world's directory, with a trailing separator or not | Refused before the world is made. |
+| The trading fixture, backed up in flight | A bid resting with its escrow, the ship cruising and Ada's every outcome as before; restored and flown on through the journal, the loop ends at its pinned state hash. |
+
+`cli_serve` stops the server with SIGINT, restores its newest backup into a new directory at the
+step it stopped at, and is refused restoring it over the world. Measured in Debug: a backup is
+730 KB, and restoring one takes 0.25 s, 0.11 s of it the start-up.
+
+### What it leaves
+
+- **R09.** A backup verified only as it is restored, not read back as it is written; the snapshot
+  limit reached at 4 GiB rather than at a test's 1 KiB; and how long a stop of a large world takes.
 
 ## Commit model: durable step batches
 
@@ -530,6 +603,8 @@ without reusing IDs. After a fatal runtime invariant failure, recover from known
 history in a fresh candidate rather than continuing a partially mutated world.
 
 ## Shutdown and backups
+
+The proposal of 2026-11-15; what R05 built is [above](#shutdown-backups-and-limits-r05-2026-11-24).
 
 Graceful shutdown stops admission, commits/executes the already selected batch, completes
 its result publication and captures a final snapshot. Provisional requests that were never

@@ -3,19 +3,12 @@
 #include <format>
 #include <optional>
 #include <stdexcept>
-#include <string_view>
 #include <utility>
 
 #include <jettison/core/File.h>
 
 namespace Manifest::Host
 {
-namespace
-{
-constexpr std::string_view kLockName = "lock";
-} // namespace
-
-
 WorldDirectory OpenWorldDirectory(const std::filesystem::path &root)
 {
 	if (Jettison::Core::CreateDirectoriesDurably(root))

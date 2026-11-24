@@ -126,6 +126,24 @@ is 63,567 bytes of 65,536), the user booked for Jettison's next change, a messag
 packets ([Jettison's roadmap](../../jettison/docs/roadmap.md#first-what-saves-and-the-simulations-interface-hold)),
 and delta snapshots in Manifest only if that is not enough.
 
+## R05: shutdown, backups and restore — 2026-11-24
+
+[Shutdown, backups and limits](stage-5-recovery-plan.md#shutdown-backups-and-limits-r05-2026-11-24),
+on pin `ea66afe` with no engine edit. A stop now runs what it admitted in one last step, answers it
+and writes a snapshot, so a request is never left with a receipt and no answer and a start replays
+nothing; `--backups` writes the world's identity, snapshot and a one-snapshot catalogue beside it
+with every snapshot, the newest 24 kept; `--restore` copies a backup into an empty directory and
+recovers it before a server takes it; a save larger than a snapshot may be is refused as it is
+written. The trading fixture is backed up in flight with a bid resting, restored and flown on
+through the journal to its pinned state hash.
+
+What it found. Taking a backup from the snapshot's bytes in memory, rather than copying the world's
+directory, makes it consistent by construction and costs one more write an hour; its recovery point
+is the snapshot's, up to an hour behind. The proposal's non-durable "stopped" answer was not needed
+once D-113 ran every admitted request in the next step. A snapshot written larger than a start reads
+would have been unreadable: the write now refuses it. The backup's read-back and a large world's stop
+time go to R09.
+
 ## R04: the journal flushed every 30 s, and its snapshots — 2026-11-24
 
 [The journal and its snapshots](stage-5-recovery-plan.md#the-journal-and-its-snapshots-r03-r04-2026-11-24),
