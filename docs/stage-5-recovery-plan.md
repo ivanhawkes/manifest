@@ -495,6 +495,98 @@ step it stopped at, and is refused restoring it over the world. Measured in Debu
 - **R09.** A backup verified only as it is restored, not read back as it is written; the snapshot
   limit reached at 4 GiB rather than at a test's 1 KiB; and how long a stop of a large world takes.
 
+## The runtime distribution contract (R06), 2026-11-24
+
+What R07 stages and tests, and what a host must give it to run. The user chose a standalone bundle and
+the TUI in it (2026-11-24, [D-114](decision-ledger.md#d-114)). Where the [relocatable
+release](#relocatable-release) proposal differs, this holds. Read from Manifest `feature-base` at
+`9dd0d81` on pin `ea66afe`. This is a planning task: no code changed, and nothing below is
+enforced yet.
+
+### What it is
+
+A tarball, `manifest-<version>-<game tree>-linux-x86_64.tar.gz`, holding one directory:
+
+| Path | Holds |
+| --- | --- |
+| `bin/` | `manifest` (the server, `--check-startup` and `--restore`), `manifest-validate`, `manifest-token` and `manifest_tui`. |
+| `share/manifest/manifest.pack` | The content, packed as the build packs it. |
+| `share/manifest/BUILD` | The build's version, its game and SDK trees ([D-111](decision-ledger.md#d-111)) and the content's fingerprint, the same values a save's `Manifest.Save` holds. |
+| `share/doc/manifest/` | Manifest's `LICENSE` and the licence of every library linked into a binary, each from its source at its pinned version. |
+
+R07 stages it from a clean commit, so its game tree names a commit. The directory may be anywhere
+and read-only. Nothing is written to it, nor to the working directory.
+
+### What a host must have
+
+- **x86-64 Linux with glibc 2.43 or newer**, loaded through `/lib64/ld-linux-x86-64.so.2`. 2.43 is
+  the highest symbol version the release binaries ask for (`remainder@GLIBC_2.43`, measured with
+  `objdump -T`). It is not a chosen floor: the binaries are built against nixpkgs' glibc, 2.44 today,
+  so the floor goes up when the development environment's nixpkgs does. R07 checks the staged
+  binaries against the declared floor and fails when they ask for more. The binaries need only
+  glibc's own `libc`, `libm`, `libpthread`, `libdl` and `librt`.
+- **On NixOS**, `programs.nix-ld`, which puts a loader at `/lib64` and the system's glibc behind it
+  (2.44 on Lythir, 2026-11-24).
+- **`/proc` mounted.** The default content is found from `/proc/self/exe`
+  (`Jettison::Platform::ExecutablePath`). So a binary is started directly, never through a loader
+  named on its command line (`ld.so bin/manifest`), which would make `/proc/self/exe` the loader.
+- **A local file system** for the world, which `flock` holds
+  ([R02](#durable-io-directories-and-the-world-lock-r02-2026-11-24)); NFS is not supported.
+- **`HOME`**, or the XDG variables below, as absolute paths.
+- **For the TUI, a terminal.** No display, GPU, Vulkan loader or window system, for any binary.
+
+Not supported: other architectures, musl, older glibc, Windows and macOS, and the claim that any
+Linux with a new enough glibc will do. Only the hosts R07 runs the bundle on are tested.
+
+### How the binaries are linked
+
+- `libstdc++` and `libgcc` are linked statically (`-static-libstdc++ -static-libgcc`); every other
+  library already is, libsodium, ENet and FTXUI included.
+- No `RUNPATH`, and the interpreter is `/lib64/ld-linux-x86-64.so.2`. Today both name the
+  devenv shell's Nix store paths. R07 checks that no binary's interpreter, `NEEDED` or `RUNPATH`
+  names `/nix/store` or any absolute path but the loader's.
+- No `libvulkan.so.1`. The TUI asks for it today, through the console's `Jettison::Devtools`, whose
+  `imgui` target compiles ImGui's GLFW and Vulkan backends and links both publicly. The TUI never
+  draws. This is the one engine gap: Jettison provisions the split before R07 (below).
+
+### Where it reads and writes
+
+Content and writable data stay apart. Each default below is an option's, and the option still
+overrides it.
+
+| What | Default | Option |
+| --- | --- | --- |
+| Content | `<bin>/../share/manifest/manifest.pack`, from `ExecutablePath` | `--content`, `--overlay` |
+| The world | `$XDG_DATA_HOME/manifest/world` | `--world` |
+| Backups | `$XDG_DATA_HOME/manifest/backups`, written by default | `--backups` |
+| The token file | `$XDG_CONFIG_HOME/manifest/tokens`, for `manifest` and `manifest-token` | `--tokens` |
+| The TUI's transcript | `$XDG_STATE_HOME/manifest/tui-session.log` | none |
+| The server's log | stderr, for the service manager to keep | none |
+
+The XDG directories default under `HOME` as the specification has it
+(`Jettison::Platform::ResolvePaths("manifest")`), and each is made 0700 when it is first written
+to. `--scenario` stays required: which game to make is the operator's choice. Backups become a
+default because a server run with none has only its world's directory to lose.
+
+### What it leaves each task
+
+- **Jettison, before R07.** ImGui's core in `imgui`, and its GLFW and Vulkan backends in a target
+  that only `render` links, so a consumer of `Devtools` links no window system or Vulkan. The engine's
+  acceptance: an executable linking `Devtools` alone has no `libvulkan` or `libglfw` among its
+  `NEEDED` and starts with no Vulkan loader present. Manifest's: the staged `manifest_tui` passes
+  the same check.
+- **R07.** The defaults above: `--content` optional in `Host::ParseOptions`, the TUI taking the
+  host's options rather than the compiled-in `MANIFEST_MOD_DIRECTORY`, and its transcript moved from
+  `build/tui-session.log`. The build tree laid out as the bundle (`bin/`, `share/manifest/`) so a
+  development run finds its content the same way. The link flags, the staging script, `BUILD` and
+  the licences. The checks above. Then the bundle unpacked into a read-only directory outside both
+  checkouts and run under `env -i` with only `HOME` and `PATH`, outside the devenv shell: a
+  start, a server stopped and restored, a validation of the pack, a token issued, and the TUI
+  connected. The CPU-only configure (`clang-notui`) kept as it is.
+- **R09.** The bundle's evidence in the stage's close, and the glibc floor restated from the last
+  build.
+
+
 ## Commit model: durable step batches
 
 The proposal of 2026-11-15, kept as it was made. Its commit before execution and its durable
@@ -624,6 +716,8 @@ before publishing it as the active world. Keep the original untouched until veri
 Test a restored backup with open orders, escrow, an in-flight ship and retry history.
 
 ## Relocatable release
+
+The proposal of 2026-11-15; what R06 selected is [above](#the-runtime-distribution-contract-r06-2026-11-24).
 
 Stage a Manifest executable, validator, required engine resources, Manifest content pack,
 runtime libraries as needed, licences and a build/content manifest. Do not ship the source

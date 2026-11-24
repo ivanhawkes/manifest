@@ -126,6 +126,21 @@ is 63,567 bytes of 65,536), the user booked for Jettison's next change, a messag
 packets ([Jettison's roadmap](../../jettison/docs/roadmap.md#first-what-saves-and-the-simulations-interface-hold)),
 and delta snapshots in Manifest only if that is not enough.
 
+## R06: the runtime distribution contract — 2026-11-24
+
+[The runtime distribution contract](stage-5-recovery-plan.md#the-runtime-distribution-contract-r06-2026-11-24),
+a planning task on pin `ea66afe` ([D-114](decision-ledger.md#d-114)). It selects a standalone
+tarball: the four binaries, the packed content and the licences, for x86-64 Linux with glibc 2.43 or
+newer and nix-ld on NixOS. Content is found from the executable, and the world, backups, tokens and
+the TUI's transcript go under the XDG directories for `manifest`.
+
+What it found. The release binaries' interpreter and `RUNPATH` name the devenv shell's store paths.
+Their glibc floor is whatever nixpkgs builds against, 2.43 today. A binary started through a loader
+named on its command line would see `/proc/self/exe` as the loader, which rules out a bundled
+`ld.so`. The TUI links `libvulkan.so.1` through the engine's `imgui` target without ever drawing,
+and it reads its content from a source path compiled into it and writes its transcript under
+`./build`. The first is Jettison's to provision; the rest is R07's.
+
 ## R05: shutdown, backups and restore — 2026-11-24
 
 [Shutdown, backups and limits](stage-5-recovery-plan.md#shutdown-backups-and-limits-r05-2026-11-24),
