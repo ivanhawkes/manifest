@@ -126,6 +126,16 @@ is 63,567 bytes of 65,536), the user booked for Jettison's next change, a messag
 packets ([Jettison's roadmap](../../jettison/docs/roadmap.md#first-what-saves-and-the-simulations-interface-hold)),
 and delta snapshots in Manifest only if that is not enough.
 
+## The engine's ImGui split, pin d9f565c — 2026-11-24
+
+The engine gap R06 named, provisioned in Jettison before R07: its `imgui` target is ImGui's core
+and its FreeType rasteriser, and `imgui_backends` the GLFW and Vulkan backends, which `render`
+alone links ([Jettison's history](../../jettison/docs/history.md#neutral-sdk-and-manifest-integration)).
+Its `devtools_alone` test links `Devtools` alone and fails on a `libvulkan` or `libglfw` among its
+`NEEDED` or mapped while it runs. Here, `manifest_tui` on pin `ea66afe` needed `libvulkan.so.1`;
+on `d9f565c` it needs `libdl`, `libstdc++`, `libm`, `libgcc_s`, `libpthread` and `libc`, and ran
+on a terminal with neither mapped. No Manifest code changed.
+
 ## R06: the runtime distribution contract — 2026-11-24
 
 [The runtime distribution contract](stage-5-recovery-plan.md#the-runtime-distribution-contract-r06-2026-11-24),

@@ -1,13 +1,14 @@
 # Session handoff
 
-## Next, on resuming — 2026-11-24 (R06 done, then the engine's ImGui split, then R07)
+## Next, on resuming — 2026-11-24 (R06 done and the engine's ImGui split pinned, then R07)
 
 R06 is done: [the runtime distribution contract](stage-5-recovery-plan.md#the-runtime-distribution-contract-r06-2026-11-24),
 a planning task with no code ([D-114](decision-ledger.md#d-114)). The user chose a standalone tarball for
 x86-64 Linux with glibc 2.39 or newer (three newer symbols bound to older versions), nix-ld on
-NixOS, with the TUI in it. Its one engine gap is
-Jettison's `imgui` target, which carries ImGui's GLFW and Vulkan backends, so the TUI links
-`libvulkan.so.1` through `Devtools`. Jettison splits that before R07 stages and tests the bundle.
+NixOS, with the TUI in it. Its one engine gap, Jettison's `imgui` target carrying ImGui's GLFW and
+Vulkan backends so the TUI linked `libvulkan.so.1` through `Devtools`, is provisioned and pinned at
+`d9f565c` ([history](history.md#the-engines-imgui-split-pin-d9f565c--2026-11-24)): the TUI needs
+neither `libvulkan` nor `libglfw`. R07 stages and tests the bundle, its checks the TUI's among them.
 
 R05 is done: [shutdown, backups and limits](stage-5-recovery-plan.md#shutdown-backups-and-limits-r05-2026-11-24),
 on pin `ea66afe` with no engine edit. `manifest --serve --world <directory> --backups <directory>`

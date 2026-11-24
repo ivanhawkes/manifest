@@ -551,7 +551,7 @@ Linux with a new enough glibc will do. Only the hosts R07 runs the bundle on are
   names `/nix/store` or any absolute path but the loader's.
 - No `libvulkan.so.1`. The TUI asks for it today, through the console's `Jettison::Devtools`, whose
   `imgui` target compiles ImGui's GLFW and Vulkan backends and links both publicly. The TUI never
-  draws. This is the one engine gap: Jettison provisions the split before R07 (below).
+  draws. This is the one engine gap, provisioned in Jettison `d9f565c` before R07 (below).
 
 ### Where it reads and writes
 
@@ -578,7 +578,9 @@ default because a server run with none has only its world's directory to lose.
   that only `render` links, so a consumer of `Devtools` links no window system or Vulkan. The engine's
   acceptance: an executable linking `Devtools` alone has no `libvulkan` or `libglfw` among its
   `NEEDED` and starts with no Vulkan loader present. Manifest's: the staged `manifest_tui` passes
-  the same check.
+  the same check. **Done** 2026-11-24 on pin `d9f565c`: `imgui_backends` holds the two backends and
+  `render` alone links it; Jettison's `devtools_alone` test holds the engine's check, and
+  `manifest_tui` needs neither library and runs with neither mapped. R07's checks gate it.
 - **R07.** The defaults above: `--content` optional in `Host::ParseOptions`, the TUI taking the
   host's options rather than the compiled-in `MANIFEST_MOD_DIRECTORY`, and its transcript moved from
   `build/tui-session.log`. The build tree laid out as the bundle (`bin/`, `share/manifest/`) so a

@@ -144,7 +144,8 @@ recovery, and a snapshot's size bounded as it is written, with no engine edit. R
 a planning task, selects a standalone tarball for x86-64 Linux with glibc 2.39 or newer, the TUI in
 it, content found beside the executable and writable data under the XDG directories
 ([D-114](decision-ledger.md#d-114)), and names one engine gap: the TUI links Vulkan through
-`Devtools`. Next: that provision in Jettison, then R07; W22 waits
+`Devtools`, provisioned in Jettison and pinned at `d9f565c` (2026-11-24): the TUI needs neither
+`libvulkan` nor `libglfw`. Next: R07; W22 waits
 for the first larger hull.
 
 ## Priority 0: maintenance before Stage 1
@@ -283,7 +284,7 @@ observations, automation and accepted obligations already delivered must be cove
 | 48 / R03 | Implement ordered immutable step journals/catalogue and acknowledge durable acceptance only after the tested commit boundary, including autonomous empty steps. **Done 2026-11-24**, [the journal](stage-5-recovery-plan.md#the-journal-and-its-snapshots-r03-r04-2026-11-24), flushed after the fact every 30 s and not before each step, with no durable acknowledgement ([D-113](decision-ledger.md#d-113)). | R02 |
 | 49 / R04 | Implement boundary snapshots, retention and startup replay into a candidate world; prove crash/fault behavior, compatibility rejection and retry preservation. **Done 2026-11-24**, [the journal and its snapshots](stage-5-recovery-plan.md#the-journal-and-its-snapshots-r03-r04-2026-11-24); the inventory's pin and a content refusal's first differing definition go to R09. | R03 |
 | 50 / R05 | Implement bounded shutdown and verified backup/restore with storage/retention limits and interrupted-publication tests. | R04. **Done 2026-11-24**, [delivered](stage-5-recovery-plan.md#shutdown-backups-and-limits-r05-2026-11-24). |
-| 51 / R06 | Select and document the supported runtime distribution contract, dependencies and writable-data locations. **Done 2026-11-24**, [the contract](stage-5-recovery-plan.md#the-runtime-distribution-contract-r06-2026-11-24), [D-114](decision-ledger.md#d-114); one engine gap, ImGui's backends out of `Devtools`, before R07. | R05 |
+| 51 / R06 | Select and document the supported runtime distribution contract, dependencies and writable-data locations. **Done 2026-11-24**, [the contract](stage-5-recovery-plan.md#the-runtime-distribution-contract-r06-2026-11-24), [D-114](decision-ledger.md#d-114); one engine gap, ImGui's backends out of `Devtools`, provisioned in Jettison and pinned at `d9f565c` (2026-11-24). | R05 |
 | 52 / R07 | Build and test the relocatable read-only distribution outside both checkouts/development environment; retain graphics-free consumer coverage. | R06 |
 | 53 / R08 | Prove persistent multi-client reconnect/retry and zero-client recovery across trading, region control, projects, observations and automation. | R04, N03, W14 |
 | 54 / R09 | Close Stage 5: consolidate fault/restart, backup, relocation, cross-build replay and final gate evidence; record measured I/O, recovery and storage limits. | R05, R07, R08 |
