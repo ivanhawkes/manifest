@@ -246,7 +246,12 @@ TEST_CASE("Provisioning gives a player a company, its credits and a ship docked 
 	const std::size_t entities = registry.view<const World::Identity>().size();
 	CHECK(hosted.Provision("Ada") == Result::AlreadyProvisioned);
 	CHECK(hosted.Run(kHost, kProvision, Provision{"", "", ""}) == Result::MalformedPayload);
+	// An ID admission would refuse to act as.
+	const std::string longest(Manifest::Command::kMaxActorIdBytes, 'A');
+	CHECK(hosted.Provision(longest + "A") == Result::MalformedPayload);
 	CHECK(registry.view<const World::Identity>().size() == entities);
+	Hosted bounded;
+	CHECK(bounded.Provision(longest) == Result::Succeeded);
 
 	// Every player starts at the one venue, connected, until its life support's four connections are
 	// taken (D-047), and the rejection spends no ID.

@@ -208,7 +208,8 @@ entt::entity Created(SimWorld &world, World::Identities &identities, Kind kind, 
 
 Result Provisioned(SimWorld &world, Rules &rules, const Provision &provision)
 {
-	if (provision.principalId.empty())
+	// Admission's bound, so the principal made can act.
+	if (provision.principalId.empty() || provision.principalId.size() > Command::kMaxActorIdBytes)
 		return Result::MalformedPayload;
 	World::Identities &identities = rules.identities;
 	if (identities.Find(Kind::Principal, provision.principalId) != entt::null)

@@ -137,7 +137,9 @@ was unbounded, so a batch of the most requests could outgrow what a start reads 
 `static_assert` on the batch's bound and a check before it is written); a restore checked each file
 as it copied it, and now checks every one first; a program writing only its tokens needed every XDG
 variable or HOME (Jettison's `ResolvePath`, one directory at a time); and no test cut a snapshot's
-write or its catalogue's off, which the `host` suite now does.
+write or its catalogue's off, which the `host` suite now does. Round 2 found each resolved and one
+more: provisioning made a principal whose ID was past that bound, so it could never act, and now
+refuses it as malformed.
 
 ## R09: Stage 5 closed — 2026-11-25
 
