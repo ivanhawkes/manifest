@@ -1,19 +1,23 @@
 // manifest <options> --check-startup (Manifest::Host::kOptionsUsage): starts Manifest on the content,
 // reports it ready, shuts down and exits 0.
-// manifest <options> --serve --world <directory> --tokens <file> [--address <ipv4>] [--port <n>]: the
-// dedicated server. It holds the world's directory, makes the world there or takes the steps its
-// journal has committed, then steps it unattended at its fixed step, with or without clients, each
-// step committed to the journal before it is taken (Manifest::Host::Journal). It admits the clients
-// the token file names (manifest-token), and stops cleanly on SIGINT or SIGTERM. The port defaults
-// to 0, an ephemeral one, which the serving line names.
+// manifest <options> --serve --world <directory> --tokens <file> [--address <ipv4>] [--port <n>]
+// [--flush-seconds <n>] [--snapshot-seconds <n>]: the dedicated server. It holds the world's
+// directory, makes the world there or recovers it from its newest snapshot and the journal after it,
+// then steps it unattended at its fixed step, with or without clients. It writes what has run to the
+// journal every flush interval, 30 s unless given, which is the most a crash loses, and a snapshot
+// every snapshot interval, an hour unless given (Manifest::Host::Journal). It admits the clients the
+// token file names (manifest-token), and stops cleanly on SIGINT or SIGTERM, losing nothing. The port
+// defaults to 0, an ephemeral one, which the serving line names.
 // A failed start-up exits 1, a bad command line 2.
 #include <manifest/host/Journal.h>
 #include <manifest/host/Start.h>
 #include <manifest/host/WorldDirectory.h>
 #include <manifest/remote/Server.h>
 
+#include <algorithm>
 #include <charconv>
 #include <chrono>
+#include <cmath>
 #include <csignal>
 #include <cstdint>
 #include <cstdio>
@@ -43,7 +47,7 @@ int Usage()
 	    std::format(
 	        "usage: manifest {} --check-startup\n"
 	        "       manifest {} --serve --world <directory> --tokens <file> [--address <ipv4>] "
-	        "[--port <n>]\n",
+	        "[--port <n>] [--flush-seconds <n>] [--snapshot-seconds <n>]\n",
 	        options, options)
 	        .c_str(),
 	    stderr);
@@ -57,10 +61,22 @@ struct Serve
 	std::string tokens;
 	std::string address{"127.0.0.1"};
 	std::uint16_t port{0};
+	// What a crash may lose, and what a start may replay (D-113).
+	std::uint32_t flushSeconds{30};
+	std::uint32_t snapshotSeconds{3'600};
 };
 
 
-// None unless the rest is --serve then --world, --tokens and the optional endpoint, each once.
+// Reads a whole decimal number, false for anything else or one the type cannot hold.
+template <typename T> bool ReadNumber(std::string_view text, T &number)
+{
+	const auto [end, error] = std::from_chars(text.data(), text.data() + text.size(), number);
+	return error == std::errc{} && end == text.data() + text.size();
+}
+
+
+// None unless the rest is --serve then --world, --tokens and the optional endpoint and intervals,
+// each once, an interval at least a second.
 std::optional<Serve> ParseServe(const std::vector<std::string_view> &rest)
 {
 	if (rest.empty() || rest[0] != "--serve" || rest.size() % 2 == 0)
@@ -70,6 +86,8 @@ std::optional<Serve> ParseServe(const std::vector<std::string_view> &rest)
 	bool tokens = false;
 	bool address = false;
 	bool port = false;
+	bool flush = false;
+	bool snapshot = false;
 	for (std::size_t index = 1; index < rest.size(); index += 2)
 	{
 		const std::string_view value = rest[index + 1];
@@ -81,9 +99,17 @@ std::optional<Serve> ParseServe(const std::vector<std::string_view> &rest)
 			serve.address = value;
 		else if (rest[index] == "--port" && !std::exchange(port, true))
 		{
-			const auto [end, error] =
-			    std::from_chars(value.data(), value.data() + value.size(), serve.port);
-			if (error != std::errc{} || end != value.data() + value.size())
+			if (!ReadNumber(value, serve.port))
+				return std::nullopt;
+		}
+		else if (rest[index] == "--flush-seconds" && !std::exchange(flush, true))
+		{
+			if (!ReadNumber(value, serve.flushSeconds) || serve.flushSeconds == 0)
+				return std::nullopt;
+		}
+		else if (rest[index] == "--snapshot-seconds" && !std::exchange(snapshot, true))
+		{
+			if (!ReadNumber(value, serve.snapshotSeconds) || serve.snapshotSeconds == 0)
 				return std::nullopt;
 		}
 		else
@@ -101,8 +127,16 @@ void RunServer(Jettison::Host::Session &session, const Serve &serve)
 	Jettison::Sim::SimWorld &world = session.World();
 	// Before a client can reach the server: the world held, and brought to its journal's last step.
 	const Manifest::Host::WorldDirectory directory = Manifest::Host::OpenWorldDirectory(serve.world);
-	Manifest::Host::Journal journal{directory, Manifest::Host::RunningIdentity(session)};
-	journal.Replay(world);
+	const auto stepsIn = [&](std::uint32_t seconds)
+	{
+		return std::max<std::uint64_t>(
+		    1, static_cast<std::uint64_t>(std::llround(seconds / world.FixedStep())));
+	};
+	Manifest::Host::Journal journal{
+	    directory,
+	    Manifest::Host::RunningIdentity(session),
+	    {stepsIn(serve.flushSeconds), stepsIn(serve.snapshotSeconds)}};
+	journal.Recover(world);
 	Manifest::Remote::Server server{session, serve.tokens, serve.address, serve.port};
 	std::signal(SIGINT, [](int) { g_stopping = 1; });
 	std::signal(SIGTERM, [](int) { g_stopping = 1; });
@@ -122,19 +156,15 @@ void RunServer(Jettison::Host::Session &session, const Serve &serve)
 		    static_cast<std::uint64_t>(steps.Accumulate(world.Clock().ScaledDelta(elapsed)));
 		if (count == 0)
 			continue;
-		// The steps the time makes are the journal's before they are the world's, and the requests
-		// that run in them are acknowledged between the two. A commit that fails throws: the server
-		// stops with none of them acknowledged or run, and the next start finds what was committed.
-		journal.Commit(world, count);
-		server.Acknowledge();
-		// Quiet steps are passed over at once (Jettison::Sim::Quiet).
-		const std::uint64_t target = world.Clock().Step() + count;
-		while (world.Clock().Step() < target)
-			world.FastForward(target);
+		// The steps the time makes, quiet ones passed over at once (Jettison::Sim::Quiet), written to
+		// the journal when a flush is due. A write that fails throws, and the server stops: the next
+		// start finds what the journal holds.
+		journal.Advance(world, count);
 		// What the engine raises is presentation's, and a dedicated server presents none of it.
 		(void)world.Events().Take();
 		server.Publish();
 	}
+	journal.Flush();
 	// The time dropped is the steps the disk or the step itself could not keep to the clock.
 	Jettison::Core::Log(
 	    Jettison::Core::Severity::Info, kManifest, "stopping at step {}, batch {}, {:.1f} s dropped",
@@ -168,7 +198,7 @@ int main(int argc, char **argv)
 	catch (const std::runtime_error &error)
 	{
 		// A failed start-up (Jettison::Host::StartupError), the world's directory, journal, token
-		// file or address the server could not take, or a commit that failed.
+		// file or address the server could not take, or a write of the journal's that failed.
 		Jettison::Core::Log(Severity::Error, kManifest, "{}", error.what());
 		return 1;
 	}

@@ -79,6 +79,13 @@ class Scratch
 		return Root() / "journal" / std::format("{:020}", sequence);
 	}
 
+
+	// The snapshot taken after the batch.
+	std::filesystem::path Snapshot(std::uint64_t batch) const
+	{
+		return Root() / "snapshots" / std::format("{:020}", batch);
+	}
+
   private:
 	std::filesystem::path m_root;
 };
@@ -93,15 +100,15 @@ struct Hosted
 	}
 
 
-	// The administrator's next request: a company for the principal.
-	Receipt Provision(const std::string &principal)
+	// The administrator's request, its next unless a sequence is given: a company for the principal.
+	Receipt Provision(const std::string &principal, std::uint64_t sequence = 0)
 	{
 		const std::vector<std::byte> payload = Jettison::Serialise::BinaryArchive::Write(
 		    Company::Provision{principal, principal, principal + " Freight"},
 		    Jettison::Serialise::FormatVersion{Company::kVersion});
 		return requests.Admit(
-		    world, kOperator, requests.NextSequence(kOperator), std::string{Company::kProvision},
-		    Company::kVersion, payload);
+		    world, kOperator, sequence == 0 ? requests.NextSequence(kOperator) : sequence,
+		    std::string{Company::kProvision}, Company::kVersion, payload);
 	}
 
 
@@ -112,13 +119,6 @@ struct Hosted
 			world.FastForward(until);
 	}
 
-
-	// The steps committed, then taken, as the server takes them.
-	void Advance(Host::Journal &journal, std::uint64_t steps)
-	{
-		journal.Commit(world, steps);
-		Take(steps);
-	}
 
 	std::unique_ptr<Jettison::Host::Session> pSession{
 	    Host::Start({MANIFEST_MOD_DIRECTORY, {}, "trading"})};
@@ -162,37 +162,60 @@ struct Disk
 };
 
 
-// A new world whose first commit, of one step and the request that provisions Ada, fails at the
-// write that many on: nothing is acknowledged, and the journal takes no other commit.
-void FailFirstCommit(const Scratch &scratch, int failIn, bool afterWriting)
+// A new world whose first flush, of one step and the request that provisions Ada, fails at the write
+// that many on: the journal then takes nothing more.
+void FailFirstFlush(const Scratch &scratch, int failIn, bool afterWriting)
 {
 	Hosted hosted;
 	Disk disk;
 	const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.Root());
-	Host::Journal journal{directory, hosted.Identity(), disk.Writer()};
+	Host::Journal journal{directory, hosted.Identity(), {}, disk.Writer()};
 	REQUIRE(hosted.Provision("Ada").status == Receipt::Status::Queued);
+	journal.Advance(hosted.world, 1);
 	disk.failIn = failIn;
 	disk.afterWriting = afterWriting;
-	CHECK_THROWS_AS(journal.Commit(hosted.world, 1), std::runtime_error);
+	CHECK_THROWS_AS(journal.Flush(), std::runtime_error);
 	CHECK(journal.Head() == 0);
-	CHECK_THROWS_AS(journal.Commit(hosted.world, 1), std::logic_error);
+	CHECK_THROWS_AS(journal.Flush(), std::logic_error);
+	CHECK_THROWS_AS(journal.Advance(hosted.world, 1), std::logic_error);
 }
 
 
-// What opening the world and replaying its journal into the fresh world throws, empty for nothing.
+// What opening the world and recovering it into the fresh world throws, empty for nothing.
 std::string Refusal(const Scratch &scratch, Hosted &hosted)
 {
 	try
 	{
 		const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.Root());
 		const Host::Journal journal{directory, hosted.Identity()};
-		journal.Replay(hosted.world);
+		journal.Recover(hosted.world);
 		return {};
 	}
 	catch (const std::runtime_error &error)
 	{
 		return error.what();
 	}
+}
+
+
+std::string Bytes(const std::filesystem::path &path)
+{
+	std::ifstream in{path, std::ios::binary};
+	return std::string{std::istreambuf_iterator<char>{in}, {}};
+}
+
+
+void Put(const std::filesystem::path &path, const std::string &contents)
+{
+	std::ofstream{path, std::ios::binary | std::ios::trunc} << contents;
+}
+
+
+void Damage(const std::filesystem::path &path)
+{
+	std::string contents = Bytes(path);
+	contents[contents.size() / 2] ^= 1;
+	Put(path, contents);
 }
 } // namespace
 
@@ -259,34 +282,43 @@ TEST_CASE(
 }
 
 
-TEST_CASE("A journal replayed takes a fresh world to the state and the outcomes of the one that ran")
+TEST_CASE("A world recovered is the one that ran as its last flush left it, and what ran after is lost")
 {
 	const Scratch scratch;
+	// A flush every hundred steps, and no snapshot.
+	const Host::Cadence cadence{100, 1'000'000};
 	std::uint64_t step = 0;
 	std::uint64_t hash = 0;
 	{
 		Hosted hosted;
 		const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.Root());
-		Host::Journal journal{directory, hosted.Identity()};
+		Host::Journal journal{directory, hosted.Identity(), cadence};
 		REQUIRE(hosted.Provision("Ada").status == Receipt::Status::Queued);
-		hosted.Advance(journal, 1);
-		// Steps with no request are committed as any others are, and several to a batch.
-		hosted.Advance(journal, 600);
+		journal.Advance(hosted.world, 1);
+		CHECK(journal.Head() == 0);
+		// Steps with no request are the journal's as any others are.
+		journal.Advance(hosted.world, 600);
+		CHECK(journal.Head() == 1);
 		REQUIRE(hosted.Provision("Ada").status == Receipt::Status::Queued);
-		hosted.Advance(journal, 3);
-		CHECK(journal.Head() == 3);
+		journal.Advance(hosted.world, 3);
+		journal.Flush();
+		CHECK(journal.Head() == 2);
+		journal.Flush();
+		CHECK(journal.Head() == 2);
 		step = hosted.world.Clock().Step();
 		hash = hosted.world.StateHash();
-		// Queued and never committed, so promised nothing: the journal's world never has it.
+		// Run, answered, and never flushed: a crash now loses it.
 		REQUIRE(hosted.Provision("Ada").status == Receipt::Status::Queued);
-		CHECK(hosted.requests.NextSequence(kOperator) == 4);
+		journal.Advance(hosted.world, 5);
+		CHECK(hosted.requests.Outcome(kOperator, 3).has_value());
+		CHECK(journal.Head() == 2);
 	}
 
 	Hosted again;
 	const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.Root());
-	Host::Journal journal{directory, again.Identity()};
-	CHECK(journal.Head() == 3);
-	journal.Replay(again.world);
+	Host::Journal journal{directory, again.Identity(), cadence};
+	CHECK(journal.Head() == 2);
+	journal.Recover(again.world);
 	CHECK(again.world.Clock().Step() == step);
 	CHECK(again.world.StateHash() == hash);
 	const std::optional<Completed> first = again.requests.Outcome(kOperator, 1);
@@ -297,32 +329,105 @@ TEST_CASE("A journal replayed takes a fresh world to the state and the outcomes 
 	REQUIRE(second.has_value());
 	CHECK(second->result == Result::AlreadyProvisioned);
 	CHECK(second->step == 601);
+	// The lost request's sequence is free again, and a retry of one that was kept is answered as
+	// it was, not run again.
 	CHECK(again.requests.NextSequence(kOperator) == 3);
+	const Receipt retried = again.Provision("Ada", 1);
+	CHECK(retried.status == Receipt::Status::Completed);
+	CHECK(retried.result == Result::Succeeded);
 
-	// And goes on from where the journal ends, and nowhere else.
-	CHECK_THROWS_AS(journal.Commit(again.world, 0), std::logic_error);
-	again.Advance(journal, 1);
-	CHECK(journal.Head() == 4);
+	// And goes on from there, in a world stepped nowhere else.
+	journal.Advance(again.world, 1);
 	again.Take(1);
-	CHECK_THROWS_AS(journal.Commit(again.world, 1), std::logic_error);
+	CHECK_THROWS_AS(journal.Advance(again.world, 1), std::logic_error);
 }
 
 
-TEST_CASE("A batch that could not be written is not committed, and its request was never run")
+TEST_CASE(
+    "Snapshots are kept two deep with the batches since the older, and a start loads the newest that "
+    "reads")
 {
 	const Scratch scratch;
-	FailFirstCommit(scratch, 1, false);
+	// A flush every ten steps and a snapshot every forty.
+	const Host::Cadence cadence{10, 40};
+	std::uint64_t hash = 0;
+	{
+		Hosted hosted;
+		const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.Root());
+		Host::Journal journal{directory, hosted.Identity(), cadence};
+		REQUIRE(hosted.Provision("Ada").status == Receipt::Status::Queued);
+		for (int advance = 0; advance < 26; ++advance)
+			journal.Advance(hosted.world, 5);
+		CHECK(journal.Head() == 13);
+		hash = hosted.world.StateHash();
+	}
+	// Snapshots after batches 4, 8 and 12: the last two are kept, with every batch after the older.
+	CHECK_FALSE(std::filesystem::exists(scratch.Snapshot(4)));
+	CHECK(std::filesystem::exists(scratch.Snapshot(8)));
+	CHECK(std::filesystem::exists(scratch.Snapshot(12)));
+	CHECK_FALSE(std::filesystem::exists(scratch.Batch(8)));
+	CHECK(std::filesystem::exists(scratch.Batch(9)));
+	CHECK(std::filesystem::exists(scratch.Batch(13)));
+
+	const auto recovers = [&]
+	{
+		Hosted again;
+		CHECK(Refusal(scratch, again).empty());
+		CHECK(again.world.Clock().Step() == 130);
+		CHECK(again.world.StateHash() == hash);
+		const std::optional<Completed> outcome = again.requests.Outcome(kOperator, 1);
+		REQUIRE(outcome.has_value());
+		CHECK(outcome->result == Result::Succeeded);
+	};
+	recovers();
+	// The newest does not read: the one before it and the batches since reach the same world.
+	Damage(scratch.Snapshot(12));
+	recovers();
+	// Neither reads, and the batches before them are gone: there is nowhere to start from.
+	std::filesystem::remove(scratch.Snapshot(8));
+	Hosted last;
+	MANIFEST_CHECK_CONTAINS(Refusal(scratch, last), scratch.Snapshot(8).string() + " is missing");
+}
+
+
+TEST_CASE("A world with one snapshot, which does not read, is recovered from its start")
+{
+	const Scratch scratch;
+	std::uint64_t hash = 0;
+	{
+		Hosted hosted;
+		const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.Root());
+		Host::Journal journal{directory, hosted.Identity(), {10, 40}};
+		REQUIRE(hosted.Provision("Ada").status == Receipt::Status::Queued);
+		journal.Advance(hosted.world, 50);
+		CHECK(journal.Head() == 1);
+		hash = hosted.world.StateHash();
+	}
+	REQUIRE(std::filesystem::exists(scratch.Snapshot(1)));
+	Damage(scratch.Snapshot(1));
+	Hosted again;
+	CHECK(Refusal(scratch, again).empty());
+	CHECK(again.world.Clock().Step() == 50);
+	CHECK(again.world.StateHash() == hash);
+}
+
+
+TEST_CASE("A batch that could not be written is not in the journal, and the world starts without it")
+{
+	const Scratch scratch;
+	FailFirstFlush(scratch, 1, false);
 	CHECK_FALSE(std::filesystem::exists(scratch.Batch(1)));
 
 	Hosted again;
 	const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.Root());
 	Host::Journal journal{directory, again.Identity()};
 	CHECK(journal.Head() == 0);
-	journal.Replay(again.world);
+	journal.Recover(again.world);
 	CHECK(again.world.Clock().Step() == 0);
 	CHECK(again.requests.NextSequence(kOperator) == 1);
 	// The half-written file beside it is in no one's way.
-	again.Advance(journal, 1);
+	journal.Advance(again.world, 1);
+	journal.Flush();
 	CHECK(journal.Head() == 1);
 }
 
@@ -330,17 +435,18 @@ TEST_CASE("A batch that could not be written is not committed, and its request w
 TEST_CASE("A batch the catalogue was never made to name is an orphan: not run, and written over")
 {
 	const Scratch scratch;
-	FailFirstCommit(scratch, 2, false);
+	FailFirstFlush(scratch, 2, false);
 	CHECK(std::filesystem::exists(scratch.Batch(1)));
 	{
 		Hosted again;
 		const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.Root());
 		Host::Journal journal{directory, again.Identity()};
 		CHECK(journal.Head() == 0);
-		journal.Replay(again.world);
+		journal.Recover(again.world);
 		CHECK(again.world.Clock().Step() == 0);
 		CHECK(again.requests.NextSequence(kOperator) == 1);
-		again.Advance(journal, 2);
+		journal.Advance(again.world, 2);
+		journal.Flush();
 	}
 	Hosted last;
 	CHECK(Refusal(scratch, last).empty());
@@ -349,16 +455,17 @@ TEST_CASE("A batch the catalogue was never made to name is an orphan: not run, a
 }
 
 
-TEST_CASE("A commit that failed with its catalogue in place is committed: its step is taken on opening")
+TEST_CASE(
+    "A flush that failed with its catalogue in place was made: a start has its step and its request")
 {
 	const Scratch scratch;
-	FailFirstCommit(scratch, 2, true);
+	FailFirstFlush(scratch, 2, true);
 
 	Hosted again;
 	const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.Root());
 	const Host::Journal journal{directory, again.Identity()};
 	CHECK(journal.Head() == 1);
-	journal.Replay(again.world);
+	journal.Recover(again.world);
 	CHECK(again.world.Clock().Step() == 1);
 	const std::optional<Completed> outcome = again.requests.Outcome(kOperator, 1);
 	REQUIRE(outcome.has_value());
@@ -367,8 +474,7 @@ TEST_CASE("A commit that failed with its catalogue in place is committed: its st
 }
 
 
-TEST_CASE(
-    "A committed batch missing, damaged or out of its chain, or a catalogue so, stops the opening")
+TEST_CASE("A batch missing, damaged or out of its chain, or a catalogue so, stops the start")
 {
 	const Scratch scratch;
 	const Scratch elsewhere;
@@ -376,48 +482,41 @@ TEST_CASE(
 		Hosted hosted;
 		const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.Root());
 		Host::Journal journal{directory, hosted.Identity()};
-		hosted.Advance(journal, 1);
-		hosted.Advance(journal, 1);
+		journal.Advance(hosted.world, 1);
+		journal.Flush();
+		journal.Advance(hosted.world, 1);
+		journal.Flush();
 		const Host::WorldDirectory other = Host::OpenWorldDirectory(elsewhere.Root());
 		const Host::Journal another{other, hosted.Identity()};
 	}
-	const auto bytes = [](const std::filesystem::path &path)
-	{
-		std::ifstream in{path, std::ios::binary};
-		return std::string{std::istreambuf_iterator<char>{in}, {}};
-	};
-	const auto put = [](const std::filesystem::path &path, const std::string &contents)
-	{ std::ofstream{path, std::ios::binary | std::ios::trunc} << contents; };
 
-	// Each fault is in the first batch or before it, so the world it is replayed into is still new.
+	// Each fault is in the first batch or before it, so the world it is recovered into is still new.
 	Hosted fresh;
-	const std::string first = bytes(scratch.Batch(1));
-	std::string damaged = first;
-	damaged[damaged.size() / 2] ^= 1;
-	put(scratch.Batch(1), damaged);
+	const std::string first = Bytes(scratch.Batch(1));
+	Damage(scratch.Batch(1));
 	MANIFEST_CHECK_CONTAINS(Refusal(scratch, fresh), scratch.Batch(1).string() + " is damaged");
-	put(scratch.Batch(1), first.substr(0, first.size() - 1));
+	Put(scratch.Batch(1), first.substr(0, first.size() - 1));
 	MANIFEST_CHECK_CONTAINS(Refusal(scratch, fresh), scratch.Batch(1).string() + " is damaged");
-	put(scratch.Batch(1), "");
+	Put(scratch.Batch(1), "");
 	MANIFEST_CHECK_CONTAINS(Refusal(scratch, fresh), "no such file is 0 bytes long");
-	put(scratch.Batch(1), bytes(scratch.Batch(2)));
+	Put(scratch.Batch(1), Bytes(scratch.Batch(2)));
 	MANIFEST_CHECK_CONTAINS(Refusal(scratch, fresh), "the chain is broken");
 	std::filesystem::remove(scratch.Batch(1));
 	MANIFEST_CHECK_CONTAINS(Refusal(scratch, fresh), scratch.Batch(1).string() + " is missing");
-	put(scratch.Batch(1), first);
+	Put(scratch.Batch(1), first);
 
 	const std::filesystem::path catalogue = scratch.Root() / "catalogue";
-	const std::string committed = bytes(catalogue);
-	put(catalogue, committed.substr(0, committed.size() / 2));
+	const std::string named = Bytes(catalogue);
+	Put(catalogue, named.substr(0, named.size() / 2));
 	MANIFEST_CHECK_CONTAINS(Refusal(scratch, fresh), catalogue.string() + " is damaged");
-	put(catalogue, bytes(elsewhere.Root() / "catalogue"));
+	Put(catalogue, Bytes(elsewhere.Root() / "catalogue"));
 	MANIFEST_CHECK_CONTAINS(Refusal(scratch, fresh), "is the catalogue of another world");
 	// A world with no catalogue is not made again over its journal.
 	std::filesystem::remove(catalogue);
 	MANIFEST_CHECK_CONTAINS(Refusal(scratch, fresh), catalogue.string() + " is missing");
 	CHECK(fresh.world.Clock().Step() == 0);
 
-	put(catalogue, committed);
+	Put(catalogue, named);
 	CHECK(Refusal(scratch, fresh).empty());
 	CHECK(fresh.world.Clock().Step() == 2);
 }

@@ -218,6 +218,10 @@ storage. Backups cover storage loss separately. Snapshot frequency, journal form
 durability batching and retention are implementation decisions to measure and document;
 they must preserve the acknowledgement contract.
 
+Settled otherwise on 2026-11-24 ([D-113](decision-ledger.md#d-113)): a crash may lose up to 30 s of
+play, no receipt is a durable acknowledgement, and the journal is written after the steps it
+records ([the journal and its snapshots](stage-5-recovery-plan.md#the-journal-and-its-snapshots-r03-r04-2026-11-24)).
+
 Persist all authoritative state, including outstanding reservations, orders, company and
 civilisation and regional progression, inventory location, economic counters, regional
 population/household/public accounts, condition and employer-region tax carries,

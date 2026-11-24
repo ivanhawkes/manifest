@@ -23,8 +23,8 @@
 namespace Manifest::Command
 {
 // What admission answers: queued, with its global order; completed, for a retry of one that has
-// run; or refused, with why. Neither is durable of itself: a server with a journal sends a queued
-// receipt only once the batch that holds the request is committed (Remote::Server::Acknowledge).
+// run; or refused, with why. Neither is a durable acknowledgement: a server's crash loses what ran
+// since its journal's last flush (Host::Journal), and the request's sequence is then free again.
 struct Receipt
 {
 	enum class Status

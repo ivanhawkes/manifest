@@ -126,9 +126,29 @@ is 63,567 bytes of 65,536), the user booked for Jettison's next change, a messag
 packets ([Jettison's roadmap](../../jettison/docs/roadmap.md#first-what-saves-and-the-simulations-interface-hold)),
 and delta snapshots in Manifest only if that is not enough.
 
+## R04: the journal flushed every 30 s, and its snapshots — 2026-11-24
+
+[The journal and its snapshots](stage-5-recovery-plan.md#the-journal-and-its-snapshots-r03-r04-2026-11-24),
+on pin `ea66afe` with no engine edit, and the user's decision ([D-113](decision-ledger.md#d-113)).
+R03's journal, below, committed a batch before every run of steps so that no answered request could
+be lost. Shown its cost, 16 GB of blocks and four million files a day with nobody playing, the user
+asked whether a game needs that, and settled on losing up to 30 s in a crash. So the world steps and
+answers at once; `Host::Journal::Advance` notes what ran and writes a batch every 30 s and the
+world's save every hour, keeps two snapshots with the batches since the older, and removes the
+rest; `Recover` loads the newest snapshot that reads and replays the batches after it; a clean stop
+flushes. `Remote::Server` is as it was before R03: the held receipt went with the promise.
+
+What it found. Saving the whole world every 30 s, the simplest design, was the first proposal, and
+is the cheapest at today's 0.5 MB; measured per player and guessed up, a world of 256 players is
+about 110 MB and would then write 317 GB a day, so the journal stayed and only its cadence changed
+([write volume and wear](stage-5-recovery-plan.md#write-volume-and-wear)). A snapshot needs no
+record of its own: it is the world's save under a checksum, and the catalogue holds what R01's
+`Manifest.Save` section would have. R01's inventory pin and a content refusal's first differing
+definition were not done, and go to R09.
+
 ## R03: the step journals and the catalogue — 2026-11-24
 
-[The journal](stage-5-recovery-plan.md#step-journals-and-the-catalogue-r03-2026-11-24), on pin
+[The journal as first built](stage-5-recovery-plan.md#write-volume-and-wear), since replaced (below), on pin
 `ea66afe` with no engine edit: the engine's durable write, FNV-1a and binary archive were enough.
 `Host::Journal` commits a run of steps, a batch file then the catalogue that names it, before the
 server takes them; `Remote::Server` holds a queued receipt until the host acknowledges, so the

@@ -10,7 +10,6 @@
 #include <jettison/host/Session.h>
 #include <jettison/net/Server.h>
 
-#include <manifest/remote/Protocol.h>
 #include <manifest/remote/Tokens.h>
 
 namespace Manifest::Remote
@@ -33,17 +32,10 @@ class Server
 
 	std::uint16_t Port() const;
 
-	// Admits connections and requests, waiting up to wait for the first. A refusal, or a retry of a
-	// request that has run, is answered at once; a queued request's receipt is held for Acknowledge.
-	// Reads the token file again when it has changed and closes, as Revoked, every session whose
-	// token is gone from it.
+	// Admits connections and requests, waiting up to wait for the first: every request gets its
+	// receipt. Reads the token file again when it has changed and closes, as Revoked, every session
+	// whose token is gone from it.
 	void Poll(std::chrono::milliseconds wait);
-
-	// Sends the receipts of the requests queued since the last: the host's word that their order
-	// will survive it, so called once the batch that holds them is committed (Host::Journal::Commit)
-	// and before the step that runs them. A host that stops instead has acknowledged nothing, and a
-	// client that was not answered sends its request again.
-	void Acknowledge();
 
 	// After a step: the completed requests' replies and each session's snapshot.
 	void Publish();
@@ -56,8 +48,6 @@ class Server
 		std::vector<std::uint64_t> pending;
 		// Its actor held every session it may when it was verified: closed as ServerFull on admission.
 		bool overCap{false};
-		// The receipts of its queued requests not yet acknowledged, oldest first.
-		std::vector<Reply> unacknowledged;
 	};
 
 	bool Verify(Jettison::Net::SessionId id, std::span<const std::byte> credential);

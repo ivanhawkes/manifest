@@ -103,7 +103,7 @@ world's save (`SimWorld::Save`, `Jettison.World` 5) and one section of Manifest'
 | `fixedStep` | The step in seconds, which the world's save does not hold: a save made at 1/60 s loads today into a world stepping at any other. | The hosted world's, to the bit. |
 | `commands` | Each command registered on `Command::Requests`, its name and version, in name order: 22 today ([Stage 4's handoff](stage-4-trading-plan.md#handoff-to-stage-5)). | The running registrations. |
 | `content` | The canonical content manifest's bytes (`Content::ContentIdentity::manifest`, `Manifest.ContentManifest` 1), which carry their own format and version. | The loaded content's, byte for byte. |
-| `batch`, `batchId` | The last journal batch this snapshot has applied: its sequence and the identity [R03's chain](#the-files) gives it, each 0 for none. | The catalogue's chain (R04). |
+| `batch`, `batchId` | The last journal batch this snapshot has applied: its sequence and the identity [the chain](#the-files) gives it. Held by the catalogue, not the snapshot ([the journal](#the-journal-and-its-snapshots-r03-r04-2026-11-24)). | The catalogue's chain. |
 
 The global command order needs no field: it is `RequestLedger::order`, in the world's save. Neither
 does a schema version: each storage's is in the world's save, and the world's and the save game's
@@ -246,61 +246,67 @@ full disk and a failed `fsync` or `rename`, which R03 injects at its own seam, a
 boundaries, where [the evidence](#delivery-and-required-evidence) asks for them; and a server started
 on the world, which waits for something to write (R03).
 
-## Step journals and the catalogue (R03), 2026-11-24
+## The journal and its snapshots (R03, R04), 2026-11-24
 
-What a server writes before it steps and reads when it starts, on Jettison `ea66afe` with no engine
-edit. Where the [commit model](#commit-model-durable-step-batches) proposed below differs, this
-holds ([D-112](decision-ledger.md#d-112)).
+What a server writes as it runs and reads when it starts, on Jettison `ea66afe` with no engine edit.
+The user's decision ([D-113](decision-ledger.md#d-113)): a crash may lose up to 30 s of play, so
+nothing is written before a step is taken and a receipt is not a durable acknowledgement. Where the
+proposal below differs ([commit model](#commit-model-durable-step-batches) to
+[startup and recovery](#startup-and-recovery)), this holds.
+
+### What a crash loses
+
+- **A crash or a power cut** loses what ran since the journal's last flush, at most the flush
+  interval, 30 s unless `--flush-seconds` says otherwise: steps, and requests that were answered.
+  Everyone's world goes back to the same step, so nothing is duplicated; a client holds no
+  authoritative state, and its reconnection is told the sequence to send next.
+- **A clean stop** (SIGINT, SIGTERM) flushes, and loses nothing.
+- **A receipt** means the request was queued or ran, as before R03. A request lost with a crash has
+  its sequence free again, and a retry of one that was kept is answered from the ledger, not run
+  twice.
 
 ### The files
 
-Each is under the world's directory, written whole with `WriteFileDurably`, and is the binary
-archive's record followed by its 64-bit FNV-1a, low byte first. A file that is missing, cut short,
-longer than any of its kind, changed since it was written or not its record is refused by name.
+Each is under the world's directory, written whole with `WriteFileDurably`, and is followed by its
+64-bit FNV-1a, low byte first. A file that is missing, cut short, longer than any of its kind or
+changed since it was written is refused by name.
 
-| File | Record | Holds | Written |
-| --- | --- | --- | --- |
-| `identity` | `Manifest.Host.Identity` | The world's identity and what [D-111](decision-ledger.md#d-111) compares: `game`, `sdk`, `fixedStep`, `commands` and `content`, as [R01](#the-file) defines them. | Once, as the world is made. |
-| `journal/<sequence>` | `Manifest.Host.Batch` | The world, the batch's sequence from 1, the identity of the batch before it, the step it begins at, how many steps it takes, and the requests that run at the start of the first, in admission's order. | Once, before any of its steps is taken. |
-| `catalogue` | `Manifest.Host.Catalogue` | The world, the head batch's sequence and identity, and the step after its last. | Replaced at every commit. |
+| File | Holds | Written |
+| --- | --- | --- |
+| `identity` | `Manifest.Host.Identity`: the world's identity and what [D-111](decision-ledger.md#d-111) compares, `game`, `sdk`, `fixedStep`, `commands` and `content`, as [R01](#the-file) defines them. | Once, as the world is made. |
+| `journal/<sequence>` | `Manifest.Host.Batch`: the world, the batch's sequence from 1, the identity of the batch before it, the step it begins at, how many steps it covers, and each request that ran in them with the step it ran at, in the order they ran. | Once, at a flush. |
+| `snapshots/<batch>` | The world's save (`SimWorld::Save`) as the journal's batch of that sequence left it. | Once, at a snapshot. |
+| `catalogue` | `Manifest.Host.Catalogue`: the world, the head batch's sequence and identity, the step after its last, and the snapshots kept, each with its batch, that batch's identity, its own checksum and its step. | Replaced at every flush and snapshot. |
 
-A batch's identity is its file's checksum, so the chain and the integrity check are one number:
-each batch names the one before it, and the catalogue names the head. A batch names its build and
-content through its world, whose `identity` file holds them once: the content manifest is 255 KB,
-too much to repeat 47 times a second. A file name is the sequence in twenty digits.
+A batch's identity is its file's checksum, so the chain and the integrity check are one number: each
+batch names the one before it, and the catalogue names the head. A batch and a snapshot name their
+build and content through the world, whose `identity` file holds them once: the content manifest is
+255 KB. A snapshot is not a `Sim::SaveGame` and has no `Manifest.Save` section, as R01 proposed: the
+catalogue holds what that section would, and the identity file the rest. A file name is its
+sequence in twenty digits.
 
-### A batch is a run of steps
+### Flushing and snapshots
 
-The proposal had one batch a step. A batch here is the steps that are due when the server commits,
-one or more, with the requests queued by then, which all run at the start of the first: what
-`SimWorld::FastForward` already did with them. So a disk slower than the step holds the world back
-by taking more steps to a batch, with no queue of batches and no step taken unjournalled. Steps
-with no request are committed as any others are.
+`Host::Journal::Advance` takes the world's steps for the server, noting the requests queued as it
+does, which run at the start of the first.
 
-### The commit and the acknowledgement
-
-`Host::Journal::Commit` writes the batch, then replaces the catalogue to name it, and returns once
-both are on the disk. The server's loop (`manifest --serve`) is then, for the steps that are due:
-commit, acknowledge, step, publish.
-
-- **A queued receipt is the durable acknowledgement.** `Remote::Server` holds the receipt of a
-  request it queued until the host calls `Acknowledge`, which the server does once the batch is
-  committed. A refusal, or a retry of a request that has run, is still answered at once. A completed
-  receipt follows the step, so it is after the commit too.
-- **A failed commit is uncertain, not rolled back.** The writer's exception leaves the server's loop
-  and the process exits 1, with no request of the batch acknowledged and no step of it taken; a
-  `Journal` that is kept takes no other commit. A client that was not answered sends its request
-  again. The next start reads the catalogue to find which it was.
-- **An orphan is never run.** A batch written and never named is past the head: a start ignores it,
-  and the next commit, which is that sequence, writes over it. A committed batch is never written
-  again, since the one writer writes only the sequence after the head.
-- **A request queued and not yet committed is promised nothing.** It is in the dead process's
-  ledger alone; after a restart its sequence is free, and the client's retry is admitted as new.
+- **A flush** is due when the steps since the last reach the flush interval, or the requests since
+  it reach 4,096: the batch is written, then the catalogue naming it.
+- **A snapshot** is due every snapshot interval, an hour unless `--snapshot-seconds` says otherwise:
+  a flush, then the world's save, then the catalogue naming it. Taken between steps, so nothing is
+  queued and no request is pending.
+- **Two snapshots are kept**, with every batch since the older. Once the catalogue names two, older
+  snapshots and batches are removed, a write's leavings among them; a world that has not yet two
+  keeps every batch from its first.
+- **A write that fails is uncertain, not rolled back.** The writer's exception leaves the server's
+  loop and the process exits 1; a `Journal` that is kept takes nothing more. The next start reads the
+  catalogue to find which it was. A batch or snapshot written and never named is ignored, and
+  written over by the next of that sequence.
 
 ### Starting on a world
 
-`--serve` takes `--world <directory>`, required: a server that acknowledges has a journal. It holds
-the directory (R02), then opens the journal before any client can reach it.
+`--serve` takes `--world <directory>`, required. It holds the directory (R02), then recovers the
+world before any client can reach it.
 
 - **A directory holding neither an identity, a catalogue nor a journal is a new world.** Its
   identity is made, 128 bits from `std::random_device`, and written, then a catalogue with no head.
@@ -308,11 +314,12 @@ the directory (R02), then opens the journal before any client can reach it.
 - **An existing world opens only for its own build and content** (D-111): the refusal names the
   first of game, SDK, fixed step, command and content that differs, with both values, the content's
   as fingerprints.
-- **The committed steps are taken.** `Journal::Replay` reads each batch from the first to the head,
-  checks it is the next in the chain, queues its requests and takes its steps, in the world as
-  `Host::Start` left it. A request runs at the step it first ran at, and `Requests::Execute` rebuilds
-  the ledger, so an outcome a client never heard is there for its retry. Replay is from the world's
-  first step until R04 gives it a snapshot to start from.
+- **`Journal::Recover`** loads the newest snapshot. One that does not read is reported and the one
+  before it tried; a world with fewer than two falls back to its own start, as `Host::Start` left
+  it. With two and neither reading, the start fails. Then each batch after the snapshot is read,
+  checked as the next in the chain, and its steps taken with each request queued at the step it
+  ran at; `Requests::Execute` rebuilds the ledger. A batch missing, damaged or out of its chain fails
+  the start by name: nothing is skipped.
 
 ### The build's identity
 
@@ -327,41 +334,100 @@ is compiled again when a tree changes, and nothing when none has.
 
 The `host` suite, on the trading scenario, with the writer replaced at the journal's seam:
 
-| Boundary | Outcome held |
+| Case | Outcome held |
 | --- | --- |
-| Three batches, of 1, 600 and 3 steps, two with a request | A fresh world replayed has the same step and state hash, both requests' results and steps, and the next sequence. |
-| Batch write fails, half a partial file left | No batch file; head 0 on opening; the request never ran; the next commit succeeds. |
-| Batch written, catalogue write fails | The orphan is on disk; head 0; not run; written over by the next commit, and a third world replays that. |
-| Catalogue in place, then the write reports failure | The commit threw and took no other; on opening the head is 1 and its request runs once, at its step. |
-| A committed batch damaged, cut short, empty, another's or missing; a catalogue damaged, another world's or missing | Each refused by name, the world left at its first step. |
+| Two flushes, of 601 and 3 steps, each with a request, then a request and five steps never flushed | A fresh world recovered has the flushed step and state hash and both requests' results and steps; the third request's sequence is free; a retry of the first is answered, not run. |
+| A flush every 10 steps and a snapshot every 40, for 130 | Snapshots after batches 8 and 12 and batches 9 to 13 remain; a start has the same state hash from the newest, and from the older when the newest is damaged; with neither, it fails by name. |
+| One snapshot, damaged | Recovered from the world's start, to the same state hash. |
+| Batch write fails, half a partial file left | No batch file; head 0 on opening; the world starts without the request; the next flush succeeds. |
+| Batch written, catalogue write fails | The orphan is on disk; head 0; not run; written over by the next flush, and a third world recovers that. |
+| Catalogue in place, then the write reports failure | The flush threw and the journal took nothing more; on opening the head is 1 and its request is there, at its step. |
+| A batch damaged, cut short, empty, another's or missing; a catalogue damaged, another world's or missing | Each refused by name, the world left at its first step. |
 | Another build, SDK, fixed step, command or content | Refused, naming the field and both values. |
 
-The `remote` suite holds a queued receipt back until `Acknowledge`, with a refusal answered
-meanwhile. `cli_serve` kills the server outright (SIGKILL) two seconds in and starts it again on the
-world: it takes up at the committed step, steps on and stops cleanly.
+`cli_serve` flushes every second and snapshots every two: it kills the server outright (SIGKILL)
+3.4 s in, starts it again on a flushed step, stops it with SIGINT and finds a third start at the
+step it stopped at.
 
-### Measured
+### Write volume and wear
 
-A Debug server on the trading scenario with no client, 20 s on Lythir's NVMe (ext4), 2026-11-24:
-1,194 steps in 931 batches, 47 commits a second and 1.3 steps a batch, with no time dropped. A
-commit took about 11 ms, the loop's period less its 10 ms poll: two durable writes, four flushes.
-A batch with no request is 235 bytes and takes a 4 KiB block: 3.7 MB of blocks in the 20 s, which
-is 16 GB and four million files a day.
+Why the journal has this shape: the designs weighed on 2026-11-24, by what each writes in a day.
+
+Measured in Debug on Lythir's NVMe (ext4), the trading scenario:
+
+| Measured | Figure |
+| --- | --- |
+| A world with no player: 10 regions, 10 markets, 1,215 brokers' orders | 462 KB, about 46 KB a region |
+| A player provisioned: a company, a ship and their market reports for 10 venues | 76 KB more |
+| A resting order with its retained request | 624 bytes more |
+| The same world after a day of steps | 568 KB: it does not grow unattended |
+| Serialising a 550 KB save, with no write | 7.3 ms |
+| A batch committed before every run of steps, as R03 first had it, no client | 47 commits a second, about 11 ms each, a 235-byte batch in a 4 KiB block |
+| The journal as it is, 65 s with no client | Four 230-byte batches; a snapshot 475 KB |
+
+Guessed from those, the size of a world's save:
+
+| Players | Assumed | Save |
+| --- | --- | --- |
+| 1, today's scenario | As measured | 0.5 MB |
+| 50, the most expected on a server (the user's) | Two regions a player, each player knowing 30 venues, with 5 ships, 20 orders and 256 retained requests | About 22 MB |
+| 256 | The same | About 110 MB, between 50 and 250 |
+
+Market reports are over half of it, at a guessed 7.5 KB a venue a player knows; a request in the
+journal is guessed at 400 bytes, and a player at one request every 10 s.
+
+Written in a day, in file blocks:
+
+| Design | 1 player | 50 players | 256 players | Flushes | A crash loses |
+| --- | --- | --- | --- | --- | --- |
+| A batch committed before every run of steps (R03 as first built), with an hourly snapshot | 16 GB | 17 GB | 19 GB | About 188 a second | Nothing answered |
+| The whole world saved every 10 s | 4.1 GB | 190 GB | 950 GB | 2 every 10 s | Up to 10 s |
+| The whole world saved every 30 s | 1.4 GB | 63 GB | 317 GB | 2 every 30 s | Up to 30 s |
+| **A batch flushed every 30 s, a snapshot every hour (chosen)** | 23 MB | 0.7 GB | 3.5 GB | 4 every 30 s, 4 more an hour | Up to 30 s |
+
+Wear, as the years in which each would write the 600 TB a typical 1 TB consumer drive is rated for:
+
+| Design | 1 player | 50 players | 256 players |
+| --- | --- | --- | --- |
+| A batch before every run of steps | About 100 | About 95 | About 85 |
+| The whole world every 10 s | About 400 | 8.6 | 1.7 |
+| The whole world every 30 s | Over 1,000 | 26 | 5.2 |
+| **A batch every 30 s, a snapshot every hour** | Beyond any drive's life | Over 2,000 | About 470 |
+
+Held on disk at once, with two snapshots kept: the whole-world designs hold twice the save; the
+journals hold that and the batches since the older snapshot, up to two hours of them, which is 1.4 GB
+for a batch before every run of steps and under 100 MB for a batch every 30 s.
+
+What the figures say:
+
+- **A batch before every step costs the same idle as busy.** It writes a 4 KiB block 47 times a
+  second whatever is in it, and four million files a day. The blocks alone would not wear a drive
+  out, but each file is also a directory entry, an inode and a filesystem-journal write, forced out
+  by 188 flushes a second: guessed at two to four times the blocks, and not measured.
+- **Saving the whole world often is the cheapest design for a small world and the dearest for a
+  large one**, since it rewrites everything each time. It passes the journal's cost at a save of 6
+  to 20 MB, some 15 to 50 players.
+- **A batch flushed every 30 s pays for what happened, not for the time or the world's size**, and
+  is the least at every size. Its snapshots are most of what it writes at scale; a longer snapshot
+  interval trades them for a longer replay at a start.
+
+Not measured: what reaches the drive beyond the file blocks, the serialising pause in a Release
+build, and how the 76 KB a player splits between their reports and the rest.
 
 ### What it leaves
 
-- **R04.** Nothing removes a batch yet, so the journal grows without bound, at the rate above: its
-  snapshots and retention bound it. Its `Manifest.Save` section is the identity here with the last
-  batch's sequence and identity, both 64-bit numbers, 0 for none. Replay then starts from a
-  snapshot, into a candidate world; a content refusal names the first definition that differs; and
-  a process is killed at each commit boundary, where `cli_serve` kills it between steps.
-- **R05.** A request queued and never committed gets no answer at shutdown, where the plan asks for
-  a stopped response; and the limits on what a world may store.
-- **The cadence.** Whether a server with no request queued commits every 21 ms is the user's to
-  settle: a batch committed for a second's steps ahead would be 1 file a second, and a request
-  would then wait for it.
+- **R05.** A backup is the directory copied between a flush and the next; the limits on what a world
+  may store; and a request queued and not yet run at a stop, which gets no answer.
+- **R09.** The gated test that pins [the state inventory](#the-state-inventory) to the names the
+  world's save lists; a content refusal naming the first definition that differs; and the
+  serialising pause of a large world's snapshot, 7.3 ms at 550 KB in Debug and unmeasured in Release.
 
 ## Commit model: durable step batches
+
+The proposal of 2026-11-15, kept as it was made. Its commit before execution and its durable
+acknowledgement were built, measured and replaced on the user's decision
+([D-113](decision-ledger.md#d-113)); what a server does is
+[above](#the-journal-and-its-snapshots-r03-r04-2026-11-24).
 
 Use one writer per world, enforced with a process-held lock in its writable data root.
 Retain stage 3's single ordered admission path. Initially use immutable journal files

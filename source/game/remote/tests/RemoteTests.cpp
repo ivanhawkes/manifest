@@ -78,8 +78,7 @@ struct Served
 		return {"127.0.0.1", pServer->Port(), token};
 	}
 
-	// Both ends polled until done holds, for at most two seconds; the client's replies kept. The host
-	// stands for one whose journal commits every batch at once, unless committing is false.
+	// Both ends polled until done holds, for at most two seconds; the client's replies kept.
 	bool Pump(Client &client, const std::function<bool()> &done)
 	{
 		const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{2};
@@ -88,8 +87,6 @@ struct Served
 			if (std::chrono::steady_clock::now() > deadline)
 				return false;
 			pServer->Poll(std::chrono::milliseconds{1});
-			if (committing)
-				pServer->Acknowledge();
 			for (Reply &reply : client.Poll())
 				replies.push_back(reply);
 		}
@@ -156,7 +153,6 @@ struct Served
 	std::unique_ptr<Jettison::Host::Session> pSession;
 	std::unique_ptr<Server> pServer;
 	std::vector<Reply> replies;
-	bool committing{true};
 };
 
 
@@ -379,33 +375,6 @@ TEST_CASE("several players are served at once, and one actor holds at most three
 		(void)served.Welcome(*pAgain);
 	}
 	REQUIRE(pAgain->Welcomed().has_value());
-}
-
-
-TEST_CASE("a queued request is acknowledged only once its host says its batch is committed")
-{
-	Served served;
-	Client admin = served.Connect(served.admin);
-	REQUIRE(served.Welcome(admin));
-	served.committing = false;
-	const std::uint64_t sequence =
-	    admin.Submit(Company::kProvision, Company::kVersion, Provision("Ada")).value();
-	const Manifest::Command::Requests &requests =
-	    Manifest::Host::HostedServices(*served.pSession).requests;
-	const Manifest::Command::Actor host{ActorKind::Administrator, "Operator"};
-	REQUIRE(served.Pump(admin, [&] { return requests.NextSequence(host) == sequence + 1; }));
-	// Admitted and queued, and the client hears nothing of it however long it waits; a request
-	// refused meanwhile is answered at once.
-	const std::uint64_t gap = sequence + 5;
-	REQUIRE(admin.Retry(gap, Company::kProvision, Company::kVersion, Provision("Bea")));
-	CHECK(served.Await(admin, gap, Receipt::Status::Refused).value().result == Result::SequenceGap);
-	CHECK(served.replies.size() == 1);
-
-	served.pServer->Acknowledge();
-	CHECK(served.Await(admin, sequence, Receipt::Status::Queued).has_value());
-	served.Step();
-	CHECK(
-	    served.Await(admin, sequence, Receipt::Status::Completed).value().result == Result::Succeeded);
 }
 
 

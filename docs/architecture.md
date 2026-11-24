@@ -225,8 +225,8 @@ checks. Worlds advance while the server runs and resume without downtime
 catch-up. These contracts must guide host integration; the existing development classes
 do not yet implement them.
 
-The planned host persists accepted command ordering before acknowledging durable success,
-recovers through atomic snapshots and journal replay, and pins world content compatibility.
+The host recovers through atomic snapshots and journal replay, losing up to 30 s of play in a crash
+([D-113](decision-ledger.md#d-113)), and pins world content compatibility.
 Clients receive filtered snapshots and use retry-safe commands. See that plan for acceptance
 criteria, content validation, operational requirements and deferred scope.
 
@@ -236,10 +236,11 @@ a service manager or container platform, without a renderer or interactive termi
 uses configuration and command-line arguments; operation provides logs and clean shutdown.
 Its first slice exists (N02): `manifest --serve` steps the world unattended and serves it
 through the `remote` module on Jettison's `net`, with `manifest-token` for its tokens; a world's
-directory is made and held by one server (`Host::OpenWorldDirectory`, R02), which commits each run
-of steps to the world's journal before taking it and acknowledges a request only then
-(`Host::Journal`, R03, [the journal](stage-5-recovery-plan.md#step-journals-and-the-catalogue-r03-2026-11-24)).
-Snapshots, retention, backup and hosting outside a trusted network do not exist yet.
+directory is made and held by one server (`Host::OpenWorldDirectory`, R02), which writes what has
+run to the world's journal every 30 s and its save every hour, and recovers from them at a start,
+a crash losing up to the 30 s ([D-113](decision-ledger.md#d-113), `Host::Journal`,
+[the journal and its snapshots](stage-5-recovery-plan.md#the-journal-and-its-snapshots-r03-r04-2026-11-24)).
+Backup and hosting outside a trusted network do not exist yet.
 
 The existing TUI is to become a required remote gameplay client with `connect <endpoint>` and
 `disconnect`. Extract its authoritative state into the server, retain useful FTXUI/console

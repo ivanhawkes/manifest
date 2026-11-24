@@ -298,7 +298,8 @@ Depends on stage 4. Turn the working scenario into a world that survives restart
 
 - Save all authoritative state, including identity counters, reservations and in-flight travel.
 - Add atomic snapshots and journal recovery using Jettison facilities where suitable.
-- Persist accepted command ordering before acknowledging durable success.
+- Persist accepted command ordering before acknowledging durable success. Replaced
+  ([D-113](decision-ledger.md#d-113)): a crash may lose up to 30 s of play.
 - Preserve retry detection across restart.
 - Validate game/schema/content compatibility before resuming.
 - Package a runnable distribution with separate writable user data.
