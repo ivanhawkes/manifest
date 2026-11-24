@@ -21,6 +21,7 @@
 #include <jettison/serialise/Archive.h>
 
 #include <manifest/content/ContentIdentity.h>
+#include <manifest/host/Locations.h>
 #include <manifest/host/Start.h>
 
 #include "Revision.h"
@@ -335,8 +336,7 @@ Journal::Journal(
 			    "the backups at {} are within the world at {}: they go outside it",
 			    m_storage.backups.string(), m_root.string())};
 		// Private to its owner when it is made here, as the world's directory is.
-		if (Jettison::Core::CreateDirectoriesDurably(m_storage.backups))
-			std::filesystem::permissions(m_storage.backups, std::filesystem::perms::owner_all);
+		MakePrivateDirectories(m_storage.backups);
 	}
 	const std::filesystem::path identity = m_root / kIdentityName;
 	const std::filesystem::path catalogue = m_root / kCatalogueName;

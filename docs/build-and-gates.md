@@ -90,8 +90,8 @@ Manifest compiles only the engine modules and dependencies it links, plus its pa
 smoke tests remain Jettison's gate. Do not configure Jettison's unsupported install/export path.
 
 Clang-tidy is opt-in (`./scripts/ci.sh --tidy`), since it is expensive on the development laptop.
-CI enables it, and so does a gate on Lythir: with its record of clean units, a small change costs
-little.
+A gate on Lythir enables it, before every push: with its record of clean units, a small change costs
+little. CI does not run it ([D-116](decision-ledger.md#d-116)).
 
 ### Gating beside the work
 

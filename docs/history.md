@@ -142,7 +142,11 @@ more: provisioning made a principal whose ID was past that bound, so it could ne
 refuses it as malformed. Round 3, aimed at what the first two had not examined, found F7 resolved and
 two more: making a default place's directories chmodded an existing parent named through `new/..`,
 now normalised first; and one long `Advance` flushed and snapshotted once at its end, now at each
-step due on the way, as the journal suite's long advance against short ones shows.
+step due on the way, as the journal suite's long advance against short ones shows. Round 4, the last
+the user allowed, found F9 resolved and F8 open where the world's and the backups' directories are
+made, the normalising fix wrong across a symlink (F10), and D-111 and build-and-gates stale (F11).
+All three were fixed after it and not reviewed again: every directory is made a component at a time,
+each made private through the path it was made by, and the documents say what is built.
 
 ## R09: Stage 5 closed — 2026-11-25
 

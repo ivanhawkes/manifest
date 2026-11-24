@@ -409,7 +409,19 @@ TEST_CASE("A default place's directories are made private, and one already there
 	// A path through a directory it makes and back out names one already there, which stays shared.
 	Manifest::Host::MakePrivateDirectories(root / "new" / ".." / "made");
 	CHECK(mode(root) == kShared);
+	CHECK(mode(root / "new") == perms::owner_all);
 	CHECK(mode(root / "made") == perms::owner_all);
+	// Through a symlink and back out, what is made is under the link's target's parent, and private.
+	std::filesystem::create_directories(root / "actual" / "sub");
+	std::filesystem::permissions(root / "actual", kShared);
+	std::filesystem::create_directory_symlink(root / "actual" / "sub", root / "link");
+	Manifest::Host::MakePrivateDirectories(root / "link" / ".." / "manifest");
+	CHECK(mode(root / "actual") == kShared);
+	CHECK(mode(root / "actual" / "manifest") == perms::owner_all);
+	CHECK_FALSE(std::filesystem::exists(root / "manifest"));
+	// A world's directory is made so too.
+	(void)Manifest::Host::OpenWorldDirectory(root / "fresh" / "..");
+	CHECK(mode(root) == kShared);
 	std::filesystem::remove_all(root);
 }
 

@@ -7,12 +7,13 @@
 
 #include <jettison/core/File.h>
 
+#include <manifest/host/Locations.h>
+
 namespace Manifest::Host
 {
 WorldDirectory OpenWorldDirectory(const std::filesystem::path &root)
 {
-	if (Jettison::Core::CreateDirectoriesDurably(root))
-		std::filesystem::permissions(root, std::filesystem::perms::owner_all);
+	MakePrivateDirectories(root);
 	std::optional<Jettison::Core::FileLock> lock =
 	    Jettison::Core::FileLock::TryAcquire(root / kLockName);
 	if (!lock)
