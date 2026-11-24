@@ -15,7 +15,7 @@
             "name": "Development TUI",
             "type": "lldb",
             "request": "launch",
-            "program": "${workspaceFolder}/build/clang-debug/source/tools/tui/manifest_tui",
+            "program": "${workspaceFolder}/build/clang-debug/bin/manifest_tui",
             "args": [],
             "cwd": "${workspaceFolder}",
             "terminal": "integrated",

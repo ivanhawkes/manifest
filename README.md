@@ -19,7 +19,7 @@ and Ninja, along with Jettison's complete SDK. From the repository root:
 cmake --preset clang-debug
 cmake --build --preset clang-debug
 ctest --preset clang-debug
-build/clang-debug/source/tools/tui/manifest_tui
+build/clang-debug/bin/manifest_tui
 ```
 
 For engine development, point at the sibling `feature-base` checkout instead of downloading the
@@ -51,7 +51,8 @@ on startup; try `generate 8`, `list`, `tick`, `prices` and `plan`. `help` lists 
 `help generate` describes one. Quote paths or civilisation names containing spaces, for example
 `show "Abigail Prime"`. Tab completes command names, Up/Down recalls history, PageUp/PageDown
 scrolls and End follows new output. `clear` clears the view; the command transcript remains in
-`build/tui-session.log` when launched from a working tree with a `build/` directory. `quit`,
+`~/.local/state/manifest/tui-session.log`. `--content <directory-or-pack>` loads other content than
+its build's pack. `quit`,
 `exit` or Ctrl-D ends the session.
 
 ## Mod output
@@ -60,7 +61,7 @@ scrolls and End follows new output. `clear` clears the view; the command transcr
 cmake --build --preset clang-debug --target manifest_pack
 ```
 
-This stages `build/clang-debug/mods/manifest/` and writes `build/clang-debug/manifest.pack` with
+This stages `build/clang-debug/mods/manifest/` and writes `build/clang-debug/share/manifest/manifest.pack` with
 Jettison's packer. Put either the directory or the pack under Jettison's user `mods/` directory.
 Both contain `mod.yaml` and the definition records under `manifest/definitions/`. The mod
 integration test mounts both through Jettison's VFS and compares every file.

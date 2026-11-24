@@ -1,14 +1,19 @@
 # Session handoff
 
-## Next, on resuming — 2026-11-24 (R06 done and the engine's ImGui split pinned, then R07)
+## Next, on resuming — 2026-11-24 (R07 done, then R08)
 
-R06 is done: [the runtime distribution contract](stage-5-recovery-plan.md#the-runtime-distribution-contract-r06-2026-11-24),
-a planning task with no code ([D-114](decision-ledger.md#d-114)). The user chose a standalone tarball for
-x86-64 Linux with glibc 2.39 or newer (three newer symbols bound to older versions), nix-ld on
-NixOS, with the TUI in it. Its one engine gap, Jettison's `imgui` target carrying ImGui's GLFW and
-Vulkan backends so the TUI linked `libvulkan.so.1` through `Devtools`, is provisioned and pinned at
-`d9f565c` ([history](history.md#the-engines-imgui-split-pin-d9f565c--2026-11-24)): the TUI needs
-neither `libvulkan` nor `libglfw`. R07 stages and tests the bundle, its checks the TUI's among them.
+R07 is done: [the distribution](stage-5-recovery-plan.md#the-distribution-r07-2026-11-24), on pin
+`d9f565c` with no engine edit. `clang-release` is the distribution build (`MANIFEST_DISTRIBUTION`):
+its four binaries link `libstdc++` statically, load through `/lib64/ld-linux-x86-64.so.2` with no
+`RUNPATH`, and ask for glibc 2.38 at most, the three newer symbols bound in
+`source/apps/distribution/GlibcFloor.cpp`; its `distribution` test fails on anything newer than 2.39,
+which a nixpkgs bump would bring and `GlibcFloor.cpp` then binds. So the release preset's tests need a
+loader at `/lib64`, nix-ld on NixOS. Every build tree is laid out as the bundle, `bin/` and
+`share/manifest/manifest.pack`: `--content` defaults to the pack beside the executable, and the
+world, backups, tokens and the TUI's transcript to `~/.local/share`, `~/.config` and `~/.local/state`
+under `manifest`. `scripts/stage-bundle.sh` stages the tarball from a clean checkout into
+`build/bundle`, and `scripts/test-bundle.sh <tarball>` runs it here and in Ubuntu 24.04 and Debian 13
+containers (Docker).
 
 R05 is done: [shutdown, backups and limits](stage-5-recovery-plan.md#shutdown-backups-and-limits-r05-2026-11-24),
 on pin `ea66afe` with no engine edit. `manifest --serve --world <directory> --backups <directory>`

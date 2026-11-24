@@ -36,7 +36,16 @@ apart, as `fixture_cruise`, `fixture_alone`, `fixture_prices`, `fixture_burn`, `
 `cli_*` tests run the `manifest` executable from an unrelated directory with no display: both
 content forms start, and a missing source and bad command lines fail. `cli_serve` runs the server
 with no client, checks that it stepped, and stops it with SIGINT; the `token_*` tests run
-`manifest-token`'s refusals.
+`manifest-token`'s refusals. `bundle_smoke` runs the build tree as a distribution is run, every
+place its default, in a new HOME (`scripts/bundle-smoke.sh`).
+
+`clang-release` is the distribution build (`MANIFEST_DISTRIBUTION`,
+[the distribution](stage-5-recovery-plan.md#the-distribution-r07-2026-11-24)): its four executables
+load through `/lib64/ld-linux-x86-64.so.2`, so its tests need a loader there, nix-ld on NixOS, and
+its `distribution` test fails on a symbol newer than glibc 2.39, to be bound in
+`source/apps/distribution/GlibcFloor.cpp`. `scripts/stage-bundle.sh` stages the tarball from a clean
+checkout into `build/bundle`; `scripts/test-bundle.sh <tarball>` runs it from a read-only directory
+under `env -i` here and in Ubuntu 24.04 and Debian 13 containers, which needs Docker.
 
 The SDK import boundary is `source/external/CMakeLists.txt`. Whether it fetched the pin, took
 `JETTISON_SOURCE_DIR` or found a parent's SDK, configuration fails unless every target and helper
@@ -49,7 +58,9 @@ fixture's whole loop ([W09](stage-4-trading-plan.md#delivered-w09-2026-11-20)) a
 fixture's project supplied ([W12](stage-4-trading-plan.md#tender-contract-w11-2026-11-21)). The mod suite
 mounts the staged directory and generated pack through the engine VFS. The default test build
 builds that pack first, validated before and after packing
-([content identity](stage-2-content-plan.md#content-identity)). The TUI executable is `build/<preset>/source/tools/tui/manifest_tui`.
+([content identity](stage-2-content-plan.md#content-identity)). Every build tree is laid out as the distribution is, its executables in `build/<preset>/bin/` and the
+pack in `build/<preset>/share/manifest/`, so the TUI, `build/<preset>/bin/manifest_tui`, runs on its
+own build's pack.
 
 `manifest_data` writes the definition records from the authored YAML with mikefarah/yq v4 (tested
 with the devenv version, 4.54.1). Missing yq fails configuration when tests are enabled; with tests
@@ -248,7 +259,7 @@ the existing generated CTest commands:
 | Launch | Executable relative to the workspace |
 | --- | --- |
 | Simulation unit tests | `build/clang-debug/source/game/sim/manifest_sim_tests` |
-| Development TUI | `build/clang-debug/source/tools/tui/manifest_tui` |
+| Development TUI | `build/clang-debug/bin/manifest_tui` |
 
 Remove the legacy launch arguments; the simulation suite requires no YAML path arguments.
 The TUI uses its configured data paths and normal startup interface. Make configure, build

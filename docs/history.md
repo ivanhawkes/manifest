@@ -126,6 +126,26 @@ is 63,567 bytes of 65,536), the user booked for Jettison's next change, a messag
 packets ([Jettison's roadmap](../../jettison/docs/roadmap.md#first-what-saves-and-the-simulations-interface-hold)),
 and delta snapshots in Manifest only if that is not enough.
 
+## R07: the distribution — 2026-11-24
+
+[The distribution](stage-5-recovery-plan.md#the-distribution-r07-2026-11-24), on pin `d9f565c` with no
+engine edit, staged from `0ac13fe`. The release preset now links the four binaries to run outside the
+toolchain, every build tree is laid out as the bundle with the contract's defaults, and the tarball,
+staged from a clean checkout, ran from a read-only directory under `env -i` on Lythir and in Ubuntu
+24.04 and Debian 13 containers: a start, a validation, a token, a server served, the TUI connected, a
+stop and a restore.
+
+What it found. The clang wrapper's gcc does carry `libstdc++.a`, in its `lib/`, though
+`clang++ -print-file-name` does not find it there; the wrapper's `-L` does. Nix's wrapper gives every
+executable a `RUNPATH` into the store, which no link option takes back, so `patchelf` removes it
+after the link; `--dynamic-linker` sets the interpreter. The static `libstdc++` names the loader
+among its `NEEDED` and asks for nothing above glibc 2.38, so the three symbols R06 found are all
+there is to bind, and `--wrap` binds them for the static libraries' calls as well as Manifest's,
+where a `.symver` in each source would not reach them. The TUI connects in a pseudo-terminal from
+`script` fed a line at a time, which is how `bundle_smoke` runs it on every build tree. MikkTSpace has
+no licence file, only its header's comment. `--serve` without `--world` or `--tokens` no longer fails
+its parse, so `cli_serve_no_tokens` and `cli_serve_no_world` gave way to the default-place tests.
+
 ## The engine's ImGui split, pin d9f565c — 2026-11-24
 
 The engine gap R06 named, provisioned in Jettison before R07: its `imgui` target is ImGui's core

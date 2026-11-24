@@ -581,7 +581,7 @@ default because a server run with none has only its world's directory to lose.
   the same check. **Done** 2026-11-24 on pin `d9f565c`: `imgui_backends` holds the two backends and
   `render` alone links it; Jettison's `devtools_alone` test holds the engine's check, and
   `manifest_tui` needs neither library and runs with neither mapped. R07's checks gate it.
-- **R07.** The defaults above: `--content` optional in `Host::ParseOptions`, the TUI taking the
+- **R07.** **Done** 2026-11-24, [delivered](#the-distribution-r07-2026-11-24). The defaults above: `--content` optional in `Host::ParseOptions`, the TUI taking the
   host's options rather than the compiled-in `MANIFEST_MOD_DIRECTORY`, and its transcript moved from
   `build/tui-session.log`. The build tree laid out as the bundle (`bin/`, `share/manifest/`) so a
   development run finds its content the same way. The link flags, the staging script, `BUILD` and
@@ -591,6 +591,82 @@ default because a server run with none has only its world's directory to lose.
   start, a server stopped and restored, a validation of the pack, a token issued, and the TUI
   connected; and the same in Ubuntu 24.04 and Debian 13 containers. The CPU-only configure (`clang-notui`) kept as it is.
 - **R09.** The bundle's evidence in the stage's close, the glibc check among it.
+
+
+## The distribution (R07), 2026-11-24
+
+What R07 built of [the runtime distribution contract](#the-runtime-distribution-contract-r06-2026-11-24),
+on Jettison `d9f565c` with no engine edit, staged from Manifest `0ac13fe`.
+
+### The build
+
+`clang-release` is the distribution build: `MANIFEST_DISTRIBUTION` (`cmake/Distribution.cmake`)
+links `manifest`, `manifest-token`, `manifest-validate` and `manifest_tui` with `libstdc++` and
+`libgcc` static and the interpreter `/lib64/ld-linux-x86-64.so.2`, then removes the `RUNPATH`
+Nix's compiler wrapper gives every executable, which no link option takes back (`patchelf`). The
+three newer glibc symbols are taken at link time, by `--wrap`, so the static `libstdc++`'s calls
+come too (`source/apps/distribution/GlibcFloor.cpp`): `remainder` and `sqrtf`, versioned again in
+2.43, are bound to `GLIBC_2.2.5`, and `__inet_pton_chk` (2.42) is wrapped onto `inet_pton` with
+its size check. Each binary then asks for glibc 2.38 at most, and needs only `libc`, `libm` and the
+loader by name, which the static `libstdc++` asks for. `scripts/check-distribution.sh` fails on
+another interpreter, a search path, any other library or a symbol above 2.39, and is the release
+preset's `distribution` test, so a nixpkgs bump that brings a newer symbol fails the gate and is
+bound in `GlibcFloor.cpp`. The other presets link as before.
+
+Every build tree is laid out as the bundle, the four in `bin/` and the pack in
+`share/manifest/manifest.pack`, and has the contract's defaults: `Host::DefaultContent`, so
+`--content` is optional; `Host::DefaultLocations` for the world, backups, token file and the TUI's
+transcript, each directory made 0700 as it is first made (`Host::MakePrivateDirectories`); and the
+TUI on `[--content <directory-or-pack>]` rather than the compiled-in mod directory. So
+`build/clang-debug/bin/manifest_tui` runs on its own build's pack, and keeps its transcript in
+`~/.local/state/manifest/tui-session.log`.
+
+### The bundle
+
+`scripts/stage-bundle.sh [<directory>]` (`build/bundle` by default) refuses a checkout with any
+change, builds the release preset's four and the pack, checks them, and writes
+`manifest-<version>-<game tree's first 12>-linux-x86_64.tar.gz`, sorted, with no owners, the commit's
+time and no gzip timestamp. `share/manifest/BUILD` holds the version, the game and SDK revisions as
+`Manifest.Save` holds them, and each scenario's content fingerprint, as `manifest-validate` reports
+it from the staged pack:
+
+```yaml
+version: 0.0.1
+game: 0.0.1+3367867d27cb…
+sdk: 644b7d0fbed1…
+content:
+  governance: 3cede8e3efd717d4
+  trading: 6e50dacaf705df77
+```
+
+`share/doc/manifest/` holds Manifest's `LICENSE` and the licence files of every fetched source tree
+an object of the four was compiled from or included a header of, from ninja's own record of the build
+(`ninja -t inputs`, `-t deps`): sixteen today, from EnTT to zstd, the engine's among them, and
+MikkTSpace's `mikktspace.h`, whose leading comment is its only licence. A tree with no licence file
+fails the staging. `libstdc++` and `libgcc`, linked statically, are GPL-3.0 with the GCC Runtime
+Library Exception, which sets no condition on a program compiled with them, and their licence is not
+shipped. The tarball is 40 MB: each binary is 30 to 32 MB, unstripped, its debug information kept.
+
+### Evidence
+
+| Check | Where | Outcome |
+| --- | --- | --- |
+| The four linked to run outside the toolchain | `distribution`, release preset | Interpreter `/lib64/ld-linux-x86-64.so.2`, no `RUNPATH`, `NEEDED` glibc's own, glibc 2.38 at most; the Debug preset's `manifest`, linked as the other presets link, fails it on all four counts. |
+| A build tree run as a bundle | `bundle_smoke`, every preset (`scripts/bundle-smoke.sh`) | From an empty directory, in a new HOME: a start and a validation on the pack beside the executables, a token issued, a new world served, the TUI connected to it with the token (`status` in its transcript), a stop, and its backup restored at the step it stopped at; the three directories 0700, nothing written to the working directory. The TUI part is skipped where there is no TUI. |
+| The defaults | `cli_default_content`, `validate_default_content`, `cli_serve_no_home`, `token_no_home`, `host` | The pack beside the executable found with no `--content`; with no HOME a server or token CLI fails naming the variable; a default directory's parents made 0700 and one already there left as it was. |
+| The bundle where it runs | `scripts/test-bundle.sh` on the tarball staged from `0ac13fe` | Unpacked into a read-only directory under `/tmp` and run by `bundle-smoke.sh` under `env -i` with only HOME and PATH: on Lythir (NixOS, nix-ld, glibc 2.44), and in `ubuntu:24.04` (glibc 2.39) and `debian:13` (2.41) containers, mounted read-only with no network. All three passed. |
+
+The CPU-only configure (`clang-notui`) is as it was; its `bundle_smoke` runs without the TUI.
+
+### What it leaves
+
+- **R09.** The bundle's evidence in the stage's close. `test-bundle.sh` needs Docker and is run by
+  hand, not in CI; CI's release stage on its Ubuntu 24.04 runner runs the distributed binaries on
+  that system's glibc 2.39 through `bundle_smoke`.
+- **Every machine that runs the release preset** needs a loader at `/lib64/ld-linux-x86-64.so.2`,
+  nix-ld on NixOS, since its tests run the distributed binaries.
+- **Debug files.** A release's binaries keep their debug information; stripping them, with the
+  debug files kept for crash reports, waits on Jettison's crash-handling work.
 
 
 ## Commit model: durable step batches
