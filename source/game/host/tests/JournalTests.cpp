@@ -321,6 +321,15 @@ TEST_CASE(
 	other = running;
 	other.content.back() ^= 1u;
 	refused(other, "its content is");
+
+	// Content patched by an overlay is named by its first definition that differs.
+	const std::unique_ptr<Jettison::Host::Session> pPatched{Host::Start(
+	    {MANIFEST_MOD_DIRECTORY,
+	     {std::filesystem::path{MANIFEST_HOST_OVERLAYS} / "copper"},
+	     "trading"})};
+	refused(
+	    Host::RunningIdentity(*pPatched),
+	    "; the first definition that differs is Manifest.Item item-copper");
 }
 
 

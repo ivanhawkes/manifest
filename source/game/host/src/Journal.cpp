@@ -20,6 +20,7 @@
 #include <jettison/reflect/Reflect.h>
 #include <jettison/serialise/Archive.h>
 
+#include <manifest/content/ContentIdentity.h>
 #include <manifest/host/Start.h>
 
 #include "Revision.h"
@@ -191,15 +192,34 @@ std::string Named(const std::vector<Command::Registered> &commands, std::size_t 
 }
 
 
+// What a content refusal adds: the first definition that differs, or nothing when the world's
+// manifest does not read, which the refusal stands without.
+std::string FirstDefinitionDiffering(const Identity &made, const Identity &running)
+{
+	try
+	{
+		return std::format(
+		    "; the first definition that differs is {}",
+		    Content::FirstDifference(
+		        std::as_bytes(std::span{made.content}), std::as_bytes(std::span{running.content})));
+	}
+	catch (const Jettison::Serialise::FormatError &)
+	{
+		return {};
+	}
+}
+
+
 // Throws naming the first field of the world's identity the running build's does not equal.
 void Hold(const std::filesystem::path &root, const Identity &made, const Identity &running)
 {
-	const auto refuse = [&](std::string_view field, const std::string &was, const std::string &is)
+	const auto refuse = [&](std::string_view field, const std::string &was, const std::string &is,
+	                        const std::string &detail = {})
 	{
 		throw std::runtime_error{std::format(
 		    "the world at {} was made by another build or other content: its {} is {}, and this "
-		    "one's is {}",
-		    root.string(), field, was, is)};
+		    "one's is {}{}",
+		    root.string(), field, was, is, detail)};
 	};
 	if (made.game != running.game)
 		refuse("game", made.game, running.game);
@@ -218,7 +238,8 @@ void Hold(const std::filesystem::path &root, const Identity &made, const Identit
 	if (made.content != running.content)
 		refuse(
 		    "content", std::format("{:016x}", Checksum(std::span<const std::uint8_t>{made.content})),
-		    std::format("{:016x}", Checksum(std::span<const std::uint8_t>{running.content})));
+		    std::format("{:016x}", Checksum(std::span<const std::uint8_t>{running.content})),
+		    FirstDefinitionDiffering(made, running));
 }
 
 

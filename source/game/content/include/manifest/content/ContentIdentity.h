@@ -2,6 +2,8 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <span>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -36,4 +38,10 @@ struct ContentIdentity
 // The registry holds every type of DefinitionTypes, as LoadDefinitions leaves it.
 ContentIdentity BuildContentIdentity(
     const Jettison::Sim::DefinitionRegistry &registry, std::string_view scenario);
+
+// What a refusal names of two manifests this build made (ContentIdentity::manifest), a world's and
+// the running content's: the first definition, in the manifest's order, that the two do not hold
+// alike, by its type and name, or else the scenario; empty for two alike. Throws
+// Jettison::Serialise::FormatError for one that is not a manifest.
+std::string FirstDifference(std::span<const std::byte> was, std::span<const std::byte> is);
 } // namespace Manifest::Content

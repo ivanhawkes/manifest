@@ -1327,6 +1327,20 @@ TEST_CASE("A changed price, a reordered selection or an unselected definition ch
 	    "manifest/definitions/ages/age-golden.yaml",
 	    "version: 1\nageId: AgeGolden\ndisplayName: Golden\n");
 	CHECK(added.manifest != base.manifest);
+
+	// What a refusal names: the first definition held otherwise, or by one alone, or the scenario.
+	CHECK(FirstDifference(base.manifest, base.manifest).empty());
+	CHECK(FirstDifference(base.manifest, price.manifest) == "Manifest.Item item-copper");
+	CHECK(
+	    FirstDifference(base.manifest, added.manifest) ==
+	    "Manifest.Age age-golden, which only this content has");
+	CHECK(
+	    FirstDifference(added.manifest, base.manifest) ==
+	    "Manifest.Age age-golden, which only the world's content has");
+	CHECK(
+	    FirstDifference(
+	        base.manifest, BuildContentIdentity(Loaded{kModDirectory}.registry, "trading").manifest) ==
+	    "the scenario");
 }
 
 

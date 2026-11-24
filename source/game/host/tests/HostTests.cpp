@@ -215,6 +215,37 @@ TEST_CASE("The staged directory and pack both start Manifest with the scenario's
 }
 
 
+// A row added to the inventory (docs/stage-5-recovery-plan.md, "The state inventory") with the
+// mechanic that adds authoritative state, and its name here.
+TEST_CASE("A hosted world saves what the state inventory names, in its order, and nothing else")
+{
+	const auto session = Manifest::Host::Start(OptionsFor(MANIFEST_MOD_DIRECTORY));
+	const Jettison::Sim::SimWorld &world = session->World();
+	CHECK(
+	    world.ComponentNames() ==
+	    std::vector<std::string_view>{
+	        "Manifest.World.Identity", "Manifest.World.Principal", "Manifest.World.Company",
+	        "Manifest.World.Organisation", "Manifest.World.Region", "Manifest.World.Account",
+	        "Manifest.World.Ship", "Manifest.World.Journey", "Manifest.World.Stock",
+	        "Manifest.World.Cargo", "Manifest.World.LifeSupport", "Manifest.World.Fuel",
+	        "Manifest.World.Refuel", "Manifest.World.Systems", "Manifest.World.Broker",
+	        "Manifest.World.Order", "Manifest.World.Production", "Manifest.World.Pantry",
+	        "Manifest.World.Sales", "Manifest.World.Reports", "Manifest.World.Fees",
+	        "Manifest.World.Arrears", "Manifest.World.Policy", "Manifest.World.Development",
+	        "Manifest.World.Job", "Manifest.World.Pricing", "Manifest.World.Paid",
+	        "Manifest.World.Knowledge", "Manifest.World.Facilities", "Manifest.World.Project",
+	        "Manifest.World.Tender", "Manifest.World.Bid",
+	        // What Travel::Register attaches: a ship in space.
+	        "Sim.Transform", "Sim.InFrame", "Sim.ControlledBy", "Physics.Body", "Physics.Velocity",
+	        "Physics.OnRails", "Physics.LocalFrame", "Physics.Handling", "Physics.FlightControls",
+	        "Ai.Steered", "Ai.Destination", "Dock.Vehicle", "Dock.Platform", "Dock.Berth",
+	        "Dock.Docking", "Space.OnLane", "Space.CruiseDrive", "Space.Cruising"});
+	CHECK(
+	    world.ServiceNames() ==
+	    std::vector<std::string_view>{"Manifest.Identities", "Manifest.Requests", "physics"});
+}
+
+
 TEST_CASE("A session starts after one that failed, and beside another")
 {
 	CheckFails("/nonexistent/manifest.pack", Phase::Mount, "");
