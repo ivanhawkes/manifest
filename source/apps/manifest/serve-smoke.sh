@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# The dedicated server unattended, killed and stopped: an administrator's token issued, the server
+# The dedicated server unattended, killed and stopped: an administrator's token issued, and another
+# with only XDG_CONFIG_HOME set; the server
 # started on a new world and an ephemeral port with no client, flushing its journal every second and
 # writing a snapshot every two, left to step and killed outright; started again on the world, it takes
 # up at a step its journal had flushed, steps on and is stopped with SIGINT, which writes a snapshot
@@ -32,6 +33,10 @@ serve() {
 }
 
 "$2" --tokens "$work/tokens.yaml" issue administrator Operator > /dev/null
+# With nothing in the environment but the one directory it writes to.
+env -i XDG_CONFIG_HOME="$work/config" "$2" issue administrator Operator > /dev/null \
+  || fail 'a token was not issued with XDG_CONFIG_HOME alone'
+[[ -f "$work/config/manifest/tokens" ]] || fail 'the token file is not under XDG_CONFIG_HOME'
 serve "$@"
 [[ "$at" -eq 0 ]] || fail 'the world was not new'
 # Past three seconds the world has stepped with nobody connected, flushed and written a snapshot.

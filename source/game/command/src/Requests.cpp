@@ -72,6 +72,8 @@ std::optional<std::string> Broken(const ActorLedger &ledger, std::uint64_t lastO
 {
 	if (ledger.id.empty())
 		return "an actor has no ID";
+	if (ledger.id.size() > kMaxActorIdBytes)
+		return "an actor's ID is longer than the limit";
 	if (ledger.floor == 0 || ledger.floor > ledger.next)
 		return std::format("'{}' has its floor above its next sequence", ledger.id);
 	if (ledger.completed.size() > kRetainedResults || ledger.pending.size() > kPendingPerActor)
@@ -117,8 +119,9 @@ Receipt Requests::Admit(
     Jettison::Sim::SimWorld &world, const Actor &actor, std::uint64_t sequence,
     const std::string &command, std::uint32_t version, std::span<const std::byte> payload)
 {
-	if (actor.id.empty() || (actor.kind == ActorKind::Principal &&
-	                         m_identities.Find(World::Kind::Principal, actor.id) == entt::null))
+	if (actor.id.empty() || actor.id.size() > kMaxActorIdBytes ||
+	    (actor.kind == ActorKind::Principal &&
+	     m_identities.Find(World::Kind::Principal, actor.id) == entt::null))
 		return Refused(Result::NotAuthorised);
 
 	// A sequence already admitted answers from the ledger before the handlers are asked, so a retry

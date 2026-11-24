@@ -651,6 +651,59 @@ TEST_CASE("A backup is written with each snapshot, the newest kept, and one cut 
 }
 
 
+TEST_CASE(
+    "A snapshot cut off, or written and never named, is passed over for the one before it and its "
+    "batches")
+{
+	// The second snapshot's writes: its world's last batch, the catalogue naming it, the snapshot,
+	// then the catalogue naming that. The third and fourth fail, the fourth after it landed too.
+	struct Interrupted
+	{
+		int failIn;
+		bool afterWriting;
+	};
+	for (const Interrupted interrupted :
+	     {Interrupted{3, false}, Interrupted{4, false}, Interrupted{4, true}})
+	{
+		CAPTURE(interrupted.failIn);
+		CAPTURE(interrupted.afterWriting);
+		const Scratch scratch;
+		std::uint64_t hash = 0;
+		{
+			Hosted hosted;
+			Disk disk;
+			const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.Root());
+			Host::Journal journal{directory, hosted.Identity(), {40, 40}, disk.Writer()};
+			REQUIRE(hosted.Provision("Ada").status == Receipt::Status::Queued);
+			journal.Advance(hosted.world, 40);
+			REQUIRE(std::filesystem::exists(scratch.Snapshot(1)));
+			disk.failIn = interrupted.failIn;
+			disk.afterWriting = interrupted.afterWriting;
+			CHECK_THROWS_AS(journal.Advance(hosted.world, 40), std::runtime_error);
+			CHECK(journal.Head() == 2);
+			hash = hosted.world.StateHash();
+		}
+		// Nothing a start needs was removed: the older snapshot and the batch after it.
+		CHECK(std::filesystem::exists(scratch.Snapshot(1)));
+		CHECK(std::filesystem::exists(scratch.Batch(2)));
+		CHECK(std::filesystem::exists(scratch.Snapshot(2)) == (interrupted.failIn == 4));
+		{
+			Hosted again;
+			const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.Root());
+			Host::Journal journal{directory, again.Identity()};
+			journal.Recover(again.world);
+			CHECK(again.world.Clock().Step() == 80);
+			CHECK(again.world.StateHash() == hash);
+			// A stop writes the snapshot again, over one never named.
+			journal.Stop(again.world);
+		}
+		Hosted last;
+		CHECK(Refusal(scratch, last).empty());
+		CHECK(last.world.StateHash() == hash);
+	}
+}
+
+
 TEST_CASE("A backup restores into an empty directory, to its head, and is only read")
 {
 	const Scratch scratch;
@@ -714,6 +767,12 @@ TEST_CASE("A backup restores into an empty directory, to its head, and is only r
 	MANIFEST_CHECK_CONTAINS(RestoreRefusal(backup, into, fresh, fresh.Identity()), "is damaged");
 	CHECK(Empty(into));
 	CHECK(fresh.world.Clock().Step() == 0);
+	// Found damaged before anything is written: into a directory that takes no file, the refusal is
+	// the damage and not the write.
+	std::filesystem::permissions(
+	    into, std::filesystem::perms::owner_read | std::filesystem::perms::owner_exec);
+	MANIFEST_CHECK_CONTAINS(RestoreRefusal(backup, into, fresh, fresh.Identity()), "is damaged");
+	std::filesystem::permissions(into, std::filesystem::perms::owner_all);
 }
 
 

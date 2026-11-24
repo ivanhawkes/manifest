@@ -223,7 +223,7 @@ TEST_CASE("A hosted world saves what the state inventory names, in its order, an
 	const Jettison::Sim::SimWorld &world = session->World();
 	CHECK(
 	    world.ComponentNames() ==
-	    std::vector<std::string_view>{
+	    std::vector<std::string>{
 	        "Manifest.World.Identity", "Manifest.World.Principal", "Manifest.World.Company",
 	        "Manifest.World.Organisation", "Manifest.World.Region", "Manifest.World.Account",
 	        "Manifest.World.Ship", "Manifest.World.Journey", "Manifest.World.Stock",
@@ -242,7 +242,7 @@ TEST_CASE("A hosted world saves what the state inventory names, in its order, an
 	        "Dock.Docking", "Space.OnLane", "Space.CruiseDrive", "Space.Cruising"});
 	CHECK(
 	    world.ServiceNames() ==
-	    std::vector<std::string_view>{"Manifest.Identities", "Manifest.Requests", "physics"});
+	    std::vector<std::string>{"Manifest.Identities", "Manifest.Requests", "physics"});
 }
 
 

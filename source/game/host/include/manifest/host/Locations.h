@@ -10,17 +10,14 @@ namespace Manifest::Host
 std::filesystem::path DefaultContent();
 
 // Where Manifest writes when no option names a place (docs/stage-5-recovery-plan.md, "The runtime
-// distribution contract"): under the XDG base directories, Jettison::Platform::ResolvePaths's for
-// "manifest". Resolving touches nothing on disk. Throws std::runtime_error naming the variable when
-// HOME is needed and is not an absolute path.
-struct Locations
-{
-	std::filesystem::path world;
-	std::filesystem::path backups;
-	std::filesystem::path tokens;
-	std::filesystem::path transcript;
-};
-Locations DefaultLocations();
+// distribution contract"): under the XDG base directories, Jettison::Platform::ResolvePath's for
+// "manifest", each resolved alone, so a program needs only the variables of the places it writes.
+// Resolving touches nothing on disk. Throws std::runtime_error naming the variable when HOME is
+// needed and is not an absolute path.
+std::filesystem::path DefaultWorld();
+std::filesystem::path DefaultBackups();
+std::filesystem::path DefaultTokens();
+std::filesystem::path DefaultTranscript();
 
 // Makes the directory and each one above it that is missing, durably
 // (Jettison::Core::CreateDirectoriesDurably), each it makes private to its owner (0700), as the XDG

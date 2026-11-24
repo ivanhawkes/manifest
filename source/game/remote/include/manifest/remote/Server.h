@@ -40,6 +40,13 @@ class Server
 	// After a step: the completed requests' replies and each session's snapshot.
 	void Publish();
 
+	// For a clean stop, after the last Publish: closes every session as Shutdown once what it was sent
+	// has arrived, and any admitted after it at once. Poll on while Stopping holds, to a deadline, for
+	// the clients to have their last replies: destroying the server closes at once, dropping them.
+	void Stop();
+
+	bool Stopping() const;
+
   private:
 	struct Session
 	{
@@ -59,6 +66,7 @@ class Server
 	std::filesystem::file_time_type m_tokensWritten;
 	TokenFile m_tokens;
 	std::map<Jettison::Net::SessionId, Session> m_sessions;
+	bool m_stopped{false};
 	Jettison::Net::Server m_net;
 };
 } // namespace Manifest::Remote

@@ -14,14 +14,31 @@ std::filesystem::path DefaultContent()
 }
 
 
-Locations DefaultLocations()
+std::filesystem::path DefaultWorld()
 {
-	const Jettison::Platform::Paths paths = Jettison::Platform::ResolvePaths("manifest");
-	return {
-	    .world = paths.userData / "world",
-	    .backups = paths.userData / "backups",
-	    .tokens = paths.config / "tokens",
-	    .transcript = paths.state / "tui-session.log"};
+	return Jettison::Platform::ResolvePath(Jettison::Platform::Directory::UserData, "manifest") /
+	       "world";
+}
+
+
+std::filesystem::path DefaultBackups()
+{
+	return Jettison::Platform::ResolvePath(Jettison::Platform::Directory::UserData, "manifest") /
+	       "backups";
+}
+
+
+std::filesystem::path DefaultTokens()
+{
+	return Jettison::Platform::ResolvePath(Jettison::Platform::Directory::Config, "manifest") /
+	       "tokens";
+}
+
+
+std::filesystem::path DefaultTranscript()
+{
+	return Jettison::Platform::ResolvePath(Jettison::Platform::Directory::State, "manifest") /
+	       "tui-session.log";
 }
 
 

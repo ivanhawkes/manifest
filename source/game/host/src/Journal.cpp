@@ -50,10 +50,19 @@ constexpr std::size_t kMaxBatchRequests = 4'096;
 
 constexpr std::size_t kChecksumBytes = sizeof(std::uint64_t);
 // The longest file of each kind read: nothing larger is one, so nothing larger is taken into memory.
-// A batch is at most kMaxBatchRequests and a step's full queue of the largest payloads, 21 MiB, and
-// each request's names; a content manifest is a few hundred KiB. A snapshot's is kMaxSnapshotBytes.
+// A batch is at most kMaxBatchRequests and a step's full queue, each request its payload, its actor's
+// ID and what else it holds; a content manifest is a few hundred KiB. A snapshot's is
+// kMaxSnapshotBytes.
 constexpr std::uintmax_t kMaxCatalogueBytes = std::uintmax_t{4} * 1024;
 constexpr std::uintmax_t kMaxBatchBytes = std::uintmax_t{32} * 1024 * 1024;
+// A request's command name, its numbers and their archive's framing: a command's name is a few dozen
+// bytes.
+constexpr std::uintmax_t kMaxRequestOverheadBytes = 1024;
+static_assert(
+    (kMaxBatchRequests + Command::kQueueCapacity) *
+            (Command::kMaxPayloadBytes + Command::kMaxActorIdBytes + kMaxRequestOverheadBytes) +
+        kMaxRequestOverheadBytes <=
+    kMaxBatchBytes);
 constexpr std::uintmax_t kMaxIdentityBytes = std::uintmax_t{64} * 1024 * 1024;
 
 // The steps the world took, from `step`, and the requests that ran in them, in the order they ran.
@@ -460,6 +469,8 @@ void Journal::Flush()
 	const Batch batch{m_catalogue.world, m_catalogue.head + 1,    m_catalogue.headId,
 	                  m_catalogue.step,  m_at - m_catalogue.step, m_ran};
 	const std::vector<std::byte> record = BinaryArchive::Write(batch, kFormat);
+	// The bounds above keep it so; past them a start would refuse the batch it was given.
+	JETTISON_VERIFY(record.size() + kChecksumBytes <= kMaxBatchBytes);
 	Catalogue next = m_catalogue;
 	next.head = batch.sequence;
 	next.headId = Checksum(std::span<const std::byte>{record});
@@ -614,6 +625,9 @@ Journal Restore(
 	for (std::uint64_t sequence = first; sequence <= catalogue.head; ++sequence)
 		files.emplace_back(Numbered({}, kJournalName, sequence), kMaxBatchBytes);
 	files.emplace_back(kCatalogueName, kMaxCatalogueBytes);
+	// Every file checked before the first is written, and again as it is copied.
+	for (const auto &[name, limit] : files)
+		(void)ReadFile(backup / name, limit);
 	try
 	{
 		for (const auto &[name, limit] : files)

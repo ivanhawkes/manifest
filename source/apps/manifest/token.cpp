@@ -2,9 +2,10 @@
 // token, printed once on stdout, and keeps only its digest in the file, replacing any the actor had.
 // manifest-token [--tokens <file>] revoke principal|administrator <id>: removes the actor's token. A
 // running server reads the file again and closes the actor's sessions. The file defaults to
-// Manifest::Host::DefaultLocations', its directory made private when it is first written to. An actor
+// Manifest::Host::DefaultTokens, its directory made private when it is first written to. An actor
 // with no token to revoke, or a file that cannot be found, read or written, exits 1; a bad command
 // line 2.
+#include <manifest/command/Request.h>
 #include <manifest/host/Locations.h>
 #include <manifest/remote/Tokens.h>
 
@@ -41,7 +42,8 @@ int main(int argc, char **argv)
 	// The action, its actor's kind and its id.
 	const std::span<const std::string_view> arguments = std::span{all}.subspan(named ? 2 : 0);
 	if (arguments.size() != 3 || (arguments[0] != "issue" && arguments[0] != "revoke") ||
-	    (arguments[1] != "principal" && arguments[1] != "administrator") || arguments[2].empty())
+	    (arguments[1] != "principal" && arguments[1] != "administrator") || arguments[2].empty() ||
+	    arguments[2].size() > Manifest::Command::kMaxActorIdBytes)
 		return Usage();
 	const ActorKind kind =
 	    arguments[1] == "principal" ? ActorKind::Principal : ActorKind::Administrator;
@@ -54,7 +56,7 @@ int main(int argc, char **argv)
 			path = all[1];
 		else
 		{
-			path = Manifest::Host::DefaultLocations().tokens;
+			path = Manifest::Host::DefaultTokens();
 			Manifest::Host::MakePrivateDirectories(path.parent_path());
 		}
 		Manifest::Remote::TokenFile file = std::filesystem::exists(path)

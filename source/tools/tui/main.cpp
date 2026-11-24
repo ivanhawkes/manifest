@@ -1,6 +1,6 @@
 // manifest_tui [--content <directory-or-pack>]: the development console in the terminal, on the
 // package beside the executable (Manifest::Host::DefaultContent) unless one is given, keeping its
-// transcript where Manifest::Host::DefaultLocations puts it. A content or transcript that cannot be
+// transcript where Manifest::Host::DefaultTranscript puts it. A content or transcript that cannot be
 // found exits 1, a bad command line 2.
 #include "ManifestTui.h"
 
@@ -25,7 +25,7 @@ int main(int argc, char **argv)
 	{
 		const std::filesystem::path content =
 		    arguments.empty() ? Manifest::Host::DefaultContent() : std::filesystem::path{arguments[1]};
-		const std::filesystem::path transcript = Manifest::Host::DefaultLocations().transcript;
+		const std::filesystem::path transcript = Manifest::Host::DefaultTranscript();
 		Manifest::Host::MakePrivateDirectories(transcript.parent_path());
 		Manifest::Tui::ManifestTui repl{content, transcript};
 		repl.Run();

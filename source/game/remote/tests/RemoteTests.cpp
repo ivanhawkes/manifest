@@ -352,6 +352,32 @@ TEST_CASE("a remote session is closed for a revoked token, a bad message and the
 }
 
 
+TEST_CASE("a clean stop's last replies arrive before its clients are closed, and it admits no one")
+{
+	Served served;
+	Client admin = served.Connect(served.admin);
+	REQUIRE(served.Welcome(admin));
+	const std::uint64_t sequence =
+	    admin.Submit(Company::kProvision, Company::kVersion, Provision("Ada")).value();
+	REQUIRE(served.Await(admin, sequence, Receipt::Status::Queued));
+	served.Step();
+	served.pServer->Stop();
+	CHECK(served.Pump(admin, [&] { return !served.pServer->Stopping() && admin.Closed(); }));
+	CHECK(admin.Closed() == Reason::Shutdown);
+	CHECK(
+	    std::ranges::any_of(
+	        served.replies[&admin],
+	        [&](const Reply &reply)
+	        {
+		        return reply.sequence == sequence && reply.receipt.status == Receipt::Status::Completed;
+	        }));
+
+	Client late = served.Connect(served.bea);
+	CHECK_FALSE(served.Welcome(late));
+	CHECK(late.Closed() == Reason::Shutdown);
+}
+
+
 TEST_CASE("several players are served at once, and one actor holds at most three sessions")
 {
 	Served served;

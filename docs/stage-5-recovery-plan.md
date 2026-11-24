@@ -612,8 +612,8 @@ bound in `GlibcFloor.cpp`. The other presets link as before.
 
 Every build tree is laid out as the bundle, the four in `bin/` and the pack in
 `share/manifest/manifest.pack`, and has the contract's defaults: `Host::DefaultContent`, so
-`--content` is optional; `Host::DefaultLocations` for the world, backups, token file and the TUI's
-transcript, each directory made 0700 as it is first made (`Host::MakePrivateDirectories`); and the
+`--content` is optional; `Host::DefaultWorld`, `DefaultBackups`, `DefaultTokens` and `DefaultTranscript`, each resolved
+alone so a program needs only its own places' variables, each directory made 0700 as it is first made (`Host::MakePrivateDirectories`); and the
 TUI on `[--content <directory-or-pack>]` rather than the compiled-in mod directory. So
 `build/clang-debug/bin/manifest_tui` runs on its own build's pack, and keeps its transcript in
 `~/.local/state/manifest/tui-session.log`.
@@ -738,13 +738,13 @@ is taken, so a receipt is not a durable acknowledgement, and a crash loses up to
 | A batch written, its catalogue not | `host`: the orphan is not run and is written over by the next flush (R04) |
 | A flushed batch replayed | `host`: its requests at the steps they ran at, the ledger rebuilt; `cli_serve` killed outright and started again on a flushed step (R04) |
 | A retry after recovery | `host`: answered from the ledger, not run; `remote`: three clients across a crash, what was kept answered and what was lost retried in each actor's order (R08) |
-| A snapshot cut off, or the newest damaged | `host`: an unnamed file ignored; the older snapshot and its batches reach the same state hash; with neither, the start fails by name (R04) |
+| A snapshot cut off, or the newest damaged | `host`: a snapshot's write failed, or the catalogue's after it, the file left unnamed and ignored, the older snapshot and its batches kept and reaching the same state hash; the newest damaged, the same; with neither, the start fails by name (R04, the Stage 5 review) |
 | A batch or catalogue missing, damaged or out of its chain | `host`: each refused by name, nothing skipped (R04) |
 | Disk full, a short write, a write reported failed after it landed | `host`'s failing writer: no batch named, or the head found on opening; the journal takes nothing more (R04) |
 | Another build, SDK, fixed step, command or content | `host`: refused before a world is recovered, naming the field, both values and, for content, the definition (R04, R09) |
 | Retry IDs pruned, and across a restart | `command`: a pruned sequence too old and a retained one answered, before and after the world's save is loaded (R01, R09) |
 | A clean stop | `host`, `cli_serve`: what was admitted runs and is answered, a snapshot of that step, nothing replayed (R05) |
-| A backup restored | `host`, `cli_serve`: into an empty directory at its head and step; refused over a world, of another build or damaged, the directory left empty (R05) |
+| A backup restored | `host`, `cli_serve`: into an empty directory at its head and step; refused over a world, of another build or damaged, every file checked before the first is written and the directory left empty (R05, the Stage 5 review) |
 | Storage limits | `host`: a save over the snapshot limit is not written and the world keeps its last recovery point (R05) |
 | The whole loop across a stop and a crash | `fixture_development` through its journal, recovered to the uninterrupted world's hash (R08) |
 | The release relocated | `distribution`, `bundle_smoke` at every gate; `scripts/test-bundle.sh` (R07, R09) |

@@ -141,6 +141,8 @@ inline constexpr std::size_t kRetainedResults = 256;
 inline constexpr std::size_t kPendingPerActor = 32;
 inline constexpr std::size_t kQueueCapacity = 1024;
 inline constexpr std::size_t kMaxPayloadBytes = 4096;
+// An actor's ID, so a journal batch of the most requests stays under what a start reads.
+inline constexpr std::size_t kMaxActorIdBytes = 256;
 
 // The types above, with Reflect. Safe to call again.
 void RegisterTypes();

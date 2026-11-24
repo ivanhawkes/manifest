@@ -204,6 +204,8 @@ TEST_CASE("A refused admission consumes no sequence")
 	CHECK(refusal(kAda, 1, "Test.Grant", 2, grant) == Result::UnsupportedCommand);
 	CHECK(refusal(kAda, 1, "Test.Audit", 1, audit) == Result::NotAuthorised);
 	CHECK(refusal(kHost, 1, "Test.Grant", 1, grant) == Result::NotAuthorised);
+	const Actor longest{ActorKind::Administrator, std::string(kMaxActorIdBytes + 1, 'A')};
+	CHECK(refusal(longest, 1, "Test.Audit", 1, audit) == Result::NotAuthorised);
 	const std::vector<std::byte> huge(kMaxPayloadBytes + 1);
 	CHECK(refusal(kAda, 1, "Test.Grant", 1, huge) == Result::PayloadTooLarge);
 	const std::vector<std::byte> damaged(grant.begin(), grant.begin() + 6);
@@ -215,6 +217,10 @@ TEST_CASE("A refused admission consumes no sequence")
 
 	CHECK(
 	    hosted.requests.Admit(hosted.world, kHost, 1, "Test.Audit", 1, audit).status == Status::Queued);
+	const Actor longestAllowed{ActorKind::Administrator, std::string(kMaxActorIdBytes, 'A')};
+	CHECK(
+	    hosted.requests.Admit(hosted.world, longestAllowed, 1, "Test.Audit", 1, audit).status ==
+	    Status::Queued);
 }
 
 

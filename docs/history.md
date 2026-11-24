@@ -126,6 +126,19 @@ is 63,567 bytes of 65,536), the user booked for Jettison's next change, a messag
 packets ([Jettison's roadmap](../../jettison/docs/roadmap.md#first-what-saves-and-the-simulations-interface-hold)),
 and delta snapshots in Manifest only if that is not enough.
 
+## Stage 5 cross-review — 2026-11-25
+
+Codex reviewed `e1def0f..cdde5ab` and the stage's three engine provisions (`build/reviews/stage-5`).
+Round 1's six findings: a clean stop's last replies were dropped, the engine's server closing every
+connection at once as it was destroyed, so the stop now closes each session and polls until its
+client has what it was sent, to two seconds (Jettison's `Server::Closing`); `ComponentNames` and
+`ServiceNames` returned views a later registration could leave dangling (copies now); an actor's ID
+was unbounded, so a batch of the most requests could outgrow what a start reads (256 bytes now, a
+`static_assert` on the batch's bound and a check before it is written); a restore checked each file
+as it copied it, and now checks every one first; a program writing only its tokens needed every XDG
+variable or HOME (Jettison's `ResolvePath`, one directory at a time); and no test cut a snapshot's
+write or its catalogue's off, which the `host` suite now does.
+
 ## R09: Stage 5 closed — 2026-11-25
 
 [The close](stage-5-recovery-plan.md#stage-5-closed-r09-2026-11-25), on pin `13c1bec`, whose one

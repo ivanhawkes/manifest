@@ -143,6 +143,12 @@ void Server::Poll(std::chrono::milliseconds wait)
 			m_sessions.erase(session);
 			continue;
 		}
+		if (m_stopped)
+		{
+			m_net.Disconnect(event.session, Jettison::Net::Reason::Shutdown);
+			m_sessions.erase(session);
+			continue;
+		}
 		if (session->second.overCap)
 		{
 			// Admitted by the engine, whose verifier can refuse only as BadCredential, so closed here.
@@ -234,6 +240,21 @@ void Server::Publish()
 		        Query::Observe(world, services.identities, ActorOf(session->second.credential)),
 		        kFormat);
 	    });
+}
+
+
+void Server::Stop()
+{
+	m_stopped = true;
+	for (const auto &[id, session] : m_sessions)
+		m_net.Disconnect(id, Jettison::Net::Reason::Shutdown);
+	m_sessions.clear();
+}
+
+
+bool Server::Stopping() const
+{
+	return m_net.Closing();
 }
 
 

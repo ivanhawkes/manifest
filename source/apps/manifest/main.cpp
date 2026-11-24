@@ -13,8 +13,9 @@
 // manifest <options> --restore <backup> [--world <directory>]: restores the backup into the
 // directory, which must be empty, and recovers it to check it, for --serve to serve. The backup is
 // only read.
-// The world, its backups and the token file default to Manifest::Host::DefaultLocations', each
-// directory made private when it is first written to. A failed start-up exits 1, a bad command line 2.
+// The world, its backups and the token file default to Manifest::Host::DefaultWorld's and the others',
+// each directory made private when it is first written to. A failed start-up exits 1, a bad command
+// line 2.
 #include <manifest/host/Journal.h>
 #include <manifest/host/Locations.h>
 #include <manifest/host/Start.h>
@@ -43,6 +44,10 @@
 namespace
 {
 constexpr Jettison::Core::Category kManifest{"manifest"};
+// How long the server waits for a request between steps, and at a clean stop for its clients to
+// acknowledge their last replies: a client on a LAN answers in milliseconds, one gone never.
+constexpr std::chrono::milliseconds kPollWait{10};
+constexpr std::chrono::milliseconds kStopWait{2'000};
 
 volatile std::sig_atomic_t g_stopping = 0;
 
@@ -69,12 +74,11 @@ using Place = std::optional<std::filesystem::path>;
 
 
 // The place given, or the default, whose directory is made private to its owner when it is missing.
-std::filesystem::path ResolvePlace(
-    const Place &place, std::filesystem::path Manifest::Host::Locations::*member)
+std::filesystem::path ResolvePlace(const Place &place, std::filesystem::path (*fallback)())
 {
 	if (place)
 		return *place;
-	std::filesystem::path path = Manifest::Host::DefaultLocations().*member;
+	std::filesystem::path path = fallback();
 	Manifest::Host::MakePrivateDirectories(path.parent_path());
 	return path;
 }
@@ -152,12 +156,11 @@ std::optional<Serve> ParseServe(const std::vector<std::string_view> &rest)
 void RunServer(Jettison::Host::Session &session, const Serve &serve)
 {
 	Jettison::Sim::SimWorld &world = session.World();
-	using Manifest::Host::Locations;
-	const std::filesystem::path backups = ResolvePlace(serve.backups, &Locations::backups);
-	const std::filesystem::path tokens = ResolvePlace(serve.tokens, &Locations::tokens);
+	const std::filesystem::path backups = ResolvePlace(serve.backups, Manifest::Host::DefaultBackups);
+	const std::filesystem::path tokens = ResolvePlace(serve.tokens, Manifest::Host::DefaultTokens);
 	// Before a client can reach the server: the world held, and brought to its journal's last step.
 	const Manifest::Host::WorldDirectory directory =
-	    Manifest::Host::OpenWorldDirectory(ResolvePlace(serve.world, &Locations::world));
+	    Manifest::Host::OpenWorldDirectory(ResolvePlace(serve.world, Manifest::Host::DefaultWorld));
 	const auto stepsIn = [&](std::uint32_t seconds)
 	{
 		return std::max<std::uint64_t>(
@@ -181,7 +184,7 @@ void RunServer(Jettison::Host::Session &session, const Serve &serve)
 	auto last = std::chrono::steady_clock::now();
 	while (g_stopping == 0)
 	{
-		server.Poll(std::chrono::milliseconds{10});
+		server.Poll(kPollWait);
 		const auto now = std::chrono::steady_clock::now();
 		const double elapsed = std::chrono::duration<double>(now - last).count();
 		last = now;
@@ -201,6 +204,10 @@ void RunServer(Jettison::Host::Session &session, const Serve &serve)
 	// no stop is reported.
 	journal.Stop(world);
 	server.Publish();
+	server.Stop();
+	const auto stopBy = std::chrono::steady_clock::now() + kStopWait;
+	while (server.Stopping() && std::chrono::steady_clock::now() < stopBy)
+		server.Poll(kPollWait);
 	// The time dropped is the steps the disk or the step itself could not keep to the clock.
 	Jettison::Core::Log(
 	    Jettison::Core::Severity::Info, kManifest, "stopping at step {}, batch {}, {:.1f} s dropped",
@@ -228,7 +235,7 @@ std::optional<Restoring> ParseRestore(const std::vector<std::string_view> &rest)
 
 void RunRestore(Jettison::Host::Session &session, const Restoring &restoring)
 {
-	const std::filesystem::path into = ResolvePlace(restoring.world, &Manifest::Host::Locations::world);
+	const std::filesystem::path into = ResolvePlace(restoring.world, Manifest::Host::DefaultWorld);
 	const Manifest::Host::WorldDirectory directory = Manifest::Host::OpenWorldDirectory(into);
 	const Manifest::Host::Journal journal = Manifest::Host::Restore(
 	    restoring.backup, directory, Manifest::Host::RunningIdentity(session), session.World());
