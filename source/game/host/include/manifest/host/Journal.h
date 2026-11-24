@@ -139,11 +139,11 @@ class Journal
 	void Recover(Jettison::Sim::SimWorld &world) const;
 
 	// Takes the world's next steps, the requests queued on it running at the start of the first, and
-	// writes each batch and snapshot due on the way at the step it is due, as shorter advances would. Nothing but requests may be queued. A write that
-	// fails throws what the writer threw and leaves the files uncertain, since the catalogue may
-	// already name what was written: the journal then refuses every later call with
-	// std::logic_error, and the next opening finds which it was. Throws std::logic_error too for a
-	// world stepped other than here since it was recovered.
+	// writes each batch and snapshot due on the way at the step it is due, as shorter advances would.
+	// Nothing but requests may be queued. A write that fails throws what the writer threw and leaves
+	// the files uncertain, since the catalogue may already name what was written: the journal then
+	// refuses every later call with std::logic_error, and the next opening finds which it was. Throws
+	// std::logic_error too for a world stepped other than here since it was recovered.
 	void Advance(Jettison::Sim::SimWorld &world, std::uint64_t steps);
 
 	// Writes the steps taken since the last flush; nothing when there are none. Throws as Advance
