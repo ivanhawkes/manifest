@@ -347,28 +347,28 @@ TEST_CASE("A world recovered is the one that ran as its last flush left it, and 
 		REQUIRE(hosted.Provision("Ada").status == Receipt::Status::Queued);
 		journal.Advance(hosted.world, 1);
 		CHECK(journal.Head() == 0);
-		// Steps with no request are the journal's as any others are.
+		// Steps with no request are the journal's as any others are, flushed every hundred.
 		journal.Advance(hosted.world, 600);
-		CHECK(journal.Head() == 1);
+		CHECK(journal.Head() == 6);
 		REQUIRE(hosted.Provision("Ada").status == Receipt::Status::Queued);
 		journal.Advance(hosted.world, 3);
 		journal.Flush();
-		CHECK(journal.Head() == 2);
+		CHECK(journal.Head() == 7);
 		journal.Flush();
-		CHECK(journal.Head() == 2);
+		CHECK(journal.Head() == 7);
 		step = hosted.world.Clock().Step();
 		hash = hosted.world.StateHash();
 		// Run, answered, and never flushed: a crash now loses it.
 		REQUIRE(hosted.Provision("Ada").status == Receipt::Status::Queued);
 		journal.Advance(hosted.world, 5);
 		CHECK(hosted.requests.Outcome(kOperator, 3).has_value());
-		CHECK(journal.Head() == 2);
+		CHECK(journal.Head() == 7);
 	}
 
 	Hosted again;
 	const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.Root());
 	Host::Journal journal{directory, again.Identity(), cadence};
-	CHECK(journal.Head() == 2);
+	CHECK(journal.Head() == 7);
 	journal.Recover(again.world);
 	CHECK(again.world.Clock().Step() == step);
 	CHECK(again.world.StateHash() == hash);
@@ -441,6 +441,39 @@ TEST_CASE(
 }
 
 
+TEST_CASE(
+    "One long advance flushes and snapshots at each step a short one would, and reaches its world")
+{
+	std::uint64_t stepped = 0;
+	{
+		const Scratch scratch;
+		Hosted hosted;
+		const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.Root());
+		Host::Journal journal{directory, hosted.Identity(), {10, 40}};
+		REQUIRE(hosted.Provision("Ada").status == Receipt::Status::Queued);
+		for (int advance = 0; advance < 13; ++advance)
+			journal.Advance(hosted.world, 10);
+		stepped = hosted.world.StateHash();
+	}
+	const Scratch scratch;
+	{
+		Hosted hosted;
+		const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.Root());
+		Host::Journal journal{directory, hosted.Identity(), {10, 40}};
+		REQUIRE(hosted.Provision("Ada").status == Receipt::Status::Queued);
+		journal.Advance(hosted.world, 130);
+		CHECK(journal.Head() == 13);
+		CHECK(hosted.world.StateHash() == stepped);
+	}
+	CHECK(std::filesystem::exists(scratch.Snapshot(8)));
+	CHECK(std::filesystem::exists(scratch.Snapshot(12)));
+	CHECK(std::filesystem::exists(scratch.Batch(9)));
+	Hosted again;
+	CHECK(Refusal(scratch, again).empty());
+	CHECK(again.world.StateHash() == stepped);
+}
+
+
 TEST_CASE("A world with one snapshot, which does not read, is recovered from its start")
 {
 	const Scratch scratch;
@@ -451,11 +484,11 @@ TEST_CASE("A world with one snapshot, which does not read, is recovered from its
 		Host::Journal journal{directory, hosted.Identity(), {10, 40}};
 		REQUIRE(hosted.Provision("Ada").status == Receipt::Status::Queued);
 		journal.Advance(hosted.world, 50);
-		CHECK(journal.Head() == 1);
+		CHECK(journal.Head() == 5);
 		hash = hosted.world.StateHash();
 	}
-	REQUIRE(std::filesystem::exists(scratch.Snapshot(1)));
-	Damage(scratch.Snapshot(1));
+	REQUIRE(std::filesystem::exists(scratch.Snapshot(4)));
+	Damage(scratch.Snapshot(4));
 	Hosted again;
 	CHECK(Refusal(scratch, again).empty());
 	CHECK(again.world.Clock().Step() == 50);
@@ -793,8 +826,8 @@ TEST_CASE("A save larger than a snapshot may be is not written, and the journal 
 		{
 			MANIFEST_CHECK_CONTAINS(error.what(), "more than a snapshot may be (1024 bytes");
 		}
-		CHECK(journal.Head() == 2);
-		CHECK_FALSE(std::filesystem::exists(scratch.Snapshot(2)));
+		CHECK(journal.Head() == 4);
+		CHECK_FALSE(std::filesystem::exists(scratch.Snapshot(4)));
 	}
 	Hosted again;
 	CHECK(Refusal(scratch, again).empty());

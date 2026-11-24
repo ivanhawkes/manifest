@@ -442,21 +442,28 @@ void Journal::Expect(const Jettison::Sim::SimWorld &world) const
 void Journal::Advance(Jettison::Sim::SimWorld &world, std::uint64_t steps)
 {
 	Expect(world);
-	for (const entt::meta_any &command : world.Commands().Pending())
+	const std::uint64_t until = m_at + steps;
+	// To each flush and snapshot due on the way, so a long advance keeps the cadence a short one does.
+	while (m_at < until)
 	{
-		// Anything else queued would run now and not in a replay.
-		const auto *pRequest = command.try_cast<const Command::Request>();
-		JETTISON_VERIFY(pRequest != nullptr);
-		m_ran.push_back({m_at, *pRequest});
+		for (const entt::meta_any &command : world.Commands().Pending())
+		{
+			// Anything else queued would run now and not in a replay.
+			const auto *pRequest = command.try_cast<const Command::Request>();
+			JETTISON_VERIFY(pRequest != nullptr);
+			m_ran.push_back({m_at, *pRequest});
+		}
+		const std::uint64_t snapshot =
+		    m_catalogue.snapshots.empty() ? 0 : m_catalogue.snapshots.back().step;
+		const std::uint64_t due =
+		    std::min(m_catalogue.step + m_cadence.flushSteps, snapshot + m_cadence.snapshotSteps);
+		Take(world, std::clamp(due, m_at + 1, until));
+		m_at = world.Clock().Step();
+		if (m_at - m_catalogue.step >= m_cadence.flushSteps || m_ran.size() >= kMaxBatchRequests)
+			Flush();
+		if (m_at - snapshot >= m_cadence.snapshotSteps)
+			Snapshot(world);
 	}
-	Take(world, m_at + steps);
-	m_at = world.Clock().Step();
-	if (m_at - m_catalogue.step >= m_cadence.flushSteps || m_ran.size() >= kMaxBatchRequests)
-		Flush();
-	const std::uint64_t snapshot =
-	    m_catalogue.snapshots.empty() ? 0 : m_catalogue.snapshots.back().step;
-	if (m_at - snapshot >= m_cadence.snapshotSteps)
-		Snapshot(world);
 }
 
 

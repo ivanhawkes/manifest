@@ -139,7 +139,10 @@ as it copied it, and now checks every one first; a program writing only its toke
 variable or HOME (Jettison's `ResolvePath`, one directory at a time); and no test cut a snapshot's
 write or its catalogue's off, which the `host` suite now does. Round 2 found each resolved and one
 more: provisioning made a principal whose ID was past that bound, so it could never act, and now
-refuses it as malformed.
+refuses it as malformed. Round 3, aimed at what the first two had not examined, found F7 resolved and
+two more: making a default place's directories chmodded an existing parent named through `new/..`,
+now normalised first; and one long `Advance` flushed and snapshotted once at its end, now at each
+step due on the way, as the journal suite's long advance against short ones shows.
 
 ## R09: Stage 5 closed — 2026-11-25
 

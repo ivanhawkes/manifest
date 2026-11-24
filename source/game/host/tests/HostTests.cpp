@@ -406,6 +406,10 @@ TEST_CASE("A default place's directories are made private, and one already there
 	CHECK(mode(root) == kShared);
 	CHECK(mode(root / "share") == perms::owner_all);
 	CHECK(mode(root / "share" / "manifest") == perms::owner_all);
+	// A path through a directory it makes and back out names one already there, which stays shared.
+	Manifest::Host::MakePrivateDirectories(root / "new" / ".." / "made");
+	CHECK(mode(root) == kShared);
+	CHECK(mode(root / "made") == perms::owner_all);
 	std::filesystem::remove_all(root);
 }
 
