@@ -20,7 +20,8 @@ std::filesystem::path DefaultTokens();
 std::filesystem::path DefaultTranscript();
 
 // Makes the directory and each one above it that is missing, durably
-// (Jettison::Core::CreateDirectoriesDurably), each it makes private to its owner (0700), as the XDG
-// specification has a writer make a base directory. One that was already there is left as it is.
+// (Jettison::Core::CreateDirectoriesDurably), each it makes private to its owner (0700) from the moment
+// it is made, as the XDG specification has a writer make a base directory. One that was already there
+// is left as it is.
 void MakePrivateDirectories(const std::filesystem::path &directory);
 } // namespace Manifest::Host

@@ -855,3 +855,28 @@ TEST_CASE("Backups within the world's directory are refused before the world is 
 	}
 	CHECK(Empty(scratch.Root()));
 }
+
+
+TEST_CASE(
+    "A world within its backups is refused, and backups led into the world by a symlink after "
+    "a directory made on the way")
+{
+	const Scratch scratch;
+	Hosted hosted;
+	{
+		// A backup named as this world's directory is would be removed and written over it.
+		const std::filesystem::path backups = scratch.Elsewhere("backups");
+		const Host::WorldDirectory directory = Host::OpenWorldDirectory(backups / "world.1");
+		CHECK_THROWS_WITH_AS(
+		    (Host::Journal{directory, hosted.Identity(), {}, {}, {backups}}),
+		    doctest::Contains("is within the backups at"), std::runtime_error);
+	}
+	// "missing" is not there to be resolved until it is made, and the link after it is the world.
+	const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.Root());
+	std::filesystem::create_directory_symlink(scratch.Root(), scratch.Elsewhere("link"));
+	const std::filesystem::path backups = scratch.Elsewhere("missing") / ".." / "link" / "backups";
+	CHECK_THROWS_WITH_AS(
+	    (Host::Journal{directory, hosted.Identity(), {}, {}, {backups}}),
+	    doctest::Contains("are within the world at"), std::runtime_error);
+	CHECK_FALSE(std::filesystem::exists(scratch.Root() / "identity"));
+}

@@ -283,6 +283,21 @@ bool Within(const std::filesystem::path &path, const std::filesystem::path &dire
 }
 
 
+// Refuses backups within the world, where a start would read them, and a world within the backups,
+// where a backup named as its directory is would be removed and written over it.
+void Apart(const std::filesystem::path &backups, const std::filesystem::path &root)
+{
+	if (Within(backups, root))
+		throw std::runtime_error{std::format(
+		    "the backups at {} are within the world at {}: they go outside it", backups.string(),
+		    root.string())};
+	if (Within(root, backups))
+		throw std::runtime_error{std::format(
+		    "the world at {} is within the backups at {}: it goes outside them", root.string(),
+		    backups.string())};
+}
+
+
 // Removes the directory's files numbered below the bound, a write's leavings among them. A file that
 // will not go is left: the catalogue names none of them.
 void RemoveBelow(const std::filesystem::path &directory, std::uint64_t bound)
@@ -331,12 +346,12 @@ Journal::Journal(
 	RegisterTypes();
 	if (!m_storage.backups.empty())
 	{
-		if (Within(m_storage.backups, m_root))
-			throw std::runtime_error{std::format(
-			    "the backups at {} are within the world at {}: they go outside it",
-			    m_storage.backups.string(), m_root.string())};
-		// Private to its owner when it is made here, as the world's directory is.
+		Apart(m_storage.backups, m_root);
+		// Private to its owner when it is made here, as the world's directory is. Then again: a
+		// path is resolved on disk only as far as it is there, and a symlink after a component
+		// made just now, through "..", may lead into the world.
 		MakePrivateDirectories(m_storage.backups);
+		Apart(m_storage.backups, m_root);
 	}
 	const std::filesystem::path identity = m_root / kIdentityName;
 	const std::filesystem::path catalogue = m_root / kCatalogueName;

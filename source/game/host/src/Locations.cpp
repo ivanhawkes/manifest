@@ -42,14 +42,7 @@ std::filesystem::path DefaultTranscript()
 
 void MakePrivateDirectories(const std::filesystem::path &directory)
 {
-	// A component at a time, each made private through the path it was made by the moment it is
-	// made: a path listed before would name, through ".." or a symlink, one that was already there.
-	std::filesystem::path at;
-	for (const std::filesystem::path &component : directory)
-	{
-		at /= component;
-		if (Jettison::Core::CreateDirectoriesDurably(at))
-			std::filesystem::permissions(at, std::filesystem::perms::owner_all);
-	}
+	// Made so, not changed after: a change cut off would leave one open that a later run keeps.
+	Jettison::Core::CreateDirectoriesDurably(directory, std::filesystem::perms::owner_all);
 }
 } // namespace Manifest::Host
