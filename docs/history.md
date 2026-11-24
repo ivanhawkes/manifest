@@ -126,6 +126,22 @@ is 63,567 bytes of 65,536), the user booked for Jettison's next change, a messag
 packets ([Jettison's roadmap](../../jettison/docs/roadmap.md#first-what-saves-and-the-simulations-interface-hold)),
 and delta snapshots in Manifest only if that is not enough.
 
+## R08: reconnect and recovery — 2026-11-24
+
+[Reconnect and recovery](stage-5-recovery-plan.md#reconnect-and-recovery-r08-2026-11-24), on pin
+`d9f565c` with no engine edit and no change outside the tests. The `remote` suite's `Served` now
+serves a world through its journal when asked, crashing as it serves again, and the development
+fixture steps through one.
+
+What it found. Several sessions of one actor that retry after a restart must do so in her order:
+the later sequence first is a `SequenceGap`, which consumes nothing, so the earlier then the later
+both run. A `Completed` heard after the last flush is lost with the crash, and the welcome shows it,
+its sequence at or below the one heard. `Served::Await` matched a reply by sequence alone, from any
+client, which two actors' equal sequences confused; each client's replies are now kept apart. The
+fixture's `ForwardTo` passed the journal by, so it now steps through one when given, as `Step`
+did. A clean stop writes a snapshot that holds what a test set outside any request, which is how
+the fixture's funds reach a recovery.
+
 ## R07: the distribution — 2026-11-24
 
 [The distribution](stage-5-recovery-plan.md#the-distribution-r07-2026-11-24), on pin `d9f565c` with no

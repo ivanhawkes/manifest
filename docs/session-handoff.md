@@ -1,6 +1,13 @@
 # Session handoff
 
-## Next, on resuming — 2026-11-24 (R07 done, then R08)
+## Next, on resuming — 2026-11-24 (R08 done, then R09)
+
+R08 is done: [reconnect and recovery](stage-5-recovery-plan.md#reconnect-and-recovery-r08-2026-11-24),
+on pin `d9f565c` with no engine edit, in tests alone. The `remote` suite crashes a journalled server
+under three clients and reconnects them: what the journal kept is answered from the ledger, what it
+lost is retried in each actor's order. The development fixture runs through a journal, a clean stop
+and a crash, and recovers to the uninterrupted world's hash. The TUI still retries nothing. R09
+closes Stage 5.
 
 R07 is done: [the distribution](stage-5-recovery-plan.md#the-distribution-r07-2026-11-24), on pin
 `d9f565c` with no engine edit. `clang-release` is the distribution build (`MANIFEST_DISTRIBUTION`):

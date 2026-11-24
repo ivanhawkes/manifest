@@ -531,6 +531,30 @@ void FromCruise(Hosted &hosted)
 	CHECK(hosted.Seen() == upgraded);
 }
 
+// A place for a world's directories, removed with the case.
+struct Scratch
+{
+	explicit Scratch(std::string_view name)
+	    : root{
+	          std::filesystem::temp_directory_path() /
+	          std::format("manifest-fixture-{}-{}", name, std::random_device{}())}
+	{
+	}
+
+	Scratch(const Scratch &) = delete;
+
+	Scratch &operator=(const Scratch &) = delete;
+
+	~Scratch()
+	{
+		std::error_code ignored;
+		std::filesystem::remove_all(root, ignored);
+	}
+
+	std::filesystem::path root;
+};
+
+
 void CheckLedger(const Hosted &hosted)
 {
 	CHECK_MESSAGE(
@@ -599,19 +623,7 @@ TEST_CASE("The trading fixture's loop, saved in flight with a bid resting and re
 TEST_CASE("The trading fixture's loop, backed up in flight with a bid resting and restored, ends alike")
 {
 	namespace Host = Manifest::Host;
-	struct Scratch
-	{
-		std::filesystem::path root{
-		    std::filesystem::temp_directory_path() /
-		    std::format("manifest-fixture-backup-{}", std::random_device{}())};
-
-		~Scratch()
-		{
-			std::error_code ignored;
-			std::filesystem::remove_all(root, ignored);
-		}
-	};
-	const Scratch scratch;
+	const Scratch scratch{"backup"};
 
 	Hosted hosted{MANIFEST_MOD_DIRECTORY};
 	const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.root / "world");
@@ -846,11 +858,15 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 
 
 // Fast-forwards the world to the step, passing over what it may.
+// Through the journal when given, as a server steps.
 void ForwardTo(Hosted &hosted, std::uint64_t step)
 {
 	while (hosted.world.Clock().Step() < step)
 	{
-		hosted.world.FastForward(step);
+		if (hosted.pJournal != nullptr)
+			hosted.pJournal->Advance(hosted.world, step - hosted.world.Clock().Step());
+		else
+			hosted.world.FastForward(step);
 		(void)hosted.world.Events().Take();
 	}
 }
@@ -2055,11 +2071,24 @@ void Develop(Hosted &hosted)
 // The development fixture (W13, D-110): Ada founds a homeworld in the governance scenario and her
 // standing policies develop it with no client, a late joiner founds the last free region and a third
 // finds none, while the AI neighbours run their own. Closing Stage 4 (W14), the joiner trades by hand
-// in her own view of the markets beside them, and the world is saved with Ada's journey and the
-// joiner's bid open and loaded into a world hosted from the pack.
-TEST_CASE("The development fixture's homeworld, founded and developed with no client, replays alike")
+// in her own view of the markets beside them. Served through its journal (R08), it is stopped once all
+// have joined, started again on a world hosted from the pack, and crashes part-way through
+// development; recovered, it goes on to the world that ran uninterrupted.
+TEST_CASE(
+    "The development fixture's homeworld, developed with no client through a stop and a crash, "
+    "replays alike")
 {
+	namespace Host = Manifest::Host;
+	const Scratch scratch{"development"};
 	Hosted hosted{MANIFEST_MOD_DIRECTORY, {}, "governance"};
+	const double fixedStep = hosted.world.FixedStep();
+	const auto hour = static_cast<std::uint64_t>(std::llround(3'600.0 / fixedStep));
+	// A flush an hour and a snapshot every twelve, so a crash days in falls after a few of each.
+	const Host::Cadence cadence{hour, 12 * hour};
+	const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.root / "world");
+	auto pJournal =
+	    std::make_unique<Host::Journal>(directory, Host::RunningIdentity(*hosted.session), cadence);
+	hosted.pJournal = pJournal.get();
 	Governing(hosted);
 	const std::vector<std::byte> start = hosted.world.Save();
 	const std::uint64_t first = hosted.world.Clock().Step();
@@ -2068,22 +2097,56 @@ TEST_CASE("The development fixture's homeworld, founded and developed with no cl
 	const std::uint64_t joined = hosted.world.Clock().Step();
 	Join(hosted);
 	Away(hosted);
-	const std::vector<std::byte> joinedSave = hosted.world.Save();
+	// The funds the fixture gives outside any request are in the snapshot the stop writes.
+	pJournal->Stop(hosted.world);
+	const std::uint64_t stopped = hosted.world.Clock().Step();
+	const std::uint64_t stoppedHash = hosted.world.StateHash();
+	const std::uint64_t stoppedBatch = pJournal->Head();
+	hosted.pJournal = nullptr;
+	pJournal.reset();
 	Develop(hosted);
 	const auto observed = [](const Hosted &of, const Actor &actor)
 	{ return Manifest::Query::Observe(of.world, of.services.identities, actor); };
 
-	// Loaded after the joins, Bea's bid resting, into a world hosted from the pack, whose content is
-	// the directory's, it goes on to the same world and views.
+	// Started again on a world hosted from the pack, whose content is the directory's, it takes up
+	// where it stopped, Bea's bid resting, then crashes half an hour after a flush, about half-way
+	// through development.
 	const auto identity = [](const std::string &content)
 	{ return Manifest::Host::Validate({content, {}, "governance"}).identity.manifest; };
 	CHECK(identity(MANIFEST_MOD_PACK) == identity(MANIFEST_MOD_DIRECTORY));
-	Hosted loaded{MANIFEST_MOD_PACK, {}, "governance"};
-	loaded.Load(joinedSave);
-	Develop(loaded);
-	CHECK(loaded.world.StateHash() == hosted.world.StateHash());
+	const std::uint64_t crash =
+	    stopped + (hosted.world.Clock().Step() - stopped) / 2 / hour * hour + hour / 2;
+	{
+		Hosted served{MANIFEST_MOD_PACK, {}, "governance"};
+		Host::Journal journal{directory, Host::RunningIdentity(*served.session), cadence};
+		journal.Recover(served.world);
+		REQUIRE(served.world.Clock().Step() == stopped);
+		CHECK(served.world.StateHash() == stoppedHash);
+		served.pJournal = &journal;
+		while (served.world.Clock().Step() < crash)
+			ForwardTo(served, std::min(served.world.Clock().Step() + hour / 4, crash));
+	}
+	// The two snapshots it keeps are its own, the stop's pruned.
+	std::size_t snapshots = 0;
+	for (const std::filesystem::directory_entry &entry :
+	     std::filesystem::directory_iterator{scratch.root / "world" / "snapshots"})
+	{
+		CHECK(std::stoull(entry.path().filename().string()) > stoppedBatch);
+		++snapshots;
+	}
+	CHECK(snapshots == 2);
+
+	// Recovered, it has lost the half hour since its last flush and nothing before, and goes on, with
+	// no client, to the same world and views.
+	Hosted recovered{MANIFEST_MOD_PACK, {}, "governance"};
+	Host::Journal journal{directory, Host::RunningIdentity(*recovered.session), cadence};
+	journal.Recover(recovered.world);
+	CHECK(recovered.world.Clock().Step() == crash - hour / 2);
+	recovered.pJournal = &journal;
+	ForwardTo(recovered, hosted.world.Clock().Step());
+	CHECK(recovered.world.StateHash() == hosted.world.StateHash());
 	for (const Actor &actor : {kAda, kBea, kHost})
-		CHECK(observed(loaded, actor) == observed(hosted, actor));
+		CHECK(observed(recovered, actor) == observed(hosted, actor));
 
 	// Replayed from the bootstrap, Bea funded as she was, it reaches the same world.
 	Hosted replayed{MANIFEST_MOD_DIRECTORY, {}, "governance"};

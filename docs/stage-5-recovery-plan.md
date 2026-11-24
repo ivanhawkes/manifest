@@ -669,6 +669,51 @@ The CPU-only configure (`clang-notui`) is as it was; its `bundle_smoke` runs wit
   debug files kept for crash reports, waits on Jettison's crash-handling work.
 
 
+## Reconnect and recovery (R08), 2026-11-24
+
+What the journal ([R03, R04](#the-journal-and-its-snapshots-r03-r04-2026-11-24)) and the server
+(N03) do together, on Jettison `d9f565c` with no engine edit and no change to either: two tests.
+
+### Several clients across a crash
+
+The `remote` suite serves the governance scenario through its journal, as `--serve` does, Ada on two
+sessions at a time and Bea on one. A bid each runs and is flushed. Then a second session of Ada's
+hears a bid complete and queues a third, Bea queues a second, and the server crashes with nothing
+more flushed. Started again on the world:
+
+- It is at the flushed step, and each reconnection is told the sequence after the last the journal
+  kept: the bid Ada heard complete is lost with its sequence, as [D-113](decision-ledger.md#d-113)
+  allows, since `Completed` is not durable.
+- The flushed bid retried is answered `Completed` with the step and global order it ran at, and is
+  not run again.
+- What was lost is sent again under its own sequences, in the actor's order whichever of her
+  sessions sends it: the later first is refused `SequenceGap`, consuming nothing, and goes after the
+  earlier.
+- Each bid ran once, Ada's three and Bea's two resting, and each session's snapshot is its actor's
+  view of the world.
+
+So N03's contract stands across a restart: a session hears only of its own requests, and one that
+did not hear a request complete retries it, oldest first. A welcome whose sequence is at or below one
+a client heard complete tells it the server went back past that request.
+
+### The development fixture across a stop and a crash
+
+The fixture Stage 4 closed on (trading by hand, market fog, standing policies, regions founded and
+their projects, the AI neighbours') now steps through a journal flushed every game hour, with a
+snapshot every twelve. It is stopped cleanly once all have joined, so the funds the fixture sets
+outside any request are in the stop's snapshot. Started again on a world hosted from the pack, it
+crashes half an hour after a flush, about half-way through development, by when its own two snapshots
+have pruned the stop's. Recovered at that flush, half an hour lost, it steps on with no client to the
+uninterrupted world's state hash and Ada's, Bea's and the host's views, the pinned hash unmoved. This
+replaces the in-memory save W14 loaded into a world hosted from the pack, which a recovery's load is,
+and the test takes the 52 s in Debug it took before.
+
+### What it leaves
+
+- **R09.** The stage's close, this evidence among it.
+- **The TUI.** Its `connect` retries nothing: a player whose request was lost sends it again by hand.
+  Retrying from the TUI wants it to keep what it sent until it hears it complete.
+
 ## Commit model: durable step batches
 
 The proposal of 2026-11-15, kept as it was made. Its commit before execution and its durable

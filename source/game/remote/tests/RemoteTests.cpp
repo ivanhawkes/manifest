@@ -2,9 +2,13 @@
 
 #include <chrono>
 #include <cstddef>
+#include <filesystem>
+#include <format>
 #include <functional>
+#include <map>
 #include <memory>
 #include <optional>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -14,7 +18,9 @@
 
 #include <manifest/command/Request.h>
 #include <manifest/company/Company.h>
+#include <manifest/host/Journal.h>
 #include <manifest/host/Start.h>
+#include <manifest/host/WorldDirectory.h>
 #include <manifest/remote/Client.h>
 #include <manifest/remote/Server.h>
 #include <manifest/remote/Tokens.h>
@@ -88,7 +94,7 @@ struct Served
 				return false;
 			pServer->Poll(std::chrono::milliseconds{1});
 			for (Reply &reply : client.Poll())
-				replies.push_back(reply);
+				replies[&client].push_back(reply);
 		}
 		return true;
 	}
@@ -107,7 +113,7 @@ struct Served
 		    client,
 		    [&]
 		    {
-			    for (const Reply &reply : replies)
+			    for (const Reply &reply : replies[&client])
 				    if (reply.sequence == sequence && reply.receipt.status == status)
 					    found = reply.receipt;
 			    return found.has_value();
@@ -117,8 +123,28 @@ struct Served
 
 	void Step()
 	{
-		pSession->World().Step();
+		if (pJournal)
+			pJournal->Advance(pSession->World(), 1);
+		else
+			pSession->World().Step();
 		pServer->Publish();
+	}
+
+	// Serves the world in the directory through its journal, as the dedicated server does: made there,
+	// or recovered from what the journal holds. What served before goes as a crash leaves it, nothing
+	// flushed or stopped, and the replies its clients heard with it.
+	void Serve(const std::filesystem::path &root)
+	{
+		pServer.reset();
+		pJournal.reset();
+		directory.reset();
+		replies.clear();
+		pSession = Manifest::Host::Start({MANIFEST_MOD_DIRECTORY, {}, "governance"});
+		directory.emplace(Manifest::Host::OpenWorldDirectory(root));
+		pJournal = std::make_unique<Manifest::Host::Journal>(
+		    *directory, Manifest::Host::RunningIdentity(*pSession));
+		pJournal->Recover(pSession->World());
+		pServer = std::make_unique<Server>(*pSession, tokens.Path(), "127.0.0.1", 0);
 	}
 
 	// The client's snapshot of the world as it now is, once it arrives.
@@ -151,8 +177,11 @@ struct Served
 	std::string admin = Jettison::Net::GenerateToken();
 	Manifest::Test::TempFile tokens{"", ".tokens.yaml"};
 	std::unique_ptr<Jettison::Host::Session> pSession;
+	std::optional<Manifest::Host::WorldDirectory> directory;
+	std::unique_ptr<Manifest::Host::Journal> pJournal;
 	std::unique_ptr<Server> pServer;
-	std::vector<Reply> replies;
+	// Each client's, as they arrived.
+	std::map<const Client *, std::vector<Reply>> replies;
 };
 
 
@@ -418,6 +447,122 @@ TEST_CASE("the world steps with no session, and a reconnect retries the request 
 	    Manifest::Query::Observe(
 	        served.pSession->World(), services.identities, {ActorKind::Administrator, "Host"})
 	        .regions);
+}
+
+
+TEST_CASE(
+    "a server restarted from its journal answers each client's retry once, and loses what it had not "
+    "flushed")
+{
+	struct Scratch
+	{
+		std::filesystem::path root{
+		    std::filesystem::temp_directory_path() /
+		    std::format("manifest-remote-world-{}", std::random_device{}())};
+
+		~Scratch()
+		{
+			std::error_code ignored;
+			std::filesystem::remove_all(root, ignored);
+		}
+	} const scratch;
+	Served served;
+	served.Serve(scratch.root);
+	served.ProvisionPlayers();
+	Client ada = served.Connect(served.ada);
+	Client bea = served.Connect(served.bea);
+	REQUIRE(served.Welcome(ada));
+	REQUIRE(served.Welcome(bea));
+	// A bid for copper at the highport, at a credit a tote, which crosses no ask and rests.
+	const auto bid = [](Client &client, std::uint64_t sequence, std::uint32_t totes)
+	{
+		return client.Retry(
+		    sequence, Manifest::Trade::kPlace, Manifest::Trade::kVersion,
+		    Jettison::Serialise::BinaryArchive::Write(
+		        Manifest::Trade::Place{
+		            "VenueForgeHighport", "ItemCopper", Manifest::World::Side::Buy, totes, 1'000'000},
+		        Jettison::Serialise::FormatVersion{Manifest::Trade::kVersion}));
+	};
+
+	// A bid each, run and flushed, as the flush interval writes them.
+	const std::uint64_t kept = ada.Welcomed()->nextSequence;
+	const std::uint64_t beaKept = bea.Welcomed()->nextSequence;
+	REQUIRE(bid(ada, kept, 1));
+	REQUIRE(bid(bea, beaKept, 1));
+	REQUIRE(served.Await(ada, kept, Receipt::Status::Queued));
+	REQUIRE(served.Await(bea, beaKept, Receipt::Status::Queued));
+	served.Step();
+	const Receipt ran = served.Await(ada, kept, Receipt::Status::Completed).value();
+	REQUIRE(ran.result == Result::Succeeded);
+	REQUIRE(served.Await(bea, beaKept, Receipt::Status::Completed).value().result == Result::Succeeded);
+	served.pJournal->Flush();
+	const std::uint64_t flushed = served.pSession->World().Clock().Step();
+
+	// Since the flush, a second session of Ada's heard a bid complete and queued another, and Bea
+	// queued one: the server then crashes.
+	Client adaToo = served.Connect(served.ada);
+	REQUIRE(served.Welcome(adaToo));
+	REQUIRE(bid(adaToo, kept + 1, 2));
+	REQUIRE(served.Await(adaToo, kept + 1, Receipt::Status::Queued));
+	served.Step();
+	REQUIRE(
+	    served.Await(adaToo, kept + 1, Receipt::Status::Completed).value().result == Result::Succeeded);
+	REQUIRE(bid(adaToo, kept + 2, 3));
+	REQUIRE(bid(bea, beaKept + 1, 1));
+	REQUIRE(served.Await(adaToo, kept + 2, Receipt::Status::Queued));
+	REQUIRE(served.Await(bea, beaKept + 1, Receipt::Status::Queued));
+	served.Serve(scratch.root);
+	CHECK(served.pSession->World().Clock().Step() == flushed);
+
+	// Each reconnects and is told the sequence after the last the journal kept.
+	Client adaAgain = served.Connect(served.ada);
+	Client adaAlso = served.Connect(served.ada);
+	Client beaAgain = served.Connect(served.bea);
+	REQUIRE(served.Welcome(adaAgain));
+	REQUIRE(served.Welcome(adaAlso));
+	REQUIRE(served.Welcome(beaAgain));
+	CHECK(adaAgain.Welcomed()->nextSequence == kept + 1);
+	CHECK(beaAgain.Welcomed()->nextSequence == beaKept + 1);
+	// The bid the journal kept is answered as it ran, at its step, and not run again.
+	REQUIRE(bid(adaAgain, kept, 1));
+	const Receipt answered = served.Await(adaAgain, kept, Receipt::Status::Completed).value();
+	CHECK(answered.result == Result::Succeeded);
+	CHECK(answered.step == ran.step);
+	CHECK(answered.order == ran.order);
+	// What it lost is sent again in Ada's order, whichever session sent it: a later one first is a gap.
+	REQUIRE(bid(adaAlso, kept + 2, 3));
+	CHECK(
+	    served.Await(adaAlso, kept + 2, Receipt::Status::Refused).value().result ==
+	    Result::SequenceGap);
+	REQUIRE(bid(adaAgain, kept + 1, 2));
+	REQUIRE(served.Await(adaAgain, kept + 1, Receipt::Status::Queued));
+	REQUIRE(bid(adaAlso, kept + 2, 3));
+	REQUIRE(bid(beaAgain, beaKept + 1, 1));
+	REQUIRE(served.Await(adaAlso, kept + 2, Receipt::Status::Queued));
+	REQUIRE(served.Await(beaAgain, beaKept + 1, Receipt::Status::Queued));
+	served.Step();
+	CHECK(
+	    served.Await(adaAgain, kept + 1, Receipt::Status::Completed).value().result ==
+	    Result::Succeeded);
+	CHECK(
+	    served.Await(adaAlso, kept + 2, Receipt::Status::Completed).value().result ==
+	    Result::Succeeded);
+	CHECK(
+	    served.Await(beaAgain, beaKept + 1, Receipt::Status::Completed).value().result ==
+	    Result::Succeeded);
+
+	// Each bid ran once, and each session sees its actor's world as it is.
+	const Manifest::Host::Services services = Manifest::Host::HostedServices(*served.pSession);
+	for (Client *pClient : {&adaAgain, &adaAlso, &beaAgain})
+	{
+		const Manifest::Query::Snapshot *pSeen = served.Current(*pClient);
+		REQUIRE(pSeen != nullptr);
+		CHECK(
+		    *pSeen == Manifest::Query::Observe(
+		                  served.pSession->World(), services.identities,
+		                  {ActorKind::Principal, pClient->Welcomed()->actorId}));
+		CHECK(pSeen->companies.at(0).orders.size() == (pClient == &beaAgain ? 2U : 3U));
+	}
 }
 
 
