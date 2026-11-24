@@ -152,6 +152,10 @@ as its directory is, and backups led into the world by a symlink after a directo
 passed the check; both are refused, the check made again once the backups' directory is. And a
 directory made and then made private stayed open to everyone when its parent's flush between the two
 failed, so Jettison's `CreateDirectoriesDurably` makes it 0700 from the start (pin `459af99`).
+Round 6 was stopped twice by OpenAI's filter before it wrote a review; its probes, kept in
+`build/reviews/stage-5/round-6a-scratch`, found F12 to F14 refused as intended. A symlink planted in a
+world's directory leads its writes outside, but planting one needs the owner's access to that private
+directory already, so the user settled it as no threat and the review closed there.
 
 ## R09: Stage 5 closed — 2026-11-25
 
