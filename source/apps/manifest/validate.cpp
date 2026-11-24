@@ -11,6 +11,7 @@
 #include <format>
 #include <fstream>
 #include <optional>
+#include <stdexcept>
 #include <string_view>
 #include <vector>
 
@@ -36,18 +37,18 @@ int Usage()
 
 int main(int argc, char **argv)
 {
-	const std::vector<std::string_view> arguments(argv + 1, argv + argc);
-	std::vector<std::string_view> rest;
-	const std::optional<Manifest::Host::Options> options =
-	    Manifest::Host::ParseOptions(arguments, rest);
-	const bool writeManifest = rest.size() == 2 && rest[0] == "--manifest";
-	if (!options || (!rest.empty() && !writeManifest))
-		return Usage();
-
 	using Jettison::Core::Log;
 	using Jettison::Core::Severity;
 	try
 	{
+		const std::vector<std::string_view> arguments(argv + 1, argv + argc);
+		std::vector<std::string_view> rest;
+		const std::optional<Manifest::Host::Options> options =
+		    Manifest::Host::ParseOptions(arguments, rest);
+		const bool writeManifest = rest.size() == 2 && rest[0] == "--manifest";
+		if (!options || (!rest.empty() && !writeManifest))
+			return Usage();
+
 		const Manifest::Content::ContentSet content = Manifest::Host::Validate(*options);
 		const std::vector<Jettison::Vfs::Mount> mounts = Manifest::Host::Mounts(*options);
 		for (std::size_t index = 0; index < mounts.size(); ++index)
@@ -71,7 +72,8 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	catch (const Jettison::Host::StartupError &error)
+	// Content that would not start (Jettison::Host::StartupError), or the default that cannot be found.
+	catch (const std::runtime_error &error)
 	{
 		Log(Severity::Error, kValidate, "{}", error.what());
 		return 1;

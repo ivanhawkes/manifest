@@ -12,10 +12,12 @@ manifest_add_module(host
 		procurement
 	HEADERS
 		include/manifest/host/Journal.h
+		include/manifest/host/Locations.h
 		include/manifest/host/Start.h
 		include/manifest/host/WorldDirectory.h
 	SOURCES
 		src/Journal.cpp
+		src/Locations.cpp
 		src/Start.cpp
 		src/WorldDirectory.cpp
 	TESTS
@@ -24,6 +26,8 @@ manifest_add_module(host
 	PUBLIC_LIBRARIES
 		Jettison::Core
 		Jettison::Host
+	PRIVATE_LIBRARIES
+		Jettison::Platform
 )
 
 # The trees the build is made from, taken again at every build (cmake/Revision.cmake). The SDK's
@@ -46,7 +50,7 @@ if(TARGET manifest_host_tests)
 	target_link_libraries(manifest_host_tests PRIVATE Jettison::Vfs)
 	target_compile_definitions(manifest_host_tests PRIVATE
 		MANIFEST_MOD_DIRECTORY="${MANIFEST_MOD_DIRECTORY}"
-		MANIFEST_MOD_PACK="${PROJECT_BINARY_DIR}/manifest.pack"
+		MANIFEST_MOD_PACK="${MANIFEST_PACK}"
 		MANIFEST_HOST_OVERLAYS="${CMAKE_CURRENT_SOURCE_DIR}/tests/overlays")
 	# Also what stages the content the manifest executable's checks start from.
 	add_dependencies(manifest_host_tests manifest_validate_pack)

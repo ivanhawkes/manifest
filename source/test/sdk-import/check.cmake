@@ -2,7 +2,8 @@
 # with only Jettison::Math it fails, naming everything else it takes. No fetch is allowed in either.
 # cmake -DMANIFEST_ROOT=<source> -DWORK=<dir> -DGENERATOR=<name> -DCXX=<compiler> -P check.cmake
 set(expected "The Jettison SDK is incomplete; missing: Jettison::Ai, \
-Jettison::Core, Jettison::Dock, Jettison::Host, Jettison::Net, Jettison::Physics, Jettison::Profile, \
+Jettison::Core, Jettison::Dock, Jettison::Host, Jettison::Net, Jettison::Physics, Jettison::Platform, \
+Jettison::Profile, \
 Jettison::Reflect, Jettison::Serialise, Jettison::Sim, Jettison::Spatial, Jettison::Time, Jettison::Transit, Jettison::Vfs, \
 jettison_warnings, jettison_pack, EnTT::EnTT, yaml-cpp::yaml-cpp, doctest::doctest, \
 doctest::doctest_with_main, jettison_add_pack().")

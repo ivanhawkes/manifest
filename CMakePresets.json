@@ -30,7 +30,8 @@
       "inherits": "clang-base",
       "binaryDir": "${sourceDir}/build/clang-release",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
+        "CMAKE_BUILD_TYPE": "Release",
+        "MANIFEST_DISTRIBUTION": "ON"
       }
     },
     {

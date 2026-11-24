@@ -111,14 +111,10 @@ Decorator LineColour(const ConsoleLine &line)
 }
 } // namespace
 
-ManifestTui::ManifestTui() : m_session{MANIFEST_MOD_DIRECTORY}, m_logFile{OpenSessionLog()}
+// The transcript is kept across clear and the shared console's bounded scrollback.
+ManifestTui::ManifestTui(const std::filesystem::path &content, const std::filesystem::path &transcript)
+    : m_session{content.string()}, m_logFile{transcript, std::ios::app}
 {
-}
-
-std::ofstream ManifestTui::OpenSessionLog()
-{
-	// Keep the transcript across clear and the shared console's bounded scrollback.
-	return std::ofstream{"build/tui-session.log", std::ios::app};
 }
 
 void ManifestTui::AppendSessionLog(const std::string &text)

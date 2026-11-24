@@ -20,7 +20,8 @@ namespace Manifest::Host
 {
 // What a host and the validator run on, given to both the same way: the Manifest package, the
 // overlays mounted over it in order, a later one winning, and the scenario, which names its game
-// mode. Nothing is found from the working directory.
+// mode. Nothing is found from the working directory; the package is the one beside the executable
+// (DefaultContent) unless one is given.
 struct Options
 {
 	std::filesystem::path content;
@@ -30,10 +31,11 @@ struct Options
 
 // The options as a usage line writes them.
 inline constexpr std::string_view kOptionsUsage =
-    "--content <directory-or-pack> [--overlay <directory-or-pack>]... --scenario <name>";
+    "[--content <directory-or-pack>] [--overlay <directory-or-pack>]... --scenario <name>";
 
-// Reads the options from a command line, leaving every other argument in `rest`, in order. None
-// when --content or --scenario is missing or given twice, or an option has no value.
+// Reads the options from a command line, leaving every other argument in `rest`, in order, the
+// content DefaultContent() when --content is not given. None when --scenario is missing, --content
+// or --scenario is given twice, or an option has no value. Throws as DefaultContent does.
 std::optional<Options> ParseOptions(
     std::span<const std::string_view> arguments, std::vector<std::string_view> &rest);
 

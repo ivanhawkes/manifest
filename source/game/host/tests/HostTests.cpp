@@ -1,5 +1,6 @@
 #include "TestHelpers.h"
 
+#include <manifest/host/Locations.h>
 #include <manifest/host/Start.h>
 #include <manifest/host/WorldDirectory.h>
 
@@ -335,10 +336,16 @@ TEST_CASE("The options are read the same way for the host and the validator")
 	CHECK(options->scenario == "trading");
 	CHECK(rest == std::vector<std::string_view>{"--check-startup"});
 
+	// With no content named, the pack beside the executable.
+	std::vector<std::string_view> none;
+	const auto beside = parse({"--scenario", "trading"}, none);
+	REQUIRE(beside);
+	CHECK(beside->content == Manifest::Host::DefaultContent());
+	CHECK(none.empty());
+
 	for (const std::vector<std::string_view> &refused : std::vector<std::vector<std::string_view>>{
 	         {},
 	         {"--content", "base"},
-	         {"--scenario", "trading"},
 	         {"--content", "base", "--scenario", "trading", "--content", "again"},
 	         {"--content", "base", "--scenario", "trading", "--scenario", "again"},
 	         {"--content", "base", "--scenario", "trading", "--overlay"},
@@ -348,6 +355,27 @@ TEST_CASE("The options are read the same way for the host and the validator")
 		std::vector<std::string_view> ignored;
 		CHECK_FALSE(parse(refused, ignored));
 	}
+}
+
+
+TEST_CASE("A default place's directories are made private, and one already there is left as it is")
+{
+	using std::filesystem::perms;
+	const std::filesystem::path root =
+	    std::filesystem::temp_directory_path() / std::format("manifest-host-private-{}", getpid());
+	std::filesystem::remove_all(root);
+	std::filesystem::create_directories(root);
+	constexpr perms kShared = perms::owner_all | perms::group_read | perms::group_exec;
+	std::filesystem::permissions(root, kShared);
+	const auto mode = [](const std::filesystem::path &path)
+	{ return std::filesystem::status(path).permissions() & perms::mask; };
+
+	Manifest::Host::MakePrivateDirectories(root / "share" / "manifest");
+	Manifest::Host::MakePrivateDirectories(root / "share" / "manifest");
+	CHECK(mode(root) == kShared);
+	CHECK(mode(root / "share") == perms::owner_all);
+	CHECK(mode(root / "share" / "manifest") == perms::owner_all);
+	std::filesystem::remove_all(root);
 }
 
 

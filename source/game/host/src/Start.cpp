@@ -16,6 +16,7 @@
 
 #include <manifest/command/Requests.h>
 #include <manifest/company/Company.h>
+#include <manifest/host/Locations.h>
 #include <manifest/policy/Policy.h>
 #include <manifest/procurement/Procurement.h>
 #include <manifest/trade/Trade.h>
@@ -166,9 +167,9 @@ std::optional<Options> ParseOptions(
 		else
 			scenario = *at;
 	}
-	if (!content || !scenario)
+	if (!scenario)
 		return std::nullopt;
-	return Options{*content, std::move(overlays), *scenario};
+	return Options{content ? *content : DefaultContent(), std::move(overlays), *scenario};
 }
 
 

@@ -5,6 +5,9 @@ if(MANIFEST_BUILD_TESTS AND BUILD_TESTING)
 endif()
 
 add_subdirectory(game)
+if(MANIFEST_DISTRIBUTION)
+    add_subdirectory(apps/distribution)
+endif()
 add_subdirectory(apps/manifest)
 # A presentation-free SDK has no developer console, so no development console either.
 if(TARGET Jettison::Devtools)

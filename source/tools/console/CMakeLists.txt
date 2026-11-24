@@ -13,7 +13,7 @@ if(MANIFEST_BUILD_TESTS AND BUILD_TESTING)
         manifest_console manifest_test_helpers doctest::doctest_with_main manifest_warnings)
     target_compile_definitions(manifest_console_tests PRIVATE
         MANIFEST_MOD_DIRECTORY="${MANIFEST_MOD_DIRECTORY}"
-        MANIFEST_MOD_PACK="${PROJECT_BINARY_DIR}/manifest.pack")
+        MANIFEST_MOD_PACK="${MANIFEST_PACK}")
     add_dependencies(manifest_console_tests manifest_validate_pack)
     set_target_properties(manifest_console_tests PROPERTIES FOLDER "Test")
     add_test(NAME console COMMAND manifest_console_tests)

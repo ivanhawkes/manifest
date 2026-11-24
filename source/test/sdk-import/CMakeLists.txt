@@ -9,7 +9,8 @@ option(SDK_IMPORT_PARTIAL "Provide only Jettison::Math" OFF)
 set(provided Jettison::Math)
 if(NOT SDK_IMPORT_PARTIAL)
     list(APPEND provided Jettison::Ai Jettison::Core Jettison::Dock Jettison::Host
-        Jettison::Net Jettison::Physics Jettison::Profile Jettison::Reflect Jettison::Serialise
+        Jettison::Net Jettison::Physics Jettison::Platform Jettison::Profile Jettison::Reflect
+        Jettison::Serialise
         Jettison::Sim
         Jettison::Spatial Jettison::Time Jettison::Transit
         Jettison::Vfs Jettison::Devtools jettison_warnings

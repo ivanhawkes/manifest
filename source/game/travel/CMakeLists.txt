@@ -29,6 +29,6 @@ if(TARGET manifest_travel_tests)
 	target_link_libraries(manifest_travel_tests PRIVATE manifest_host manifest_company Jettison::Vfs)
 	target_compile_definitions(manifest_travel_tests PRIVATE
 		MANIFEST_MOD_DIRECTORY="${MANIFEST_MOD_DIRECTORY}"
-		MANIFEST_MOD_PACK="${PROJECT_BINARY_DIR}/manifest.pack")
+		MANIFEST_MOD_PACK="${MANIFEST_PACK}")
 	add_dependencies(manifest_travel_tests manifest_validate_pack)
 endif()

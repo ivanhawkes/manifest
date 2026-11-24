@@ -114,7 +114,10 @@ endif()
 
 
 include(cmake/ManifestModule.cmake)
+include(cmake/Distribution.cmake)
 set(MANIFEST_MOD_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/mods/manifest")
+# Where a distribution's executables find it (Manifest::Host::DefaultContent).
+set(MANIFEST_PACK "${CMAKE_CURRENT_BINARY_DIR}/share/manifest/manifest.pack")
 add_subdirectory(source)
 
 # A mod is content, not a native shared library. Keep its virtual paths stable in
@@ -153,7 +156,7 @@ foreach(scenario_file IN LISTS MANIFEST_SCENARIOS)
         COMMAND manifest-validate --content "${MANIFEST_MOD_DIRECTORY}" --scenario ${scenario}
             --manifest "${manifests}.directory.manifest")
     list(APPEND manifest_validate_pack_commands
-        COMMAND manifest-validate --content "${CMAKE_CURRENT_BINARY_DIR}/manifest.pack"
+        COMMAND manifest-validate --content "${MANIFEST_PACK}"
             --scenario ${scenario} --manifest "${manifests}.pack.manifest"
         COMMAND ${CMAKE_COMMAND} -E compare_files
             "${manifests}.directory.manifest" "${manifests}.pack.manifest")
@@ -166,10 +169,20 @@ add_custom_target(manifest_validate_mod
 add_dependencies(manifest_validate_mod manifest_mod manifest-validate)
 jettison_add_pack(manifest_pack
     SOURCE "${MANIFEST_MOD_DIRECTORY}"
-    OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/manifest.pack"
+    OUTPUT "${MANIFEST_PACK}"
     DEPENDS manifest_validate_mod)
 add_custom_target(manifest_validate_pack
     ${manifest_validate_pack_commands}
     COMMENT "Validating the pack with each scenario, against the staged content"
     VERBATIM)
 add_dependencies(manifest_validate_pack manifest_pack)
+
+if(MANIFEST_DISTRIBUTION AND MANIFEST_BUILD_TESTS AND BUILD_TESTING)
+    set(distributed
+        $<TARGET_FILE:manifest> $<TARGET_FILE:manifest-token> $<TARGET_FILE:manifest-validate>)
+    if(MANIFEST_BUILD_TUI)
+        list(APPEND distributed $<TARGET_FILE:manifest_tui>)
+    endif()
+    add_test(NAME distribution
+        COMMAND "${BASH_PROGRAM}" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/check-distribution.sh" ${distributed})
+endif()

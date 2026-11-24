@@ -34,6 +34,6 @@ if(TARGET manifest_content_tests)
 	target_link_libraries(manifest_content_tests PRIVATE Jettison::Dock Jettison::Reflect Jettison::Sim yaml-cpp::yaml-cpp)
 	target_compile_definitions(manifest_content_tests PRIVATE
 		MANIFEST_MOD_DIRECTORY="${MANIFEST_MOD_DIRECTORY}"
-		MANIFEST_MOD_PACK="${PROJECT_BINARY_DIR}/manifest.pack")
+		MANIFEST_MOD_PACK="${MANIFEST_PACK}")
 	add_dependencies(manifest_content_tests manifest_validate_pack)
 endif()

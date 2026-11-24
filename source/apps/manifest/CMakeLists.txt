@@ -2,16 +2,19 @@ add_executable(manifest main.cpp)
 set_target_properties(manifest PROPERTIES FOLDER "Apps")
 target_link_libraries(manifest PRIVATE
     Manifest::Host Manifest::Remote Jettison::Core Jettison::Sim Jettison::Time manifest_warnings)
+manifest_distributed(manifest)
 
 # The server's CLI for its token file: issues and revokes bearer tokens, keeping their digests.
 add_executable(manifest-token token.cpp)
 set_target_properties(manifest-token PROPERTIES FOLDER "Apps")
-target_link_libraries(manifest-token PRIVATE Manifest::Remote Jettison::Net manifest_warnings)
+target_link_libraries(manifest-token PRIVATE Manifest::Host Manifest::Remote Jettison::Net manifest_warnings)
+manifest_distributed(manifest-token)
 
 # The content validator: the host's options and loading, with no world.
 add_executable(manifest-validate validate.cpp)
 set_target_properties(manifest-validate PROPERTIES FOLDER "Apps")
 target_link_libraries(manifest-validate PRIVATE Manifest::Host Jettison::Core manifest_warnings)
+manifest_distributed(manifest-validate)
 
 if(MANIFEST_BUILD_TESTS AND BUILD_TESTING)
     # Run from a directory with nothing of Manifest in it, given absolute paths, with no display:
@@ -23,7 +26,7 @@ if(MANIFEST_BUILD_TESTS AND BUILD_TESTING)
     set(run ${env} $<TARGET_FILE:manifest>)
     set(validate ${env} $<TARGET_FILE:manifest-validate>)
     set(directory --content "${MANIFEST_MOD_DIRECTORY}" --scenario trading)
-    set(pack --content "${PROJECT_BINARY_DIR}/manifest.pack" --scenario trading)
+    set(pack --content "${MANIFEST_PACK}" --scenario trading)
     set(overlays "${PROJECT_SOURCE_DIR}/source/game/host/tests/overlays")
 
     add_test(NAME cli_directory COMMAND ${run} ${directory} --check-startup
@@ -39,10 +42,24 @@ if(MANIFEST_BUILD_TESTS AND BUILD_TESTING)
     add_test(NAME cli_no_check COMMAND ${run} ${directory} WORKING_DIRECTORY "${elsewhere}")
     add_test(NAME cli_unknown_argument COMMAND ${run} ${directory} --check-startup --serve
         WORKING_DIRECTORY "${elsewhere}")
-    add_test(NAME cli_serve_no_tokens COMMAND ${run} ${directory} --serve
+    # The defaults: the content beside the executables, and with no HOME no place to write.
+    add_test(NAME cli_default_content COMMAND ${run} --scenario trading --check-startup
         WORKING_DIRECTORY "${elsewhere}")
-    add_test(NAME cli_serve_no_world COMMAND ${run} ${directory} --serve
-        --tokens "${elsewhere}/none.yaml" WORKING_DIRECTORY "${elsewhere}")
+    add_test(NAME validate_default_content COMMAND ${validate} --scenario trading
+        WORKING_DIRECTORY "${elsewhere}")
+    set(homeless ${env} --unset=HOME --unset=XDG_DATA_HOME --unset=XDG_CONFIG_HOME
+        --unset=XDG_STATE_HOME --unset=XDG_CACHE_HOME)
+    add_test(NAME cli_serve_no_home COMMAND ${homeless} $<TARGET_FILE:manifest> ${directory} --serve
+        WORKING_DIRECTORY "${elsewhere}")
+    add_test(NAME token_no_home COMMAND ${homeless} $<TARGET_FILE:manifest-token>
+        issue administrator Operator WORKING_DIRECTORY "${elsewhere}")
+    # The build tree is laid out as a bundle, and run as one (scripts/bundle-smoke.sh), in a new HOME.
+    add_test(NAME bundle_fresh_home COMMAND "${CMAKE_COMMAND}" -E rm -rf "${elsewhere}/home")
+    set_tests_properties(bundle_fresh_home PROPERTIES FIXTURES_SETUP fresh_home)
+    add_test(NAME bundle_smoke COMMAND "${CMAKE_COMMAND}" -E env "HOME=${elsewhere}/home"
+        "${BASH_PROGRAM}" "${PROJECT_SOURCE_DIR}/scripts/bundle-smoke.sh" "${PROJECT_BINARY_DIR}"
+        WORKING_DIRECTORY "${elsewhere}")
+    set_tests_properties(bundle_smoke PROPERTIES FIXTURES_REQUIRED fresh_home)
     # A world is its build's (D-111), so one left by an earlier build is cleared first.
     add_test(NAME cli_serve_fresh_world COMMAND "${CMAKE_COMMAND}" -E rm -rf "${elsewhere}/world")
     set_tests_properties(cli_serve_fresh_world PROPERTIES FIXTURES_SETUP fresh_world)
@@ -80,7 +97,8 @@ if(MANIFEST_BUILD_TESTS AND BUILD_TESTING)
         --manifest "${elsewhere}/none/trading.manifest" WORKING_DIRECTORY "${elsewhere}")
 
     set_tests_properties(cli_no_arguments cli_no_path cli_no_scenario cli_no_check
-        cli_unknown_argument cli_serve_no_tokens cli_serve_no_world token_no_arguments validate_no_arguments validate_unknown_argument validate_no_manifest_path
+        cli_unknown_argument token_no_arguments validate_no_arguments validate_unknown_argument
+        validate_no_manifest_path
         PROPERTIES WILL_FAIL TRUE)
     # Each failure is the one expected, not a crash: only a failed start-up logs its phase.
     set(missing "Start-up failed in the mount phase, at ${elsewhere}/none")
@@ -88,6 +106,12 @@ if(MANIFEST_BUILD_TESTS AND BUILD_TESTING)
 BlankAge \\(patch\\)\\)")
     set_tests_properties(cli_missing_content validate_missing_content
         PROPERTIES PASS_REGULAR_EXPRESSION "${missing}")
+    set_tests_properties(cli_default_content PROPERTIES PASS_REGULAR_EXPRESSION
+        "ready, from ${MANIFEST_PACK}, scenario trading")
+    set_tests_properties(validate_default_content PROPERTIES PASS_REGULAR_EXPRESSION
+        "mount 1: manifest, from ${MANIFEST_PACK}.*valid: scenario trading")
+    set_tests_properties(cli_serve_no_home token_no_home PROPERTIES PASS_REGULAR_EXPRESSION
+        "XDG_[A-Z]+_HOME is unset or relative, and so is HOME")
     set_tests_properties(cli_broken_overlay validate_broken_overlay
         PROPERTIES PASS_REGULAR_EXPRESSION "${blank}")
     set_tests_properties(cli_serve_missing_tokens

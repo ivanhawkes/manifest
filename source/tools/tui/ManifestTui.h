@@ -2,6 +2,7 @@
 
 #include "ManifestConsole.h"
 
+#include <filesystem>
 #include <fstream>
 #include <string>
 
@@ -11,14 +12,14 @@ namespace Manifest::Tui
 class ManifestTui
 {
   public:
-	ManifestTui();
+	// The console on the content, its transcript appended to the file.
+	ManifestTui(const std::filesystem::path &content, const std::filesystem::path &transcript);
 	ManifestTui(const ManifestTui &) = delete;
 	ManifestTui &operator=(const ManifestTui &) = delete;
 
 	void Run();
 
   private:
-	static std::ofstream OpenSessionLog();
 	void AppendSessionLog(const std::string &text);
 
 	Tools::ManifestConsole m_session;

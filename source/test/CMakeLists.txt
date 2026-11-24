@@ -12,7 +12,7 @@ target_link_libraries(manifest_fixture_tests PRIVATE Manifest::Game manifest_hos
 target_compile_options(manifest_fixture_tests PRIVATE -ffp-contract=off)
 target_compile_definitions(manifest_fixture_tests PRIVATE
     MANIFEST_MOD_DIRECTORY="${MANIFEST_MOD_DIRECTORY}"
-    MANIFEST_MOD_PACK="${PROJECT_BINARY_DIR}/manifest.pack"
+    MANIFEST_MOD_PACK="${MANIFEST_PACK}"
     MANIFEST_FIXTURE_OVERLAY="${CMAKE_CURRENT_SOURCE_DIR}/overlays/quick-batches"
     MANIFEST_TRADER_OVERLAY="${CMAKE_CURRENT_SOURCE_DIR}/overlays/one-trader")
 add_dependencies(manifest_fixture_tests manifest_validate_pack)
@@ -49,7 +49,7 @@ add_executable(manifest_mod_tests ModTests.cpp)
 target_link_libraries(manifest_mod_tests PRIVATE Jettison::Vfs yaml-cpp::yaml-cpp manifest_test_helpers doctest::doctest_with_main manifest_warnings)
 target_compile_definitions(manifest_mod_tests PRIVATE
     MANIFEST_MOD_DIRECTORY="${MANIFEST_MOD_DIRECTORY}"
-    MANIFEST_MOD_PACK="${PROJECT_BINARY_DIR}/manifest.pack")
+    MANIFEST_MOD_PACK="${MANIFEST_PACK}")
 add_dependencies(manifest_mod_tests manifest_validate_pack)
 add_test(NAME mod COMMAND manifest_mod_tests)
 
