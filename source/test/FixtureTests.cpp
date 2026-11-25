@@ -1,8 +1,8 @@
 // The trading fixture's whole loop through the public command and query boundary (W09,
-// docs/stage-4-trading-plan.md, "Acceptance scenario and delivery"): bought at Ore, loaded, flown to
-// Brine through the engine's departure, cruise and docking, resupplied from the hold, unloaded, sold
-// and the ship upgraded, with the economy, life support and observations running throughout. Nothing
-// after the bootstrap writes the world but a command.
+// docs/history/stage-4-trading-plan.md, "Acceptance scenario and delivery"): bought at Ore, loaded,
+// flown to Brine through the engine's departure, cruise and docking, resupplied from the hold,
+// unloaded, sold and the ship upgraded, with the economy, life support and observations running
+// throughout. Nothing after the bootstrap writes the world but a command.
 
 #include "TestHelpers.h"
 

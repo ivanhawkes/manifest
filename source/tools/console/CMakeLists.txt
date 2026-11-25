@@ -1,5 +1,5 @@
 # The development console's commands, apart from any terminal: built and tested with the TUI off
-# (docs/stage-3-authority-plan.md, "Queries and tooling").
+# (docs/console.md).
 add_library(manifest_console STATIC ManifestConsole.cpp ManifestConsole.h)
 target_include_directories(manifest_console PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(manifest_console

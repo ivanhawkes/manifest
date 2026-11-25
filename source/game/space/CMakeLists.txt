@@ -1,8 +1,8 @@
-# The space setting, which Jettison keeps none of (Jettison's docs/space-extraction-plan.md): star
-# systems, their orbits and bodies, and the galaxy, as data; a star system as a physics frame; and
-# space transit over the engine's transit, portals and slots: cruising across a system, lanes between
-# systems, the gates that send ships down them, and routes over the galaxy. Below content, which
-# defines the scenario's systems and drives in it.
+# The space setting, which Jettison keeps none of (Jettison's docs/history/space-extraction.md): star
+# systems, their orbits and bodies, and the galaxy, as data; a star system as a physics frame; and space
+# transit over the engine's transit, portals and slots: cruising across a system, lanes between systems,
+# the gates that send ships down them, and routes over the galaxy. Below content, which defines the
+# scenario's systems and drives in it.
 manifest_add_module(space
 	HEADERS
 		include/manifest/space/Cruise.h

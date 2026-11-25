@@ -1,5 +1,5 @@
 # Standing trade policies and their jobs, run by the world for a player's ship or an NPC's through the
-# players' own commands (docs/stage-4-trading-plan.md, "W10 plan").
+# players' own commands (docs/policies.md).
 manifest_add_module(policy
 	DEPENDS
 		content

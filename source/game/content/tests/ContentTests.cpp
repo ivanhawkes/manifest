@@ -615,8 +615,8 @@ TEST_CASE("The fixtures are the trading and governance scenarios their plans des
 	REQUIRE(content.scenarios.size() == 2);
 
 	// One system, two planets, ten regions each served by a station of its own, nine governed, of
-	// mixed ages (docs/stage-2-content-plan.md, "Initial scenario"), with the essentials every region
-	// trades (W04), the life-support goods a ship's resupply takes (W09) and the wellness goods (W19).
+	// mixed ages (docs/content.md, "Scenarios"), with the essentials every region trades (W04), the
+	// life-support goods a ship's resupply takes (W09) and the wellness goods (W19).
 	const ScenarioDefinition &trading = content.scenarios.at("trading");
 	CHECK(trading.items.size() == 24);
 	CHECK(trading.systems.size() == 1);
@@ -864,7 +864,7 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	    "venues 'StarAnvil' is no station of system 'SystemAnvil'");
 	CheckRefused(
 	    trading, "version: 1\nsystems: !append [{systemId: SystemFar}]\n",
-	    "systems 'SystemFar' has no Celestial.StarSystem 'system-far' that resolves");
+	    "systems 'SystemFar' has no Space.StarSystem 'system-far' that resolves");
 	CheckRefused(
 	    trading,
 	    "version: 1\nsystems: !merge=systemId\n  - {systemId: SystemAnvil, connections: [{systemId: "

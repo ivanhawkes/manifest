@@ -1,6 +1,6 @@
 # The engine-loaded definitions, their validation as one set and its identity. Above config,
 # universe, progression, sim and effects, which never depend back on it
-# (docs/stage-2-content-plan.md).
+# (docs/content.md).
 manifest_add_module(content
 	DEPENDS
 		config

@@ -23,10 +23,9 @@ class DefinitionRegistry;
 namespace Manifest::Content
 {
 // The definitions Manifest loads through Jettison's DefinitionRegistry, one versioned file each,
-// the schema settled in docs/stage-2-content-plan.md ("Schema contract"). Ages, categories, items
-// and skills are the configuration records themselves (manifest/config/SimulationConfig.h); the
-// types below are those only content has. Each field is read under its authored YAML key, so a key
-// is the one a file and a patch name.
+// the schema docs/content.md describes. Ages, categories, items and skills are the configuration
+// records themselves (manifest/config/SimulationConfig.h); the types below are those only content has.
+// Each field is read under its authored YAML key, so a key is the one a file and a patch name.
 
 struct NamePoolDefinition
 {
@@ -78,8 +77,8 @@ struct ItemTotes
 	std::uint64_t totes{0};
 };
 
-// The balance inputs (data/tuning/balance.yaml), named by its file: values no rule reads yet, held to
-// their ranges (docs/stage-2-content-plan.md, "Tuning").
+// The balance inputs (data/tuning/balance.yaml), named by its file, held to their ranges
+// (docs/content.md, "Tuning").
 struct EconomyTuning
 {
 	double intervalSeconds{0.0};
@@ -166,9 +165,9 @@ enum class OfferTarget
 	Ship
 };
 
-// What a company may buy with its own credits (docs/stage-4-trading-plan.md, "First company
-// purchase"), named by its offerId: a tier at a time of a Skill node fitted to its target, up to its
-// maxTier, the skill's at most. What it costs leaves the economy, paid to no one.
+// What a company may buy with its own credits (docs/companies.md, "Upgrades"), named by its offerId: a
+// tier at a time of a Skill node fitted to its target, up to its maxTier, the skill's at most. What it
+// costs leaves the economy, paid to no one.
 struct OfferDefinition
 {
 	std::string offerId;
@@ -198,7 +197,7 @@ struct MarketTuning
 	// A resting order's life, in simulation seconds, a whole number of fixed steps; 0 is none.
 	double orderLifeSeconds{0.0};
 	// The span a market report's sales volume is over, in simulation seconds, a whole number of fixed
-	// steps above 0 (docs/market-information-plan.md, "Sales reporting").
+	// steps above 0 (docs/trading.md, "Market observations").
 	double salesWindowSeconds{0.0};
 };
 
@@ -320,10 +319,10 @@ struct TuningDefinition
 	std::vector<RecipeDefinition> recipes;
 };
 
-// A scenario: the world a game starts from, named by its file (docs/stage-2-content-plan.md,
-// "Scenario and frames"). Every list is keyed by its own ID, so a patch merges by it
-// (!merge=regionId); an ID is unique within its list and, being save identity, stable. Positions
-// are metres in the system's frame, quantities in the item's unit, rates per simulation day.
+// A scenario: the world a game starts from, named by its file (docs/content.md, "Scenarios"). Every
+// list is keyed by its own ID, so a patch merges by it (!merge=regionId); an ID is unique within its
+// list and, being save identity, stable. Positions are metres in the system's frame, quantities in the
+// item's unit, rates per simulation day.
 enum class OrganisationKind
 {
 	Polity,
@@ -341,8 +340,8 @@ struct SystemSelection
 	std::string systemId;
 };
 
-// A star system: a Jettison frame, Sim::FrameId(systemId), its bodies in the Celestial.StarSystem of
-// that name (definitions/systems).
+// A star system: a Jettison frame, Sim::FrameId(systemId), its bodies in the Space.StarSystem of that
+// name (definitions/systems).
 struct SystemDefinition
 {
 	std::string systemId;

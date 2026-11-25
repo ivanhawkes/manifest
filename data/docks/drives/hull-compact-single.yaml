@@ -1,6 +1,6 @@
-# How long the compact single-seat's cruises across a system take (Ai.CruiseDrive): a skiff's, the
-# Jettison sample's shuttle, 40 s for 100,000 km, rising as the distance's fourth root. Provisional
-# until long hauls are tuned.
+# How long the compact single-seat's cruises across a system take (Space.CruiseDrive): a skiff's,
+# the Jettison sample's shuttle, 40 s for 100,000 km, rising as the distance's fourth root.
+# Provisional until long hauls are tuned.
 version: 1
 seconds: 40
 reference: 1.0e8

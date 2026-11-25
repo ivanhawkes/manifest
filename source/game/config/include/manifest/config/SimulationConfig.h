@@ -9,9 +9,9 @@
 namespace Manifest::Core
 {
 // The configuration records, as Jettison's DefinitionRegistry reads them through Manifest::Content
-// (docs/stage-2-content-plan.md, "Schema contract"). A field a file leaves out keeps its
-// initialiser here; which fields are required, and every rule between records, is the content
-// set's validation, not the reader's.
+// (docs/content.md, "Loading and validation"). A field a file leaves out keeps its initialiser here;
+// which fields are required, and every rule between records, is the content set's validation, not the
+// reader's.
 
 enum class NodeType
 {
@@ -118,8 +118,8 @@ using Items = std::vector<ItemNode>;
 inline constexpr std::uint64_t kTotesPerIbc = 8;
 
 // The most a hull's hold carries is the largest hull class's envelope, the heavy destroyer's
-// 600 x 160 x 120 m (small-trader-and-docking-plan.md, "Ship size classes"): no hold is bigger than
-// its hull. Content and the commands each refuse a hull over it.
+// 600 x 160 x 120 m (docs/history/small-trader-and-docking-plan.md, "Ship size classes and the resupply
+// platform"): no hold is bigger than its hull. Content and the commands each refuse a hull over it.
 inline constexpr std::uint64_t kMaxHoldTotes = 11'520'000 * kTotesPerIbc;
 
 // The most one owner holds of one item at one venue's warehouse: a hundred of the largest holds.

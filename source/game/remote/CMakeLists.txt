@@ -1,6 +1,5 @@
 # Manifest's protocol on Jettison::Net: the dedicated server's admission and snapshots, the client a
-# frontend connects with, and the token file the server's CLI keeps (docs/gameplay-and-server-plan.md,
-# "Network contract").
+# frontend connects with, and the token file the server's CLI keeps (docs/server.md).
 manifest_add_module(remote
 	DEPENDS
 		query

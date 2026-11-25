@@ -1,7 +1,7 @@
 ---
-# The fields and their units are defined in docs/model.md, "Units, prices and storage". Each
-# price is the 2026-11-19 spot or contract quote where the good has a market, sourced in the
-# same section, and the first-draft value converted to the unit where it has none.
+# The fields and their units are defined in docs/content.md, "Units and storage". Each price is the
+# 2026-11-19 spot or contract quote where the good has a market, sourced in the same section, and
+# the first-draft value converted to the unit where it has none.
 #
 # Bulk chemicals, by the tonne as the chemical markets quote them. Refrigerated gases travel in
 # vacuum-jacketed tanks, which spend part of the cube on the jacket and the vaporiser headspace,

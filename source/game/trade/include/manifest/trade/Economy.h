@@ -8,17 +8,16 @@
 
 namespace Manifest::Trade
 {
-// The regional economy (W04), the step's second system (docs/stage-4-trading-plan.md, "The step, in
-// order"), which Register adds. Each step every region's employer works its batches at its region's
-// work rate, as its condition was at the end of the step before; on the last step of each economic
-// turn it pays the wages earned, sells what it has made to the venue's broker at its bid, its
-// households buy and consume their essentials and then, every essential met, their optional goods,
-// and the region's health and happiness move with the interval's shortage.
+// The regional economy (W04), the step's second system (docs/architecture.md, "The step, in order"),
+// which Register adds. Each step every region's employer works its batches at its region's work rate,
+// as its condition was at the end of the step before; on the last step of each economic turn it pays
+// the wages earned, sells what it has made to the venue's broker at its bid, its households buy and
+// consume their essentials and then, every essential met, their optional goods, and the region's health
+// and happiness move with the interval's shortage.
 inline constexpr std::string_view kEconomy = "manifest.economy";
 
 // The share of its full rate a region's production works at: each condition's factor runs from the
-// floor at 0 to 1 at 100, and the two multiply (docs/economy-and-development-plan.md, "Population
-// health, happiness and production").
+// floor at 0 to 1 at 100, and the two multiply (docs/economy.md, "Production").
 double WorkRate(double health, double happiness, double floor);
 
 // One need's interval: its weight, what it required and what was consumed, in its unit.

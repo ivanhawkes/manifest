@@ -29,14 +29,14 @@ namespace Manifest::Space
 {
 class LaneTravel;
 
-// A gate flown through (Jettison's docs/roadmap.md, "Decided": a gate sends the ships it has cleared).
-// A jump point's gate is an entity with a ring, a sensor on the jump point's rails, and a ship it has
-// cleared that flies through the ring is sent along its lane (Lanes.h), its owner charged the lane's
-// toll as it enters. Who holds a gate is authoritative state every player sees the same, so the gate is
-// given by commands in the order the queue applies them, as a station's pad is (dock/Docks.h). What
-// a toll is drawn from, and whatever else a clearance asks of a ship's owner, are the game's
-// (TollRule); this is what any space game's gates would want unchanged. A gate is a gated portal
-// (transit/Slot.h): its clearance a slot, and its ring the sensor a ship holding it flies through.
+// A gate flown through (docs/space.md, "Gates": a gate sends the ships it has cleared). A jump point's
+// gate is an entity with a ring, a sensor on the jump point's rails, and a ship it has cleared that
+// flies through the ring is sent along its lane (Lanes.h), its owner charged the lane's toll as it
+// enters. Who holds a gate is authoritative state every player sees the same, so the gate is given by
+// commands in the order the queue applies them, as a station's pad is (dock/Docks.h). What a toll is
+// drawn from, and whatever else a clearance asks of a ship's owner, are the game's (TollRule); this is
+// what any space game's gates would want unchanged. A gate is a gated portal (transit/Slot.h): its
+// clearance a slot, and its ring the sensor a ship holding it flies through.
 
 // A jump point's gate: its ring, and its clearance as a slot: the ship it has cleared (the holder)
 // and the step that clearance lapses at, and the ships waiting for it, first come first. Free while

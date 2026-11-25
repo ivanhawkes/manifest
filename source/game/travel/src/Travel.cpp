@@ -234,8 +234,8 @@ bool Near(
 
 
 // One transition of the ship's journey, from the engine's state as the step's movement left it
-// (docs/stage-4-trading-plan.md, "Transaction boundaries"): the next engine command, applied now and
-// acted on by the engine's systems from the next step, and the leg it leads to.
+// (docs/world.md, "Transaction boundaries"): the next engine command, applied now and acted on by the
+// engine's systems from the next step, and the leg it leads to.
 void Advance(SimWorld &world, const Rules &rules, entt::entity ship)
 {
 	entt::registry &registry = world.Registry();

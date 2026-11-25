@@ -142,23 +142,23 @@ inline constexpr std::string_view kDeliver = "Manifest.Procurement.Deliver";
 inline constexpr std::string_view kAbandon = "Manifest.Procurement.Abandon";
 inline constexpr std::uint32_t kVersion = 1;
 
-// The tenders' system, by the name the step's table gives it (docs/stage-4-trading-plan.md, "Tender
-// contract (W11)"): after manifest.expiry and before kProjects. Each awarded tender whose delivery
-// close it is, in ID order, ends in default, as Abandon ends it. Then each open tender whose bid close
-// it is, in ID order, is awarded to its lowest bid, then the earliest accepted, then its company's ID,
-// whose company can fund the bond, procurement's rate of the total rounded up, moved into the tender's
-// BondAccount, the next bid's otherwise, so an earlier award's bond spends what a later one would
-// need; the budget beyond the total returns to the public account and the delivery window runs from
-// the step. With none it closes unawarded, its budget returned. Its bids are dropped either way, and
-// each region keeps its last procurement.keptClosed closed tenders, the oldest closed dropped. Then, as
-// the world starts, on each economic turn's last step, in a step a tender's bidding closed and in one
-// a tender closed or its contract ended, the AI issuer: for each region whose governor the AI runs, or
-// whose player's development policy tenders within its limit (SetDevelopment), in the scenario's order,
-// at the first venue serving it, each input its head project still needs, in the project's order, with
-// no tender open for it, is tendered, the totes still needed at Trade::TenderPrice times one and the
-// project's priorityPremium (Trade::Budget), with procurement's AI windows; and on a turn's last step
-// each relief Trade::Reliefs calls for of such a region with no relief tender open for its need. One
-// the region cannot fund or bound is not.
+// The tenders' system, by the name the step's table gives it (docs/governance.md, "Where it runs in the
+// step"): after manifest.expiry and before kProjects. Each awarded tender whose delivery close it is,
+// in ID order, ends in default, as Abandon ends it. Then each open tender whose bid close it is, in ID
+// order, is awarded to its lowest bid, then the earliest accepted, then its company's ID, whose company
+// can fund the bond, procurement's rate of the total rounded up, moved into the tender's BondAccount,
+// the next bid's otherwise, so an earlier award's bond spends what a later one would need; the budget
+// beyond the total returns to the public account and the delivery window runs from the step. With none
+// it closes unawarded, its budget returned. Its bids are dropped either way, and each region keeps its
+// last procurement.keptClosed closed tenders, the oldest closed dropped. Then, as the world starts, on
+// each economic turn's last step, in a step a tender's bidding closed and in one a tender closed or its
+// contract ended, the AI issuer: for each region whose governor the AI runs, or whose player's
+// development policy tenders within its limit (SetDevelopment), in the scenario's order, at the first
+// venue serving it, each input its head project still needs, in the project's order, with no tender
+// open for it, is tendered, the totes still needed at Trade::TenderPrice times one and the project's
+// priorityPremium (Trade::Budget), with procurement's AI windows; and on a turn's last step each relief
+// Trade::Reliefs calls for of such a region with no relief tender open for its need. One the region
+// cannot fund or bound is not.
 inline constexpr std::string_view kTenders = "manifest.tenders";
 
 // The projects' system, after kTenders and before manifest.economy, each region's World::Project in

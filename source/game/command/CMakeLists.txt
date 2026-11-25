@@ -1,5 +1,5 @@
 # The one admission path into the hosted world and every actor's request ledger: ordering, retries
-# and structured results (docs/stage-3-authority-plan.md). Commands' rules register their handlers.
+# and structured results (docs/world.md). Commands' rules register their handlers.
 manifest_add_module(command
 	DEPENDS
 		world

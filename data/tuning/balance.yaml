@@ -1,8 +1,7 @@
 ---
 # The balance inputs of the first scenario: initial test values, selected in the plans and not
-# yet validated (docs/decision-ledger.md, "Numeric values"). No rule reads them until Stages 3-4
-# implement it; the content loader holds them to their ranges now. A value the design has not
-# selected is left out.
+# yet validated (docs/decision-ledger.md, "Numeric values"). The rules read them, and the content
+# loader holds them to their ranges. A value the design has not selected is left out.
 
 economy:
   # Simulation seconds between regular payroll, household purchases and the condition update.
@@ -104,8 +103,8 @@ lifeSupport:
   oxygenItemId: ItemOxygen
   cartridgeItemId: ItemCarbonScrubberCartridge
 
-# A torch's fuel (D-108; docs/stage-4-trading-plan.md, "W21 plan"): reaction mass at an exhaust of
-# 10% of light speed, in km/s; fusion pellets in milligrams for each tonne aboard and km/s of speed
+# A torch's fuel (D-108; docs/travel.md, "The fuel a leg burns"): reaction mass at an exhaust of 10%
+# of light speed, in km/s; fusion pellets in milligrams for each tonne aboard and km/s of speed
 # change, times the acceleration in g to curveExponent above 1 g; the tanks' own tonnes for each
 # tonne of reaction mass they hold; and each occupant's kilograms, with their effects.
 fuel:
@@ -137,7 +136,7 @@ market:
   # A resting order's life: one simulation day (D-085).
   orderLifeSeconds: 86400
   # A market report's sales volume is over the hour before it was observed, an initial balance setting
-  # (docs/market-information-plan.md, "Sales reporting").
+  # (docs/trading.md, "Market observations").
   salesWindowSeconds: 3600
 
 # What each venue charges as the initial state opens it, in whole credits (D-097, D-098, D-100); each

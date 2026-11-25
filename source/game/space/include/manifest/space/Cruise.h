@@ -29,11 +29,10 @@ class SimWorld;
 
 namespace Manifest::Space
 {
-// The cruise (Jettison's docs/architecture.md, "Cruising"; docs/roadmap.md, "Decided": a ship crosses a
-// system by cruising): a ship taken across its system to a body, out of physics and its frame as on a
-// lane but staying in its system, placed each step along its course, and brought out at rest a few
-// kilometres off the body, in its frame. The bodies are on rails, so where the target will be on
-// arrival is solved exactly rather than chased.
+// The cruise (docs/space.md, "Cruising": a ship crosses a system by cruising): a ship taken across its
+// system to a body, out of physics and its frame as on a lane but staying in its system, placed each
+// step along its course, and brought out at rest a few kilometres off the body, in its frame. The
+// bodies are on rails, so where the target will be on arrival is solved exactly rather than chased.
 
 // How long a ship's cruises take: the seconds a cruise of the reference distance takes, rising with
 // the distance to the exponent, slower than it, so one planet's stations are about a minute apart

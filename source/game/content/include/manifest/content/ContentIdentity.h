@@ -16,9 +16,9 @@ class DefinitionRegistry;
 
 namespace Manifest::Content
 {
-// The canonical manifest of a content set and its fingerprint (docs/stage-2-content-plan.md,
-// "Content identity"). The manifest is what a save compares exactly; the fingerprint is a 64-bit
-// FNV-1a of it, a compatibility aid that a list can show, not an authenticity check.
+// The canonical manifest of a content set and its fingerprint (docs/content.md, "Content identity").
+// The manifest is what a save compares exactly; the fingerprint is a 64-bit FNV-1a of it, a
+// compatibility aid that a list can show, not an authenticity check.
 //
 // Format "Manifest.ContentManifest", in Jettison's binary layout (BinaryWriter): for each type of
 // DefinitionTypes, in that order, its reflected name, its format version (4 bytes) and its record

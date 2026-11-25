@@ -338,7 +338,7 @@ std::shared_ptr<const Rules> MakeRules(
 
 
 // ─── Money ───
-// The market price rules (docs/market-prices.md), over totes (D-083, D-087).
+// The market price rules (docs/pricing.md, "From a price to credits"), over totes (D-083, D-087).
 
 std::optional<std::int64_t> Fee(std::int64_t gross, int feeBps)
 {
@@ -1080,8 +1080,7 @@ void Requote(SimWorld &world, const Rules &rules)
 
 
 // ─── The regional economy ───
-// docs/economy-and-development-plan.md, "Aggregate households, wages and consumer demand" and what
-// follows it; docs/stage-4-trading-plan.md, "The step, in order".
+// docs/economy.md, "How it works"; docs/architecture.md, "The step, in order".
 
 entt::entity Require(const Rules &rules, Kind kind, const std::string &id)
 {
@@ -1627,7 +1626,7 @@ void EconomySkip(SimWorld &world, const Rules &rules, std::uint64_t passed)
 
 
 // ─── Observation ───
-// docs/market-information-plan.md, "Selected information rules".
+// docs/trading.md, "Market observations".
 
 const Content::VenueDefinition &DefinitionOf(const Rules &rules, std::string_view venueId)
 {
@@ -1848,8 +1847,7 @@ void Register(
 	                          .Writing<
 	                              World::Order, World::Account, World::Stock, World::Identity,
 	                              World::Sales, World::Paid>();
-	// Ahead of the movement Travel::Register attaches (docs/stage-4-trading-plan.md, "The step, in
-	// order").
+	// Ahead of the movement Travel::Register attaches (docs/architecture.md, "The step, in order").
 	const std::vector<std::string> beforeMovement{
 	    std::string{Jettison::Spatial::FrameIndices::kSystemName}};
 	world.RegisterSystem(

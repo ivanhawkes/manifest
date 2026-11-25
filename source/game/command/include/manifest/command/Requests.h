@@ -42,11 +42,11 @@ struct Receipt
 };
 
 // The one admission path into the world and the ledger of every actor's requests
-// (docs/stage-3-authority-plan.md, "Command boundary and ordering" and "Retry and result contract").
-// Admission checks the actor, the command and the sequence, assigns the next global order and
-// queues the request on the world, so it runs at the start of the next step in admission order.
-// Running it rechecks nothing admission promised: its command's handler checks the world as it then
-// is. The ledger is saved; the handlers are registered again at start-up, as the world's are.
+// (docs/world.md, "Admission" and "Retries and the ledger"). Admission checks the actor, the command
+// and the sequence, assigns the next global order and queues the request on the world, so it runs at
+// the start of the next step in admission order. Running it rechecks nothing admission promised: its
+// command's handler checks the world as it then is. The ledger is saved; the handlers are registered
+// again at start-up, as the world's are.
 class Requests final : public Jettison::Sim::WorldService
 {
   public:

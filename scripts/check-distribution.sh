@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Checks that each executable runs outside the toolchain that built it, as the runtime distribution
-# contract has it (docs/stage-5-recovery-plan.md): loaded through the system's loader, with no
+# contract has it (docs/host.md, "The distribution"): loaded through the system's loader, with no
 # RUNPATH, needing only glibc's own libraries, and no symbol of a glibc newer than the floor.
 # check-distribution.sh <executable>...
 set -euo pipefail

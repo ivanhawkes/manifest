@@ -1,9 +1,9 @@
-# The executables a distribution carries (docs/stage-5-recovery-plan.md, "The runtime distribution
-# contract"), each built into <build>/bin, beside the content in <build>/share/manifest, as the bundle
-# lays them out, so a build tree finds its content as a bundle does. With MANIFEST_DISTRIBUTION each
-# is linked to run on x86-64 Linux with glibc 2.39 or newer and nothing else: libstdc++ and libgcc
-# linked in, the system's loader, no RUNPATH, and the symbols glibc gave newer versions after 2.39
-# bound to the older (source/apps/distribution). scripts/check-distribution.sh checks the result.
+# The executables a distribution carries (docs/host.md, "The distribution"), each built into
+# <build>/bin, beside the content in <build>/share/manifest, as the bundle lays them out, so a build
+# tree finds its content as a bundle does. With MANIFEST_DISTRIBUTION each is linked to run on x86-64
+# Linux with glibc 2.39 or newer and nothing else: libstdc++ and libgcc linked in, the system's loader,
+# no RUNPATH, and the symbols glibc gave newer versions after 2.39 bound to the older
+# (source/apps/distribution). scripts/check-distribution.sh checks the result.
 option(MANIFEST_DISTRIBUTION "Link the distributed executables to run outside the build's toolchain" OFF)
 set(MANIFEST_LOADER /lib64/ld-linux-x86-64.so.2)
 if(MANIFEST_DISTRIBUTION)

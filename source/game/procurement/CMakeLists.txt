@@ -1,6 +1,6 @@
-# Regions' public projects and their procurement (W12, docs/stage-4-trading-plan.md, "Tender contract
-# (W11)"): a project's inputs gathered, consumed once and worked at its region's workshop, unlocking
-# its recipe there.
+# Regions' public projects and their procurement (W12, docs/governance.md, "Projects and the queue"): a
+# project's inputs gathered, consumed once and worked at its region's workshop, unlocking its recipe
+# there.
 manifest_add_module(procurement
 	DEPENDS
 		content

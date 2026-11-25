@@ -776,7 +776,7 @@ TEST_CASE("A company's credits buy its ship a tier of cargo holds, once, and its
 	CHECK(hosted.Run(kAda, kUpgrade, holds) == Result::InsufficientFunds);
 	CHECK(hosted.Seen(kAda) == start);
 
-	// What W15's furs run leaves it with, which W09's fixture earns by trading.
+	// More than the holds cost, as one completed trade leaves it (W15's furs run ended at 29,590).
 	Credits(hosted, "Company1").balance = 29590;
 	const std::uint64_t sequence = hosted.requests.NextSequence(kAda);
 	CHECK(hosted.Run(kAda, kUpgrade, holds) == Result::Succeeded);
@@ -990,7 +990,8 @@ TEST_CASE("An upgrade saved pending, retried after the load and replayed from th
 	hosted.world.SetRecording(true);
 	hosted.Admit(kHost, kProvision, Provision{"Ada", "Ada", "Co"});
 	hosted.world.Step();
-	// What W15's furs run leaves it with, written as bootstrap between the first two steps.
+	// As one completed trade leaves it (W15's furs run ended at 29,590), written as bootstrap between
+	// the first two steps.
 	Credits(hosted, "Company1").balance = 29590;
 	const std::uint64_t sequence = hosted.requests.NextSequence(kAda);
 	hosted.Admit(kAda, kUpgrade, holds);

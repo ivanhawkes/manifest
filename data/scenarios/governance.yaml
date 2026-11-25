@@ -1,14 +1,14 @@
 version: 1
-# The multi-region governance fixture (docs/regional-economy-and-governance-plan.md): four regions on
-# Forge, each its own economy, two of them ungoverned and two AI neighbours, all served by one
-# public highport; and a Cassiter region across the system that sells tin and the industrial goods
-# Forge cannot make. Forge East works the Bronze project (D-029) with local copper, tin from
-# Cassiter and a seeded workshop. Every number is an initial test value recorded with C05, not a
-# balance result. Where the bodies and stations are is the system's record
-# (systems/system-crucible.yaml); market rates are per simulation day, in the item's unit
-# (docs/model.md), and stock is in totes (D-087): the earlier quantities in the unit to the nearest
-# tote, at least one. Each region trades the essentials at its venue (W04); a row's region is the
-# employer that makes it. Forge grows its staples and works its salt, and buys its soap from Cassiter.
+# The multi-region governance fixture (docs/governance.md): four regions on Forge, each its own
+# economy, two of them ungoverned and two AI neighbours, all served by one public highport; and a
+# Cassiter region across the system that sells tin and the industrial goods Forge cannot make. Forge
+# East works the Bronze project (D-029) with local copper, tin from Cassiter and a seeded workshop.
+# Every number is an initial test value recorded with C05, not a balance result. Where the bodies
+# and stations are is the system's record (systems/system-crucible.yaml); market rates are per
+# simulation day, in the item's unit (docs/content.md, "Units and storage"), and stock is in totes
+# (D-087): the earlier quantities in the unit to the nearest tote, at least one. Each region trades
+# the essentials at its venue (W04); a row's region is the employer that makes it. Forge grows its
+# staples and works its salt, and buys its soap from Cassiter.
 gameMode: manifest
 starterHull: HullLoneTraderStarter
 starterVenue: VenueForgeHighport

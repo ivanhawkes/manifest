@@ -1,11 +1,11 @@
-# The trading fixture's system (data/scenarios/trading.yaml), a star system of Jettison's
-# (Celestial.StarSystem): a Sun-like star, Ore an Earth-like planet and Brine a Mars-like one on
-# their orbits, and five stations 42,000 km out from each, a fifth of an orbit apart: its highport
-# and one for each of its other regions. A body is named by its scenario ID, a
-# station by its venue's, and the venue names its station layout. Ore is at +X and Brine at -X at
-# simulation time 0. Metres, seconds and radians; a period left out is from the parent's
-# gravitational parameter. Every number is an initial test value, not a balance result: a cruise
-# between the planets takes a few minutes until long hauls are tuned.
+# The trading fixture's system (data/scenarios/trading.yaml), a star system (Space.StarSystem): a
+# Sun-like star, Ore an Earth-like planet and Brine a Mars-like one on their orbits, and five
+# stations 42,000 km out from each, a fifth of an orbit apart: its highport and one for each of its
+# other regions. A body is named by its scenario ID, a station by its venue's, and the venue names
+# its station layout. Ore is at +X and Brine at -X at simulation time 0. Metres, seconds and
+# radians; a period left out is from the parent's gravitational parameter. Every number is an
+# initial test value, not a balance result: a cruise between the planets takes a few minutes until
+# long hauls are tuned.
 version: 1
 name: SystemAnvil
 bodies:

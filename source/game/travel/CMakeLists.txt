@@ -1,7 +1,6 @@
 # Ships in space: Jettison's physics, docks, lanes and cruise in the hosted world, its stations and
 # the ships parked on their pads, and a ship's journey from one venue to another
-# (docs/stage-4-trading-plan.md, "Cargo capacity and physical travel"). Below company, which parks a
-# new player's ship through it.
+# (docs/travel.md). Below company, which parks a new player's ship through it.
 manifest_add_module(travel
 	DEPENDS
 		content

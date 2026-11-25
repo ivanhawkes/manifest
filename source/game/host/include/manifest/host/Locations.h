@@ -9,11 +9,10 @@ namespace Manifest::Host
 // which is laid out the same way. Throws std::filesystem::filesystem_error when /proc is not mounted.
 std::filesystem::path DefaultContent();
 
-// Where Manifest writes when no option names a place (docs/stage-5-recovery-plan.md, "The runtime
-// distribution contract"): under the XDG base directories, Jettison::Platform::ResolvePath's for
-// "manifest", each resolved alone, so a program needs only the variables of the places it writes.
-// Resolving touches nothing on disk. Throws std::runtime_error naming the variable when HOME is
-// needed and is not an absolute path.
+// Where Manifest writes when no option names a place (docs/host.md, "The default places"): under the
+// XDG base directories, Jettison::Platform::ResolvePath's for "manifest", each resolved alone, so a
+// program needs only the variables of the places it writes. Resolving touches nothing on disk. Throws
+// std::runtime_error naming the variable when HOME is needed and is not an absolute path.
 std::filesystem::path DefaultWorld();
 std::filesystem::path DefaultBackups();
 std::filesystem::path DefaultTokens();

@@ -124,8 +124,8 @@ struct MarketView
 
 // What an actor may see of the hosted world, copied out at a completed step: nothing in it refers
 // back into the world, so a later step changes the next snapshot and never this one. Its markets are
-// the player's own reports alone (docs/market-information-plan.md): a venue it has none of is unknown
-// to them, and no other company's stock, credits or orders are in it.
+// the player's own reports alone (docs/trading.md, "Market observations"): a venue it has none of is
+// unknown to them, and no other company's stock, credits or orders are in it.
 struct Snapshot
 {
 	// The clock's step: how many steps have completed.

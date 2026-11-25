@@ -1,20 +1,20 @@
 version: 1
-# The trading fixture (docs/stage-2-content-plan.md, "Initial scenario"): one system, two planets,
-# and ten regions, five on each, every region served by a station of its own (the user's,
-# 2026-11-21). Their staples follow their kind of world (D-105): the developed regions grow a
-# surplus of a complementary grain and legume, half again their need, and want the others; the
-# undeveloped grow three fifths of their staples, the ruined advanced half; the mining colonies
-# grow none and draw no water. Ore's Highlands, ungoverned, grows rice and lentils and makes the
-# copper, furs, oxygen and cartridges; its Vale oats and beans; its Deeps mine tin and gold. Brine's
-# Coast grows wheat and chickpeas and makes the glassware, soap, wellness goods and medical
-# supplies; its Delta barley and peas; its Saltworks salt and lime. Every station makes reaction mass
-# for the ships, 10,000 kg a day, and Ore Deeps and Brine Saltworks refine fusion pellets, 2 kg a day
-# (D-108). A station makes what its region makes and its essentials' demand is its region's need, which set its prices; a row's region is
-# the employer that makes it, and the households that want it when no need names it. Market rates
-# are per simulation day, in the item's unit (docs/model.md); stock is in totes, eight to the IBC
-# (D-087), about ten days of a row's rate, so a broker's ladder takes a starter's run (W19's
-# balance). Every number is an initial test value, not a balance result; where the bodies and
-# stations are is the system's record (systems/system-anvil.yaml).
+# The trading fixture (docs/content.md, "Scenarios"): one system, two planets, and ten regions, five
+# on each, every region served by a station of its own (the user's, 2026-11-21). Their staples
+# follow their kind of world (D-105): the developed regions grow a surplus of a complementary grain
+# and legume, half again their need, and want the others; the undeveloped grow three fifths of their
+# staples, the ruined advanced half; the mining colonies grow none and draw no water. Ore's
+# Highlands, ungoverned, grows rice and lentils and makes the copper, furs, oxygen and cartridges;
+# its Vale oats and beans; its Deeps mine tin and gold. Brine's Coast grows wheat and chickpeas and
+# makes the glassware, soap, wellness goods and medical supplies; its Delta barley and peas; its
+# Saltworks salt and lime. Every station makes reaction mass for the ships, 10,000 kg a day, and Ore
+# Deeps and Brine Saltworks refine fusion pellets, 2 kg a day (D-108). A station makes what its
+# region makes and its essentials' demand is its region's need, which set its prices; a row's region
+# is the employer that makes it, and the households that want it when no need names it. Market rates
+# are per simulation day, in the item's unit (docs/content.md, "Units and storage"); stock is in
+# totes, eight to the IBC (D-087), about ten days of a row's rate, so a broker's ladder takes a
+# starter's run (W19's balance). Every number is an initial test value, not a balance result; where
+# the bodies and stations are is the system's record (systems/system-anvil.yaml).
 gameMode: manifest
 starterHull: HullLoneTraderStarter
 starterVenue: VenueOreHighport

@@ -65,7 +65,7 @@ trap 'rm -rf "$tmp_dir"' EXIT
 # loads, named by its ID in kebab case. The rule is RegistryName's in
 # source/game/content/src/Definitions.cpp, which the loader holds every record to, so a name this
 # writes differently is refused there rather than resolved by filename
-# (docs/stage-2-content-plan.md, "Records").
+# (docs/content.md, "Processing the YAML").
 kebab='sub("([a-z0-9])([A-Z])"; "${1}-${2}") | sub("([A-Z])([A-Z][a-z])"; "${1}-${2}") | downcase'
 
 # Legacy authoring writes null for an absent optional field. The engine's reader refuses null, so

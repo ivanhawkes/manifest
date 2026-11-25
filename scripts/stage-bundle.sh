@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Stages the distribution (docs/stage-5-recovery-plan.md, "The runtime distribution contract") from a
-# clean checkout, so that its game tree names a commit: the release build, linked to run outside its
-# toolchain (cmake/Distribution.cmake) and checked so (check-distribution.sh), laid out with its
-# content, its BUILD and the licence of every source tree compiled into it, and packed as
-# manifest-<version>-<game tree>-linux-x86_64.tar.gz in the output directory, which it names.
+# Stages the distribution (docs/host.md, "The distribution") from a clean checkout, so that its game
+# tree names a commit: the release build, linked to run outside its toolchain (cmake/Distribution.cmake)
+# and checked so (check-distribution.sh), laid out with its content, its BUILD and the licence of every
+# source tree compiled into it, and packed as manifest-<version>-<game tree>-linux-x86_64.tar.gz in the
+# output directory, which it names.
 # stage-bundle.sh [<output directory>], build/bundle by default.
 set -euo pipefail
 cd "$(dirname "$0")/.."

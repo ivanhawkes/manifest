@@ -58,8 +58,8 @@ struct Ran
 // (2026-11-24).
 inline constexpr std::uintmax_t kMaxSnapshotBytes = std::uintmax_t{4} * 1024 * 1024 * 1024;
 
-// Where a journal keeps its backups, and what a world may store (docs/stage-5-recovery-plan.md,
-// "Shutdown, backups and limits").
+// Where a journal keeps its backups, and what a world may store (docs/persistence.md, "Backups" and
+// "What a world stores").
 struct Storage
 {
 	// None when empty. Otherwise a backup is written here with every snapshot, as
@@ -93,16 +93,16 @@ struct Catalogue
 	std::vector<Kept> snapshots;
 };
 
-// A world's journal, snapshots and catalogue (docs/stage-5-recovery-plan.md, "The journal and its
-// snapshots"). The world steps and answers its requests at once; every Cadence::flushSteps the steps
-// taken since the last flush, and the requests that ran in them, are written as one immutable batch
-// file and the catalogue replaced to name it as the head. So a crash loses what ran since the last
-// flush and nothing before it, and a clean stop, which flushes, loses nothing. Every
-// Cadence::snapshotSteps the world's save is written beside them, the last two kept with every batch
-// since the older, and what is older than that removed. Every file is followed by its 64-bit
-// FNV-1a, which is also a batch's identity in the chain. Each snapshot is also a backup, when the
-// storage names a directory for them: the world's identity, the snapshot and a catalogue naming it
-// alone, the catalogue written last, so a backup cut off before it is none and is removed by the next.
+// A world's journal, snapshots and catalogue (docs/persistence.md, "The journal and its batches"). The
+// world steps and answers its requests at once; every Cadence::flushSteps the steps taken since the
+// last flush, and the requests that ran in them, are written as one immutable batch file and the
+// catalogue replaced to name it as the head. So a crash loses what ran since the last flush and nothing
+// before it, and a clean stop, which flushes, loses nothing. Every Cadence::snapshotSteps the world's
+// save is written beside them, the last two kept with every batch since the older, and what is older
+// than that removed. Every file is followed by its 64-bit FNV-1a, which is also a batch's identity in
+// the chain. Each snapshot is also a backup, when the storage names a directory for them: the world's
+// identity, the snapshot and a catalogue naming it alone, the catalogue written last, so a backup cut
+// off before it is none and is removed by the next.
 class Journal
 {
   public:

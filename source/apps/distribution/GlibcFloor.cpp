@@ -1,7 +1,7 @@
 // Each call to a function that glibc gave a new version after 2.39, the distribution's floor
-// (docs/stage-5-recovery-plan.md, "The runtime distribution contract"), comes here by --wrap
-// (CMakeLists.txt), and is made to the version 2.39 has. scripts/check-distribution.sh fails on any
-// symbol newer than the floor, which a toolchain's glibc brings in, to be bound here too.
+// (docs/host.md, "The distribution"), comes here by --wrap (CMakeLists.txt), and is made to the version
+// 2.39 has. scripts/check-distribution.sh fails on any symbol newer than the floor, which a toolchain's
+// glibc brings in, to be bound here too.
 
 // The wrapper of __inet_pton_chk calls inet_pton itself, which fortified would be __inet_pton_chk.
 #undef _FORTIFY_SOURCE

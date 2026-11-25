@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # The distribution run as its operator runs it, every place left to its default
-# (docs/stage-5-recovery-plan.md, "The runtime distribution contract"): from an empty directory, the
-# content found beside the executables, and the world, its backups, the token file and the TUI's
-# transcript under HOME's XDG directories, each made private. A start; the pack validated; an
-# administrator's token issued; the server started on a new world, the TUI (when there is one)
-# connected to it with the token, and the server stopped, which writes a snapshot and its backup; the
-# backup restored into a new directory at the step the server stopped at.
+# (docs/host.md, "The distribution"): from an empty directory, the content found beside the executables,
+# and the world, its backups, the token file and the TUI's transcript under HOME's XDG directories, each
+# made private. A start; the pack validated; an administrator's token issued; the server started on a
+# new world, the TUI (when there is one) connected to it with the token, and the server stopped, which
+# writes a snapshot and its backup; the backup restored into a new directory at the step the server
+# stopped at.
 # bundle-smoke.sh <prefix>, the directory holding bin/ and share/manifest/, a bundle's or a build
 # tree's. HOME is made, and must be new or empty; the XDG variables are not read.
 set -euo pipefail

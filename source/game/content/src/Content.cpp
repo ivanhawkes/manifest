@@ -406,7 +406,7 @@ template <typename Check> void RequireDock(const Checker &checker, Check check)
 
 // Jettison's ship, station and star-system definitions as Manifest authors them (D-062): each checked
 // as the engine checks it (a system as Resolve does), every Manifest.Hull with the
-// Dock.VehicleDefinition and the Ai.CruiseDrive of its name, so a hull has a size, a pad class and a
+// Dock.VehicleDefinition and the Space.CruiseDrive of its name, so a hull has a size, a pad class and a
 // drive, and the reverse, and each system named by its record.
 void CheckDocks(Checker &checker, const Jettison::Sim::DefinitionRegistry &registry)
 {
@@ -471,7 +471,7 @@ void CheckDocks(Checker &checker, const Jettison::Sim::DefinitionRegistry &regis
 		}
 		checker.Require(
 		    registry.Find<Manifest::Space::CruiseDrive>(name) != nullptr, "dock",
-		    std::format("has no Ai.CruiseDrive '{}'", name));
+		    std::format("has no Space.CruiseDrive '{}'", name));
 	}
 	for (const std::string &name : registry.Names<Manifest::Space::StarSystem>())
 	{
@@ -1015,7 +1015,7 @@ void CheckScenarios(
 			checker.Require(
 			    resolved.has_value(), "systems",
 			    std::format(
-			        "'{}' has no Celestial.StarSystem '{}' that resolves", system.systemId,
+			        "'{}' has no Space.StarSystem '{}' that resolves", system.systemId,
 			        RegistryName(system.systemId)));
 			if (resolved)
 				bodies.emplace(system.systemId, *std::move(resolved));

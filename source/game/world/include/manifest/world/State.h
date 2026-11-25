@@ -259,8 +259,8 @@ struct Ship
 	bool operator==(const Ship &) const = default;
 };
 
-// How far a ship's journey has got (docs/stage-4-trading-plan.md, "Cargo capacity and physical
-// travel"). Arrived and Failed are where it ends; each other leg is waited out on the engine's state.
+// How far a ship's journey has got (docs/travel.md, "Flying the journey"). Arrived and Failed are where
+// it ends; each other leg is waited out on the engine's state.
 enum class Leg
 {
 	// Its pad being let go of, or its place in a queue given up.
@@ -417,9 +417,9 @@ struct Order
 	bool operator==(const Order &) const = default;
 };
 
-// A batch of an employer's production (docs/economy-and-development-plan.md, "Production-batch payroll
-// funding"): whole totes of one good made at a venue over its duration of work, its gross wage bill
-// reserved from the employer's account as it started and paid as the work is done.
+// A batch of an employer's production (docs/economy.md, "Production"): whole totes of one good made at
+// a venue over its duration of work, its gross wage bill reserved from the employer's account as it
+// started and paid as the work is done.
 struct Batch
 {
 	std::string venueId;
@@ -524,9 +524,9 @@ struct LastSale
 	bool operator==(const LastSale &) const = default;
 };
 
-// What a venue's market has sold (docs/market-information-plan.md, "Sales reporting"), on its Market:
-// the fills of at least the last sales window, by step then item, oldest first, and each item's last
-// sale, by item, however long ago.
+// What a venue's market has sold (docs/trading.md, "Market observations"), on its Market: the fills of
+// at least the last sales window, by step then item, oldest first, and each item's last sale, by item,
+// however long ago.
 struct Sales
 {
 	std::vector<Sold> recent;
@@ -580,10 +580,11 @@ struct Line
 	bool operator==(const Line &) const = default;
 };
 
-// What a player last saw of a venue's market (docs/market-information-plan.md): at the completed step
-// it was observed at, the clock's step then; its sales window, from the step since to the observation,
-// shorter for a market younger than the window; and its goods in the market's order. It is live while
-// a ship of the player's fleet stays docked there, and otherwise as it was when the last one left.
+// What a player last saw of a venue's market (docs/trading.md, "Market observations"): at the completed
+// step it was observed at, the clock's step then; its sales window, from the step since to the
+// observation, shorter for a market younger than the window; and its goods in the market's order. It is
+// live while a ship of the player's fleet stays docked there, and otherwise as it was when the last one
+// left.
 struct Report
 {
 	std::string venueId;
@@ -707,7 +708,7 @@ struct Development
 	bool operator==(const Development &) const = default;
 };
 
-// Where a ship's job has got (docs/stage-4-trading-plan.md, "W10 plan").
+// Where a ship's job has got (docs/policies.md, "The job's phases").
 enum class Phase
 {
 	// Choosing a trade from its owner's reports: a source and a destination, or with a lot aboard a

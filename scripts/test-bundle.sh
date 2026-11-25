@@ -2,7 +2,7 @@
 # Tests a staged bundle (stage-bundle.sh) where it is to run: unpacked into a read-only directory
 # outside both checkouts and run as its operator runs it (bundle-smoke.sh), with nothing but HOME and
 # PATH, outside the development shell; on this machine, and in containers of the oldest systems the
-# runtime distribution contract supports (docs/stage-5-recovery-plan.md), which have nothing of the
+# runtime distribution contract supports (docs/host.md, "The distribution"), which have nothing of the
 # build's.
 # test-bundle.sh <bundle.tar.gz> [host|<docker image>]..., host, ubuntu:24.04 and debian:13 by default.
 set -euo pipefail

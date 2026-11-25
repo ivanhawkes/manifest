@@ -1,5 +1,5 @@
-# The governance fixture's system (data/scenarios/governance.yaml), a star system of Jettison's
-# (Celestial.StarSystem), as the trading fixture's (system-anvil.yaml) is: a Sun-like star, Forge an
+# The governance fixture's system (data/scenarios/governance.yaml), a star system
+# (Space.StarSystem), as the trading fixture's (system-anvil.yaml) is: a Sun-like star, Forge an
 # Earth-like planet and Cassiter a smaller one across the system, and a station 42,000 km out from
 # each, named by its venue's ID. Initial test values, not a balance result.
 version: 1

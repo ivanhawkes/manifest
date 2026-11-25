@@ -1,5 +1,5 @@
 # A player's company in the hosted world: its provisioning and its ships' cargo, as commands on the
-# one admission path (docs/stage-3-authority-plan.md, "Stage 3 executable scope").
+# one admission path (docs/companies.md, "The commands").
 manifest_add_module(company
 	DEPENDS
 		content

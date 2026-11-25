@@ -73,11 +73,11 @@ struct ContentSet
 };
 
 // Loads every definition type into the registry, which reads through the file system, holds the
-// whole set to the schema's rules (docs/stage-2-content-plan.md, "Fields, defaults and null"),
-// every game mode included, and builds the content set for the mode, a game-mode record's name.
-// The defaults one field takes from another (an empty skill display name is its ID) are filled in
-// the set, not the registry. Throws Jettison::Serialise::FormatError for a record that does not
-// read, and ContentError for a broken rule; the registry is then to be discarded.
+// whole set to the schema's rules (docs/content.md, "Loading and validation"), every game mode
+// included, and builds the content set for the mode, a game-mode record's name. The defaults one field
+// takes from another (an empty skill display name is its ID) are filled in the set, not the registry.
+// Throws Jettison::Serialise::FormatError for a record that does not read, and ContentError for a
+// broken rule; the registry is then to be discarded.
 ContentSet LoadContent(
     const Jettison::Vfs::FileSystem &files, Jettison::Sim::DefinitionRegistry &registry,
     std::string_view gameMode);

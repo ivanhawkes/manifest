@@ -1,6 +1,6 @@
 ---
-# The hulls a ship is built on (docs/small-trader-and-docking-plan.md). Each is a hull as built,
-# before any system is fitted:
+# The hulls a ship is built on (docs/companies.md, "Hulls"). Each is a hull as built, before any
+# system is fitted:
 #
 #   baseStats          The stats it starts from, by EffectStat name; the ship systems it is fitted
 #                      with and its operator's technology add to them. CargoVolume is the trade
@@ -19,9 +19,9 @@
 #
 # A value the design has not selected is left out, not guessed: a stat it does not list is none,
 # no fitableEffects is no upgrade, and occupants, oxygenTanks and scrubberCartridges left out are
-# open (docs/stage-2-content-plan.md, "Item authoring"). The long-haul trader is the hull the ship
-# systems of skill-tree/spaceship.yaml are bought against, its numbers chosen so that the three
-# tiers of a system move it by a half to a third of what it starts at.
+# open (docs/history/stage-2-content-plan.md, "Item authoring"). The long-haul trader is the hull
+# the ship systems of skill-tree/spaceship.yaml are bought against, its numbers chosen so that the
+# three tiers of a system move it by a half to a third of what it starts at.
 hull-base:
 
   - hull:

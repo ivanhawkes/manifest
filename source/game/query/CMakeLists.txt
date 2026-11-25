@@ -1,5 +1,5 @@
 # What an actor may see of the hosted world, as value snapshots at a completed step
-# (docs/stage-3-authority-plan.md, "Queries and tooling").
+# (docs/world.md, "Queries").
 manifest_add_module(query
 	DEPENDS
 		world

@@ -1,5 +1,5 @@
 # The hosted world's state on the engine's SimWorld: owner identities, accounts, regions and the
-# counters new IDs come from (docs/stage-3-authority-plan.md). Above content, whose scenario seeds it.
+# counters new IDs come from (docs/world.md). Above content, whose scenario seeds it.
 manifest_add_module(world
 	DEPENDS
 		content

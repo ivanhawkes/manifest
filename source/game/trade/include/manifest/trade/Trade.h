@@ -18,18 +18,18 @@
 namespace Manifest::Trade
 {
 // A player's limit order for their company at a venue, in totes at a price per the item's unit
-// (docs/stage-4-trading-plan.md, "Order and settlement contract"). It reserves, then matches at once
-// against the other side of the venue's book, best price first and oldest first within a price, the
-// resting order setting the price, for at most kMaxFills fills; what is left rests as "Order<n>"
-// until it fills, is cancelled or expires. Everything is checked and planned before anything is
-// written: the sender's company (NotAuthorised), the venue and the scenario's item (UnknownTarget),
-// totes above 0 and up to a warehouse's (InvalidQuantity), a limit above 0 whose reservation the
-// ledger holds (InvalidPrice), for a sell the totes available at the venue (InsufficientStock), for a
-// buy the credits its reservation takes (InsufficientFunds) and the warehouse's room for all it may
-// fill (CapacityExceeded), every balance a fill pays into (InvalidQuantity), and room on its side of
-// the book for what is left (BookFull). Too little on the other side is a success that rests: what
-// filled is the order's totes less its remaining, found by the request's sequence (Order::request),
-// and none rests when the whole filled.
+// (docs/trading.md, "How it works"). It reserves, then matches at once against the other side of the
+// venue's book, best price first and oldest first within a price, the resting order setting the price,
+// for at most kMaxFills fills; what is left rests as "Order<n>" until it fills, is cancelled or
+// expires. Everything is checked and planned before anything is written: the sender's company
+// (NotAuthorised), the venue and the scenario's item (UnknownTarget), totes above 0 and up to a
+// warehouse's (InvalidQuantity), a limit above 0 whose reservation the ledger holds (InvalidPrice), for
+// a sell the totes available at the venue (InsufficientStock), for a buy the credits its reservation
+// takes (InsufficientFunds) and the warehouse's room for all it may fill (CapacityExceeded), every
+// balance a fill pays into (InvalidQuantity), and room on its side of the book for what is left
+// (BookFull). Too little on the other side is a success that rests: what filled is the order's totes
+// less its remaining, found by the request's sequence (Order::request), and none rests when the whole
+// filled.
 struct Place
 {
 	std::string venueId;
@@ -73,15 +73,14 @@ inline constexpr std::string_view kExpiry = "manifest.expiry";
 inline constexpr std::string_view kBrokers = "manifest.brokers";
 // After manifest.travel, at the completed step's boundary, it refreshes each player's report of every
 // venue a ship of their fleet is docked at (Ship::dockedAt), observed at the step the clock reaches as
-// the step ends; a report no ship refreshes stays as it was (docs/market-information-plan.md,
-// "Observation timing").
+// the step ends; a report no ship refreshes stays as it was (docs/trading.md, "Market observations").
 inline constexpr std::string_view kObserve = "manifest.observe";
 
-// The market price rules (docs/market-prices.md), in whole credits, none for an amount the ledger
-// cannot hold. Fee is a gross's listing fee at the rate in basis points, rounded up; Cost a count of an
-// item's units at a price, raw microcredits per unit, rounded up or to the nearest, as a fill's gross
-// is; and PerTote what a buy order at the limit holds in escrow for each tote, a tote's cost rounded
-// up and its fee.
+// The market price rules (docs/pricing.md, "From a price to credits"), in whole credits, none for an
+// amount the ledger cannot hold. Fee is a gross's listing fee at the rate in basis points, rounded up;
+// Cost a count of an item's units at a price, raw microcredits per unit, rounded up or to the nearest,
+// as a fill's gross is; and PerTote what a buy order at the limit holds in escrow for each tote, a
+// tote's cost rounded up and its fee.
 std::optional<std::int64_t> Fee(std::int64_t gross, int feeBps);
 std::optional<std::int64_t> Cost(std::int64_t price, double units, bool roundUp);
 std::optional<std::int64_t> PerTote(std::int64_t limit, double unitsPerTote, int feeBps);

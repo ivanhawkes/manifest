@@ -4,10 +4,10 @@
 
 namespace Manifest::Space
 {
-// The coordinate frames of Jettison's docs/architecture.md, "Coordinate frames and units". A
-// SystemPosition is metres from the system's primary in double precision; a LocalPosition is metres
-// from a station or planet, on axes parallel to the system frame's (a local frame translates with its
-// origin and does not rotate with it).
+// The coordinate frames of Jettison's docs/coordinates.md, "The four levels". A SystemPosition is
+// metres from the system's primary in double precision; a LocalPosition is metres from a station or
+// planet, on axes parallel to the system frame's (a local frame translates with its origin and does not
+// rotate with it).
 struct SystemPosition
 {
 	glm::dvec3 metres{0.0};

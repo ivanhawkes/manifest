@@ -13,12 +13,11 @@ namespace Manifest::Space
 {
 struct StarSystem;
 
-// The galaxy frame of Jettison's docs/architecture.md, "Coordinate frames and units": a graph whose
-// nodes are the star systems, each at a position in light years, and whose edges are the jump lanes,
-// each lane joining a jump point in one system to a jump point in another, travelled either way. A ship
-// travels between systems only along a lane, through a gate at each end, and the distance between
-// the systems it joins is what its toll is reckoned by. Route planning over it is the AI's; this
-// is the graph and its file.
+// The galaxy (docs/space.md, "Star systems and the galaxy"): a graph whose nodes are the star systems,
+// each at a position in light years, and whose edges are the jump lanes, each lane joining a jump point
+// in one system to a jump point in another, travelled either way. A ship travels between systems only
+// along a lane, through a gate at each end, and the distance between the systems it joins is what its
+// toll is reckoned by. Route planning over it is the AI's; this is the graph and its file.
 
 // A star system as the galaxy knows it: its name, which is the name its system file gives it, and
 // where its files are, by virtual path.

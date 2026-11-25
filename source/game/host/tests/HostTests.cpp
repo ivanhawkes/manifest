@@ -215,8 +215,8 @@ TEST_CASE("The staged directory and pack both start Manifest with the scenario's
 }
 
 
-// A row added to the inventory (docs/stage-5-recovery-plan.md, "The state inventory") with the
-// mechanic that adds authoritative state, and its name here.
+// A row added to the inventory (docs/world.md, "The state inventory") with the mechanic that adds
+// authoritative state, and its name here.
 TEST_CASE("A hosted world saves what the state inventory names, in its order, and nothing else")
 {
 	const auto session = Manifest::Host::Start(OptionsFor(MANIFEST_MOD_DIRECTORY));

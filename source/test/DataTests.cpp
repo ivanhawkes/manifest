@@ -165,9 +165,9 @@ TEST_CASE("every_item_in_the_full_game_mode_has_a_price")
 	}
 }
 
-// C04's goods (docs/stage-2-content-plan.md): the four food grains beside their seeds, the
-// household's medical supplies beside the specialised medicines, LPG, and the life-support
-// consumables in their own category.
+// C04's goods (docs/history/stage-2-content-plan.md): the four food grains beside their seeds, the
+// household's medical supplies beside the specialised medicines, LPG, and the life-support consumables
+// in their own category.
 TEST_CASE("the_household_and_life_support_goods_are_distinct_manifest_mode_items")
 {
 	using Manifest::Core::TradeUnit;
@@ -281,9 +281,8 @@ TEST_CASE("the_hulls_carry_their_selected_values_and_leave_the_rest_unset")
 	CHECK_FALSE(compact.mass.has_value());
 }
 
-// T4's balance inputs against the plans' own worked examples (docs/economy-and-development-plan.md,
-// docs/procurement-and-station-contracts-plan.md): the data carries the numbers, the prose the
-// arithmetic.
+// T4's balance inputs against the plans' own worked examples (docs/economy.md, "Tuning";
+// docs/governance.md, "A tender's life"): the data carries the numbers, the prose the arithmetic.
 TEST_CASE("the_balance_tuning_reproduces_the_plans_worked_examples")
 {
 	using Manifest::Core::TradeUnit;

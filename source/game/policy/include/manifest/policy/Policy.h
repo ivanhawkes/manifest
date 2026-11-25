@@ -36,13 +36,13 @@ inline constexpr std::string_view kSet = "Manifest.Policy.Set";
 // Version 2 added the thrust; a version-1 command is refused as one of no registered version is.
 inline constexpr std::uint32_t kVersion = 2;
 
-// The system, by the name the step's table gives it (docs/stage-4-trading-plan.md, "W10 plan"): after
-// manifest.brokers and before the movement, each ship whose policy is enabled, in entity order, takes
-// its job's next decisions from its owner's reports, through the players' own commands sent as its
-// owner (Command::Requests::Act): choosing a trade, or a destination for the lot aboard; flying to the
-// source; buying there at the live ask, the rest cancelled, and loading what it bought; flying to the
-// destination; and selling there at no less than the lot's floor, the rest cancelled and loaded back.
-// A policy with no thrust of its own chooses the trade and thrust that make the most an hour, its
+// The system, by the name the step's table gives it (docs/policies.md, "Where it runs in the step"):
+// after manifest.brokers and before the movement, each ship whose policy is enabled, in entity order,
+// takes its job's next decisions from its owner's reports, through the players' own commands sent as
+// its owner (Command::Requests::Act): choosing a trade, or a destination for the lot aboard; flying to
+// the source; buying there at the live ask, the rest cancelled, and loading what it bought; flying to
+// the destination; and selling there at no less than the lot's floor, the rest cancelled and loaded
+// back. A policy with no thrust of its own chooses the trade and thrust that make the most an hour, its
 // estimate over its route's seconds (EstimateRoute), of each of fuel.thrustSharesBps the tanks can fly
 // and, below one they cannot, the most they can; its legs then fly that thrust (W21). With the policy's
 // contracts on, a job choosing a trade first bids on the open tender it can estimate from its owner's
