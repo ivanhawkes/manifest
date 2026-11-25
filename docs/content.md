@@ -177,13 +177,14 @@ is, what a unit is worth, and how many units and kilograms fill a cubic metre of
 | --- | --- |
 | `unitType` | The unit the good's real market trades it in, which `basePrice` and `unitsPerCubicMetre` count ([D-064](decision-ledger.md#d-064)). |
 | `basePrice` | Its value per `unitType`, in credits at one credit to one US dollar, as exact decimal text ([prices](pricing.md#base-prices)). |
-| `unitsPerCubicMetre` | Units in one cubic metre: one IBC of the good. |
+| `unitsPerCubicMetre` | Units in one packed cubic metre: one IBC of the good as it travels. |
 | `density` | Specific gravity against water, so `1.0` is 1,000 kg/m³; the solid value at 20 °C. |
 | `packFactor` | The share of a cube the product fills, counting packaging and the voids between pieces: `0.85` for stacked copper ingots, `0.05` for hollow glassware. |
 
 The loader refuses an item with no `unitType`, a number that is not finite and above 0, a
-`packFactor` above 1, or a price that is not a valid base price
-(`Core::Simulation::IsValidBasePrice`).
+`packFactor` above 1, a price that is not a valid base price
+(`Core::Simulation::IsValidBasePrice`), or a good counted by mass or volume whose
+`unitsPerCubicMetre` is not the packed figure below, within 0.1%.
 
 **Totes.** Goods are held, moved and traded in whole totes, an eighth of an IBC: a full container
 500 mm a side ([D-087](decision-ledger.md#d-087), `Core::kTotesPerIbc`). A tote of any good is
@@ -197,26 +198,27 @@ hull class's envelope) and a warehouse 100 of those of one item for one owner
 (`source/game/travel/src/Travel.cpp`), which its fuel burn depends on
 ([travel and fuel](travel.md)).
 
-The unit sets how `unitsPerCubicMetre` follows from the density:
+A tote is priced as it weighs: for a good counted by mass or volume, `unitsPerCubicMetre` is what a
+packed cube holds, so the unit sets it from the density and `packFactor`:
 
 | `unitType` | `unitsPerCubicMetre` | Example |
 | --- | --- | --- |
-| `Carat` | `density x 5000000` | A carat is a fifth of a gram: `ItemGems` at 3.5 is 17,500,000. |
-| `TroyOunce` | `density x 1000 / 0.0311034768` | `ItemGold` at 19.32 is 621,152. |
-| `Kilogram` | `density x 1000` | Lithium at 0.534 is 534. |
-| `Tonne` | `density` | Copper at 8.96 is 8.96. |
-| `Litre` | `1000` | A cubic metre is a thousand litres. |
-| `Kilolitre` | `1` | Water, the one good a utility meters by volume. |
-| `CubicMetre` | `1` | Timber, measured as solid volume. |
-| `Barrel` | `1 / 0.158987294928` | Crude oil's 42-gallon barrel, 6.29 to the cubic metre. |
+| `Carat` | `density x packFactor x 5000000` | A carat is a fifth of a gram: `ItemGems` at 3.5, packed at 0.65, is 11,375,000. |
+| `TroyOunce` | `density x packFactor x 1000 / 0.0311034768` | `ItemGold` at 19.32, packed at 0.8, is 496,922. |
+| `Kilogram` | `density x packFactor x 1000` | Lithium at 0.534, packed at 0.55, is 293.7. |
+| `Tonne` | `density x packFactor` | Copper at 8.96, packed at 0.85, is 7.616. |
+| `Litre` | `packFactor x 1000` | Beer packed at 0.75 is 750 litres to the cube. |
+| `Kilolitre` | `packFactor` | Water, the one good a utility meters by volume: 0.75. |
+| `CubicMetre` | `packFactor` | Timber, measured as solid volume: 0.75 of a stacked cube. |
+| `Barrel` | `packFactor / 0.158987294928` | Crude oil's 42-gallon barrel, packed at 0.9, 5.66 to the cube. |
 | `MMBtu` | MMBtu in a cubic metre | Natural gas by its energy: 23 in a cubic metre of LNG. |
 | `Unit` | tight-nested piece count | 2,000 `ItemBooks`, 40,000 pieces of `ItemJewellery`. |
 | `Sheet` | stacked sheet count | 50,000 sheets of `ItemPapyrus`, 20,000 of `ItemParchment`. |
 | `SquareMetre` | `1 / thickness` | `ItemGraphene` film at 10 µm is 100,000 m² to the cube. |
 
-For goods counted by the piece, sheet or square metre the count is a packed count, so it fixes the
-mass of a piece. The fields must then agree through the **mass identity**, the check to apply when
-adding such a good:
+For goods counted by the piece, sheet or square metre the count is a packed count too, so it fixes
+the mass of a piece. The fields must then agree through the **mass identity**, the check to apply
+when adding such a good, which the loader cannot make:
 
 ```text
 density x 1000 x packFactor  ==  kilograms in a cube  ==  unitsPerCubicMetre x piece mass
@@ -226,11 +228,8 @@ A 15 g piece of jewellery, of metal at specific gravity 12, takes 1.25 cm³ of m
 fitted tray. That is 40,000 pieces to the cube, a `packFactor` of 0.05 and 600 kg in the cube on
 both sides of the identity: `ItemJewellery`.
 
-Most goods counted by mass or volume state the solid figure in `unitsPerCubicMetre`, so only the
-left side holds for them. A cube of stacked copper ingots is 8.96 x 1000 x 0.85 kg, not 8.96 t.
-Wheat seed shows the split: a kernel's density is 1.27 and its test weight 78 kg a hectolitre, so
-`packFactor` is 0.61 and a full cube holds 775 kg. The torch's fuels are the exception: reaction
-mass (900 kg to the cube) and fusion pellets (100) state the packed figure.
+Wheat seed shows the packing: a kernel's density is 1.27 and its test weight 78 kg a hectolitre, so
+`packFactor` is 0.61 and a full cube holds 775 kg, 0.7747 t.
 
 Prices are for the traded form of a good, not a purer one: uranium is `U3O8` concentrate, the
 medicines are bulk active ingredient, the alloys the value of the metal in them. A quote in another
@@ -294,7 +293,7 @@ kilogram, liquid hydrogen 6 a kilogram, helium-3 18.6 million a kilogram, a habi
 million, diesel 900 a tonne, tobacco 5 a kilogram, clay 150 a tonne, vaccines 10 a dose, mining
 drills and robots 50,000, satellites 5 million, reactor fuel assemblies 1.5 million, water ice
 1,000 a tonne, heavy weapons 250,000, media 20, and passengers, prisoners and tourists 1,000,
-2,000 and 3,000 a person. Drinking water is 8 a kilolitre, a credit a tote
+2,000 and 3,000 a person. Drinking water is 8 a kilolitre, 0.75 credits a tote of 0.09375 kL
 ([D-093](decision-ledger.md#d-093)). Goods added later (the legumes, the torch's fuels) give their
 reasoning in their file's header. Every other good keeps its first-draft price converted to its
 unit.
@@ -516,9 +515,6 @@ traders:
 
 ## Limits and open work
 
-- A tote's traded quantity and its mass disagree for goods that state a solid
-  `unitsPerCubicMetre`: a tote of copper is priced as 1.12 t but weighs 0.95 t. Only the torch's
-  fuels state the packed figure.
 - Trading blocs have no schema; one is added when a rule or fixture needs it.
 - `universe/station-names.yaml` is not loaded until something generates stations.
 - No content is migrated yet: formats change in place until player testing

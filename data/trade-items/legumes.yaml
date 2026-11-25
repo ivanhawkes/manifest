@@ -14,7 +14,7 @@ item-base:
       ageId: AgeStone
       displayName: Beans
       description: Dried beans
-      unitsPerCubicMetre: 1.3
+      unitsPerCubicMetre: 0.78
       basePrice: 1000
       unitType: Tonne
       density: 1.3
@@ -26,7 +26,7 @@ item-base:
       ageId: AgeStone
       displayName: Lentils
       description: Dried lentils
-      unitsPerCubicMetre: 1.35
+      unitsPerCubicMetre: 0.81
       basePrice: 750
       unitType: Tonne
       density: 1.35
@@ -38,7 +38,7 @@ item-base:
       ageId: AgeStone
       displayName: Chickpeas
       description: Dried chickpeas
-      unitsPerCubicMetre: 1.3
+      unitsPerCubicMetre: 0.754
       basePrice: 850
       unitType: Tonne
       density: 1.3
@@ -50,7 +50,7 @@ item-base:
       ageId: AgeStone
       displayName: Peas
       description: Dried field peas
-      unitsPerCubicMetre: 1.35
+      unitsPerCubicMetre: 0.783
       basePrice: 350
       unitType: Tonne
       density: 1.35

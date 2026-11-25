@@ -179,6 +179,14 @@ struct Hosted
 		return tenders;
 	}
 
+	// Every project tender, by ID: the relief tenders the AI calls for short households left out.
+	std::map<std::string, World::Tender> ProjectTenders() const
+	{
+		std::map<std::string, World::Tender> tenders = Tenders();
+		std::erase_if(tenders, [](const auto &entry) { return entry.second.projectId.empty(); });
+		return tenders;
+	}
+
 	void FastForwardTo(std::uint64_t step)
 	{
 		while (world.Clock().Step() < step)
@@ -542,10 +550,10 @@ TEST_CASE("A tender with no award closes at its bid close, its budget back, and 
 	Hosted hosted;
 	const std::int64_t funds = hosted.Public();
 	hosted.FastForwardTo(kDay);
-	CHECK(hosted.Tenders().size() == 2);
+	CHECK(hosted.ProjectTenders().size() == 2);
 	hosted.world.Step();
 
-	const std::map<std::string, World::Tender> tenders = hosted.Tenders();
+	const std::map<std::string, World::Tender> tenders = hosted.ProjectTenders();
 	REQUIRE(tenders.size() == 4);
 	for (const char *pItem : {"ItemCopper", "ItemTin"})
 	{
@@ -557,17 +565,22 @@ TEST_CASE("A tender with no award closes at its bid close, its budget back, and 
 	CHECK(
 	    hosted.identities.Find(Kind::TenderAccount, TenderId(kEast, kBronze, "ItemCopper", 1)) ==
 	    entt::null);
-	std::int64_t reserved = 0;
+	// The relief tenders share the sequence, so the new ones are found by their item.
+	std::map<std::string, std::size_t> reopened;
 	for (const auto &[id, tender] : tenders)
 		if (tender.state == TenderState::Open)
 		{
 			CHECK(tender.published == kDay);
 			CHECK(tender.bidClose == 2 * kDay);
-			reserved += tender.budget;
+			++reopened[tender.itemId];
 		}
-	CHECK(tenders.contains(TenderId(kEast, kBronze, "ItemCopper", 3)));
-	CHECK(tenders.contains(TenderId(kEast, kBronze, "ItemTin", 4)));
-	// The public account has had its tax since, and holds back only the open budgets.
+	CHECK(reopened == std::map<std::string, std::size_t>{{"ItemCopper", 1}, {"ItemTin", 1}});
+	// The public account has had its tax since, and holds back only its open budgets, relief
+	// tenders' among them.
+	std::int64_t reserved = 0;
+	for (const auto &[id, tender] : hosted.Tenders())
+		if (tender.state == TenderState::Open && tender.regionId == kEast)
+			reserved += tender.budget;
 	CHECK(hosted.Public() >= funds - reserved);
 }
 
@@ -883,8 +896,8 @@ TEST_CASE("At its bid close a tender goes to its lowest bid, then the earliest, 
 	CHECK(hosted.Balance(Kind::CompanyAccount, "CompanyC") == 10'000);
 	CHECK(hosted.world.Registry().view<const World::Bid>().empty());
 	// Posted: the winner and its total, seen by a player who did not bid.
-	const Manifest::Query::Snapshot seen =
-	    Manifest::Query::Observe(hosted.world, hosted.identities, kAda);
+	Manifest::Query::Snapshot seen = Manifest::Query::Observe(hosted.world, hosted.identities, kAda);
+	std::erase_if(seen.tenders, [](const auto &view) { return view.tender.projectId.empty(); });
 	REQUIRE(seen.tenders.size() == 1);
 	CHECK(seen.tenders[0].tender == awarded);
 }
@@ -997,7 +1010,7 @@ TEST_CASE("The AI tenders again for what closed unawarded, and not for what its 
 	CHECK(hosted.TenderOf(TenderId(kEast, kBronze, "ItemCopper", 1)).state == TenderState::Unawarded);
 	hosted.FastForwardTo(kDay + 120);
 	std::map<std::string, std::size_t> open;
-	for (const auto &[id, tender] : hosted.Tenders())
+	for (const auto &[id, tender] : hosted.ProjectTenders())
 		if (tender.state == TenderState::Open || tender.state == TenderState::Awarded)
 			++open[tender.itemId];
 	CHECK(open == std::map<std::string, std::size_t>{{"ItemCopper", 1}, {"ItemTin", 1}});
@@ -1104,8 +1117,8 @@ TEST_CASE("Deliveries are paid their share of the total, an excess stays aboard,
 	CHECK(hosted.Run(kDi, kDeliver, deliver) == Result::Closed);
 	CHECK(hosted.Run(kDi, kAbandon, Abandon{copper}) == Result::Closed);
 	// Posted, its deliveries with it.
-	const Manifest::Query::Snapshot seen =
-	    Manifest::Query::Observe(hosted.world, hosted.identities, kAda);
+	Manifest::Query::Snapshot seen = Manifest::Query::Observe(hosted.world, hosted.identities, kAda);
+	std::erase_if(seen.tenders, [](const auto &view) { return view.tender.projectId.empty(); });
 	REQUIRE(seen.tenders.size() == 1);
 	CHECK(seen.tenders[0].tender == fulfilled);
 }

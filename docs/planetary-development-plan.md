@@ -65,7 +65,7 @@ flowchart LR
   W12["Tenders (built)"] --> L02["L02 Corruption"]
   W13["Regions and founding (built)"] --> L03["L03 Buying AI regions"]
   W05["Docking (built)"] --> L04["L04 Port bookings"]
-  J["Jettison: dock admission seam"] --> L04
+  J["Jettison J35: dock control"] --> L04
   L04 --> L05["L05 Port construction"]
   W12 --> L05
   L05 --> L06["L06 Exploitation and colonies"]
@@ -207,10 +207,10 @@ The scenario already has both kinds of venue, but the private one admits every s
 **Engine dependency.** Jettison's docks refuse a request only for control, frame or fit, and serve
 the queue first come, first served
 ([Jettison docks](../../jettison/docs/docks.md#asking-for-a-berth-and-giving-it-up)). There is no
-seam for a game to admit or refuse a vehicle, or to rank the queue, and
-[Jettison's roadmap](../../jettison/docs/roadmap.md) has no item for one. L04 needs the smallest
-reusable admission and queue-ranking seam, proved by a consumer that is not Manifest, before
-Manifest's policy goes on it. Every ordinary arrival, player or NPC, must pass it; `Docks::Park`
+seam for a game to admit or refuse a vehicle, or to rank the queue: that is Jettison's
+[J35](../../jettison/docs/roadmap.md#j35), a game-agnostic interface that supplies the core
+functions and leaves every rule of admission, refusal and rank to the game. L04 needs it, proved
+by a consumer that is not Manifest, before Manifest's policy goes on it. Every ordinary arrival, player or NPC, must pass it; `Docks::Park`
 stays the trusted path for the world's initial state.
 
 ## L05: port construction and corporate leverage
@@ -416,7 +416,7 @@ Open:
 
 | Need | Task | Jettison today |
 | --- | --- | --- |
-| Admission and refusal of a vehicle by game policy, and ranking of a platform's queue | [L04](#l04-private-port-bookings-and-owner-policy) | Not provided, and no roadmap item ([docks](../../jettison/docs/docks.md#limits-and-open-work)) |
+| Admission and refusal of a vehicle by game policy, and ranking of a platform's queue | [L04](#l04-private-port-bookings-and-owner-policy) | Not provided: Jettison's [J35](../../jettison/docs/roadmap.md#j35) |
 
 Everything else here is Manifest's: tenders, bribery, offers, concessions and colonies use the
 engine's commands, saved world and journal as they are.

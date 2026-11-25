@@ -16,7 +16,7 @@ item-base:
       ageId: AgeStone
       displayName: Wheat seeds
       description: Wheat seeds
-      unitsPerCubicMetre: 1.27
+      unitsPerCubicMetre: 0.7747
       basePrice: 452
       unitType: Tonne
       density: 1.27
@@ -28,7 +28,7 @@ item-base:
       ageId: AgeStone
       displayName: Barley seeds
       description: Barley seeds
-      unitsPerCubicMetre: 1.3
+      unitsPerCubicMetre: 0.624
       basePrice: 449
       unitType: Tonne
       density: 1.3
@@ -40,7 +40,7 @@ item-base:
       ageId: AgeStone
       displayName: Oat seeds
       description: Oat seeds
-      unitsPerCubicMetre: 1.22
+      unitsPerCubicMetre: 0.5002
       basePrice: 400
       unitType: Tonne
       density: 1.22
@@ -52,7 +52,7 @@ item-base:
       ageId: AgeCopper
       displayName: Corn seeds
       description: Corn seeds
-      unitsPerCubicMetre: 1.25
+      unitsPerCubicMetre: 0.725
       basePrice: 6897
       unitType: Tonne
       density: 1.25
@@ -64,7 +64,7 @@ item-base:
       ageId: AgeStone
       displayName: Rice seeds
       description: Rice seeds
-      unitsPerCubicMetre: 1.32
+      unitsPerCubicMetre: 0.8052
       basePrice: 1242
       unitType: Tonne
       density: 1.32
@@ -76,7 +76,7 @@ item-base:
       ageId: AgeCopper
       displayName: Sorghum seeds
       description: Sorghum seeds
-      unitsPerCubicMetre: 1.3
+      unitsPerCubicMetre: 0.663
       basePrice: 3017
       unitType: Tonne
       density: 1.3
@@ -88,7 +88,7 @@ item-base:
       ageId: AgeCopper
       displayName: Poppy seeds
       description: Poppy seeds
-      unitsPerCubicMetre: 1.25
+      unitsPerCubicMetre: 0.6
       basePrice: 8333
       unitType: Tonne
       density: 1.25
@@ -100,7 +100,7 @@ item-base:
       ageId: AgeCopper
       displayName: Cocoa seeds
       description: Cocoa seeds
-      unitsPerCubicMetre: 1.2
+      unitsPerCubicMetre: 0.552
       basePrice: 5145
       unitType: Tonne
       density: 1.2
@@ -112,7 +112,7 @@ item-base:
       ageId: AgeCopper
       displayName: Coca seeds
       description: Coca seeds
-      unitsPerCubicMetre: 1.25
+      unitsPerCubicMetre: 0.55
       basePrice: 4909
       unitType: Tonne
       density: 1.25
@@ -124,7 +124,7 @@ item-base:
       ageId: AgePost-industrial
       displayName: Canola seeds
       description: Canola seeds
-      unitsPerCubicMetre: 1.2
+      unitsPerCubicMetre: 0.66
       basePrice: 1970
       unitType: Tonne
       density: 1.2

@@ -12,7 +12,7 @@ item-base:
       ageId: AgePre-industrial
       displayName: Tobacco
       description: Cured leaf tobacco
-      unitsPerCubicMetre: 700
+      unitsPerCubicMetre: 245
       basePrice: 5
       unitType: Kilogram
       density: 0.7

@@ -16,7 +16,7 @@ item-base:
       ageId: AgeStone
       displayName: Drinking Water
       description: Potable water, in bulk
-      unitsPerCubicMetre: 1
+      unitsPerCubicMetre: 0.75
       basePrice: 8
       unitType: Kilolitre
       density: 1.0
@@ -28,7 +28,7 @@ item-base:
       ageId: AgeCopper
       displayName: Flour
       description: Flour
-      unitsPerCubicMetre: 1.5
+      unitsPerCubicMetre: 0.57
       basePrice: 509
       unitType: Tonne
       density: 1.5
@@ -40,7 +40,7 @@ item-base:
       ageId: AgeCopper
       displayName: Bread
       description: Bread
-      unitsPerCubicMetre: 1050
+      unitsPerCubicMetre: 283.5
       basePrice: 2.82
       unitType: Kilogram
       density: 1.05
@@ -52,7 +52,7 @@ item-base:
       ageId: AgeCopper
       displayName: Beer
       description: Beer
-      unitsPerCubicMetre: 1000
+      unitsPerCubicMetre: 750
       basePrice: 1.2
       unitType: Litre
       density: 1.01
@@ -64,7 +64,7 @@ item-base:
       ageId: AgeCopper
       displayName: Wine
       description: Wine
-      unitsPerCubicMetre: 1000
+      unitsPerCubicMetre: 700
       basePrice: 5.0
       unitType: Litre
       density: 1.0
@@ -76,7 +76,7 @@ item-base:
       ageId: AgeCopper
       displayName: Vinegar
       description: Vinegar
-      unitsPerCubicMetre: 1000
+      unitsPerCubicMetre: 800
       basePrice: 1.0
       unitType: Litre
       density: 1.01
@@ -88,7 +88,7 @@ item-base:
       ageId: AgeMedieval
       displayName: Sugar
       description: Raw cane sugar, in bulk
-      unitsPerCubicMetre: 1.59
+      unitsPerCubicMetre: 0.8745
       basePrice: 398
       unitType: Tonne
       density: 1.59
@@ -100,7 +100,7 @@ item-base:
       ageId: AgeStone
       displayName: Preserved Meat and Fish
       description: Frozen, salted and dried meat and fish
-      unitsPerCubicMetre: 1.05
+      unitsPerCubicMetre: 0.63
       basePrice: 7114
       unitType: Tonne
       density: 1.05
@@ -112,7 +112,7 @@ item-base:
       ageId: AgeClassical
       displayName: Spices
       description: Black pepper and the other dried spices
-      unitsPerCubicMetre: 1.2
+      unitsPerCubicMetre: 0.54
       basePrice: 7350
       unitType: Tonne
       density: 1.2
@@ -124,7 +124,7 @@ item-base:
       ageId: AgeMedieval
       displayName: Tea
       description: Black tea, in chests
-      unitsPerCubicMetre: 900
+      unitsPerCubicMetre: 315
       basePrice: 3.0
       unitType: Kilogram
       density: 0.9
@@ -136,7 +136,7 @@ item-base:
       ageId: AgePre-industrial
       displayName: Coffee
       description: Green arabica coffee beans, in bags
-      unitsPerCubicMetre: 1.2
+      unitsPerCubicMetre: 0.66
       basePrice: 6086
       unitType: Tonne
       density: 1.2
@@ -148,7 +148,7 @@ item-base:
       ageId: AgeSpaceColonisation
       displayName: Water Ice
       description: Water ice, mined in space
-      unitsPerCubicMetre: 0.917
+      unitsPerCubicMetre: 0.6419
       basePrice: 1000
       unitType: Tonne
       density: 0.917

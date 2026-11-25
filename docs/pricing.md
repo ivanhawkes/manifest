@@ -87,7 +87,9 @@ An item's `basePrice` is authored as text and stays text until it is used
 `data/build.sh` writes it double-quoted into the built records, so no YAML reader takes it for a
 float. Content validation (`source/game/content/src/Content.cpp`) holds every item to
 `Simulation::IsValidBasePrice`: exact by `TryParse`, not negative, and at most
-`Decimal::Max() / 10`. That bound leaves room for the sandbox's largest multiplier, 5 times 1.9.
+`Decimal::Max() / 30` (`kMaxPriceMultiplier`). That bound leaves room for the hosted multipliers,
+which reach about 27 times the base price ([L51](delivery-order.md#l51) asks why, and whether 30
+stays).
 Zero is valid: such a good has no native price, so no broker quotes it. The shipped base prices
 run from 0.05 to
 50,000,000 (the habitat module). How items are authored is in [content](content.md).
@@ -296,8 +298,9 @@ CHECK(Budget(1'050'000, 10.0, 1.0) == 22);
 - The native price is fixed at load, so only stock moves a price. Long-run shifts in production
   and demand reach prices through stock alone.
 - `CurvePrice` caps a price at the largest raw value rather than failing. The hosted multipliers
-  reach about 27 times the base price, past `IsValidBasePrice`'s room of 10, but no authored price
-  comes near the cap.
+  reach about 27 times the base price, inside `IsValidBasePrice`'s room of 30, and no authored
+  price comes near the cap. What drives them that high, and whether 30 stays, is
+  [L51](delivery-order.md#l51).
 - Market services that sell or fix prices are open: options and futures
   ([L17](delivery-order.md#l17)), paid price reports ([L20](delivery-order.md#l20)) and forward
   contracts ([L21](delivery-order.md#l21)), in

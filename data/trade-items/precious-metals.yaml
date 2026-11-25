@@ -4,7 +4,7 @@
 # the first-draft value converted to the unit where it has none.
 #
 # Gold, silver and the platinum group, bars by the troy ounce (31.1034768 grams) as the market
-# quotes them, so unitsPerCubicMetre is the ounces in a cubic metre of the solid metal.
+# quotes them, so unitsPerCubicMetre is the ounces in a cubic metre of stacked bars.
 item-base:
 
   - item:
@@ -13,7 +13,7 @@ item-base:
       ageId: AgeCopper
       displayName: Gold
       description: Gold ingots
-      unitsPerCubicMetre: 621152
+      unitsPerCubicMetre: 496922
       basePrice: 3725
       unitType: TroyOunce
       density: 19.32
@@ -25,7 +25,7 @@ item-base:
       ageId: AgeBronze
       displayName: Silver
       description: Silver ingots
-      unitsPerCubicMetre: 337261
+      unitsPerCubicMetre: 269809
       basePrice: 45.03
       unitType: TroyOunce
       density: 10.49
@@ -37,7 +37,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: Platinum
       description: Platinum ingots
-      unitsPerCubicMetre: 689634
+      unitsPerCubicMetre: 551707
       basePrice: 1371
       unitType: TroyOunce
       density: 21.45
@@ -49,7 +49,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: Palladium
       description: Palladium ingots
-      unitsPerCubicMetre: 386452
+      unitsPerCubicMetre: 309162
       basePrice: 949
       unitType: TroyOunce
       density: 12.02
@@ -61,7 +61,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: Rhodium
       description: Rhodium ingots
-      unitsPerCubicMetre: 398991
+      unitsPerCubicMetre: 319193
       basePrice: 8550
       unitType: TroyOunce
       density: 12.41
@@ -73,7 +73,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: Ruthenium
       description: Ruthenium ingots
-      unitsPerCubicMetre: 400277
+      unitsPerCubicMetre: 320221
       basePrice: 1900
       unitType: TroyOunce
       density: 12.45

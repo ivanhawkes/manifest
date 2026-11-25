@@ -283,6 +283,9 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	    copper, "version: 1\nunitType: ~\n", "Manifest.Item 'ItemCopper': unitType is required");
 	CheckRefused(copper, "version: 1\nunitsPerCubicMetre: 0\n", "unitsPerCubicMetre must be above 0");
 	CheckRefused(copper, "version: 1\ndensity: -1\n", "density must be above 0");
+	CheckRefused(
+	    copper, "version: 1\nunitsPerCubicMetre: 8.96\n",
+	    "unitsPerCubicMetre must be the 7.616 a packed cube holds by its density and packFactor");
 	CheckRefused(copper, "version: 1\npackFactor: 1.5\n", "packFactor must be in (0, 1]");
 	CheckRefused(copper, "version: 1\npackFactor: 0\n", "packFactor must be in (0, 1]");
 	for (const std::string_view price : {"ten", "-1", "1e3", "999999999999999"})
@@ -1357,9 +1360,9 @@ TEST_CASE("A cubic metre holds an item's units per cubic metre, a finite amount 
 		CHECK(item.unitsPerCubicMetre > 0.0);
 	}
 	CHECK(units.size() >= 5);
-	// Copper by the tonne, 8.96 to the cubic metre: the starter's 160 totes hold 179.2 t.
+	// Copper by the tonne, 7.616 to the packed cubic metre: the starter's 160 totes hold 152.32 t.
 	const auto copper = std::ranges::find(
 	    content.gameMode.items, std::string{"ItemCopper"}, &Manifest::Core::ItemNode::itemId);
 	REQUIRE(copper != content.gameMode.items.end());
-	CHECK(copper->unitsPerCubicMetre == 8.96);
+	CHECK(copper->unitsPerCubicMetre == 7.616);
 }

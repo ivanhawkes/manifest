@@ -74,7 +74,8 @@ insurance ([L23](delivery-order.md#l23)) and escrow between players
 Regions gain governor-set tax rates ([L29](delivery-order.md#l29)), debt and lenders
 ([L30](delivery-order.md#l30)), a power grid and an AI economy ([L31](delivery-order.md#l31)),
 and staple balances by kind of world ([L33](delivery-order.md#l33)); gold and gems move in cases
-([L32](delivery-order.md#l32)). The design is the
+([L32](delivery-order.md#l32)). Why the hosted prices reach about 27 times their base, and
+whether the bound of 30 stays, is [L51](delivery-order.md#l51). The design is the
 [economy plan](economy-and-development-plan.md). The built rules (households and their needs,
 health and happiness, grains and medical supplies) are [the regional economy](economy.md), with
 [trading](trading.md) and [prices](pricing.md).

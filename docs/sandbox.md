@@ -9,7 +9,9 @@ no player shares it, nothing in it is saved, and nothing in it reaches the hoste
 What still uses it: the console's sandbox commands (see [Using it](#using-it)), its own test
 suites, and a few pure functions and records that the hosted modules borrow (see
 [What the hosted game borrows](#what-the-hosted-game-borrows)). The [sandbox](glossary.md#sandbox)
-is otherwise frozen: no open task works on it.
+is otherwise frozen: no open task works on it. It stays Manifest's own and is not retired: each
+game builds the sandbox it needs, and Jettison provides none, only the common functions a sandbox
+stands on (settled 2026-11-25).
 
 ## Concepts
 

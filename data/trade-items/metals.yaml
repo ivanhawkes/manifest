@@ -17,7 +17,7 @@ item-base:
       ageId: AgeCopper
       displayName: Copper
       description: Copper ingots
-      unitsPerCubicMetre: 8.96
+      unitsPerCubicMetre: 7.616
       basePrice: 13226
       unitType: Tonne
       density: 8.96
@@ -29,7 +29,7 @@ item-base:
       ageId: AgeBronze
       displayName: Tin
       description: Tin ingots
-      unitsPerCubicMetre: 7.27
+      unitsPerCubicMetre: 6.1795
       basePrice: 46650
       unitType: Tonne
       density: 7.27
@@ -41,7 +41,7 @@ item-base:
       ageId: AgeClassical
       displayName: Brass
       description: Brass ingots
-      unitsPerCubicMetre: 8.5
+      unitsPerCubicMetre: 7.225
       basePrice: 9918
       unitType: Tonne
       density: 8.5
@@ -53,7 +53,7 @@ item-base:
       ageId: AgeBronze
       displayName: Bronze
       description: Bronze ingots
-      unitsPerCubicMetre: 8.8
+      unitsPerCubicMetre: 7.48
       basePrice: 16568
       unitType: Tonne
       density: 8.8
@@ -65,7 +65,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: Nickel
       description: Nickel ingots
-      unitsPerCubicMetre: 8.91
+      unitsPerCubicMetre: 7.5735
       basePrice: 15790
       unitType: Tonne
       density: 8.91
@@ -77,7 +77,7 @@ item-base:
       ageId: AgeIron
       displayName: Iron
       description: Iron ingots
-      unitsPerCubicMetre: 7.87
+      unitsPerCubicMetre: 6.296
       basePrice: 458
       unitType: Tonne
       density: 7.87
@@ -89,7 +89,7 @@ item-base:
       ageId: AgeCopper
       displayName: Lead
       description: Lead ingots
-      unitsPerCubicMetre: 11.34
+      unitsPerCubicMetre: 10.206
       basePrice: 1840
       unitType: Tonne
       density: 11.34
@@ -101,7 +101,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: Cobalt
       description: Cobalt ingots
-      unitsPerCubicMetre: 8.9
+      unitsPerCubicMetre: 7.565
       basePrice: 33525
       unitType: Tonne
       density: 8.9
@@ -113,7 +113,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: Lithium
       description: Lithium ingots
-      unitsPerCubicMetre: 534
+      unitsPerCubicMetre: 293.7
       basePrice: 90
       unitType: Kilogram
       density: 0.534
@@ -125,7 +125,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: Molybdenum
       description: Molybdenum ingots
-      unitsPerCubicMetre: 10280
+      unitsPerCubicMetre: 8224
       basePrice: 76.5
       unitType: Kilogram
       density: 10.28
@@ -137,7 +137,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: Aluminium
       description: Aluminium ingots
-      unitsPerCubicMetre: 2.7
+      unitsPerCubicMetre: 1.89
       basePrice: 3061
       unitType: Tonne
       density: 2.7
@@ -153,7 +153,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: Potassium
       description: Potassium ingots
-      unitsPerCubicMetre: 862
+      unitsPerCubicMetre: 775.8
       basePrice: 10.4
       unitType: Kilogram
       density: 0.862
@@ -169,7 +169,7 @@ item-base:
       ageId: AgePost-industrial
       displayName: Uranium
       description: Uranium, oxide concentrate in sealed drums
-      unitsPerCubicMetre: 8300
+      unitsPerCubicMetre: 1660
       basePrice: 198.7
       unitType: Kilogram
       density: 8.3
@@ -181,7 +181,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: Vanadium
       description: Vanadium ingots
-      unitsPerCubicMetre: 6110
+      unitsPerCubicMetre: 4888
       basePrice: 26.6
       unitType: Kilogram
       density: 6.11
@@ -193,7 +193,7 @@ item-base:
       ageId: AgePre-industrial
       displayName: Zinc
       description: Zinc ingots
-      unitsPerCubicMetre: 7.14
+      unitsPerCubicMetre: 6.426
       basePrice: 3776
       unitType: Tonne
       density: 7.14
@@ -205,7 +205,7 @@ item-base:
       ageId: AgeMedieval
       displayName: Antimony
       description: Antimony ingots
-      unitsPerCubicMetre: 6.68
+      unitsPerCubicMetre: 5.01
       basePrice: 17600
       unitType: Tonne
       density: 6.68
@@ -217,7 +217,7 @@ item-base:
       ageId: AgePost-industrial
       displayName: Neodymium
       description: Neodymium metal, praseodymium neodymium alloy
-      unitsPerCubicMetre: 7010
+      unitsPerCubicMetre: 5608
       basePrice: 138
       unitType: Kilogram
       density: 7.01
@@ -229,7 +229,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: Steel
       description: Hot-rolled steel coil
-      unitsPerCubicMetre: 7.85
+      unitsPerCubicMetre: 6.6725
       basePrice: 845
       unitType: Tonne
       density: 7.85
@@ -241,7 +241,7 @@ item-base:
       ageId: AgePost-industrial
       displayName: Titanium
       description: Titanium sponge
-      unitsPerCubicMetre: 4510
+      unitsPerCubicMetre: 1578.5
       basePrice: 6.1
       unitType: Kilogram
       density: 4.51
@@ -253,7 +253,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: Copper Wire
       description: Copper wire and cable, on drums
-      unitsPerCubicMetre: 8.96
+      unitsPerCubicMetre: 5.376
       basePrice: 14500
       unitType: Tonne
       density: 8.96

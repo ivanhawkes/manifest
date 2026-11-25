@@ -13,7 +13,7 @@ item-base:
       ageId: AgeStone
       displayName: Gems
       description: Gems
-      unitsPerCubicMetre: 17500000
+      unitsPerCubicMetre: 11375000
       basePrice: 5
       unitType: Carat
       density: 3.5
@@ -49,7 +49,7 @@ item-base:
       ageId: AgeIron
       displayName: Diamonds
       description: Diamonds
-      unitsPerCubicMetre: 17550000
+      unitsPerCubicMetre: 9652500
       basePrice: 800
       unitType: Carat
       density: 3.51

@@ -36,7 +36,7 @@ item-base:
       ageId: AgeStone
       displayName: Livestock
       description: Beef cattle, live, by live weight
-      unitsPerCubicMetre: 1.0
+      unitsPerCubicMetre: 0.3
       basePrice: 4845
       unitType: Tonne
       density: 1.0

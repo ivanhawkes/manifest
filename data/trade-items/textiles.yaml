@@ -12,7 +12,7 @@ item-base:
       ageId: AgeCopper
       displayName: Cotton
       description: Raw cotton lint, in bales
-      unitsPerCubicMetre: 1.54
+      unitsPerCubicMetre: 0.4466
       basePrice: 1653
       unitType: Tonne
       density: 1.54
@@ -36,7 +36,7 @@ item-base:
       ageId: AgeStone
       displayName: Wool
       description: Scoured wool, in bales
-      unitsPerCubicMetre: 1310
+      unitsPerCubicMetre: 524
       basePrice: 11.68
       unitType: Kilogram
       density: 1.31

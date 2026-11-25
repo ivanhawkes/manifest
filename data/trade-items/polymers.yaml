@@ -12,7 +12,7 @@ item-base:
       ageId: AgePost-industrial
       displayName: Plastics
       description: Polyethylene resin pellets
-      unitsPerCubicMetre: 0.95
+      unitsPerCubicMetre: 0.57
       basePrice: 1269
       unitType: Tonne
       density: 0.95
@@ -24,7 +24,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: Rubber
       description: Natural rubber, TSR20, in bales
-      unitsPerCubicMetre: 0.93
+      unitsPerCubicMetre: 0.651
       basePrice: 2492
       unitType: Tonne
       density: 0.93

@@ -16,7 +16,7 @@ item-base:
       ageId: AgeStone
       displayName: Charcoal
       description: Wood with all the moisture removed
-      unitsPerCubicMetre: 1.3
+      unitsPerCubicMetre: 0.455
       basePrice: 989
       unitType: Tonne
       density: 1.3
@@ -28,7 +28,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: LPG
       description: Liquefied petroleum gas, propane and butane under pressure
-      unitsPerCubicMetre: 0.54
+      unitsPerCubicMetre: 0.243
       basePrice: 720
       unitType: Tonne
       density: 0.54
@@ -64,7 +64,7 @@ item-base:
       ageId: AgePre-industrial
       displayName: Coal
       description: Thermal coal
-      unitsPerCubicMetre: 1.35
+      unitsPerCubicMetre: 0.81
       basePrice: 145
       unitType: Tonne
       density: 1.35
@@ -76,7 +76,7 @@ item-base:
       ageId: AgePre-industrial
       displayName: Coke
       description: Metallurgical coke
-      unitsPerCubicMetre: 1.9
+      unitsPerCubicMetre: 0.475
       basePrice: 334
       unitType: Tonne
       density: 1.9
@@ -88,7 +88,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: Crude Oil
       description: Crude oil, Brent blend
-      unitsPerCubicMetre: 6.28981
+      unitsPerCubicMetre: 5.66083
       basePrice: 92.18
       unitType: Barrel
       density: 0.85
@@ -100,7 +100,7 @@ item-base:
       ageId: AgeSpace
       displayName: Liquid Hydrogen
       description: Liquid hydrogen rocket propellant
-      unitsPerCubicMetre: 71
+      unitsPerCubicMetre: 63.9
       basePrice: 6
       unitType: Kilogram
       density: 0.071
@@ -112,7 +112,7 @@ item-base:
       ageId: AgeSpaceColonisation
       displayName: Helium-3
       description: Helium-3 fusion fuel, liquefied
-      unitsPerCubicMetre: 59
+      unitsPerCubicMetre: 29.5
       basePrice: 18600000
       unitType: Kilogram
       density: 0.059
@@ -136,7 +136,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: Diesel
       description: Diesel, kerosene and jet fuel
-      unitsPerCubicMetre: 0.84
+      unitsPerCubicMetre: 0.756
       basePrice: 900
       unitType: Tonne
       density: 0.84

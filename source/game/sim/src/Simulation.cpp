@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <format>
 #include <limits>
@@ -415,9 +416,11 @@ const Civilisation *Simulation::FindCivilisation(const std::string &idOrName) co
 
 bool Simulation::IsValidBasePrice(std::string_view text)
 {
-	// Room for the maximum market/local multiplier (5 * 1.9).
+	// Room for the hosted multipliers, which reach about 27 times the base price (docs/pricing.md,
+	// "Limits and open work"; L51 asks what drives them and whether 30 stays).
+	constexpr std::int64_t kMaxPriceMultiplier = 30;
 	const auto price = Decimal::TryParse(text);
-	return price && *price >= 0 && *price <= Decimal::Max() / 10;
+	return price && *price >= 0 && *price <= Decimal::Max() / kMaxPriceMultiplier;
 }
 
 

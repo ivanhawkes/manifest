@@ -64,7 +64,7 @@ Content::MarketEntry &Entry(ContentSet &content, std::string_view venueId, std::
 
 
 // One employer making one good, Brine's medical supplies, a tote every 600 s at the full rate for a
-// wage bill of 469 credits (a quarter of the tote's 1,875 at base price, to the nearest), and no
+// wage bill of 164 credits (a quarter of the tote's 656.25 at base price, to the nearest), and no
 // households: every other row's region cleared and both regions empty.
 ContentSet OneBatch()
 {
@@ -78,9 +78,9 @@ ContentSet OneBatch()
 			entry.regionId.clear();
 	Content::MarketEntry &medical = Entry(content, kBrine, kMedical);
 	medical.regionId = kBrineCoast;
-	// 144 totes of 125 kg a day, wanted as much, so its price stays near its base, over its floor.
-	medical.production = 18'000.0;
-	medical.demand = 18'000.0;
+	// 144 totes of 43.75 kg a day, wanted as much, so its price stays near its base, over its floor.
+	medical.production = 6'300.0;
+	medical.demand = 6'300.0;
 	return content;
 }
 
@@ -277,32 +277,32 @@ TEST_CASE("A batch reserves its wages, pays them as it works, and sells its good
 	REQUIRE(production.batches.size() == 1);
 	CHECK(production.batches[0].totes == 1);
 	CHECK(production.batches[0].duration == 600.0);
-	CHECK(production.batches[0].wages == 469);
+	CHECK(production.batches[0].wages == 164);
 	CHECK(production.batches[0].progress == 1.0);
-	CHECK(hosted.Balance(Kind::EmployerAccount, kBrineCoast) == 1'000'000 - 469);
+	CHECK(hosted.Balance(Kind::EmployerAccount, kBrineCoast) == 1'000'000 - 164);
 	// Ore's employer makes nothing, and reserves nothing.
 	CHECK(hosted.Get<World::Production>(Kind::Employer, kOreHighlands).batches.empty());
 	CHECK(hosted.Balance(Kind::EmployerAccount, kOreHighlands) == 1'000'000);
 
-	// The turn's last step pays what 60 s of 600 have earned, 46 credits: 4 withheld, 6 carried.
+	// The turn's last step pays what 60 s of 600 have earned, 16 credits: 1 withheld, 6 carried.
 	hosted.StepTo(60);
-	CHECK(production.batches[0].paid == 46);
+	CHECK(production.batches[0].paid == 16);
 	CHECK(production.taxCarry == 6);
-	CHECK(hosted.Balance(Kind::HouseholdAccount, kBrineCoast) == households + 42);
-	CHECK(hosted.Balance(Kind::PublicAccount, kBrineCoast) == treasury + 4);
+	CHECK(hosted.Balance(Kind::HouseholdAccount, kBrineCoast) == households + 15);
+	CHECK(hosted.Balance(Kind::PublicAccount, kBrineCoast) == treasury + 1);
 
-	// At 600 s the tote is made and the rest is paid: 469 gross in all, 46 of it withheld and 9
+	// At 600 s the tote is made and the rest is paid: 164 gross in all, 16 of it withheld and 4
 	// carried, however the payments split. The tote is sold to the broker at its bid that turn.
 	hosted.StepTo(599);
 	REQUIRE(production.batches.size() == 1);
 	hosted.world.Step();
 	CHECK(production.batches.empty());
-	CHECK(production.taxCarry == 9);
-	CHECK(hosted.Balance(Kind::HouseholdAccount, kBrineCoast) == households + 423);
-	CHECK(hosted.Balance(Kind::PublicAccount, kBrineCoast) == treasury + 46);
+	CHECK(production.taxCarry == 4);
+	CHECK(hosted.Balance(Kind::HouseholdAccount, kBrineCoast) == households + 148);
+	CHECK(hosted.Balance(Kind::PublicAccount, kBrineCoast) == treasury + 16);
 	CHECK(hosted.Totes(Kind::Employer, kBrineCoast, kBrine, kMedical) == 0);
 	CHECK(hosted.Totes(Kind::Broker, kBrine, kBrine, kMedical) == brokered + 1);
-	CHECK(hosted.Balance(Kind::EmployerAccount, kBrineCoast) > 1'000'000 - 469);
+	CHECK(hosted.Balance(Kind::EmployerAccount, kBrineCoast) > 1'000'000 - 164);
 
 	// The next batch starts on the next step.
 	hosted.world.Step();
@@ -340,8 +340,8 @@ TEST_CASE("At half the work rate a batch takes twice as long, for the same goods
 	CHECK(production.batches[0].progress == doctest::Approx(599.5));
 	hosted.world.Step();
 	CHECK(production.batches.empty());
-	CHECK(production.taxCarry == 9);
-	CHECK(hosted.Balance(Kind::HouseholdAccount, kBrineCoast) == households + 423);
+	CHECK(production.taxCarry == 4);
+	CHECK(hosted.Balance(Kind::HouseholdAccount, kBrineCoast) == households + 148);
 }
 
 
@@ -349,11 +349,11 @@ TEST_CASE("An employer that cannot fund a batch's wages starts none")
 {
 	ContentSet content = OneBatch();
 	for (Content::RegionDefinition &region : ScenarioOf(content).regions)
-		region.employerFunds = 468;
+		region.employerFunds = 163;
 	Hosted hosted{std::move(content)};
 	hosted.StepTo(120);
 	CHECK(hosted.Get<World::Production>(Kind::Employer, kBrineCoast).batches.empty());
-	CHECK(hosted.Balance(Kind::EmployerAccount, kBrineCoast) == 468);
+	CHECK(hosted.Balance(Kind::EmployerAccount, kBrineCoast) == 163);
 }
 
 
@@ -379,10 +379,11 @@ TEST_CASE("Households buy their essentials through the book and consume each int
 	CHECK(pantry.severity == 0.0);
 	CHECK(pantry.unmet.empty());
 	CHECK(pantry.shortIntervals == 0);
-	// A tote of medical supplies opened, 125 kg, less 25,000 people's minute: 125 kg a day.
-	CHECK(hosted.Opened(kOreHighlands, kMedical) == doctest::Approx(125.0 - 125.0 / 1'440.0));
-	// A tote of water opened, an eighth of a kilolitre, less 75 kL a day's minute.
-	CHECK(hosted.Opened(kOreHighlands, "ItemDrinkingWater") == doctest::Approx(0.125 - 75.0 / 1'440.0));
+	// A tote of medical supplies opened, 43.75 kg, less 25,000 people's minute: 125 kg a day.
+	CHECK(hosted.Opened(kOreHighlands, kMedical) == doctest::Approx(43.75 - 125.0 / 1'440.0));
+	// A tote of water opened, 0.09375 kL (an eighth of a packed cube), less 75 kL a day's minute.
+	CHECK(
+	    hosted.Opened(kOreHighlands, "ItemDrinkingWater") == doctest::Approx(0.09375 - 75.0 / 1'440.0));
 	// The food is one need: one grain's tote, the cheapest, opened, and no other.
 	double grain = 0.0;
 	int grains = 0;
@@ -455,23 +456,23 @@ TEST_CASE("A need's pressure past a quarter calls a relief tender for the day's 
 	REQUIRE(medical != pantry.unmet.end());
 	const double pressure = medical->pressure;
 	CHECK(pressure > kReliefPressure);
-	// 125 kg a day, short by the pressure, is a tote of 125 kg, rounded up.
+	// 125 kg a day, short by the pressure, is a tote of 43.75 kg, rounded up.
 	CHECK(relief.totes == 1);
 	// Nothing is offered at Ore, so the tote at its native price, three times the pressure over it.
 	const auto price = TenderPrice(hosted.world, hosted.identities, hosted.content, kOre, kMedical);
 	REQUIRE(price);
-	CHECK(relief.budget == Budget(*price, 125.0, kReliefUrgency * pressure));
-	CHECK(relief.budget > *Budget(*price, 125.0, 0.0));
+	CHECK(relief.budget == Budget(*price, 43.75, kReliefUrgency * pressure));
+	CHECK(relief.budget > *Budget(*price, 43.75, 0.0));
 }
 
 
 TEST_CASE("A need's pressure raises the households' bid until they buy what the broker asks")
 {
 	ContentSet content = Trading();
-	// A tote of medical supplies an interval, 125 kg a minute.
+	// A tote of medical supplies an interval, 43.75 kg a minute: 125 kg a day times 504.
 	for (Content::NeedDefinition &need : content.tuning.needs)
 		if (need.needId == "NeedBasicMedicalSupplies")
-			need.perThousandPerDay *= 1'440.0;
+			need.perThousandPerDay *= 504.0;
 	Hosted hosted{std::move(content)};
 	const std::uint64_t seeded = hosted.Totes(Kind::Broker, kOre, kOre, kMedical);
 	const auto &pantry = hosted.Get<World::Pantry>(Kind::Household, kOreHighlands);
@@ -509,7 +510,7 @@ TEST_CASE("A save part-way through a batch and a turn carries on as the world it
 	hosted.world.Registry()
 	    .get<World::Production>(hosted.identities.Find(Kind::Employer, std::string{kBrineCoast}))
 	    .batches.at(0)
-	    .paid = 470;
+	    .paid = 165;
 	CHECK_THROWS_WITH_AS(
 	    loaded.world.Load(hosted.world.Save()), doctest::Contains("paid more than its wages"),
 	    Jettison::Serialise::FormatError);

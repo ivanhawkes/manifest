@@ -364,17 +364,17 @@ TEST_CASE("Refill and Replace take the life-support goods from the hold, opening
 	World::LifeSupport &support = hosted.Support("Ship1");
 	CHECK(support == used);
 
-	// Fixture bootstrap: a tote each of oxygen (142.5 kg) and of cartridges (two) aboard.
+	// Fixture bootstrap: a tote each of oxygen (128.25 kg) and of cartridges (two) aboard.
 	hosted.Hold("Ship1").lots = {{"ItemCarbonScrubberCartridge", 1}, {"ItemOxygen", 1}};
 	CHECK(hosted.Service(kAda, kRefill, "Ship1") == Result::Succeeded);
 	CHECK(support.tanks == std::vector<double>{10.0, 10.0, 10.0});
 	CHECK(hosted.Hold("Ship1").lots == std::vector<World::Lot>{{"ItemCarbonScrubberCartridge", 1}});
-	CHECK(hosted.Hold("Ship1").opened == std::vector<World::Opened>{{"ItemOxygen", 124.5}});
+	CHECK(hosted.Hold("Ship1").opened == std::vector<World::Opened>{{"ItemOxygen", 110.25}});
 	CHECK(hosted.Service(kAda, kRefill, "Ship1") == Result::CapacityExceeded);
 	// The opened tote is drawn on first; it is no tote to unload.
 	support.tanks[1] = 9.0;
 	CHECK(hosted.Service(kAda, kRefill, "Ship1") == Result::Succeeded);
-	CHECK(hosted.Hold("Ship1").opened == std::vector<World::Opened>{{"ItemOxygen", 123.5}});
+	CHECK(hosted.Hold("Ship1").opened == std::vector<World::Opened>{{"ItemOxygen", 109.25}});
 	CHECK(
 	    hosted.Unload(kAda, Move{"Ship1", "VenueForgeHighport", "ItemOxygen", 1}) ==
 	    Result::InsufficientStock);
@@ -385,9 +385,9 @@ TEST_CASE("Refill and Replace take the life-support goods from the hold, opening
 	CHECK(hosted.Hold("Ship1").lots.empty());
 	CHECK(
 	    hosted.Hold("Ship1").opened ==
-	    std::vector<World::Opened>{{"ItemCarbonScrubberCartridge", 1.0}, {"ItemOxygen", 123.5}});
+	    std::vector<World::Opened>{{"ItemCarbonScrubberCartridge", 1.0}, {"ItemOxygen", 109.25}});
 	CHECK(hosted.Service(kAda, kReplace, "Ship1") == Result::Succeeded);
-	CHECK(hosted.Hold("Ship1").opened == std::vector<World::Opened>{{"ItemOxygen", 123.5}});
+	CHECK(hosted.Hold("Ship1").opened == std::vector<World::Opened>{{"ItemOxygen", 109.25}});
 	CHECK(hosted.Service(kAda, kReplace, "Ship1") == Result::InsufficientStock);
 
 	// The opened tote still takes its tote of the 160-tote hold.
@@ -402,7 +402,7 @@ TEST_CASE("Refill and Replace take the life-support goods from the hold, opening
 	support.tanks[2] = 0.0;
 	CHECK(hosted.Service(kAda, kRefill, "Ship1") == Result::Succeeded);
 	CHECK(support.tanks[2] == 10.0);
-	CHECK(hosted.Hold("Ship1").opened == std::vector<World::Opened>{{"ItemOxygen", 113.5}});
+	CHECK(hosted.Hold("Ship1").opened == std::vector<World::Opened>{{"ItemOxygen", 99.25}});
 }
 
 

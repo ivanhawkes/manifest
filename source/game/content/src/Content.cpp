@@ -57,6 +57,38 @@ bool Positive(double value)
 }
 
 
+// The units a cube of the good holds as packed, where its mass or volume fixes them: density x
+// packFactor in a mass unit, packFactor in a volume unit. None for a count by piece, sheet, area or
+// energy, which the author states.
+std::optional<double> PackedUnitsPerCubicMetre(const Core::ItemNode &item)
+{
+	constexpr double kKilogramsPerCubicMetreOfWater = 1000.0;
+	constexpr double kKilogramsPerCarat = 0.0002;
+	constexpr double kKilogramsPerTroyOunce = 0.0311034768;
+	constexpr double kKilogramsPerTonne = 1000.0;
+	constexpr double kCubicMetresPerLitre = 0.001;
+	constexpr double kCubicMetresPerBarrel = 0.158987294928;
+
+	const double kilograms = item.density * kKilogramsPerCubicMetreOfWater * item.packFactor;
+	switch (*item.unitType)
+	{
+		case Core::TradeUnit::Carat: return kilograms / kKilogramsPerCarat;
+		case Core::TradeUnit::TroyOunce: return kilograms / kKilogramsPerTroyOunce;
+		case Core::TradeUnit::Kilogram: return kilograms;
+		case Core::TradeUnit::Tonne: return kilograms / kKilogramsPerTonne;
+		case Core::TradeUnit::Litre: return item.packFactor / kCubicMetresPerLitre;
+		case Core::TradeUnit::Kilolitre:
+		case Core::TradeUnit::CubicMetre: return item.packFactor;
+		case Core::TradeUnit::Barrel: return item.packFactor / kCubicMetresPerBarrel;
+		case Core::TradeUnit::MMBtu:
+		case Core::TradeUnit::Unit:
+		case Core::TradeUnit::Sheet:
+		case Core::TradeUnit::SquareMetre: return std::nullopt;
+	}
+	return std::nullopt;
+}
+
+
 // Holds the loaded set to its rules, failing on the first one broken with the record's path and
 // the mounts behind it.
 class Checker
@@ -172,6 +204,19 @@ void CheckItems(Checker &checker, const Jettison::Sim::DefinitionRegistry &regis
 		checker.Require(Positive(item.density), "density", "must be above 0");
 		checker.Require(
 		    Positive(item.packFactor) && item.packFactor <= 1.0, "packFactor", "must be in (0, 1]");
+		// A tote is priced by the units it holds, so they must be what it weighs: authored figures
+		// are rounded to six significant digits.
+		constexpr double kPackedTolerance = 0.001;
+		const std::optional<double> packed =
+		    item.unitType && Positive(item.density) && Positive(item.packFactor)
+		        ? PackedUnitsPerCubicMetre(item)
+		        : std::nullopt;
+		checker.Require(
+		    !packed || std::abs(item.unitsPerCubicMetre - *packed) <= *packed * kPackedTolerance,
+		    "unitsPerCubicMetre",
+		    std::format(
+		        "must be the {:.6g} a packed cube holds by its density and packFactor",
+		        packed.value_or(0.0)));
 		checker.Require(
 		    Core::Simulation::IsValidBasePrice(item.basePrice), "basePrice",
 		    std::format(

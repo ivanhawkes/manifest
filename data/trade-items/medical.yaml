@@ -12,7 +12,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: Basic Medical Supplies
       description: Routine medical consumables, dressings, gloves, syringes and saline
-      unitsPerCubicMetre: 1000
+      unitsPerCubicMetre: 350
       basePrice: 15
       unitType: Kilogram
       density: 1.0
@@ -24,7 +24,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: Anesthetics
       description: Anesthetics
-      unitsPerCubicMetre: 1200
+      unitsPerCubicMetre: 540
       basePrice: 60
       unitType: Kilogram
       density: 1.2
@@ -36,7 +36,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: Analgesics
       description: Analgesics
-      unitsPerCubicMetre: 1300
+      unitsPerCubicMetre: 650
       basePrice: 12
       unitType: Kilogram
       density: 1.3
@@ -48,7 +48,7 @@ item-base:
       ageId: AgePost-industrial
       displayName: Antibiotics
       description: Antibiotics
-      unitsPerCubicMetre: 1140
+      unitsPerCubicMetre: 456
       basePrice: 45
       unitType: Kilogram
       density: 1.14
@@ -60,7 +60,7 @@ item-base:
       ageId: AgeStone
       displayName: Medicinal Herbs
       description: Dried medicinal herbs
-      unitsPerCubicMetre: 800
+      unitsPerCubicMetre: 200
       basePrice: 12
       unitType: Kilogram
       density: 0.8

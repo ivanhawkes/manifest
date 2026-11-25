@@ -12,7 +12,7 @@ item-base:
       ageId: AgeClassical
       displayName: Cement
       description: Lime and volcanic ash that sets under water
-      unitsPerCubicMetre: 3.15
+      unitsPerCubicMetre: 1.323
       basePrice: 128
       unitType: Tonne
       density: 3.15
@@ -36,7 +36,7 @@ item-base:
       ageId: AgeStone
       displayName: Timber
       description: Sawn softwood timber
-      unitsPerCubicMetre: 1
+      unitsPerCubicMetre: 0.75
       basePrice: 224
       unitType: CubicMetre
       density: 0.5

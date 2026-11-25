@@ -16,7 +16,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: Sodium Hydroxide
       description: Sodium Hydroxide, AKA caustic soda
-      unitsPerCubicMetre: 2.13
+      unitsPerCubicMetre: 1.1502
       basePrice: 840
       unitType: Tonne
       density: 2.13
@@ -28,7 +28,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: Nitrogen
       description: Nitrogen (refrigerated liquid)
-      unitsPerCubicMetre: 0.808
+      unitsPerCubicMetre: 0.7272
       basePrice: 619
       unitType: Tonne
       density: 0.808
@@ -40,7 +40,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: Phosphorus
       description: White phosphorus, shipped under water in sealed drums
-      unitsPerCubicMetre: 1.82
+      unitsPerCubicMetre: 1.547
       basePrice: 4261
       unitType: Tonne
       density: 1.82
@@ -52,7 +52,7 @@ item-base:
       ageId: AgeClassical
       displayName: Sulfur
       description: Sulfur, granulated
-      unitsPerCubicMetre: 2.07
+      unitsPerCubicMetre: 1.3041
       basePrice: 733
       unitType: Tonne
       density: 2.07
@@ -64,7 +64,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: Sulfuric Acid
       description: Sulfuric acid, 93 to 98 percent, in lined tanks
-      unitsPerCubicMetre: 1.83
+      unitsPerCubicMetre: 1.7385
       basePrice: 170
       unitType: Tonne
       density: 1.83
@@ -78,7 +78,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: Chlorine
       description: Chlorine (refrigerated liquid)
-      unitsPerCubicMetre: 1.56
+      unitsPerCubicMetre: 1.404
       basePrice: 321
       unitType: Tonne
       density: 1.56
@@ -90,7 +90,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: Ammonia
       description: Anhydrous ammonia (refrigerated liquid)
-      unitsPerCubicMetre: 0.682
+      unitsPerCubicMetre: 0.6138
       basePrice: 585
       unitType: Tonne
       density: 0.682
@@ -102,7 +102,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: Ethylene
       description: Ethylene (refrigerated liquid)
-      unitsPerCubicMetre: 0.567
+      unitsPerCubicMetre: 0.5103
       basePrice: 1100
       unitType: Tonne
       density: 0.567
@@ -131,7 +131,7 @@ item-base:
       ageId: AgeMedieval
       displayName: Gunpowder
       description: Black powder, in kegs
-      unitsPerCubicMetre: 1700
+      unitsPerCubicMetre: 850
       basePrice: 25
       unitType: Kilogram
       density: 1.7

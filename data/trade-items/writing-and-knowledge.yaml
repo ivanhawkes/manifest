@@ -25,7 +25,7 @@ item-base:
       ageId: AgeBronze
       displayName: Ink
       description: Ink
-      unitsPerCubicMetre: 1000
+      unitsPerCubicMetre: 800
       basePrice: 8.0
       unitType: Litre
       density: 1.1
@@ -109,7 +109,7 @@ item-base:
       ageId: AgeMedieval
       displayName: Paper
       description: Uncoated paper, in reams and reels
-      unitsPerCubicMetre: 0.8
+      unitsPerCubicMetre: 0.68
       basePrice: 950
       unitType: Tonne
       density: 0.8

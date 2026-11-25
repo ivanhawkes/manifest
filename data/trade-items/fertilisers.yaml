@@ -13,7 +13,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: Potash
       description: Muriate of potash, granular potassium chloride
-      unitsPerCubicMetre: 1.99
+      unitsPerCubicMetre: 1.1542
       basePrice: 365
       unitType: Tonne
       density: 1.99
@@ -25,7 +25,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: Urea
       description: Granular urea, 46% nitrogen
-      unitsPerCubicMetre: 1.32
+      unitsPerCubicMetre: 0.726
       basePrice: 535
       unitType: Tonne
       density: 1.32
@@ -37,7 +37,7 @@ item-base:
       ageId: AgePost-industrial
       displayName: Diammonium Phosphate
       description: Diammonium phosphate, 18-46-0
-      unitsPerCubicMetre: 1.62
+      unitsPerCubicMetre: 0.891
       basePrice: 803
       unitType: Tonne
       density: 1.62

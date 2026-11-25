@@ -26,7 +26,7 @@ item-base:
       ageId: AgeStone
       displayName: Pigments
       description: Pigments
-      unitsPerCubicMetre: 3000
+      unitsPerCubicMetre: 1350
       basePrice: 8.9
       unitType: Kilogram
       density: 3.0

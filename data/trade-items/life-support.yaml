@@ -17,7 +17,7 @@ item-base:
       ageId: AgeIndustrial
       displayName: Oxygen
       description: Breathing oxygen (refrigerated liquid)
-      unitsPerCubicMetre: 1140
+      unitsPerCubicMetre: 1026
       basePrice: 0.26
       unitType: Kilogram
       density: 1.14
