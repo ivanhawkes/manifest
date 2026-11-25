@@ -134,8 +134,8 @@ from planet count. A one-planet world can contain many independently active econ
 
 ## Control, construction and discovery boundaries
 
-Onboarding allocates no region since W16 ([D-089](decision-ledger.md#d-089)): a player founds one
-homeworld in a region no one governs ([D-110](decision-ledger.md#d-110), W13). Below, read
+Onboarding allocates no region since W16 ([D-089](../decision-ledger.md#d-089)): a player founds one
+homeworld in a region no one governs ([D-110](../decision-ledger.md#d-110), W13). Below, read
 allocation as founding: the eligible, reserve and acquisition counts are of regions open to
 founding, and the station, delivery and life-support conditions are founding's, which `Found`
 does not yet check.
@@ -197,7 +197,7 @@ government. Onboarding must explicitly address existing construction claims and 
 Stations should express the cultures and corporations that own and operate them, with
 customisable looks, corporate colours, logos and distinct station identities. The detailed
 visual/customisation design is deferred to the station presentation work described in the
-[development plan](planetary-development-plan.md#station-appearance-and-corporate-identity).
+[development plan](../planetary-development-plan.md).
 
 Fleet market visibility remains station-specific. Regional government, corporate activity,
 bloc membership or shared planetary location grants no new live station data. Starting

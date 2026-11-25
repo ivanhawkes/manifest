@@ -8,10 +8,10 @@ No code, content assets, SDK pin or environment changed; no builds or gameplay c
 ## Selected ship roles and cargo capacities
 
 The starter ship is the entry point for a lone trader and has a cargo hold of 160 totes
-(20 m³, a tote being an eighth of a cubic metre, [D-087](decision-ledger.md#d-087)). It is
+(20 m³, a tote being an eighth of a cubic metre, [D-087](../decision-ledger.md#d-087)). It is
 distinct from the new compact 32-tote ship below. 160 totes is the selected starting hold
 capacity. Its first upgrade is a tier of cargo holds, 2,400 totes more
-([D-096](decision-ledger.md#d-096)); other upgrade rules and starter specifications remain open.
+([D-096](../decision-ledger.md#d-096)); other upgrade rules and starter specifications remain open.
 
 The subsequently selected initial starter supply is 30 kg of oxygen and one fresh
 installed standard scrubber cartridge, providing 30 occupant-days of scrubbing capacity.
@@ -29,7 +29,7 @@ Moving goods from cargo into operating reserves must conserve actual stock and c
 the transfer/replacement procedure still needs design.
 
 The starter's operating oxygen bank is modular under
-[D-050](decision-ledger.md#d-050), detailed in the canonical section below. Cargo oxygen
+[D-050](../decision-ledger.md#d-050), detailed in the canonical section below. Cargo oxygen
 remains separate until transferred and cannot increase installed capacity. Physical tank
 volume/storage method, compartment dimensions, cartridge physical mass/volume, spare
 provision, upgrades and other journey limits remain open. This decision does not set
@@ -42,7 +42,7 @@ product decision.
 
 ## Modular oxygen storage
 
-Canonical specification for [D-050](decision-ledger.md#d-050), refining D-045's starter
+Canonical specification for [D-050](../decision-ledger.md#d-050), refining D-045's starter
 provisioning without changing its selected total oxygen reserve or cargo separation.
 The user replaced the single-tank interpretation with independently serviceable tanks.
 
@@ -97,7 +97,7 @@ Tank rules, data and tests remain unimplemented. No runtime or gate result is cl
 
 ## Algae oxygen recycling (selected 2026-11-21)
 
-The user's (2026-11-21), [D-106](decision-ledger.md#d-106), for L34: a life-support technology a ship
+The user's (2026-11-21), [D-106](../decision-ledger.md#d-106), for L34: a life-support technology a ship
 can be upgraded to, an algae photobioreactor that turns its occupants' exhaled carbon dioxide back
 into oxygen. It is bought as other ship upgrades are, an offer of a skill node fitted to the ship
 (D-096), requiring the Life Support skill, in tiers. Each tier supplies a share of the ship's daily
@@ -111,12 +111,12 @@ and replaced.
 
 ## Fuel burn and the speed of a run (selected 2026-11-22)
 
-The user's (2026-11-22), [D-107](decision-ledger.md#d-107), booked as W21 at high priority, next
+The user's (2026-11-22), [D-107](../decision-ledger.md#d-107), booked as W21 at high priority, next
 after W19 and before W12: a ship's drive burns fuel to accelerate, and how hard it burns is a choice
 in planning a route. Burning more arrives sooner, so a ship trades more often; burning less spends
 less fuel and may make a run more profitable, offset by the longer cruise and so fewer runs. The
 fuel is the ships' own, reaction mass and fusion pellets burned by a clean fusion torch, larger hulls
-flying dirtier drives ([D-108](decision-ledger.md#d-108); LPG stays the planets' cooking and vehicle
+flying dirtier drives ([D-108](../decision-ledger.md#d-108); LPG stays the planets' cooking and vehicle
 fuel), burned on a curve that rises steeply with the acceleration, so a very hard burn is punishingly expensive but can
 win a race, such as to colonise a new system, and with the mass of everything aboard: hull, fuel
 tanks and their fuel, occupants and passengers, and cargo. The tanks are apart from the cargo hold
@@ -134,7 +134,7 @@ dimensions and journey endurance remain to be designed. This requirement does no
 select individual crew simulation or a walkable interior.
 
 The ship carries at most 32 totes of cargo, 4 m³: a tote is an eighth of the [unit
-contract](model.md)'s one-cubic-metre IBC cube ([D-087](decision-ledger.md#d-087)). Cabin, life-support,
+contract](../content.md)'s one-cubic-metre IBC cube ([D-087](../decision-ledger.md#d-087)). Cabin, life-support,
 propulsion and other ship equipment need their own space outside that usable cargo volume.
 Cargo mass depends on the goods; 32 totes do not mean four tonnes or four units of
 every commodity. Preserve fractional commodity quantities and the shared packed-volume
@@ -165,7 +165,7 @@ dimensions. Each is a `Dock::PadClassDefinition` by its kebab-case name (`heavy-
 
 | Class | Rank | Largest hull, L x B x H (m) | Pad, W x L (m) | Docks at |
 | --- | --- | --- | --- | --- |
-| skiff | 0 | 9.8 x 6.4 x 1.8, the lone-trader starter ([D-062](decision-ledger.md#d-062)) | 8 x 10 | a standard station |
+| skiff | 0 | 9.8 x 6.4 x 1.8, the lone-trader starter ([D-062](../decision-ledger.md#d-062)) | 8 x 10 | a standard station |
 | corvette | 1 | 25 x 20 x 8 | 35 x 40 | a standard station |
 | frigate | 2 | 60 x 30 x 15 | 50 x 90 | a standard station |
 | destroyer | 3 | 140 x 50 x 30 | 80 x 180 | a standard station, the largest it takes |
@@ -198,7 +198,7 @@ traffic), each checked by a free function (`CheckPadClass`, `CheckHull`, `CheckL
 sample adds its own cruise drive and ship-for-sale records. A `Manifest.Hull` carries only stats,
 occupants and life support, and C05's venues list the hulls they dock by hand. Manifest authors
 records of the engine's types, seeded from the sample's values and the table above, and extends
-them; neither game reads the other's files ([D-062](decision-ledger.md#d-062)).
+them; neither game reads the other's files ([D-062](../decision-ledger.md#d-062)).
 
 **When: now, as C09, between C05 and C06.** C06 fixes the validator's and host's options over the
 content set, and C07 and C08 close the schema contract and the content identity; merging first
@@ -244,16 +244,16 @@ starter and the compact ship fit all twenty highport pads and the long-haul trad
 destroyer pads.
 
 Left for when a task needs them: a ship's sale price, mass and fitting slots (W08), and station
-dressing and models (L15). W05 gave each hull a cruise drive ([D-088](decision-ledger.md#d-088)) and
+dressing and models (L15). W05 gave each hull a cruise drive ([D-088](../decision-ledger.md#d-088)) and
 the engine's default flight handling; the compact hull's size stays provisional.
 
 ## Capability map and demonstrated gap
 
 | Required mechanic | Existing public evidence | Owner and required work |
 | --- | --- | --- |
-| Distinct Manifest hulls and stats | `ShipClassSpec` and `ShipEffectEngine::BuildShip` exist; the hulls are `Manifest.Hull` definitions since C04 (`data/ships/hulls.yaml`), the long-haul trader's `CargoVolume` 900 and `LifeSupportDays` 45 among them | Done in C04 ([D-059](decision-ledger.md#d-059)): the compact class's 4 m³ and one occupant, and the lone-trader starter's 20 m³ hold, are authored apart from the long-haul values, through the engine definition pipeline. |
+| Distinct Manifest hulls and stats | `ShipClassSpec` and `ShipEffectEngine::BuildShip` exist; the hulls are `Manifest.Hull` definitions since C04 (`data/ships/hulls.yaml`), the long-haul trader's `CargoVolume` 900 and `LifeSupportDays` 45 among them | Done in C04 ([D-059](../decision-ledger.md#d-059)): the compact class's 4 m³ and one occupant, and the lone-trader starter's 20 m³ hold, are authored apart from the long-haul values, through the engine definition pipeline. |
 | Physical hull and docking | Pinned `Dock::HullDefinition` provides dimensions, hatch, model path, pad class and cruise data; `Docks::DefineHull`, `DefineLayout`, `Park`, `RequestPad` and `IsDocked` provide public integration points | Manifest supplies hull geometry, station layout and gameplay policy using public SDK APIs. Art and collision dimensions must agree with the authored definition. |
-| Smaller berth geometry | At `f850920`, `PadClass` was a closed `S/M/L/XL` enumeration. Provisioned in Jettison W01 (pin `fafa758`): a pad class is a definition, `Dock::PadClassDefinition`. See [D-044](decision-ledger.md) and Jettison's [history](../../jettison/docs/history.md#neutral-sdk-and-manifest-integration) | Manifest authors its compact berth and the hulls' classes as data, and owns this ship's size and station choices. |
+| Smaller berth geometry | At `f850920`, `PadClass` was a closed `S/M/L/XL` enumeration. Provisioned in Jettison W01 (pin `fafa758`): a pad class is a definition, `Dock::PadClassDefinition`. See [D-044](../decision-ledger.md) and Jettison's [history](../../../jettison/docs/history.md#neutral-sdk-and-manifest-integration) | Manifest authors its compact berth and the hulls' classes as data, and owns this ship's size and station choices. |
 | Cargo, permissions and recovery | Existing effects expose `CargoVolume`; hosted ownership, packed-volume transfer, travel and persistence remain planned in stages 3–5 | Manifest enforces one authoritative cargo inventory with distinct 4 m³ compact and 20 m³ starter capacities across loading, trading, effects and recovery. Resolve starter upgrades separately. Do not use integer `Dock::Carry` crates as a second inventory or infer an unauthored mass limit. |
 
 Evidence: `source/game/effects/include/manifest/effects/ShipEffectEngine.h`,
@@ -300,7 +300,7 @@ matching environment. No SDK change has been made by this planning work.
    docking, and the selected observation boundary when departing or changing ownership.
 6. Verify definition directory/pack equivalence and saved class/layout references, cargo,
    docking and travel through load/replay. The implementer runs relevant presets and the
-   required local gate at the machine's concurrency ([D-051](decision-ledger.md#d-051)); local
+   required local gate at the machine's concurrency ([D-051](../decision-ledger.md#d-051)); local
    clang-tidy stays opt-in.
 
 This plan establishes requirements and a public API gap, not build validity, playable

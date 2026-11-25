@@ -1,6 +1,6 @@
 # Market information, fleet observation and stale reports
 
-Selected product rules, 2026-11-15. Extends the [economy plan](economy-and-development-plan.md),
+Selected product rules, 2026-11-15. Extends the [economy plan](../economy-and-development-plan.md),
 [gameplay/server contract](gameplay-and-server-plan.md) and
 [physical trading plan](stage-4-trading-plan.md). These are requirements, not implemented
 capabilities. Inspection used Manifest `feature-base` at `4e78dbb`, with planning edits,

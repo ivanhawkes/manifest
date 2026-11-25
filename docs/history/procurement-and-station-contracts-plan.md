@@ -1,7 +1,7 @@
 # Public supply contracts and station bookings
 
-Planning handoff, 2026-11-15. Extends the [planetary/corporate plan](planetary-development-plan.md)
-and [roadmap](roadmap.md). Implementation and validation by the selected implementer remain
+Planning handoff, 2026-11-15. Extends the [planetary/corporate plan](../planetary-development-plan.md)
+and [roadmap](../roadmap.md). Implementation and validation by the selected implementer remain
 pending. This document changes no code, authored balance, schemas or engine SDK revision.
 The inspected baseline remains Manifest `feature-base` at `8f02d54` and Jettison `feature-base`
 at `0564f19`, with Manifest SDK pin `f85092027eda49c29001f7589608df1f0b8827fb`.
@@ -22,7 +22,7 @@ construction/control changes need separate rules.
 ## Decisions and proposal status
 
 W11 (2026-11-21) settled the pilot's terms in [the tender contract](stage-4-trading-plan.md#tender-contract-w11-2026-11-21)
-([D-101](decision-ledger.md#d-101)); where the proposals below differ, the contract holds.
+([D-101](../decision-ledger.md#d-101)); where the proposals below differ, the contract holds.
 
 Confirmed: public procurement requires corporate bids, including the governor's own company;
 public and company accounts are separate; suppliers are paid for accepted partial deliveries
@@ -37,7 +37,7 @@ At stations offering connected life support, its ongoing service is included in 
 fee. Oxygen refills and replacement scrubber cartridges have separate prices and resupply
 accounting; inclusion does not replenish onboard reserves. Numeric tariffs remain open.
 
-Subsequent [economy/development requirements](economy-and-development-plan.md) specify instant
+Subsequent [economy/development requirements](../economy-and-development-plan.md) specify instant
 credits, physical commodities, principal brokers and separate warehouse handling. Contract
 terms name which handling/transport legs the supplier pays and where acceptance occurs.
 Frontier exclusivity uses real elapsed server-running time; tender deadlines below remain
@@ -135,7 +135,7 @@ rounding every small delivery into a larger total payment. Example only: `Q = 10
 deliveries of 3, 3 and 4 units pay 2, 2 and 3 credits.
 
 This cumulative rule is a proposal for public supply contracts. Existing marketplace
-per-fill rounding stays as documented in [market prices](market-prices.md); this plan does
+per-fill rounding stays as documented in [market prices](../pricing.md); this plan does
 not migrate wallets, fractional quantities or market settlement. The implementer must
 specify checked arithmetic/representable ranges, floating quantity normalisation and minimum
 meaningful delivery size. Never grant missing goods merely through an epsilon. Use canonical
@@ -346,10 +346,10 @@ cross-build replay hashes. Use repository presets/gates with each machine's conc
 (D-051), local clang-tidy opt-in for cross-repository implementation. None ran for this
 planning document.
 
-The [construction-site rules](planetary-development-plan.md#company-built-stations-and-control-of-shipping)
+The [construction-site rules](../planetary-development-plan.md)
 now select funded reservation, non-refundable mobilisation, a fixed completion deadline and
 reopening on abandonment/expiry. Exact funding, deadline and salvage terms remain unresolved.
-The selected [exploitation grant](economy-and-development-plan.md#real-time-exclusive-exploitation)
+The selected [exploitation grant](../economy-and-development-plan.md)
 starts at the first eligible operational frontier port plus concession activation, with a
 disclosed provisional 72-hour server-running term, covering eligible resources in one named
 region. Neighbours retain independent eligibility/timers; the grant transfers no government
@@ -362,7 +362,7 @@ starter-compatible public station and physical regional delivery connection, wit
 basic docking/trading/delivery access corporate players cannot revoke. Charges, finite
 capacity/goods/funds and private-port commercial policies remain. Detailed transport and
 starter fees/capacity/funds remain open. The selected first
-[tech project](economy-and-development-plan.md#first-tech-example-bronze-metallurgy-selected)
+[tech project](../economy-and-development-plan.md#first-tech-example-bronze-metallurgy-selected)
 uses 90 kg local copper and 10 kg imported tin with an operational workshop; competitive
 procurement and physical delivery apply to its public inputs. Next design long-running
 demand/public-income circulation; construction details, colonial rights, inhabited AI

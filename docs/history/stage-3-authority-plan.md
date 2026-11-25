@@ -1,6 +1,6 @@
 # Stage 3: companies, authoritative state and commands
 
-Subsequent requirements: read [planetary/corporate planning](planetary-development-plan.md)
+Subsequent requirements: read [planetary/corporate planning](../planetary-development-plan.md)
 before freezing schemas and apply the [regional correction](regional-economy-and-governance-plan.md).
 Players also direct one region's development/public budget; keep physical planet, region,
 population/household/public accounts, government, company assets and control rights separate.
@@ -70,9 +70,9 @@ then copy its state into the world.
 organisation for that player and sets the region's `governorId` to it; the region is the first
 ungoverned `playerHome` region in the world's region order: authored order in a scenario,
 generation order on a server, whose supply of free regions is the
-[roadmap's](roadmap.md#region-supply). The player's trading company stays a separate
-organisation ([D-075](decision-ledger.md#d-075)). Retired in W16 by
-[D-089](decision-ledger.md#d-089): a new player is given no region.
+[roadmap's](../roadmap.md#region-supply). The player's trading company stays a separate
+organisation ([D-075](../decision-ledger.md#d-075)). Retired in W16 by
+[D-089](../decision-ledger.md#d-089): a new player is given no region.
 
 Prefer separate reflected inventory/cargo balance records or components to opaque
 maps hidden inside public components. If a service retains maps internally, serialise
@@ -111,7 +111,7 @@ clamping of arithmetic residue, if needed, must have one documented rule and tes
 never use a tolerance to permit a material overdraft.
 
 Use the existing content units and packing semantics for capacity. Settled in A02, and since
-[D-087](decision-ledger.md#d-087) counted in whole totes: a hold carries totes of an eighth of a
+[D-087](../decision-ledger.md#d-087) counted in whole totes: a hold carries totes of an eighth of a
 cubic metre, each full, which is an eighth of `ItemNode::unitsPerCubicMetre` of the item in its unit
 (that figure already folds in the unit, density and packing), and a hull holds the totes of its
 `CargoVolume`. Do not treat every item unit as one cubic metre. Derived occupied capacity is
@@ -210,8 +210,8 @@ a host that runs more than one world.
 <a id="provisioning-a04"></a>Settled in A04 (2026-11-19), in the `company` module. Three commands, each
 version 1. `Manifest.Company.Provision`, the administrator's, takes a principal's ID and the names
 it shows, and makes the `Principal`, a `Company` issued `Company<n>` with its `CompanyAccount` at
-`company.startingCredits` ([D-077](decision-ledger.md#d-077)), a `Polity` governing the first
-ungoverned home ([D-075](decision-ledger.md#d-075)), and one `Ship` issued `Ship<n>` of the
+`company.startingCredits` ([D-077](../decision-ledger.md#d-077)), a `Polity` governing the first
+ungoverned home ([D-075](../decision-ledger.md#d-075)), and one `Ship` issued `Ship<n>` of the
 scenario's starter hull, docked at the region's home venue: the first public, operational station
 with life support that serves it and has a pad the starter fits, which the content set records
 (`ContentSet::homeVenues`) by the check C09 made. A principal the world has is `AlreadyProvisioned`,
@@ -220,7 +220,7 @@ the polity and home venue with the scenario's starter venue
 ([delivered](stage-4-trading-plan.md#delivered-w16-2026-11-20)). A ship's dock
 is its `Ship::dockedAt`, a venue's ID, which only provisioning sets: the engine's `Dock::Docking`
 needs physics and a station body, which W05 brings. `Manifest.Company.Load` and `Unload`, a player's,
-move a whole number of totes ([D-087](decision-ledger.md#d-087)) between the company's `Stock` (a
+move a whole number of totes ([D-087](../decision-ledger.md#d-087)) between the company's `Stock` (a
 sorted `Holding` per venue and item, its available and reserved totes) and the ship's `Cargo` (a
 sorted `Lot` per item, its totes), naming the venue the sender believes the ship is at. Every count is
 an integer, so a move conserves exactly and no residue rule is needed. Every check runs before any

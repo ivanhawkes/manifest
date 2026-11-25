@@ -4,14 +4,14 @@ Planning handoff for the selected implementer, prepared 2026-11-15 and refreshed
 2026-11-16. This refines stage 1 of
 [development stages](development-stages.md); it does not mark implementation complete.
 OpenAI work is repository inspection and planning documentation only, under the
-[agent workflow](agent-workflow.md#planning-only-policy).
+[agent workflow](../agent-workflow.md#planning-only-policy).
 
 **Planning status: complete and ready for implementation.** The capability map,
 lifecycle, delivery slices and acceptance matrix below form the Stage 1 handoff.
 No product decision remains that blocks this stage; exact API names and extraction
 details are implementer choices within these constraints. Implementation and its
 acceptance evidence remain pending, after the maintenance prerequisites below.
-Use the [prioritised delivery order](delivery-order.md#priority-1-stage-1-host-and-bootstrap)
+Use the [prioritised delivery order](tasks.md#priority-1-stage-1-host-and-bootstrap)
 for task dependencies across this stage and the wider plan.
 
 Apply the later [engine/game boundary assessment](engine-game-boundary-assessment.md).
@@ -22,8 +22,8 @@ the space sample, not deferred solely to a future server milestone.
 ## Delivery status, 2026-11-18
 
 Slices 1–5 are done (slice 4, H06, and slice 5, H07, in Manifest); Stage 1 is closed. The
-[delivery order's status](delivery-order.md#status) is the canonical status. Jettison's
-[history](../../jettison/docs/history.md#neutral-sdk-and-manifest-integration) records what the
+[delivery order's status](../delivery-order.md) is the canonical status. Jettison's
+[history](../../../jettison/docs/history.md#neutral-sdk-and-manifest-integration) records what the
 engine slices built (`Jettison::Host`: `Host::Session`, `Host::Game`, `host/Package.h`). The
 evidence below describes the engine before those slices, and it is why they exist.
 
@@ -34,7 +34,7 @@ Historical: this is the read-only refresh of 2026-11-16, before the slices above
 - Manifest: `feature-base`, `728bb95729c41bec887569ae60334acdd7056ea0`, clean
   before this planning closeout. T10, T5, T7 and the preceding Stage 1 handoff are
   committed documentation; their implementation remains pending. The
-  [T1/T9 verification record](history.md#t1t9-local-verification--2026-11-16)
+  [T1/T9 verification record](planning-2026-11-15.md#t1t9-local-verification--2026-11-16)
   establishes the local model-library baseline, not Stage 1 readiness.
 - The immutable SDK pin in `source/external/CMakeLists.txt` remains
   `f85092027eda49c29001f7589608df1f0b8827fb`. The clean sibling checkout is on
@@ -43,17 +43,17 @@ Historical: this is the read-only refresh of 2026-11-16, before the slices above
   top-level CMake file between these revisions. The newer boundary documentation
   has not provisioned the host or build seams described below.
 - The selected revision has no `docs/game-integration.md`. The newer sibling's
-  [integration contract](../../jettison/docs/game-integration.md) was consulted as
+  [integration contract](../../../jettison/docs/game-integration.md) was consulted as
   target guidance; its presence does not change the selected SDK or prove extraction.
 - Environment parity remains open. Follow the selected
-  [T5 plan](build-and-gates.md#t5-selected-environment-parity-plan), preserving
-  [D-006](decision-ledger.md) and [D-054](decision-ledger.md#d-054).
+  [T5 plan](plan-notes.md#t5-selected-environment-parity-plan), preserving
+  [D-006](../decision-ledger.md) and [D-054](../decision-ledger.md#d-054).
 - No build, gate or consumer configure was run for this refresh. Source inspection
   demonstrates current coupling; runtime and configuration acceptance remain pending.
 
-Execution proceeds through the selected [T10](build-and-gates.md#t10-selected-gate-and-promotion-policy),
-[T5](build-and-gates.md#t5-selected-environment-parity-plan) and
-[T7](build-and-gates.md#t7-selected-editor-example-plan) handoffs before Stage 1.
+Execution proceeds through the selected [T10](plan-notes.md#t10-selected-gate-and-promotion-policy),
+[T5](plan-notes.md#t5-selected-environment-parity-plan) and
+[T7](plan-notes.md#t7-selected-editor-example-plan) handoffs before Stage 1.
 Before implementation, recheck both repositories' instructions, commits and uncommitted
 work. Use their recorded final verification instead of rerunning an unchanged baseline;
 establish fresh evidence when changes or unresolved failures require it. Retain the
@@ -89,7 +89,7 @@ lifecycle services. Names below describe responsibilities, not prescribed C++ si
 
 ### Capability map and demonstrated gaps
 
-This maps the existing [D-003](decision-ledger.md) and [D-005](decision-ledger.md)
+This maps the existing [D-003](../decision-ledger.md) and [D-005](../decision-ledger.md)
 boundary requirements to the inspected SDK. All additions below are pending. Paths
 refer to the Jettison checkout unless prefixed with `Manifest`.
 
@@ -140,7 +140,7 @@ Stage 1 supplies lifecycle hooks for content and world registration, but Manifes
 content phase only verifies the package contract and its initial world is empty.
 Typed economy definitions, restore flows and script startup remain later work. The
 implementer may use useful scaffolding or stubs under
-[D-056](decision-ledger.md#d-056); this does not require speculative save/script APIs
+[D-056](../decision-ledger.md#d-056); this does not require speculative save/script APIs
 or establish those later capabilities as implemented.
 
 On any startup failure, release all acquired resources and report the phase, source
@@ -264,8 +264,8 @@ The implementer runs and records these checks; none are reported as passing by t
 | Regression | Existing Manifest suites, affected engine host/app/mount suites, SDK consumer executable and sample/render checks; preserve sample save and registration behaviour. |
 
 Use each repository's presets and required `./scripts/ci.sh --werror --asan` gate in
-the locked environment. Follow [D-051](decision-ledger.md#d-051) for machine-specific
-concurrency and the [build/gate policy](build-and-gates.md) for optional local tidy
+the locked environment. Follow [D-051](../decision-ledger.md#d-051) for machine-specific
+concurrency and the [build/gate policy](../build-and-gates.md) for optional local tidy
 and the selected T10 ordering. Follow the engine review workflow within the user's
 planning-only model policy: review may be read-only, while fixes and gate execution
 belong to the selected implementer. Do not rerun unrelated checks repeatedly once
@@ -285,7 +285,7 @@ world are bootstrap evidence, not playable gameplay.
 
 Planning closes with this handoff; do not mark Stage 1 implemented until the final
 committed pair has the required evidence. Record results in
-[session handoff](session-handoff.md), then update the stage index and roadmap with
+[session handoff](../session-handoff.md), then update the stage index and roadmap with
 the verified capabilities and remaining limitations.
 
 The next planning task is stage 2: loader inventory, typed definition mapping, atomic

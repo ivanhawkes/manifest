@@ -12,17 +12,17 @@ to the old engine scope describe the inspected baseline.
 
 **Status, 2026-11-18:** the extraction is done in Jettison and is in Manifest's SDK pin
 `fafa758`. The H02–H05, A01 and W01 rows of
-[Jettison's history](../../jettison/docs/history.md#neutral-sdk-and-manifest-integration) record
+[Jettison's history](../../../jettison/docs/history.md#neutral-sdk-and-manifest-integration) record
 it, along with the enforcement checks below that now exist in Jettison: the dependency checks,
 the consumer matrix and the neutral-startup registration check. The evidence table below is the
 2026-11-15 baseline, and the lines it cites no longer exist. Manifest's side of these checks
 arrives with H06 and later stages.
 
 **Status, 2026-11-23:** the space extraction
-([Jettison's plan](../../jettison/docs/space-extraction-plan.md)) is done. The engine keeps only
+([Jettison's plan](../../../jettison/docs/history/space-extraction.md)) is done. The engine keeps only
 what has a neutral name and serves more than one genre; the space setting, star systems, their
 orbits and the galaxy, cruising, jump lanes, gates and routes, is Manifest's `space` module
-([architecture](architecture.md#space)), which tests all space code, and the engine's space sample
+([architecture](../architecture.md#space)), which tests all space code, and the engine's space sample
 is retired. Jettison's `neutral_words` suite holds its modules to none of the setting's words.
 Every Manifest suite and pinned hash held on the local engine at Jettison `359ad42`.
 
@@ -196,7 +196,7 @@ hides behaviour changes or needlessly invalidates saves and authored IDs.
   folder names alone do not enforce a dependency boundary.
 
 The status note at the top lists which of these checks exist. The implementer runs repository
-gates at each machine's concurrency ([D-051](decision-ledger.md#d-051)), preserving engine sample
+gates at each machine's concurrency ([D-051](../decision-ledger.md#d-051)), preserving engine sample
 coverage as well as Manifest checks. OpenAI agents remain planning-only.
 
 ## First implementation handoff

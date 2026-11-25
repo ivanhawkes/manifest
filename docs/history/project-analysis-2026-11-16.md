@@ -2,7 +2,7 @@
 
 This is the historical assessment before the T9 fixes. The current local baseline and
 T1/T9 completion evidence are in the
-[verification record](history.md#t1t9-local-verification--2026-11-16); the original
+[verification record](planning-2026-11-15.md#t1t9-local-verification--2026-11-16); the original
 measurements and CI failure history below are preserved as assessed.
 
 Assessed at Manifest `feature-base` `f63a3a4` (`Ran out of tokens. Partial work being committed.`),
@@ -12,7 +12,7 @@ working tree clean, `main` and `feature-base` identical. Sibling engine checkout
 This is read-only planning documentation. No implementation code, tests, fixtures, assets,
 build scripts, `data/` YAML, `devenv.*` or `.vscode` files were changed here, and no build,
 CTest run, clang-format gate or clang-tidy run was performed. Every finding below is recorded
-so an implementer can act on it; the [models and agent workflow](agent-workflow.md) policy
+so an implementer can act on it; the [models and agent workflow](../agent-workflow.md) policy
 assigns that execution.
 
 ## Verdict
@@ -48,7 +48,7 @@ arriving faster than any of it can be built.
 ## Verified build evidence
 
 The newest recorded gate is the decimal-prices handoff in
-[session handoff](session-handoff.md): formatting and all 11 suites passed in Debug, Release and
+[session handoff](../session-handoff.md): formatting and all 11 suites passed in Debug, Release and
 ASan/UBSan at `5d7f54e` (`Market prices: use decimal values while preserving floating
 quantities`, 2026-11-15), with generation hash `10355632731109243635`, 100-tick hash
 `12410383246888723003` and raw-price hash `15444164946577136117`.
@@ -183,7 +183,7 @@ sources) from the acknowledged broken build, fixed by `81f72a6`.
    environment file and the VS Code examples are implementer work (T5, T7).
 7. **Minor module asymmetry.** The `effects` module declares no `TESTS` in
    `source/game/effects/CMakeLists.txt`; it is covered by `source/test/EffectsIntegrationTests.cpp`
-   (1,507 lines, 8 cases), which is documented in [architecture](architecture.md). No action
+   (1,507 lines, 8 cases), which is documented in [architecture](../architecture.md). No action
    beyond noting that per-module failure isolation for effects is coarser than for the other
    modules. All 54 `namespace Manifest::Core` occurrences in `source/` survive the module
    reorganisation, which the README documents as an intentional compatibility alias.
@@ -229,7 +229,7 @@ consumer that configures without presentation dependencies is a Stage 1 acceptan
 the boundary assessment, and it is also the foundation of the required dedicated server.
 
 **P1 — traceability (T2, T3).** Record selected decisions once, in
-[the decision ledger](decision-ledger.md), with stable IDs, canonical sections, status, owner and
+[the decision ledger](../decision-ledger.md), with stable IDs, canonical sections, status, owner and
 stage. Long-form plans link by ID. The ledger is the antidote to finding 2 and the index a fresh
 session needs.
 
@@ -252,13 +252,13 @@ clang-tidy left opt-in.
 | ID | Task | Acceptance |
 | --- | --- | --- |
 | T1 | Run `./scripts/ci.sh --werror --asan --log build/gate-analysis.log` at HEAD; record the result, log path and state hashes in `session-handoff.md`; if it fails, fix and re-run | Gate passes in Debug, Release and ASan/UBSan; hashes recorded and compared with the `5d7f54e` values above |
-| T2 | Extend the existing [decision ledger](decision-ledger.md) as decisions are selected, and reduce the duplicated statements in `scope.md`, `roadmap.md`, `development-stages.md`, `architecture.md` and `session-handoff.md` to one canonical section per decision plus a ledger link | Each selected decision has exactly one canonical statement; links resolve; `git diff --check` clean |
-| T3 | Apply the [ledger rules](decision-ledger.md#rules-for-maintaining-this-ledger) and the [planning discipline](agent-workflow.md#planning-discipline-after-the-2026-11-16-analysis) to future planning updates | New decisions arrive with an ID, status, owner and stage; no new prose duplicates |
+| T2 | Extend the existing [decision ledger](../decision-ledger.md) as decisions are selected, and reduce the duplicated statements in `scope.md`, `roadmap.md`, `development-stages.md`, `architecture.md` and `session-handoff.md` to one canonical section per decision plus a ledger link | Each selected decision has exactly one canonical statement; links resolve; `git diff --check` clean |
+| T3 | Apply the [ledger rules](../decision-ledger.md#rules-for-maintaining-this-ledger) and the [planning discipline](../agent-workflow.md#planning-discipline-after-the-2026-11-16-analysis) to future planning updates | New decisions arrive with an ID, status, owner and stage; no new prose duplicates |
 | T4 | Author the economy tuning inputs as YAML under `data/`, wire them through the existing merge, loader and data suite, and point the prose at the file | Data suite validates the values; no balance number exists only in prose |
 | T5 | Reconcile `devenv.nix` with pinned Jettison (`f850920`) by removing `lazygit` or recording an explicit documented exception, add a CI parity check for all three devenv files, and keep the README statement aligned with the final rule | Parity check green; README, `AGENTS.md` and the files agree |
 | T6 | Enforce the scope funnel in planning: each new mechanic names its stage, the public SDK API it consumes and the demonstrated gap, and no new product pillar is scheduled before the Stage 4 acceptance criteria pass | Roadmap entries carry stage/API/gaps triplets; pillars are explicitly deferred with a re-entry condition |
 | T7 | Repair the tracked VS Code examples: preset-relative binary paths, real test target names, Ninja task target | A fresh clone's examples match `CMakePresets.json` and the generated binaries |
-| T8 | Add the cheap checks in the appendix to this document to CI: local Markdown link and heading-anchor integrity, `devenv.*` parity against the pinned engine revision, and the CMake dependency-closure boundary checks from the [boundary assessment](engine-game-boundary-assessment.md#enforcement-to-implement-later) | Checks run in CI and fail on violations; documented in [build and gates](build-and-gates.md) |
+| T8 | Add the cheap checks in the appendix to this document to CI: local Markdown link and heading-anchor integrity, `devenv.*` parity against the pinned engine revision, and the CMake dependency-closure boundary checks from the [boundary assessment](engine-game-boundary-assessment.md#enforcement-to-implement-later) | Checks run in CI and fail on violations; documented in [build and gates](../build-and-gates.md) |
 | T9 | Fix the two clang-tidy findings that keep CI red: an explicit widening cast at `source/game/types/include/manifest/types/Decimal.h:99`, matching the `static_cast<__int128_t>` form already used at `Decimal.h:93`, and the `insert`/`append` form the check suggests at `source/game/market/src/Marketplace.cpp:1688`. Both preserve behaviour. Run `./scripts/ci.sh --werror --asan --tidy --log build/gate-tidy.log`, then push and confirm CI green | Local gate passes including tidy; the CI run on the fix commit is green; both findings are absent from `ci.log`, which now reaches Release and ASan/UBSan |
 | T10 | Repair the CI gate shape: run the tidy stage after Release and ASan/UBSan so a tidy warning cannot mask sanitiser evidence; run one gate per push rather than twice on identical `main` and `feature-base`; consider a bounded tidy baseline in place of `--warnings-as-errors=*`, and reporting header findings once rather than per TU | A failing tidy stage no longer prevents Release and ASan/UBSan results; one push costs one full gate |
 
@@ -340,7 +340,7 @@ for problem in missing:
 sys.exit(1 if missing else 0)
 ```
 
-Related: [roadmap](roadmap.md), [decision ledger](decision-ledger.md),
+Related: [roadmap](../roadmap.md), [decision ledger](../decision-ledger.md),
 [development stages](development-stages.md),
 [boundary assessment](engine-game-boundary-assessment.md),
-[session handoff](session-handoff.md).
+[session handoff](../session-handoff.md).

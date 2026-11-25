@@ -1,137 +1,121 @@
 # Models and agent workflow
 
+Who may do what on Manifest, how work is planned, and how a session ends. The rules apply to every
+agent, primary or sub-agent, whatever its model, effort or configured role.
+
 ## Planning-only policy
 
-The user's policy, recorded on 2026-11-15, is: **OpenAI models are for planning only.
-They must not implement project work.** This applies to the primary agent and every
-sub-agent, regardless of model, effort or configured role. It supersedes the previous
-OpenAI implementation recommendations in this document and `AGENTS.md`.
+The user's policy, recorded on 2026-11-15: **OpenAI models are for planning only. They must not
+implement project work.**
 
-OpenAI models may inspect the repository and existing logs read-only to inform architecture,
-task breakdowns, acceptance criteria, validation plans and implementation handoffs. When
-explicitly requested, they may write or update planning and workflow documentation, including
-this policy. Such a documentation request does not authorize project implementation.
+OpenAI models may read the repository and existing logs to inform architecture, task breakdowns,
+acceptance criteria, validation plans and handoffs to an implementer. When explicitly asked, they
+may write or update planning and workflow documentation, this policy included. Such a request does
+not authorise implementation.
 
-OpenAI models must not write or modify implementation code, tests, fixtures, assets, build
-scripts or configuration. Fixes, refactors, mechanical migrations, implementation delegation,
-integration and build/gate execution belong to the implementer. A small or routine change is
-still implementation; lowering effort or choosing a cheaper OpenAI model does not permit it.
+OpenAI models must not write or modify implementation code, tests, fixtures, assets, build scripts
+or configuration. Fixes, refactors, mechanical migrations, implementation delegation, integration
+and running builds or gates belong to the implementer. A small or routine change is still
+implementation; a lower effort or a cheaper OpenAI model does not permit it.
 
-Implementation is performed by the user or a non-OpenAI implementer selected by the user.
-This policy does not select a replacement provider, model or tool. An implementation request
-to an OpenAI planning agent produces a plan and handoff under this policy, not a patch.
+Implementation is done by the user or by a non-OpenAI implementer the user selects. This policy
+selects no replacement. An implementation request to an OpenAI planning agent produces a plan and
+handoff, not a patch.
 
 ## Implementer discretion to use stubs
 
-The user explicitly permits the implementer to write stubs when they judge them useful
-([D-056](decision-ledger.md#d-056)). Stubs may scaffold interfaces, isolate work or
-support incremental integration. Identify unfinished behavior clearly and follow the
-[coding standard](../../jettison/docs/coding-standards.md#errors): an unsupported production operation must
-fail explicitly rather than report a fabricated success. Test doubles remain explicit
-test dependencies.
+The implementer may write stubs when they judge them useful ([D-056](decision-ledger.md#d-056)):
+to scaffold an interface, isolate work or integrate in steps. Unfinished behaviour is marked
+clearly and follows the engine's [error rules](../../jettison/docs/coding-standards.md#errors): an
+unsupported production operation fails explicitly rather than report a made-up success. Test
+doubles stay explicit test dependencies.
 
-A stub does not satisfy the dependency or acceptance criterion for the behavior it
-stands in for. Dependent work may be developed against the provisional interface, but
-cannot be accepted as integrated until the real prerequisite and required checks pass.
-Record remaining stubs and their replacement tasks in the implementation handoff. This
-permission does not change the OpenAI planning-only policy or authorise broader scope.
+A stub does not meet the dependency or acceptance criterion of the behaviour it stands in for.
+Dependent work may be built against the provisional interface, but is not accepted as integrated
+until the real prerequisite and its checks pass. The handoff lists the stubs left and the tasks
+that replace them. This permission does not relax the planning-only policy or widen scope.
 
-## Roadmap planning
+## Planning integration work
 
-Before planning an integration, consult [development stages](development-stages.md),
-[gameplay requirements](gameplay-and-server-plan.md) and the
-[engine/game boundary assessment](engine-game-boundary-assessment.md). Record a small
-capability map: required Manifest mechanic, existing public engine API, demonstrated gap,
-owner, and acceptance evidence. Jettison implementers must inspect Manifest's current
-requirements and provision reusable missing capabilities in engine code; Manifest
-implementers supply the game's rules, schemas and content. Consult the selected SDK's
-`docs/game-integration.md` when available. Keep proposed APIs distinct from implemented ones.
-The planning-only policy above applies to this cross-repository work too.
+Before planning work that spans the engine and the game, read the [task queue](delivery-order.md),
+the feature document the work touches (listed in the [index](README.md)), the
+[architecture](architecture.md) and Jettison's
+[game integration](../../jettison/docs/game-integration.md). Record a small capability map: the
+mechanic Manifest needs, the public engine API that serves it, the gap if one is shown, its owner
+and the acceptance evidence. Jettison provisions reusable missing capabilities in engine code;
+Manifest supplies the game's rules, schemas and content. Keep proposed APIs apart from built ones.
 
-| Work | Planning output |
-| --- | --- |
-| 1. Host boundary and script capabilities | State ownership, host/script contracts, capability limits and acceptance criteria |
-| 2. Decimal market prices | Precision, overflow and rounding rules, affected-field inventory and migration plan |
-| 3. VFS, layered definitions and schema migration | Loader inventory, layering and migration semantics, compatibility and validation plan |
-| 4. Fixed-step commands, saves, replay and hashing | Ordering and state contracts, save format decisions, replay and determinism checks |
-| 5. Scripts, staging and an engine-hosted scenario | Capability/ABI design, packaging requirements and scenario acceptance criteria |
+A handoff names the agreed design, the files or modules affected, the constraints, the acceptance
+criteria, the checks required and the open questions. The implementer applies the change, reviews
+its integration and runs the checks and the final [gate](build-and-gates.md#the-gate).
 
-A handoff should name the agreed design, affected files or modules, constraints, acceptance
-criteria, required checks and unresolved questions. The implementer applies changes, reviews
-integration and runs the relevant checks and final gate. Build concurrency follows
-[D-051](decision-ledger.md#d-051); local clang-tidy remains opt-in as described in
-[build and gates](build-and-gates.md).
+<a id="planning-discipline-after-the-2026-11-16-analysis"></a>
 
-### Planning discipline after the 2026-11-16 analysis
+### Planning discipline
 
-Two rules bind planning edits, from the [project analysis](project-analysis-2026-11-16.md):
+These rules came out of the [2026-11-16 analysis](history/project-analysis-2026-11-16.md):
 
 - **Decisions are recorded once.** Selecting, changing or superseding a decision updates the
-  [decision ledger](decision-ledger.md) with its ID, single canonical section, status, owner and
-  stage in the same change. The roadmap, `scope.md`, `architecture.md`, `development-stages.md` and
-  `session-handoff.md` link the ID rather than restating the rule, and numeric balance values are
-  not written into prose; they are authored data (handoff T4) referenced from the ledger.
-- **Scope enters through a funnel.** A new mechanic is scheduled only with its stage, the public
-  SDK API it consumes, and the demonstrated gap when one exists. Product pillars beyond the current
-  sequence are recorded as deferred with a re-entry condition, not as next work. The first playable
-  loop needs stages 1–4: a new pillar may not displace Stage 1.
+  [decision ledger](decision-ledger.md) in the same change: its ID, canonical section, status and
+  owner. Other documents link the ID rather than restate the rule. Tuning values are authored data
+  under `data/`, not prose.
+- **Scope enters through a funnel.** A new mechanic is queued only with its
+  [task ID](glossary.md#task-id), the public SDK API it consumes and the gap it shows, if any. A
+  product pillar beyond the queue is recorded as deferred with a condition for taking it up, not
+  as next work.
+- **Gate claims name the stages that ran.** State which presets and stages ran. A Debug-only pass
+  is not a gate, and a CI run is never gate evidence: CI stages and smoke-tests the bundle only
+  ([verification evidence](build-and-gates.md#verification-evidence),
+  [D-116](decision-ledger.md#d-116)).
+- **Externally reported identifiers need a second source.** Tool output here has produced CI run
+  IDs and commit SHAs that do not exist
+  ([CI failure analysis](history/project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16)).
+  Confirm any run ID, commit SHA, push result or gate claim against `gh api`, `git ls-remote`,
+  `FETCH_HEAD` or the remote's commit list before reporting it, and take CI counts from a live
+  run list. Never write an unverified identifier into the documents, and never tell the user work
+  may be lost unless the remote's commit list agrees.
 
-- **Gate claims name the stages that ran.** Before planning, implementing or reporting validation,
-  read the "Current verification and CI status" section of `AGENTS.md` and
-  [CI failure analysis](project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16). State which
-  presets and stages ran, and never treat a CI run as Release or sanitiser evidence while the gate
-  aborts in tidy, nor a Debug-only pass as a full gate.
-
-- **Externally-reported identifiers need a second source.** Tool output in this project has emitted
-  CI run records and commit SHAs that resolve to nothing on GitHub (see the data-quality note in
-  [CI failure analysis](project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16)). Confirm any
-  run ID, commit SHA, push result or gate claim against `gh api`, `git ls-remote`, `FETCH_HEAD` or the
-  remote's own commit list before reporting it, and take CI counts from a live paginated run list
-  rather than from recalled output. Never write an unverified identifier into project documentation,
-  and never tell the user work may have been lost without the remote's commit list agreeing.
-
-Planning output never marks work `implemented` without a named verifying suite and a recorded gate.
+Planning never marks work done without a named verifying suite and a recorded gate.
 
 ## Existing roles and delegation
 
-The definitions under `.codex/agents/` and defaults in `.codex/config.toml` are existing
-OpenAI-backed configuration, not authorization to implement. Do not invoke
-`manifest_maintainer`, `manifest_small_fix` or `manifest_worker` for their implementation
-scopes. Read-only scout or review work is allowed only when it supports planning; it must
-not become delegated execution or patch production. The policy is an instruction, not an
-enforced filesystem sandbox.
+`.codex/agents/` defines five OpenAI-backed roles, and `.codex/config.toml` sets their defaults.
+They are configuration, not permission to implement:
 
-Delegate only a bounded, independent, read-only planning investigation when a small brief
-and concise findings reduce primary context or expensive-model work. Mapping loaders or
-examining an existing failure log can qualify; a single search usually does not. Prefer fresh
-context, specify the question and relevant paths, and request concise findings with file
-references. Avoid duplicate investigations and reuse a worker for related follow-up.
+| Role | Its configured scope | Allowed use |
+| --- | --- | --- |
+| `manifest_scout` | Inspect code, engine APIs or logs and return evidence | Read-only, in support of planning |
+| `manifest_reviewer` | Review a bounded diff | Read-only, in support of planning |
+| `manifest_maintainer` | Scoped documentation, fixture or mechanical changes | Not for its implementation scopes |
+| `manifest_small_fix` | Fix a small reproduced issue | Do not invoke |
+| `manifest_worker` | Implement one bounded module | Do not invoke |
 
-Use at most two sub-agents concurrently. They must not delegate further unless the primary
-explicitly assigns further delegation. The primary retains architectural decisions and
-prepares the handoff. Sub-agents add context and coordination overhead; do not promise lower
-aggregate tokens or guaranteed savings.
+The policy is an instruction, not an enforced filesystem sandbox.
+
+Delegate only a bounded, independent, read-only investigation, when a small brief and concise
+findings save the primary's context or an expensive model's work. Mapping loaders or reading a
+failure log can qualify; a single search usually does not. Give the question and the relevant
+paths, ask for concise findings with file references, avoid duplicate investigations, and reuse a
+worker for a related follow-up.
+
+Use at most two sub-agents at once. They do not delegate further unless the primary assigns it.
+The primary keeps the architectural decisions and writes the handoff. Do not promise lower total
+tokens or guaranteed savings.
 
 ## Session context at task completion
 
-End every completed roadmap task with a short context recommendation:
+End every completed task with a short recommendation, and its reason:
 
-- **Continue** when the next change needs the current reasoning and the session remains focused.
-- **Compact** when related work continues but old searches, build output and resolved issues
-  dominate the history. In Codex CLI, `/compact` summarises the conversation while preserving
-  useful continuity.
-- **Fresh session** when the task is complete and the next milestone can start from repository
-  documentation plus a short handoff. In Codex CLI, `/clear` or `/new` starts a fresh chat.
+- **Continue** when the next change needs the current reasoning and the session is still focused.
+- **Compact** when related work continues but old searches, build output and settled issues fill
+  the history (`/compact`).
+- **Fresh session** when the task is done and the next can start from the documents and a short
+  handoff (`/clear` or `/new`).
 
-Give the reason and advise rather than executing these actions automatically. Before advising
-a fresh session, provide the branch/commit, uncommitted changes, important decisions, completed
-checks, limitations and the next task so the user can paste the handoff into the new session.
-Do not commit changes merely to prepare that handoff.
+Advise; do not compact or clear automatically. Before advising a fresh session, give the branch and
+commit, uncommitted changes, decisions taken, checks run, limits and the next task, so the user can
+paste the handoff into the new session. Do not commit merely to prepare it.
 
-Conversation compaction is distinct from flushing the server-managed KV/prompt cache. Cache
-reuse can reduce input cost, while compaction and a fresh chat may incur summary or context
-reconstruction work. Recommend based on continuity and expected future context needs, without
-claiming guaranteed savings or inventing unavailable usage metrics. Use context usage from
-`/status` if it is available; the user can supply it when the agent cannot inspect it.
-See the official [Codex commands](https://learn.chatgpt.com/docs/developer-commands?surface=cli)
-and [prompt-caching guidance](https://developers.openai.com/api/docs/guides/prompt-caching).
+Compacting the conversation is not flushing the server's prompt cache. Recommend from continuity
+and the next task's needs; do not claim to measure or flush the cache, invent context-usage
+figures, or guarantee savings. Use `/status` for context usage where it is available.

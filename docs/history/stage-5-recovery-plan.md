@@ -1,6 +1,6 @@
 # Stage 5: persistence, recovery and a relocatable release
 
-Subsequent requirements: [planetary/corporate planning](planetary-development-plan.md)
+Subsequent requirements: [planetary/corporate planning](../planetary-development-plan.md)
 adds control rights, separate public budgets, development reservations/queues and idle
 automation to authoritative recovery as they land. Later acquisition and generated frontier
 topology need the same guarantees. A remote TUI slice can precede this stage; durable
@@ -112,13 +112,13 @@ are their formats'.
 ### Compatibility
 
 A build loads a save only when `game`, `sdk`, `fixedStep`, `commands` and `content` each equal its
-own ([D-111](decision-ledger.md#d-111)), checked from the section before the world's save is read,
+own ([D-111](../decision-ledger.md#d-111)), checked from the section before the world's save is read,
 so a refusal installs nothing. The refusal names the field and both values: for `commands` the
 first that differs, for `content` both fingerprints and the first definition type and record that
 differ.
 
 The build is compared exactly because nothing else tells two builds apart. Formats change in place
-until player testing ([D-109](decision-ledger.md#d-109)), so equal versions do not mean equal
+until player testing ([D-109](../decision-ledger.md#d-109)), so equal versions do not mean equal
 layouts or equal rules, and a journal replayed under other rules gives other outcomes than the ones
 it acknowledged. So a world does not outlive the build that hosts it until D-109 ends. From then a
 build names the earlier builds whose saves a migration brings up, offline and against a copy, as
@@ -249,7 +249,7 @@ on the world, which waits for something to write (R03).
 ## The journal and its snapshots (R03, R04), 2026-11-24
 
 What a server writes as it runs and reads when it starts, on Jettison `ea66afe` with no engine edit.
-The user's decision ([D-113](decision-ledger.md#d-113)): a crash may lose up to 30 s of play, so
+The user's decision ([D-113](../decision-ledger.md#d-113)): a crash may lose up to 30 s of play, so
 nothing is written before a step is taken and a receipt is not a durable acknowledgement. Where the
 proposal below differs ([commit model](#commit-model-durable-step-batches) to
 [startup and recovery](#startup-and-recovery)), this holds.
@@ -274,7 +274,7 @@ changed since it was written is refused by name.
 
 | File | Holds | Written |
 | --- | --- | --- |
-| `identity` | `Manifest.Host.Identity`: the world's identity and what [D-111](decision-ledger.md#d-111) compares, `game`, `sdk`, `fixedStep`, `commands` and `content`, as [R01](#the-file) defines them. | Once, as the world is made. |
+| `identity` | `Manifest.Host.Identity`: the world's identity and what [D-111](../decision-ledger.md#d-111) compares, `game`, `sdk`, `fixedStep`, `commands` and `content`, as [R01](#the-file) defines them. | Once, as the world is made. |
 | `journal/<sequence>` | `Manifest.Host.Batch`: the world, the batch's sequence from 1, the identity of the batch before it, the step it begins at, how many steps it covers, and each request that ran in them with the step it ran at, in the order they ran. | Once, at a flush. |
 | `snapshots/<batch>` | The world's save (`SimWorld::Save`) as the journal's batch of that sequence left it. | Once, at a snapshot. |
 | `catalogue` | `Manifest.Host.Catalogue`: the world, the head batch's sequence and identity, the step after its last, and the snapshots kept, each with its batch, that batch's identity, its own checksum and its step. | Replaced at every flush and snapshot. |
@@ -431,7 +431,7 @@ On SIGINT or SIGTERM the server admits nothing more, and `Host::Journal::Stop` r
 it admitted since the last step in one more step, so none is left with a receipt and no answer; the
 server then sends their answers and a snapshot is written, so the next start loads it and replays
 nothing. The proposal's non-durable stopped answer is not needed: under
-[D-113](decision-ledger.md#d-113) every admitted request runs in the next step, and the step at a
+[D-113](../decision-ledger.md#d-113) every admitted request runs in the next step, and the step at a
 stop is that step. A stop costs one step and one save, 475 KB today. A write that fails exits 1
 with no stop reported, and the catalogue still names the last recovery point.
 
@@ -495,7 +495,7 @@ step it stopped at, and is refused restoring it over the world. Measured in Debu
 ## The runtime distribution contract (R06), 2026-11-24
 
 What R07 stages and tests, and what a host must give it to run. The user chose a standalone bundle and
-the TUI in it (2026-11-24, [D-114](decision-ledger.md#d-114)). Where the [relocatable
+the TUI in it (2026-11-24, [D-114](../decision-ledger.md#d-114)). Where the [relocatable
 release](#relocatable-release) proposal differs, this holds. Read from Manifest `feature-base` at
 `9dd0d81` on pin `ea66afe`. This is a planning task: no code changed, and nothing below is
 enforced yet.
@@ -508,7 +508,7 @@ A tarball, `manifest-<version>-<game tree>-linux-x86_64.tar.gz`, holding one dir
 | --- | --- |
 | `bin/` | `manifest` (the server, `--check-startup` and `--restore`), `manifest-validate`, `manifest-token` and `manifest_tui`. |
 | `share/manifest/manifest.pack` | The content, packed as the build packs it. |
-| `share/manifest/BUILD` | The build's version, its game and SDK trees ([D-111](decision-ledger.md#d-111)) and the content's fingerprint, the same values a save's `Manifest.Save` holds. |
+| `share/manifest/BUILD` | The build's version, its game and SDK trees ([D-111](../decision-ledger.md#d-111)) and the content's fingerprint, the same values a save's `Manifest.Save` holds. |
 | `share/doc/manifest/` | Manifest's `LICENSE` and the licence of every library linked into a binary, each from its source at its pinned version. |
 
 R07 stages it from a clean commit, so its game tree names a commit. The directory may be anywhere
@@ -659,7 +659,7 @@ The CPU-only configure (`clang-notui`) is as it was; its `bundle_smoke` runs wit
 
 - **R09.** Done: [the stage's close](#stage-5-closed-r09-2026-11-25). `test-bundle.sh` needs Docker
   and is run by hand; CI stages the bundle and runs it on its Ubuntu 24.04 runner's glibc 2.39 with
-  `test-bundle.sh <bundle> host` ([D-116](decision-ledger.md#d-116)).
+  `test-bundle.sh <bundle> host` ([D-116](../decision-ledger.md#d-116)).
 - **Every machine that runs the release preset** needs a loader at `/lib64/ld-linux-x86-64.so.2`,
   nix-ld on NixOS, since its tests run the distributed binaries.
 - **Debug files.** A release's binaries keep their debug information; stripping them, with the
@@ -679,7 +679,7 @@ hears a bid complete and queues a third, Bea queues a second, and the server cra
 more flushed. Started again on the world:
 
 - It is at the flushed step, and each reconnection is told the sequence after the last the journal
-  kept: the bid Ada heard complete is lost with its sequence, as [D-113](decision-ledger.md#d-113)
+  kept: the bid Ada heard complete is lost with its sequence, as [D-113](../decision-ledger.md#d-113)
   allows, since `Completed` is not durable.
 - The flushed bid retried is answered `Completed` with the step and global order it ran at, and is
   not run again.
@@ -716,7 +716,7 @@ and the test takes the 52 s in Debug it took before.
 **Stage 5 is closed**, on Jettison `13c1bec` at Manifest `5c4bf68`, with one engine provision:
 a world lists the names its save holds (`SimWorld::ComponentNames`, `ServiceNames`), the gap
 [R01](#what-it-leaves-each-task) named. Where the [delivery and evidence](#delivery-and-required-evidence)
-table below differs, [D-113](decision-ledger.md#d-113) and this hold: nothing is written before a step
+table below differs, [D-113](../decision-ledger.md#d-113) and this hold: nothing is written before a step
 is taken, so a receipt is not a durable acknowledgement, and a crash loses up to 30 s.
 
 ### What R09 added
@@ -772,13 +772,13 @@ In a Release build on Lythir's NVMe (ext4), the trading scenario, each figure on
 A hosted session starts in 52 ms. A batch of one idle step is 230 bytes, and one with a
 provisioning request 638; the journal grows by what runs, not by the time. Debug's figure for
 serialising, 7.3 ms at 550 KB (R04), is about Release's. Four players is the most the trading scenario holds: its starter venue's life support
-has connections for four ships ([D-047](decision-ledger.md#d-047)), and a fifth is refused
+has connections for four ships ([D-047](../decision-ledger.md#d-047)), and a fifth is refused
 `NoServiceFree`. So a larger world is not measured: at the 14 ms a megabyte these give, R04's guessed
 22 MB for 50 players would serialise in about 0.3 s, a guess on a guess.
 
 ### What it leaves
 
-- **Saves off the step's thread** (the user's, 2026-11-25, [D-115](decision-ledger.md#d-115)). A flush
+- **Saves off the step's thread** (the user's, 2026-11-25, [D-115](../decision-ledger.md#d-115)). A flush
   holds the server's loop for 11 ms and a snapshot for about 60, against a 16.7 ms step, and the
   serialising grows with the world. Taken up before a world outgrows a step or a frame is drawn
   beside one.
@@ -795,7 +795,7 @@ has connections for four ships ([D-047](decision-ledger.md#d-047)), and a fifth 
 
 The proposal of 2026-11-15, kept as it was made. Its commit before execution and its durable
 acknowledgement were built, measured and replaced on the user's decision
-([D-113](decision-ledger.md#d-113)); what a server does is
+([D-113](../decision-ledger.md#d-113)); what a server does is
 [above](#the-journal-and-its-snapshots-r03-r04-2026-11-24).
 
 Use one writer per world, enforced with a process-held lock in its writable data root.

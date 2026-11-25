@@ -1,7 +1,7 @@
 # Next development stages
 
 Approved by the user on 2026-11-15. Implementation follows the
-[planning-only model policy](agent-workflow.md#planning-only-policy). These stages
+[planning-only model policy](../agent-workflow.md#planning-only-policy). These stages
 refine the [standalone mod plan](standalone-mod-plan.md) and
 [gameplay and persistent server plan](gameplay-and-server-plan.md) into the next delivery
 sequence, originally a local persistent trading game before networking. The subsequent
@@ -15,20 +15,20 @@ standalone plan's workstreams. Preserve the product decisions and host/script co
 in the linked documents. Policy scripts and graphical presentation follow the proven
 native trading loop.
 
-The [prioritised delivery order](delivery-order.md) breaks these stages and their
+The [prioritised delivery order](../delivery-order.md) breaks these stages and their
 maintenance/amendment tasks into a dependency-ordered implementation queue. Use it
 to choose the next task; the detailed stage plans retain their acceptance contracts.
 
-Status: see the [delivery order](delivery-order.md#status).
+Status: see the [delivery order](../delivery-order.md).
 The [project analysis](project-analysis-2026-11-16.md) retains the historical diagnosis.
 The amendments below are read together with the
-[decision ledger](decision-ledger.md), which carries each selected decision once with its status,
+[decision ledger](../decision-ledger.md), which carries each selected decision once with its status,
 owner and stage; the roadmap's delivery sequence governs ordering, and a new pillar does not
 displace Stage 1.
 
 ## Subsequent product goals and delivery amendments
 
-The [planetary development and frontier plan](planetary-development-plan.md) records the
+The [planetary development and frontier plan](../planetary-development-plan.md) records the
 current direction: a headless authoritative idle world; required remote TUI `connect` and
 `disconnect` gameplay; a GUI sharing the server interface; NPCs, autopilot and physical
 auto-trading operating without clients. Manual TUI spaceport trading remains a stretch goal.
@@ -47,7 +47,7 @@ on that planet under owner terms, preserving bookings, physical delivery and sep
 economies/rights/construction opportunities. Allocate starting regions only with an operational
 starter-compatible public station and physical delivery connection. Also require available
 working station life support and spawn the new player connected. The starter receives
-its oxygen and one fresh installed scrubber cartridge once ([D-045](decision-ledger.md), values in
+its oxygen and one fresh installed scrubber cartridge once ([D-045](../decision-ledger.md), values in
 the [small-ship plan](small-trader-and-docking-plan.md#selected-ship-roles-and-cargo-capacities)), in dedicated service space outside its trade hold. Trade supplies/loose spares use cargo volume; storage
 dimensions, station provisioning and later outages remain open. Guarantee continuing basic
 docking/trading/regional delivery access against corporate revocation, retaining charges,
@@ -75,18 +75,18 @@ neighbouring ports do not block it, and other players' governed regions are prot
 unsolicited builds. It opens resource exploitation and colonies
 with company-controlled puppet governments. Prove this on a static map before requiring live
 frontier generation; construction rights and planet-wide control are distinct contracts.
-Later new-system access requires the [stargate expedition](stargate-expansion-plan.md): a
+Later new-system access requires the [stargate expedition](../space-plan.md): a
 government/corporation funds an automated unmanned FTL delivery, with distance-based duration
 tuned through speed/pacing to hours/days of server-running wall time. An operational gate opens
 the connection; its owner controls access and fees, including refusing rivals. This is separate
 from planetary ports, control and exploitation grants and does not delay the first static-map loop.
-The selected [site reservation rules](planetary-development-plan.md#company-built-stations-and-control-of-shipping)
+The selected [site reservation rules](../planetary-development-plan.md)
 give the first eligible funded project construction priority, with non-refundable mobilisation,
 reserved construction funds and a fixed completion deadline. Abandonment/expiry reopens the
 site; unspent funds and unused goods retain company ownership. Exact amounts, deadline timing
 and completed-work salvage remain unresolved; resource/government grants are separate.
 
-Further refinements: [physical economy/development](economy-and-development-plan.md) requires
+Further refinements: [physical economy/development](../economy-and-development-plan.md) requires
 instant credit settlement, full commodity transport through warehouses, finite principal
 brokers, spreads plus separate handling charges, and production-capped supply/scarcity pricing.
 Planet tech requires local/imported materials and built production facilities. Generate
@@ -97,16 +97,16 @@ protected. These refinements supersede the permanent no-second-port interpretati
 concessions. The host records timing inputs/expiry for replay; deterministic systems read no clock.
 The selected exclusivity grant starts when the first eligible frontier port becomes operational
 and its exploitation concession activates. Disclose its duration before construction; the
-initial balance-testing term is the [economy plan: exclusive exploitation](economy-and-development-plan.md#real-time-exclusive-exploitation)'s, in server-running hours. Idle facilities and disconnected
+initial balance-testing term is the [economy plan: exclusive exploitation](../economy-and-development-plan.md)'s, in server-running hours. Idle facilities and disconnected
 owners do not pause it; ownership transfers, rebuilding and government changes cannot renew
 or extend it. The concession does not itself transfer government control.
 
-The first selected [tech example](economy-and-development-plan.md#first-tech-example-bronze-metallurgy-selected)
+The first selected [tech example](../economy-and-development-plan.md#first-tech-example-bronze-metallurgy-selected)
 is Bronze metallurgy in the separate governance fixture. Basic smelting knowledge, a seeded
 operational local workshop and delivered public project inputs of copper and tin
 gate timed work. Use local copper and physically imported tin. Consume project inputs once;
 workshop interruption pauses work. Completion unlocks local production batches of copper and tin
-into bronze (inputs and batch ratio: [economy plan: bronze](economy-and-development-plan.md#first-tech-example-bronze-metallurgy-selected)). Knowledge survives workshop loss; production still needs an
+into bronze (inputs and batch ratio: [economy plan: bronze](../economy-and-development-plan.md#first-tech-example-bronze-metallurgy-selected)). Knowledge survives workshop loss; production still needs an
 operational workshop. Quantities are starting test values; work duration, throughput and
 profitability remain unvalidated. Preserve the separate eight-good trading fixture.
 
@@ -119,32 +119,32 @@ grains once without creating a food commodity. Population counts people in aggre
 consumption rates are per 1,000 people per simulation day, scaled by population and elapsed
 simulation time with fractional quantities retained. Any supported migration must explicitly
 convert legacy abstract world units. The initial food demand, across the qualifying grains, and drinking-water demand are the
-[economy plan: households](economy-and-development-plan.md#aggregate-households-wages-and-consumer-demand-selected)'s; drinking water is separate from agricultural/industrial water demand.
+[economy plan: households](../economy-and-development-plan.md)'s; drinking water is separate from agricultural/industrial water demand.
 Preserve physical volume through conversion to selected inventory units. Remaining item
 authoring values and population sizes need selection/
 implementation through the stage 2 content path.
 
 Basic Medical Supplies is a distinct tradable `Kilogram` commodity for routine medical
 consumables. Preserve specialised medicines as separate items without automatic substitution.
-Basic-supplies consumption is prorated across updates at the [economy plan: households](economy-and-development-plan.md#aggregate-households-wages-and-consumer-demand-selected)'s
+Basic-supplies consumption is prorated across updates at the [economy plan: households](../economy-and-development-plan.md)'s
 rate. Remaining authored values still need selection; the economy plan records
 the content implementer handoff.
 
-Further [economy rules](economy-and-development-plan.md) select aggregate households,
+Further [economy rules](../economy-and-development-plan.md) select aggregate households,
 pre-funded recipe payroll, progress-based wages, tax/rounding, regular payroll/purchases
-on a fixed simulation-time cadence ([economy plan: health and happiness](economy-and-development-plan.md#population-health-happiness-and-production-selected)) and health/happiness losses that both reduce production.
+on a fixed simulation-time cadence ([economy plan: health and happiness](../economy-and-development-plan.md)) and health/happiness losses that both reduce production.
 Condition updates follow household purchases on that cadence: greater essential shortages
 cause greater losses, full essentials allow gradual recovery and happiness declines/recovers
 faster than health. Both remain within 0–100, initially 100 in the first balance-testing
 scenario, without resets on joining/acquisition/governor changes. Losses are proportional
 to severity and recovery happens at full essentials, at the initial test rates of the
-[economy plan: health and happiness](economy-and-development-plan.md#population-health-happiness-and-production-selected). Severity averages required
+[economy plan: health and happiness](../economy-and-development-plan.md). Severity averages required
 essential needs' unmet fractions using authored importance weights, initially equal. Food
 counts once across qualifying grains. Surplus cannot
 offset another missing essential. Condition slows production work rate while completed batches
 retain declared inputs, outputs and gross wages. Slower work slows proportional wage accrual;
 changes apply to subsequent steps without reversing progress or earned/paid wages. The initial
-work-rate multiplier is the [economy plan: health and happiness](economy-and-development-plan.md#population-health-happiness-and-production-selected)'s; missing materials/funds or inactive facilities can still stop work entirely.
+work-rate multiplier is the [economy plan: health and happiness](../economy-and-development-plan.md)'s; missing materials/funds or inactive facilities can still stop work entirely.
 Production uses prior-step condition and settles completion. At each due economic boundary,
 regular payroll/tax precedes household purchases/consumption, then condition updates for the
 next fixed step. Full movement/market integration ordering and balance need validation.
@@ -157,16 +157,16 @@ the intended information advantage. These remain planning requirements without r
 The [small-ship plan](small-trader-and-docking-plan.md) adds a single-occupant long-journey
 class with a truck-like tiny cabin, a very small cargo hold and a matching small berth.
 Its primary purpose remains unspecified and trade is secondary. The distinct lone-trader
-starter has a larger hold (both capacities: [D-044](decision-ledger.md), the [small-ship plan](small-trader-and-docking-plan.md#selected-ship-roles-and-cargo-capacities)); onboarding must not confuse the two classes.
+starter has a larger hold (both capacities: [D-044](../decision-ledger.md), the [small-ship plan](small-trader-and-docking-plan.md#selected-ship-roles-and-cargo-capacities)); onboarding must not confuse the two classes.
 Plan definitions in stage 2, ownership/capacity in stage 3, physical berth integration in
 stage 4 and recovery in stage 5. The smaller berth is a pad class Manifest authors
-([D-044](decision-ledger.md)); Jettison provisioned it in W01. Dimensions,
+([D-044](../decision-ledger.md)); Jettison provisioned it in W01. Dimensions,
 costs, endurance, starter upgrades and the starter's berth fit remain open.
 
 The [contract/booking handoff](procurement-and-station-contracts-plan.md) proposes the first
 supply tender and accepted-booking lifecycle. Partial delivery payments and grandfathered
 booking terms are selected, as is a supplier-funded performance bond held until close with
-proportional forfeiture for undelivered goods ([D-042](decision-ledger.md#d-042); its rate
+proportional forfeiture for undelivered goods ([D-042](../decision-ledger.md#d-042); its rate
 is proposed, not accepted). Detailed numeric
 settlement and other failure defaults remain proposals. No code or gameplay-validation
 evidence is supplied by these additional plans.
@@ -204,7 +204,7 @@ original delivery sequence.
 
 Establish how Manifest starts and owns a game through Jettison.
 
-**Done** 2026-11-18, H07 ([status](history.md#status-2026-11-18)). Use the
+**Done** 2026-11-18, H07 ([status](stage-1.md#status-2026-11-18)). Use the
 [detailed handoff](stage-1-host-plan.md) for the lifecycle contract, delivery slices
 and acceptance matrix. Complete its maintenance prerequisites before implementation.
 
@@ -299,7 +299,7 @@ Depends on stage 4. Turn the working scenario into a world that survives restart
 - Save all authoritative state, including identity counters, reservations and in-flight travel.
 - Add atomic snapshots and journal recovery using Jettison facilities where suitable.
 - Persist accepted command ordering before acknowledging durable success. Replaced
-  ([D-113](decision-ledger.md#d-113)): a crash may lose up to 30 s of play.
+  ([D-113](../decision-ledger.md#d-113)): a crash may lose up to 30 s of play.
 - Preserve retry detection across restart.
 - Validate game/schema/content compatibility before resuming.
 - Package a runnable distribution with separate writable user data.
@@ -318,7 +318,7 @@ checkouts. Backups and restore tests address storage loss separately.
 
 For every stage, the selected implementer records acceptance evidence, updates the roadmap
 and runs the relevant suites and required repository gates. Follow
-[D-051](decision-ledger.md#d-051) for machine-specific concurrency; keep local
+[D-051](../decision-ledger.md#d-051) for machine-specific concurrency; keep local
 clang-tidy opt-in. Commit Jettison changes before updating Manifest's immutable SDK pin,
 and keep the development environment identical to the selected SDK.
 
@@ -334,8 +334,8 @@ the number of registered players or worlds advancing while they are absent.
 
 ## Handoff
 
-Stages 1 and 2 are done. The [delivery order](delivery-order.md) names the next task and the
-newest [session handoff](session-handoff.md) the state it starts from; recheck both repositories
+Stages 1 and 2 are done. The [delivery order](../delivery-order.md) names the next task and the
+newest [session handoff](../session-handoff.md) the state it starts from; recheck both repositories
 before implementation. At each completed task, follow the session handoff guidance in
 `agent-workflow.md`: recommend continuing, compacting or starting a fresh session, and leave
 concrete state and validation evidence when handing off.

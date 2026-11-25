@@ -70,7 +70,7 @@ The package currently contains Manifest's configuration data. Jettison can mount
 sample game does not consume Manifest's configuration schema or execute this repository's C++
 economy. The C++ implementation builds as static host-side modules aggregated by `Manifest::Game`
 (with `Manifest::Core` as a compatibility alias); the TUI exercises them during development.
-The [host/script boundary](docs/host-script-boundary.md) assigns authoritative rules to linked
+The [host/script boundary](docs/history/host-script-boundary.md) assigns authoritative rules to linked
 native game code and bounded policy decisions to Wasm. Market prices now use an exact decimal
 representation; other continuous values retain floats/doubles. Shipping gameplay still needs
 the VFS loaders, world adapters and scripted scenario in the
@@ -96,7 +96,7 @@ all but `host`;
 `Manifest::Core` namespace.
 
 [Architecture](docs/architecture.md), [coding standards](docs/coding-standards.md),
-[scope](docs/scope.md), and [model reference](docs/model.md) describe the implementation.
+[scope](docs/scope.md), and [model reference](docs/content.md) describe the implementation.
 
 MIT licensed; see [LICENSE](LICENSE).
 

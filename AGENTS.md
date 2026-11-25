@@ -2,23 +2,37 @@
 
 Manifest is a Jettison mod project. Read `docs/coding-standards.md`,
 `docs/architecture.md` and `docs/build-and-gates.md` before changing it.
-For the current work, read the [delivery order's status](docs/delivery-order.md#status); for
-selected decisions and their status, read `docs/decision-ledger.md`.
+For the current work, read the [task queue](docs/delivery-order.md) and the
+[session handoff](docs/session-handoff.md); for decisions and their status, read
+`docs/decision-ledger.md`.
 
-- Jettison's `feature-base` branch is the SDK reference; `main` may lag behind it.
-  The sibling checkout is usually `../jettison`. The reproducible SDK commit is in
-  `source/external/CMakeLists.txt`; `JETTISON_SOURCE_DIR` is an explicit local override.
+- The SDK is the Jettison commit pinned in `source/external/CMakeLists.txt`. The sibling
+  checkout is usually `../jettison`; `JETTISON_SOURCE_DIR` is an explicit local override.
 - Keep `devenv.nix`, `devenv.yaml` and `devenv.lock` identical to the selected engine SDK.
   Reuse its dependency targets rather than fetching second copies or changing ABI defines.
 - Follow the engine's naming, formatting, warnings and simulation rules. Keep authored
   YAML keys and IDs stable when renaming C++ identifiers.
-- Build and test with the presets. `./scripts/ci.sh --werror --asan` is the local gate.
+- Build and test with the presets. `./scripts/ci.sh --werror --asan --tidy` is the local
+  gate, run before every push.
 - Avoid running clang-tidy routinely on the underpowered laptop.
-  It is opt-in with `--tidy`, enabled in CI. Build concurrency is machine-specific;
+  It is opt-in with `--tidy`; the gate runs it locally before a push, not CI
+  ([D-116](docs/decision-ledger.md#d-116)). Build concurrency is machine-specific;
   follow [D-051](docs/decision-ledger.md#d-051) and
   [the concurrency policy](docs/build-and-gates.md#machine-specific-concurrency).
-- A mounted content package is not yet playable gameplay. Document the host/script boundary
-  and the remaining fixed-point/VFS integration accurately; see `docs/roadmap.md`.
+- The Wasm policy scripts are not built ([L39](docs/delivery-order.md#l39)); everything else of
+  the first loop runs in `manifest --serve` and the console. See `docs/roadmap.md`.
+
+## Where to look
+
+- [docs/README.md](docs/README.md) is the index: every document, with its purpose. Terms are
+  defined once, in the [glossary](docs/glossary.md).
+- The open work, in order, is the [task queue](docs/delivery-order.md); where it is going, the
+  [roadmap](docs/roadmap.md). Finished work is in [history](docs/history.md), an index of
+  `docs/history/`.
+- The design is [architecture](docs/architecture.md) for the overview, then one document per
+  feature (content, the host, the world, companies, trading, prices, the economy, governance,
+  space, travel, stations, policies, persistence, the server, the console, the sandbox), each
+  listed in the index.
 
 ## Agent Directions
 
@@ -68,41 +82,39 @@ does not restate it.
 
 - **Local gate results do not establish CI results.** Inspect the exact pushed commit's
   Actions run and logs before reporting its CI status. The pre-fix failure streak in the
-  [analysis](docs/project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16) is historical.
+  [analysis](docs/history/project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16) is
+  historical.
 - **CI runs on `feature-base` pushes, PRs to it and manual dispatch, not on `main` (M02).**
   Promote with `scripts/promote.sh`, which fast-forwards `main` only to a commit whose own
   `feature-base` run passed. CI is not the gate (D-116): it stages the bundle and smoke-tests
   it on Ubuntu, and the gate, tidy included, runs locally before a push. Name the stages that
   actually ran.
-- **Next implementer work:** see the [delivery order's status](docs/delivery-order.md#status)
+- **Next implementer work:** see the [task queue](docs/delivery-order.md)
   and the [session handoff](docs/session-handoff.md); how earlier tasks went is in
   [history](docs/history.md).
   The shell matches the SDK pin (T5, M04); `scripts/check-env-parity.sh` checks it in CI, and a
   pin move copies the three files from that commit. Avoid repeated gates without a new change or
   unresolved failure.
-- **Tool output in this project has emitted identifiers that do not exist.** The 2026-11-16 analysis
-  saw two CI run records (43806887285, 43806869597, "created 2026-11-16T04:21Z") and a push rejection
-  (`9ea337b..7c0a307`, "Docs: record the running-world economy decisions") that resolve to nothing on
-  GitHub: the records 404, `gh api` reports _No commit found for SHA_ for both SHAs, no forced push
-  event exists, and `FETCH_HEAD` plus the remote commit list show linear history to `531295e`. Nothing
-  was lost. Confirm any externally-reported run or commit identifier against a second source (`gh api`,
-  `git ls-remote`, `FETCH_HEAD`, the remote's commit list) before reporting it or writing it into docs;
-  see the data-quality note in
-  [CI failure analysis](docs/project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16).
+- **Tool output in this project has emitted identifiers that do not exist** (CI runs and commit
+  SHAs; the record is in the
+  [CI failure analysis](docs/history/project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16)).
+  Confirm any externally-reported run or commit identifier against a second source (`gh api`,
+  `git ls-remote`, `FETCH_HEAD`, the remote's commit list) before reporting it or writing it into
+  docs.
 - Planning agents must not reason "CI is green, therefore validated": a run validates the commit
   it ran on, and only the stages it ran.
 
 ## Models and delegation
 
-Before integration work, read `docs/engine-game-boundary-assessment.md`, the current
-development-stage/gameplay plans and the selected SDK's `docs/game-integration.md` when
-available. Manifest owns production rules and content; Jettison supplies genre-neutral
-capabilities. Map required mechanics to public SDK APIs and record demonstrated gaps.
-The implementer provisions reusable missing capabilities in Jettison, commits them and
-updates the SDK pin; game rules, balance and authored values remain in Manifest. Use
-Jettison YAML/archive/registry mechanisms rather than parallel custom loaders. Do not
-include private engine app headers or depend on its sample economy. Jettison may retain
-small gameplay examples for automated testing in separate sample/test targets and assets.
+Before integration work, read Jettison's `docs/game-integration.md` at the pin, this
+repository's `docs/architecture.md`, the task queue and the feature document the work touches.
+Manifest owns production rules and content; Jettison supplies genre-neutral capabilities. Map
+required mechanics to public SDK APIs and record demonstrated gaps. The implementer provisions
+reusable missing capabilities in Jettison, commits them and updates the SDK pin; game rules,
+balance and authored values remain in Manifest. Use Jettison YAML/archive/registry mechanisms
+rather than parallel custom loaders. Do not include private engine app headers or depend on its
+sample economy. Jettison may retain small gameplay examples for automated testing in separate
+sample/test targets and assets.
 
 **OpenAI models are for planning only. They must not implement project work.** This applies
 to the primary agent and all sub-agents, regardless of model, effort or role name, and

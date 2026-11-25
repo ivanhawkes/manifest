@@ -1,292 +1,252 @@
 # Build and gates
 
-Run inside `devenv shell` or the direnv-loaded shell. The SDK source pin is
-`MANIFEST_JETTISON_REVISION` in `source/external/CMakeLists.txt`, and the shell's three files
-match it ([T5](#t5-selected-environment-parity-plan)). To test a local engine,
-configure with `-DJETTISON_SOURCE_DIR=/path/to/jettison` on `feature-base`.
+How to build Manifest, run its suites, pass the gate before a push, and stage the distribution.
+Everything runs inside `devenv shell` or the shell direnv loads, which provides clang 21,
+clang-format, clang-tidy, CMake, Ninja and yq. Much of the mechanism follows Jettison's
+[build and gates](../../jettison/docs/build-and-gates.md); this page says how Manifest's differs.
+
+## Quick start
 
 ```bash
 cmake --preset clang-debug
 cmake --build --preset clang-debug
-ctest --preset clang-debug
-./scripts/ci.sh --werror --asan --tidy --log build/gate.log
+ctest --preset clang-debug                                   # every suite
+ctest --preset clang-debug -R '^console$'                    # one suite
+./scripts/ci.sh --werror --asan --tidy --log build/gate.log  # the gate, before a push
 ```
 
-Presets are `clang-debug`, `clang-notui`, `clang-release` and `clang-asan`. Each has its own build
-tree, generated data and staged mod. `clang-notui` is Debug with `MANIFEST_BUILD_TUI=OFF` and the engine's
-`JETTISON_PRESENTATION=OFF`, which holds the game's command and query coverage to a build without
-the terminal interface or the engine's renderer, UI and developer console. The gate
-runs formatting, Debug build and CTest, the same for `clang-notui`, Release build and CTest, and
-optionally ASan/UBSan build and CTest. `--skip-release` supports a shorter local pass;
-CI runs none of it ([D-116](decision-ledger.md#d-116)). `CMAKE_BUILD_PARALLEL_LEVEL`, `CTEST_PARALLEL_LEVEL` and
-`MANIFEST_TIDY_JOBS` control concurrency. Clang-format must be version 21.
+## The SDK and the shell
 
-A gate that passed is not run again on the same inputs, as Jettison's is: a digest of the working
-tree's files (tracked or untracked and not ignored, `*.md` aside), the versions of clang,
-clang-format, clang-tidy and cmake, and the options (the presets set every build option a stage
-reads, so no cached setting escapes the digest), kept under `build/gate-passed` when it is the same at the end of
-the run as at the start; `--force` runs it anyway. The engine is in that digest by its pin, so a
-preset configured with `JETTISON_SOURCE_DIR` runs every time and is never kept. `scripts/tidy.py`
-skips a unit that was clean and whose compile command, includes (`ninja -t deps`), clang-tidy and
-`.clang-tidy` are unchanged since, recorded under `<build>/tidy-clean`.
+Manifest builds against one Jettison commit, the [pin](glossary.md#pin):
+`MANIFEST_JETTISON_REVISION` in `source/external/CMakeLists.txt`. Configuring fetches that commit
+into `build/<preset>/_deps/jettison-src`. To build against a local engine instead, configure with
+`-DJETTISON_SOURCE_DIR=/path/to/jettison`; that is development evidence only, never a gate.
 
-The CTest suites are `types`, `config`, `universe`, `progression`, `sim`, `ecs`, `market`,
-`host`, `content`, `effects`, `remote`, `data`, `packaging`, `mod`, `fixture` (its longest cases
-apart, as `fixture_cruise`, `fixture_alone`, `fixture_prices`, `fixture_burn`, `fixture_traffic` and `fixture_governance`, so the seven run side by side) and `sdk_import`, plus `console` when the TUI is enabled. The
-`cli_*` tests run the `manifest` executable from an unrelated directory with no display: both
-content forms start, and a missing source and bad command lines fail. `cli_serve` runs the server
-with no client, checks that it stepped, and stops it with SIGINT; the `token_*` tests run
-`manifest-token`'s refusals. `bundle_smoke` runs the build tree as a distribution is run, every
-place its default, in a new HOME (`scripts/bundle-smoke.sh`).
+The shell is the engine's: `devenv.nix`, `devenv.yaml` and `devenv.lock` are byte for byte those
+of the pinned commit ([D-006](decision-ledger.md#d-006), [D-054](decision-ledger.md#d-054)). A
+pin move copies all three from that commit. `scripts/check-env-parity.sh` compares them against
+the pin's committed files and never reads `JETTISON_SOURCE_DIR`; `scripts/test-env-parity.sh`
+tests the checker itself. CI runs both first.
 
-`clang-release` is the distribution build (`MANIFEST_DISTRIBUTION`,
-[the distribution](stage-5-recovery-plan.md#the-distribution-r07-2026-11-24)): its four executables
-load through `/lib64/ld-linux-x86-64.so.2`, so its tests need a loader there, nix-ld on NixOS, and
-its `distribution` test fails on a symbol newer than glibc 2.39, to be bound in
-`source/apps/distribution/GlibcFloor.cpp`. `scripts/stage-bundle.sh` stages the tarball from a clean
-checkout into `build/bundle`; `scripts/test-bundle.sh <tarball>` runs it from a read-only directory
-under `env -i` here and in Ubuntu 24.04 and Debian 13 containers, which needs Docker.
+The engine is added with `EXCLUDE_FROM_ALL`: configuring loads its whole SDK, but a build compiles
+only the engine modules Manifest links, plus the packer. `source/external/CMakeLists.txt` is also
+the import boundary: configuring fails, naming each one, unless every engine target and helper
+Manifest uses exists, whether the SDK was fetched, given by `JETTISON_SOURCE_DIR` or found in a
+parent project. Do not configure Jettison's install or export path, which it does not support.
 
-The SDK import boundary is `source/external/CMakeLists.txt`. Whether it fetched the pin, took
-`JETTISON_SOURCE_DIR` or found a parent's SDK, configuration fails unless every target and helper
-Manifest uses exists, naming each one missing. `sdk_import` configures Manifest under a parent with
-stand-in targets, complete and partial (`source/test/sdk-import`), without fetching or building.
-Module libraries publish their own header sets and dependencies;
-integration tests link the aggregate `Manifest::Game`. Existing assertions run under the engine's
-doctest version. The simulation suite pins generated and replayed state hashes, and the fixture suite the trading
-fixture's whole loop ([W09](stage-4-trading-plan.md#delivered-w09-2026-11-20)) and the governance
-fixture's project supplied ([W12](stage-4-trading-plan.md#tender-contract-w11-2026-11-21)). The mod suite
-mounts the staged directory and generated pack through the engine VFS. The default test build
-builds that pack first, validated before and after packing
-([content identity](stage-2-content-plan.md#content-identity)). Every build tree is laid out as the distribution is, its executables in `build/<preset>/bin/` and the
-pack in `build/<preset>/share/manifest/`, so the TUI, `build/<preset>/bin/manifest_tui`, runs on its
-own build's pack.
+## Presets
 
-`manifest_data` writes the definition records from the authored YAML with mikefarah/yq v4 (tested
-with the devenv version, 4.54.1). Missing yq fails configuration when tests are enabled; with tests
-disabled the C++ library can build, but packaging still requires yq. Generated records live in the
-build tree. Running `bash data/build.sh` manually writes to the source-tree `data/definitions`;
-`bash data/build.sh /absolute/output/path` selects an explicit output directory.
+Each preset has its own build tree under `build/<preset>/`, laid out as the distribution is: the
+executables in `bin/` and the packed content in `share/manifest/manifest.pack`. So
+`build/clang-debug/bin/manifest_tui` runs on its own build's pack.
 
-The console suite checks command registration, quoted paths and names, completion and history,
-typed errors, numeric bounds, configuration reloads and the load/generate/tick/trade-planning
-workflow. Run it without a terminal using `ctest --preset clang-debug -R '^console$'`.
-`step-budget` runs one of its cases alone (`RUN_SERIAL`): a cruising hosted step, timed in an
-optimised build without sanitisers and not on CI, fails above half as much again as the figure
-measured on Lythir ([L26](stage-4-trading-plan.md#delivered-l26-2026-11-20)). A change that makes the
-step dearer on purpose measures it again and moves the figure.
+| Preset | What it is for |
+| --- | --- |
+| `clang-debug` | Debug, with the tests and the TUI. The everyday build and the compile database for clangd and clang-tidy |
+| `clang-notui` | Debug with `MANIFEST_BUILD_TUI=OFF` and the engine's `JETTISON_PRESENTATION=OFF`: proves the game's commands and queries build and pass without the terminal UI or the engine's renderer, UI and developer console |
+| `clang-release` | Release with `MANIFEST_DISTRIBUTION=ON`: the build that is shipped ([the distribution](#the-distribution-and-the-bundle)) |
+| `clang-asan` | Debug with the address and undefined-behaviour sanitisers, no recovery |
 
-`MANIFEST_BUILD_TUI=OFF` omits the terminal and FTXUI; an SDK without presentation also omits the
-development console, which is built on the engine's.
-`BUILD_TESTING=OFF` or `MANIFEST_BUILD_TESTS=OFF`
-omits the suites. Manifest tests and the TUI default to off when a host consumes the project.
-The presets set both to on, so the gate builds that configuration only.
-`MANIFEST_WERROR=ON` makes project warnings fatal. `MANIFEST_CCACHE=OFF` and
-`JETTISON_CCACHE=OFF` disable compiler caches. C++ module scanning is disabled because this
-project uses headers, keeping compile commands directly usable by clangd and clang-tidy.
+A top-level `build/` holding `CivSim*` files is an ignored tree from before the project's rename.
+It is not a current build; remove it.
 
-The engine is added with `EXCLUDE_FROM_ALL`: configuring loads its complete SDK, but building
-Manifest compiles only the engine modules and dependencies it links, plus its packer. Renderer
-smoke tests remain Jettison's gate. Do not configure Jettison's unsupported install/export path.
+### Build options
 
-Clang-tidy is opt-in (`./scripts/ci.sh --tidy`), since it is expensive on the development laptop.
-A gate on Lythir enables it, before every push: with its record of clean units, a small change costs
-little. CI does not run it ([D-116](decision-ledger.md#d-116)).
+| Option | Default | Effect |
+| --- | --- | --- |
+| `MANIFEST_BUILD_TESTS`, `BUILD_TESTING` | on at top level | Either off omits the suites. Off when another project consumes Manifest |
+| `MANIFEST_BUILD_TUI` | on at top level | Off omits the TUI and FTXUI. An SDK without presentation also omits the development console, which is built on the engine's |
+| `MANIFEST_WERROR` | off | Makes project warnings fatal. The gate's `--werror` sets it |
+| `MANIFEST_DISTRIBUTION` | off | Links the shipped executables to run outside the build's toolchain (`cmake/Distribution.cmake`) |
+| `MANIFEST_CCACHE`, `JETTISON_CCACHE` | on | Off disables the compiler cache |
+
+The presets set the test and TUI options on, so the gate builds that configuration only. C++
+module scanning is off (`CMAKE_CXX_SCAN_FOR_MODULES`), since the project uses headers; this keeps
+the compile commands usable by clangd and clang-tidy as they are.
+
+### Content in the build
+
+`data/build.sh` turns the authored YAML under `data/` into the engine's definition records, with
+mikefarah/yq v4 (the shell's is 4.54.1). The build writes them into the build tree, then stages the
+mod and packs it; the pack is validated with each scenario before the suites that read it run.
+Without yq, configuring fails when the tests are enabled; with `-DBUILD_TESTING=OFF` the C++
+libraries build, but packing still needs yq. Run by hand, `bash data/build.sh` writes to the
+source tree's `data/definitions`, and `bash data/build.sh /absolute/path` to the directory given.
+How content is authored and checked is in [content](content.md).
+
+## Suites
+
+The suites are CTest tests, named for what they test. `ctest --test-dir build/clang-debug -N`
+lists them: 63 in Debug. A module's unit tests live in its `tests/` directory; the cross-module
+suites live in `source/test/`.
+
+| Suites | What they test | Source |
+| --- | --- | --- |
+| `types`, `universe`, `progression`, `sim`, `ecs`, `market` | The [sandbox](sandbox.md) modules. `sim` pins the generated and replayed state's hash | `source/game/<module>/tests` |
+| `space`, `content`, `world`, `command`, `travel`, `trade`, `company`, `procurement`, `policy`, `query`, `host`, `remote` | One per [hosted world](glossary.md#hosted-world) module | `source/game/<module>/tests` |
+| `effects` | Effects applied across modules | `source/test/EffectsIntegrationTests.cpp` |
+| `fixture` and `fixture_cruise`, `_alone`, `_prices`, `_burn`, `_traffic`, `_governance`, `_development` | Whole scenarios played through the host, from the content directory and the pack. The seven long cases are suites of their own so they run side by side; `fixture` runs every other case | `source/test/FixtureTests.cpp` |
+| `data`, `packaging`, `mod` | The generated records, the packer's refusals, and the staged mod and pack mounted through the engine's VFS | `source/test/` |
+| `sdk_import` | Configures Manifest under a parent with stand-in SDK targets, complete and partial, without fetching or building | `source/test/sdk-import` |
+| `cli_*`, `validate_*`, `token_*` | `manifest`, `manifest-validate` and `manifest-token` run from an unrelated directory with no display: both content forms start, and bad command lines fail. `cli_serve` starts the server with no client, kills it, restarts it from its journal, stops it with SIGINT and restores its backup (`serve-smoke.sh`) | `source/apps/manifest/CMakeLists.txt` |
+| `bundle_smoke` | The build tree run as a distribution is, every place at its default, in a new HOME (`scripts/bundle-smoke.sh`) | `source/apps/manifest/CMakeLists.txt` |
+| `console` | The development console's commands, completion, history, errors and the load, generate, tick and trade-planning workflow. Not in `clang-notui` | `source/tools/console/tests` |
+| `step-budget` | One [console](console.md) case, run alone: a cruising journey through the console's long step, timed. Not in `clang-notui` | `source/tools/console/tests` |
+| `distribution` | `clang-release` only: `scripts/check-distribution.sh` on the shipped executables | `CMakeLists.txt` |
+
+`step-budget` times only in an optimised build without sanitisers, and not on CI, so in practice
+in `clang-release` on Lythir, the machine its figure was measured on. It fails when the journey
+takes over half as much again as that figure (`kJourneySeconds`). A change that makes the step
+dearer on purpose measures it again and moves the figure.
+
+## The gate
+
+The [gate](glossary.md#gate-ci) is `scripts/ci.sh`: the local check every commit passes before a
+push. CI does not run it ([CI](#ci)). Its stages, in order:
+
+1. The format check (`scripts/format-check.sh`, clang-format 21 over `source/`).
+2. `clang-debug`: configure, build, CTest.
+3. `clang-notui`: the same.
+4. `clang-release`: the same, unless `--skip-release`.
+5. `clang-asan`: the same, with `--asan`.
+6. clang-tidy over Manifest's own units in `clang-debug` (`scripts/tidy.py`), with `--tidy`.
+
+Tidy runs last, so a finding fails the gate without hiding the results of the stages before it
+([D-052](decision-ledger.md#d-052)). A stage that fails stops the gate. The full gate before a push
+is `--werror --asan --tidy`; anything less is a partial run, and is reported as one.
+
+### `ci.sh` options
+
+| Flag | Effect |
+| --- | --- |
+| `--werror` | Configures every tree with `MANIFEST_WERROR=ON` |
+| `--asan` | Adds the `clang-asan` stage |
+| `--tidy` | Adds clang-tidy |
+| `--skip-release` | Leaves out `clang-release`, for a shorter local pass |
+| `--log FILE` | Writes the whole output to the file as well |
+| `--force` | Runs even when the inputs are those of a gate that passed |
+
+### A gate that passed is not run again
+
+As in [Jettison](../../jettison/docs/build-and-gates.md#a-gate-that-passed-is-not-run-again), a
+gate whose inputs match one that passed exits 0 at once. The key is a digest of the working
+tree's files less `*.md`, the versions of clang, clang-format, clang-tidy and CMake, and the
+options, recorded under `build/gate-passed` only if it is unchanged at the end of the run. The
+engine enters the key by its pin, so a tree configured with `JETTISON_SOURCE_DIR` runs every time
+and is never recorded.
+
+### clang-tidy
+
+`scripts/tidy.py <build directory>` runs clang-tidy with the checks in `.clang-tidy`, every
+warning an error, on the units under `source/` alone. It skips a unit that was clean and whose
+compile command, includes (from `ninja -t deps`), clang-tidy and `.clang-tidy` are unchanged since;
+the record is under `<build>/tidy-clean`. So a gate after a small change pays for little tidy. It
+is opt-in because it is expensive on the laptop; on Lythir every gate before a push runs it.
+
+### Machine-specific concurrency
+
+Concurrency is set per machine ([D-051](decision-ledger.md#d-051)). `ci.sh` and `tidy.py` default
+to two workers each, the laptop's limit. On Lythir (12 cores, 24 threads) pass the machine's width:
+
+```bash
+CMAKE_BUILD_PARALLEL_LEVEL=24 CTEST_PARALLEL_LEVEL=24 MANIFEST_TIDY_JOBS=24 \
+  ./scripts/ci.sh --werror --asan --tidy --log build/gate.log
+```
+
+The three settings are independent. Read `MemAvailable` first: the memory a full-width run needs,
+and the user's local AI that can hold most of it, are in Jettison's
+[machine-specific concurrency](../../jettison/docs/build-and-gates.md#machine-specific-concurrency).
+Run nothing else beside a build or clang-tidy.
 
 ### Gating beside the work
 
-On Lythir a commit is gated in a second checkout, so the next change is written while the gate
-runs. `build/gate-tree` is a detached worktree with its own presets' build trees, made once with
-`git worktree add --detach build/gate-tree <commit>`; for each commit gated,
-`git -C build/gate-tree checkout --detach <commit>` and then `build/gate-tree/scripts/ci.sh` with
-the gate's options. While it runs nothing else builds, runs tests or runs clang-tidy (the user's,
+On Lythir a commit is gated in a second checkout, so the next change can be written while the gate
+runs. `build/gate-tree` is a detached worktree with its own build trees, made once with
+`git worktree add --detach build/gate-tree <commit>`. For each commit gated, run
+`git -C build/gate-tree checkout --detach <commit>`, then `build/gate-tree/scripts/ci.sh` with the
+gate's options. While it runs nothing else builds, runs tests or runs clang-tidy (the user's rule,
 2026-11-21), so the work beside it is editing alone. A failure is fixed by a later commit, before
 the push.
 
-## Machine-specific concurrency
-
-[D-051](decision-ledger.md#d-051) distinguishes the laptop's resource limit from other
-machines. Limit compilation on the laptop to two workers. Lythir has 12 cores and 24
-threads and is not subject to that laptop limit; choose concurrency to suit its available
-resources and other running work.
-
-The gate's conservative default remains two compile and test workers, and the tidy runner
-also defaults to two. Override `CMAKE_BUILD_PARALLEL_LEVEL` for compilation,
-`CTEST_PARALLEL_LEVEL` for tests and `MANIFEST_TIDY_JOBS` for tidy on a suitable machine.
-These settings are independent; increasing compile workers does not require increasing
-test or tidy workers. CI has its own explicit limits in the workflow.
-
-## T5 selected environment-parity plan
-
-[D-054](decision-ledger.md#d-054) resolves the approach to the open D-006 deviation.
-Desktop-only tools stay out of the shared shell: `lazygit` was removed from both repositories'
-`devenv.nix` on 2026-11-18 and is installed on the desktop instead.
-
-Implemented in M04 (2026-11-18): the pin is `fafa758`, and the three files match it byte for
-byte. `scripts/check-env-parity.sh [repository]` reads the pin, fetches only that commit (from the
-pin's `GIT_REPOSITORY`, or a given clone, whose committed objects alone are used) and diffs each
-file against it; it never reads `JETTISON_SOURCE_DIR`. `scripts/test-env-parity.sh` runs it on
-copies against a throwaway repository: a match, each file differing or missing, a file absent at
-the pin, no pin, two pins, an abbreviated pin, an unknown pin, an engine's uncommitted edit and a
-`JETTISON_SOURCE_DIR` at matching files. CI runs both straight after checkout, before Nix and
-compilation. The handoff records the evidence. The plan as selected follows.
-
-Review every intervening Jettison commit before selecting the new SDK revision; a newer sibling
-checkout alone is not a reason to move the pin. Then update Manifest's immutable pin and copy all
-three environment files from that exact committed revision together. Preserve the
-byte-identity rule without a Manifest-only package exception.
-
-Add a parity check to Manifest's CI before compilation. Its revision authority is
-`MANIFEST_JETTISON_REVISION` in `source/external/CMakeLists.txt`, not a second hard-coded SHA,
-a moving branch or the current sibling checkout. Compare all three Manifest files against
-the committed blobs at that revision. The checker may reuse an available engine clone that
-contains the exact revision or obtain it independently; a local SDK override or uncommitted
-engine edits must not substitute a different baseline. Missing files, an unresolved or
-ambiguous pin, unavailable reference content and any byte difference fail with a useful
-file/revision diagnostic rather than silently skipping the check. Keep the lock file intact
-unless the selected SDK change itself requires updating it.
-
-Implementer ownership: Jettison's shared environment and its verification first; Manifest's
-SDK pin, matching environment files, parity tooling, CI wiring and workflow documentation
-second. Keep README and AGENTS guidance aligned with the final verified state. This is T5's
-parity deliverable, also referenced by T8; implement one check rather than separate copies.
-
-Acceptance evidence includes a passing comparison of all three files against the selected
-commit and rejection of a controlled difference in each file separately, including missing
-reference content. Show that local overrides cannot bypass the comparison. Record the engine
-verification and run Manifest's full gate from a clean checkout using its pinned fetch with no sibling-engine override. Retain
-the replay expectations and record exact revisions, stages and logs under D-007. Apply T10's
-selected CI order when its implementation has landed and use D-051's host-specific concurrency.
-Environment parity alone does not establish Stage 1's CPU-only consumer or gameplay integration.
-
 ## Verification evidence
 
-A gate is recorded, not implied. After running it, add a short entry to
-[session handoff](session-handoff.md) with the commit, the presets and suites that passed, the
-three state hashes (generation, 100-tick, raw price) and the log path. Gate logs are ignored build
-artifacts under `build/`, never committed fixtures. "Configure succeeded", mounted content
-equality and documentation edits are not verification. Record which stages actually ran: a partial
-run is not a gate.
+A gate is recorded, not implied. A task's record in [history](history.md) names the commit, the
+presets and stages that ran, and the log path. Gate logs are build artefacts under `build/`,
+never committed. A successful configure, equal mounted content or a documentation edit is not
+verification, and a partial run is not a gate ([D-007](decision-ledger.md#d-007)).
 
-The newest local evidence is the
-[T1/T9 verification record](history.md#t1t9-local-verification--2026-11-16), including
-the tested tree, full command, presets, suites, replay hashes and log path. Both tidy findings
-identified in the [historical CI analysis](project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16)
-are fixed. This does not establish engine integration or gameplay acceptance.
+Report CI from the exact commit's run and its fetched log, apart from local evidence. Confirm any
+run ID or commit SHA against a second source (`gh api`, `git ls-remote`, the remote's commit
+list) before writing it down: tool output here has invented both
+([the 2026-11-16 analysis](history/project-analysis-2026-11-16.md#ci-failure-analysis--2026-11-16)).
 
-The CI [workflow](../.github/workflows/ci.yml) is not the gate ([D-116](decision-ledger.md#d-116),
-the user's, 2026-11-25): the full gate ran past the job's hour on the runner's two workers. It checks
-the environment's parity, stages the bundle from the clean checkout (`scripts/stage-bundle.sh`,
-the release build and its glibc check) and runs it on the runner's Ubuntu 24.04 outside the
-development shell (`scripts/test-bundle.sh <bundle> host`), on each push to `feature-base`, on each
-pull request targeting it and on a manual dispatch, and uploads `build/ci.log`. A push to `main` or
-to another branch runs nothing (M02, 2026-11-18). The gate, tidy included, is run locally before a
-push. Report CI from the exact commit's run and fetched logs, separately from local evidence.
+## CI
+
+CI is not the gate ([D-116](decision-ledger.md#d-116)): the full gate ran past the runner's hour on
+its two workers. `.github/workflows/ci.yml` shows instead that a clean checkout builds the
+distribution and that the bundle runs on a plain Ubuntu. On an Ubuntu 24.04 runner, within 45
+minutes, it:
+
+1. checks the shell's parity (`test-env-parity.sh`, then `check-env-parity.sh`), before Nix;
+2. installs Nix and devenv 2.4.0;
+3. in the shell, stages the bundle (`scripts/stage-bundle.sh`: the release build, its
+   `check-distribution.sh`, the tarball);
+4. outside the shell, runs it on the runner's own system (`scripts/test-bundle.sh <tarball> host`);
+5. uploads `build/ci.log`.
+
+It runs on each push to `feature-base`, each pull request targeting it, and by hand
+(`gh workflow run ci --ref <branch>`). A push to `main` or another branch runs nothing.
 
 ### Promoting to main
 
-`scripts/promote.sh [--check] [commit]` fast-forwards `main` to a commit, by default
-`origin/feature-base`, and `--check` stops before the push. It refuses a commit that does not
-descend from `origin/main` (divergence: integrate on `feature-base` and verify there), one that
-is not on `origin/feature-base`, and one without a completed, successful CI run of its own from a
-`feature-base` push. A cancelled run is re-run from Actions; a PR, manual or ancestor run does
-not count. The push is a plain fast-forward, so git also rejects a race with another update.
+`feature-base` is the integration branch; `main` only fast-forwards to a commit already verified
+there ([D-053](decision-ledger.md#d-053)). `scripts/promote.sh [--check] [commit]` does it, by
+default to `origin/feature-base`; `--check` stops before the push. It refuses a commit that does
+not descend from `origin/main` (integrate on `feature-base` and verify there), one not on
+`origin/feature-base`, and one without a completed, successful CI run of its own from a
+`feature-base` push. An ancestor's run, a pull request's or a manual run does not count; a
+cancelled run is re-run from Actions.
 
-The script is the procedure, not an enforcement. Required status checks would not enforce it
-either: a pull request's merge-candidate result is reported on its head SHA. The repository's one
-rule is the ruleset "main: fast-forward only" (27518688, active, applied 2026-11-18, no bypass
-actors), which blocks force pushes to `main` and its deletion. `feature-base` has none.
+The script is the procedure, not an enforcement. The repository's one rule is the ruleset "main:
+fast-forward only", which blocks force pushes to `main` and its deletion. `feature-base` has none.
 
-### T10 selected gate and promotion policy
+## The distribution and the bundle
 
-[D-052](decision-ledger.md#d-052) and [D-053](decision-ledger.md#d-053) select the following
-implementation contract. The gate order (D-052) is implemented in `scripts/ci.sh` (M01,
-2026-11-18); the triggers and promotion (D-053) in the workflow and `scripts/promote.sh` (M02,
-2026-11-18), described [above](#promoting-to-main).
+`clang-release` is the build that ships as a [bundle](glossary.md#bundle): `manifest`,
+`manifest-token`, `manifest-validate` and `manifest_tui`, linked to load through
+`/lib64/ld-linux-x86-64.so.2` with `libstdc++` static and no `RUNPATH`. Its tests therefore need a
+loader at that path: on NixOS, nix-ld. Its `distribution` test fails on any symbol newer than the
+[glibc floor](glossary.md#glibc-floor), 2.39 ([D-114](decision-ledger.md#d-114)); a newer symbol
+the toolchain brings is bound to an older version in `source/apps/distribution/GlibcFloor.cpp`.
+What the bundle holds and where it writes is in [the host](host.md).
 
-Run formatting, Debug build/CTest, Release build/CTest, ASan/UBSan build/CTest, then
-clang-tidy in that order for the full gate. Keep `--warnings-as-errors=*` for tidy; do not
-introduce a warning baseline or suppress checks. Preserve the existing optional local flags:
-`--skip-release` omits Release, `--asan` includes sanitizers and `--tidy` includes tidy.
-Keep ordinary failure propagation: a tidy failure must fail the gate, after the requested
-build/test stages have completed. This does not require continuing after an earlier build or
-test failure, and a shortened local pass remains partial evidence.
+```bash
+./scripts/stage-bundle.sh                       # from a clean checkout, into build/bundle
+./scripts/test-bundle.sh build/bundle/manifest-*.tar.gz            # here, Ubuntu 24.04, Debian 13
+./scripts/test-bundle.sh build/bundle/manifest-*.tar.gz host       # here only, as CI does
+```
 
-`feature-base` is the integration branch. Its push runs the full gate on the resulting
-commit. `main` receives only fast-forward promotions to an exact commit already tested on
-`feature-base`; it receives no independent changes or promotion merge commits. A promotion
-must verify a successful, completed full gate for that exact SHA under the applicable workflow.
-An ancestor's result, a PR merge candidate's result, a partial gate, or a missing, running,
-failed or cancelled run is insufficient. If the update cannot fast-forward, stop and resolve
-the divergence through integration and verification rather than rewriting either branch.
+`stage-bundle.sh` refuses a checkout with changes, since a bundle names its commit.
+`test-bundle.sh` unpacks the tarball into a read-only directory and runs `bundle-smoke.sh` on it
+under `env -i`, on this machine and in the containers named (Docker).
 
-Avoid the second full gate triggered solely by promoting the same SHA to `main`. Retain
-PR candidate verification for changes targeting `feature-base`; ordinary feature-branch pushes
-need not also run a full gate when the PR already provides that check. The integrated commit
-still needs its own `feature-base` result. Explicit manual diagnostic runs remain available.
-This policy removes duplicate promotion work; it does not equate distinct PR and integrated
-commits or cancel one branch's required run when another branch advances.
+## Cross-review
 
-Implementer scope: `scripts/ci.sh`, `.github/workflows/ci.yml`, the promotion procedure and
-their workflow documentation. Before changing triggers, inspect repository rules and required
-checks, and confirm that the verified integration result can authorize promotion without
-weakening protection or inventing a passing result for skipped work. Any required repository
-administration must be identified explicitly. `scripts/tidy.py` needs no warning-policy change.
-No SDK or gameplay changes are required. Concurrency follows [D-051](decision-ledger.md#d-051).
+At a [stage](glossary.md#stage)'s close, Codex reviews its commits adversarially
+([cross-review](glossary.md#cross-review); Jettison's
+[cross-review](../../jettison/docs/build-and-gates.md#cross-review) describes the method). Manifest
+has no script for it: each round's prompt is written by hand and Codex run directly, and the
+prompt, the tree's state before, the review, the transcript and the exit status are kept under
+`build/reviews/<stage>/` as `round-N.prompt`, `.before`, `.md`, `.log` and `.exit`. The tree
+is checked unchanged after a round. Three rounds by default; the user settles what is still open.
 
-Acceptance evidence must include a controlled tidy failure after successful requested
-build/test stages, with a nonzero gate result and logs showing those stages ran first; a
-passing full gate on the final implementation; and promotion checks covering exact-SHA success,
-unverified changes and divergence. Confirm that a normal verified fast-forward to `main`
-does not start another full gate, while a new integration commit and an explicit manual run
-still do. Record actual stages, logs and exact-commit CI evidence under D-007 before closing T10.
+## Editors
 
-Preset builds live in `build/clang-debug/`, `build/clang-notui/`, `build/clang-release/` and
-`build/clang-asan/`. A
-top-level `build/` containing `CivSim*` artifacts is the ignored pre-rename configure tree; remove
-it rather than reading it as a current build. `.vscode/` is ignored, so the tracked
-`.vscode/*.example` files are the reference for a fresh clone; they are currently stale and are
-repaired by handoff T7.
+The tracked examples are `.vscode/tasks.json.example`, `.vscode/launch.json.example` and
+`.vscode/settings.json.example` ([D-055](decision-ledger.md#d-055)); the personal copies without
+`.example` are ignored.
 
-### T7 selected editor-example plan
-
-[D-055](decision-ledger.md#d-055) selects repair of the tracked
-`.vscode/launch.json.example` and `.vscode/tasks.json.example`, with setup instructions here.
-Delivered 2026-11-18 (M05): the setup is [below](#editor-setup), the evidence in the
-[session handoff](history.md#m05-the-editor-examples--2026-11-18).
-
-Provide two launch entries using these Debug executables, confirmed against CMake targets and
-the existing generated CTest commands:
-
-| Launch | Executable relative to the workspace |
-| --- | --- |
-| Simulation unit tests | `build/clang-debug/source/game/sim/manifest_sim_tests` |
-| Development TUI | `build/clang-debug/bin/manifest_tui` |
-
-Remove the legacy launch arguments; the simulation suite requires no YAML path arguments.
-The TUI uses its configured data paths and normal startup interface. Make configure, build
-and test tasks explicitly use the `clang-debug` presets, with configure before build and
-build before tests or debugger launch. Task labels and `preLaunchTask` references must agree.
-Preserve Ninja-compatible targets and build dependencies for generated content; do not fall
-back to the pre-rename top-level build tree or source-tree generated YAML.
-
-Document copying the examples to ignored personal files, required editor/debugger extensions
-and launching the editor/tasks in the development shell. Validate the chosen debugger adapter's
-configuration fields rather than mixing adapters. Compilation follows D-051: the laptop stays
-within its limit and the tasks respect overrides appropriate to Lythir. Preserve existing
-personal editor files when updating the tracked templates.
-
-Acceptance: copy the examples in a fresh checkout, configure and build through the tasks,
-run the Debug CTest suites, and launch both entries through the debugger. Reach a source
-breakpoint in each and continue the simulation suite to success and the TUI to normal exit.
-Record the debugger/extension used and observed results. Inspecting JSON or finding an old
-binary alone does not establish working editor integration. No SDK, gameplay or test-source
-change is needed for this repair; this check is separate from the full gate's evidence.
-
-#### Editor setup
-
-The tracked files are `.vscode/tasks.json.example`, `.vscode/launch.json.example` and
-`.vscode/settings.json.example`; the personal copies without `.example` are ignored. In a checkout:
+### Editor setup
 
 ```sh
 cp .vscode/tasks.json.example .vscode/tasks.json
@@ -295,26 +255,26 @@ cp .vscode/settings.json.example .vscode/settings.json
 devenv shell -- code .
 ```
 
-Start the editor from the development shell, so the tasks find `cmake`, `ctest` and clang on
-`PATH` and inherit D-051's concurrency overrides (`CMAKE_BUILD_PARALLEL_LEVEL`,
-`CTEST_PARALLEL_LEVEL`). The tasks are shell tasks on the `clang-debug` presets: `CMake:
-configure`, then `CMake: build` (the default build task, the `all` target), then `CTest: test`
-(the default test task). Both launches build first.
+Start the editor from the shell, so the tasks find `cmake`, `ctest` and clang on `PATH` and
+inherit the concurrency settings. The tasks are shell tasks on the `clang-debug` presets:
+`CMake: configure`, then `CMake: build` (the default build task), then `CTest: test` (the default
+test task). Both launches build first:
 
-The debugger is **CodeLLDB** (`vadimcn.vscode-lldb`) with the development shell's LLDB 21,
-matching the compiler, which the settings example names as `lldb.library` (CodeLLDB expands
-`${workspaceFolder}`; LLDB finds its `lldb-server` beside the library). The example also points
-the C/C++ extension at the shell's clang. On NixOS, CodeLLDB's adapter is a generic Linux binary,
-so the system needs `programs.nix-ld.enable = true`; without it the adapter fails with "Could not
-start dynamically linked executable". *Simulation unit tests* runs the suite in the debug console (`terminal:
-console`); *Development TUI* runs in the integrated terminal (`terminal: integrated`), which the
-full-screen interface needs.
+| Launch | Program | Terminal |
+| --- | --- | --- |
+| Simulation unit tests | `build/clang-debug/source/game/sim/manifest_sim_tests` | the debug console |
+| Development TUI | `build/clang-debug/bin/manifest_tui` | the integrated terminal, which the full-screen UI needs |
 
-Proposed checks, not present (handoff T8): local Markdown link and heading-anchor integrity across
-`docs/`, `README.md` and `AGENTS.md` — an ad-hoc scan at the 2026-11-16 assessment covered 31
-documents and roughly 300 local targets, found two stale heading anchors in `docs/coding-standards.md`
-pointing at Jettison headings, and those links now use `../../jettison/docs/…`; the
-checker lives in the analysis appendix until an implementer commits it to `scripts/` and CI. Also
-proposed: a `devenv.nix`, `devenv.yaml` and `devenv.lock` parity check against the pinned engine
-revision, and the CMake dependency-closure
-boundary checks in the [boundary assessment](engine-game-boundary-assessment.md#enforcement-to-implement-later).
+The debugger is CodeLLDB (`vadimcn.vscode-lldb`) with the shell's LLDB 21, which the settings
+example names as `lldb.library`; it also points the C/C++ extension at the shell's clang. On NixOS
+CodeLLDB's adapter is a generic Linux binary, so the system needs `programs.nix-ld.enable = true`;
+without it the adapter fails with "Could not start dynamically linked executable".
+
+## Checks not yet built
+
+- A Markdown link and heading-anchor check over `docs/`, `README.md` and `AGENTS.md`. A checker
+  is in the analysis's
+  [appendix](history/project-analysis-2026-11-16.md#appendix-documentation-link-and-anchor-checker),
+  not yet in `scripts/` or CI.
+- The CMake dependency-closure checks of the
+  [boundary assessment](history/engine-game-boundary-assessment.md#enforcement-to-implement-later).

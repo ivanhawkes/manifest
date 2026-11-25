@@ -151,7 +151,7 @@ authored value is below one.
 | Category | `description` | string, empty | optional |
 | Item | `itemId`, `displayName`, `categoryId`, `ageId` | string, empty | required; links resolve |
 | Item | `description` | string, empty | optional |
-| Item | `unitType` | `std::optional<TradeUnit>`, empty | required. Enumerators are the authored names: `Carat`, `TroyOunce`, `Kilogram`, `Tonne`, `Litre`, `Kilolitre`, `Unit`, `Sheet`, `SquareMetre` ([D-064](decision-ledger.md#d-064)) |
+| Item | `unitType` | `std::optional<TradeUnit>`, empty | required. Enumerators are the authored names: `Carat`, `TroyOunce`, `Kilogram`, `Tonne`, `Litre`, `Kilolitre`, `Unit`, `Sheet`, `SquareMetre` ([D-064](../decision-ledger.md#d-064)) |
 | Item | `unitsPerCubicMetre`, `density` | double, 0 | required, finite, above 0 |
 | Item | `packFactor` | double, 0 | required, finite, in (0, 1] |
 | Item | `basePrice` | string, empty | required, quoted; `Decimal::TryParse`, nonnegative, with the multiplier headroom |
@@ -166,7 +166,7 @@ authored value is below one.
 | NamePool | `pool` | string, empty | required, equals the record's name |
 | NamePool | `names` | vector of string, empty | at least one, none empty; order kept |
 | GameMode | `ages`, `items`, `skills` | vectors of `{ageId}`, `{itemId}`, `{skillId}` | each resolves, none twice; order kept |
-| GameMode | `cruise` | `std::optional<CruiseModel>`: `manned` and `unmanned`, each a Jettison `Ai.CruiseProfile` | each checked as Jettison's `CheckCruiseDrive` checks a profile; empty keeps each drive's power law (W17, [D-090](decision-ledger.md#d-090)) |
+| GameMode | `cruise` | `std::optional<CruiseModel>`: `manned` and `unmanned`, each a Jettison `Ai.CruiseProfile` | each checked as Jettison's `CheckCruiseDrive` checks a profile; empty keeps each drive's power law (W17, [D-090](../decision-ledger.md#d-090)) |
 | Hull | `hullId`, `className` | string, empty | required |
 | Hull | `description` | string, empty | optional |
 | Hull | `baseStats` | `std::map<EffectStat, double>`, a mapping by stat name | at least one; each finite, not below 0; a stat left out is none |
@@ -174,7 +174,7 @@ authored value is below one.
 | Hull | `occupants` | `std::optional<int>`, empty | not negative, 0 a hull with no one aboard (W17); empty is unselected, and cruises manned |
 | Hull | `scrubberCartridges` | `std::optional<int>`, empty | at least 1; empty is unselected |
 | Hull | `oxygenTanks` | `std::optional<std::vector<double>>`, kilograms a tank | at least one, each above 0; empty is unselected |
-| Hull | `mass` | `std::optional<double>`, kilograms | above 0; empty is unselected, and a scenario's starter hull needs one (W08, [D-096](decision-ledger.md#d-096)) |
+| Hull | `mass` | `std::optional<double>`, kilograms | above 0; empty is unselected, and a scenario's starter hull needs one (W08, [D-096](../decision-ledger.md#d-096)) |
 | Offer | `offerId`, `skillId` | string, empty | required; the skill is a Skill node of a ship effect |
 | Offer | `target` | `std::optional<OfferTarget>`: `Ship` | required |
 | Offer | `cost`, `maxTier` | `std::int64_t` whole credits a tier; `int` | the cost at least 1; the tier from 1 to the skill's `maxTiers` |
@@ -189,12 +189,12 @@ shown to be the same set in another order. Name pools are already held sorted by
 ### Units and time
 
 Simulation time is seconds of the fixed step. Rates are authored per simulation day (86,400 s), and
-population-scaled rates per 1,000 people per simulation day ([D-022](decision-ledger.md#d-022)).
+population-scaled rates per 1,000 people per simulation day ([D-022](../decision-ledger.md#d-022)).
 A good's quantity is a double in its `unitType`; its packed volume and mass follow
 `unitsPerCubicMetre`, `density` and `packFactor` as the field notes in `data/trade-items/` define
-them, never the trading unit alone. Since [D-078](decision-ledger.md#d-078) and
-[D-083](decision-ledger.md#d-083), goods held, moved or traded are counted in totes, an eighth of a cubic metre each
-([D-087](decision-ledger.md#d-087)), so a venue's market `stock` and a hull's `CargoVolume` are whole totes (W03); rates stay doubles
+them, never the trading unit alone. Since [D-078](../decision-ledger.md#d-078) and
+[D-083](../decision-ledger.md#d-083), goods held, moved or traded are counted in totes, an eighth of a cubic metre each
+([D-087](../decision-ledger.md#d-087)), so a venue's market `stock` and a hull's `CargoVolume` are whole totes (W03); rates stay doubles
 in the unit, per day. Prices are
 Decimal text, ledgers whole credits (int64).
 Positions are metres, `glm::dvec3`, in a system's frame.
@@ -208,7 +208,7 @@ save identity, stable.
 | List | Fields | Rules |
 | --- | --- | --- |
 | (root) | `gameMode`, `items: [{itemId}]` | the mode resolves; items are a subset of its items, order kept |
-| `systems` | `systemId`, `displayName`, `connections: [{systemId}]` (optional) | each a Jettison frame, `Sim::FrameId(systemId)`, its bodies the `Celestial.StarSystem` of that name ([D-088](decision-ledger.md#d-088), W05); two IDs with one frame ID are refused; a connection is another of the scenario's systems, each way, named once ([D-095](decision-ledger.md#d-095), W07) |
+| `systems` | `systemId`, `displayName`, `connections: [{systemId}]` (optional) | each a Jettison frame, `Sim::FrameId(systemId)`, its bodies the `Celestial.StarSystem` of that name ([D-088](../decision-ledger.md#d-088), W05); two IDs with one frame ID are refused; a connection is another of the scenario's systems, each way, named once ([D-095](../decision-ledger.md#d-095), W07) |
 | `planets` | `planetId`, `systemId`, `displayName` | a physical body, its system's planet or moon of that name; no population or account of its own |
 | `civilisations` | `civilisationId`, `displayName`, `ageId` | cultural and technology identity only |
 | `organisations` | `organisationId`, `kind` (`Polity` or `Corporation`), `displayName` | owns accounts and assets from Stage 3 |
@@ -231,7 +231,7 @@ set holds them all by name. Beyond the table's rules: a scenario's `starterVenue
 public venue that docks its `starterHull` with life-support capacity of at least 1 (D-047, D-089); a
 region's project needs its prerequisites known, an operational workshop, and every project and
 recipe input produced by some venue of the scenario. Two fixtures, staged as they are authored at
-`manifest/scenarios/`, their values recorded with them ([ledger](decision-ledger.md#numeric-values)):
+`manifest/scenarios/`, their values recorded with them ([ledger](../decision-ledger.md#numeric-values)):
 
 - `trading`: the eight goods in system Anvil, Ore and Brine each a region of its own civilisation
   with a public highport, each good made at one and wanted at the other. Ore's region is
@@ -251,9 +251,9 @@ new engine API yet.
 
 ### Item authoring (C04, 2026-11-19)
 
-The user selected the item values ([D-059](decision-ledger.md#d-059)); the numbers are the data's,
+The user selected the item values ([D-059](../decision-ledger.md#d-059)); the numbers are the data's,
 in `data/trade-items/`. The four food grains are `CategoryConsumables`, of the Stone Age with their
-seeds ([D-064](decision-ledger.md#d-064)), and keep their seed's kernel density and packing; rice is milled white rice. Basic Medical
+seeds ([D-064](../decision-ledger.md#d-064)), and keep their seed's kernel density and packing; rice is milled white rice. Basic Medical
 Supplies is `CategoryMedicalEquipment`, so the specialised medicines stay alone in
 `CategoryMedicine`. LPG is `CategoryFuels`. Oxygen, as the refrigerated liquid, and the scrubber
 cartridge are the new `CategoryLifeSupport`; one cartridge is one `Unit`, a fresh 30-occupant-day
@@ -276,11 +276,11 @@ The balance inputs are one `Manifest.Tuning` record, `manifest/definitions/tunin
 wage tax, the household needs, condition rates, a new company's starting credits (A04), onboard
 life-support consumption, the concession
 term, the performance-security rate, and the bronze project and recipe. The keys are indexed in
-the [ledger](decision-ledger.md#numeric-values). No rule reads them yet; the content suite holds
+the [ledger](../decision-ledger.md#numeric-values). No rule reads them yet; the content suite holds
 each to its range and its references (a need's items in the need's unit, a project's skills,
 inputs and recipe), and the data suite to the plans' worked examples. A need, project or recipe
 patches by its ID (`!merge=needId`). Drinking water's need is `ItemDrinkingWater`, in kilolitres
-([D-060](decision-ledger.md#d-060)).
+([D-060](../decision-ledger.md#d-060)).
 
 ### Authoring decisions still open
 
@@ -301,7 +301,7 @@ mapping fields merge; untagged sequences replace; `!append` appends; `!merge=<fi
 merges by identity; null removes a field. Never reproduce these operations in Manifest.
 
 Until player testing a format changes in place, its files rewritten and no step added
-([D-109](decision-ledger.md#d-109)); the rest of this paragraph applies from then on.
+([D-109](../decision-ledger.md#d-109)); the rest of this paragraph applies from then on.
 Register a migration chain for each evolving reflected format. Future steps transform
 only fields present in a document, because patches migrate independently and must not
 acquire defaults that overwrite the lower layer. Unsupported versions fail with path,
@@ -312,7 +312,7 @@ Expose explicit ordered overlay sources for host and validator, using the same o
 contract. Preserve stage 1's mandatory base-package validation; do not add automatic
 directory discovery. Identify mounts by stable logical IDs and report that order.
 
-**Built in C06 (2026-11-19)**, as [D-070](decision-ledger.md#d-070) selects. `Manifest::Host::Options`
+**Built in C06 (2026-11-19)**, as [D-070](../decision-ledger.md#d-070) selects. `Manifest::Host::Options`
 (`Start.h`) is the contract, read from a command line by `ParseOptions` for both executables:
 `--content <directory-or-pack> [--overlay <directory-or-pack>]... --scenario <name>`, each overlay
 mounted over the package in the order given. The package mounts as `manifest`, an overlay under
@@ -390,7 +390,7 @@ Use the existing `SkillShipCargoHolds` as the proposed later company upgrade ref
 with prerequisite closure available. Binding that skill to company ownership is stage 3.
 
 The fixture has since grown (W19, 2026-11-21) to 22 goods and ten regions on ten stations, their
-staples by kind of world ([D-105](decision-ledger.md#d-105)); `data/scenarios/trading.yaml`'s
+staples by kind of world ([D-105](../decision-ledger.md#d-105)); `data/scenarios/trading.yaml`'s
 header describes it.
 
 Stage 2 validates scenario definitions only. Company creation, cargo transfers, travel,
@@ -401,7 +401,7 @@ is made until the command-driven loop demonstrates it.
 ## Staple-grain content follow-up
 
 The user requires rice, wheat, oats and barley as four distinct tradable food commodities.
-The [grain handoff](economy-and-development-plan.md#staple-grain-commodities-selected-implementation-handoff)
+The [grain handoff](../economy-and-development-plan.md)
 records proposed IDs, affected authoring/packaging/mode paths, unresolved physical/price
 values and implementer checks. Existing seed commodities retain their IDs and values.
 Use the current definition/registry/packaging path; no parallel loader or additional generic
@@ -428,7 +428,7 @@ do not count every grain as a separately mandatory essential.
 
 The selected medical essential is one distinct Basic Medical Supplies commodity, traded
 in kilograms and representing routine medical consumables. The
-[medical-supplies handoff](economy-and-development-plan.md#basic-medical-supplies-commodity-selected-implementation-handoff)
+[medical-supplies handoff](../economy-and-development-plan.md)
 records the proposed `ItemBasicMedicalSupplies` ID, existing authoring/packaging paths and
 implementer checks. Preserve existing antibiotics, anaesthetics and analgesics as separate
 commodities without automatic substitution. Initial basic-supplies demand is 5 kg per
@@ -464,7 +464,7 @@ Add a Life Support category with the following planned items:
 
 | Planned item | Requirement to define |
 | --- | --- |
-| Oxygen | Separate consumable traded and measured aboard in kilograms ([D-064](decision-ledger.md#d-064)), required at 1 kg per occupant per simulation day while relying on onboard life support. The starter's operating reserve is capped at 30 kg; tank physical volume and other hull capacities remain open. |
+| Oxygen | Separate consumable traded and measured aboard in kilograms ([D-064](../decision-ledger.md#d-064)), required at 1 kg per occupant per simulation day while relying on onboard life support. The starter's operating reserve is capped at 30 kg; tank physical volume and other hull capacities remain open. |
 | Carbon scrubbers | Replaceable consumable cartridges used by installed life-support machinery. A fresh standard cartridge provides 30 occupant-days. Trade/storage units, physical values and resupply rules remain open. |
 
 The selected distinction is installed machinery versus consumable supplies. Scrubber
@@ -476,7 +476,7 @@ Both consumables belong under Life Support. A fresh standard cartridge is rated 
 occupant-days. Ship endurance, consequences of exhaustion and spent-cartridge handling
 remain open.
 
-The oxygen trading unit is the kilogram ([D-064](decision-ledger.md#d-064), superseding D-060's
+The oxygen trading unit is the kilogram ([D-064](../decision-ledger.md#d-064), superseding D-060's
 kilolitre), the unit of the tanks and the use aboard. Preserve fractional quantities under Manifest's float/double
 policy. Oxygen mass is the quoted, transferred and consumed quantity; tank volume, storage
 capacity and physical authoring values are separate choices. Selecting mass units does
@@ -542,7 +542,7 @@ physical values and spare provision remain open. Do not apply these initial quan
 to the separate compact ship without a product decision.
 
 The starter's modular oxygen bank and initial fill follow
-[D-050](decision-ledger.md#d-050). Use its canonical specification for authoring and
+[D-050](../decision-ledger.md#d-050). Use its canonical specification for authoring and
 per-tank validation; cargo oxygen cannot increase installed capacity. This deferred
 requirement does not enter the first playable loop's critical path.
 
@@ -578,7 +578,7 @@ service transitions so neither supply is double-debited or silently skipped. Con
 docking, reconnect and recovery cannot refill tanks or restore cartridges. Explicit
 resupply must conserve actual stock and ownership separately. Persist connection/service
 state for replay; transition ordering and service accounting are resolved by
-[D-094](decision-ledger.md#d-094) (W06), and exhaustion behaviour is still open. No free refill or
+[D-094](../decision-ledger.md#d-094) (W06), and exhaustion behaviour is still open. No free refill or
 station resource model is selected.
 Verify the berth charge includes connected life-support service without a separate ongoing
 life-support charge. Refills and replacement cartridges must have distinct authorised
@@ -591,7 +591,7 @@ capacity. Replacement must debit an actual accessible fresh cartridge once and a
 declared capacity without duplicating inventory, removing the machinery or replenishing
 oxygen. Preserve remaining supplies/capacity across save/replay and ship transfers rather
 than resetting them on docking, reconnect or reload. Replacement timing, access, partial
-cartridges and spent-item handling are [D-094](decision-ledger.md#d-094)'s (W06). Existing
+cartridges and spent-item handling are [D-094](../decision-ledger.md#d-094)'s (W06). Existing
 life-support skill/effect IDs remain stable; their presence does not implement consumable
 accounting or select these new values.
 Verify the oxygen definition uses `Kilogram`, independent oxygen mass in quotes/stock/

@@ -32,7 +32,7 @@ be no dependency from Jettison to Manifest.
 
 Read both repositories' AGENTS.md and applicable coding/build documentation before
 implementation. Preserve the decisions in [host/script boundary](host-script-boundary.md),
-[market prices](market-prices.md) and [architecture](architecture.md). Resolve any newly
+[market prices](../pricing.md) and [architecture](../architecture.md). Resolve any newly
 discovered API constraints explicitly rather than silently changing those contracts.
 
 ## Inspected baseline
@@ -216,7 +216,7 @@ configuration does not require Vulkan/windowing/presentation dependencies. An Xv
 smoke test is not evidence of a renderer-free server.
 
 Networking, authentication, replication, administration protocols and deployment platform
-remain separate design work. The subsequent [idle/planetary plan](planetary-development-plan.md)
+remain separate design work. The subsequent [idle/planetary plan](../planetary-development-plan.md)
 requires morphing the existing TUI into a remote gameplay client with `connect`/`disconnect`,
 sharing a command/query layer with the GUI. Clients submit commands without owning another
 simulation or controlling server lifetime; admin permissions remain separate. This integration

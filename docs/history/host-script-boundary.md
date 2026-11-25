@@ -3,7 +3,7 @@
 Roadmap item 1 is defined by this contract. It is a design decision, not an implemented game
 host or script ABI. The reference is Jettison `feature-base` at
 `f85092027eda49c29001f7589608df1f0b8827fb`, matching
-[`source/external/CMakeLists.txt`](../source/external/CMakeLists.txt). Recheck the API inventory
+[`source/external/CMakeLists.txt`](../../source/external/CMakeLists.txt). Recheck the API inventory
 when updating that pin.
 
 ## Deployment and ownership
@@ -87,7 +87,7 @@ counter in the world, never a terminal refresh or event handler. The sample game
 every 200 steps; item 4 must specify and test the final cadence and system ordering rather than
 equating today's development tick with an engine step. Native systems remain responsible for
 production, consumption, expiry and settlement even when no scripts are loaded.
-The subsequent [economy plan](economy-and-development-plan.md) selects 60 simulation seconds
+The subsequent [economy plan](../economy-and-development-plan.md) selects 60 simulation seconds
 for regular payroll/household purchasing; W02 fixed the full production/market schedule
 ([Stage 4 plan: the step](stage-4-trading-plan.md#the-step-in-order)).
 The [regional correction](regional-economy-and-governance-plan.md) scopes population,
@@ -140,7 +140,7 @@ markets may be scouting targets without fabricated commercial estimates.
 
 The engine's scalar input ABI is `double`. Keep it for dimensionless decision values; it is not
 a currency/quantity ABI. Raw balances, order amounts, prices, effects and rounding stay in native
-code. The [price policy](market-prices.md) specifies decimal per-unit prices only; quantities,
+code. The [price policy](../pricing.md) specifies decimal per-unit prices only; quantities,
 physics, population, effect stats and other continuous values retain floats/doubles, while
 existing credit balances and fees remain integers. Engine API conversions must be explicit.
 This supersedes the original all-integer economy proposal. Concrete game wire layouts remain

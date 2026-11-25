@@ -1,12 +1,12 @@
 # Stage 4: complete the local trading loop
 
-Subsequent requirements: the [idle/planetary plan](planetary-development-plan.md) requires
+Subsequent requirements: the [idle/planetary plan](../planetary-development-plan.md) requires
 physical auto-trader jobs, autopilot and NPC operation with zero clients. Preserve the
 manual command fixture below, then prove saved standing policies and unattended jobs.
 Regional development adds a separate public-budget project loop; manual TUI trading
 is a stretch goal, and the TUI is to become a remote gameplay client.
 
-Subsequent economy decisions in the [economy plan](economy-and-development-plan.md) select
+Subsequent economy decisions in the [economy plan](../economy-and-development-plan.md) select
 aggregate household payroll/purchases every 60 simulation seconds, progress-based batch
 wages and tracked health/happiness losses that both reduce production. Those decisions
 amend the original governed-economy proposals below. The selected economic sequence is
@@ -67,7 +67,7 @@ from stage 2, and stage 3's ownership, inventory and command contracts.
 
 ## Fixed-step schedule
 
-Resolved in W02 (2026-11-20, [D-086](decision-ledger.md#d-086)). The hosted world steps at
+Resolved in W02 (2026-11-20, [D-086](../decision-ledger.md#d-086)). The hosted world steps at
 1/60 simulation second, the step Jettison's docking and physics are tested at, since W05. Let `s` denote the clock step before `SimWorld::Step` advances
 it. The economic cadence `N` is `economy.intervalSeconds` divided by the fixed step, 3,600 steps,
 checked at start-up to be a positive whole number. Production work advances every fixed step;
@@ -120,7 +120,7 @@ the `travel` suite pins the order and the empty ambiguities.
   goods), then updates regional health/happiness; the new multiplier applies from the next fixed
   step. Goods and funds keep their regional/owner/venue identities and physical access.
 - **Brokers** requote after the turn's economy, so their quotes see its stock and funds
-  ([D-084](decision-ledger.md#d-084)).
+  ([D-084](../decision-ledger.md#d-084)).
 - **Travel** reads the saved engine state the movement systems left (docking, cruising, a pad's
   occupant), advances each intent one transition, and sends the next engine command through
   `SimWorld::Apply`, which the engine's systems act on from the next step. It alone writes
@@ -168,7 +168,7 @@ the systems phase becomes eligible for cargo commands at the next command bounda
 New production likewise becomes available to external commands on the following step.
 
 Order placement and fill timestamps use server steps. A resting order lives one simulation day by
-default ([D-085](decision-ledger.md#d-085)), authored in simulation seconds and converted to steps
+default ([D-085](../decision-ledger.md#d-085)), authored in simulation seconds and converted to steps
 with checked arithmetic; the existing `orderLifeTicks` is not read as steps. Zero keeps its
 no-expiry meaning, and a consignment listing has none. Define and test the exact expiry boundary.
 
@@ -179,11 +179,11 @@ available civilisation-owned stock, never a company's purchases or sell escrow. 
 shortage accounting and price rules, with checked finite arithmetic. Record intentional
 production/consumption sources and sinks for invariant tests.
 
-The native counterparty is a broker at each venue ([D-084](decision-ledger.md#d-084), W02): a
+The native counterparty is a broker at each venue ([D-084](../decision-ledger.md#d-084), W02): a
 trading principal owned by the venue's operator, with its own account and holdings in totes
 there, seeded from the scenario's venue stock and an authored treasury. On each due economic turn
 it cancels its resting orders and posts a ladder of bids and asks per item it trades, priced on
-its stock's curve about the existing native price ([D-102](decision-ledger.md#d-102), W19's
+its stock's curve about the existing native price ([D-102](../decision-ledger.md#d-102), W19's
 [curve and ladder](#delivered-w19-2026-11-22)) with an authored spread and exact integer rounding: the asks no
 more than its unreserved holdings, the bids no more than its unreserved funds cover with fees. Its
 orders take the same order/reservation path as a company's, in stable venue/item order, so a turn
@@ -230,7 +230,7 @@ that sequence in authoritative state. The existing development tie-break by tick
 string order ID remains a development behaviour, not a reason to let `Order-10` jump
 ahead of `Order-2` in the hosted book. The maker sets the fill price.
 
-Preserve [market price rules](market-prices.md): exact Decimal comparisons, double
+Preserve [market price rules](../pricing.md): exact Decimal comparisons, double
 quantity/product conversion, ceil buy reservations, nearest whole-credit fill gross
 and ceil fees. Do not introduce microcredit wallets, cumulative rounding, a silent fee
 cap or changed authored prices as part of ownership integration.
@@ -280,14 +280,14 @@ and remaining service capacity through retry/recovery. Other hull limits, physic
 volume, compartment dimensions, item fields and transfer/replacement procedures
 remain open; separate storage does not grant unlimited reserves or duplicate inventory.
 
-Reconciled with [D-078](decision-ledger.md#d-078) in W02 ([D-083](decision-ledger.md#d-083)) and
-counted in totes since W03 ([D-087](decision-ledger.md#d-087)): goods are held, moved and traded in
+Reconciled with [D-078](../decision-ledger.md#d-078) in W02 ([D-083](../decision-ledger.md#d-083)) and
+counted in totes since W03 ([D-087](../decision-ledger.md#d-087)): goods are held, moved and traded in
 whole totes, an eighth of a cubic metre each, one tote being an eighth of the item's
 `unitsPerCubicMetre` in its unit, so the occupied volume of `n` totes is `n / 8` cubic metres for
 every unit and no `packFactor` enters capacity. An order's quantity is a whole number of totes and
 its limit stays a Decimal price per authored unit. A fill's gross is that price times
 `unitsPerCubicMetre / 8` times the totes, converted to whole credits by the
-[market price rules](market-prices.md) (nearest whole-credit gross, ceil fees, ceil buy
+[market price rules](../pricing.md) (nearest whole-credit gross, ceil fees, ceil buy
 reservations); the double unit count is formed once, at that conversion. A broker's holdings are
 totes like a company's.
 The initial capacity constraint is `CargoVolume`; do not invent an unauthored payload
@@ -299,12 +299,12 @@ does not simulate deck loading time. Do not make `Dock::Carry`, which counts cra
 inventory owner. Deck transfer animation can follow with
 an explicit conversion and pending-transfer accounting contract.
 
-Selected in W02 ([D-086](decision-ledger.md#d-086)): one player command, `Travel(ship, venue)`,
+Selected in W02 ([D-086](../decision-ledger.md#d-086)): one player command, `Travel(ship, venue)`,
 starts a journey, and `manifest.travel` drives it through pad release, departure, cruise, pad
 request and docking ([the step](#the-step-in-order)); the player sends no engine command. The
 first slice charges nothing for travel, docking or handling: a fill's listing fee is the only
 charge until a later task selects the economy plan's handling services. The starter docks at a
-`skiff` pad ([D-058](decision-ledger.md#d-058)).
+`skiff` pad ([D-058](../decision-ledger.md#d-058)).
 
 A travel command creates an owned, saved intent, with states such as departing,
 cruising, approaching, waiting-for-pad, docked or failed. The host resolves stable IDs
@@ -359,8 +359,8 @@ Each slice preserves existing relevant checks before the next expands the integr
 The final test must use the public command/query boundary, not direct component edits
 after bootstrap:
 
-W03 restated the trading fixture's stocks in totes ([D-087](decision-ledger.md#d-087)). A
-25,000-credit start ([D-077](decision-ledger.md#d-077)) buys totes of furs at Ore and of salt,
+W03 restated the trading fixture's stocks in totes ([D-087](../decision-ledger.md#d-087)). A
+25,000-credit start ([D-077](../decision-ledger.md#d-077)) buys totes of furs at Ore and of salt,
 lime, glassware and soap at Brine, and now a tote of copper (about 14,800 credits) or of tin
 (about 42,400 at base price, beyond the start); a tote of gold is about 290 million, a later good.
 W15 trades furs Ore to Brine or a Brine good back.
@@ -407,7 +407,7 @@ graphical presentation or public hosting readiness.
 ## Delivered: W03, 2026-11-20
 
 The `trade` module settles the hosted book on owner/venue accounts; Stage 3's goods are counted in
-totes ([D-087](decision-ledger.md#d-087), the user's choice during W03), and content authors a
+totes ([D-087](../decision-ledger.md#d-087), the user's choice during W03), and content authors a
 hull's `CargoVolume` and a venue's `stock` in totes as well. What it chose where the contract above
 left room:
 
@@ -465,7 +465,7 @@ scenario has not needed; and a broker's demand beyond its funds, a W04 question.
 A new `travel` module, below `company`, puts the hosted world's ships in space. What it chose where
 the contract above left room:
 
-- **Content** ([D-088](decision-ledger.md#d-088)). Each scenario system is a `Celestial.StarSystem`
+- **Content** ([D-088](../decision-ledger.md#d-088)). Each scenario system is a `Celestial.StarSystem`
   record named by its ID (`data/systems/`): a Sun-like star, the planets on their orbits and each
   venue a `Station` body of its ID orbiting its planet 42,000 km out, a highport's radius 763 m; the
   venue names its layout, the body none. `position` left the scenario. Each hull has an
@@ -516,7 +516,7 @@ gates; the handling services' charges; and long-haul timing, with W15's two-plan
 
 ## Delivered: W17, 2026-11-20
 
-The Manifest mode's cruise is limited by acceleration ([D-090](decision-ledger.md#d-090)), on
+The Manifest mode's cruise is limited by acceleration ([D-090](../decision-ledger.md#d-090)), on
 Jettison's `Space::CruiseProfile` (pin `54fb871`), which a drive may give in place of its power law:
 
 - **Content.** A game mode's optional `cruise` (`Manifest.CruiseModel`) gives a `manned` and an
@@ -544,7 +544,7 @@ stargates or moongates (L16), and the TUI and console show a journey's days (W15
 
 ## Delivered: W16, 2026-11-20
 
-Onboarding by [D-089](decision-ledger.md#d-089), with no engine edit:
+Onboarding by [D-089](../decision-ledger.md#d-089), with no engine edit:
 
 - **Content.** A scenario names its `starterVenue`, one of its venues, beside its `starterHull`, both
   now required: the venue must be public and operational, have life support, and have a pad, not for
@@ -600,13 +600,13 @@ snapshot of her. Played on the manned profile in a release build, the same comma
 credits after 4.49 days. The `company`, `query` and `remote` suites hold.
 
 Left: market views for a player (W07); the long step, which blocks the console while it runs and
-costs minutes of a release build ([L26](delivery-order.md#later-priorities-and-re-entry-conditions)); and the slice's whole fixture, with production, life support, observations and the upgrade
+costs minutes of a release build ([L26](../delivery-order.md)); and the slice's whole fixture, with production, life support, observations and the upgrade
 (W09).
 
 ## Delivered: W04, 2026-11-20
 
 The regional economy, `manifest.economy`, on pin `54fb871` with no engine edit. What it chose where
-the plans left room ([D-092](decision-ledger.md#d-092), the user's choices):
+the plans left room ([D-092](../decision-ledger.md#d-092), the user's choices):
 
 - **Content.** A market row names its `regionId`, one of the venue's regions: that region's employer
   makes its `production`, which needs one, and its households want its `demand` as an optional good
@@ -639,7 +639,7 @@ the plans left room ([D-092](decision-ledger.md#d-092), the user's choices):
   goods first, within their funds, any remainder cancelled at once so no household bid rests; then
   consumed exactly from opened totes and whole ones opened in turn; a shortfall added to the need's
   unmet total, with no catch-up after. Every need met, each optional good is bought and consumed
-  likewise. The severity moves health and happiness ([the rates](economy-and-development-plan.md#population-health-happiness-and-production-selected)),
+  likewise. The severity moves health and happiness ([the rates](../economy-and-development-plan.md)),
   which the work rate reads from the next step; then the brokers requote.
 - **Finite brokers and demand.** A broker still bids only what its funds cover (W03), and its stock now
   moves with employers' sales and households' purchases as well as players' trades; no account is
@@ -675,7 +675,7 @@ workshop's, which W06 and W12 give their consumers.
 ## Delivered: W06, 2026-11-20
 
 Station life support, onboard use and resupply, `manifest.lifeSupport`, on pin `54fb871` with no
-engine edit. What it chose where the plans left room ([D-094](decision-ledger.md#d-094), the user's
+engine edit. What it chose where the plans left room ([D-094](../decision-ledger.md#d-094), the user's
 choices):
 
 - **State.** Each ship has a saved `LifeSupport`: the oxygen left in each tank, in its hull's order
@@ -731,7 +731,7 @@ which only the governance fixture's do, for W09's whole fixture.
 ## Delivered: W07, 2026-11-20
 
 Live and stale market observations, `manifest.observe`, on pin `54fb871` with no engine edit. What it
-chose where the plans left room ([D-095](decision-ledger.md#d-095), the user's choices):
+chose where the plans left room ([D-095](../decision-ledger.md#d-095), the user's choices):
 
 - **State.** Each venue has a `Market` entity, by its ID, whose saved `Sales` hold the totes each
   matching pass filled, by step and item, for at least the last sales window, and each item's last sale,
@@ -782,12 +782,12 @@ Left: trader and script facts, which the hosted world does not have until W10's 
 NPC jobs and the scripts after them, which are to read these reports and nothing else; the
 development sandbox's `prices` and `plan`, which stay privileged and apart from the hosted world;
 ship transfers, which do not exist yet; and each covered venue's report rebuilt every step from the
-book, to profile with the long step ([L26](delivery-order.md#later-priorities-and-re-entry-conditions)).
+book, to profile with the long step ([L26](../delivery-order.md)).
 
 ## Delivered: W08, 2026-11-20
 
 Company-funded cargo upgrades, `Manifest.Company.Upgrade`, on pin `54fb871` with no engine edit. What
-it chose where the plans left room ([D-096](decision-ledger.md#d-096), the user's choices):
+it chose where the plans left room ([D-096](../decision-ledger.md#d-096), the user's choices):
 
 - **The offer.** `Manifest.Offer`, a versioned record of its own under `definitions/offers`, authored
   as records under `data/offers/` and in the content fingerprint: an `offerId`, the Skill node it
@@ -854,7 +854,7 @@ The console's long step, on pin `9e0274f` with one engine provision:
   evaluating orbits, since physics placed each pad, deck and buggy on a station's rails by the
   station's whole orbit chain; Manifest's systems together were under 5%, the trade's 1.7%. The
   engine now places a rails body once a step for everything on it, to the same bits
-  ([Jettison's history](../../jettison/docs/history.md#neutral-sdk-and-manifest-integration)): 13 µs
+  ([Jettison's history](../../../jettison/docs/history.md#neutral-sdk-and-manifest-integration)): 13 µs
   a step, Ore to Brine about 4 min 50 s. What is left is the engine's movement, spread over Jolt's
   update of each frame's world, the docks, the spatial index and the cruise.
 - **The budget.** `step-budget`, a ctest of its own run serially, times a cruising step in an
@@ -920,7 +920,7 @@ which a release build steps in minutes (W15) and the suite does not.
 ## Delivered: L27, 2026-11-20
 
 A fast-forward over quiet steps, on pin `892b7b3` with its engine provision
-([Jettison's architecture](../../jettison/docs/architecture.md#quiet-steps)):
+([Jettison's architecture](../../../jettison/docs/physics.md#quiet-steps)):
 
 - **The engine's.** `SimWorld::FastForward` passes over the steps before the soonest any system has
   to run in, to the same bits as stepping them, each system saying when (`Sim::Quiet`); a system that
@@ -950,7 +950,7 @@ while a fleet is docked, which W10's fleets will be; [L28](#delivered-l28-2026-1
 
 ## Delivered: W10, 2026-11-21
 
-Standing trade policies, autopilot and NPC jobs, on [D-097](decision-ledger.md#d-097) (the user's,
+Standing trade policies, autopilot and NPC jobs, on [D-097](../decision-ledger.md#d-097) (the user's,
 2026-11-21), on pin `0f973b2` with one engine provision, from Manifest `feature-base` at `b1bf8e8`
 and Jettison's at `28e8272`:
 
@@ -979,7 +979,7 @@ and Jettison's at `28e8272`:
   estimate is the bid's proceeds net of its fee less the ask's cost and fee, by the market price
   rules, less the route's charges. **Charges** are real from W10 at nominal values (the user's,
   2026-11-21). They are each venue's own, `World::Fees` on the venue, which its operator sets
-  ([D-098](decision-ledger.md#d-098)); W10 gives every venue `balance.yaml`'s `charges` defaults
+  ([D-098](../decision-ledger.md#d-098)); W10 gives every venue `balance.yaml`'s `charges` defaults
   in the initial state and adds no command to change them. A venue's fees are posted, so an
   estimate reads them live rather than from reports, and a change applies to the next charge, not
   one paid. Transport is a docking fee, 10 credits by default, paid to the
@@ -994,7 +994,7 @@ and Jettison's at `28e8272`:
   its cost; the source's docking fee is the estimate's alone, and a failed journey's fee is not
   refunded (W18's). Their real amounts and bases,
   warehouse storage, tolls and the life support used in transit are
-  [W18](delivery-order.md#priority-5-stage-4-trading-automation-and-regional-development)'s. The
+  [W18](tasks.md#priority-5-stage-4-trading-automation-and-regional-development)'s. The
   highest estimate wins, then a source the ship is docked at, then the scenario's order of source,
   destination and item. An unknown venue gives nothing, and none above the target blocks the job.
 - **Buying**, docked at the source: the estimate again on the live ask, skipped if no longer above
@@ -1043,7 +1043,7 @@ and Jettison's at `28e8272`:
 - **Left.** Scouting an unknown market, a standing route and Wasm policies; the charges' real amounts and the
   ones not yet charged (W18). A ship flown in to a pad stops out along its normal first, Jettison's stopgap for one that
   circled its pad until the pad lapsed, as Ada's did at Ore in the zero-client run; the quality
-  solution is Jettison's ([roadmap](../../jettison/docs/roadmap.md#then-robustness-tools-and-what-a-mod-can-reach)).
+  solution is Jettison's ([roadmap](../../../jettison/docs/roadmap.md)).
 
 ## Delivered: L28, 2026-11-21
 
@@ -1065,7 +1065,7 @@ are passed over.
 
 ## Delivered: W18, 2026-11-21
 
-Transport and holding charges at their real values, on [D-100](decision-ledger.md#d-100) (the
+Transport and holding charges at their real values, on [D-100](../decision-ledger.md#d-100) (the
 user's, 2026-11-21), on pin `0f973b2` with no engine edit, from Manifest `feature-base` at
 `dfde305`: a journey's cruise time is Jettison's `Space::CruiseSeconds`.
 
@@ -1136,7 +1136,7 @@ user's, 2026-11-21), on pin `0f973b2` with no engine edit, from Manifest `featur
 
 ## Tender contract (W11), 2026-11-21
 
-The clean public-project and tender lifecycle that W12 implements, on [D-101](decision-ledger.md#d-101)
+The clean public-project and tender lifecycle that W12 implements, on [D-101](../decision-ledger.md#d-101)
 (the user's, 2026-11-21), settling the [procurement plan](procurement-and-station-contracts-plan.md)'s
 proposals for the pilot; where they differ, this holds. From Manifest `feature-base` at `39f6618` on
 pin `0f973b2`; no engine edit is expected: tenders, bids and contracts are Manifest's commands,
@@ -1338,7 +1338,7 @@ W12's slices, each one commit with its suites, the gate after the third and the 
 
 ## Delivered: W19, 2026-11-22
 
-Supply and demand pricing, on [D-102](decision-ledger.md#d-102) (the user's, 2026-11-21), built ahead
+Supply and demand pricing, on [D-102](../decision-ledger.md#d-102) (the user's, 2026-11-21), built ahead
 of W12 so procurement's budgets and bids are on live prices, with no engine edit; the SDK pin moved
 from `0f973b2` to `f14c288` for the shell's profilers alone. Before it, a venue's native price was
 worked out once at load from the authored rates (`Simulation::MarketPrice` and `LocalPrice`), and
@@ -1472,14 +1472,14 @@ Slices, each a commit with its suites:
 
 ## Delivered: W21, 2026-11-22
 
-Fuel burn, on [D-107](decision-ledger.md#d-107) (the user's, 2026-11-22), built at high priority
+Fuel burn, on [D-107](../decision-ledger.md#d-107) (the user's, 2026-11-22), built at high priority
 ahead of W12, its choices settled with the user as it was planned (2026-11-22): the ships' own fuel,
 burned on a curve that rises steeply with the acceleration, and with everything the ship carries, its
 tanks and their fuel included; tanks apart from the hold, grown on the tech tree; a slow run coasts;
 stations refuel a ship automatically, as they connect its life support, while its owner allows it
 and its funds last; and a standing policy picks the burn that makes the most an hour unless its owner
 fixes one. The drive is a clean fusion torch burning two goods, reaction mass and fusion pellets, at
-an exhaust of 10% of light speed, and a hard burn is a decision, not a default ([D-108](decision-ledger.md#d-108),
+an exhaust of 10% of light speed, and a hard burn is a decision, not a default ([D-108](../decision-ledger.md#d-108),
 the user's, 2026-11-22). W21 built the torch alone; the hauler's fusion drive, the pulse drive and
 their exclusion radii are designed below and built with the first larger hull (W22). Every number below is
 a starting point (mine, the user's to review). Two engine provisions: the coast phase, planned (pin
@@ -1684,9 +1684,9 @@ Slices, each a commit with its suites:
 
 ## Regional governance (W13), 2026-11-23
 
-The multi-region idle governance scenario, on [D-110](decision-ledger.md#d-110) (the user's,
-2026-11-23), settling [D-089](decision-ledger.md#d-089)'s founding and the
-[planetary plan](planetary-development-plan.md#development-and-unattended-operation)'s queue for the
+The multi-region idle governance scenario, on [D-110](../decision-ledger.md#d-110) (the user's,
+2026-11-23), settling [D-089](../decision-ledger.md#d-089)'s founding and the
+[planetary plan](../planetary-development-plan.md)'s queue for the
 pilot; where they differ, this holds. From Manifest `feature-base` at `7d1dd6a` on pin `14fc23a`; no
 engine edit is expected: founding, queues and the region view are Manifest's commands, components and
 systems on the world's services.
@@ -1734,7 +1734,7 @@ systems on the world's services.
   reconnecting player's snapshot is computed from the world as any other, so reconnecting loses and
   replays nothing.
 - **Saves.** The project phases `Queued` and `Cancelled` and the region's development policy are saved,
-  the formats changed in place ([D-109](decision-ledger.md#d-109)).
+  the formats changed in place ([D-109](../decision-ledger.md#d-109)).
 - **Acceptance**, `fixture_development`, on the governance scenario, Forge North given a workshop:
   Ada, provisioned and funded, founds Forge North, queues the guild and Bronze, sets the policy and her ship's contracts on, and no
   client is connected. Her region's tenders are issued, her job bids and delivers, the guild teaches
@@ -1845,5 +1845,5 @@ relocation. No Stage 4 success response claims durability.
 
 A snapshot longer than the engine's default message (64 KiB) was dropped, so a remote client's view
 froze while it was. The limit is Manifest's since R02, 192 KiB (`Remote::kMaxMessageBytes`,
-[history](history.md#r02-durable-io-directories-and-the-world-lock--2026-11-24)); a view past that
+[history](stage-5.md#r02-durable-io-directories-and-the-world-lock--2026-11-24)); a view past that
 is logged and not sent, and wants delta snapshots.

@@ -7,7 +7,7 @@ Implementation is assigned to Claude. This document extends the
 [standalone mod plan](standalone-mod-plan.md); it does not replace its SDK integration
 stages or the [host/script boundary](host-script-boundary.md).
 
-The [planetary development and frontier plan](planetary-development-plan.md) records the
+The [planetary development and frontier plan](../planetary-development-plan.md) records the
 2026-11-15 additions and impact assessment. It supersedes the optional administration-only
 TUI direction and the assumption that all planetary development is permanently AI-controlled.
 There is no win condition: players grow trading companies and accumulate wealth, power and
@@ -62,10 +62,10 @@ control is not sovereignty over the entire body.
 | Brokers and fees | Brokers buy/sell their own finite stock/funds, earning through spreads; warehouses charge separately at both ends. | Quote real liquidity, charge each provided service once, and include all costs in auto-trade decisions. |
 | Market intelligence | Exact current station trade data requires a fleet member docked there; retain dated last-known reports elsewhere. New players get spawn-time reports for every station market in directly connected systems. | Enforce the [market-information contract](market-information-plan.md) in server views, trader candidates/rankings and script facts; show stale-data age and preserve fleet coverage advantage. |
 | Starter and compact ships | The lone-trader entry ship has a 160-tote cargo hold and starts with its operating oxygen reserve full at the selected 30 kg maximum, plus one fresh installed standard scrubber cartridge (30 occupant-days). At one occupant each covers 30 simulation days of onboard use. Operating reserves occupy dedicated life-support space outside the trade hold; trade supplies and loose spares use cargo capacity. A separate compact single-occupant ship has tiny truck-like living accommodation for long journeys, 32 totes (4 m³) of cargo and a matching small berth; its primary purpose is unspecified and trade is secondary. | The [ship plan](small-trader-and-docking-plan.md) distinguishes 20 m³ starter and 4 m³ compact capacities and the smaller-berth SDK gap. Preserve actual remaining supplies, stock locations and the starter's operating oxygen cap. Dimensions, tank physical volume, cartridge physical values, transfer procedures, full journey endurance, compact limits/reserves, costs and starter upgrades remain open. |
-| Population condition | Track regional health and happiness separately on continuous 0–100 scales, initially 100 in the first balance-testing scenario. Update after household purchases every 60 simulation seconds. Initial hourly rates: complete shortage −6 health/−12 happiness, partial losses proportional to severity; full essentials +3 health/+6 happiness. | Severity averages essential needs' unmet fractions with initially equal weights; food counts once across qualifying grains and cannot offset water/medicine. Initial work-rate multiplier is `(0.5 + health / 200) × (0.5 + happiness / 200)`, 25%–100%; other production gates remain. Production uses prior-step condition; due payroll/tax precedes household purchases/consumption, then condition updates for the next fixed step. Preserve recipe/payroll/progress and saved regional state without control-change resets. See the [economy plan](economy-and-development-plan.md); balance requires validation. |
+| Population condition | Track regional health and happiness separately on continuous 0–100 scales, initially 100 in the first balance-testing scenario. Update after household purchases every 60 simulation seconds. Initial hourly rates: complete shortage −6 health/−12 happiness, partial losses proportional to severity; full essentials +3 health/+6 happiness. | Severity averages essential needs' unmet fractions with initially equal weights; food counts once across qualifying grains and cannot offset water/medicine. Initial work-rate multiplier is `(0.5 + health / 200) × (0.5 + happiness / 200)`, 25%–100%; other production gates remain. Production uses prior-step condition; due payroll/tax precedes household purchases/consumption, then condition updates for the next fixed step. Preserve recipe/payroll/progress and saved regional state without control-change resets. See the [economy plan](../economy-and-development-plan.md); balance requires validation. |
 | Development and geography | Tech needs exploited/imported resources and actual facilities; inner worlds start higher-tech and depleted, outer worlds richer and less developed. | Validate cross-facility/import dependencies and seeded spatial economic generation. |
 | Frontier rights | Exclusivity covers eligible resources in one named region, using the accepted operational-port/concession trigger and 72-hour server-running term. Neighbours remain independently eligible; government control stays separate. | Persist regional scope and independent host-time events for replay. Preserve rival exploitation and competing ports at expiry despite puppet government, without restarting the term after ownership/control changes. |
-| New-system access | A government or corporation funds physical stargate delivery on an automated unmanned FTL flight. Distance and configurable speed/pacing set hours/days of server-running duration. Operational owners control access/fees and may refuse rivals. | Persist flight progress, pause in shutdown, reuse recorded host timing and activate topology once; gate ownership is separate from planetary/resource rights. See the [stargate plan](stargate-expansion-plan.md). |
+| New-system access | A government or corporation funds physical stargate delivery on an automated unmanned FTL flight. Distance and configurable speed/pacing set hours/days of server-running duration. Operational owners control access/fees and may refuse rivals. | Persist flight progress, pause in shutdown, reuse recorded host timing and activate topology once; gate ownership is separate from planetary/resource rights. See the [stargate plan](../space-plan.md). |
 
 The first integration fixture runs without a renderer, using commands and automated tests.
 A small real network/TUI slice should follow the minimal command/ownership foundation rather
@@ -75,7 +75,7 @@ Graphical presentation uses the same command/query interface and selected public
 See the [supply-contract and station-booking handoff](procurement-and-station-contracts-plan.md)
 for the proposed first tender and commercial booking lifecycle. It separates confirmed
 payment/commitment decisions from proposed scoring, arithmetic, deadlines and failure rules.
-The [physical economy/development plan](economy-and-development-plan.md) records supply caps,
+The [physical economy/development plan](../economy-and-development-plan.md) records supply caps,
 scarcity pricing, commodity custody/handling, imported tech inputs, map gradients and timed
 concessions. Initial port eligibility is refined by reopening after exclusivity; controller
 changes cannot make a frontier concession permanently private.
@@ -140,11 +140,11 @@ request rejection, retry safety and replay of the exact accepted command orderin
 
 ## Network contract (N01, 2026-11-20)
 
-Selected by the user, 2026-11-20 ([D-079](decision-ledger.md#d-079) to
-[D-081](decision-ledger.md#d-081)). The idle game is the first variant to use it. The same stack
+Selected by the user, 2026-11-20 ([D-079](../decision-ledger.md#d-079) to
+[D-081](../decision-ledger.md#d-081)). The idle game is the first variant to use it. The same stack
 must also carry variants played as real-time space combat, so nothing below assumes idle pacing.
 
-**Transport.** UDP through ENet, in Jettison ([D-057](decision-ledger.md#d-057)). A connection has
+**Transport.** UDP through ENet, in Jettison ([D-057](../decision-ledger.md#d-057)). A connection has
 channels: reliable-ordered for the handshake, requests and their results, and
 unreliable-sequenced for snapshots, where the newest supersedes any still in flight. A real-time
 variant adds its inputs on an unreliable-sequenced channel of its own at step rate; the idle game
@@ -166,7 +166,7 @@ do, and only an administrator token grants admin. Revoking a token disconnects i
 **Encryption.** None through N02 and N03, which run on loopback or a LAN. A token sent in
 plaintext can be stolen, so hosting outside a trusted network is blocked until Jettison adds
 libsodium encryption: a key exchange in the handshake with the server's public key pinned by the
-client, then every packet encrypted ([D-081](decision-ledger.md#d-081)). TLS does not run over
+client, then every packet encrypted ([D-081](../decision-ledger.md#d-081)). TLS does not run over
 UDP and is not used.
 
 **Encoding.** Each message is a kind (a protocol-defined number) followed by its body in
@@ -181,7 +181,7 @@ safe, as it already does locally. Each session's inbound messages are bounded by
 the bound the session is disconnected, while `QueueFull` stays the ledger's answer to a well-formed
 request when the world's queue is full. Requests are admitted between steps; the network never
 steps the world, and the world steps with no sessions. An actor may hold three sessions at once,
-which share its sequences ([D-082](decision-ledger.md#d-082)).
+which share its sequences ([D-082](../decision-ledger.md#d-082)).
 
 **Snapshots.** Full, actor-filtered snapshots at a bounded rate. Each carries the step it was taken
 at, so a client can order snapshots and a real-time client can interpolate between them. Jettison
@@ -218,7 +218,7 @@ storage. Backups cover storage loss separately. Snapshot frequency, journal form
 durability batching and retention are implementation decisions to measure and document;
 they must preserve the acknowledgement contract.
 
-Settled otherwise on 2026-11-24 ([D-113](decision-ledger.md#d-113)): a crash may lose up to 30 s of
+Settled otherwise on 2026-11-24 ([D-113](../decision-ledger.md#d-113)): a crash may lose up to 30 s of
 play, no receipt is a durable acknowledgement, and the journal is written after the steps it
 records ([the journal and its snapshots](stage-5-recovery-plan.md#the-journal-and-its-snapshots-r03-r04-2026-11-24)).
 
@@ -321,7 +321,7 @@ not merge accounts or replicate local project effects; save/replay preserves the
 ## Sequencing and deferred scope
 
 The [next development stages](development-stages.md) retain five foundational work packages.
-Their amendments and the [planetary plan](planetary-development-plan.md) add required remote
+Their amendments and the [planetary plan](../planetary-development-plan.md) add required remote
 idle play, governed development and later corporate/frontier growth. Retain the ownership and
 persistence contracts here when refining the extended schedule.
 
