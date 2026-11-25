@@ -6,6 +6,45 @@ is here: what is built is in the feature documents (the [index](README.md)), and
 is in [history](history.md). Why Manifest exists, and what is in and out of it, is
 [scope](scope.md).
 
+## Waiting on you
+
+What needs the user's answer or action and is not a task in the queue. Each line goes when it is
+settled.
+
+- **Review the numbers.** The price bound of 30 times the base, against hosted prices that reach
+  about 27 times ([L51](delivery-order.md#l51)); and the drive numbers of
+  [D-108](decision-ledger.md#d-108), proposed by an agent.
+- **The packed totes' fallout.** `d7843df` priced every tote by its packed weight and was
+  committed without the fixture suites (`ctest -R fixture`), and with the trade, company and
+  procurement suites' new expectations unreviewed. Run the fixtures and settle what moved. The
+  procurement suite's AI now opens more tenders (6 where it expected 2): find out why.
+- **Merge the docs review**, with Jettison's (see
+  [Jettison's roadmap](../../jettison/docs/roadmap.md#waiting-on-you)).
+- **Delete `data/core-config/`?** A git-ignored leftover the build and the `packaging` suite skip
+  ([content](content.md#limits-and-open-work)).
+- **Questions from the docs review:**
+  - Companies: the long-haul trader (7,200 totes) is in no scenario. Keep it as the hull the skill
+    tree balances against?
+  - Persistence: [D-115](decision-ledger.md#d-115) makes a reusable off-thread writer Jettison's,
+    and Jettison's roadmap has no item for it. Add one?
+  - Travel: fuel is priced on the straight line at departure, not the course flown. Intended?
+  - Policies: no shipped scenario has NPC traders, only a test overlay. Intended?
+  - Host: [D-070](decision-ledger.md#d-070)'s "nothing defaults" contradicts
+    [D-114](decision-ledger.md#d-114)'s defaults: amend or supersede? The world seed is fixed at 0:
+    a queue row?
+  - Space: the hosted game attaches lanes and cruising but no gates or galaxy. Is the scenario's
+    list of connections [space](space.md)'s, or content's and trading's? Is a zero-distance
+    expedition right to be refused outright?
+  - Economy: a condition's `initial` is never read; the trading fixture's regions grow 150% of
+    their staple need, against [D-105](decision-ledger.md#d-105)'s "about 100 to 110%". Which?
+  - Planetary: a venue's `public: false` is not enforced at the dock. Should founding require a
+    reachable public station?
+  - Sandbox: `spaceship.yaml` says the bunkers feed the drive, but `SkillShipFuelBunkers` has no
+    prerequisite. Is the data or the comment wrong?
+  - Trading: observation rebuilds each docked venue's report every step (a shortcut), and ships
+    cannot be transferred. Queue rows?
+  - Glossary: split cadence into the economy's and the journal's?
+
 ## Ships and drives
 
 Today a skiff to a corvette flies a clean fusion [torch](glossary.md#torch). Larger hulls come next,
