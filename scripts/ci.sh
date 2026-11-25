@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
+
+# One gate or build at a time across every worktree of both repositories (scripts/heavy.sh).
+[[ -n "${JETTISON_HEAVY_HELD:-}" ]] || exec scripts/heavy.sh scripts/ci.sh "$@"
 werror=OFF
 asan=false
 release=true

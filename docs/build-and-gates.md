@@ -158,11 +158,22 @@ and the user's local AI that can hold most of it, are in Jettison's
 [machine-specific concurrency](../../jettison/docs/build-and-gates.md#machine-specific-concurrency).
 Run nothing else beside a build or clang-tidy.
 
+### Lanes
+
+Work happens in three kept worktrees, `~/projects/manifest`, `manifest.lane-b` and `manifest.lane-c`,
+beside the engine's three, so one lane can wait on a gate or a cross-review while work goes on in
+another: a task is cut from `feature-base` in a free lane and merged back into it. A lane builds
+against the engine's pin, or against the engine lane of its letter with
+`-DJETTISON_SOURCE_DIR=~/projects/jettison.lane-<letter>`. `scripts/heavy.sh <command>` holds the
+lock every lane of both repositories shares, and `ci.sh` takes it itself, so builds, suites and
+gates take turns. How the lanes are kept is in Jettison's
+[lanes](../../jettison/docs/build-and-gates.md#lanes).
+
 ### Gating beside the work
 
-On Lythir a commit is gated in a second checkout, so the next change can be written while the gate
-runs. `build/gate-tree` is a detached worktree with its own build trees, made once with
-`git worktree add --detach build/gate-tree <commit>`. For each commit gated, run
+On Lythir a commit can also be gated in a second checkout of its own lane, so the next change can be
+written while the gate runs. `build/gate-tree` is a detached worktree with its own build trees,
+made once with `git worktree add --detach build/gate-tree <commit>`. For each commit gated, run
 `git -C build/gate-tree checkout --detach <commit>`, then `build/gate-tree/scripts/ci.sh` with the
 gate's options. While it runs nothing else builds, runs tests or runs clang-tidy (the user's rule,
 2026-11-21), so the work beside it is editing alone. A failure is fixed by a later commit, before
