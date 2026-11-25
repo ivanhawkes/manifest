@@ -18,8 +18,6 @@ settled.
   committed without the fixture suites (`ctest -R fixture`), and with the trade, company and
   procurement suites' new expectations unreviewed. Run the fixtures and settle what moved. The
   procurement suite's AI now opens more tenders (6 where it expected 2): find out why.
-- **Merge the docs review**, with Jettison's (see
-  [Jettison's roadmap](../../jettison/docs/roadmap.md#waiting-on-you)).
 - **Delete `data/core-config/`?** A git-ignored leftover the build and the `packaging` suite skip
   ([content](content.md#limits-and-open-work)).
 - **Questions from the docs review:**
