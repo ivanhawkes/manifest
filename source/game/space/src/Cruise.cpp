@@ -118,6 +118,77 @@ struct Planner
 };
 
 
+static_assert(Jettison::Physics::Handling{}.reverse == CruiseTravel::kCrossingAcceleration);
+
+
+// A course's crossing at each end of a drive's clearance: the thrusters from rest to rest over at most
+// half the course. None where the drive crosses nothing.
+struct Crossing
+{
+	Jettison::Transit::MotionProfile thrusters;
+	double metres{0.0};
+};
+
+
+std::optional<Crossing> CrossingOf(double clearance, float acceleration, double metres)
+{
+	if (!(clearance > 0.0) || !(acceleration > 0.0f) || !(metres > 0.0))
+		return std::nullopt;
+	return Crossing{{acceleration, 0.0f, acceleration, {}}, std::min(clearance, metres / 2.0)};
+}
+
+
+double CrossedSeconds(
+    const Jettison::Transit::MotionProfile &profile, const std::optional<Crossing> &crossing,
+    double metres)
+{
+	if (!crossing)
+		return Jettison::Transit::Seconds(profile, metres);
+	return (2.0 * Jettison::Transit::Seconds(crossing->thrusters, crossing->metres)) +
+	       Jettison::Transit::Seconds(profile, metres - (2.0 * crossing->metres));
+}
+
+
+// The metres covered that many seconds after setting out: across the first crossing, along the drive's
+// way, then across the last.
+double CrossedCovered(
+    const Jettison::Transit::MotionProfile &profile, const Crossing &crossing, double metres,
+    double seconds)
+{
+	const double across = Jettison::Transit::Seconds(crossing.thrusters, crossing.metres);
+	const double driven = metres - (2.0 * crossing.metres);
+	const double driving = Jettison::Transit::Seconds(profile, driven);
+	if (seconds < across)
+		return Jettison::Transit::Covered(crossing.thrusters, crossing.metres, seconds);
+	if (seconds < across + driving)
+		return crossing.metres + Jettison::Transit::Covered(profile, driven, seconds - across);
+	return crossing.metres + driven +
+	       Jettison::Transit::Covered(crossing.thrusters, crossing.metres, seconds - across - driving);
+}
+
+
+// Where a cruising ship is as the step ending at that count ends, as Transit::Underway places it, its
+// crossings included.
+Jettison::Sim::Transform Underway(
+    const Cruising &cruising, const glm::dvec3 &origin, std::uint64_t ending)
+{
+	const double length = Jettison::Transit::Length(cruising.course);
+	const std::optional<Crossing> crossing =
+	    CrossingOf(cruising.clearance, cruising.crossingAcceleration, length);
+	if (!cruising.profile || !crossing)
+		return Jettison::Transit::Underway(
+		    cruising.course, cruising.departureStep, cruising.arrivalStep, cruising.profile, origin,
+		    ending);
+
+	// Slowed to the whole steps it was given, as Transit::Underway's profile is.
+	const double share = static_cast<double>(ending - cruising.departureStep) /
+	                     static_cast<double>(cruising.arrivalStep - cruising.departureStep);
+	const double seconds = CrossedSeconds(*cruising.profile, crossing, length);
+	const auto [at, leg] = Jettison::Transit::Along(
+	    cruising.course,
+	    CrossedCovered(*cruising.profile, *crossing, length, share * seconds) / length);
+	return {origin + at, Facing(leg)};
+}
 } // namespace
 
 
@@ -126,8 +197,17 @@ double CruiseSeconds(const CruiseDrive &drive, double metres)
 	if (metres <= 0.0)
 		return 0.0;
 	if (drive.profile)
-		return Jettison::Transit::Seconds(*drive.profile, metres);
+		return CrossedSeconds(
+		    *drive.profile, CrossingOf(drive.clearance, drive.crossingAcceleration, metres), metres);
 	return double{drive.seconds} * std::pow(metres / drive.reference, double{drive.exponent});
+}
+
+
+double DriveMetres(const CruiseDrive &drive, double metres)
+{
+	const std::optional<Crossing> crossing =
+	    drive.profile ? CrossingOf(drive.clearance, drive.crossingAcceleration, metres) : std::nullopt;
+	return crossing ? metres - (2.0 * crossing->metres) : std::max(metres, 0.0);
 }
 
 
@@ -141,6 +221,12 @@ void CheckCruiseDrive(std::string_view name, const CruiseDrive &drive)
 		    name)};
 	if (drive.profile)
 		Jettison::Transit::CheckProfile(std::format("Cruise drive '{}'", name), *drive.profile);
+	const bool crosses = drive.crossingAcceleration > 0.0f && std::isfinite(drive.crossingAcceleration);
+	if (!std::isfinite(drive.clearance) || drive.clearance < 0.0 || (drive.clearance > 0.0 && !crosses))
+		throw Jettison::Serialise::FormatError{std::format(
+		    "Cruise drive '{}' has a clearance that is not finite and at least 0, or one with no "
+		    "crossing acceleration above 0",
+		    name)};
 }
 
 
@@ -391,6 +477,8 @@ void CruiseTravel::Start(Jettison::Sim::SimWorld &world, const Cruise &command) 
 	cruising.arrivalStep = cruising.departureStep + steps;
 	cruising.body = Jettison::Transit::TakeOut(registry, ship);
 	cruising.profile = drive->profile;
+	cruising.clearance = drive->clearance;
+	cruising.crossingAcceleration = drive->crossingAcceleration;
 
 	world.Events().Emit(
 	    CruiseStarted{
@@ -416,10 +504,7 @@ void CruiseTravel::Skip(Jettison::Sim::SimWorld &world) const
 		    carrier < 0
 		        ? glm::dvec3{0.0}
 		        : Space::EvaluateBody(starSystem, static_cast<std::size_t>(carrier), endsAt).metres;
-		registry.emplace_or_replace<Jettison::Sim::Transform>(
-		    ship, Jettison::Transit::Underway(
-		              cruising.course, cruising.departureStep, cruising.arrivalStep, cruising.profile,
-		              origin, ending));
+		registry.emplace_or_replace<Jettison::Sim::Transform>(ship, Underway(cruising, origin, ending));
 	}
 }
 
@@ -462,9 +547,7 @@ void CruiseTravel::Place(Jettison::Sim::SimWorld &world) const
 		if (ending < cruising.arrivalStep)
 		{
 			registry.emplace_or_replace<Jettison::Sim::Transform>(
-			    ship, Jettison::Transit::Underway(
-			              cruising.course, cruising.departureStep, cruising.arrivalStep,
-			              cruising.profile, origin, ending));
+			    ship, Underway(cruising, origin, ending));
 			continue;
 		}
 

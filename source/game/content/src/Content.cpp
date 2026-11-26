@@ -1402,6 +1402,11 @@ ContentSet Build(
 		{
 			const CruiseModel &model = driveClass.cruise ? *driveClass.cruise : *pMode->cruise;
 			drive.profile = hull.occupants == 0 ? model.unmanned : model.manned;
+
+			// A ship leaves a station's reach on steering (Space::ClearOf); the cruise crosses the
+			// rest.
+			drive.clearance = driveClass.exclusionRadius - Manifest::Space::CruiseTravel::kStationReach;
+			drive.crossingAcceleration = Manifest::Space::CruiseTravel::kCrossingAcceleration;
 		}
 	}
 	for (const std::string &name : registry.Names<Jettison::Dock::PlatformLayout>())

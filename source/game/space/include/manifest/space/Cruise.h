@@ -49,16 +49,28 @@ struct CruiseDrive
 	float exponent{0.25f};
 	std::optional<Jettison::Transit::MotionProfile> profile;
 
+	// With a profile, the metres at each end of a course its drive may not thrust over, which the ship
+	// crosses on its thrusters from rest to rest at the crossing acceleration, in m/s² (D-108's
+	// exclusion radius, beyond a station's reach); none crosses nothing.
+	double clearance{0.0};
+	float crossingAcceleration{0.0f};
+
 	bool operator==(const CruiseDrive &) const = default;
 };
 
 // The seconds a cruise of that many metres takes on the drive: seconds × (metres / reference) to the
-// exponent, or the profile's time, at rest at both ends. None for no distance.
+// exponent, or the profile's time with its clearance crossed at each end, at rest at both ends. None
+// for no distance.
 double CruiseSeconds(const CruiseDrive &drive, double metres);
 
+// The metres of a cruise of that many the drive itself thrusts over: all but its clearance at each end,
+// at most half the cruise each.
+double DriveMetres(const CruiseDrive &drive, double metres);
+
 // Checks a drive a game defines: its seconds and reference positive and finite, and its exponent
-// above 0 and at most 1, so its time rises with the distance and no faster than it; and its profile,
-// if it has one, as Transit::CheckProfile does. Throws Jettison::Serialise::FormatError naming the
+// above 0 and at most 1, so its time rises with the distance and no faster than it; its profile, if it
+// has one, as Transit::CheckProfile does; and its clearance finite and not below 0, with a crossing
+// acceleration above 0 where it is above 0. Throws Jettison::Serialise::FormatError naming the
 // drive.
 void CheckCruiseDrive(std::string_view name, const CruiseDrive &drive);
 
@@ -91,8 +103,12 @@ struct Cruising
 	// Its body, which it has back on arrival.
 	Jettison::Physics::Body body;
 
-	// Its drive's profile as it set out, which it covers its course by, or none to ease along it.
+	// Its drive's profile as it set out, which it covers its course by, or none to ease along it; and
+	// with a profile, its drive's clearance and crossing acceleration, the ends it crosses on
+	// thrusters.
 	std::optional<Jettison::Transit::MotionProfile> profile;
+	double clearance{0.0};
+	float crossingAcceleration{0.0f};
 
 	bool operator==(const Cruising &) const = default;
 };
@@ -186,6 +202,10 @@ class CruiseTravel
 
 	// Metres from a station's radius within which a cruise does not engage.
 	static constexpr double kStationReach = 2000.0;
+
+	// The acceleration a drive's clearance is crossed at, in m/s²: the reverse thrust every ship is
+	// given, Jettison::Physics::Handling's, which Cruise.cpp holds it to.
+	static constexpr float kCrossingAcceleration = 15.0f;
 
 	// Where a cruise arrives: this many metres beyond the target's radius and a quarter of it, so a
 	// ship is a few kilometres off a station or a gate and clear of a planet's air; and no nearer a

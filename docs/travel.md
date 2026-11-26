@@ -145,7 +145,9 @@ aboard and each km/s of that change, the phase burns, at the rates of the hull's
   16.5), times a factor of 1 up to 1 g and the acceleration in g to the power `curveExponent` (2)
   above it.
 
-Each total is rounded up to the gram. The pellets' curve makes a hard burn a decision, not a
+Only the metres the drive itself thrusts over burn: a drive with a clearance crosses it on its
+thrusters at each end, and those metres burn nothing (`Space::DriveMetres`,
+[cruising](space.md#cruising)). Each total is rounded up to the gram. The pellets' curve makes a hard burn a decision, not a
 default: at 2 g the pellets cost four times as much for each km/s
 ([D-108](decision-ledger.md#d-108)).
 

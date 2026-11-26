@@ -96,9 +96,11 @@ flowchart LR
   for a desperate or greedy player; the fine and the harm are W22's to set.
 
 The cruise and `ClearOf` are Manifest's own code since the space extraction (`source/game/space`),
-so the provision W22's row calls Jettison's is a Manifest change: a `Space::CruiseDrive` gains a
-clearance, within which a cruise is refused and at which it arrives, and `ClearOf` takes the
-reach to fly out to. Steering over flights of 10³ to 10⁵ km must be measured.
+so the crossing is a Manifest change. Steering was measured against it on 2026-11-26: it holds a ship
+to its thrusters' `maxSpeed`, 150 m/s, so 1,000 km would take nearly two hours each way, every step
+run. So a `Space::CruiseDrive` gained a `clearance` that the cruise itself crosses on thrusters at
+each end, out of physics and under the fast-forward ([cruising](space.md#cruising)), and `ClearOf`
+still flies a ship out of the 2 km reach first. Only the drive's own metres burn fuel.
 
 ### The first larger hull
 

@@ -105,7 +105,9 @@ void RegisterTypes()
 		    .Field<&CruiseDrive::seconds>("seconds", kDefined)
 		    .Field<&CruiseDrive::reference>("reference", kDefined)
 		    .Field<&CruiseDrive::exponent>("exponent", kDefined)
-		    .Field<&CruiseDrive::profile>("profile", kDefined);
+		    .Field<&CruiseDrive::profile>("profile", kDefined)
+		    .Field<&CruiseDrive::clearance>("clearance", kDefined)
+		    .Field<&CruiseDrive::crossingAcceleration>("crossingAcceleration", kDefined);
 		RegisterType<Cruising>("Space.Cruising")
 		    .Field<&Cruising::target>("target", Attribute::Saved)
 		    .Field<&Cruising::frame>("frame", Attribute::Saved)
@@ -114,7 +116,9 @@ void RegisterTypes()
 		    .Field<&Cruising::departureStep>("departureStep", Attribute::Saved)
 		    .Field<&Cruising::arrivalStep>("arrivalStep", Attribute::Saved)
 		    .Field<&Cruising::body>("body", Attribute::Saved)
-		    .Field<&Cruising::profile>("profile", Attribute::Saved);
+		    .Field<&Cruising::profile>("profile", Attribute::Saved)
+		    .Field<&Cruising::clearance>("clearance", Attribute::Saved)
+		    .Field<&Cruising::crossingAcceleration>("crossingAcceleration", Attribute::Saved);
 		RegisterType<Cruise>("Space.Cruise")
 		    .Field<&Cruise::sender>("sender", Attribute::Saved)
 		    .Field<&Cruise::ship>("ship", Attribute::Saved)

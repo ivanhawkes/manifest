@@ -155,7 +155,8 @@ Result Started(SimWorld &world, const Rules &rules, const Actor &actor, const Tr
 		const Content::DriveDefinition *pClass = Content::DriveOf(rules.content, record.hullId);
 		JETTISON_VERIFY(pClass != nullptr);
 		burned = Burned(
-		    *pClass, *flown, TonnesAboard(registry, rules.identities, rules.content, ship), metres);
+		    *pClass, *flown, TonnesAboard(registry, rules.identities, rules.content, ship),
+		    Space::DriveMetres(*pDrive, metres));
 		const auto *pFuel = registry.try_get<World::Fuel>(ship);
 		const World::Fuel tanks = pFuel ? *pFuel : World::Fuel{};
 		if (tanks.reactionMass < burned.reactionMass || tanks.pellets < burned.pellets)

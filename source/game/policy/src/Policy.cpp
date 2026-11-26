@@ -321,7 +321,7 @@ Route Priced(
 		    *pClass, *flown->profile,
 		    dry + (start.reactionMass + start.pellets) / kKilogramsPerTonne +
 		        (leg.laden ? lotTonnes : 0.0),
-		    leg.metres);
+		    Manifest::Space::DriveMetres(*flown, leg.metres));
 		route.fuelled = route.fuelled &&
 		                burned.reactionMass + kFuelMarginKilograms <= start.reactionMass &&
 		                burned.pellets + kFuelMarginKilograms <= start.pellets;

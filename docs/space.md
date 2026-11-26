@@ -253,6 +253,15 @@ ship uses is the [game mode](glossary.md#game-mode)'s choice. The Manifest mode 
 its `cruise` profile, manned or unmanned by whether the hull carries people; Astralis keeps the
 power law ([D-090](decision-ledger.md#d-090)). The fuel a profile burns is [travel](travel.md)'s.
 
+A drive with a profile may also have a `clearance`: the metres at each end of its course it may not
+thrust over, the hull's drive class's exclusion radius beyond the station's reach
+([ships plan](ships-plan.md#the-exclusion-radius)). The ship crosses each on its thrusters, from rest
+to rest at `CruiseTravel::kCrossingAcceleration` (15 m/s², every ship's reverse thrust), each at most
+half the course, and the drive's profile covers what lies between (`CruiseSeconds`,
+`DriveMetres`). The crossings are part of the cruise, out of physics, so the fast-forward passes over
+them: steering would hold a ship to its thrusters' 150 m/s, nearly two hours for 1,000 km, every step
+of it run. A clearance of 0, the torch's, crosses nothing.
+
 Cruising works with [fast-forward](glossary.md#fast-forward): between departure and the step before
 arrival, a cruise has nothing to decide, so its steps are [quiet](glossary.md#quiet-step) and the
 ship is placed where the last skipped step would have put it. Lanes and gates also report their next

@@ -722,6 +722,89 @@ TEST_CASE("Cruise: on a profile, a ship covers its course as the profile does, n
 }
 
 
+TEST_CASE("Cruise: a drive's clearance is crossed on thrusters at each end, from rest to rest")
+{
+	const Manifest::Space::CruiseDrive drive{
+	    .profile = kHard, .clearance = 1.0e6, .crossingAcceleration = 15.0f};
+	const Transit::MotionProfile thrusters{15.0f, 0.0f, 15.0f};
+	CHECK(
+	    Manifest::Space::CruiseSeconds(drive, 3.93e8) ==
+	    doctest::Approx(
+	        (2.0 * Transit::Seconds(thrusters, 1.0e6)) + Transit::Seconds(kHard, 3.93e8 - 2.0e6)));
+	CHECK(Manifest::Space::DriveMetres(drive, 3.93e8) == doctest::Approx(3.91e8));
+
+	// A cruise shorter than both crossings is thrusters all the way.
+	CHECK(
+	    Manifest::Space::CruiseSeconds(drive, 1.0e6) ==
+	    doctest::Approx(2.0 * Transit::Seconds(thrusters, 5.0e5)));
+	CHECK(Manifest::Space::DriveMetres(drive, 1.0e6) == 0.0);
+
+	// The power law crosses nothing.
+	CHECK(
+	    Manifest::Space::DriveMetres(
+	        {.profile = {}, .clearance = 1.0e6, .crossingAcceleration = 15.0f}, 5.0e6) == 5.0e6);
+	CHECK_NOTHROW(Manifest::Space::CheckCruiseDrive("crossing", drive));
+	for (const Manifest::Space::CruiseDrive bad :
+	     {Manifest::Space::CruiseDrive{.profile = kHard, .clearance = -1.0},
+	      Manifest::Space::CruiseDrive{.profile = kHard, .clearance = 1.0e6}})
+		CHECK_THROWS_WITH_AS(
+		    Manifest::Space::CheckCruiseDrive("bad", bad),
+		    doctest::Contains("Cruise drive 'bad' has a clearance"), Serialise::FormatError);
+}
+
+
+TEST_CASE("Cruise: a ship crosses its drive's clearance at its thrusters' acceleration, then drives")
+{
+	Fixture fixture;
+	entt::registry &registry = fixture.world.Registry();
+	const entt::entity ship = fixture.Ship("Ostra Highport", {0.0, 0.0, 3000.0});
+	const Manifest::Space::CruiseDrive drive{
+	    .profile = kHard, .clearance = 1.0e6, .crossingAcceleration = 15.0f};
+	registry.replace<Manifest::Space::CruiseDrive>(ship, drive);
+	fixture.Run(5);
+	fixture.Events<Manifest::Space::CruiseStarted>();
+	fixture.world.Commands().Push(Manifest::Space::Cruise{{}, ship, "Pell"});
+	fixture.Run(1);
+	const std::vector<Manifest::Space::CruiseStarted> started =
+	    fixture.Events<Manifest::Space::CruiseStarted>();
+	REQUIRE(started.size() == 1);
+	const Manifest::Space::Cruising cruising = registry.get<Manifest::Space::Cruising>(ship);
+	CHECK(cruising.clearance == 1.0e6);
+	const double least = Manifest::Space::CruiseSeconds(drive, started[0].metres);
+	CHECK(started[0].seconds >= least);
+	CHECK(started[0].seconds < least + (4.0 * kStep));
+	CHECK(started[0].seconds > Manifest::Space::CruiseSeconds({.profile = kHard}, started[0].metres));
+
+	const auto relative = [&]
+	{
+		return registry.get<Jettison::Sim::Transform>(ship).position -
+		       Fixture::Where("Ostra", fixture.world.Clock().Now());
+	};
+	std::vector<glm::dvec3> places{cruising.course.front(), relative()};
+	std::vector<double> accelerations;
+	while (fixture.world.Clock().Step() + 1 < started[0].arrivalStep)
+	{
+		fixture.Run(1);
+		places.push_back(relative());
+		const std::size_t last = places.size() - 1;
+		accelerations.push_back(
+		    glm::length(places[last] - (2.0 * places[last - 1]) + places[last - 2]) / (kStep * kStep));
+	}
+
+	// The first minute is on thrusters, the crossing taking 516 s; the drive's boost comes after.
+	const double crossing = 2.0 * std::sqrt(1.0e6 / 15.0);
+	const auto atSecond = [&](double seconds)
+	{ return accelerations[static_cast<std::size_t>(seconds / kStep)]; };
+	CHECK(atSecond(60.0) == doctest::Approx(15.0).epsilon(0.01));
+	CHECK(atSecond(crossing + 5.0) == doctest::Approx(double{kHard.boostAcceleration}).epsilon(0.01));
+	CHECK(std::ranges::max(accelerations) <= double{kHard.boostAcceleration} * 1.001);
+	MESSAGE(
+	    "Highport to Pell crossing 1,000 km at each end: " << started[0].metres / 1000.0 << " km in "
+	                                                       << started[0].seconds << " s");
+	CHECK(glm::distance(places.back(), cruising.course.back()) < 10.0);
+}
+
+
 TEST_CASE("Cruise: on a profile with a share, a ship thrusts out, coasts, and thrusts in to rest")
 {
 	Fixture fixture;
