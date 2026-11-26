@@ -154,8 +154,12 @@ freighter's 100 kg magazine, eight totes of deuterium, gets 12.5 kg a refuel. In
 totes the magazine's room needs, less the whole totes aboard, then fills the magazine from the hold
 as it does today, so a partly used magazine is topped up from an opened tote and the rest stays
 aboard. So that the hold has room for them, the policy's free hold (`FreeHold`) keeps back the totes
-the magazine's next refuel needs before it sizes a cargo. The starter's 12.5 kg magazine still
-takes one tote.
+the magazine's next refuel needs before it sizes a cargo. Cargo already aboard can still fill it:
+unsold totes from a partial sale are loaded back, so the policy's estimate (`Policy::EstimateRoute`)
+counts a leg's refuel only as far as it fits, the pellets aboard plus the room the magazine has or
+the totes the hold can then take, after the cargo the ship carries out of that venue, whichever is
+less, not a full magazine wherever pellets are sold. The starter's 12.5 kg magazine still takes one
+tote.
 
 **Units and kilograms.** A magazine, a burn and a job's fuel stay in kilograms (`World::Fuel`,
 `Job::pelletKilograms`); a fuel item's traded unit is converted at its kilograms a unit, from its
@@ -317,6 +321,15 @@ the drive's `bodyExclusionRadius` above its surface; a station's, `exclusionRadi
   crossings are relative to the course's carrier, the star between planets, which leaves a
   planet's ship behind as it orbits on (about 250,000 km in the 2.3 hours); the hauler's 1,000 km
   crossing and its course move to these frames too, and the W22a fixtures' pins move with it.
+- **Where it is settled.** `travel` runs the check as it admits the journey, docked, from the
+  station's place at that step, to refuse early and to burn fuel for the settled course's driven
+  metres (its length less the two crossings) rather than the straight line's. The course flown is
+  solved later, after undocking and clearing: `Space::CruiseTravel::Start` runs the same check
+  from the ship's own place and step, and flies and saves the course it settles, so a load
+  continues it without checking again. The minutes spent clearing move the bodies little, but the
+  course may still differ: where Start's settled driven metres exceed those paid for, the extra is
+  burnt from the fuel aboard, and where that is short of the extra plus the fuel margin the cruise
+  is refused (`Failure::CruiseRefused`, as today when a cruise cannot start).
 - **Two clearances.** `Space::CruiseDrive` and `Space::Cruising` split `clearance` into
   `departureClearance` and `arrivalClearance`, which `travel` writes as it writes the flown
   profile. The hauler's stay its 1,000 km. `Policy::EstimateRoute` takes both.
@@ -363,10 +376,11 @@ its `fine`, shown in the ship's view.
   proves a 280 m hull docks at a battleship pad; if it cannot, that is a Jettison item first. A
   dry dock docking with a parked titan-class ship is a later Jettison provision (above).
 - **Modules.** `content` (the drive, item, grant and venue rules), `space` (the two clearances,
-  crossed in the body's frame, the cruise checked as flown), `travel` (fuel by the unit, the clearances, the override), `company`
-  (refuelling, `Apply`, `SetLicence`, `Claim`), `trade` (licensed goods in `Post`, cancelled on
-  revocation), `policy` (the acceleration it asks, estimates by the unit, licensed goods), `query`
-  and `console` (licences, grants, the override), and `world` (the state).
+  crossed in the body's frame, the cruise checked as flown), `travel` (fuel by the unit, the
+  clearances, the override), `company` (refuelling, `Apply`, `SetLicence`, `Claim`), `trade`
+  (licensed goods in `Post`, cancelled on revocation), `policy` (the acceleration it asks, estimates
+  by the unit, licensed goods, the refuel the hold can take), `query` and `console` (licences,
+  grants, the override), and `world` (the state).
 
 #### The steps
 
@@ -374,8 +388,8 @@ Each is one commit chunk, its suites and tidy passing, in this order.
 
 | Step | What | Done when |
 | --- | --- | --- |
-| W22b1 | Fuel by the unit: `exhaustKms` optional, a unit-counted fuel, `ItemPulseUnits`, `DrivePulse`; the magazine refuelled by the totes it needs; deuterium at every venue | The `travel` suite pins a pulse leg's burn in whole units on a test hull, its kilograms and its price by the unit; the `company` suite refuels the freighter's 100 kg magazine at a venue selling deuterium and a pulse magazine by the unit; a policy keeps hold room for the refuel and a partly used starter magazine is topped up; and a standing policy flies the medium freighter on a trade |
-| W22b2 | The radius about populated bodies and the two clearances | The `space` and `travel` suites cross a pulse ship out of a planet's ball and into another's on thrusters, in each body's frame; stepped through the whole cruise from several starting phases and thrust shares, the review's day-460 case at 20 basis points and day-751 case at 1,000 among them, the drive never thrusts inside a sphere and the ship never comes within a solid body's radius plus `kCourseClearance`, coasting included; a journey whose check cannot clear is refused `InsideRadius`, or `NoCourse` for a body; fuel is burnt only over the drive's metres; and a save mid-crossing and mid-coast, loaded, moves on as an unsaved run does, fast-forward included |
+| W22b1 | Fuel by the unit: `exhaustKms` optional, a unit-counted fuel, `ItemPulseUnits`, `DrivePulse`; the magazine refuelled by the totes it needs; deuterium at every venue | The `travel` suite pins a pulse leg's burn in whole units on a test hull, its kilograms and its price by the unit; the `company` suite refuels the freighter's 100 kg magazine at a venue selling deuterium and a pulse magazine by the unit; a policy keeps hold room for the refuel, a partly used starter magazine is topped up, and after a partial sale the next journey is estimated at the pellets the hold can take; and a standing policy flies the medium freighter on a trade |
+| W22b2 | The radius about populated bodies and the two clearances | The `space` and `travel` suites cross a pulse ship out of a planet's ball and into another's on thrusters, in each body's frame; stepped through the whole cruise from several starting phases and thrust shares, the review's day-460 case at 20 basis points and day-751 case at 1,000 among them, the drive never thrusts inside a sphere and the ship never comes within a solid body's radius plus `kCourseClearance`, coasting included; a journey whose check cannot clear is refused `InsideRadius`, or `NoCourse` for a body; fuel is burnt only over the drive's metres; a hosted departure that needs a detour is followed through undocking, clearing and the cruise, its movement the checked course's and its fuel that course's driven metres; and a save mid-crossing and mid-coast, loaded, moves on as an unsaved run does, fast-forward included |
 | W22b3 | The dry dock and the pulse carrier: `drydock.yaml`, the two yards, `HullPulseCarrier` | `content` passes the yards' markets and fits the carrier only to their battleship pads, and a fixture's standing policy flies one from Ore Yards to Brine Yards, its fuel and time shown, and passes over a better trade at a highport no pad of which fits it; `travel` refuses `NoPadFits` a journey there |
 | W22b4 | The licence: `licensed`, `Licences`, `Apply`, `SetLicence` | An unlicensed buy of pulse units is refused, by command and by refuelling, a licensed one fills, a revocation cancels the company's resting buys, a revoked carrier with a depleted magazine is estimated unfuelled and loads nothing, and a player's polity grants and revokes, through a save |
 | W22b5 | Hull grants: `grants`, `Claim`, `Claims` | A company claims the freighter, flies it and refuels its deuterium, and a second claim is refused, through a save |
