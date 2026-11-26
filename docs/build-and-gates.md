@@ -160,9 +160,12 @@ Run nothing else beside a build or clang-tidy.
 
 ### Lanes
 
-Work happens in three kept worktrees, `~/projects/manifest`, `manifest.lane-b` and `manifest.lane-c`,
-beside the engine's three, so one lane can wait on a gate or a cross-review while work goes on in
-another: a task is cut from `feature-base` in a free lane and merged back into it. A lane builds
+Work happens in three kept worktrees beside the engine's three. The primary checkout,
+`~/projects/manifest`, stays on `feature-base` for merges; each task is written, gated and reviewed in
+`manifest.lane-b` or `manifest.lane-c`, cut from `feature-base` and merged back by fast-forward, so
+one lane can wait on a gate or a cross-review while the next task starts in the other. The engine's
+`scripts/lanes.sh` lists both repositories' lanes, and a task's plan warns of any clash with the
+other lanes' work before it begins. A lane builds
 against the engine's pin, or against the engine lane of its letter with
 `-DJETTISON_SOURCE_DIR=~/projects/jettison.lane-<letter>`. `scripts/heavy.sh <command>` holds the
 lock every lane of both repositories shares, and `ci.sh` takes it itself, so builds, suites and
