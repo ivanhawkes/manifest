@@ -81,11 +81,11 @@ Jettison::Transit::MotionProfile Profile(
 // The fuel, in kilograms, a cruise of that many metres on the profile burns for that many tonnes
 // aboard (D-108): each phase's speed change, its acceleration times its seconds at each end
 // (Jettison::Transit::Thrust), burns reaction mass by the rocket equation to first order and pellets by
-// the tuning's rate times the acceleration's factor, 1 up to 1 g and its g to the curve's power above;
+// the drive's rate times the acceleration's factor, 1 up to 1 g and its g to the curve's power above;
 // each rounded up to the gram.
 World::Fuel Burned(
-    const Content::FuelTuning &tuning, const Jettison::Transit::MotionProfile &profile, double tonnes,
-    double metres);
+    const Content::DriveDefinition &drive, const Jettison::Transit::MotionProfile &profile,
+    double tonnes, double metres);
 
 // Everything the ship carries as a leg starts, in tonnes: its hull's mass, its tanks' and the fuel in
 // them, its occupants and its cargo, opened totes included, each unit at its item's density and pack

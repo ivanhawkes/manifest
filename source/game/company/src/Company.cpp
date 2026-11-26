@@ -63,7 +63,6 @@ struct Rules
 	double oxygenPerTote{0.0};
 	double cartridgesPerTote{0.0};
 	double reactionMassPerTote{0.0};
-	double pelletsPerTote{0.0};
 
 	// What refuelling buys through (Trade::MakeBuyer).
 	Trade::Buyer buy{};
@@ -533,6 +532,14 @@ void Refuelled(SimWorld &world, const Rules &rules, entt::entity ship, std::int6
 	JETTISON_VERIFY(company != entt::null && account != entt::null);
 	const auto budget = [&] { return registry.get<World::Account>(account).balance - reserve; };
 	const Content::FuelTuning &fuel = rules.content.tuning.fuel;
+	const Content::DriveDefinition *pClass = Content::DriveOf(rules.content, record.hullId);
+	JETTISON_VERIFY(pClass != nullptr);
+	const std::string &pellets = pClass->pelletItemId;
+	const auto pelletItem =
+	    std::ranges::find(rules.content.gameMode.items, pellets, &Core::ItemNode::itemId);
+	JETTISON_VERIFY(pelletItem != rules.content.gameMode.items.end());
+	const double pelletsPerTote =
+	    pelletItem->unitsPerCubicMetre / static_cast<double>(Core::kTotesPerIbc);
 
 	// Whole totes of reaction mass, straight from the warehouse into the tanks.
 	const double room = tanks->reactionMass - registry.get<World::Fuel>(ship).reactionMass;
@@ -565,13 +572,13 @@ void Refuelled(SimWorld &world, const Rules &rules, entt::entity ship, std::int6
 	// A tote of pellets into a hold with none and room for it, loaded as Load would.
 	const std::uint64_t free =
 	    rules.identities.Hold(record, registry.try_get<World::Systems>(ship)).value_or(0);
-	if (Aboard(registry.get<World::Cargo>(ship), fuel.pelletItemId, rules.pelletsPerTote) <= 0.0 &&
+	if (Aboard(registry.get<World::Cargo>(ship), pellets, pelletsPerTote) <= 0.0 &&
 	    Carried(registry.get<World::Cargo>(ship)) < free &&
-	    rules.buy(world, record.companyId, record.dockedAt, fuel.pelletItemId, 1, budget()) > 0)
+	    rules.buy(world, record.companyId, record.dockedAt, pellets, 1, budget()) > 0)
 	{
 		const Actor owner{
 		    Command::ActorKind::Principal, registry.get<World::Company>(company).principalId};
-		const Move move{registry.get<World::Identity>(ship).id, record.dockedAt, fuel.pelletItemId, 1};
+		const Move move{registry.get<World::Identity>(ship).id, record.dockedAt, pellets, 1};
 		JETTISON_VERIFY(Moved(world, rules, owner, move, true) == Result::Succeeded);
 	}
 
@@ -579,16 +586,15 @@ void Refuelled(SimWorld &world, const Rules &rules, entt::entity ship, std::int6
 	World::Cargo &cargo = registry.get<World::Cargo>(ship);
 	World::Fuel &held = registry.get<World::Fuel>(ship);
 	const double space = tanks->pellets - held.pellets;
-	if (const double given = std::min(space, Aboard(cargo, fuel.pelletItemId, rules.pelletsPerTote));
-	    given > 0.0)
+	if (const double given = std::min(space, Aboard(cargo, pellets, pelletsPerTote)); given > 0.0)
 	{
 		const auto sealed = [&]
 		{
-			const auto lot = std::ranges::find(cargo.lots, fuel.pelletItemId, &World::Lot::itemId);
+			const auto lot = std::ranges::find(cargo.lots, pellets, &World::Lot::itemId);
 			return lot == cargo.lots.end() ? std::uint64_t{0} : lot->totes;
 		};
 		const std::uint64_t before = sealed();
-		Take(world, cargo, fuel.pelletItemId, rules.pelletsPerTote, given, 0.0);
+		Take(world, cargo, pellets, pelletsPerTote, given, 0.0);
 		held.pellets = given == space ? tanks->pellets : held.pellets + given;
 
 		// The sealed totes opened leave a job's lot of pellets, after any aboard beyond it.
@@ -596,7 +602,7 @@ void Refuelled(SimWorld &world, const Rules &rules, entt::entity ship, std::int6
 		{
 			const std::uint64_t opened = before - sealed();
 			const std::uint64_t spare = before > pJob->totes ? before - pJob->totes : 0;
-			World::LeaveLot(*pJob, fuel.pelletItemId, opened > spare ? opened - spare : 0);
+			World::LeaveLot(*pJob, pellets, opened > spare ? opened - spare : 0);
 		}
 	}
 }
@@ -1077,7 +1083,6 @@ void RegisterCommands(
 	rules->oxygenPerTote = perTote(lifeSupport.oxygenItemId);
 	rules->cartridgesPerTote = perTote(lifeSupport.cartridgeItemId);
 	rules->reactionMassPerTote = perTote(content.tuning.fuel.reactionMassItemId);
-	rules->pelletsPerTote = perTote(content.tuning.fuel.pelletItemId);
 	rules->buy = Trade::MakeBuyer(world, identities, content);
 	fleet.SetRefueller([rules](SimWorld &target, entt::entity ship, std::int64_t reserve)
 	                   { Refuelled(target, *rules, ship, reserve); });

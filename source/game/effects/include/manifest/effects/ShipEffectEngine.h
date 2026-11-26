@@ -42,8 +42,11 @@ struct ShipClassSpec
 	std::optional<std::vector<double>> oxygenTanks;
 	std::optional<int> scrubberCartridges;
 
-	// The fusion pellets its drive's magazine holds, in kilograms (D-108), apart from the hold.
+	// The pellets its drive's magazine holds, in kilograms (D-108), apart from the hold.
 	std::optional<double> pelletMagazine;
+
+	// The Manifest.Drive it flies, by driveId (D-108).
+	std::string driveId;
 
 	// In kilograms, as it flies: a ship of a hull with none cannot be spawned.
 	std::optional<double> mass;

@@ -12,8 +12,9 @@
 #   oxygenTanks        Its installed operating oxygen bank (D-050), each tank's capacity in
 #                      kilograms. It is outside the trade hold, as the installed scrubber is.
 #   scrubberCartridges The cartridges its installed scrubber holds.
-#   pelletMagazine     The fusion pellets its torch's magazine holds, in kilograms, outside the
-#                      trade hold (D-108); its reaction mass tanks are its FuelCapacity, in tonnes.
+#   pelletMagazine     The pellets its drive's magazine holds, in kilograms, outside the trade
+#                      hold (D-108); its reaction mass tanks are its FuelCapacity, in tonnes.
+#   driveId            The drive class it flies (ships/drives.yaml).
 #   mass               What it weighs as it flies, in kilograms, which only its collisions feel:
 #                      its thrusters are accelerations. A hull a scenario starts players in has one.
 #
@@ -61,6 +62,7 @@ hull-base:
         SensorCommercial, ComputerNavigation, ComputerTrader, CargoHolds, FuelBunkers,
         SalvageRig, LifeSupport, StealthCoating, EmissionsControl, Countermeasures,
         CrewTraining, DamageControl, SparesLockers]
+      driveId: DriveTorch
 
   # The lone trader's first ship (D-045, D-050): a 160-tote hold, one occupant, three
   # 10 kg oxygen tanks and one scrubber cartridge, provisioned once with every tank full and a fresh
@@ -80,6 +82,7 @@ hull-base:
       scrubberCartridges: 1
       pelletMagazine: 12.5
       mass: 20000
+      driveId: DriveTorch
 
   # The compact single-occupant ship (D-044): 32 totes of cargo and a truck-cab cabin. Its
   # life support and its fittings against the 32-tote limit are open.
@@ -90,3 +93,4 @@ hull-base:
       baseStats:
         CargoVolume: 32
       occupants: 1
+      driveId: DriveTorch

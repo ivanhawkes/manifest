@@ -98,6 +98,7 @@ previous records and a deleted source leaves no record behind. The scenarios are
 | `trade-items/*.yaml` (`item-base`) | `Manifest.Item` | `definitions/items` | 160 |
 | `skill-tree/*.yaml` (`skill-base`) | `Manifest.Skill` | `definitions/skills` | 85 |
 | `ships/hulls.yaml` (`hull-base`) | `Manifest.Hull` | `definitions/hulls` | 3 |
+| `ships/drives.yaml` (`drive-base`) | `Manifest.Drive` | `definitions/drive-classes` | 1 |
 | `offers/*.yaml` | `Manifest.Offer` | `definitions/offers` | 2 |
 | `docks/pads/*.yaml` | `Dock.BerthClassDefinition` | `definitions/pads` | 5 |
 | `docks/hulls/*.yaml` | `Dock.VehicleDefinition` | `definitions/dock-hulls` | 3 |

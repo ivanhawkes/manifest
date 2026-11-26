@@ -723,11 +723,11 @@ TEST_CASE(
 }
 
 
-// The starter's mode profile, the fuel tuning and the distance from the ship to a station now.
+// The starter's mode profile, its drive class and the distance from the ship to a station now.
 struct Burn
 {
 	const Jettison::Transit::MotionProfile &mode;
-	const Manifest::Content::FuelTuning &tuning;
+	const Manifest::Content::DriveDefinition &drive;
 	double metres{0.0};
 };
 
@@ -745,7 +745,7 @@ Burn BurnOf(Hosted &hosted, entt::entity ship, const std::string &to)
 	};
 	return {
 	    *hosted.content.drives.at(Manifest::Content::RegistryName(record.hullId)).profile,
-	    hosted.content.tuning.fuel,
+	    *Manifest::Content::DriveOf(hosted.content, record.hullId),
 	    glm::distance(registry.get<const Jettison::Sim::Transform>(ship).position, at(to))};
 }
 
@@ -781,7 +781,8 @@ TEST_CASE("Fuel burned with a lot aboard is charged to it at the company's last 
 	registry.emplace<World::Paid>(
 	    hosted.Find(Kind::Company, "Company1"),
 	    std::vector<World::PaidPrice>{
-	        {burn.tuning.pelletItemId, kPelletPrice}, {burn.tuning.reactionMassItemId, kMassPrice}});
+	        {burn.drive.pelletItemId, kPelletPrice},
+	        {hosted.content.tuning.fuel.reactionMassItemId, kMassPrice}});
 	const auto worth = [&](const World::Fuel &fuel)
 	{
 		return static_cast<std::int64_t>(std::ceil(
@@ -790,7 +791,7 @@ TEST_CASE("Fuel burned with a lot aboard is charged to it at the company's last 
 		    1e6));
 	};
 	const World::Fuel full = Manifest::Travel::Burned(
-	    burn.tuning,
+	    burn.drive,
 	    Manifest::Travel::Profile(burn.mode, World::kFullThrustBps, Manifest::Travel::kMilliGPerG),
 	    Manifest::Travel::TonnesAboard(registry, hosted.identities, hosted.content, ship), burn.metres);
 	REQUIRE(full.reactionMass > 0.0);

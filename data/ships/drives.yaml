@@ -1,0 +1,23 @@
+---
+# The drive classes a hull names (D-108; docs/ships-plan.md, "Drives past the torch"):
+#
+#   exhaustKms                   Its exhaust speed in km/s, which sets the reaction mass a burn takes
+#                                by the rocket equation to first order.
+#   pelletItemId                 The pellets it burns, an item traded by the kilogram.
+#   pelletMilligramsPerTonneKms  Pellets in milligrams for each tonne aboard and km/s of speed
+#                                change, times the acceleration in g to curveExponent above 1 g.
+#   exclusionRadius              Metres from a station within which it may not thrust, at least a
+#                                station's reach (2,000 m).
+#   cruise                       Its own manned and unmanned profiles in a mode with a cruise, in
+#                                m/s² and seconds, in place of the mode's; left out, the mode's.
+drive-base:
+
+  # The torch (W21): a clean fusion drive, its exhaust 10% of light speed, burning fusion pellets of
+  # deuterium and helium-3, and allowed to thrust from a station's reach.
+  - drive:
+      driveId: DriveTorch
+      exhaustKms: 29979
+      pelletItemId: ItemFusionPellets
+      pelletMilligramsPerTonneKms: 16.5
+      curveExponent: 2
+      exclusionRadius: 2000

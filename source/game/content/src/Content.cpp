@@ -18,6 +18,7 @@
 #include <utility>
 #include <vector>
 
+#include <jettison/core/Assert.h>
 #include <jettison/dock/Definitions.h>
 #include <jettison/serialise/Archive.h>
 #include <jettison/sim/DefinitionRegistry.h>
@@ -364,6 +365,10 @@ void CheckHulls(Checker &checker, const Jettison::Sim::DefinitionRegistry &regis
 		    hull.scrubberCartridges.value_or(1) >= 1, "scrubberCartridges", "must be at least 1");
 		checker.Require(
 		    Positive(hull.pelletMagazine.value_or(1.0)), "pelletMagazine", "must be above 0");
+		const auto *pDrive = registry.Find<DriveDefinition>(RegistryName(hull.driveId));
+		checker.Require(
+		    pDrive != nullptr && pDrive->driveId == hull.driveId, "driveId",
+		    std::format("'{}' names no drive", hull.driveId));
 		if (hull.oxygenTanks)
 		{
 			checker.Require(!hull.oxygenTanks->empty(), "oxygenTanks", "holds none");
@@ -451,6 +456,49 @@ template <typename Check> void RequireDock(const Checker &checker, Check check)
 	catch (const Jettison::Serialise::FormatError &error)
 	{
 		checker.Require(false, "dock", error.what());
+	}
+}
+
+
+void CheckDrives(Checker &checker, const Jettison::Sim::DefinitionRegistry &registry)
+{
+	for (const std::string &name : registry.Names<DriveDefinition>())
+	{
+		const DriveDefinition &drive = *registry.Find<DriveDefinition>(name);
+		At<DriveDefinition>(checker, name, drive.driveId);
+		checker.Require(!drive.driveId.empty(), "driveId", "is required");
+		checker.Require(Positive(drive.exhaustKms), "exhaustKms", "must be above 0");
+		const auto *pItem = registry.Find<Core::ItemNode>(RegistryName(drive.pelletItemId));
+		checker.Require(
+		    pItem != nullptr && pItem->itemId == drive.pelletItemId &&
+		        pItem->unitType == Core::TradeUnit::Kilogram,
+		    "pelletItemId",
+		    std::format("'{}' names no item traded by the kilogram", drive.pelletItemId));
+		checker.Require(
+		    Positive(drive.pelletMilligramsPerTonneKms), "pelletMilligramsPerTonneKms",
+		    "must be above 0");
+		checker.Require(drive.curveExponent >= 0, "curveExponent", "must not be below 0");
+
+		// Inside the station's reach a ship is flown out by steering before it cruises.
+		checker.Require(
+		    std::isfinite(drive.exclusionRadius) &&
+		        drive.exclusionRadius >= Manifest::Space::CruiseTravel::kStationReach,
+		    "exclusionRadius",
+		    std::format(
+		        "must be finite and at least a station's reach, {} m",
+		        Manifest::Space::CruiseTravel::kStationReach));
+		if (drive.cruise)
+			for (const auto &[crew, profile] :
+			     {std::pair{"manned", drive.cruise->manned},
+			      std::pair{"unmanned", drive.cruise->unmanned}})
+				RequireDock(
+				    checker,
+				    [&]
+				    {
+					    Manifest::Space::CheckCruiseDrive(
+					        std::format("{} {}", name, crew),
+					        Manifest::Space::CruiseDrive{.profile = profile});
+				    });
 	}
 }
 
@@ -718,8 +766,7 @@ void CheckTuning(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 		          "lifeSupport.oxygenItemId"},
 		      {tuning.lifeSupport.cartridgeItemId, Core::TradeUnit::Unit,
 		       "lifeSupport.cartridgeItemId"},
-		      {tuning.fuel.reactionMassItemId, Core::TradeUnit::Kilogram, "fuel.reactionMassItemId"},
-		      {tuning.fuel.pelletItemId, Core::TradeUnit::Kilogram, "fuel.pelletItemId"}})
+		      {tuning.fuel.reactionMassItemId, Core::TradeUnit::Kilogram, "fuel.reactionMassItemId"}})
 		{
 			const auto *pItem = registry.Find<Core::ItemNode>(RegistryName(itemId));
 			checker.Require(
@@ -727,11 +774,6 @@ void CheckTuning(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 			    std::format("'{}' names no item traded in its unit", itemId));
 		}
 		const FuelTuning &fuel = tuning.fuel;
-		checker.Require(Positive(fuel.exhaustKms), "fuel.exhaustKms", "must be above 0");
-		checker.Require(
-		    Positive(fuel.pelletMilligramsPerTonneKms), "fuel.pelletMilligramsPerTonneKms",
-		    "must be above 0");
-		checker.Require(fuel.curveExponent >= 0, "fuel.curveExponent", "must not be below 0");
 		checker.Require(
 		    NotNegative(fuel.tankTonnesPerTonne), "fuel.tankTonnesPerTonne", "must not be below 0");
 		checker.Require(
@@ -1296,6 +1338,7 @@ void LoadChecked(const Jettison::Vfs::FileSystem &files, Jettison::Sim::Definiti
 	CheckItems(checker, registry);
 	CheckSkills(checker, registry);
 	CheckNamePools(checker, registry);
+	CheckDrives(checker, registry);
 	CheckHulls(checker, registry);
 	CheckOffers(checker, registry);
 	CheckDocks(checker, registry);
@@ -1341,6 +1384,8 @@ ContentSet Build(
 		content.hulls.push_back(*pHull);
 	for (const OfferDefinition *pOffer : All<OfferDefinition>(registry))
 		content.offers.push_back(*pOffer);
+	for (const DriveDefinition *pDrive : All<DriveDefinition>(registry))
+		content.driveClasses.emplace(pDrive->driveId, *pDrive);
 	content.padClasses = PadClassesOf(registry);
 	for (const std::string &name : registry.Names<Jettison::Dock::VehicleDefinition>())
 		content.dockHulls.emplace(name, *registry.Find<Jettison::Dock::VehicleDefinition>(name));
@@ -1350,11 +1395,14 @@ ContentSet Build(
 		    content.drives.emplace(name, *registry.Find<Manifest::Space::CruiseDrive>(name))
 		        .first->second;
 
-		// The checks hold each drive to a hull of its name.
+		// The checks hold each drive to a hull of its name, and the hull to a drive class.
+		const Core::ShipClassSpec &hull = *registry.Find<Core::ShipClassSpec>(name);
+		const DriveDefinition &driveClass = content.driveClasses.at(hull.driveId);
 		if (pMode->cruise)
-			drive.profile = registry.Find<Core::ShipClassSpec>(name)->occupants == 0
-			                    ? pMode->cruise->unmanned
-			                    : pMode->cruise->manned;
+		{
+			const CruiseModel &model = driveClass.cruise ? *driveClass.cruise : *pMode->cruise;
+			drive.profile = hull.occupants == 0 ? model.unmanned : model.manned;
+		}
 	}
 	for (const std::string &name : registry.Names<Jettison::Dock::PlatformLayout>())
 		content.layouts.emplace(name, *registry.Find<Jettison::Dock::PlatformLayout>(name));
@@ -1408,5 +1456,16 @@ std::string FeeClass(const ContentSet &content, std::string_view hullId)
 {
 	const auto found = content.dockHulls.find(RegistryName(hullId));
 	return found == content.dockHulls.end() ? std::string{} : found->second.berthClass;
+}
+
+
+const DriveDefinition *DriveOf(const ContentSet &content, std::string_view hullId)
+{
+	const auto hull = std::ranges::find(content.hulls, hullId, &Core::ShipClassSpec::hullId);
+	if (hull == content.hulls.end())
+		return nullptr;
+	const auto drive = content.driveClasses.find(hull->driveId);
+	JETTISON_VERIFY(drive != content.driveClasses.end());
+	return &drive->second;
 }
 } // namespace Manifest::Content

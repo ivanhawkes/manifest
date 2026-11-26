@@ -248,7 +248,8 @@ Route Priced(
 		flown = authored->second;
 	else if (pDrive)
 		flown = *pDrive;
-	const bool burns = flown && pDrive && pDrive->profile;
+	const Content::DriveDefinition *pClass = Content::DriveOf(content, record.hullId);
+	const bool burns = flown && pDrive && pDrive->profile && pClass;
 	if (burns)
 		flown->profile = Travel::Profile(
 		    flown->profile ? *flown->profile : *pDrive->profile, thrustBps, Travel::kMilliGPerG);
@@ -309,7 +310,7 @@ Route Priced(
 			return pLine && !pLine->asks.empty() ? pLine : nullptr;
 		};
 		const World::Line *pMass = sold(tuning.reactionMassItemId);
-		const World::Line *pPellets = sold(tuning.pelletItemId);
+		const World::Line *pPellets = sold(pClass->pelletItemId);
 
 		// shortcut: a venue selling pellets is taken to fill the magazine, which takes a tote in the
 		// hold; refine when a policy's estimate is seen refused for its pellets.
@@ -317,7 +318,7 @@ Route Priced(
 		    pMass && tanks ? refuelled(left.reactionMass) : left.reactionMass,
 		    pPellets && tanks ? tanks->pellets : left.pellets};
 		const World::Fuel burned = Travel::Burned(
-		    tuning, *flown->profile,
+		    *pClass, *flown->profile,
 		    dry + (start.reactionMass + start.pellets) / kKilogramsPerTonne +
 		        (leg.laden ? lotTonnes : 0.0),
 		    leg.metres);
@@ -332,7 +333,7 @@ Route Priced(
 		route.charges = Added(
 		    route.charges, Worth(
 		                       {{burned.reactionMass, price(pMass, tuning.reactionMassItemId)},
-		                        {burned.pellets, price(pPellets, tuning.pelletItemId)}}));
+		                        {burned.pellets, price(pPellets, pClass->pelletItemId)}}));
 	}
 	return route;
 }
@@ -1278,7 +1279,9 @@ bool Decide(Context &context)
 				        {{job.reactionMassKilograms,
 				          LastPaid(registry, identities, record.companyId, fuel.reactionMassItemId)},
 				         {job.pelletKilograms,
-				          LastPaid(registry, identities, record.companyId, fuel.pelletItemId)}}));
+				          LastPaid(
+				              registry, identities, record.companyId,
+				              Content::DriveOf(context.rules.content, record.hullId)->pelletItemId)}}));
 				job.oxygenKilograms = 0.0;
 				job.cartridgeDays = 0.0;
 				job.reactionMassKilograms = 0.0;

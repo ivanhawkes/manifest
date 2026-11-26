@@ -167,6 +167,7 @@ void RegisterTypes()
 		    .Field<&Core::ShipClassSpec::oxygenTanks>("oxygenTanks", kDefined)
 		    .Field<&Core::ShipClassSpec::scrubberCartridges>("scrubberCartridges", kDefined)
 		    .Field<&Core::ShipClassSpec::pelletMagazine>("pelletMagazine", kDefined)
+		    .Field<&Core::ShipClassSpec::driveId>("driveId", kDefined)
 		    .Field<&Core::ShipClassSpec::mass>("mass", kDefined);
 		RegisterEnum<OfferTarget>("Manifest.OfferTarget").Value<OfferTarget::Ship>("Ship");
 		RegisterType<OfferDefinition>("Manifest.Offer", Attribute::Moddable)
@@ -221,13 +222,9 @@ void RegisterTypes()
 		    .Field<&LifeSupportTuning::oxygenItemId>("oxygenItemId", kDefined)
 		    .Field<&LifeSupportTuning::cartridgeItemId>("cartridgeItemId", kDefined);
 		RegisterType<FuelTuning>("Manifest.FuelTuning")
-		    .Field<&FuelTuning::exhaustKms>("exhaustKms", kDefined)
-		    .Field<&FuelTuning::pelletMilligramsPerTonneKms>("pelletMilligramsPerTonneKms", kDefined)
-		    .Field<&FuelTuning::curveExponent>("curveExponent", kDefined)
 		    .Field<&FuelTuning::tankTonnesPerTonne>("tankTonnesPerTonne", kDefined)
 		    .Field<&FuelTuning::occupantKilograms>("occupantKilograms", kDefined)
 		    .Field<&FuelTuning::reactionMassItemId>("reactionMassItemId", kDefined)
-		    .Field<&FuelTuning::pelletItemId>("pelletItemId", kDefined)
 		    .Field<&FuelTuning::thrustSharesBps>("thrustSharesBps", kDefined)
 		    .Field<&FuelTuning::legAllowanceSeconds>("legAllowanceSeconds", kDefined);
 		RegisterType<CompanyTuning>("Manifest.CompanyTuning")
@@ -301,6 +298,15 @@ void RegisterTypes()
 		RegisterType<CruiseModel>("Manifest.CruiseModel")
 		    .Field<&CruiseModel::manned>("manned", kDefined)
 		    .Field<&CruiseModel::unmanned>("unmanned", kDefined);
+		RegisterType<DriveDefinition>("Manifest.Drive", Attribute::Moddable)
+		    .Field<&DriveDefinition::driveId>("driveId", kDefined)
+		    .Field<&DriveDefinition::exhaustKms>("exhaustKms", kDefined)
+		    .Field<&DriveDefinition::pelletItemId>("pelletItemId", kDefined)
+		    .Field<&DriveDefinition::pelletMilligramsPerTonneKms>(
+		        "pelletMilligramsPerTonneKms", kDefined)
+		    .Field<&DriveDefinition::curveExponent>("curveExponent", kDefined)
+		    .Field<&DriveDefinition::exclusionRadius>("exclusionRadius", kDefined)
+		    .Field<&DriveDefinition::cruise>("cruise", kDefined);
 		RegisterType<GameModeDefinition>("Manifest.GameMode", Attribute::Moddable)
 		    .Field<&GameModeDefinition::ages>("ages", kDefined)
 		    .Field<&GameModeDefinition::items>("items", kDefined)
@@ -409,6 +415,8 @@ std::span<const DefinitionType> DefinitionTypes()
 		    {YamlMigrations{"Manifest.Hull", kVersion1}, "manifest/definitions/hulls",
 		     entt::resolve<Core::ShipClassSpec>(),
 		     &IdOf<Core::ShipClassSpec, &Core::ShipClassSpec::hullId>},
+		    {YamlMigrations{"Manifest.Drive", kVersion1}, "manifest/definitions/drive-classes",
+		     entt::resolve<DriveDefinition>(), &IdOf<DriveDefinition, &DriveDefinition::driveId>},
 		    {YamlMigrations{"Manifest.Offer", kVersion1}, "manifest/definitions/offers",
 		     entt::resolve<OfferDefinition>(), &IdOf<OfferDefinition, &OfferDefinition::offerId>},
 		    {Jettison::Dock::BerthClassMigrations(), "manifest/definitions/pads",

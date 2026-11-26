@@ -54,6 +54,7 @@ DEFINITIONS=(
   skill-tree/trade.yaml
   skill-tree/services.yaml
   ships/hulls.yaml
+  ships/drives.yaml
 )
 
 # Every document is built in a temporary directory and moved into place at the end, so a failed
@@ -123,6 +124,7 @@ done
 write_records items itemId '.["item-base"][].item' "${item_files[@]}"
 write_records skills skillId '.["skill-base"][].skill' "${skill_files[@]}"
 write_records hulls hullId '.["hull-base"][].hull' ships/hulls.yaml
+write_records drive-classes driveId '.["drive-base"][].drive' ships/drives.yaml
 write_records name-pools pool 'to_entries[] | {"pool": .key, "names": .value}' \
   universe/solar-system-names.yaml
 

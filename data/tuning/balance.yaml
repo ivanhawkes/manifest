@@ -103,20 +103,14 @@ lifeSupport:
   oxygenItemId: ItemOxygen
   cartridgeItemId: ItemCarbonScrubberCartridge
 
-# A torch's fuel (D-108; docs/travel.md, "The fuel a leg burns"): reaction mass at an exhaust of 10%
-# of light speed, in km/s; fusion pellets in milligrams for each tonne aboard and km/s of speed
-# change, times the acceleration in g to curveExponent above 1 g; the tanks' own tonnes for each
-# tonne of reaction mass they hold; and each occupant's kilograms, with their effects.
+# What every drive's fuel shares (D-108; docs/travel.md, "The fuel a leg burns"; each drive's own is
+# in ships/drives.yaml): the tanks' own tonnes for each tonne of reaction mass they hold, and each
+# occupant's kilograms, with their effects.
 fuel:
-  exhaustKms: 29979
-  pelletMilligramsPerTonneKms: 16.5
-  curveExponent: 2
   tankTonnesPerTonne: 0.25
   occupantKilograms: 100
-  # What a journey refuels with as it leaves a venue: reaction mass into the tanks, and pellets into
-  # the hold, which fill the magazine (W21).
+  # The reaction mass a journey refuels its tanks with as it leaves a venue (W21).
   reactionMassItemId: ItemReactionMass
-  pelletItemId: ItemFusionPellets
   # The thrusts a standing policy choosing its burn prices each trade at, in basis points, and the
   # seconds it allows each leg beside its cruise, for leaving and docking (W21).
   thrustSharesBps: [10000, 5000, 2500, 1000]

@@ -59,6 +59,9 @@ struct ContentSet
 	// Every offer a company may buy, in registry order.
 	std::vector<OfferDefinition> offers;
 
+	// Every drive class, by driveId.
+	std::map<std::string, DriveDefinition, std::less<>> driveClasses;
+
 	// Jettison's docks as authored (D-062), by record name: the pad classes, each hull's dock hull and
 	// cruise drive, by its Manifest.Hull's record name, and the station layouts.
 	Jettison::Dock::BerthClasses padClasses;
@@ -106,4 +109,8 @@ ContentSet LoadContent(std::span<const Jettison::Vfs::Mount> sources, std::strin
 // A ship's fee class (D-100), the pad class of its hull's dock hull, which venues charge it by
 // (ChargesTuning, World::Fees); empty for a hull with no dock hull.
 std::string FeeClass(const ContentSet &content, std::string_view hullId);
+
+// The drive class a hull flies (Core::ShipClassSpec::driveId), or null for a hull the set does not
+// have; content holds every hull's to a drive class.
+const DriveDefinition *DriveOf(const ContentSet &content, std::string_view hullId);
 } // namespace Manifest::Content

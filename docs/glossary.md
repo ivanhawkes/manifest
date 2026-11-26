@@ -312,7 +312,7 @@ governors and public projects](governance.md).
 
 The torch's dear fuel, the good `ItemFusionPellets`, by the kilogram, refined at few stations. They
 fill a drive's magazine (the hull's `pelletMagazine`) from totes in the hold, and burn at a rate
-that rises steeply above 1 g (`fuel.curveExponent`). See [travel and fuel](travel.md).
+that rises steeply above 1 g (the drive's `curveExponent`). See [travel and fuel](travel.md).
 
 ### Game mode
 
@@ -792,7 +792,7 @@ actor's sessions. See [the dedicated server](server.md) and Jettison's
 ### Torch
 
 The clean fusion drive of the small hulls, skiff to corvette (D-108): it burns [reaction
-mass](#reaction-mass) at `fuel.exhaustKms` and [fusion pellets](#fusion-pellets), more of both the
+mass](#reaction-mass) at its `exhaustKms` and [fusion pellets](#fusion-pellets), more of both the
 heavier the ship and the harder the [burn](#burn). Larger drives are planned. See [travel and
 fuel](travel.md).
 

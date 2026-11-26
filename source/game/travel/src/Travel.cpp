@@ -152,9 +152,10 @@ Result Started(SimWorld &world, const Rules &rules, const Actor &actor, const Tr
 		const double metres = glm::distance(
 		    registry.get<Sim::Transform>(ship).position,
 		    registry.get<Sim::Transform>(rules.fleet.StationOf(registry, travel.venueId)).position);
+		const Content::DriveDefinition *pClass = Content::DriveOf(rules.content, record.hullId);
+		JETTISON_VERIFY(pClass != nullptr);
 		burned = Burned(
-		    rules.content.tuning.fuel, *flown,
-		    TonnesAboard(registry, rules.identities, rules.content, ship), metres);
+		    *pClass, *flown, TonnesAboard(registry, rules.identities, rules.content, ship), metres);
 		const auto *pFuel = registry.try_get<World::Fuel>(ship);
 		const World::Fuel tanks = pFuel ? *pFuel : World::Fuel{};
 		if (tanks.reactionMass < burned.reactionMass || tanks.pellets < burned.pellets)
@@ -409,8 +410,8 @@ Jettison::Transit::MotionProfile Profile(
 
 
 World::Fuel Burned(
-    const Content::FuelTuning &tuning, const Jettison::Transit::MotionProfile &profile, double tonnes,
-    double metres)
+    const Content::DriveDefinition &drive, const Jettison::Transit::MotionProfile &profile,
+    double tonnes, double metres)
 {
 	const Jettison::Transit::ThrustSeconds thrust = Jettison::Transit::Thrust(profile, metres);
 	double kms = 0.0;
@@ -423,7 +424,7 @@ World::Fuel Burned(
 		const double change = 2.0 * acceleration * seconds / kMetresPerKilometre;
 		const double g = acceleration / kStandardGravity;
 		double factor = 1.0;
-		for (int power = 0; g > 1.0 && power < tuning.curveExponent; ++power)
+		for (int power = 0; g > 1.0 && power < drive.curveExponent; ++power)
 			factor *= g;
 		kms += change;
 		pelletKms += change * factor;
@@ -431,8 +432,8 @@ World::Fuel Burned(
 	const auto grams = [](double kilograms)
 	{ return std::ceil(kilograms * kGramsPerKilogram) / kGramsPerKilogram; };
 	return {
-	    grams(tonnes * kms * kKilogramsPerTonne / tuning.exhaustKms),
-	    grams(tonnes * pelletKms * tuning.pelletMilligramsPerTonneKms / kMilligramsPerKilogram)};
+	    grams(tonnes * kms * kKilogramsPerTonne / drive.exhaustKms),
+	    grams(tonnes * pelletKms * drive.pelletMilligramsPerTonneKms / kMilligramsPerKilogram)};
 }
 
 

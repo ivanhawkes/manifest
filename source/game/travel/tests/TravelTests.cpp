@@ -561,7 +561,8 @@ TEST_CASE("A burn is its mode's profile at the most it sustains, and that accele
 
 TEST_CASE("A burn's fuel is the plan's: the starter to Brine at 1 g, all its rates rising above it")
 {
-	const Manifest::Content::FuelTuning tuning{29979.0, 16.5, 2, 0.25, 100.0};
+	const Manifest::Content::DriveDefinition tuning{"DriveTorch", 29979.0, "ItemFusionPellets", 16.5, 2,
+	                                                2000.0,       {}};
 	const auto g = static_cast<float>(kGravity);
 
 	// 27 t, two totes of copper aboard, 396 million km at 1 g: 3,941 km/s.
@@ -597,7 +598,7 @@ TEST_CASE("A journey flies the burn chosen and takes its leg's fuel from the tan
 	    *content.drives.at("hull-lone-trader-starter").profile;
 	const Jettison::Transit::MotionProfile flown = Travel::Profile(mode, 5000, 1000);
 	const World::Fuel burned = Travel::Burned(
-	    content.tuning.fuel, flown,
+	    *Manifest::Content::DriveOf(content, "HullLoneTraderStarter"), flown,
 	    Travel::TonnesAboard(registry, hosted.services.identities, content, hosted.Ship()),
 	    hosted.Metres(kBrine));
 	MESSAGE(
@@ -661,7 +662,7 @@ TEST_CASE(
 	const Jettison::Transit::MotionProfile flown =
 	    Travel::Profile(*content.drives.at("hull-lone-trader-starter").profile, 10000, 1000);
 	const World::Fuel burned = Travel::Burned(
-	    content.tuning.fuel, flown,
+	    *Manifest::Content::DriveOf(content, "HullLoneTraderStarter"), flown,
 	    Travel::TonnesAboard(registry, hosted.services.identities, content, hosted.Ship()),
 	    hosted.Metres(kBrine));
 	start();

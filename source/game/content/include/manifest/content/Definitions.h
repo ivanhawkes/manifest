@@ -142,26 +142,36 @@ struct LifeSupportTuning
 	std::string cartridgeItemId;
 };
 
-// A torch's fuel (D-108): its reaction mass by the rocket equation to first order at its exhaust speed,
-// in km/s; its pellets in milligrams for each tonne aboard and each km/s of speed change, times the
-// acceleration in g to the curve's power above 1 g; the mass of its tanks for each tonne of reaction
-// mass they hold, and of each occupant with their effects, in kilograms.
+// What every drive's fuel shares (D-108): the mass of its tanks for each tonne of reaction mass they
+// hold, and of each occupant with their effects, in kilograms.
 struct FuelTuning
 {
-	double exhaustKms{0.0};
-	double pelletMilligramsPerTonneKms{0.0};
-	int curveExponent{0};
 	double tankTonnesPerTonne{0.0};
 	double occupantKilograms{0.0};
 
-	// The goods a ship refuels with, each by the kilogram.
+	// The reaction mass a ship refuels with, by the kilogram; its pellets are its drive's.
 	std::string reactionMassItemId{};
-	std::string pelletItemId{};
 
 	// The thrusts a policy choosing its burn prices each trade at, in basis points, each above 0 and at
 	// most full; and the seconds it allows each leg beside its cruise, for leaving and docking.
 	std::vector<std::uint32_t> thrustSharesBps{};
 	double legAllowanceSeconds{0.0};
+};
+
+// A drive class, which a hull names (D-108; docs/ships-plan.md, "Drives past the torch"): its reaction
+// mass by the rocket equation to first order at its exhaust speed, in km/s; its pellets, an item
+// traded by the kilogram, in milligrams for each tonne aboard and each km/s of speed change, times
+// the acceleration in g to the curve's power above 1 g; the metres from a station within which it
+// may not thrust; and its own cruise in a mode that has one, in place of the mode's.
+struct DriveDefinition
+{
+	std::string driveId;
+	double exhaustKms{0.0};
+	std::string pelletItemId;
+	double pelletMilligramsPerTonneKms{0.0};
+	int curveExponent{0};
+	double exclusionRadius{0.0};
+	std::optional<CruiseModel> cruise;
 };
 
 // Who an offer is bought for: a company's own ship, the one target so far.

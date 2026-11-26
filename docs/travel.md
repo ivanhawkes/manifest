@@ -136,12 +136,14 @@ s is about 0.58: about 58% of the fuel, for a cruise about 15% longer.
 straight-line distance from the ship to the destination's station now. Jettison's
 `Transit::Thrust` gives each end's seconds at the boost and at the sustained acceleration. Each
 phase changes the ship's speed by its acceleration times its seconds, at both ends. For each tonne
-aboard and each km/s of that change, the phase burns:
+aboard and each km/s of that change, the phase burns, at the rates of the hull's drive class
+(`Manifest.Drive`, `data/ships/drives.yaml`):
 
-- **reaction mass**, by the rocket equation to first order: 1,000 / `fuel.exhaustKms` kilograms,
-  about 0.033 kg at 29,979 km/s;
-- **pellets**, `fuel.pelletMilligramsPerTonneKms` milligrams (16.5), times a factor of 1 up to 1 g
-  and the acceleration in g to the power `fuel.curveExponent` (2) above it.
+- **reaction mass**, by the rocket equation to first order: 1,000 / `exhaustKms` kilograms, about
+  0.033 kg at the torch's 29,979 km/s;
+- **pellets**, the drive's `pelletItemId`, `pelletMilligramsPerTonneKms` milligrams (the torch's
+  16.5), times a factor of 1 up to 1 g and the acceleration in g to the power `curveExponent` (2)
+  above it.
 
 Each total is rounded up to the gram. The pellets' curve makes a hard burn a decision, not a
 default: at 2 g the pellets cost four times as much for each km/s
@@ -258,24 +260,33 @@ hosted.Run(
 hosted.Run(kAda, Company::kSetRefuel, Company::kVersion, Company::SetRefuel{"Ship1", false});
 ```
 
-The fuel rules are tuning, in `data/tuning/balance.yaml`:
+Each drive's rates are its record in `data/ships/drives.yaml`, which a hull names by `driveId`:
+
+```yaml
+  - drive:
+      driveId: DriveTorch
+      exhaustKms: 29979
+      pelletItemId: ItemFusionPellets
+      pelletMilligramsPerTonneKms: 16.5
+      curveExponent: 2
+      exclusionRadius: 2000
+```
+
+What every drive shares is tuning, in `data/tuning/balance.yaml`:
 
 ```yaml
 fuel:
-  exhaustKms: 29979
-  pelletMilligramsPerTonneKms: 16.5
-  curveExponent: 2
   tankTonnesPerTonne: 0.25
   occupantKilograms: 100
   reactionMassItemId: ItemReactionMass
-  pelletItemId: ItemFusionPellets
   thrustSharesBps: [10000, 5000, 2500, 1000]
   legAllowanceSeconds: 1800
 ```
 
 `thrustSharesBps` and `legAllowanceSeconds` are the standing policy's: the shares it prices each
 trade at, and the time it allows each leg for leaving and docking. Content refuses a fuel item that
-is not traded by the kilogram, and rates that are not above 0.
+is not traded by the kilogram, rates that are not above 0, an exclusion radius inside a station's
+reach, and a hull whose `driveId` names no drive.
 
 The Manifest mode's cruise profiles, in `data/game-mode/manifest.yaml` (accelerations in m/s²):
 
@@ -324,8 +335,8 @@ it.
 - Header: `source/game/travel/include/manifest/travel/Travel.h` (the command, `Profile`, `Burned`,
   `TonnesAboard`, `Fleet`, `Register`, `OpenStations`).
 - State: `World::Journey`, `World::Leg`, `World::Failure`, `World::Fuel` and `World::Refuel` in
-  `source/game/world/include/manifest/world/State.h`; `Content::FuelTuning` and
-  `Content::CruiseModel` in `source/game/content/include/manifest/content/Definitions.h`.
+  `source/game/world/include/manifest/world/State.h`; `Content::FuelTuning`,
+  `Content::DriveDefinition` and `Content::CruiseModel` in `source/game/content/include/manifest/content/Definitions.h`.
 - Refuelling and `SetRefuel`: `source/game/company/src/Company.cpp`.
 - Tests: the `travel` suite (`source/game/travel/tests/TravelTests.cpp`); `fixture_cruise` and
   `fixture_burn` (`source/test/FixtureTests.cpp`) for a cruise fast-forwarded and a policy's burns

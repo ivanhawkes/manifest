@@ -337,8 +337,32 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	    "Dock.VehicleDefinition 'hull-nowhere': dock is the dock hull of no Manifest.Hull of its name");
 	CheckRefused(
 	    "manifest/definitions/hulls/hull-extra.yaml",
-	    "version: 1\nhullId: HullExtra\nclassName: Extra\nbaseStats: {CargoVolume: 1}\n",
+	    "version: 1\nhullId: HullExtra\nclassName: Extra\nbaseStats: {CargoVolume: 1}\ndriveId: "
+	    "DriveTorch\n",
 	    "Manifest.Hull 'HullExtra': dock has no Dock.VehicleDefinition 'hull-extra'");
+	CheckRefused(
+	    starter, "version: 1\ndriveId: DriveNowhere\n", "driveId 'DriveNowhere' names no drive");
+
+	// A drive class (D-108).
+	const std::string torch = patch("manifest/definitions/drive-classes/", "drive-torch");
+	CheckRefused(
+	    torch, "version: 1\nexhaustKms: 0\n",
+	    "Manifest.Drive 'DriveTorch': exhaustKms must be above 0");
+	CheckRefused(
+	    torch, "version: 1\npelletItemId: ItemCopper\n",
+	    "pelletItemId 'ItemCopper' names no item traded by the kilogram");
+	CheckRefused(
+	    torch, "version: 1\npelletMilligramsPerTonneKms: -1\n",
+	    "pelletMilligramsPerTonneKms must be above 0");
+	CheckRefused(torch, "version: 1\ncurveExponent: -1\n", "curveExponent must not be below 0");
+	CheckRefused(
+	    torch, "version: 1\nexclusionRadius: 1999\n",
+	    "exclusionRadius must be finite and at least a station's reach, 2000 m");
+	CheckRefused(
+	    torch,
+	    "version: 1\ncruise: {manned: {boostAcceleration: 9, boostSeconds: 60, sustainedAcceleration: "
+	    "10}, unmanned: {boostAcceleration: 9, boostSeconds: 0, sustainedAcceleration: 9}}\n",
+	    "Cruise drive 'drive-torch manned' has a profile");
 	CheckRefused(
 	    starter, "version: 1\nscrubberCartridges: 0\n", "scrubberCartridges must be at least 1");
 	CheckRefused(starter, "version: 1\noxygenTanks: []\n", "oxygenTanks holds none");
