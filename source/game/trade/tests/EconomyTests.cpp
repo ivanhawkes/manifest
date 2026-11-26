@@ -357,16 +357,16 @@ TEST_CASE("An employer that cannot fund a batch's wages starts none")
 }
 
 
-TEST_CASE("A tote of drinking water is a credit at base price (D-093)")
+TEST_CASE("A tote of drinking water is a credit at base price, to a part in a thousand (D-093)")
 {
 	const auto &items = Trading().gameMode.items;
 	const auto water =
 	    std::ranges::find(items, std::string{"ItemDrinkingWater"}, &Manifest::Core::ItemNode::itemId);
 	REQUIRE(water != items.end());
-	CHECK(
+	MANIFEST_CHECK_NEAR(
 	    Manifest::Core::Simulation::BasePrice(*water).ToDouble() * water->unitsPerCubicMetre /
-	        static_cast<double>(Manifest::Core::kTotesPerIbc) ==
-	    1.0);
+	        static_cast<double>(Manifest::Core::kTotesPerIbc),
+	    1.0, 1e-3);
 }
 
 

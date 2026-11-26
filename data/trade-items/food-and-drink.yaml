@@ -8,8 +8,8 @@
 # is sold wholesale.
 item-base:
 
-  # Bulk potable water, a credit a tote (D-093): one kilolitre to the cubic metre, three quarters of an
-  # IBC cube filled, as ItemBeer.
+  # Bulk potable water, about a credit a tote (D-093): three quarters of a kilolitre to the packed
+  # cube, as ItemBeer, so 0.09375 kL a tote at 10.67 a kilolitre.
   - item:
       itemId: ItemDrinkingWater
       categoryId: CategoryWater
@@ -17,7 +17,7 @@ item-base:
       displayName: Drinking Water
       description: Potable water, in bulk
       unitsPerCubicMetre: 0.75
-      basePrice: 8
+      basePrice: 10.67
       unitType: Kilolitre
       density: 1.0
       packFactor: 0.75

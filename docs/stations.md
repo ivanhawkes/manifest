@@ -97,8 +97,8 @@ are ordinary trade goods, `lifeSupport.oxygenItemId` (`ItemOxygen`, by the kilog
 [book](glossary.md#book) and loaded like any cargo. The station's own stock is never drawn on.
 
 - **`Manifest.Company.Refill`** fills the tanks in order: from the opened oxygen tote first, then
-  from whole totes opened one at a time. A tote of oxygen holds 142.5 kg (an eighth of its
-  `unitsPerCubicMetre`, 1,140). What the last tote has left stays opened in the hold.
+  from whole totes opened one at a time. A tote of oxygen holds 128.25 kg (an eighth of its
+  `unitsPerCubicMetre`, 1,026). What the last tote has left stays opened in the hold.
 - **`Manifest.Company.Replace`** takes one whole cartridge the same way (a tote holds two) and
   installs it fresh in place of the installed cartridge with the least left. The old cartridge is
   thrown away with whatever it had.

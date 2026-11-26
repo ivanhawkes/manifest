@@ -380,7 +380,7 @@ void ToCruise(Hosted &hosted)
 	CHECK(start.credits == 25000);
 	REQUIRE(
 	    hosted.Place(kOre, kGood, Side::Buy, 2, hosted.Quote(kOre, kGood).Ask()) == Result::Succeeded);
-	CHECK(hosted.Seen().credits == 4804);
+	CHECK(hosted.Seen().credits == 7833);
 	REQUIRE(
 	    hosted.Place(kOre, kOxygen, Side::Buy, 1, hosted.Quote(kOre, kOxygen).Ask()) ==
 	    Result::Succeeded);
@@ -456,7 +456,7 @@ void FromCruise(Hosted &hosted)
 	REQUIRE(refilled.opened.size() == 1);
 	CHECK(refilled.opened[0].itemId == kOxygen);
 	MANIFEST_CHECK_NEAR(
-	    refilled.opened[0].quantity, 142.5 - (10.0 - cruising.lifeSupport.tanks[0]), 1e-6);
+	    refilled.opened[0].quantity, 128.25 - (10.0 - cruising.lifeSupport.tanks[0]), 1e-6);
 
 	hosted.RunJourney();
 	const ShipView arrived = hosted.Ship1();
@@ -616,7 +616,7 @@ TEST_CASE("The trading fixture's loop, saved in flight with a bid resting and re
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves with
 	// what a save holds, the fixture's content or stream, or the engine's movement or save format.
-	CHECK(hosted.world.StateHash() == 0xf6bc2a278ee8d60cULL);
+	CHECK(hosted.world.StateHash() == 0x572095a617e5839eULL);
 }
 
 
@@ -667,7 +667,7 @@ TEST_CASE("The trading fixture's loop, backed up in flight with a bid resting an
 	// Served on from the restore, through the journal, it reaches the loop's own world.
 	FromCruise(restored);
 	CheckLedger(restored);
-	CHECK(restored.world.StateHash() == 0xf6bc2a278ee8d60cULL);
+	CHECK(restored.world.StateHash() == 0x572095a617e5839eULL);
 }
 
 
@@ -853,7 +853,7 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 	CHECK(replayed.world.StateHash() == hosted.world.StateHash());
 
 	// The same in every build the gate runs; it moves as the fixture's does.
-	CHECK(hosted.world.StateHash() == 0x07ca71f6577f7997ULL);
+	CHECK(hosted.world.StateHash() == 0x6803614c88c9fde6ULL);
 }
 
 
@@ -1824,7 +1824,7 @@ TEST_CASE("The governance fixture's project, tendered, supplied, worked and unlo
 
 	// The same in every build the gate runs; it moves with what a save holds, the governance
 	// scenario's content or the stream.
-	CHECK(hosted.world.StateHash() == 0xfa77f9c61ae433bdULL);
+	CHECK(hosted.world.StateHash() == 0x340a2f79f6638644ULL);
 }
 
 
@@ -1832,7 +1832,8 @@ namespace
 {
 constexpr std::string_view kNorth = "RegionForgeNorth";
 constexpr std::string_view kGuild = "ProjectSmeltersGuild";
-constexpr std::string_view kRice = "ItemRice";
+// Bea's good: soap, which Forge still offers by then, when its foods have sold out.
+constexpr std::string_view kSoap = "ItemSoap";
 const Actor kBea{ActorKind::Principal, "Bea"};
 const Actor kCara{ActorKind::Principal, "Cara"};
 
@@ -1913,12 +1914,12 @@ void Found(Hosted &hosted)
 }
 
 
-// Bea's buy of a tote of rice at the highport, at the limit.
-Result BuyRice(Hosted &hosted, std::int64_t limit)
+// Bea's buy of a tote of soap at the highport, at the limit.
+Result BuySoap(Hosted &hosted, std::int64_t limit)
 {
 	return hosted.Run(
 	    kBea, Trade::kPlace, Trade::kVersion,
-	    Trade::Place{std::string{kForge}, std::string{kRice}, Side::Buy, 1, limit});
+	    Trade::Place{std::string{kForge}, std::string{kSoap}, Side::Buy, 1, limit});
 }
 
 
@@ -1987,15 +1988,15 @@ void Join(Hosted &hosted)
 	CHECK(treasury("RegionForgeSouth").has_value());
 	CHECK_FALSE(treasury(kNorth).has_value());
 
-	// A tote of rice bought at the ask of her live report, hers at the highport.
+	// A tote of soap bought at the ask of her live report, hers at the highport.
 	std::int64_t ask = 0;
 	for (const World::Line &line : market(kForge).report.lines)
-		if (line.itemId == kRice)
+		if (line.itemId == kSoap)
 			ask = line.Ask();
 	REQUIRE(ask > 0);
-	REQUIRE(BuyRice(hosted, ask) == Result::Succeeded);
+	REQUIRE(BuySoap(hosted, ask) == Result::Succeeded);
 	const CompanyView bea = beas().companies.at(0);
-	CHECK(Held(bea, kForge, kRice).available == 1);
+	CHECK(Held(bea, kForge, kSoap).available == 1);
 	CHECK(bea.ships.at(0).cargo.empty());
 	CHECK(bea.orders.empty());
 	CHECK_FALSE(hosted.creditBreach);
@@ -2016,7 +2017,7 @@ void Away(Hosted &hosted)
 	const auto minute = static_cast<std::uint64_t>(std::llround(60.0 / fixedStep));
 	while (!out() && hosted.world.Clock().Step() < end)
 		ForwardTo(hosted, hosted.world.Clock().Step() + minute);
-	REQUIRE(BuyRice(hosted, 1) == Result::Succeeded);
+	REQUIRE(BuySoap(hosted, 1) == Result::Succeeded);
 	REQUIRE(out());
 	const CompanyView bea =
 	    Manifest::Query::Observe(hosted.world, hosted.services.identities, kBea).companies.at(0);
@@ -2059,11 +2060,11 @@ void Develop(Hosted &hosted)
 	CHECK(Credits(registry) + hosted.sunk == hosted.credits);
 	CHECK_FALSE(hosted.creditBreach);
 	CHECK_FALSE(hosted.goodsBreach);
-	// Bea's resting bid expired within its day, its escrow back, and her rice is where she bought it.
+	// Bea's resting bid expired within its day, its escrow back, and her soap is where she bought it.
 	const CompanyView bea =
 	    Manifest::Query::Observe(hosted.world, hosted.services.identities, kBea).companies.at(0);
 	CHECK(bea.orders.empty());
-	CHECK(Held(bea, kForge, kRice).available == 1);
+	CHECK(Held(bea, kForge, kSoap).available == 1);
 }
 } // namespace
 
@@ -2172,5 +2173,5 @@ TEST_CASE(
 
 	// The same in every build the gate runs; it moves with what a save holds, the governance
 	// scenario's content or the stream.
-	CHECK(hosted.world.StateHash() == 0xa78c569537d6dabaULL);
+	CHECK(hosted.world.StateHash() == 0x841073cbfdf717bbULL);
 }
