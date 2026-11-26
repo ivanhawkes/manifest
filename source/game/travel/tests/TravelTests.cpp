@@ -76,6 +76,7 @@ struct Hosted
 	Manifest::Host::Services services{Manifest::Host::HostedServices(*session)};
 	const Travel::Fleet *fleet{&services.fleet};
 
+
 	// From the staged directory, or another source of the same content, such as its pack.
 	explicit Hosted(
 	    const std::string &content = MANIFEST_MOD_DIRECTORY, Cruise cruise = Cruise::Compressed)
@@ -87,6 +88,7 @@ struct Hosted
 		if (cruise == Cruise::Compressed)
 			world.Registry().get<Space::CruiseDrive>(Ship()).profile.reset();
 	}
+
 
 	template <typename T>
 	Result Run(const Actor &actor, std::string_view command, std::uint32_t version, const T &payload)
@@ -102,12 +104,14 @@ struct Hosted
 		return completed->result;
 	}
 
+
 	Result Go(const Actor &actor, std::string_view venueId, std::string shipId = "Ship1")
 	{
 		return Run(
 		    actor, Travel::kTravel, Travel::kVersion,
 		    Travel::Travel{std::move(shipId), std::string{venueId}});
 	}
+
 
 	Result Burn(std::string_view venueId, std::uint32_t thrustBps, std::uint32_t accelerationMilliG)
 	{
@@ -116,10 +120,12 @@ struct Hosted
 		    Travel::Travel{"Ship1", std::string{venueId}, thrustBps, accelerationMilliG});
 	}
 
+
 	Result Refuel(bool enabled)
 	{
 		return Run(kAda, Company::kSetRefuel, Company::kVersion, Company::SetRefuel{"Ship1", enabled});
 	}
+
 
 	World::Account &Account()
 	{
@@ -127,15 +133,18 @@ struct Hosted
 		    services.identities.Find(Kind::CompanyAccount, "Company1"));
 	}
 
+
 	std::int64_t Balance()
 	{
 		return Account().balance;
 	}
 
+
 	void SetBalance(std::int64_t balance)
 	{
 		Account().balance = balance;
 	}
+
 
 	// The venue's docking fee for the ship's fee class, as posted now.
 	std::int64_t DockingFee(std::string_view venueId) const
@@ -148,15 +157,18 @@ struct Hosted
 		    ->docking;
 	}
 
+
 	World::Stock &Stock()
 	{
 		return world.Registry().get<World::Stock>(services.identities.Find(Kind::Company, "Company1"));
 	}
 
+
 	World::Fuel &Fuel()
 	{
 		return world.Registry().get<World::Fuel>(Ship());
 	}
+
 
 	// From the ship to the venue's station now, as a journey prices its leg.
 	double Metres(std::string_view venueId) const
@@ -167,6 +179,7 @@ struct Hosted
 		    registry.get<Jettison::Sim::Transform>(fleet->StationOf(registry, venueId)).position);
 	}
 
+
 	Result Load(std::string_view venueId, std::uint64_t totes = 1)
 	{
 		return Run(
@@ -174,26 +187,31 @@ struct Hosted
 		    Company::Move{"Ship1", std::string{venueId}, "ItemFurs", totes});
 	}
 
+
 	void Step()
 	{
 		world.Step();
 		(void)world.Events().Take();
 	}
 
+
 	entt::entity Ship() const
 	{
 		return services.identities.Find(Kind::Ship, "Ship1");
 	}
+
 
 	const World::Ship &Record() const
 	{
 		return world.Registry().get<World::Ship>(Ship());
 	}
 
+
 	const World::Journey &Journey() const
 	{
 		return world.Registry().get<World::Journey>(Ship());
 	}
+
 
 	// Steps until the journey ends, each leg it passes through recorded once, in order.
 	std::vector<Leg> RunJourney()
@@ -222,6 +240,7 @@ TEST_CASE("Provisioning parks the starter on a pad of its home venue, docked as 
 	REQUIRE(docking);
 	CHECK(docking->stage == Dock::Stage::Docked);
 	CHECK(Dock::IsDocked(registry, hosted.Ship(), docking->platform));
+
 	// The skiff takes the smallest pad it fits, a skiff pad, the lowest numbered: the thirteenth.
 	CHECK(registry.get<Dock::Berth>(docking->berth).berthClass == "skiff");
 	CHECK(registry.get<Dock::Berth>(docking->berth).number == 13);
@@ -235,6 +254,7 @@ TEST_CASE("A ship travels from Ore to Brine through the engine's departure, crui
 {
 	Hosted hosted;
 	entt::registry &registry = hosted.world.Registry();
+
 	// Fixture bootstrap: two totes of furs in the company's warehouse at Ore, loaded through the
 	// command.
 	registry.get<World::Stock>(hosted.services.identities.Find(Kind::Company, "Company1"))
@@ -247,6 +267,7 @@ TEST_CASE("A ship travels from Ore to Brine through the engine's departure, crui
 	CHECK(hosted.Journey().leg == Leg::Departing);
 	CHECK(registry.get<Dock::Docking>(hosted.Ship()).stage == Dock::Stage::Leaving);
 	CHECK(hosted.Record().dockedAt.empty());
+
 	// Off its pad, it lets go of Ore's life support and draws on its own (D-046).
 	const auto &support = [&]() -> const World::LifeSupport &
 	{ return registry.get<World::LifeSupport>(hosted.Ship()); };
@@ -263,6 +284,7 @@ TEST_CASE("A ship travels from Ore to Brine through the engine's departure, crui
 	CHECK(hosted.Journey().failure == Failure::None);
 	CHECK(hosted.Record().dockedAt == kBrine);
 	CHECK(registry.get<World::Cargo>(hosted.Ship()) == cargo);
+
 	// Docked, it is connected at Brine in the same step, having drawn a kilogram a day for the steps
 	// since it let go, from its first tank, and an occupant-day a day from its cartridge.
 	CHECK(support().connectedTo == kBrine);
@@ -303,6 +325,7 @@ TEST_CASE("Travel is refused, writing nothing, for what it cannot send")
 {
 	Hosted hosted;
 	entt::registry &registry = hosted.world.Registry();
+
 	// Fixture bootstrap: Bea, a principal with no company.
 	registry.emplace<World::Principal>(
 	    hosted.services.identities.Create(registry, Kind::Principal, "Bea"), "Bea");
@@ -320,6 +343,7 @@ TEST_CASE("A journey whose cruise the engine refuses fails, its ship left where 
 {
 	Hosted hosted;
 	entt::registry &registry = hosted.world.Registry();
+
 	// Fixture bootstrap: a tote of furs loaded, and the ship's drive taken out, which the engine's
 	// cruise refuses a ship for.
 	registry.get<World::Stock>(hosted.services.identities.Find(Kind::Company, "Company1"))
@@ -333,6 +357,7 @@ TEST_CASE("A journey whose cruise the engine refuses fails, its ship left where 
 	CHECK(hosted.Journey().failure == Failure::CruiseRefused);
 	CHECK(hosted.Record().dockedAt.empty());
 	CHECK(registry.get<World::Cargo>(hosted.Ship()) == cargo);
+
 	// Ended, it gives way to a new journey, back to the pads it left.
 	CHECK(hosted.Go(kAda, kOre) == Result::Succeeded);
 }
@@ -342,6 +367,7 @@ TEST_CASE("A ship whose pad the docks will not let go of fails to depart, keepin
 {
 	Hosted hosted;
 	entt::registry &registry = hosted.world.Registry();
+
 	// Fixture bootstrap: the ship commanded by another company, so the docks refuse its owner's
 	// release, as they refused one while cargo crossed the deck until Jettison retired it.
 	auto &controlled = registry.get<Jettison::Sim::ControlledBy>(hosted.Ship());
@@ -352,6 +378,7 @@ TEST_CASE("A ship whose pad the docks will not let go of fails to depart, keepin
 	CHECK(hosted.Journey().failure == Failure::DepartureRefused);
 	CHECK(hosted.Record().dockedAt == kOre);
 	CHECK(registry.get<Dock::Docking>(hosted.Ship()).stage == Dock::Stage::Docked);
+
 	// A failed journey is over, so another may start once the docks let it go.
 	registry.get<Jettison::Sim::ControlledBy>(hosted.Ship()).controller = owner;
 	CHECK(hosted.Go(kAda, kBrine) == Result::Succeeded);
@@ -364,6 +391,7 @@ TEST_CASE("At a station with every pad taken, a ship waits in its queue, cargo a
 	Hosted hosted;
 	entt::registry &registry = hosted.world.Registry();
 	const Travel::Fleet &fleet = *hosted.fleet;
+
 	// Fixture bootstrap: every pad at Brine held by a ship of no company's.
 	std::vector<entt::entity> parked;
 	for (entt::entity pad = fleet.FreePad(registry, kBrine, "HullLoneTraderStarter"); pad != entt::null;
@@ -380,6 +408,7 @@ TEST_CASE("At a station with every pad taken, a ship waits in its queue, cargo a
 	for (; step < kJourneySteps && hosted.Journey().leg != Leg::Arriving; ++step)
 		hosted.Step();
 	REQUIRE(hosted.Journey().leg == Leg::Arriving);
+
 	// Where its cruise left it off the station, still: nothing flies a ship that waits.
 	const entt::entity brine = fleet.StationOf(registry, kBrine);
 	const auto offStation = [&]
@@ -534,16 +563,20 @@ TEST_CASE("A burn's fuel is the plan's: the starter to Brine at 1 g, all its rat
 {
 	const Manifest::Content::FuelTuning tuning{29979.0, 16.5, 2, 0.25, 100.0};
 	const auto g = static_cast<float>(kGravity);
+
 	// 27 t, two totes of copper aboard, 396 million km at 1 g: 3,941 km/s.
 	const World::Fuel full = Travel::Burned(tuning, {g, 0.0f, g, {}}, 27.0, 3.96e11);
 	CHECK(full.reactionMass == doctest::Approx(3549.0).epsilon(0.002));
 	CHECK(full.pellets == doctest::Approx(1.756).epsilon(0.002));
+
 	// Each rounded up to the gram.
 	CHECK(full.reactionMass * 1000.0 == std::ceil(full.reactionMass * 1000.0));
+
 	// A share f reaches s = sqrt(f / (2 - f)) of the speed: at 50%, 0.577 of the fuel.
 	const World::Fuel half = Travel::Burned(tuning, {g, 0.0f, g, 0.5f}, 27.0, 3.96e11);
 	CHECK(
 	    half.reactionMass == doctest::Approx(full.reactionMass * std::sqrt(1.0 / 3.0)).epsilon(0.001));
+
 	// At 2 g the speed change rises as sqrt(2) and the pellets' factor is 4.
 	const World::Fuel hard = Travel::Burned(tuning, {2.0f * g, 0.0f, 2.0f * g, {}}, 27.0, 3.96e11);
 	CHECK(hard.reactionMass == doctest::Approx(full.reactionMass * std::sqrt(2.0)).epsilon(0.001));
@@ -601,6 +634,7 @@ TEST_CASE("Travel is refused, writing nothing, for a burn out of bounds or a leg
 	CHECK(hosted.Fuel() == World::Fuel{4000.0, 0.1});
 	CHECK_FALSE(hosted.world.Registry().all_of<World::Journey>(hosted.Ship()));
 	CHECK(hosted.Record().dockedAt == kOre);
+
 	// A slow enough burn flies on what is left.
 	hosted.Fuel() = {100.0, 0.1};
 	CHECK(hosted.Burn(kBrine, 100, 100) == Result::Succeeded);
@@ -615,6 +649,7 @@ TEST_CASE(
 	entt::registry &registry = hosted.world.Registry();
 	const Manifest::Content::ContentSet &content = hosted.fleet->Content();
 	World::Cargo &cargo = registry.get<World::Cargo>(hosted.Ship());
+
 	// Tanks with room for 26 totes of 112.5 kg and a magazine for 7.5 kg of a tote aboard.
 	const auto start = [&]
 	{
@@ -636,6 +671,7 @@ TEST_CASE(
 	CHECK(hosted.Fuel().reactionMass == doctest::Approx(1000.0 + (26 * 112.5) - burned.reactionMass));
 	CHECK(hosted.Fuel().pellets == doctest::Approx(12.5 - burned.pellets));
 	CHECK(cargo == World::Cargo{{}, {{"ItemFusionPellets", 5.0}}});
+
 	// Paid for, past the docking fee; nothing of it left in the warehouse.
 	CHECK(before - hosted.Balance() > hosted.DockingFee(kBrine));
 	CHECK(
@@ -665,6 +701,7 @@ TEST_CASE("Refuelling buys a tote of pellets for a hold with none, where the ven
 	hosted.Fuel().pellets = 2.5;
 
 	REQUIRE(hosted.Go(kAda, kBrine) == Result::Succeeded);
+
 	// The tote bought, loaded and opened for the 10 kg the magazine had room for.
 	CHECK(registry.get<World::Cargo>(hosted.Ship()) == World::Cargo{{}, {{"ItemFusionPellets", 2.5}}});
 	CHECK(hosted.Fuel().pellets < 12.5);
@@ -710,6 +747,7 @@ TEST_CASE("The compact single-seat takes a skiff pad too")
 	const entt::entity pad = hosted.fleet->FreePad(registry, kOre, "HullCompactSingle");
 	REQUIRE(pad != entt::null);
 	CHECK(registry.get<Dock::Berth>(pad).berthClass == "skiff");
+
 	// The long-haul trader, a frigate, only a destroyer pad.
 	CHECK(
 	    registry.get<Dock::Berth>(hosted.fleet->FreePad(registry, kOre, "HullTraderLongHaul"))

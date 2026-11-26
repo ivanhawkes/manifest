@@ -36,6 +36,7 @@ struct Place
 	std::string itemId;
 	World::Side side{World::Side::Buy};
 	std::uint64_t totes{0};
+
 	// A Core::Decimal's raw microcredits per the item's unit.
 	std::int64_t limit{0};
 };
@@ -65,12 +66,14 @@ inline constexpr std::uint32_t kVersion = 1;
 // holds at most this many resting orders, so a pass can settle every maker it crosses (D-085).
 inline constexpr std::size_t kMaxFills = 64;
 inline constexpr std::size_t kMaxRestingOrders = 64;
+
 // A broker posts at most this many orders a side for each good, its ladder's rungs (D-102).
 inline constexpr std::uint64_t kLevels = 4;
 
 // The systems, by the names the step's table gives them.
 inline constexpr std::string_view kExpiry = "manifest.expiry";
 inline constexpr std::string_view kBrokers = "manifest.brokers";
+
 // After manifest.travel, at the completed step's boundary, it refreshes each player's report of every
 // venue a ship of their fleet is docked at (Ship::dockedAt), observed at the step the clock reaches as
 // the step ends; a report no ship refreshes stays as it was (docs/trading.md, "Market observations").
@@ -82,7 +85,9 @@ inline constexpr std::string_view kObserve = "manifest.observe";
 // as a fill's gross is; and PerTote what a buy order at the limit holds in escrow for each tote, a
 // tote's cost rounded up and its fee.
 std::optional<std::int64_t> Fee(std::int64_t gross, int feeBps);
+
 std::optional<std::int64_t> Cost(std::int64_t price, double units, bool roundUp);
+
 std::optional<std::int64_t> PerTote(std::int64_t limit, double unitsPerTote, int feeBps);
 
 // The payloads, with Reflect. Safe to call again.
@@ -136,6 +141,7 @@ void Register(
 using Buyer = std::function<std::uint64_t(
     Jettison::Sim::SimWorld &, const std::string &companyId, const std::string &venueId,
     const std::string &itemId, std::uint64_t totes, std::int64_t budget)>;
+
 Buyer MakeBuyer(
     Jettison::Sim::SimWorld &world, World::Identities &identities, const Content::ContentSet &content);
 
@@ -171,10 +177,12 @@ struct Relief
 {
 	std::string regionId;
 	std::string needId;
+
 	// The region's first venue, where its households keep their goods, and the cheapest of the need's
 	// goods there by TenderPrice, the first in the need's order of those as cheap.
 	std::string venueId;
 	std::string itemId;
+
 	// The day's shortfall, a day's requirement times the pressure, in whole totes rounded up.
 	std::uint64_t totes{0};
 	std::int64_t budget{0};
@@ -196,6 +204,7 @@ struct Pricer
 	    tenderPrice;
 	std::function<std::vector<Relief>(Jettison::Sim::SimWorld &)> reliefs;
 };
+
 Pricer MakePricer(
     Jettison::Sim::SimWorld &world, World::Identities &identities, const Content::ContentSet &content);
 } // namespace Manifest::Trade

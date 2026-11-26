@@ -41,4 +41,5 @@ extern "C" int __wrap___inet_pton_chk(
 		std::abort();
 	return inet_pton(family, source, destination);
 }
+
 // NOLINTEND(bugprone-reserved-identifier,cert-dcl37-c,cert-dcl51-cpp,readability-identifier-naming)

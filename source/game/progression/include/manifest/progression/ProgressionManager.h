@@ -72,11 +72,14 @@ class ProgressionManager
 	// Upgrades one tier, spending resourceCostPerTier from the pool. Leaves the state
 	// untouched when the upgrade is not allowed or not affordable.
 	UpgradeResult TryUpgrade(const std::string &nodeId);
+
 	bool TryUpgrade(const std::string &nodeId, std::string &errorMessage);
 
 	// Resource pool: never negative.
 	int GetResources() const;
+
 	void SetResources(int amount);
+
 	void AddResources(int amount);
 
 	// One node as a line for the UI, for example "SkillMining tier 2/5 (cost 1/tier)".

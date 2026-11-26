@@ -34,13 +34,17 @@ struct ShipClassSpec
 	// effect refuses the system: a salvage rig cannot be fitted to a hull that has no
 	// rig frame, and the shipyard tree is where the hulls with more slots come from.
 	std::vector<std::string> fitableEffects;
+
 	// Empty where the design has not selected the value (data/ships/hulls.yaml).
 	std::optional<int> occupants;
+
 	// The installed operating oxygen bank, each tank's capacity in kilograms (D-050).
 	std::optional<std::vector<double>> oxygenTanks;
 	std::optional<int> scrubberCartridges;
+
 	// The fusion pellets its drive's magazine holds, in kilograms (D-108), apart from the hold.
 	std::optional<double> pelletMagazine;
+
 	// In kilograms, as it flies: a ship of a hull with none cannot be spawned.
 	std::optional<double> mass;
 };
@@ -73,6 +77,7 @@ class ShipEffectEngine
 	explicit ShipEffectEngine(EffectCatalogue catalogue = EffectCatalogue::Default());
 
 	const EffectCatalogue &Catalogue() const;
+
 	void SetCatalogue(EffectCatalogue catalogue);
 
 	// Builds one ship of a class: the identity, the base stats, the stats as it flies
@@ -184,6 +189,7 @@ class ShipEffectEngine
 	double GetStat(const EntityStore &world, const std::string &shipId, EffectStat stat) const;
 
 	std::map<EffectStat, double> StatsOf(const EntityStore &world, const std::string &shipId) const;
+
 	std::map<EffectStat, double> BaseStatsOf(const EntityStore &world, const std::string &shipId) const;
 
 	// A hull as lines for the UI: what it is, who flies it, the systems on it by tier,

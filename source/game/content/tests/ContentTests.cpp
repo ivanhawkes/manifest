@@ -301,6 +301,7 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	CheckRefused(
 	    starter, "version: 1\nbaseStats: {CargoVolume: -1}\n",
 	    "baseStats Cargo Volume must be finite and not below 0");
+
 	// A hold is whole totes, none bigger than the largest hull class's envelope.
 	for (const std::string_view volume : {"18446744073709551616", "92160001", "160.5"})
 		CheckRefused(
@@ -344,8 +345,10 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	CheckRefused(
 	    starter, "version: 1\noxygenTanks: [10, 0]\n", "oxygenTanks a capacity must be above 0");
 	CheckRefused(starter, "version: 1\nmass: 0\n", "mass must be above 0");
+
 	// Above 0 as a double, and 0 as the float a body keeps.
 	CheckRefused(starter, "version: 1\nmass: 1e-100\n", "mass must be above 0");
+
 	// A float, and its box's inertia past what Jolt's float arithmetic holds.
 	CheckRefused(
 	    starter, "version: 1\nmass: 1e38\n",
@@ -491,6 +494,7 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	CheckRefused(
 	    balance, "version: 1\nlifeSupport: {oxygenItemId: ItemNothing}\n",
 	    "'ItemNothing' names no item traded in its unit");
+
 	// Water is by the kilolitre, and a tank holds kilograms.
 	CheckRefused(
 	    balance, "version: 1\nlifeSupport: {oxygenItemId: ItemDrinkingWater}\n",
@@ -542,6 +546,7 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	    "needs maxOpenTenders, maxBids and keptClosed above 0");
 
 	const std::string mining = patch(skills, "skill-mining");
+
 	// Nothing requires publishing, so its tiers are its own rule alone.
 	CheckRefused(
 	    patch(skills, "skill-publishing"), "version: 1\nmaxTiers: 0\n", "maxTiers must be at least 1");
@@ -559,6 +564,7 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	    patch(skills, "skill-smelting"),
 	    "version: 1\nrequires: [{nodeId: SkillMining, requiredTier: 9}]\n",
 	    "requires 'SkillMining' asks for tier 9, of 3");
+
 	// Two skills no mode selects are still one graph.
 	CheckRefused(
 	    {{"manifest/definitions/skills/skill-review-a.yaml",
@@ -571,6 +577,7 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	    mining, "version: 1\nrequires: [{nodeId: SkillMining}]\n",
 	    "manifest/definitions/skills/skill-mining.yaml: Manifest.Skill 'SkillMining': requires skill "
 	    "'SkillMining' requires itself (from base, overlay (patch))");
+
 	// The whole graph holds, but the mode leaves a prerequisite out.
 	CheckRefused(
 	    patch("manifest/definitions/game-modes/", "astralis"),
@@ -580,6 +587,7 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	const std::string latin = patch("manifest/definitions/name-pools/", "latin");
 	CheckRefused(latin, "version: 1\nnames: []\n", "Manifest.NamePool 'latin': names holds none");
 	CheckRefused(latin, "version: 1\nnames: [Aaron, '']\n", "names holds an empty name");
+
 	// A file named ".yaml" is a record whose name is empty, and so is its ID if it gives none.
 	CheckRefused(
 	    "manifest/definitions/name-pools/.yaml", "version: 1\nnames: [Abba]\n",
@@ -636,6 +644,7 @@ TEST_CASE("The fixtures are the trading and governance scenarios their plans des
 	CHECK(ages.size() >= 8);
 	for (const VenueDefinition &venue : trading.venues)
 		CHECK(venue.regions.size() == 1);
+
 	// Each region's staples by its kind of world (D-105): a developed one makes half again its need,
 	// the others less, a mining colony none.
 	const auto &staples =
@@ -654,6 +663,7 @@ TEST_CASE("The fixtures are the trading and governance scenarios their plans des
 		const double share = made / (staples->perThousandPerDay * region.population / 1'000.0);
 		CHECK((share == 0.0 || (share >= 0.5 && share <= 0.6) || share == doctest::Approx(1.5)));
 	}
+
 	// Complementary: each good is made at a station and wanted at another.
 	const auto needed = [&](const std::string &itemId)
 	{
@@ -665,6 +675,7 @@ TEST_CASE("The fixtures are the trading and governance scenarios their plans des
 			           need.items.end();
 		    });
 	};
+
 	// A torch's fuels are the ships' (D-108): every station of both scenarios makes reaction mass,
 	// 10,000 kg a day, its broker seeded with 800 totes, about nine days, and one station of each
 	// planet refines pellets, 2 kg a day; no household wants either.
@@ -695,6 +706,7 @@ TEST_CASE("The fixtures are the trading and governance scenarios their plans des
 		CAPTURE(item.itemId);
 		if (item.itemId == "ItemReactionMass" || item.itemId == "ItemFusionPellets")
 			continue;
+
 		// Each venue trades an essential, which each region needs.
 		if (needed(item.itemId))
 		{
@@ -826,6 +838,7 @@ TEST_CASE("Each hull docks at the highport on the pads its class and size fit (D
 			count += Dock::Fits(classes, docked, pad.berthClass) ? 1 : 0;
 		return count;
 	};
+
 	// Eight skiff pads and twelve destroyer pads; a frigate is given a destroyer's.
 	CHECK(pads(starter) == 20);
 	CHECK(pads(hull("HullCompactSingle")) == 20);
@@ -938,6 +951,7 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	CheckRefused(
 	    trading, ore("!merge=itemId\n      - {itemId: ItemCopper, regionId: RegionBrineCoast}"),
 	    "'VenueOreHighport' market 'ItemCopper' region 'RegionBrineCoast' is not one it serves");
+
 	// Every region trades the essentials, at the least (W04).
 	CheckRefused(
 	    trading, ore("[{itemId: ItemCopper, regionId: RegionOreHighlands, production: 2, stock: 1}]"),
@@ -976,6 +990,7 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	        "facilities: [{facilityId: FacilityForgeEastWorkshop, kind: Workshop, operational: "
 	        "false}]"),
 	    "'RegionForgeEast' project 'ProjectBronzeMetallurgy' needs an operational workshop");
+
 	// The tin is Cassiter's: without it the project has no supplier.
 	CheckRefused(
 	    governance,
@@ -993,6 +1008,7 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 
 
 	const std::string farSystem = "manifest/definitions/systems/system-far.yaml";
+
 	// A second system of the trading scenario's, a planet and a station in it.
 	const std::string far =
 	    "version: 1\nname: SystemFar\nbodies:\n  - {name: StarFar, kind: Star, radius: 7e8, "
@@ -1039,6 +1055,7 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	      "VenueBrineHighport, systemId: SystemFar, planetId: ''}\n"},
 	     {farSystem, far}},
 	    "'VenueBrineHighport' region 'RegionBrineCoast' is not on its planet");
+
 	// A port serves the regions of its own planet, not another in its system.
 	CheckRefused(
 	    {{trading, venue("planetId: PlanetOre")},
@@ -1075,6 +1092,7 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 		        "version: 1\nvenues: !merge=venueId\n  - {{venueId: VenueOreHighport, {}}}\n", lack),
 		    kNotStarter);
 	}
+
 	// A layout whose only pad is of a class the starter does not fit, by size though not by rank.
 	CheckRefused(
 	    {{"manifest/definitions/pads/tender.yaml",
@@ -1087,6 +1105,7 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	     {"manifest/definitions/tuning/balance.patch.yaml",
 	      "version: 1\ncharges: {padClasses: !append [{padClass: tender}]}\n"}},
 	    kNotStarter);
+
 	// The scenario's traders take a pad and a connection each and leave a player one: four leave the
 	// starter's four connections none.
 	std::string traders = "version: 1\ntraders:\n";
@@ -1217,6 +1236,7 @@ TEST_CASE("A type's migrations bring an earlier file, and an earlier patch, to i
 TEST_CASE("A price keeps its authored text")
 {
 	const Loaded loaded{kModDirectory};
+
 	// Authored unquoted as 5.0: a float on the way would have made it "5".
 	CHECK(Get<Manifest::Core::ItemNode>(loaded, "ItemWine").basePrice == "5.0");
 }
@@ -1360,6 +1380,7 @@ TEST_CASE("A cubic metre holds an item's units per cubic metre, a finite amount 
 		CHECK(item.unitsPerCubicMetre > 0.0);
 	}
 	CHECK(units.size() >= 5);
+
 	// Copper by the tonne, 7.616 to the packed cubic metre: the starter's 160 totes hold 152.32 t.
 	const auto copper = std::ranges::find(
 	    content.gameMode.items, std::string{"ItemCopper"}, &Manifest::Core::ItemNode::itemId);

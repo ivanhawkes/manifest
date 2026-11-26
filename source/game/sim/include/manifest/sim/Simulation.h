@@ -111,9 +111,11 @@ class Simulation
 	    const UniverseNamePools &names, const GenerateOptions &options, std::string &errorMessage);
 
 	bool IsGenerated() const;
+
 	long long GetTick() const;
 
 	const std::vector<Civilisation> &GetCivilisations() const;
+
 	const std::vector<ItemNode> &GetItems() const;
 
 	// Looks a world up by id ("Civ-03") or by name, case insensitive.
@@ -130,6 +132,7 @@ class Simulation
 
 	// Aggregate supply and demand of a good across every world, in units per tick.
 	double GetSupply(const std::string &itemId) const;
+
 	double GetDemand(const std::string &itemId) const;
 
 	// Market price: the base price scaled by how scarce the good is.
@@ -140,6 +143,7 @@ class Simulation
 	// making and needing against the average economy's supply and demand. A base price within
 	// IsValidBasePrice's bound always gives a representable price.
 	static Decimal MarketPrice(Decimal basePrice, double supply, double demand);
+
 	static Decimal LocalPrice(Decimal marketPrice, double made, double need, double average);
 
 	// Price at one world: the market price moved by that economy's own surplus or
@@ -179,5 +183,6 @@ class Simulation
 // Number formatting for the UI: two decimals, thousands separators are left to the
 // front-end.
 std::string FormatNumber(double value);
+
 std::string FormatNumber(Decimal value);
 } // namespace Manifest::Core

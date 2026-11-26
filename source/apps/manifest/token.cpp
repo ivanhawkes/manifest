@@ -79,6 +79,7 @@ int main(int argc, char **argv)
 {
 	const std::vector<std::string_view> all(argv + 1, argv + argc);
 	const bool keyNamed = all.size() >= 2 && all[0] == "--key";
+
 	// key, then --replace or nothing.
 	const std::span<const std::string_view> keyArguments = std::span{all}.subspan(keyNamed ? 2 : 0);
 	if (!keyArguments.empty() && keyArguments[0] == "key")
@@ -97,6 +98,7 @@ int main(int argc, char **argv)
 	}
 
 	const bool named = all.size() == 5 && all[0] == "--tokens";
+
 	// The action, its actor's kind and its id.
 	const std::span<const std::string_view> arguments = std::span{all}.subspan(named ? 2 : 0);
 	if (arguments.size() != 3 || (arguments[0] != "issue" && arguments[0] != "revoke") ||

@@ -92,6 +92,7 @@ struct Hosted
 		ProvisionTraders(world, requests, identities, content);
 	}
 
+
 	// The request admitted as the actor's next, and run in the next step.
 	template <typename T>
 	Result Run(const Actor &actor, std::string_view command, std::uint32_t version, const T &payload)
@@ -107,6 +108,7 @@ struct Hosted
 		return completed->result;
 	}
 
+
 	Result Provision(const std::string &principalId)
 	{
 		return Run(
@@ -114,15 +116,18 @@ struct Hosted
 		    Manifest::Company::Provision{principalId, principalId, "Co"});
 	}
 
+
 	Result SetPolicy(const Actor &actor, const Set &set)
 	{
 		return Run(actor, kSet, kVersion, set);
 	}
 
+
 	entt::entity Ship(const std::string &shipId) const
 	{
 		return identities.Find(Kind::Ship, shipId);
 	}
+
 
 	entt::entity Find(Kind kind, const std::string &id) const
 	{
@@ -131,15 +136,18 @@ struct Hosted
 		return found;
 	}
 
+
 	std::int64_t Balance(const std::string &companyId) const
 	{
 		return world.Registry().get<World::Account>(Find(Kind::CompanyAccount, companyId)).balance;
 	}
 
+
 	World::Job &Job(const std::string &shipId = "Ship1")
 	{
 		return world.Registry().get<World::Job>(Ship(shipId));
 	}
+
 
 	// The player's report of the venue's good.
 	World::Line Line(const std::string &principalId, std::string_view venueId, std::string_view itemId)
@@ -153,6 +161,7 @@ struct Hosted
 		return *line;
 	}
 
+
 	// The player forgets the venue, as one that never saw it.
 	void Forget(const std::string &principalId, std::string_view venueId)
 	{
@@ -160,6 +169,7 @@ struct Hosted
 		    world.Registry().get<World::Reports>(Find(Kind::Principal, principalId)).reports,
 		    [venueId](const World::Report &report) { return report.venueId == venueId; });
 	}
+
 
 	// The company's resting orders.
 	std::size_t Resting(const std::string &companyId)
@@ -170,6 +180,7 @@ struct Hosted
 		return resting;
 	}
 
+
 	double UnitsPerTote(std::string_view itemId) const
 	{
 		const auto item =
@@ -178,12 +189,14 @@ struct Hosted
 		return item->unitsPerCubicMetre / static_cast<double>(Manifest::Core::kTotesPerIbc);
 	}
 
+
 	// What one tote sells for at the price, net of its fee.
 	std::int64_t NetPerTote(std::int64_t price, std::string_view itemId) const
 	{
 		const std::int64_t gross = *Manifest::Trade::Cost(price, UnitsPerTote(itemId), false);
 		return gross - *Manifest::Trade::Fee(gross, content.tuning.market.listingFeeBps);
 	}
+
 
 	// Ada's ship, docked at Ore, holding a lot of furs that cost the credits, its job selling them
 	// there, with Brine unknown to her: the job's policy disabled until a test enables it.
@@ -200,11 +213,13 @@ struct Hosted
 		Forget("Ada", "VenueBrineHighport");
 	}
 
+
 	void StepTo(std::uint64_t step)
 	{
 		while (world.Clock().Step() < step)
 			world.Step();
 	}
+
 
 	// The steps to the one given, passed over where the systems allow.
 	void PassTo(std::uint64_t step)
@@ -212,6 +227,7 @@ struct Hosted
 		while (world.Clock().Step() < step)
 			world.FastForward(step);
 	}
+
 
 	// Fixture bootstrap: the company's account holds the credits, as trading would have left it.
 	void Fund(const std::string &companyId, std::int64_t credits)
@@ -297,6 +313,7 @@ TEST_CASE("A saved policy and job load, and a broken one does not")
 	hosted.world.Registry().replace<World::Job>(ship, drawn);
 	Hosted lotless;
 	CHECK_THROWS(lotless.world.Load(hosted.world.Save()));
+
 	// Fuel burned with no lot, and a thrust of none or past full.
 	World::Job burned;
 	burned.reactionMassKilograms = 1.0;
@@ -344,12 +361,14 @@ TEST_CASE("A sale's limit nets the floor's share of any totes sold, however the 
 			const std::optional<std::int64_t> limit = SellLimit(floor, totes, units, 40);
 			REQUIRE(limit);
 			CHECK(*limit >= 1);
+
 			// The worst split: a fill a tote, each at the limit.
 			const std::int64_t gross = *Manifest::Trade::Cost(*limit, units, false);
 			const std::int64_t perFill = gross - *Manifest::Trade::Fee(gross, 40);
 			for (std::uint64_t sold = 1; sold <= totes; ++sold)
 			{
 				const std::uint64_t fills = std::min<std::uint64_t>(sold, Manifest::Trade::kMaxFills);
+
 				// The rest of the totes in the last fill, at the limit.
 				const std::int64_t last = [&]
 				{
@@ -393,6 +412,7 @@ TEST_CASE(
 	const Manifest::Query::ShipView &ship = seen.companies.at(0).ships.at(0);
 	REQUIRE(ship.policy);
 	REQUIRE(ship.job);
+
 	// Docked at Highport, its source, it buys there and pays Vale's docking fee to go.
 	CHECK(ship.job->phase == World::Phase::ToDestination);
 	CHECK(ship.job->itemId == "ItemLentils");
@@ -412,6 +432,7 @@ TEST_CASE("A live ask past the target is skipped, and the job replans from its r
 	Hosted hosted;
 	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
 	REQUIRE(hosted.SetPolicy(kAda, {"Ship1", false, 0, 0}) == Result::Succeeded);
+
 	// Arrived at Ore, its source, for furs to Brine, with a target no trade there reaches.
 	World::Job &job = hosted.Job();
 	job.phase = World::Phase::ToSource;
@@ -441,6 +462,7 @@ TEST_CASE("An allowance past all a lot cost sells it, its floor below 0")
 	    hosted.SetPolicy(kAda, {"Ship1", true, 0, std::numeric_limits<std::int64_t>::max()}) ==
 	    Result::Succeeded);
 	hosted.world.Step();
+
 	// The floor less the allowance once overflowed as the route's charges were added to it, which the
 	// sanitised build stops on.
 	CHECK(hosted.Balance("Company1") > before);
@@ -465,6 +487,7 @@ TEST_CASE("A lot no bid clears is kept, and the allowance is shared across its s
 	REQUIRE(hosted.Provision("Bea") == Result::Succeeded);
 	const World::Line furs = hosted.Line("Ada", "VenueOreHighport", "ItemFurs");
 	REQUIRE(furs.Bid() > 0);
+
 	// 4% a tote above what Ore's bid nets: no bid there clears it at no allowance.
 	constexpr std::uint64_t kTotes = 10;
 	constexpr auto kCount = static_cast<std::int64_t>(kTotes);
@@ -586,6 +609,7 @@ TEST_CASE("Docked at its source, a job walks the live asks, cancels the rest, lo
 	    hosted.world.Registry().get<World::Paid>(hosted.Find(Kind::Company, "Company1")), "ItemFurs");
 	REQUIRE(pPaid);
 	CHECK(pPaid->price == deepest);
+
 	// The lot's cost is what the account paid for it, its docking fee at Brine a charge of the lot.
 	CHECK(bought.charges == 100);
 	CHECK(bought.cost == before - hosted.Balance("Company1") - 100);
@@ -610,6 +634,7 @@ TEST_CASE(
 	const World::Ship &record = registry.get<const World::Ship>(ship);
 	const std::string brine = "VenueBrineHighport";
 	const Manifest::Content::LifeSupportTuning &tuning = hosted.content.tuning.lifeSupport;
+
 	// Refuelling off and no fuel ever bought, so the fuel's estimate is nothing (W21).
 	registry.emplace_or_replace<World::Refuel>(ship, false);
 	const auto charges = [&]
@@ -668,6 +693,7 @@ TEST_CASE(
 	    hosted.Run(
 	        kAda, Manifest::Travel::kTravel, Manifest::Travel::kVersion,
 	        Manifest::Travel::Travel{"Ship1", brine}) == Result::Succeeded);
+
 	// Passed over where it may be, as the server's loop steps it, its draws with it.
 	const auto ended = [&] { return registry.get<const World::Journey>(ship).Ended(); };
 	const std::uint64_t limit = hosted.world.Clock().Step() + std::uint64_t{60} * 86'400 * 8;
@@ -704,6 +730,8 @@ struct Burn
 	const Manifest::Content::FuelTuning &tuning;
 	double metres{0.0};
 };
+
+
 Burn BurnOf(Hosted &hosted, entt::entity ship, const std::string &to)
 {
 	const entt::registry &registry = hosted.world.Registry();
@@ -794,6 +822,7 @@ TEST_CASE("Fuel burned with a lot aboard is charged to it at the company's last 
 	REQUIRE(
 	    hosted.SetPolicy(kAda, {"Ship1", true, std::numeric_limits<std::int64_t>::max() / 2, 0}) ==
 	    Result::Succeeded);
+
 	// No life support was ever bought, so the fuel is all that is charged.
 	CHECK(job.charges == charged + worth(tallied));
 	CHECK(job.reactionMassKilograms == 0.0);
@@ -822,6 +851,7 @@ TEST_CASE("Choosing, a policy takes the thrust that makes the most an hour, or i
 		CHECK(hosted->Job().phase == World::Phase::ToDestination);
 		CHECK(hosted->Job().thrustBps == World::kFullThrustBps);
 	}
+
 	// Its owner's thrust, which its journey flies.
 	{
 		const auto hosted = chosen(nothing, 2500);
@@ -834,6 +864,7 @@ TEST_CASE("Choosing, a policy takes the thrust that makes the most an hour, or i
 		REQUIRE(drive.profile->thrustShare);
 		CHECK(*drive.profile->thrustShare == doctest::Approx(0.25));
 	}
+
 	// Reaction mass dear, at 12 credits a kilogram, slower is worth more an hour, still a trade.
 	{
 		const auto hosted = chosen(
@@ -849,6 +880,7 @@ TEST_CASE("Choosing, a policy takes the thrust that makes the most an hour, or i
 		CHECK(hosted->Job().thrustBps < World::kFullThrustBps);
 		CHECK(hosted->Job().estimate > 0);
 	}
+
 	// Its tanks nearly dry and not refuelled, no thrust listed reaches, so it flies at the most they
 	// allow, and its journey is accepted; held to full thrust, it has no trade.
 	const auto dry = [](Hosted &on, entt::entity ship)
@@ -879,6 +911,7 @@ TEST_CASE("Past the grace, a ship's cargo is sold tote by tote at the live bids 
 	content.tuning.charges.seizureGraceDays = 1;
 	const std::string ore = "VenueOreHighport";
 	const std::uint64_t day = std::uint64_t{60} * 86'400;
+
 	// Ada's ship docked at Ore with the totes of furs, ten for her job, and of soap, her account empty
 	// and owing what is given since now; Bea directs Ore's operator, whose fees are 0.
 	const auto owing = [&](Hosted &hosted, std::int64_t owed, std::vector<World::Lot> lots)
@@ -905,6 +938,7 @@ TEST_CASE("Past the grace, a ship's cargo is sold tote by tote at the live bids 
 	};
 	const auto lots = [](Hosted &hosted)
 	{ return hosted.world.Registry().get<const World::Cargo>(hosted.Ship("Ship1")).lots; };
+
 	// The live bids at Ore as the seizure's step begins, a tote's net at each and its totes, once Ore's
 	// employer has sold its broker two days of furs.
 	const auto bids = [&](Hosted &hosted, std::string_view item)
@@ -1083,6 +1117,7 @@ TEST_CASE(
 	CHECK(adas.destinationId == kForge);
 	CHECK(adas.retry == close);
 	CHECK(adas.estimate == 0);
+
 	// Nia's first choice, before its reports of Forge were observed live, found nothing; it chooses
 	// again as the first economic turn ends.
 	CHECK(hosted.Job("Ship1").blockage == World::Blockage::NoTrade);
@@ -1165,6 +1200,7 @@ TEST_CASE("A contract the job could not deliver within its window is not bid on"
 	hosted.Forget("Ada", kForge);
 	hosted.Fund("Company2", 200'000);
 	REQUIRE(hosted.SetPolicy(kAda, {"Ship2", true, 0, 0, 0, true}) == Result::Succeeded);
+
 	// Once it bid, won and defaulted, forfeiting its bond.
 	CHECK(hosted.Job("Ship2").phase != World::Phase::Bidding);
 	CHECK(hosted.Job("Ship2").tenderId.empty());
@@ -1179,6 +1215,7 @@ TEST_CASE("Pellets of a job's lot opened for its magazine leave the lot, which t
 	entt::registry &registry = hosted.world.Registry();
 	const entt::entity ship = hosted.Ship("Ship1");
 	const std::string destination = "VenueOreValeStation";
+
 	// Fixture bootstrap: a magazine part spent, and a job carrying two totes of pellets to sell.
 	registry.get<World::Fuel>(ship).pellets = 2.5;
 	registry.get<World::Cargo>(ship).lots = {{"ItemFusionPellets", 2}};
@@ -1193,6 +1230,7 @@ TEST_CASE("Pellets of a job's lot opened for its magazine leave the lot, which t
 	    hosted.Run(
 	        kAda, Manifest::Travel::kTravel, Manifest::Travel::kVersion,
 	        Manifest::Travel::Travel{"Ship1", destination, 10'000, 1'000}) == Result::Succeeded);
+
 	// Refuelled as it left: a tote opened for the magazine, the lot and its cost one tote less.
 	const World::Cargo &cargo = registry.get<World::Cargo>(ship);
 	REQUIRE(cargo.lots.size() == 1);
@@ -1202,6 +1240,7 @@ TEST_CASE("Pellets of a job's lot opened for its magazine leave the lot, which t
 	for (int calls = 0; calls < 100'000 && !registry.get<World::Journey>(ship).Ended(); ++calls)
 		hosted.world.FastForward(hosted.world.Clock().Step() + 3'600);
 	REQUIRE(registry.get<World::Journey>(ship).leg == World::Leg::Arrived);
+
 	// Once it tried to unload the two totes it no longer held, refused at every retry.
 	REQUIRE(hosted.SetPolicy(kAda, {"Ship1", true, 0, 100'000}) == Result::Succeeded);
 	const bool refused = hosted.Job().phase == World::Phase::Blocked &&

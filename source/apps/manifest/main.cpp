@@ -46,6 +46,7 @@
 namespace
 {
 constexpr Jettison::Core::Category kManifest{"manifest"};
+
 // How long the server waits for a request between steps, and at a clean stop for its clients to
 // acknowledge their last replies: a client on a LAN answers in milliseconds, one gone never.
 constexpr std::chrono::milliseconds kPollWait{10};
@@ -95,6 +96,7 @@ struct Serve
 	Place backups;
 	std::string address{"127.0.0.1"};
 	std::uint16_t port{0};
+
 	// What a crash may lose, and what a start may replay (D-113).
 	std::uint32_t flushSeconds{30};
 	std::uint32_t snapshotSeconds{3'600};
@@ -166,6 +168,7 @@ void RunServer(Jettison::Host::Session &session, const Serve &serve)
 	const std::filesystem::path backups = ResolvePlace(serve.backups, Manifest::Host::DefaultBackups);
 	const std::filesystem::path tokens = ResolvePlace(serve.tokens, Manifest::Host::DefaultTokens);
 	const std::filesystem::path key = ResolvePlace(serve.key, Manifest::Host::DefaultServerKey);
+
 	// Before a client can reach the server: the world held, and brought to its journal's last step.
 	const Manifest::Host::WorldDirectory directory =
 	    Manifest::Host::OpenWorldDirectory(ResolvePlace(serve.world, Manifest::Host::DefaultWorld));
@@ -201,14 +204,17 @@ void RunServer(Jettison::Host::Session &session, const Serve &serve)
 		    static_cast<std::uint64_t>(steps.Accumulate(world.Clock().ScaledDelta(elapsed)));
 		if (count == 0)
 			continue;
+
 		// The steps the time makes, quiet ones passed over at once (Jettison::Sim::Quiet), written to
 		// the journal when a flush is due. A write that fails throws, and the server stops: the next
 		// start finds what the journal holds.
 		journal.Advance(world, count);
+
 		// What the engine raises is presentation's, and a dedicated server presents none of it.
 		(void)world.Events().Take();
 		server.Publish();
 	}
+
 	// Nothing is admitted from here; what was is run, answered and kept. A write that fails throws, and
 	// no stop is reported.
 	journal.Stop(world);
@@ -217,6 +223,7 @@ void RunServer(Jettison::Host::Session &session, const Serve &serve)
 	const auto stopBy = std::chrono::steady_clock::now() + kStopWait;
 	while (server.Stopping() && std::chrono::steady_clock::now() < stopBy)
 		server.Poll(kPollWait);
+
 	// The time dropped is the steps the disk or the step itself could not keep to the clock.
 	Jettison::Core::Log(
 	    Jettison::Core::Severity::Info, kManifest, "stopping at step {}, batch {}, {:.1f} s dropped",

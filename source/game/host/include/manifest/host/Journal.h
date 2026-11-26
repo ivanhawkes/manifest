@@ -24,14 +24,17 @@ struct Identity
 	// 128 bits from the operating system as the world is made, in hex: no part of the state or its
 	// hash. Empty in a running build's own.
 	std::string world;
+
 	// The project's version and the tree the build was made from, then the SDK's tree: git's hash of
 	// each checkout's build inputs as they were on disk (cmake/Revision.cmake), so uncommitted
 	// changes are another build.
 	std::string game;
 	std::string sdk;
 	double fixedStep{0.0};
+
 	// In name order.
 	std::vector<Command::Registered> commands;
+
 	// The canonical content manifest (Content::ContentIdentity::manifest).
 	std::vector<std::uint8_t> content;
 };
@@ -67,6 +70,7 @@ struct Storage
 	// directory, for a disk that is not the world's.
 	std::filesystem::path backups;
 	std::size_t kept{24};
+
 	// The largest save a snapshot may be: a larger one is refused as it is written, since a start
 	// would refuse it as it is read.
 	std::uintmax_t snapshotBytes{kMaxSnapshotBytes};
@@ -158,9 +162,13 @@ class Journal
 
   private:
 	void Snapshot(Jettison::Sim::SimWorld &world);
+
 	void Expect(const Jettison::Sim::SimWorld &world) const;
+
 	void Publish(Catalogue next, const std::filesystem::path &path, std::span<const std::byte> file);
+
 	void Prune() const;
+
 	void Backup(std::span<const std::byte> snapshot) const;
 
 	std::filesystem::path m_root;
@@ -168,8 +176,10 @@ class Journal
 	Cadence m_cadence;
 	Storage m_storage;
 	Catalogue m_catalogue;
+
 	// The requests that have run since the last flush, in the order they ran.
 	std::vector<Ran> m_ran;
+
 	// The step the world is at, as its advances here have left it.
 	std::uint64_t m_at{0};
 	bool m_uncertain{false};

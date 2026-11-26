@@ -18,6 +18,7 @@ enum class Visit
 	Visited
 };
 
+
 std::string Join(const std::vector<std::string> &parts)
 {
 	std::string joined;
@@ -34,6 +35,7 @@ std::string Join(const std::vector<std::string> &parts)
 
 	return joined;
 }
+
 
 // Depth first search with three colours: a node that is still on the stack is part of
 // a cycle, so the path from that node to the current one is reported.

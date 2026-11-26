@@ -14,7 +14,9 @@ class ManifestTui
   public:
 	// The console on the content, its transcript appended to the file.
 	ManifestTui(const std::filesystem::path &content, const std::filesystem::path &transcript);
+
 	ManifestTui(const ManifestTui &) = delete;
+
 	ManifestTui &operator=(const ManifestTui &) = delete;
 
 	void Run();

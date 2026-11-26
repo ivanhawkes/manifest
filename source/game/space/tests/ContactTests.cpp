@@ -32,6 +32,7 @@ using Jettison::Physics::Velocity;
 namespace
 {
 constexpr double kStep = 1.0 / 60.0;
+
 // A system no star system definition names: no gravity, no rails, and bodies that sleep.
 const std::uint64_t kQuiet = Jettison::Sim::FrameId("Quiet");
 
@@ -168,11 +169,13 @@ TEST_CASE(
     "Contacts: two bodies that meet begin a contact, with where and how hard, and end it as they part")
 {
 	Fixture fixture;
+
 	// A crate at 10 m/s into a block whose face is at x = 4, which it bounces off.
 	Body crate = Make(BodyKind::Dynamic, "crate", 100.0f);
 	crate.restitution = 1.0f;
 	const entt::entity moving = fixture.Add(crate, {0.0, 0.0, 0.0}, {10.0f, 0.0f, 0.0f});
 	const entt::entity block = fixture.Add(Make(BodyKind::Static, "block"), {5.0, 0.0, 0.0});
+
 	// 3 m to go: the eighteenth step meets it.
 	fixture.Run(19);
 	REQUIRE(fixture.log.size() == 1);
@@ -192,6 +195,7 @@ TEST_CASE(
 	REQUIRE(fixture.log.size() == 2);
 	CHECK(fixture.log.back() == ContactEvent{ContactPhase::Ended, moving, block});
 	CHECK(fixture.physics.Touching(moving).empty());
+
 	// A step with nothing beginning or ending has no contacts.
 	CHECK(fixture.physics.Contacts().empty());
 	CHECK(fixture.physics.Touching(entt::entity{99}).empty());
@@ -207,6 +211,7 @@ TEST_CASE("Contacts: a sensor sees a body enter and leave it, and pushes nothing
 		const entt::entity zone = fixture.Add(Sensor(kind, "zone"), {20.0, 0.0, 0.0});
 		const entt::entity crate =
 		    fixture.Add(Make(BodyKind::Dynamic, "crate", 100.0f), {0.0, 0.0, 0.0}, {10.0f, 0.0f, 0.0f});
+
 		// In at x = 14, by its leading face.
 		fixture.Run(90);
 		REQUIRE(fixture.log.size() == 1);
@@ -215,6 +220,7 @@ TEST_CASE("Contacts: a sensor sees a body enter and leave it, and pushes nothing
 		CHECK(fixture.log.front().sensor);
 		CHECK(fixture.physics.Touching(zone) == std::vector{crate});
 		CHECK(fixture.world.Registry().get<Velocity>(crate).linear == glm::vec3{10.0f, 0.0f, 0.0f});
+
 		// Out past x = 26, by its trailing face.
 		fixture.Run(90);
 		REQUIRE(fixture.log.size() == 2);
@@ -228,6 +234,7 @@ TEST_CASE("Contacts: a body asleep still touches what it lies against, and a sen
 {
 	Fixture fixture;
 	const entt::entity zone = fixture.Add(Sensor(BodyKind::Static, "zone"), {0.0, 0.0, 0.0});
+
 	// At rest inside the zone, and 5 mm off the block's face, inside Jolt's speculative distance: it
 	// touches both and falls asleep in half a second, with nothing to wake it.
 	const entt::entity crate = fixture.Add(Make(BodyKind::Dynamic, "crate", 100.0f), {2.995, 0.0, 0.0});
@@ -263,6 +270,7 @@ TEST_CASE("Contacts: a body asleep is made again asleep, where it lay, from a sa
 	CHECK(loaded.physics.Asleep(crate));
 	CHECK_FALSE(loaded.physics.Asleep(drifter));
 	CHECK(loaded.physics.Touching(crate) == std::vector{zone, block});
+
 	// Nothing begins or ends, the crate sleeps on where it lay, and the drifter, with nothing to
 	// warm-start, goes where it would have to the bit.
 	const glm::dvec3 lay = loaded.Position(crate);
@@ -304,6 +312,7 @@ TEST_CASE(
 	Fixture loaded;
 	loaded.world.Load(save);
 	fixture.log.clear();
+
 	// What the warm start is worth: without the impulses each contact starts its step from, the
 	// row gives 1.2 mm in the first step and 7.1 mm by the tenth, and comes to rest 4.6 mm from
 	// where the run not saved does (measured).
@@ -375,6 +384,7 @@ TEST_CASE(
 	Fixture original;
 	const entt::entity zone = original.Add(Sensor(BodyKind::Static, "zone"), {20.0, 0.0, 0.0});
 	original.Add(Make(BodyKind::Dynamic, "crate", 100.0f), {0.0, 0.0, 0.0}, {10.0f, 0.0f, 0.0f});
+
 	// Saved on the step the crate enters the zone, so the save holds the beginning.
 	while (original.log.empty())
 		original.Run(1);
@@ -472,6 +482,7 @@ TEST_CASE("Casts: a shape swept towards the station stops where it would meet th
 	CHECK(hit->distance == doctest::Approx(69.0).epsilon(1e-4));
 	CHECK(hit->point.z - at.z == doctest::Approx(-30.0).epsilon(1e-4));
 	CHECK(hit->normal.z == doctest::Approx(-1.0f).epsilon(1e-4));
+
 	// Past the hub's side, it meets nothing. The block, 5 m either side along z, meets it 4 m sooner,
 	// and turned a quarter about y, so its 1 m leads, as soon as the crate.
 	CHECK_FALSE(fixture.physics.CastShape(
@@ -502,13 +513,16 @@ TEST_CASE("Picking: a ray presentation draws is answered with what it hit, as an
 	fixture.Run(1);
 	const double now = fixture.world.Clock().Now();
 	const glm::dvec3 eye = fixture.StationAt(now) + glm::dvec3{0.0, 0.0, -100.0};
+
 	// Each player's presentation asks, and takes its own answers.
 	const Jettison::Sim::Controller player{Jettison::Sim::ControllerKind::Player, 1};
 	fixture.world.Commands().Push(
 	    Jettison::Physics::Pick{player, 1, kHalcyon, eye, {0.0, 0.0, 1.0}, 500.0, now});
+
 	// One of nothing: a ray of no direction.
 	fixture.world.Commands().Push(
 	    Jettison::Physics::Pick{{}, 2, kHalcyon, eye, glm::dvec3{0.0}, 500.0, now});
+
 	// And one that misses.
 	fixture.world.Commands().Push(
 	    Jettison::Physics::Pick{{}, 3, kHalcyon, eye, {0.0, 0.0, -1.0}, 500.0, now});

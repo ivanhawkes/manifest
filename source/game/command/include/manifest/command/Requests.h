@@ -37,6 +37,7 @@ struct Receipt
 	Status status{Status::Refused};
 	Result result{Result::Succeeded};
 	std::uint64_t order{0};
+
 	// For a completed request, the step it ran at.
 	std::uint64_t step{0};
 };

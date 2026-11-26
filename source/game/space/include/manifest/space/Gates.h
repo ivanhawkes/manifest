@@ -154,8 +154,10 @@ class Gates
 {
   public:
 	static constexpr std::string_view kSystemName = "gates";
+
 	// Metres along a ring's axis that its sensor spans, either side of the jump point.
 	static constexpr double kRingDepth = 60.0;
+
 	// Seconds a clearance is held for its ship, which has to fly through the ring by then: a cruise
 	// arrives 4.6 km off a gate, which the sample's traders fly through within 34 s of being cleared,
 	// and a pilot flying by hand has more than three times that.
@@ -227,6 +229,7 @@ class Gates
 	Jettison::Physics::PhysicsWorld &m_physics;
 	const LaneTravel &m_lanes;
 	TollRule m_rule;
+
 	// By Jettison::Sim::FrameId; looked up, and ordered regardless.
 	std::map<std::uint64_t, Space::StarSystem> m_systems;
 };

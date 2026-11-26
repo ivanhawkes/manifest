@@ -88,10 +88,15 @@ class EffectCatalogue
 
 	// The effects of one domain, for a game mode that ships only some of them.
 	static std::vector<EffectDefinition> ShipEffects();
+
 	static std::vector<EffectDefinition> YardEffects();
+
 	static std::vector<EffectDefinition> RouteEffects();
+
 	static std::vector<EffectDefinition> SurveyEffects();
+
 	static std::vector<EffectDefinition> MarketEffects();
+
 	static std::vector<EffectDefinition> BodyEffects();
 
   private:

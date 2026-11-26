@@ -75,6 +75,7 @@ struct Served
 		pServer = std::make_unique<Server>(*pSession, tokens.Path(), keyFile.Path(), "127.0.0.1", 0);
 	}
 
+
 	void Write()
 	{
 		WriteTokens(
@@ -84,10 +85,12 @@ struct Served
 		      {Jettison::Net::DigestToken(admin), ActorKind::Administrator, "Operator"}}});
 	}
 
+
 	Client Connect(const std::string &token) const
 	{
 		return {"127.0.0.1", pServer->Port(), key.publicKey, token};
 	}
+
 
 	// Both ends polled until done holds, for at most two seconds; the client's replies kept.
 	bool Pump(Client &client, const std::function<bool()> &done)
@@ -104,11 +107,13 @@ struct Served
 		return true;
 	}
 
+
 	bool Welcome(Client &client)
 	{
 		return Pump(client, [&] { return client.Welcomed().has_value() || client.Closed(); }) &&
 		       client.Welcomed().has_value();
 	}
+
 
 	// The reply to the sequence with the status, once it arrives.
 	std::optional<Receipt> Await(Client &client, std::uint64_t sequence, Receipt::Status status)
@@ -126,6 +131,7 @@ struct Served
 		return found;
 	}
 
+
 	void Step()
 	{
 		if (pJournal)
@@ -134,6 +140,7 @@ struct Served
 			pSession->World().Step();
 		pServer->Publish();
 	}
+
 
 	// Serves the world in the directory through its journal, as the dedicated server does: made there,
 	// or recovered from what the journal holds. What served before goes as a crash leaves it, nothing
@@ -152,6 +159,7 @@ struct Served
 		pServer = std::make_unique<Server>(*pSession, tokens.Path(), keyFile.Path(), "127.0.0.1", 0);
 	}
 
+
 	// The client's snapshot of the world as it now is, once it arrives.
 	const Manifest::Query::Snapshot *Current(Client &client)
 	{
@@ -160,6 +168,7 @@ struct Served
 		    Pump(client, [&] { return client.Latest().has_value() && client.Latest()->step == step; });
 		return arrived ? &*client.Latest() : nullptr;
 	}
+
 
 	// The administrator provisions Ada's and Bea's companies.
 	void ProvisionPlayers()
@@ -187,6 +196,7 @@ struct Served
 	std::optional<Manifest::Host::WorldDirectory> directory;
 	std::unique_ptr<Manifest::Host::Journal> pJournal;
 	std::unique_ptr<Server> pServer;
+
 	// Each client's, as they arrived.
 	std::map<const Client *, std::vector<Reply>> replies;
 };
@@ -332,12 +342,14 @@ TEST_CASE("a remote player is welcomed as its token's actor and sees only its ow
 	REQUIRE(served.Welcome(player));
 	CHECK(player.Welcomed()->actorId == "Ada");
 	CHECK(player.Welcomed()->nextSequence == 1);
+
 	// Provisioning is the administrator's: the player's request is refused at admission.
 	const std::uint64_t refused =
 	    player.Submit(Company::kProvision, Company::kVersion, Provision("Cai")).value();
 	CHECK(
 	    served.Await(player, refused, Receipt::Status::Refused).value().result ==
 	    Result::NotAuthorised);
+
 	// The refusal consumed no sequence, so the player's next request is sent under it again.
 	const std::vector<std::byte> move = Jettison::Serialise::BinaryArchive::Write(
 	    Company::Move{"Ship1", "VenueForgeHighport", "ItemCopper", 1},
@@ -451,6 +463,7 @@ TEST_CASE("several players are served at once, and one actor holds at most three
 	Client fourth = served.Connect(served.ada);
 	CHECK_FALSE(served.Welcome(fourth));
 	CHECK(fourth.Closed() == Reason::ServerFull);
+
 	// The cap is each actor's, not the server's.
 	Client bea = served.Connect(served.bea);
 	REQUIRE(served.Welcome(bea));
@@ -523,8 +536,10 @@ TEST_CASE("the world steps with no session, and a reconnect retries the request 
 	const Manifest::Query::Snapshot *pSeen = served.Current(again);
 	REQUIRE(pSeen != nullptr);
 	CHECK(pSeen->step == left + 6);
+
 	// Provisioned once, though asked twice.
 	CHECK(pSeen->companies.size() == 1);
+
 	// The regions as the world has them, the governors' figures the administrator's (D-110).
 	const Manifest::Host::Services services = Manifest::Host::HostedServices(*served.pSession);
 	CHECK_FALSE(pSeen->regions.empty());
@@ -559,6 +574,7 @@ TEST_CASE(
 	Client bea = served.Connect(served.bea);
 	REQUIRE(served.Welcome(ada));
 	REQUIRE(served.Welcome(bea));
+
 	// A bid for copper at the highport, at a credit a tote, which crosses no ask and rests.
 	const auto bid = [](Client &client, std::uint64_t sequence, std::uint32_t totes)
 	{
@@ -609,12 +625,14 @@ TEST_CASE(
 	REQUIRE(served.Welcome(beaAgain));
 	CHECK(adaAgain.Welcomed()->nextSequence == kept + 1);
 	CHECK(beaAgain.Welcomed()->nextSequence == beaKept + 1);
+
 	// The bid the journal kept is answered as it ran, at its step, and not run again.
 	REQUIRE(bid(adaAgain, kept, 1));
 	const Receipt answered = served.Await(adaAgain, kept, Receipt::Status::Completed).value();
 	CHECK(answered.result == Result::Succeeded);
 	CHECK(answered.step == ran.step);
 	CHECK(answered.order == ran.order);
+
 	// What it lost is sent again in Ada's order, whichever session sent it: a later one first is a gap.
 	REQUIRE(bid(adaAlso, kept + 2, 3));
 	CHECK(

@@ -39,6 +39,7 @@ class TempFile
 	}
 
 	TempFile(const TempFile &) = delete;
+
 	TempFile &operator=(const TempFile &) = delete;
 
 	~TempFile()

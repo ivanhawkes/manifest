@@ -53,6 +53,7 @@ constexpr const char *kEssentialCategories[] = {
     "CategoryInformation",
     "CategoryWriting"};
 
+
 // Fisher-Yates with the engine's pinned distribution: std::shuffle is allowed to
 // draw differently across standard libraries, even with the same generator.
 template <typename T> void Shuffle(std::vector<T> &values, Jettison::Math::Random &random)
@@ -67,10 +68,12 @@ template <typename T> void Shuffle(std::vector<T> &values, Jettison::Math::Rando
 	}
 }
 
+
 double Clamp(double value, double low, double high)
 {
 	return std::max(low, std::min(high, value));
 }
+
 
 double LookUp(const std::map<std::string, double> &values, const std::string &key)
 {
@@ -78,6 +81,7 @@ double LookUp(const std::map<std::string, double> &values, const std::string &ke
 
 	return entry != values.end() ? entry->second : 0.0;
 }
+
 
 std::string LowerCase(std::string text)
 {
@@ -88,12 +92,14 @@ std::string LowerCase(std::string text)
 	return text;
 }
 
+
 std::string PaddedIndex(unsigned index)
 {
 	const std::string digits = std::to_string(index);
 
 	return digits.size() >= 2 ? digits : "0" + digits;
 }
+
 
 bool IsEssentialDemand(const std::string &categoryId)
 {
@@ -107,6 +113,7 @@ bool IsEssentialDemand(const std::string &categoryId)
 
 	return false;
 }
+
 
 // The age each good belongs in, keyed by the age's ageId. The merged documents write
 // the age link out of the age anchor each item carries, so the link is a plain field by
@@ -123,6 +130,7 @@ std::map<std::string, std::size_t> BuildAgeRanks(const std::vector<AgeNode> &age
 
 	return ranks;
 }
+
 
 // Finds a world by id ("Civ-03") or by name, case insensitive. -1 when unknown.
 int FindCivilisationIndex(const std::vector<Civilisation> &civilisations, const std::string &idOrName)
@@ -689,6 +697,7 @@ bool Simulation::AdvanceTick(std::string &errorMessage)
 		}
 
 		const double revenue = route.quantity * route.unitSellPrice.ToDouble();
+
 		// 2^63 rounds to double but LLONG_MAX does not. Check the exclusive bound
 		// before casting, then check the integer addition before moving goods.
 		if (!std::isfinite(cost) || !std::isfinite(revenue) || cost < 0.0 || revenue < 0.0 ||

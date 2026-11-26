@@ -28,6 +28,7 @@ TEST_CASE("pools_are_held_in_sorted_order")
 	CHECK(pools.Find("coptic").empty());
 }
 
+
 TEST_CASE("adding_a_pool_again_replaces_it")
 {
 	Manifest::Core::UniverseNamePools pools;

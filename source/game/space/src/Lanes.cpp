@@ -31,6 +31,7 @@ LaneTravel &LaneTravel::Attach(
     Jettison::Sim::SimWorld &world, const Jettison::Physics::PhysicsWorld &physics)
 {
 	RegisterTypes();
+
 	// Shared by the command and the system, which the world keeps for as long as it lives.
 	std::shared_ptr<LaneTravel> lanes{new LaneTravel{physics}};
 	world.RegisterComponent<OnLane>();
@@ -118,6 +119,7 @@ void LaneTravel::Enter(Jettison::Sim::SimWorld &world, const EnterLane &command)
 	    inSystem->frame, command.jumpPoint, destination, std::string{exit->arrival},
 	    world.Clock().Step() + Jettison::Transit::Steps(exit->transitSeconds, world.FixedStep())};
 	registry.emplace_or_replace<OnLane>(command.entity, lane);
+
 	// Where it was going is in the system it left.
 	Jettison::Transit::Depart(registry, command.entity);
 	world.Events().Emit(LaneEntered{command.entity, lane, exit->transitSeconds});
@@ -127,6 +129,7 @@ void LaneTravel::Enter(Jettison::Sim::SimWorld &world, const EnterLane &command)
 void LaneTravel::Arrive(Jettison::Sim::SimWorld &world) const
 {
 	entt::registry &registry = world.Registry();
+
 	// The step being run ends at the next count.
 	const std::vector<entt::entity> arriving =
 	    Jettison::Transit::Arriving<OnLane>(registry, world.Clock().Step() + 1);
@@ -155,6 +158,7 @@ void LaneTravel::Arrive(Jettison::Sim::SimWorld &world) const
 		    starSystem.bodies[static_cast<std::size_t>(parent)].kind == Space::BodyKind::Station;
 		const glm::dquat facing = Space::JumpPointFacing(starSystem, body, endsAt);
 		destinations.push_back(lane.to);
+
 		// Out ahead of the ring, clear of its sensor, so the gate does not see it pass through.
 		exits.push_back(
 		    {{Space::EvaluateBody(starSystem, body, endsAt).metres, facing},

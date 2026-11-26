@@ -72,6 +72,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
+
 	// Content that would not start (Jettison::Host::StartupError), or the default that cannot be found.
 	catch (const std::runtime_error &error)
 	{

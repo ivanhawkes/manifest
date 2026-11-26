@@ -26,10 +26,12 @@ constexpr double quantityEpsilon = 1e-9;
 // fits an int; one that is no number is none.
 constexpr double kMaxBps = 1'000'000.0;
 
+
 double BoundedBps(double bps)
 {
 	return std::isfinite(bps) ? std::clamp(bps, -kMaxBps, kMaxBps) : 0.0;
 }
+
 
 std::optional<long long> CheckedFeeFor(long long gross, int feeBps)
 {
@@ -45,15 +47,18 @@ std::optional<long long> CheckedFeeFor(long long gross, int feeBps)
 	return static_cast<long long>(fee);
 }
 
+
 std::optional<long long> WholeCost(Decimal price, double quantity, bool roundUp)
 {
 	if (price < 0 || !std::isfinite(quantity) || quantity < 0.0)
 	{
 		return std::nullopt;
 	}
+
 	// Quantities retain the development model's double arithmetic at this boundary.
 	const double value = price.ToDouble() * quantity;
 	const double whole = roundUp ? std::ceil(value) : std::round(value);
+
 	// 2^63 is exactly representable; LLONG_MAX rounds up when converted to double.
 	if (!std::isfinite(whole) || whole < 0 || whole >= std::ldexp(1.0, 63))
 	{
@@ -61,6 +66,7 @@ std::optional<long long> WholeCost(Decimal price, double quantity, bool roundUp)
 	}
 	return static_cast<long long>(whole);
 }
+
 
 bool CanRefundOrders(
     const EntityStore &world, const std::vector<std::string> &orders, std::string &error)
@@ -90,15 +96,18 @@ bool CanRefundOrders(
 	return true;
 }
 
+
 double OpenQuantity(const MarketOrderInfo &request)
 {
 	return request.quantity - request.filled;
 }
 
+
 bool IsFulfilled(const MarketOrderInfo &request)
 {
 	return OpenQuantity(request) <= quantityEpsilon;
 }
+
 
 // The resting-first rule: of two orders that meet, the one that reached the book first
 // is the maker and its limit price is the price of the fill.
@@ -112,6 +121,7 @@ bool RestsFirst(const MarketOrderInfo &left, const MarketOrderInfo &right)
 	return left.orderId < right.orderId;
 }
 
+
 // An order still in the book: not filled, not retired.
 bool IsLive(const EntityStore &entityStore, EntityStore::Entity entity)
 {
@@ -119,6 +129,7 @@ bool IsLive(const EntityStore &entityStore, EntityStore::Entity entity)
 
 	return info != nullptr && info->status == OrderStatus::Active && !IsFulfilled(*info);
 }
+
 
 // Price then time, the rule every book of this shape keeps: the best price first, and
 // inside a price the order that posted first. The order id breaks the last tie, so the
@@ -162,6 +173,7 @@ void SortBestFirst(
 // ActiveOrders is a pass for each good and side.
 using Books = std::map<std::pair<std::string, OrderSide>, std::vector<EntityStore::Entity>>;
 
+
 Books BooksAt(const EntityStore &entityStore, const std::string &marketId)
 {
 	Books books;
@@ -185,6 +197,7 @@ Books BooksAt(const EntityStore &entityStore, const std::string &marketId)
 
 	return books;
 }
+
 
 // The orders resting at a price, and their units: the screen that shows a price shows
 // the size of the pile at it in units and in orders, and the orders in the whole book are
@@ -860,6 +873,7 @@ bool MarketplaceService::CreateOrder(
 	info.limitPrice = request.limitPrice;
 	info.feeBps = feeBps;
 	info.placedTick = request.tick;
+
 	// The life of an order is the life the service posting it gives an order at the tick
 	// it lands: the venue's own record keeps the life of the venue as it opened, and the
 	// service that writes the order is the service whose charges the order is priced by,
@@ -914,6 +928,7 @@ bool MarketplaceService::CreateOrder(
 			stock->units[request.itemId] -= request.quantity;
 			info.reservedGoods = request.quantity;
 		}
+
 		// A venue that allows a sell order for cargo no one holds leaves the goods in the
 		// seller's stockpile and spends them at the fill, which is the promises venue and
 		// is off by default.

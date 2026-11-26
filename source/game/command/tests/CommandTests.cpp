@@ -93,6 +93,7 @@ struct Hosted
 		    { return Result::Succeeded; });
 	}
 
+
 	void Populate()
 	{
 		entt::registry &registry = world.Registry();
@@ -101,10 +102,12 @@ struct Hosted
 		registry.emplace<Account>(identities.Create(registry, Kind::PublicAccount, "RegionA"), 100);
 	}
 
+
 	std::int64_t Balance() const
 	{
 		return world.Registry().get<Account>(identities.Find(Kind::PublicAccount, "RegionA")).balance;
 	}
+
 
 	Receipt Send(const Actor &actor, std::uint64_t sequence, std::int64_t amount)
 	{
@@ -131,10 +134,12 @@ class Forged final : public Jettison::Sim::WorldService
 	{
 	}
 
+
 	void Save(Jettison::Serialise::BinaryWriter &writer) const override
 	{
 		writer.Write(m_ledger);
 	}
+
 
 	std::function<void()> Load(
 	    Jettison::Serialise::BinaryReader & /*reader*/, const entt::registry & /*loaded*/,
@@ -245,6 +250,7 @@ TEST_CASE("Nothing runs before its step, and the second of two conflicting reque
 	CHECK(bea->result == Result::Succeeded);
 	CHECK(ada->result == Result::InsufficientFunds);
 	CHECK(bea->step == 0);
+
 	// A rejection still spends its sequence.
 	CHECK(hosted.requests.NextSequence(kAda) == 2);
 }
@@ -442,9 +448,11 @@ TEST_CASE("A saved ledger whose pending requests the step could not run does not
 			request.payload.push_back(std::to_integer<std::uint8_t>(byte));
 		return request;
 	};
+
 	// The queue in global order, but Ada's ledger holds her second request before her first.
 	const Request first = granting(Queued("Ada", 1, 2));
 	const Request second = granting(Queued("Ada", 2, 1));
+
 	// A Grant whose payload is empty, in the queue and the ledger alike, and one over the limit.
 	const Request empty = Queued("Ada", 1, 1);
 	Request large = granting(Queued("Ada", 1, 1));
@@ -482,12 +490,14 @@ TEST_CASE(
 	const Receipt pending = upgraded.Send(kAda, 2, 20);
 	CHECK(pending.status == Status::Queued);
 	CHECK(pending.order == 2);
+
 	// A new request at the old version is refused, and the pending one runs as unsupported.
 	CHECK(upgraded.Send(kAda, 3, 30).result == Result::UnsupportedCommand);
 	upgraded.world.Step();
 	CHECK(upgraded.Send(kAda, 2, 20).result == Result::UnsupportedCommand);
 	CHECK(upgraded.Balance() == 110);
 }
+
 
 TEST_CASE("The registered commands are listed in name order, each with its version")
 {

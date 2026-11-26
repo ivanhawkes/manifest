@@ -101,6 +101,7 @@ struct Good
 	std::string itemId;
 	Decimal native;
 	std::uint64_t target{1};
+
 	// The count of its units a tote holds.
 	double unitsPerTote{0.0};
 };
@@ -130,10 +131,13 @@ struct Row
 struct Economy
 {
 	std::string regionId;
+
 	// Where its households buy and keep their goods: the first venue serving it; empty for none.
 	std::string venueId;
+
 	// In (venue, item) order, as its employer's batches are.
 	std::vector<Row> made;
+
 	// Its households' optional goods at its venue, in the market's order.
 	std::vector<Row> wanted;
 };
@@ -144,6 +148,7 @@ struct Need
 	std::string needId;
 	double weight{0.0};
 	double perThousandPerDay{0.0};
+
 	// Those the scenario trades, in the need's order.
 	std::vector<std::string> items;
 };
@@ -153,14 +158,17 @@ struct Need
 struct Rules
 {
 	World::Identities &identities;
+
 	// The scenario's items, each the count of its units a tote holds.
 	std::map<std::string, double, std::less<>> unitsPerTote;
 	std::map<std::string, Venue, std::less<>> venues;
+
 	// The venues in the scenario's order.
 	std::vector<std::string> venueOrder;
 	std::uint64_t lifeSteps{0};
 	std::uint64_t turnSteps{0};
 	std::uint64_t windowSteps{0};
+
 	// The scenario's venues, by ID, for the reports of their markets.
 	std::map<std::string, const Content::VenueDefinition *, std::less<>> definitions;
 	int feeBps{0};
@@ -169,9 +177,11 @@ struct Rules
 	// The regions in the scenario's order, and the needs in the tuning's.
 	std::vector<Economy> economies;
 	std::vector<Need> needs;
+
 	// Each scenario item's base price, raw microcredits per its unit.
 	std::map<std::string, std::int64_t, std::less<>> basePrices;
 	double intervalSeconds{0.0};
+
 	// The gross paid for each credit withheld; 0 withholds none.
 	std::int64_t perTaxCredit{0};
 	Content::ProductionTuning production;
@@ -183,6 +193,7 @@ std::optional<std::uint64_t> WholeSteps(double seconds, double step)
 {
 	const double steps = seconds / step;
 	const double whole = std::round(steps);
+
 	// The steps of a 1/60 s world are not exact in binary; a part in a billion is.
 	if (!std::isfinite(steps) || whole < 0.0 || whole >= 0x1p63 ||
 	    std::abs(steps - whole) > 1e-9 * std::max(1.0, whole))
@@ -340,6 +351,7 @@ std::shared_ptr<const Rules> MakeRules(
 // ─── Money ───
 // The market price rules (docs/pricing.md, "From a price to credits"), over totes (D-083, D-087).
 
+
 std::optional<std::int64_t> Fee(std::int64_t gross, int feeBps)
 {
 	if (gross <= 0 || feeBps <= 0)
@@ -357,6 +369,7 @@ std::optional<std::int64_t> Cost(std::int64_t price, double units, bool roundUp)
 {
 	const double value = Decimal::FromRaw(price).ToDouble() * units;
 	const double whole = roundUp ? std::ceil(value) : std::round(value);
+
 	// 2^63 is exactly representable; INT64_MAX rounds up to it.
 	if (!std::isfinite(whole) || whole < 0.0 || whole >= 0x1p63)
 		return std::nullopt;
@@ -379,8 +392,6 @@ std::optional<std::int64_t> PerTote(std::int64_t limit, double unitsPerTote, int
 
 namespace
 {
-
-
 // Copies of what one unit of work changes, written back together by Commit: everything a command or
 // a system decides is planned here, so an expected refusal leaves the world as it was. An account
 // or an owner reached twice, by a self-trade or a broker's own venue, is the one copy.
@@ -402,12 +413,14 @@ class Ledger
 	{
 	}
 
+
 	World::Account &Account(Kind kind, const std::string &id)
 	{
 		const entt::entity entity = Require(kind, id);
 		return m_accounts.try_emplace(entity, m_registry.get<const World::Account>(entity))
 		    .first->second;
 	}
+
 
 	// Whether the account holds the credit as well as what it has.
 	[[nodiscard]] bool Credit(Kind kind, const std::string &id, std::int64_t amount)
@@ -418,6 +431,7 @@ class Ledger
 		account.balance += amount;
 		return true;
 	}
+
 
 	// The owner's holding of the item at the venue, made empty if it has none. Only the holdings
 	// touched are staged, not the owner's whole stock.
@@ -437,10 +451,12 @@ class Ledger
 		return m_holdings.emplace(std::tuple{entity, venueId, itemId}, std::move(held)).first->second;
 	}
 
+
 	World::Order &Order(entt::entity entity)
 	{
 		return m_orders.try_emplace(entity, m_registry.get<const World::Order>(entity)).first->second;
 	}
+
 
 	// The order leaves the book; Retire gives back what it holds first.
 	void Close(entt::entity entity)
@@ -448,10 +464,12 @@ class Ledger
 		m_closed.insert(entity);
 	}
 
+
 	void Commit()
 	{
 		for (const auto &[entity, account] : m_accounts)
 			m_registry.replace<World::Account>(entity, account);
+
 		// Each touched stock with its staged holdings in place, and none left empty.
 		std::set<entt::entity> touched;
 		for (auto &[key, holding] : m_holdings)
@@ -535,6 +553,7 @@ void Record(
 	const entt::entity market = rules.identities.Find(Kind::Market, venueId);
 	JETTISON_VERIFY(market != entt::null);
 	World::Sales &sales = registry.get<World::Sales>(market);
+
 	// No report yet to be observed, at this step or after it, has a window reaching back so far.
 	std::erase_if(
 	    sales.recent,
@@ -619,6 +638,7 @@ Result Post(SimWorld &world, const Rules &rules, World::Order order, bool rests 
 		if (held > Core::kMaxWarehouseTotes || order.totes > Core::kMaxWarehouseTotes - held)
 			return Result::CapacityExceeded;
 	}
+
 	// The makers it crosses, best price first, then in time priority; an expired one no longer trades.
 	std::ranges::sort(
 	    makers,
@@ -634,6 +654,7 @@ Result Post(SimWorld &world, const Rules &rules, World::Order order, bool rests 
 	std::size_t fills = 0;
 	std::uint64_t traded = 0;
 	std::int64_t lastPrice = 0;
+
 	// Each company's buy filled, by its ID, at its fill's price, in fill order.
 	std::vector<std::pair<std::string, std::int64_t>> paid;
 	for (const auto &[entity, resting] : makers)
@@ -648,6 +669,7 @@ Result Post(SimWorld &world, const Rules &rules, World::Order order, bool rests 
 		    Cost(maker.limit, unitsPerTote * static_cast<double>(totes), false);
 		const std::optional<std::int64_t> buyerFee = gross ? Fee(*gross, buy.feeBps) : std::nullopt;
 		const std::optional<std::int64_t> sellerFee = gross ? Fee(*gross, sell.feeBps) : std::nullopt;
+
 		// Past a double's exact range a whole fill can cost more than the escrow its totes reserved,
 		// as can a loaded buy's: refused, the ledger not yet committed.
 		if (!buyerFee || !sellerFee || *gross > buy.escrow || *buyerFee > buy.escrow - *gross)
@@ -703,6 +725,7 @@ Result Post(SimWorld &world, const Rules &rules, World::Order order, bool rests 
 	if (order.remaining > 0 && rests)
 	{
 		std::optional<std::string> id = rules.identities.Issue(Kind::Order);
+
 		// No refusal can give back what the commit wrote.
 		if (!id)
 			throw std::overflow_error{"the order ID counter is exhausted"};
@@ -725,6 +748,7 @@ std::uint64_t BoughtNow(
 		return 0;
 	entt::registry &registry = world.Registry();
 	const std::uint64_t step = world.Clock().Step();
+
 	// The asks it would cross, best first, as Post orders them.
 	std::vector<const World::Order *> asks;
 	for (const entt::entity entity : Listing(registry, venueId, itemId))
@@ -738,6 +762,7 @@ std::uint64_t BoughtNow(
 		    return std::pair{pLeft->limit, pLeft->sequence} <
 		           std::pair{pRight->limit, pRight->sequence};
 	    });
+
 	// The most totes a limit at one of them reserves within the budget, the asks up to it offer and
 	// one pass fills.
 	std::uint64_t best = 0;
@@ -859,6 +884,7 @@ void Expire(SimWorld &world, const Rules &rules)
 // The curve's price empty, as a multiple of the native price: r C T / (T + (C - 1) h), r at the target
 // and r / C from (C + 1) T up (D-102).
 constexpr std::int64_t kCurveCeiling = 4;
+
 // Basis points of a price, doubled, over which half the spread is the spread's basis points.
 constexpr std::int64_t kHalfSpreadScale = 20'000;
 
@@ -893,6 +919,8 @@ std::uint64_t BrokerStock(
 // A rung of the good's ladder: a kRungsPerTarget-th of its target, at least a tote, so the kLevels a
 // side reach half the target and the quote there stays close to the native price (D-102).
 constexpr std::uint64_t kRungsPerTarget = 8;
+
+
 std::uint64_t Rung(const Good &good)
 {
 	return (good.target + kRungsPerTarget - 1) / kRungsPerTarget;
@@ -998,6 +1026,7 @@ void Requote(SimWorld &world, const Rules &rules)
 		JETTISON_VERIFY(broker != entt::null && account != entt::null);
 		const Venue &venue = rules.venues.at(venueId);
 		const std::vector<Good> &goods = venue.goods;
+
 		// Its resting orders by good, from the venue's markets, and the escrow they hold.
 		std::vector<Resting> resting(goods.size());
 		std::int64_t funds = registry.get<const World::Account>(account).balance;
@@ -1009,6 +1038,7 @@ void Requote(SimWorld &world, const Rules &rules)
 					resting[index].emplace_back(order.sequence, entity);
 					funds = order.escrow > kMaxCredits - funds ? kMaxCredits : funds + order.escrow;
 				}
+
 		// What it holds of each good, available and reserved, in one pass of its stock.
 		std::vector<std::uint64_t> stocked(goods.size(), 0);
 		for (const World::Holding &holding : registry.get<const World::Stock>(broker).holdings)
@@ -1053,6 +1083,7 @@ void Requote(SimWorld &world, const Rules &rules)
 			order.ownerId = venueId;
 			order.venueId = venueId;
 			order.itemId = pGood->itemId;
+
 			// Its orders retired, all it holds is free; an ask may fill, so the bids are at what is
 			// left.
 			ladder.clear();
@@ -1081,6 +1112,7 @@ void Requote(SimWorld &world, const Rules &rules)
 
 // ─── The regional economy ───
 // docs/economy.md, "How it works"; docs/architecture.md, "The step, in order".
+
 
 entt::entity Require(const Rules &rules, Kind kind, const std::string &id)
 {
@@ -1461,6 +1493,7 @@ void Households(SimWorld &world, const Rules &rules)
 				const double required = need.perThousandPerDay * population / 1'000.0 * days;
 				auto unmet = std::ranges::find(pantry.unmet, need.needId, &World::Unmet::needId);
 				const double pressure = unmet == pantry.unmet.end() ? 0.0 : unmet->pressure;
+
 				// From the ask at the target when fed to the curve's ceiling when starving.
 				const double consumed = consume(
 				    need.items, required, 1.0 + static_cast<double>(kCurveCeiling - 1) * pressure);
@@ -1582,6 +1615,7 @@ std::uint64_t EconomyNext(const SimWorld &world, const Rules &rules)
 				    due = stocked <= Core::kMaxWarehouseTotes - batch->totes;
 				    continue;
 			    }
+
 			    // Short of its end by more than the steps to next can add, rounding included, it is not
 			    // due.
 			    const auto span = static_cast<double>(next - now) + 1.0;
@@ -1628,6 +1662,7 @@ void EconomySkip(SimWorld &world, const Rules &rules, std::uint64_t passed)
 // ─── Observation ───
 // docs/trading.md, "Market observations".
 
+
 const Content::VenueDefinition &DefinitionOf(const Rules &rules, std::string_view venueId)
 {
 	const auto definition = rules.definitions.find(venueId);
@@ -1653,6 +1688,7 @@ void Observe(SimWorld &world, const Rules &rules, std::uint64_t observed)
 {
 	JETTISON_PROFILE_ZONE("Manifest.Trade.Observe");
 	entt::registry &registry = world.Registry();
+
 	// Each venue a fleet is docked at, and the principals whose fleets they are.
 	std::map<std::string, std::set<std::string>, std::less<>> covered;
 	for (const auto [entity, ship] : registry.view<const World::Ship>().each())
@@ -1663,6 +1699,7 @@ void Observe(SimWorld &world, const Rules &rules, std::uint64_t observed)
 		JETTISON_VERIFY(company != entt::null);
 		covered[ship.dockedAt].insert(registry.get<const World::Company>(company).principalId);
 	}
+
 	// shortcut: each covered venue's report is made afresh every step, a scan of the book each; a
 	// cheaper refresh (only what changed) when a profile shows it: at L26 all of Manifest's systems
 	// together were under 5% of a cruising step.
@@ -1744,6 +1781,7 @@ World::Report Capture(
 	for (const auto [entity, order] : registry.view<const World::Order>().each())
 	{
 		World::Line *pLine = order.venueId == venue.venueId ? lineOf(order.itemId) : nullptr;
+
 		// An order that no longer matches after the observed step is not in the book it shows.
 		if (!pLine || (order.expiresStep != 0 && order.expiresStep <= observed))
 			continue;
@@ -1847,6 +1885,7 @@ void Register(
 	                          .Writing<
 	                              World::Order, World::Account, World::Stock, World::Identity,
 	                              World::Sales, World::Paid>();
+
 	// Ahead of the movement Travel::Register attaches (docs/architecture.md, "The step, in order").
 	const std::vector<std::string> beforeMovement{
 	    std::string{Jettison::Spatial::FrameIndices::kSystemName}};

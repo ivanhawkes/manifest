@@ -45,6 +45,7 @@ class EntityStore
 	// empty id, and on an id the world already has: two entities of one name are an
 	// economy the tests cannot read.
 	bool Create(const std::string &id, std::string &errorMessage);
+
 	bool Create(const std::string &id, Entity &created, std::string &errorMessage);
 
 	// A new entity under "Prefix-n", n counting up from 1 and never reused: an order
@@ -62,6 +63,7 @@ class EntityStore
 	// Destroys an entity and every component on it. Fails when the id is unknown,
 	// because a typo in an id must not read as a clean destroy.
 	bool Destroy(const std::string &id, std::string &errorMessage);
+
 	bool Destroy(Entity target, std::string &errorMessage);
 
 	// Every entity, in sorted id order: it takes a snapshot of the ids first, so a
@@ -85,6 +87,7 @@ class EntityStore
 	std::size_t EntityCount() const;
 
 	entt::registry &Registry();
+
 	const entt::registry &Registry() const;
 
 	// ─── Components ───
@@ -164,13 +167,11 @@ class EntityStore
 	unsigned m_idCounter{0};
 };
 
-
 template <typename Type, typename... Args>
 Type *EntityStore::Add(const std::string &id, Args &&...values)
 {
 	return Add<Type>(Find(id), std::forward<Args>(values)...);
 }
-
 
 template <typename Type, typename... Args> Type *EntityStore::Add(Entity target, Args &&...values)
 {
@@ -187,12 +188,10 @@ template <typename Type, typename... Args> Type *EntityStore::Add(Entity target,
 	return &m_registry.emplace<Type>(target, std::forward<Args>(values)...);
 }
 
-
 template <typename Type> Type *EntityStore::Put(const std::string &id, Type value)
 {
 	return Put<Type>(Find(id), std::move(value));
 }
-
 
 template <typename Type> Type *EntityStore::Put(Entity target, Type value)
 {
@@ -204,36 +203,30 @@ template <typename Type> Type *EntityStore::Put(Entity target, Type value)
 	return &m_registry.emplace_or_replace<Type>(target, std::move(value));
 }
 
-
 template <typename Type> const Type *EntityStore::Get(const std::string &id) const
 {
 	return Get<Type>(Find(id));
 }
-
 
 template <typename Type> const Type *EntityStore::Get(Entity target) const
 {
 	return IsValid(target) ? m_registry.try_get<Type>(target) : nullptr;
 }
 
-
 template <typename Type> Type *EntityStore::Get(const std::string &id)
 {
 	return Get<Type>(Find(id));
 }
-
 
 template <typename Type> Type *EntityStore::Get(Entity target)
 {
 	return IsValid(target) ? m_registry.try_get<Type>(target) : nullptr;
 }
 
-
 template <typename Type> bool EntityStore::Remove(const std::string &id)
 {
 	return Remove<Type>(Find(id));
 }
-
 
 template <typename Type> bool EntityStore::Remove(Entity target)
 {
@@ -247,12 +240,10 @@ template <typename Type> bool EntityStore::Remove(Entity target)
 	return true;
 }
 
-
 template <typename... Type> bool EntityStore::HasComponent(const std::string &id) const
 {
 	return HasComponent<Type...>(Find(id));
 }
-
 
 template <typename... Type> bool EntityStore::HasComponent(Entity target) const
 {

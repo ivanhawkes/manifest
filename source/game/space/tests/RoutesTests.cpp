@@ -82,6 +82,7 @@ TEST_CASE("Routes: across the sample galaxy, end to end and back, by its lanes")
 	CHECK(out->jumps[1].jumpPoint == "Vesper Deep Gate");
 	CHECK(out->jumps[1].destination == 2);
 	CHECK(out->jumps[1].arrival == "Marrow Gate");
+
 	// Each with its lane's toll.
 	CHECK(out->jumps[0].toll == 0);
 	CHECK(out->jumps[1].toll == 6000);
@@ -203,6 +204,7 @@ TEST_CASE("Courses: from Ostra Highport to Pell round Ostra when it is in the wa
 		const glm::dvec3 moon = at("Pell");
 		const auto course = waypoints.PlotCourse(station, moon);
 		REQUIRE(course);
+
 		// The legs from the ends by the radii alone, and the end at Pell's centre not against Pell.
 		const std::vector<Sphere> ostra{obstacles[1]};
 		CHECK(Clear(*course, ostra, kClearance));
@@ -213,6 +215,7 @@ TEST_CASE("Courses: from Ostra Highport to Pell round Ostra when it is in the wa
 		{
 			++blocked;
 			CHECK(course->points.size() > 2);
+
 			// Round Ostra's ring, 10 000 km from its centre, on a crossing of 384 000 km.
 			CHECK(course->length <= straight + 2.0e7);
 		}
@@ -255,12 +258,14 @@ TEST_CASE("Courses: a crossing costed by a time of the course's length, which ha
 {
 	const std::vector<Manifest::Space::StarSystem> systems{
 	    AiTests::Halcyon(), AiTests::Vesper(), AiTests::Marrow()};
+
 	// The same course as at a speed, in the seconds the function gives for its length.
 	const Manifest::Space::CrossingCost bySpeed =
 	    Manifest::Space::CrossingByCourse(systems, 0.0, 2.0e3, 1.0e5);
 	const Manifest::Space::CrossingCost byTime = Manifest::Space::CrossingByCourse(
 	    systems, 0.0, [](double metres) { return metres / 2.0e3; }, 1.0e5);
 	CHECK(byTime(0, "Ostra Highport", "Pell") == doctest::Approx(bySpeed(0, "Ostra Highport", "Pell")));
+
 	// A drive's time is not linear in the length: a fourth root of it, rising slower than the speed's.
 	const Manifest::Space::CruiseDrive drive{40.0f, 1.0e8, 0.25f, {}};
 	const Manifest::Space::CrossingCost cruised = Manifest::Space::CrossingByCourse(

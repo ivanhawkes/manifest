@@ -13,6 +13,7 @@
 
 #include <manifest/host/Locations.h>
 
+
 int main(int argc, char **argv)
 {
 	const std::vector<std::string_view> arguments(argv + 1, argv + argc);

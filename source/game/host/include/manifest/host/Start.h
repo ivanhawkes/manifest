@@ -65,6 +65,7 @@ struct Services
 	const Travel::Fleet &fleet;
 	const Content::ContentIdentity &content;
 };
+
 Services HostedServices(Jettison::Host::Session &session);
 
 // What Start loads, with no world: the same sources, package rules and content set, failing as

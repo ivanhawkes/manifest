@@ -33,6 +33,7 @@ struct Set
 };
 
 inline constexpr std::string_view kSet = "Manifest.Policy.Set";
+
 // Version 2 added the thrust; a version-1 command is refused as one of no registered version is.
 inline constexpr std::uint32_t kVersion = 2;
 
@@ -82,6 +83,7 @@ struct Route
 	double seconds{0.0};
 	bool fuelled{true};
 };
+
 Route EstimateRoute(
     const entt::registry &registry, const World::Identities &identities,
     const Content::ContentSet &content, entt::entity ship, std::string_view sourceId,

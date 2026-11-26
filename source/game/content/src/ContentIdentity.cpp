@@ -48,6 +48,7 @@ std::string FirstDifference(std::span<const std::byte> was, std::span<const std:
 	constexpr std::string_view kFormat = "Manifest.ContentManifest";
 	BinaryReader before{was, kFormat, kContentManifestFormat};
 	BinaryReader after{is, kFormat, kContentManifestFormat};
+
 	// The same build wrote both, so the types are DefinitionTypes' in its order.
 	for (std::size_t type = 0; type < DefinitionTypes().size(); ++type)
 	{
@@ -56,6 +57,7 @@ std::string FirstDifference(std::span<const std::byte> was, std::span<const std:
 			return name;
 		std::uint64_t beforeLeft = before.ReadUnsigned(4);
 		std::uint64_t afterLeft = after.ReadUnsigned(4);
+
 		// Each record in name order: the first name one holds and the other does not, or holds
 		// otherwise, is the difference.
 		while (beforeLeft > 0 && afterLeft > 0)

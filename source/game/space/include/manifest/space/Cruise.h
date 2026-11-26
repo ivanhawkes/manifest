@@ -43,6 +43,7 @@ namespace Manifest::Space
 struct CruiseDrive
 {
 	float seconds{45.0f};
+
 	// In metres.
 	double reference{1.0e8};
 	float exponent{0.25f};
@@ -72,19 +73,24 @@ struct Cruising
 	// arrival is.
 	std::string target;
 	std::string frame;
+
 	// The body the course moves with, the nearest both the frame it left and the target orbit (the
 	// planet between two of its stations, the star between two planets), or none for the system's
 	// own frame.
 	std::string carrier;
+
 	// From where it set out to where it arrives, both included, with the waypoints round the bodies
 	// in the way between; metres from the carrier, in the system's axes.
 	std::vector<glm::dvec3> course;
+
 	// The clock's step counts as it set out and once it has arrived (Jettison::Time::SimClock::Step):
 	// it arrives as the step before the second ends.
 	std::uint64_t departureStep{0};
 	std::uint64_t arrivalStep{0};
+
 	// Its body, which it has back on arrival.
 	Jettison::Physics::Body body;
+
 	// Its drive's profile as it set out, which it covers its course by, or none to ease along it.
 	std::optional<Jettison::Transit::MotionProfile> profile;
 
@@ -177,8 +183,10 @@ class CruiseTravel
 {
   public:
 	static constexpr std::string_view kSystemName = "cruise";
+
 	// Metres from a station's radius within which a cruise does not engage.
 	static constexpr double kStationReach = 2000.0;
+
 	// Where a cruise arrives: this many metres beyond the target's radius and a quarter of it, so a
 	// ship is a few kilometres off a station or a gate and clear of a planet's air; and no nearer a
 	// body with gravity than where it pulls at kArrivalGravity. A station's or a gate's frame falls
@@ -188,9 +196,11 @@ class CruiseTravel
 	static constexpr double kArrivalStandoff = 4000.0;
 	static constexpr double kArrivalRadiusShare = 1.25;
 	static constexpr double kArrivalGravity = 1.0;
+
 	// Metres a course keeps from a star's, a planet's or a moon's radius.
 	static constexpr double kCourseClearance = 2000.0;
 	static constexpr int kSolveIterations = 8;
+
 	// Times a profile's steps may double from the solve's before a cruise is refused (NoCourse).
 	static constexpr int kProfileDoublings = 32;
 
@@ -224,6 +234,7 @@ class CruiseTravel
 	void Skip(Jettison::Sim::SimWorld &world) const;
 
 	const Jettison::Physics::PhysicsWorld &m_physics;
+
 	// By Jettison::Sim::FrameId; looked up, and ordered regardless.
 	std::map<std::uint64_t, Space::StarSystem> m_systems;
 };

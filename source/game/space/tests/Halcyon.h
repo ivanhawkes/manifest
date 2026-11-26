@@ -55,6 +55,7 @@ inline Jettison::Physics::ShapeDefinition MeshBox(const glm::vec3 &half)
 		for (const float y : {-half.y, half.y})
 			for (const float z : {-half.z, half.z})
 				shape.vertices.emplace_back(x, y, z);
+
 	// Vertex index bits: 4 is x, 2 is y, 1 is z. Counter-clockwise seen from outside.
 	shape.indices = {0, 3, 2, 0, 1, 3, 4, 7, 5, 4, 6, 7, 0, 5, 1, 0, 4, 5,
 	                 2, 7, 6, 2, 3, 7, 0, 6, 4, 0, 2, 6, 1, 7, 3, 1, 5, 7};

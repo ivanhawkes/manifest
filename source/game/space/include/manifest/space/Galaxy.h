@@ -24,11 +24,14 @@ struct StarSystem;
 struct GalaxySystem
 {
 	std::string name;
+
 	// The system file (systems/halcyon.yaml).
 	std::string system;
+
 	// A scene file authored for the system, which names the same system file; without one the
 	// system is shown as its system scene builds it from the system alone.
 	std::optional<std::string> scene;
+
 	// Where it is in the galaxy, in light years from wherever the galaxy puts its origin.
 	glm::dvec3 position{0.0};
 };
@@ -49,8 +52,10 @@ struct JumpLane
 {
 	LaneEnd a;
 	LaneEnd b;
+
 	// Simulation seconds between entering one end and leaving the other.
 	double transitSeconds{0.0};
+
 	// Runtime: what a ship's owner is charged to enter it, in whole credits, the game's currency
 	// (space/Gates.h): the light years between its systems at the galaxy's toll per light year, rounded
 	// to the nearest credit. Filled in by Resolve, not written to the file.
@@ -62,6 +67,7 @@ struct Galaxy
 	std::string name;
 	std::vector<GalaxySystem> systems;
 	std::vector<JumpLane> lanes;
+
 	// Whole credits a light year of a lane's length costs to enter it; none for free lanes.
 	std::int64_t tollPerLightYear{0};
 
@@ -76,8 +82,10 @@ struct Galaxy
 struct Exit
 {
 	std::size_t lane{0};
+
 	// The jump point the lane leaves from, in the system it is an exit of.
 	std::string_view jumpPoint;
+
 	// The system it arrives in, an index in Galaxy::systems, and the jump point it arrives at there.
 	std::size_t destination{0};
 	std::string_view arrival;

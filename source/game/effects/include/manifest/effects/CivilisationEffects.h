@@ -38,6 +38,7 @@ struct CivilisationEffectEngine
 	explicit CivilisationEffectEngine(EffectCatalogue catalogue = EffectCatalogue::Default());
 
 	const EffectCatalogue &Catalogue() const;
+
 	void SetCatalogue(EffectCatalogue catalogue);
 
 	// One effect at a tier, for one civilisation. The effect's domain picks the store.
@@ -80,23 +81,30 @@ struct CivilisationEffectEngine
 	// The shared stores, one per civilisation, created on the first effect that needs
 	// them.
 	static std::string LaneStoreId(const std::string &civilisationId);
+
 	static std::string SurveyStoreId(const std::string &civilisationId);
+
 	static std::string YardStoreId(const std::string &civilisationId);
 
 	// The stores a civilisation's effects land on, in sorted id order.
 	std::vector<std::string> MarketsOf(
 	    const EntityStore &world, const std::string &civilisationId) const;
+
 	std::vector<std::string> BodiesOf(
 	    const EntityStore &world, const std::string &civilisationId) const;
 
 	// The stats of one store: empty when the store does not exist.
 	std::map<EffectStat, double> MarketStatsOf(
 	    const EntityStore &world, const std::string &venueBodyId) const;
+
 	std::map<EffectStat, double> BodyStatsOf(const EntityStore &world, const std::string &bodyId) const;
+
 	std::map<EffectStat, double> RouteStatsOf(
 	    const EntityStore &world, const std::string &civilisationId) const;
+
 	std::map<EffectStat, double> SurveyStatsOf(
 	    const EntityStore &world, const std::string &civilisationId) const;
+
 	std::map<EffectStat, double> YardStatsOf(
 	    const EntityStore &world, const std::string &civilisationId) const;
 

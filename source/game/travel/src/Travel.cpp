@@ -270,6 +270,7 @@ void Advance(SimWorld &world, const Rules &rules, entt::entity ship)
 				return Fail(journey, Failure::CruiseRefused);
 			if (Near(registry, *system, ship, station))
 				return Ask(world, journey, ship, station, sender);
+
 			// Within a station's reach: flown out, or still flying out, its flight planned again if it
 			// lost its way. Steering keeps a destination it has reached, so it is out once it is past.
 			const Content::ScenarioDefinition &scenario =
@@ -456,6 +457,7 @@ double TonnesAboard(
 		JETTISON_VERIFY(found != content.gameMode.items.end());
 		return *found;
 	};
+
 	// A cubic metre of the item as packed, in kilograms: its density, water's 1 a tonne to it.
 	const auto packed = [](const Core::ItemNode &each)
 	{ return each.density * each.packFactor * kKilogramsPerTonne; };
@@ -529,6 +531,7 @@ void Fleet::Park(
 	entt::registry &registry = world.Registry();
 	const entt::entity station = registry.get<Dock::Berth>(pad).platform;
 	const std::string hull = Content::RegistryName(hullId);
+
 	// Content holds a scenario's starter hull to having a mass.
 	const auto spec = std::ranges::find(m_content.hulls, hullId, &Core::ShipClassSpec::hullId);
 	JETTISON_VERIFY(spec != m_content.hulls.end() && spec->mass);

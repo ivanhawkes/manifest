@@ -13,6 +13,7 @@ using namespace Manifest::Space;
 namespace
 {
 constexpr double kPi = std::numbers::pi;
+
 // Earth's GM, for orbits whose speed can be checked against vis-viva.
 constexpr double kMu = 3.986004418e14;
 
@@ -30,6 +31,7 @@ OrbitalElements LowOrbit()
 TEST_CASE("Frames: render space is the difference taken in double, then made a float")
 {
 	static_assert(sizeof(SystemPosition::metres.x) == sizeof(double));
+
 	// A hundred million kilometres out, where floats are eight kilometres apart and doubles 15
 	// micrometres: the difference keeps what the doubles kept.
 	const SystemPosition camera{{1.0e11, 2.0e10, -3.0e10}};
@@ -37,6 +39,7 @@ TEST_CASE("Frames: render space is the difference taken in double, then made a f
 	const SystemPosition station{camera.metres + offset};
 	const glm::vec3 render = ToRenderSpace(station, camera);
 	CHECK(glm::length(glm::dvec3{render} - offset) < 2e-5);
+
 	// Converting first loses them.
 	CHECK(glm::vec3{station.metres} - glm::vec3{camera.metres} != render);
 
@@ -64,6 +67,7 @@ TEST_CASE("Orbit: Kepler's equation is solved for every eccentricity below one")
 TEST_CASE("Orbit: a circular orbit starts on +X, runs prograde towards -Z, and keeps its radius")
 {
 	const OrbitalElements orbit = LowOrbit();
+
 	// About ninety-two and a half minutes, as a station 420 km above an Earth runs.
 	CHECK(orbit.period == doctest::Approx(5569.6).epsilon(1e-4));
 
@@ -71,6 +75,7 @@ TEST_CASE("Orbit: a circular orbit starts on +X, runs prograde towards -Z, and k
 	CHECK(start.position.x == doctest::Approx(orbit.semiMajorAxis));
 	CHECK(std::abs(start.position.y) < 1e-6);
 	CHECK(std::abs(start.position.z) < 1e-6);
+
 	// Anticlockwise seen from +Y, the reference plane's north.
 	CHECK(start.velocity.z < 0.0);
 	const double speed = 2.0 * kPi * orbit.semiMajorAxis / orbit.period;

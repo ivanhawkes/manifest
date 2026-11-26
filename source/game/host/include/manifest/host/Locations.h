@@ -14,9 +14,13 @@ std::filesystem::path DefaultContent();
 // program needs only the variables of the places it writes. Resolving touches nothing on disk. Throws
 // std::runtime_error naming the variable when HOME is needed and is not an absolute path.
 std::filesystem::path DefaultWorld();
+
 std::filesystem::path DefaultBackups();
+
 std::filesystem::path DefaultTokens();
+
 std::filesystem::path DefaultServerKey();
+
 std::filesystem::path DefaultTranscript();
 
 // The servers a client pins the keys of (Remote::ServerList): the player's,

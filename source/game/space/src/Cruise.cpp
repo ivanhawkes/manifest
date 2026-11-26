@@ -202,6 +202,7 @@ CruiseTravel &CruiseTravel::Attach(
     Jettison::Sim::SimWorld &world, const Jettison::Physics::PhysicsWorld &physics)
 {
 	RegisterTypes();
+
 	// Shared by the command and the system, which the world keeps for as long as it lives.
 	std::shared_ptr<CruiseTravel> cruises{new CruiseTravel{physics}};
 	world.RegisterComponent<CruiseDrive>();
@@ -292,6 +293,7 @@ void CruiseTravel::Start(Jettison::Sim::SimWorld &world, const Cruise &command) 
 	const double t0 = world.Clock().Now();
 	const glm::dvec3 from = transform->position;
 	const std::vector<Space::SystemPosition> bodies = Space::EvaluateSystem(system, t0);
+
 	// The reach measured where the bodies are as the ship's Transform has it
 	// (Jettison::Physics::PlacedAt), a step on from t0 for a cruise applied after physics, as a
 	// station's frame moves hundreds of metres a step with its planet. The course keeps t0, as the
@@ -401,6 +403,7 @@ void CruiseTravel::Start(Jettison::Sim::SimWorld &world, const Cruise &command) 
 void CruiseTravel::Skip(Jettison::Sim::SimWorld &world) const
 {
 	entt::registry &registry = world.Registry();
+
 	// As the last step passed over placed them: it ended at the clock's count and time.
 	const std::uint64_t ending = world.Clock().Step();
 	const double endsAt = world.Clock().Now();
@@ -434,6 +437,7 @@ void CruiseTravel::Place(Jettison::Sim::SimWorld &world) const
 	// The step being run ends at the next count, and at this time.
 	const std::uint64_t ending = world.Clock().Step() + 1;
 	const double endsAt = world.Clock().Now() + world.FixedStep();
+
 	// What each arrival comes out clear of, gathered at the first: what is already in the systems
 	// the ships cruise in, and each arrival once it is placed.
 	std::optional<std::vector<Jettison::Transit::Occupant>> occupants;

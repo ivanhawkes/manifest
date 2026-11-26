@@ -21,12 +21,14 @@ std::string SourceIdFor(const std::string &shipId, const std::string &effectId)
 	return shipId + ":" + effectId;
 }
 
+
 bool HasSlot(const ShipSlots &slots, const std::string &effectId)
 {
 	return std::find(slots.fitableEffects.begin(), slots.fitableEffects.end(), effectId) !=
 	       slots.fitableEffects.end();
 }
 } // namespace
+
 
 ShipEffectEngine::ShipEffectEngine(EffectCatalogue catalogue) : m_catalogue(std::move(catalogue))
 {

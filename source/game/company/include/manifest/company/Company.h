@@ -132,6 +132,7 @@ inline constexpr std::string_view kSetRefuel = "Manifest.Company.SetRefuel";
 // and draws each unconnected ship's step of use from its own tanks and cartridges, in order: the
 // tuning's rates times its hull's occupants, never more than is left (D-046, D-094).
 inline constexpr std::string_view kLifeSupportSystem = "manifest.lifeSupport";
+
 // The system after it that prices each venue whose operator no principal directs (D-100), as each
 // simulation day's last step ends: its World::Pricing level, in basis points of the tuning's defaults,
 // rises by charges.pricing's stepBps when more of its station's pads (display pads aside) are taken
@@ -139,6 +140,7 @@ inline constexpr std::string_view kLifeSupportSystem = "manifest.lifeSupport";
 // maxLevelBps, and each of its World::Fees is then the default at that level, to the nearest credit,
 // the arrears rate the default's.
 inline constexpr std::string_view kPricingSystem = "manifest.pricing";
+
 // The system after it that charges the berth fee (D-097, D-100): as each simulation hour's last step
 // ends, each ship docked then, in entity order, pays its World::Arrears and its venue's World::Fees,
 // the berthPerHour of its fee class (Content::FeeClass) and berthPerOccupantHour for each of its hull's

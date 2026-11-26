@@ -59,14 +59,18 @@ class Server
 	struct Session
 	{
 		Credential credential;
+
 		// Queued here and not yet reported completed, oldest first.
 		std::vector<std::uint64_t> pending;
+
 		// Its actor held every session it may when it was verified: closed as ServerFull on admission.
 		bool overCap{false};
 	};
 
 	bool Verify(Jettison::Net::SessionId id, std::span<const std::byte> credential);
+
 	void Admit(Jettison::Net::SessionId id, Session &session);
+
 	void ReloadTokens();
 
 	Jettison::Host::Session &m_hosted;
@@ -75,6 +79,7 @@ class Server
 	TokenFile m_tokens;
 	std::map<Jettison::Net::SessionId, Session> m_sessions;
 	bool m_stopped{false};
+
 	// Before m_net, whose configuration sets it from the secret.
 	std::string m_publicKey;
 	Jettison::Net::Server m_net;

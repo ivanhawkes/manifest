@@ -71,6 +71,7 @@ class StarSystemFrame final : public Jettison::Physics::FrameModel
 				const double distance = glm::length(towards);
 				if (distance <= 0.0)
 					continue;
+
 				// Inside the body, the mass within the distance pulls, as a uniform sphere's does, so
 				// the pull falls to nothing at the centre rather than growing without bound.
 				const double reach = std::max(distance, well.radius);

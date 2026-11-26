@@ -12,7 +12,6 @@
 
 namespace Manifest::World
 {
-
 Kind AccountOf(Kind owner)
 {
 	switch (owner)
@@ -105,6 +104,7 @@ std::optional<std::string> Broken(const Order &order)
 		return std::format("order {} has no price, fee or place in the book", order.sequence);
 	if (order.remaining == 0 || order.remaining > order.totes || order.totes > Core::kMaxWarehouseTotes)
 		return std::format("order {} has nothing left or more than it was placed for", order.sequence);
+
 	// A buy reserves at least a credit for each tote it may still fill (Trade::PerTote).
 	if (order.escrow < 0 || (order.side == Side::Sell && order.escrow != 0) ||
 	    (order.side == Side::Buy && order.escrow < static_cast<std::int64_t>(order.remaining)))
@@ -417,6 +417,7 @@ std::optional<std::string> Broken(const Tender &tender)
 	const bool closed = tender.state != TenderState::Open && tender.state != TenderState::Awarded;
 	if (closed == (tender.closed == 0) || (closed && tender.closed < tender.published))
 		return "a tender closes before it is published, or is open with a close";
+
 	// Awarded, or its contract ended: the award is posted for the record.
 	const bool awarded = tender.state == TenderState::Awarded ||
 	                     tender.state == TenderState::Fulfilled ||
@@ -443,6 +444,7 @@ std::int64_t Owed(const Tender &tender)
 {
 	if (tender.totes == 0)
 		return 0;
+
 	// Exactly, with T = a Q + b: T q / Q = a q + b q / Q, b q below Q squared, so in 128 bits.
 	const auto whole = static_cast<std::int64_t>(tender.totes);
 	const auto part = static_cast<std::int64_t>(tender.delivered);

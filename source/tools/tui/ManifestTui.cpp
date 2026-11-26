@@ -64,6 +64,7 @@ Element WrapLogText(const std::string &value)
 	return vbox(std::move(lines));
 }
 
+
 std::string LineText(const ConsoleLine &line)
 {
 	return line.category.empty() ? line.text : std::format("[{}] {}", line.category, line.text);
@@ -111,11 +112,13 @@ Decorator LineColour(const ConsoleLine &line)
 }
 } // namespace
 
+
 // The transcript is kept across clear and the shared console's bounded scrollback.
 ManifestTui::ManifestTui(const std::filesystem::path &content, const std::filesystem::path &transcript)
     : m_session{content.string()}, m_logFile{transcript, std::ios::app}
 {
 }
+
 
 void ManifestTui::AppendSessionLog(const std::string &text)
 {
@@ -125,6 +128,7 @@ void ManifestTui::AppendSessionLog(const std::string &text)
 		m_logFile.flush();
 	}
 }
+
 
 void ManifestTui::Run()
 {
@@ -149,6 +153,7 @@ void ManifestTui::Run()
 		console.Execute(command);
 		failed = false;
 		const auto lines = console.Lines();
+
 		// Locate this command's echo rather than counting lines: the console may
 		// have evicted older output, or clear may have removed the echo itself.
 		const auto echo = std::find_if(
@@ -179,6 +184,7 @@ void ManifestTui::Run()
 		    {
 			    for (const std::string &line : m_session.Poll())
 				    print(line);
+
 			    // A run of steps goes on a slice an event, the input read between them.
 			    if (m_session.Stepping())
 				    screen.PostEvent(Event::Custom);

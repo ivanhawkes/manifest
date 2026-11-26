@@ -29,11 +29,14 @@ namespace
 {
 constexpr double kStep = 1.0 / 60.0;
 const std::uint64_t kHalcyon = Jettison::Sim::FrameId("Halcyon");
+
 // A shuttle's drive (defs/hulls/shuttle.yaml).
 constexpr Manifest::Space::CruiseDrive kDrive{40.0f, 1.0e8, 0.25f, {}};
+
 // A profile far past any crew's, so a test's cruise from Highport to Pell is minutes, not hours:
 // boosting 10 s at each end, sustained between.
 constexpr Transit::MotionProfile kHard{20000.0f, 20.0f, 5000.0f};
+
 // The same thrusting for a quarter of the cruise, coasting for the rest.
 constexpr Transit::MotionProfile kCoasting{20000.0f, 20.0f, 5000.0f, 0.25f};
 
@@ -160,6 +163,7 @@ TEST_CASE("Cruise: a drive's time rises as the distance's fourth root")
 	CHECK(Manifest::Space::CruiseSeconds(kDrive, 1.0e8) == doctest::Approx(40.0));
 	CHECK(Manifest::Space::CruiseSeconds(kDrive, 1.6e9) == doctest::Approx(80.0));
 	CHECK(Manifest::Space::CruiseSeconds(kDrive, 0.0) == 0.0);
+
 	// Off a station by its radius, off a body with gravity where it pulls at 1 m/s².
 	CHECK(
 	    Manifest::Space::CruiseTravel::ArrivalDistance(BodyOf("Ostra Highport")) ==
@@ -216,6 +220,7 @@ TEST_CASE("Cruise: a ship crosses from Highport to Pell out of physics, and arri
 	REQUIRE(started.size() == 1);
 	CHECK(started[0].ship == ship);
 	CHECK(started[0].body == "Pell");
+
 	// The time its drive takes over its course, to within the step it is rounded up to and what the
 	// last round of the solve moved the course by.
 	CHECK(started[0].metres > 3.6e8);
@@ -296,6 +301,7 @@ TEST_CASE("Cruise: a ship crosses from Highport to Pell out of physics, and arri
 	    registry.get<Manifest::Space::Cruising>(ship).arrivalStep - fixture.world.Clock().Step());
 	CHECK(!registry.all_of<Manifest::Space::Cruising>(ship));
 	CHECK(registry.get<Jettison::Physics::LocalFrame>(ship).body == "Ostra Highport");
+
 	// To the millimetre: a place 1.5 x 10^11 m from the star is held to about 30 µm.
 	CHECK(
 	    std::abs(
@@ -310,6 +316,7 @@ TEST_CASE("Cruise: ships that arrive together at one body come out clear of each
 {
 	Fixture fixture;
 	entt::registry &registry = fixture.world.Registry();
+
 	// Two that set out a few metres apart, and one that has been waiting where they would come out.
 	const entt::entity first = fixture.Ship("Ostra Highport", {0.0, 0.0, 3000.0});
 	const entt::entity second = fixture.Ship("Ostra Highport", {4.0, 0.0, 3000.0});
@@ -332,6 +339,7 @@ TEST_CASE("Cruise: ships that arrive together at one body come out clear of each
 	const double apart = glm::distance(firstAt, secondAt) - 2.0 * hull;
 	MESSAGE("Arrived " << apart << " m between hulls");
 	CHECK(apart >= Manifest::Space::LaneTravel::kArrivalClearance);
+
 	// Not further than the first ring, a hull's breadth and the clearance out, and the few metres
 	// the two courses differ by.
 	CHECK(
@@ -351,6 +359,7 @@ TEST_CASE("Cruise: a course goes round the planet between a ship and its target"
 {
 	Fixture fixture;
 	entt::registry &registry = fixture.world.Registry();
+
 	// In Ostra's frame, three of its radii out on the far side from Pell.
 	const glm::dvec3 away = glm::normalize(Fixture::Where("Ostra", 0.0) - Fixture::Where("Pell", 0.0));
 	const entt::entity ship = fixture.Ship("Ostra", away * 2.0e7);
@@ -385,6 +394,7 @@ TEST_CASE("Cruise: off a planet where its pull is one its assist holds against")
 {
 	Fixture fixture;
 	entt::registry &registry = fixture.world.Registry();
+
 	// From Pell: Highport, in low orbit, is already where a cruise to Ostra would arrive.
 	const entt::entity ship = fixture.Ship("Pell", {0.0, 3.0e6, 0.0});
 	registry.emplace<Jettison::Physics::Handling>(ship);
@@ -417,6 +427,7 @@ TEST_CASE("Cruise: to the star, a system's breadth, carried by nothing that move
 	const Manifest::Space::Cruising *cruising = registry.try_get<Manifest::Space::Cruising>(ship);
 	REQUIRE(cruising);
 	CHECK(cruising->carrier == "Halcyon");
+
 	// A few minutes for a hundred and fifty million kilometres.
 	const double seconds = static_cast<double>(cruising->arrivalStep - cruising->departureStep) * kStep;
 	MESSAGE("Highport to Halcyon: " << seconds << " s");
@@ -526,6 +537,7 @@ TEST_CASE(
 	    glm::distance(end, Fixture::Where("Ostra Highport", 0.0)) ==
 	    doctest::Approx(reach + Manifest::Space::kReachMargin));
 	CHECK(glm::dot(end - Fixture::Where("Ostra Highport", 0.0), toPell) > 0.0);
+
 	// Each waypoint is clear of the hub's sphere.
 	for (const glm::dvec3 &waypoint : flight->waypoints)
 		CHECK(
@@ -592,6 +604,7 @@ TEST_CASE("Cruise: after physics in a step, a station's reach is measured where 
 		     if (checked)
 			     return;
 		     checked = true;
+
 		     // Just outside the reach of the station as placed, behind it as it goes.
 		     const double now = fixture.world.Clock().Now();
 		     const glm::dvec3 placed = registry.get<const Jettison::Sim::Transform>(station).position;
@@ -608,6 +621,7 @@ TEST_CASE("Cruise: after physics in a step, a station's reach is measured where 
 	REQUIRE(checked);
 	REQUIRE(fixture.physics.PlacedAt());
 	CHECK(*fixture.physics.PlacedAt() == doctest::Approx(kStep));
+
 	// Measured at the clock's Now, it would be inside by all but the margin.
 	CHECK(moved > 10.0 * kOutside);
 	CHECK(cleared);
@@ -622,6 +636,7 @@ TEST_CASE(
 	entt::registry &registry = fixture.world.Registry();
 	const entt::entity steered = fixture.Ship("Ostra Highport", {0.0, 0.0, 3000.0});
 	const entt::entity piloted = fixture.Ship("Ostra Highport", {0.0, 0.0, -3000.0});
+
 	// What steering last demanded of one, and a pilot of the other.
 	registry.emplace<Jettison::Ai::Destination>(steered);
 	const Jettison::Physics::FlightControls demand{{0.0f, 0.0f, -0.6f}, {}, true, entt::null};
@@ -664,6 +679,7 @@ TEST_CASE("Cruise: on a profile, a ship covers its course as the profile does, n
 	const Manifest::Space::Cruising cruising = registry.get<Manifest::Space::Cruising>(ship);
 	REQUIRE(cruising.course.size() == 2);
 	CHECK(cruising.profile == kHard);
+
 	// Time enough for the course, and within a few steps of the least.
 	const double least = Manifest::Space::CruiseSeconds(drive, started[0].metres);
 	CHECK(started[0].seconds >= least);
@@ -726,6 +742,7 @@ TEST_CASE("Cruise: on a profile with a share, a ship thrusts out, coasts, and th
 	const double least = Manifest::Space::CruiseSeconds(drive, started[0].metres);
 	CHECK(started[0].seconds >= least);
 	CHECK(started[0].seconds < least + (4.0 * kStep));
+
 	// Slower than thrusting throughout.
 	CHECK(least > Manifest::Space::CruiseSeconds({.profile = kHard}, started[0].metres) * 1.4);
 
@@ -762,6 +779,7 @@ TEST_CASE("Cruise: on a profile with a share, a ship thrusts out, coasts, and th
 	    << " m/s², coasting at " << midSpeed << " m/s with " << coasting << " m/s²");
 	CHECK(hardest <= double{kCoasting.boostAcceleration} * 1.001);
 	CHECK(coasting < 1.0);
+
 	// The speed it reached, slowed to the whole steps it was given.
 	CHECK(midSpeed == doctest::Approx(top * least / started[0].seconds).epsilon(1.0e-4));
 	CHECK(glm::distance(places.back(), cruising.course.back()) < 10.0);
@@ -791,6 +809,7 @@ TEST_CASE("Cruise: a world saved mid-cruise arrives as the one saved does")
 	fixture.Run(1);
 	const std::uint64_t arrival =
 	    fixture.world.Registry().get<Manifest::Space::Cruising>(ship).arrivalStep;
+
 	// Half-way, where a coasting profile is coasting.
 	fixture.Run((arrival - fixture.world.Clock().Step()) / 2);
 	const std::vector<std::byte> midway = fixture.world.Save();
@@ -814,6 +833,7 @@ TEST_CASE(
 	for (Fixture *fixture : {&forwarded, &stepped})
 	{
 		fixture->Ship("Ostra Highport", {0.0, 0.0, 3000.0});
+
 		// Kinematic on Highport's rails, at an offset no coordinate's spacing divides.
 		entt::registry &registry = fixture->world.Registry();
 		const entt::entity parked = registry.create();
@@ -848,6 +868,7 @@ TEST_CASE(
 		REQUIRE(forwarded.world.Save() == stepped.world.Save());
 	}
 	CHECK(forwarded.world.Registry().get<Jettison::Physics::LocalFrame>(ship).body == "Pell");
+
 	// The cruise's 3,000-odd steps in a handful of calls, and each of the 120 after it run.
 	MESSAGE("Highport to Pell and two seconds on in " << calls << " calls");
 	CHECK(calls < 140);

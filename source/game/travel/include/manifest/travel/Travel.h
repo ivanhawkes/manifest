@@ -64,6 +64,7 @@ struct Travel
 };
 
 inline constexpr std::string_view kTravel = "Manifest.Travel.Travel";
+
 // Version 2 added the burn; a version-1 command is refused as one of no registered version is.
 inline constexpr std::uint32_t kVersion = 2;
 
@@ -153,6 +154,7 @@ class Fleet
 	// journey is then refused for its fuel. Unset, nothing.
 	using Refueller =
 	    std::function<void(Jettison::Sim::SimWorld &, entt::entity ship, std::int64_t reserve)>;
+
 	void SetRefueller(Refueller refueller)
 	{
 		m_refueller = std::move(refueller);

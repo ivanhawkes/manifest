@@ -52,6 +52,7 @@ unsigned ParseCount(
 	return value;
 }
 
+
 std::string PadRight(const std::string &text, std::size_t width)
 {
 	return text.size() >= width ? text : text + std::string(width - text.size(), ' ');
@@ -63,6 +64,7 @@ template <typename Enum> std::string_view NameOf(Enum value)
 	return Jettison::Reflect::EnumName(entt::meta_any{value});
 }
 
+
 std::string_view ResultName(Command::Result result)
 {
 	return NameOf(result);
@@ -71,20 +73,25 @@ std::string_view ResultName(Command::Result result)
 // The hosted world's step (D-086), which a snapshot's steps are counted in.
 constexpr double kStepSeconds = 1.0 / 60.0;
 constexpr double kDaySeconds = 86400.0;
+
 // The longest step asks for, in simulation seconds: a cruise between worlds takes days (D-090).
 constexpr double kMostSeconds = 60 * kDaySeconds;
+
 // How long a run of steps holds the frontend at a time: its input is read between slices.
 constexpr std::chrono::milliseconds kSlice{50};
+
 
 double Days(std::uint64_t steps)
 {
 	return static_cast<double>(steps) * kStepSeconds / kDaySeconds;
 }
 
+
 std::string Price(std::int64_t raw)
 {
 	return sim::Decimal::FromRaw(raw).ToString();
 }
+
 
 // A count of steps, or a span of simulation time such as 90s, 30m, 6h or 4d, as whole steps.
 std::uint64_t ParseSteps(std::span<const std::string> arguments)
@@ -109,6 +116,7 @@ std::uint64_t ParseSteps(std::span<const std::string> arguments)
 	           ? value
 	           : static_cast<std::uint64_t>(std::llround(seconds / kStepSeconds));
 }
+
 
 std::string Describe(const World::Journey &journey, std::uint64_t step)
 {
@@ -220,6 +228,7 @@ std::string Describe(const Query::Snapshot &snapshot, std::string_view as)
 }
 } // namespace
 
+
 ManifestConsole::ManifestConsole(std::string contentSource, std::filesystem::path servers)
     : m_contentSource{std::move(contentSource)}, m_servers{std::move(servers)}
 {
@@ -229,6 +238,7 @@ ManifestConsole::ManifestConsole(std::string contentSource, std::filesystem::pat
 	RegisterCommands();
 	m_console.CaptureLog();
 }
+
 
 void ManifestConsole::RegisterCommand(
     std::string name, std::string help, std::size_t minimum, std::size_t maximum, Handler run)
@@ -242,6 +252,7 @@ void ManifestConsole::RegisterCommand(
 		    console.Print(run(arguments));
 	    });
 }
+
 
 void ManifestConsole::RegisterCommands()
 {
@@ -343,6 +354,7 @@ void ManifestConsole::RegisterCommands()
 	RegisterCommand("quit", "quit: ends the session (Ctrl-D works too)", 0, 0, quit);
 	RegisterCommand("exit", "exit: alias for quit", 0, 0, quit);
 }
+
 
 std::string ManifestConsole::CommandVersion()
 {
@@ -669,6 +681,7 @@ std::string ManifestConsole::CommandHost(const std::string &scenario)
 {
 	if (m_run)
 		throw std::runtime_error{"Stepping: stop first."};
+
 	// A failed start keeps the hosted world there was; the replaced one shuts down with its requests.
 	std::unique_ptr<Jettison::Host::Session> hosted = Host::Start({m_contentSource, {}, scenario});
 	m_pHosted = std::move(hosted);
@@ -812,6 +825,7 @@ std::string ManifestConsole::CommandTravel(Arguments arguments)
 	constexpr std::size_t kLeast = 2;
 	constexpr std::size_t kMost = 4;
 	constexpr unsigned kPercent = 100;
+
 	// A tenth of g, in the Decimal's raw millionths.
 	constexpr std::int64_t kRawTenthG = 100000;
 	constexpr std::int64_t kRawPerMilliG = 1000;
@@ -884,6 +898,7 @@ std::string ManifestConsole::CommandBook(Arguments arguments)
 	     hosted.World().Registry().view<const World::Identity, const World::Order>().each())
 		if (order.venueId == venueId && (arguments.size() == 1 || order.itemId == arguments[1]))
 			orders.emplace_back(identity.id, order);
+
 	// By item, asks then bids, each best price first and oldest first within a price.
 	std::ranges::sort(
 	    orders,
@@ -953,6 +968,7 @@ bool ManifestConsole::Advance(std::chrono::milliseconds budget)
 	{
 		// Quiet steps passed over at once (Jettison::Sim::Quiet), to the state stepping leaves.
 		run.taken += world.FastForward(world.Clock().Step() + (run.steps - run.taken));
+
 		// What the engine raises is presentation's; the console reports from the world instead.
 		(void)world.Events().Take();
 		for (const auto &[entity, journey] : world.Registry().view<const World::Journey>().each())
@@ -1022,6 +1038,7 @@ std::string ManifestConsole::CommandConnect(const std::string &endpoint, const s
 	if (!key)
 		throw std::runtime_error{
 		    std::format("The server list {} pins no key for {}.", servers.string(), endpoint)};
+
 	// A failed connect keeps the connection there was; a replaced one is closed.
 	auto pRemote =
 	    std::make_unique<Remote::Client>(endpoint.substr(0, colon), number, std::move(*key), token);
@@ -1099,6 +1116,7 @@ std::vector<std::string> ManifestConsole::Poll()
 				break;
 		}
 	}
+
 	// Nothing of a session comes before its welcome.
 	if (!welcomed && m_pRemote->Welcomed())
 		lines.insert(

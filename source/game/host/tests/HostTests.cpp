@@ -205,6 +205,7 @@ TEST_CASE("The staged directory and pack both start Manifest with the scenario's
 		CHECK(session->Packages().front().description->name == "Manifest");
 		const entt::registry &registry = session->World().Registry();
 		CHECK(registry.view<const Manifest::World::Region>().size() == 10);
+
 		// Each region's three, and each venue's broker's and its own.
 		CHECK(registry.view<const Manifest::World::Account>().size() == 50);
 		CHECK(registry.view<const Manifest::World::Broker>().size() == 10);
@@ -274,6 +275,7 @@ TEST_CASE("A damaged required file in the pack fails start-up as it is read")
 	const Content content;
 	std::vector<char> pack = content.PackBytes();
 	const Stored stored = FindStored(pack, "manifest/definitions/game-modes/manifest.yaml");
+
 	// A stored file has no checksum; a compressed one has its frame's.
 	REQUIRE(stored.method == 1);
 	pack[stored.offset + stored.size / 2] ^= 0x5a;
@@ -326,6 +328,7 @@ TEST_CASE("Content that is missing, cannot be read or breaks a rule fails")
 	{
 		const Content content;
 		content.Remove("manifest/definitions/game-modes/manifest.yaml");
+
 		// The scenarios name it first.
 		CheckFails(content.Directory(), Phase::Content, "gameMode 'manifest' names no game mode");
 	}
@@ -342,6 +345,7 @@ TEST_CASE("Content that is missing, cannot be read or breaks a rule fails")
 	const std::filesystem::path file =
 	    content.Directory() / "manifest/definitions/game-modes/manifest.yaml";
 	std::filesystem::permissions(file, std::filesystem::perms::none);
+
 	// Root reads it anyway, as a CI container may run the suite.
 	if (std::ifstream{file}.is_open())
 		MESSAGE("running as a user that reads a file without permissions; not checked");
@@ -406,11 +410,13 @@ TEST_CASE("A default place's directories are made private, and one already there
 	CHECK(mode(root) == kShared);
 	CHECK(mode(root / "share") == perms::owner_all);
 	CHECK(mode(root / "share" / "manifest") == perms::owner_all);
+
 	// A path through a directory it makes and back out names one already there, which stays shared.
 	Manifest::Host::MakePrivateDirectories(root / "new" / ".." / "made");
 	CHECK(mode(root) == kShared);
 	CHECK(mode(root / "new") == perms::owner_all);
 	CHECK(mode(root / "made") == perms::owner_all);
+
 	// Through a symlink and back out, what is made is under the link's target's parent, and private.
 	std::filesystem::create_directories(root / "actual" / "sub");
 	std::filesystem::permissions(root / "actual", kShared);
@@ -419,6 +425,7 @@ TEST_CASE("A default place's directories are made private, and one already there
 	CHECK(mode(root / "actual") == kShared);
 	CHECK(mode(root / "actual" / "manifest") == perms::owner_all);
 	CHECK_FALSE(std::filesystem::exists(root / "manifest"));
+
 	// A world's directory is made so too.
 	(void)Manifest::Host::OpenWorldDirectory(root / "fresh" / "..");
 	CHECK(mode(root) == kShared);

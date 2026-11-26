@@ -65,6 +65,7 @@ const Actor kBea{ActorKind::Principal, "Bea"};
 constexpr std::string_view kOre = "VenueOreHighport";
 constexpr std::string_view kFurs = "ItemFurs";
 
+
 // Raw microcredits for whole credits a unit.
 constexpr std::int64_t Credits(std::int64_t whole)
 {
@@ -78,6 +79,7 @@ struct Business
 	std::map<std::pair<Kind, std::string>, std::int64_t> balances;
 	std::map<std::pair<Kind, std::string>, World::Stock> stocks;
 	std::map<std::string, World::Order> orders;
+
 
 	bool operator==(const Business &) const = default;
 };
@@ -105,6 +107,7 @@ struct Hosted
 			Quote(world, identities, Trading());
 	}
 
+
 	void AddCompany(const std::string &principal, const std::string &company)
 	{
 		entt::registry &registry = world.Registry();
@@ -117,6 +120,7 @@ struct Hosted
 		    identities.Create(registry, Kind::CompanyAccount, company), 25'000);
 	}
 
+
 	template <typename T> Receipt Admit(const Actor &actor, std::string_view command, const T &payload)
 	{
 		const std::vector<std::byte> bytes = BinaryArchive::Write(payload, FormatVersion{kVersion});
@@ -124,12 +128,14 @@ struct Hosted
 		    world, actor, requests.NextSequence(actor), std::string{command}, kVersion, bytes);
 	}
 
+
 	Result Outcome(const Actor &actor, std::uint64_t sequence) const
 	{
 		const auto completed = requests.Outcome(actor, sequence);
 		REQUIRE(completed);
 		return completed->result;
 	}
+
 
 	// The order admitted as the actor's next and run in the next step.
 	Result Place(
@@ -145,6 +151,7 @@ struct Hosted
 		world.Step();
 		return Outcome(actor, sequence);
 	}
+
 
 	// As many one-tote orders, admitted as many to a step as an actor may queue.
 	void Rest(const Actor &actor, Side side, std::size_t orders, std::int64_t limit)
@@ -162,6 +169,7 @@ struct Hosted
 		world.Step();
 	}
 
+
 	Result Cancel(const Actor &actor, const std::string &orderId)
 	{
 		const std::uint64_t sequence = requests.NextSequence(actor);
@@ -171,12 +179,14 @@ struct Hosted
 		return Outcome(actor, sequence);
 	}
 
+
 	std::int64_t Balance(Kind kind, std::string_view id) const
 	{
 		const entt::entity entity = identities.Find(kind, std::string{id});
 		REQUIRE(entity != entt::null);
 		return world.Registry().get<const World::Account>(entity).balance;
 	}
+
 
 	// The owner's holding of the item at the venue, empty where it holds none.
 	World::Holding Held(Kind owner, std::string_view id, std::string_view item = kFurs) const
@@ -189,12 +199,14 @@ struct Hosted
 		return {std::string{kOre}, std::string{item}, 0, 0};
 	}
 
+
 	void Give(std::string_view company, std::uint64_t totes, std::string_view item = kFurs)
 	{
 		world.Registry()
 		    .get<World::Stock>(identities.Find(Kind::Company, std::string{company}))
 		    .holdings = {{std::string{kOre}, std::string{item}, totes, 0}};
 	}
+
 
 	// The order an actor's request placed, if it rests, by ID.
 	std::optional<std::pair<std::string, World::Order>> Placed(
@@ -206,6 +218,7 @@ struct Hosted
 				return std::pair{identity.id, order};
 		return std::nullopt;
 	}
+
 
 	Business Now() const
 	{
@@ -223,6 +236,7 @@ struct Hosted
 		return now;
 	}
 
+
 	// Credits anywhere: in accounts and in buy orders' escrow.
 	std::int64_t Credits() const
 	{
@@ -233,6 +247,7 @@ struct Hosted
 			total += order.escrow;
 		return total;
 	}
+
 
 	// Totes of the item anywhere at the venue, available and reserved.
 	std::uint64_t Totes(std::string_view item = kFurs) const
@@ -257,6 +272,7 @@ TEST_CASE(
 {
 	Hosted hosted;
 	hosted.Give("CompanyB", 2);
+
 	// A tote of furs is 18.75 of them: two at 100 credits are 3,750, a fee of 15 on each side.
 	REQUIRE(hosted.Place(kBea, Side::Sell, 2, Credits(100)) == Result::Succeeded);
 	CHECK(
@@ -327,6 +343,7 @@ TEST_CASE("Within a price the older order fills first, and a better price before
 	hosted.world.Registry()
 	    .get<World::Stock>(hosted.identities.Find(Kind::Company, "CompanyC"))
 	    .holdings = {{std::string{kOre}, std::string{kFurs}, 1, 0}};
+
 	// Bea's first at 100, then Ada's at 100, then Cy's under both at 90.
 	REQUIRE(hosted.Place(kBea, Side::Sell, 1, Credits(100)) == Result::Succeeded);
 	REQUIRE(hosted.Place(kAda, Side::Sell, 1, Credits(100)) == Result::Succeeded);
@@ -338,6 +355,7 @@ TEST_CASE("Within a price the older order fills first, and a better price before
 	CHECK_FALSE(hosted.Placed("CompanyC", 1));
 	CHECK_FALSE(hosted.Placed("CompanyB", 1));
 	CHECK(hosted.Placed("CompanyA", 1));
+
 	// 90 for one tote then 100 for the other: 1,688 and 1,875, a fee of 7 and 8.
 	CHECK(hosted.Balance(Kind::CompanyAccount, "CompanyD") == 25'000 - 1'688 - 7 - 1'875 - 8);
 }
@@ -352,6 +370,7 @@ TEST_CASE("An order matches until the step it expires at, and that step's sweep 
 	REQUIRE(placed);
 	const std::string id = placed->first;
 	const World::Order order = placed->second;
+
 	// Placed in step 0 with a day's life at one-second steps.
 	CHECK(order.expiresStep == 86'400);
 	CHECK(order.sequence == 1);
@@ -425,6 +444,7 @@ TEST_CASE("A refused order writes nothing a trade would")
 TEST_CASE("Two buys in one step compete for one account's funds, in admission order")
 {
 	Hosted hosted;
+
 	// 13 totes at 100 are 24,479 with fees, of Ada's 25,000.
 	const Manifest::Trade::Place thirteen{
 	    std::string{kOre}, std::string{kFurs}, Side::Buy, 13, Credits(100)};
@@ -446,6 +466,7 @@ TEST_CASE("A side of the book holds 64 resting orders; one past them that would 
 	CHECK(full.orders.size() == kMaxRestingOrders);
 	CHECK(hosted.Place(kBea, Side::Sell, 1, Credits(200)) == Result::BookFull);
 	CHECK(hosted.Now() == full);
+
 	// One that fills whole rests nothing, so the full side does not refuse it; nor does the other.
 	CHECK(hosted.Place(kAda, Side::Buy, 1, Credits(200)) == Result::Succeeded);
 	CHECK(hosted.Place(kAda, Side::Buy, 1, Credits(100)) == Result::Succeeded);
@@ -469,6 +490,7 @@ TEST_CASE("One pass settles at most 64 fills, the remainder resting")
 TEST_CASE("Each broker posts a ladder about its stock and requotes each turn, its orders not piling up")
 {
 	Hosted hosted{true};
+
 	// Ore makes furs and Brine wants them: Ore's native price, 58.931104, its target the 21 totes it is
 	// seeded with, in rungs of 3, each priced at its middle on 58.931104 x 4 x 21 / (21 + 3h), the
 	// asks 5% over it rounded up and the bids 5% under rounded down.
@@ -491,11 +513,13 @@ TEST_CASE("Each broker posts a ladder about its stock and requotes each turn, it
 		    [&](const auto &rung) { return side == Side::Sell ? rung.second : -rung.second; });
 		return rungs;
 	};
+
 	// Four rungs of the 21 totes it holds, climbing as they sell it down: the first at 19.5 totes,
 	// 65.380169.
 	CHECK(
 	    limits(Side::Sell) == std::vector<std::pair<std::uint64_t, std::int64_t>>{
 	                              {3, 65'380'169}, {3, 73'726'573}, {3, 84'515'828}, {3, 99'004'255}});
+
 	// Four rungs of bids, falling as they buy it up: the first at 22.5 totes, 53.137876.
 	CHECK(
 	    limits(Side::Buy) == std::vector<std::pair<std::uint64_t, std::int64_t>>{
@@ -717,6 +741,7 @@ TEST_CASE("A new player sees their own station live, and the rest of their syste
 	spawn.source = World::Source::Starting;
 	const World::Report brine = ReportOf(hosted, "Cai", kBrine);
 	CHECK(brine == spawn);
+
 	// Its own and its system's nine other stations.
 	CHECK(ReportsOf(hosted, "Cai").reports.size() == 10);
 	CHECK(LineOf(brine, "ItemSalt").Ask() > 0);
@@ -874,6 +899,7 @@ TEST_CASE("A save keeps each player's reports and each market's sales, and refus
 	CHECK(LineOf(ReportOf(loaded, "Cai", kOre), "ItemFurs").sold == 1);
 
 	entt::registry &registry = hosted.world.Registry();
+
 	// The last, so the reports stay in order.
 	registry.get<World::Reports>(hosted.identities.Find(Kind::Principal, "Cai"))
 	    .reports.back()
@@ -889,9 +915,11 @@ TEST_CASE("A tender's budget is its units at the price, times one and its urgenc
 	// 10 units at 1.5 credits are 15, and half again 22.5, so 23.
 	CHECK(Budget(1'500'000, 10.0, 0.5) == 23);
 	CHECK(Budget(1'500'000, 10.0, 0.0) == 15);
+
 	// The cost is rounded up first: 10 units at 1.05 are 10.5, so 11, and twice that 22.
 	CHECK(Budget(1'050'000, 10.0, 1.0) == 22);
 	CHECK_FALSE(Budget(1'500'000, 10.0, -0.5));
+
 	// A cost of 2^62 credits is held; twice it is not.
 	CHECK(Budget(Credits(1), 0x1p62, 0.0) == std::int64_t{1} << 62);
 	CHECK_FALSE(Budget(Credits(1), 0x1p62, 1.0));
@@ -903,12 +931,15 @@ TEST_CASE("A tender prices a good at the lowest ask on the venue's book, or its 
 	Hosted hosted;
 	const auto price = [&](std::string_view item)
 	{ return TenderPrice(hosted.world, hosted.identities, Trading(), kOre, item); };
+
 	// No broker has quoted: nothing is offered, so the native price.
 	const std::optional<std::int64_t> native = price(kFurs);
 	REQUIRE(native);
 	CHECK(*native > 0);
+
 	// Ore's market does not price tin.
 	CHECK_FALSE(price("ItemTin"));
+
 	// A bid is not an offer; the lowest of the asks is the price.
 	hosted.Give("CompanyB", 2);
 	REQUIRE(hosted.Place(kAda, Side::Buy, 1, Credits(1)) == Result::Succeeded);

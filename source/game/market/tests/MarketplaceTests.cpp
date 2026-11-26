@@ -19,6 +19,7 @@ namespace
 {
 using namespace Manifest::Core;
 
+
 // A world of the scaffold's own making: the credits and the cargo a market settles
 // against, in the components the market reads.
 std::string AddWorld(
@@ -47,6 +48,7 @@ std::string AddWorld(
 	return {};
 }
 
+
 OrderRequest Order(
     const std::string &marketId, const std::string &traderId, const std::string &itemId, OrderSide side,
     double quantity, Decimal limitPrice, long long tick)
@@ -64,12 +66,14 @@ OrderRequest Order(
 	return request;
 }
 
+
 long long Credits(const EntityStore &world, const std::string &civilisationId)
 {
 	const auto *treasury = world.Get<Treasury>(civilisationId);
 
 	return treasury != nullptr ? treasury->credits : 0;
 }
+
 
 // The credits of a trader, set by the test and not by the book: the ledger of a fill
 // moves the money, and a scenario that follows a fill starts from the pile its numbers
@@ -84,6 +88,7 @@ void SetCredits(EntityStore &world, const std::string &civilisationId, long long
 	}
 }
 
+
 double Units(const EntityStore &world, const std::string &civilisationId, const std::string &itemId)
 {
 	const auto *stock = world.Get<Stockpile>(civilisationId);
@@ -97,6 +102,8 @@ double Units(const EntityStore &world, const std::string &civilisationId, const 
 
 	return entry != stock->units.end() ? entry->second : 0.0;
 }
+
+
 // The stockpile of a generated world, read the way the market's own stockpile is read:
 // a good the world has none of is a good of nought units.
 double StockOf(const Civilisation &world, const std::string &itemId)
@@ -105,6 +112,7 @@ double StockOf(const Civilisation &world, const std::string &itemId)
 
 	return entry != world.stockpile.end() ? entry->second : 0.0;
 }
+
 
 // A node of the tree the marketplace reads: the shipped shape, the set it sits in, the
 // tiers it opens, the resource each tier costs, and the effect its tiers write.
@@ -123,6 +131,7 @@ SkillNode Node(
 	return node;
 }
 
+
 // A tree and the points that buy it. The marketplace reads a ProgressionManager, so a
 // test that walks a tree builds one, and the points of the pool pay for the nodes the
 // test names.
@@ -138,6 +147,7 @@ ProgressionManager Tree(const std::vector<SkillNode> &nodes, int points)
 }
 
 } // namespace
+
 
 TEST_CASE("a_marketplace_sits_at_a_planet_and_at_a_station_in_orbit_above_one")
 {
@@ -387,6 +397,7 @@ TEST_CASE("a_resting_order_holds_the_goods_and_the_credits_it_promises")
 	    world, Order("", "Civ-02", "iron_ore", OrderSide::Buy, 10.0, 10.0_dec, 1), orderId,
 	    errorMessage));
 	MANIFEST_CHECK_CONTAINS(errorMessage, "empty");
+
 	// A trader of the scaffold's own making that carries credits and no cargo: a venue
 	// settles a fill in goods and credits, the goods out of the seller's stockpile and the
 	// credits out of the buyer's treasury, and a world that carries one of the two cannot
@@ -408,6 +419,7 @@ TEST_CASE("a_resting_order_holds_the_goods_and_the_credits_it_promises")
 	    errorMessage));
 	MANIFEST_CHECK_CONTAINS(errorMessage, "Civ-03");
 	MANIFEST_CHECK_CONTAINS(errorMessage, "Stockpile");
+
 	// The rule is the venue's settlement rule, and it is the same on the sell side: the
 	// trader that carries no cargo has no stockpile to reserve the goods out of, and a
 	// venue that requires stock turns the order away before it books, so the book keeps
@@ -426,6 +438,7 @@ TEST_CASE("a_resting_order_holds_the_goods_and_the_credits_it_promises")
 	CHECK(service.Book(world, "Civ-01", "iron_ore", OrderSide::Sell).empty());
 	CHECK_EQ(service.OpenOrderCount(world, "Civ-01"), 1u);
 	CHECK_EQ(Units(world, "Civ-01", "iron_ore"), 100.0);
+
 	// A cancel of an order that is gone is the target state and not a failure: the order
 	// that filled, the order that expired, the order that was cancelled and the order that
 	// was never posted are all gone, and the books of a tick are cleaned by cancelling what
@@ -519,6 +532,7 @@ TEST_CASE("a_post_that_crosses_the_book_trades_at_the_price_that_was_resting")
 	CHECK_EQ(fills[0].makerFee, 2);
 	CHECK_EQ(fills[0].takerFee, 2);
 	CHECK_EQ(service.MarketAt(world, "Civ-01")->venueTake, 4);
+
 	// The seller's treasury is the 1000 it started with, plus the 480 of the sale less
 	// the 2 of its fee; the buyer's is the 1000 it started with less the 482 the venue
 	// reserved at the post of the order that crossed, and the fill spent that pocket to
@@ -527,6 +541,7 @@ TEST_CASE("a_post_that_crosses_the_book_trades_at_the_price_that_was_resting")
 	// rounded up, because the fraction a venue is owed is not paid out of its own pocket.
 	CHECK_EQ(Credits(world, "Civ-01"), 1478);
 	CHECK_EQ(Credits(world, "Civ-02"), 518);
+
 	// The goods move on the spot: the seller's stockpile is the 100 units it started
 	// with, less the 40 that shipped, and the buyer's is the 100 it started with plus the
 	// 40 that arrived, because a fill hands the cargo over at once and the venue keeps
@@ -639,6 +654,7 @@ TEST_CASE("a_post_that_crosses_the_book_trades_at_the_price_that_was_resting")
 	CHECK_EQ(quoteAfter->volume, 70.0);
 	CHECK_EQ(quoteAfter->bidDepth, 40.0);
 	CHECK_EQ(quoteAfter->askDepth, 20.0);
+
 	// The reference price of a good the book quotes on both sides is the middle of the two
 	// quotes, and it is the number the quote table calls the mid: a ship, a UI and a test
 	// that want one number for the good take it, and they do not care which of the four
@@ -734,6 +750,7 @@ TEST_CASE("an_order_that_walks_the_book_pays_the_best_price_first")
 	CHECK_EQ(Credits(world, "Civ-01"), 1000 - 100 - 1 - 22 - 1);
 	CHECK_EQ(Credits(world, "Civ-02"), 1000 + 100 - 1 + 22 - 1);
 	CHECK_EQ(Units(world, "Civ-01", "iron_ore"), 12.0);
+
 	// The seller's stockpile reads 10: its 40 units are the 30 that sit in its three asks,
 	// 10 of them at each of 10.0, 11.0 and 12.0, and the 10 that no order holds, and the 12
 	// units the fills shipped left the pile at the posts of the asks and not at the fills,
@@ -753,6 +770,7 @@ TEST_CASE("an_order_that_walks_the_book_pays_the_best_price_first")
 	CHECK_EQ(bestAsk, 11.0_dec);
 	CHECK_EQ(bestBid, 9.0_dec);
 	CHECK_EQ(service.DepthUnits(world, "Civ-01"), 0.0);
+
 	// The best ask after the walk: the 11 ask with 8 units left, the 12 ask, and the
 	// depth the book quotes. The quote counts the orders at the best price and the units
 	// resting at it, not the orders in the whole book, because the depth at the best price
@@ -796,6 +814,7 @@ TEST_CASE("an_order_that_walks_the_book_pays_the_best_price_first")
 	CHECK_EQ(sold[1].unitPrice, 9.0_dec);
 	CHECK_EQ(sold[1].quantity, 2.0);
 	CHECK_EQ(sold[1].makerOrderId, std::string("Order-5"));
+
 	// The bids are both taken, at their own price of 9.0, and the 2 units of the walk
 	// that no bid wanted go back to the seller's stockpile: the reservation a walk leaves
 	// behind is the trader's at the end of the walk. The bids of the book are gone, and a
@@ -936,6 +955,7 @@ TEST_CASE("the_book_is_the_book_the_quoters_read")
 	CHECK(iron != nullptr);
 	CHECK_EQ(iron->bestAsk, 12.0_dec);
 	CHECK_EQ(iron->bestBid, 10.0_dec);
+
 	// The quote names the best price on each side, the number of orders that quote it,
 	// which is the number of traders a screen shows beside the price, and the units
 	// resting at it: the asks at 12.0 are two orders of 10 units, the bid at 10.0 is one
@@ -1112,6 +1132,7 @@ TEST_CASE("the_deck_of_a_venue_holds_just_so_many_units_of_one_good")
 	CHECK_EQ(effects.ReadStat(world, EffectDomain::Market, "Civ-01", EffectStat::MarketDepth), 25.0);
 
 	CHECK_EQ(service.DepthUnits(world, "Civ-01"), 55.0);
+
 	// The Sell side of iron_ore: the ask that traded at tick 3 left the book in the fill,
 	// the deck measures what the side holds now, and the 15-unit ask at 12.0 that meets the
 	// 10-unit bid resting at 12.0 trades 10 units at the resting price and rests with 5.
@@ -1150,6 +1171,8 @@ TEST_CASE("the_deck_of_a_venue_holds_just_so_many_units_of_one_good")
 	CHECK_EQ(service.InsuranceBps(world, "Civ-99"), 0);
 	CHECK_EQ(service.RiskPremiumBps(world, "Civ-99"), 0);
 }
+
+
 TEST_CASE("a_market_effect_moves_the_charge_of_the_venue_it_lands_on")
 {
 	MarketplaceOptions options;
@@ -1326,6 +1349,7 @@ TEST_CASE("a_market_effect_moves_the_charge_of_the_venue_it_lands_on")
 	CHECK_EQ(service.DepthUnits(world, "Civ-99"), 0.0);
 	CHECK_EQ(service.Fills(world, "Civ-99").size(), 0u);
 }
+
 
 TEST_CASE("an_order_whose_life_runs_past_the_tick_range_is_refused")
 {
@@ -1693,6 +1717,7 @@ TEST_CASE("a_fill_trades_in_whole_units_of_the_price_and_the_fee")
 	CHECK_EQ(MarketplaceService::AffordableQuantity(0.0_dec, 40, 100), 0.0);
 	CHECK_EQ(MarketplaceService::AffordableQuantity(10.0_dec, 40, 0), 0.0);
 	CHECK_EQ(MarketplaceService::AffordableQuantity(10.0_dec, 40, -1), 0.0);
+
 	// A million at 40 bps: 1000000 * 10000 / 10040 is 996015 credits of goods, 3984060
 	// units at 0.25, and 996015 + 3985 of fee pays the million exactly.
 	MANIFEST_CHECK_NEAR(MarketplaceService::AffordableQuantity(0.25_dec, 40, 1000000), 3984060.0, 1e-6);
@@ -1743,12 +1768,14 @@ TEST_CASE("a_fill_trades_in_whole_units_of_the_price_and_the_fee")
 	CHECK_EQ(Credits(world, "Civ-01"), 0);
 	CHECK_EQ(Credits(world, "Civ-02"), 1000 + 59 - 1);
 	CHECK_EQ(Units(world, "Civ-01", "iron_ore"), 5.9);
+
 	// The sell of 10 units reserved its cargo into the order at the post, so the pile of
 	// Civ-02 is 90 while the order that rests on the book holds the 4.1 it has not
 	// traded: 94.1 units of the good between the pile and the book, and the 5.9 that
 	// filled in the pile of the buyer.
 	CHECK_EQ(Units(world, "Civ-02", "iron_ore"), 90.0);
 	CHECK_EQ(service.MarketAt(world, "Civ-01")->venueTake, 2);
+
 	// The fill traded all the money of the buyer and 5.9 of the 10 units each order
 	// carried: both sides of the pair keep the 4.1 they have left to trade, and a tick
 	// trades nothing, so the two rest on the book until a post crosses them again.
@@ -1939,6 +1966,7 @@ TEST_CASE("a_marketplace_loads_the_world_the_generator_built")
 	}
 
 	REQUIRE(!good.empty());
+
 	// The RNG contract changed to Jettison's PCG32. Loaded stock was checked above;
 	// provision the settlement fixture explicitly instead of assuming a seed yields
 	// at least ten units of one good at this particular civilisation.
@@ -2350,6 +2378,7 @@ TEST_CASE("a_buy_order_its_reservation_cannot_pay_leaves_the_book_for_the_bids_b
 	    world, Order("buyer", "buyer", "ore", OrderSide::Buy, 1.0, 10_dec, 1), first, error));
 	REQUIRE(service.PostOrder(
 	    world, Order("buyer", "buyer", "ore", OrderSide::Buy, 1.0, 10_dec, 2), second, error));
+
 	// The first bid's pocket spent, as the rounding of many partial fills can spend it.
 	world.Get<MarketOrderInfo>(first)->reservedCredits = 0;
 
@@ -2375,6 +2404,7 @@ TEST_CASE("a_marketable_order_walks_a_full_deck_and_reserves_only_the_asks_it_ta
 	REQUIRE(AddWorld(world, "buyer", "Buyer", 100, {}).empty());
 	REQUIRE(AddWorld(world, "seller", "Seller", 0, {{"ore", 10.0}, {"gem", 2.0}}).empty());
 	REQUIRE(service.Open(world, "buyer", error));
+
 	// The bid side of ore is full, which turns a resting bid away and not a walk.
 	REQUIRE(service.PostOrder(
 	    world, Order("buyer", "buyer", "ore", OrderSide::Buy, 10.0, 1_dec, 1), orderId, error));
@@ -2424,6 +2454,7 @@ TEST_CASE("a_post_whose_crossing_fails_in_settlement_says_so")
 	REQUIRE(service.Open(world, "buyer", error));
 	REQUIRE(service.PostOrder(
 	    world, Order("buyer", "buyer", "ore", OrderSide::Buy, 1.0, 10_dec, 1), bid, error));
+
 	// The seller's proceeds would pass the credit range.
 	SetCredits(world, "seller", std::numeric_limits<long long>::max() - 5);
 

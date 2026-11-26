@@ -77,6 +77,7 @@ struct Organisation
 {
 	Content::OrganisationKind kind{Content::OrganisationKind::Polity};
 	std::string displayName;
+
 	// The player who directs it; empty for one the AI runs.
 	std::string principalId;
 };
@@ -86,6 +87,7 @@ struct Region
 {
 	std::string planetId;
 	std::string civilisationId;
+
 	// An Organisation; empty for one no one governs yet.
 	std::string governorId;
 	double population{0.0};
@@ -191,12 +193,14 @@ enum class Award
 struct Tender
 {
 	std::string regionId;
+
 	// One of the two: the project, or the relief's need.
 	std::string projectId;
 	std::string needId;
 	std::string itemId;
 	std::string venueId;
 	std::uint64_t totes{0};
+
 	// Whole credits.
 	std::int64_t budget{0};
 	std::uint64_t published{0};
@@ -204,6 +208,7 @@ struct Tender
 	std::uint32_t deliveryDays{0};
 	TenderState state{TenderState::Open};
 	std::uint64_t closed{0};
+
 	// Posted at its bid close: why, and for an award its company, its total in whole credits, the bond
 	// that company holds in the BondAccount, and the step its delivery closes at.
 	Award award{Award::None};
@@ -211,6 +216,7 @@ struct Tender
 	std::int64_t price{0};
 	std::int64_t bond{0};
 	std::uint64_t deliveryClose{0};
+
 	// The totes its contract has accepted, all of them once Fulfilled.
 	std::uint64_t delivered{0};
 
@@ -294,6 +300,7 @@ struct Journey
 	std::string venueId;
 	Leg leg{Leg::Departing};
 	Failure failure{Failure::None};
+
 	// The clock's step the command ran at the start of.
 	std::uint64_t started{0};
 
@@ -399,18 +406,24 @@ struct Order
 	std::string venueId;
 	std::string itemId;
 	Side side{Side::Buy};
+
 	// The worst price it trades at, a Core::Decimal's raw microcredits per the item's unit.
 	std::int64_t limit{0};
 	std::uint64_t totes{0};
 	std::uint64_t remaining{0};
+
 	// Whole credits, a buy order's alone.
 	std::int64_t escrow{0};
+
 	// The venue's listing fee as it was placed, which its escrow was reserved at.
 	int feeBps{0};
+
 	// Its place in time priority: the n of its ID.
 	std::uint64_t sequence{0};
+
 	// The step from which it no longer matches and leaves the book; 0 for none.
 	std::uint64_t expiresStep{0};
+
 	// The sequence of its owner's principal's request that placed it; 0 for a broker's.
 	std::uint64_t request{0};
 
@@ -425,10 +438,12 @@ struct Batch
 	std::string venueId;
 	std::string itemId;
 	std::uint64_t totes{0};
+
 	// Simulation seconds of work at the full rate, and those done, the rate scaled by its region's
 	// condition (WorkRate).
 	double duration{0.0};
 	double progress{0.0};
+
 	// Whole credits: the gross bill, and what of it has been paid. The rest is reserved.
 	std::int64_t wages{0};
 	std::int64_t paid{0};
@@ -451,6 +466,7 @@ struct Unmet
 {
 	std::string needId;
 	double quantity{0.0};
+
 	// Its unmet share smoothed over an hour, 0 to 1 (D-102).
 	double pressure{0.0};
 
@@ -572,6 +588,7 @@ struct Line
 	{
 		return bids.empty() ? 0 : bids.front().price;
 	}
+
 	std::int64_t Ask() const
 	{
 		return asks.empty() ? 0 : asks.front().price;
@@ -613,8 +630,10 @@ struct ClassFees
 {
 	// The Dock.BerthClassDefinition, by record name.
 	std::string padClass;
+
 	// Paid to the venue as a journey to it starts (Travel::Travel).
 	std::int64_t docking{0};
+
 	// Paid by each ship docked at the venue as each simulation hour ends.
 	std::int64_t berthPerHour{0};
 
@@ -628,9 +647,11 @@ struct Fees
 {
 	// By pad class, in name order, each named once.
 	std::vector<ClassFees> classes;
+
 	// Paid with the hour's berth fee for each occupant of a docked ship connected to the venue's life
 	// support (D-047).
 	std::int64_t berthPerOccupantHour{0};
+
 	// The yearly interest on arrears owed to the venue, in basis points, compounded daily, at most
 	// the tuning's usury limit as it is charged.
 	int arrearsRateBps{0};
@@ -657,9 +678,11 @@ inline constexpr int kDefaultLevelBps = 10'000;
 struct Arrears
 {
 	std::int64_t owed{0};
+
 	// The part of a credit of interest accrued and not yet added to what is owed, in units of
 	// 1 / kRateYear credits, below kRateYear, so a small debt accrues exactly over the days.
 	std::int64_t carry{0};
+
 	// The step whose berth fee began them, kept until they are paid in full.
 	std::uint64_t since{0};
 
@@ -749,23 +772,28 @@ struct Job
 	std::int64_t cost{0};
 	std::int64_t charges{0};
 	std::int64_t allowanceSpent{0};
+
 	// What its trade was estimated to make after charges when it was chosen, whole credits; 0 before.
 	std::int64_t estimate{0};
 	Blockage blockage{Blockage::None};
+
 	// The step it first blocked at, of this blockage, and the step it reconsiders at.
 	std::uint64_t blockedSince{0};
 	std::uint64_t retry{0};
+
 	// What its ship has drawn of its own life support while the lot is aboard and its job has not yet
 	// charged to the lot (D-100), each finite and at least 0: oxygen in kilograms, cartridges in
 	// occupant-days.
 	double oxygenKilograms{0.0};
 	double cartridgeDays{0.0};
+
 	// The thrust its trade was chosen at, which its legs fly, above 0 and at most kFullThrustBps; and
 	// the fuel its ship's journeys have burned while the lot is aboard and its job has not yet charged
 	// to the lot (W21), in kilograms, each finite and at least 0.
 	std::uint32_t thrustBps{kFullThrustBps};
 	double reactionMassKilograms{0.0};
 	double pelletKilograms{0.0};
+
 	// A contract's tender (W12): bid on, or awarded to its company, its totes bought at the source and
 	// delivered at the destination, its venue; empty for a trade.
 	std::string tenderId{};

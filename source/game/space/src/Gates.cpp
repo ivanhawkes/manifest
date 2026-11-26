@@ -61,6 +61,7 @@ Gates &Gates::Attach(
     Jettison::Sim::SimWorld &world, Jettison::Physics::PhysicsWorld &physics, const LaneTravel &lanes)
 {
 	RegisterTypes();
+
 	// Shared by the command and the system, which the world keeps for as long as it lives.
 	std::shared_ptr<Gates> gates{new Gates{physics, lanes}};
 	world.RegisterComponent<Gate>();
@@ -292,6 +293,7 @@ void Gates::Send(Jettison::Sim::SimWorld &world, entt::entity gate, entt::entity
 		world.Events().Emit(GatePassed{ship, gate, std::move(*reason)});
 		return;
 	}
+
 	// The lanes refuse it with a reason of their own, should they.
 	world.Apply(EnterLane{{}, ship, jumpPoint});
 	if (!registry.all_of<OnLane>(ship))

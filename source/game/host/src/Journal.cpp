@@ -45,17 +45,20 @@ constexpr Jettison::Core::Category kJournal{"journal"};
 
 // The newest, and the one before it for a start to fall back to when the newest does not load.
 constexpr std::size_t kKeptSnapshots = 2;
+
 // A batch is flushed early once it holds this many requests, so a flood cannot grow one without
 // bound; a step adds at most a full queue to it.
 constexpr std::size_t kMaxBatchRequests = 4'096;
 
 constexpr std::size_t kChecksumBytes = sizeof(std::uint64_t);
+
 // The longest file of each kind read: nothing larger is one, so nothing larger is taken into memory.
 // A batch is at most kMaxBatchRequests and a step's full queue, each request its payload, its actor's
 // ID and what else it holds; a content manifest is a few hundred KiB. A snapshot's is
 // kMaxSnapshotBytes.
 constexpr std::uintmax_t kMaxCatalogueBytes = std::uintmax_t{4} * 1024;
 constexpr std::uintmax_t kMaxBatchBytes = std::uintmax_t{32} * 1024 * 1024;
+
 // A request's command name, its numbers and their archive's framing: a command's name is a few dozen
 // bytes.
 constexpr std::uintmax_t kMaxRequestOverheadBytes = 1024;
@@ -71,6 +74,7 @@ struct Batch
 {
 	std::string world;
 	std::uint64_t sequence{0};
+
 	// The identity of the batch before it, 0 for the first.
 	std::uint64_t previous{0};
 	std::uint64_t step{0};
@@ -347,6 +351,7 @@ Journal::Journal(
 	if (!m_storage.backups.empty())
 	{
 		Apart(m_storage.backups, m_root);
+
 		// Private to its owner when it is made here, as the world's directory is. Then again: a
 		// path is resolved on disk only as far as it is there, and a symlink after a component
 		// made just now, through "..", may lead into the world.
@@ -361,6 +366,7 @@ Journal::Journal(
 		std::random_device device;
 		running.world = std::format("{:08x}{:08x}{:08x}{:08x}", device(), device(), device(), device());
 		m_catalogue.world = running.world;
+
 		// The identity first: a world cut off between the two has no catalogue, and is refused
 		// rather than made again over whatever else is there.
 		m_write(identity, Framed(BinaryArchive::Write(running, kFormat)));
@@ -433,6 +439,7 @@ void Journal::Recover(Jettison::Sim::SimWorld &world) const
 			world.Commands().Push(ran.request);
 		}
 		Take(world, until);
+
 		// What the engine raises is presentation's, and a replay presents none of it.
 		(void)world.Events().Take();
 	}
@@ -458,6 +465,7 @@ void Journal::Advance(Jettison::Sim::SimWorld &world, std::uint64_t steps)
 {
 	Expect(world);
 	const std::uint64_t until = m_at + steps;
+
 	// To each flush and snapshot due on the way, so a long advance keeps the cadence a short one does.
 	while (m_at < until)
 	{
@@ -491,6 +499,7 @@ void Journal::Flush()
 	const Batch batch{m_catalogue.world, m_catalogue.head + 1,    m_catalogue.headId,
 	                  m_catalogue.step,  m_at - m_catalogue.step, m_ran};
 	const std::vector<std::byte> record = BinaryArchive::Write(batch, kFormat);
+
 	// The bounds above keep it so; past them a start would refuse the batch it was given.
 	JETTISON_VERIFY(record.size() + kChecksumBytes <= kMaxBatchBytes);
 	Catalogue next = m_catalogue;
@@ -505,6 +514,7 @@ void Journal::Flush()
 void Journal::Snapshot(Jettison::Sim::SimWorld &world)
 {
 	Flush();
+
 	// Between steps a hosted world has nothing queued but a request not yet run, which no batch
 	// holds and a snapshot must not either.
 	JETTISON_VERIFY(world.Commands().Pending().empty());
@@ -629,6 +639,7 @@ Journal Restore(
 			throw std::runtime_error{std::format(
 			    "the world at {} is not empty: a backup is restored only into an empty directory",
 			    root.string())};
+
 	// Refused before anything is written: another build's, or a catalogue not the world's.
 	const Identity made = Read<Identity>(backup / kIdentityName, kMaxIdentityBytes).value;
 	Hold(backup, made, running);
@@ -647,6 +658,7 @@ Journal Restore(
 	for (std::uint64_t sequence = first; sequence <= catalogue.head; ++sequence)
 		files.emplace_back(Numbered({}, kJournalName, sequence), kMaxBatchBytes);
 	files.emplace_back(kCatalogueName, kMaxCatalogueBytes);
+
 	// Every file checked before the first is written, and again as it is copied.
 	for (const auto &[name, limit] : files)
 		(void)ReadFile(backup / name, limit);

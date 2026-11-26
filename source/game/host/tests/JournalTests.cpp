@@ -336,6 +336,7 @@ TEST_CASE(
 TEST_CASE("A world recovered is the one that ran as its last flush left it, and what ran after is lost")
 {
 	const Scratch scratch;
+
 	// A flush every hundred steps, and no snapshot.
 	const Host::Cadence cadence{100, 1'000'000};
 	std::uint64_t step = 0;
@@ -347,6 +348,7 @@ TEST_CASE("A world recovered is the one that ran as its last flush left it, and 
 		REQUIRE(hosted.Provision("Ada").status == Receipt::Status::Queued);
 		journal.Advance(hosted.world, 1);
 		CHECK(journal.Head() == 0);
+
 		// Steps with no request are the journal's as any others are, flushed every hundred.
 		journal.Advance(hosted.world, 600);
 		CHECK(journal.Head() == 6);
@@ -358,6 +360,7 @@ TEST_CASE("A world recovered is the one that ran as its last flush left it, and 
 		CHECK(journal.Head() == 7);
 		step = hosted.world.Clock().Step();
 		hash = hosted.world.StateHash();
+
 		// Run, answered, and never flushed: a crash now loses it.
 		REQUIRE(hosted.Provision("Ada").status == Receipt::Status::Queued);
 		journal.Advance(hosted.world, 5);
@@ -380,6 +383,7 @@ TEST_CASE("A world recovered is the one that ran as its last flush left it, and 
 	REQUIRE(second.has_value());
 	CHECK(second->result == Result::AlreadyProvisioned);
 	CHECK(second->step == 601);
+
 	// The lost request's sequence is free again, and a retry of one that was kept is answered as
 	// it was, not run again.
 	CHECK(again.requests.NextSequence(kOperator) == 3);
@@ -399,6 +403,7 @@ TEST_CASE(
     "reads")
 {
 	const Scratch scratch;
+
 	// A flush every ten steps and a snapshot every forty.
 	const Host::Cadence cadence{10, 40};
 	std::uint64_t hash = 0;
@@ -412,6 +417,7 @@ TEST_CASE(
 		CHECK(journal.Head() == 13);
 		hash = hosted.world.StateHash();
 	}
+
 	// Snapshots after batches 4, 8 and 12: the last two are kept, with every batch after the older.
 	CHECK_FALSE(std::filesystem::exists(scratch.Snapshot(4)));
 	CHECK(std::filesystem::exists(scratch.Snapshot(8)));
@@ -431,9 +437,11 @@ TEST_CASE(
 		CHECK(outcome->result == Result::Succeeded);
 	};
 	recovers();
+
 	// The newest does not read: the one before it and the batches since reach the same world.
 	Damage(scratch.Snapshot(12));
 	recovers();
+
 	// Neither reads, and the batches before them are gone: there is nowhere to start from.
 	std::filesystem::remove(scratch.Snapshot(8));
 	Hosted last;
@@ -509,6 +517,7 @@ TEST_CASE("A batch that could not be written is not in the journal, and the worl
 	journal.Recover(again.world);
 	CHECK(again.world.Clock().Step() == 0);
 	CHECK(again.requests.NextSequence(kOperator) == 1);
+
 	// The half-written file beside it is in no one's way.
 	journal.Advance(again.world, 1);
 	journal.Flush();
@@ -595,6 +604,7 @@ TEST_CASE("A batch missing, damaged or out of its chain, or a catalogue so, stop
 	MANIFEST_CHECK_CONTAINS(Refusal(scratch, fresh), catalogue.string() + " is damaged");
 	Put(catalogue, Bytes(elsewhere.Root() / "catalogue"));
 	MANIFEST_CHECK_CONTAINS(Refusal(scratch, fresh), "is the catalogue of another world");
+
 	// A world with no catalogue is not made again over its journal.
 	std::filesystem::remove(catalogue);
 	MANIFEST_CHECK_CONTAINS(Refusal(scratch, fresh), catalogue.string() + " is missing");
@@ -617,6 +627,7 @@ TEST_CASE(
 		const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.Root());
 		Host::Journal journal{directory, hosted.Identity()};
 		journal.Advance(hosted.world, 10);
+
 		// Admitted, and the server stopped before its step.
 		REQUIRE(hosted.Provision("Ada").status == Receipt::Status::Queued);
 		journal.Stop(hosted.world);
@@ -628,11 +639,13 @@ TEST_CASE(
 		CHECK(journal.Head() == 1);
 		CHECK(std::filesystem::exists(scratch.Snapshot(1)));
 		hash = hosted.world.StateHash();
+
 		// Stopped again with nothing since: nothing is written.
 		const std::string catalogue = Bytes(scratch.Root() / "catalogue");
 		journal.Stop(hosted.world);
 		CHECK(Bytes(scratch.Root() / "catalogue") == catalogue);
 	}
+
 	// The start needs no batch: it loads the snapshot, which is of the last step.
 	std::filesystem::remove(scratch.Batch(1));
 	Hosted again;
@@ -650,12 +663,14 @@ TEST_CASE("A backup is written with each snapshot, the newest kept, and one cut 
 	Hosted hosted;
 	Disk disk;
 	const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.Root());
+
 	// A flush every ten steps, a snapshot every forty and two backups kept.
 	Host::Journal journal{directory, hosted.Identity(), {10, 40}, disk.Writer(), {backups, 2}};
 	const std::string world = journal.World();
 	REQUIRE(hosted.Provision("Ada").status == Receipt::Status::Queued);
 	for (int advance = 0; advance < 26; ++advance)
 		journal.Advance(hosted.world, 5);
+
 	// Snapshots after batches 4, 8 and 12, and the last two backed up.
 	CHECK_FALSE(std::filesystem::exists(Backup(backups, world, 4)));
 	CHECK(std::filesystem::exists(Backup(backups, world, 8) / "catalogue"));
@@ -716,6 +731,7 @@ TEST_CASE(
 			CHECK(journal.Head() == 2);
 			hash = hosted.world.StateHash();
 		}
+
 		// Nothing a start needs was removed: the older snapshot and the batch after it.
 		CHECK(std::filesystem::exists(scratch.Snapshot(1)));
 		CHECK(std::filesystem::exists(scratch.Batch(2)));
@@ -727,6 +743,7 @@ TEST_CASE(
 			journal.Recover(again.world);
 			CHECK(again.world.Clock().Step() == 80);
 			CHECK(again.world.StateHash() == hash);
+
 			// A stop writes the snapshot again, over one never named.
 			journal.Stop(again.world);
 		}
@@ -767,15 +784,18 @@ TEST_CASE("A backup restores into an empty directory, to its head, and is only r
 		CHECK(journal.Head() == head);
 		CHECK(again.world.Clock().Step() == step);
 		CHECK(again.world.StateHash() == hash);
+
 		// The retry history with it: a retry answered as before, not run again.
 		CHECK(again.Provision("Ada", 1).status == Receipt::Status::Completed);
 		CHECK(again.requests.NextSequence(kOperator) == 3);
+
 		// And served on from there, and stopped.
 		journal.Advance(again.world, 1);
 		journal.Stop(again.world);
 	}
 	CHECK(Bytes(backup / "catalogue") == catalogue);
 	CHECK(Bytes(backup / "snapshots" / std::format("{:020}", head)) == snapshot);
+
 	// The restored world is one a server opens.
 	{
 		Hosted served;
@@ -795,11 +815,13 @@ TEST_CASE("A backup restores into an empty directory, to its head, and is only r
 	MANIFEST_CHECK_CONTAINS(
 	    RestoreRefusal(backup, into, fresh, other), "was made by another build or other content");
 	CHECK(Empty(into));
+
 	// Copied, then found damaged as it is recovered: what was written goes again.
 	Damage(backup / "snapshots" / std::format("{:020}", head));
 	MANIFEST_CHECK_CONTAINS(RestoreRefusal(backup, into, fresh, fresh.Identity()), "is damaged");
 	CHECK(Empty(into));
 	CHECK(fresh.world.Clock().Step() == 0);
+
 	// Found damaged before anything is written: into a directory that takes no file, the refusal is
 	// the damage and not the write.
 	std::filesystem::permissions(
@@ -871,6 +893,7 @@ TEST_CASE(
 		    (Host::Journal{directory, hosted.Identity(), {}, {}, {backups}}),
 		    doctest::Contains("is within the backups at"), std::runtime_error);
 	}
+
 	// "missing" is not there to be resolved until it is made, and the link after it is the world.
 	const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.Root());
 	std::filesystem::create_directory_symlink(scratch.Root(), scratch.Elsewhere("link"));

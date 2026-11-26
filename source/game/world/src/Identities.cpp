@@ -106,6 +106,7 @@ void Identities::CheckProject(
 	for (const auto &[itemId, totes] : held)
 	{
 		const auto input = needed.inputs.find(itemId);
+
 		// Delivered to before it starts, and kept when it is taken out of the queue (D-110).
 		const bool holds = project.phase == ProjectPhase::Tendering ||
 		                   project.phase == ProjectPhase::Queued ||
@@ -142,6 +143,7 @@ std::function<void()> Identities::Load(
 	for (const auto [entity, stock] : loaded.view<const Stock>().each())
 		if (const std::optional<std::string> problem = Broken(stock))
 			reader.Fail(*problem);
+
 	// An opened tote holds at most a tote of its item.
 	const auto checkOpened = [&](const std::vector<Opened> &opened)
 	{
@@ -189,6 +191,7 @@ std::function<void()> Identities::Load(
 		     fees.arrearsRateBps > m_maxArrearsRateBps))
 			reader.Fail("a venue's fees are not of every pad class, or past the highest arrears rate");
 	}
+
 	// Travel and the berths read every market's fees.
 	if (m_padClasses)
 		for (const auto &[key, entity] : index)
@@ -220,6 +223,7 @@ std::function<void()> Identities::Load(
 	for (const auto [entity, facilities] : loaded.view<const Facilities>().each())
 		if (const std::optional<std::string> problem = Broken(facilities))
 			reader.Fail(*problem);
+
 	// A region works one project at a time, its queue's head (D-110).
 	std::set<std::string, std::less<>> underWay;
 	for (const auto [entity, project] : loaded.view<const Project>().each())
@@ -255,6 +259,7 @@ std::function<void()> Identities::Load(
 		const auto account = index.find({Kind::TenderAccount, identity.id});
 		const auto *pAccount =
 		    account == index.end() ? nullptr : loaded.try_get<const Account>(account->second);
+
 		// Open, its account holds its budget; awarded, its winner's total less what it was paid.
 		const bool open = tender.state == TenderState::Open;
 		const bool awarded = tender.state == TenderState::Awarded;
@@ -313,6 +318,7 @@ std::function<void()> Identities::Load(
 				    std::format(
 				        "a market report is of '{}', a venue the world does not hold", report.venueId));
 	}
+
 	// Every reserved tote backs the sell orders of its owner there, and the reverse.
 	std::map<std::tuple<Kind, std::string, std::string, std::string>, std::uint64_t> reserved;
 	for (const auto [entity, order] : loaded.view<const Order>().each())

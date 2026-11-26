@@ -67,6 +67,8 @@ void EntityStore::SpendNumericSuffix(std::map<std::string, unsigned> &spent, con
 		spent[prefix] = number;
 	}
 }
+
+
 bool EntityStore::Create(const std::string &id, std::string &errorMessage)
 {
 	Entity created = Null;

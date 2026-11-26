@@ -101,6 +101,7 @@ struct Request
 struct Completed
 {
 	Request request;
+
 	// The clock's step it ran at the start of.
 	std::uint64_t step{0};
 	Result result{Result::Succeeded};
@@ -123,6 +124,7 @@ struct RequestLedger
 {
 	// The last global order assigned.
 	std::uint64_t order{0};
+
 	// In (kind, id) order.
 	std::vector<ActorLedger> actors;
 };
@@ -141,6 +143,7 @@ inline constexpr std::size_t kRetainedResults = 256;
 inline constexpr std::size_t kPendingPerActor = 32;
 inline constexpr std::size_t kQueueCapacity = 1024;
 inline constexpr std::size_t kMaxPayloadBytes = 4096;
+
 // An actor's ID, so a journal batch of the most requests stays under what a start reads.
 inline constexpr std::size_t kMaxActorIdBytes = 256;
 

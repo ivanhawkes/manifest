@@ -42,6 +42,7 @@ struct Route
 	// The lanes taken, in order, each seen from the end it is entered at; none for a route within
 	// one system.
 	std::vector<Space::Exit> jumps;
+
 	// The lanes' transit times and the crossings between them.
 	double seconds{0.0};
 };

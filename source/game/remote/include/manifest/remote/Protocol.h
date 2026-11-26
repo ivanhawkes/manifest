@@ -16,6 +16,7 @@ namespace Manifest::Remote
 // archive's, at the protocol's version, so a message's shape changing is a new version. A snapshot's
 // body is a Query::Snapshot, the session's own view.
 inline constexpr std::string_view kProtocol = "manifest";
+
 // 2: a snapshot holds its ships' journeys and its company's orders (W15).
 // 3: and its ships' life support and opened totes (W06).
 // 4: and its player's market reports (W07).
@@ -57,6 +58,7 @@ struct Reply
 {
 	std::uint64_t sequence{0};
 	Command::Receipt receipt;
+
 	// The actor's next sequence after this: a refusal consumes none, so the client sends it again.
 	std::uint64_t nextSequence{1};
 };

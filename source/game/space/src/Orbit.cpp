@@ -29,8 +29,10 @@ double PeriodFor(double semiMajorAxis, double gravitationalParameter)
 double SolveKepler(double meanAnomaly, double eccentricity)
 {
 	JETTISON_ASSERT(eccentricity >= 0.0 && eccentricity < 1.0);
+
 	// Into [-pi, pi]: remainder is exact, so the reduction itself costs nothing.
 	const double mean = std::remainder(meanAnomaly, kTwoPi);
+
 	// From the mean anomaly the iteration can overshoot past the root when the orbit is long
 	// and thin. From pi (with the mean anomaly's sign) it cannot: E - e sin E - M is convex
 	// between the root and pi, so each step lands between the root and the last guess.
@@ -54,6 +56,7 @@ double Phase(double simSeconds, double period)
 	double phase = std::fmod(simSeconds, period) / period;
 	if (phase < 0.0)
 		phase += 1.0;
+
 	// A phase just below zero plus one rounds to one.
 	return phase < 1.0 ? phase : 0.0;
 }

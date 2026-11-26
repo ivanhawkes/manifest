@@ -23,6 +23,7 @@ namespace
 // The staged package, passed by CMake.
 std::string contentSource;
 
+
 std::vector<std::string> Ids(const Manifest::Core::Items &items)
 {
 	std::vector<std::string> ids;
@@ -35,6 +36,7 @@ std::vector<std::string> Ids(const Manifest::Core::Items &items)
 	return ids;
 }
 
+
 bool HasDuplicates(const std::vector<std::string> &values)
 {
 	std::vector<std::string> sorted = values;
@@ -42,6 +44,7 @@ bool HasDuplicates(const std::vector<std::string> &values)
 
 	return std::adjacent_find(sorted.begin(), sorted.end()) != sorted.end();
 }
+
 
 // The tree a node belongs to. A node id runs namespace marker, tree and node: the
 // yard drydock is SkillYardDrydock, the gate of the Space Colonisation Age is
@@ -69,6 +72,7 @@ std::string TreeLabel(const std::string &nodeId)
 	return treeEnd == std::string::npos ? rest : rest.substr(0, treeEnd);
 }
 
+
 // The content set of a game mode, loaded once.
 const Manifest::Content::ContentSet &Load(const std::string &mode)
 {
@@ -81,15 +85,18 @@ const Manifest::Content::ContentSet &Load(const std::string &mode)
 	return loaded.at(mode);
 }
 
+
 Manifest::Core::Ages LoadAges()
 {
 	return Load("manifest").ages;
 }
 
+
 Manifest::Core::Categories LoadCategories()
 {
 	return Load("manifest").categories;
 }
+
 
 Manifest::Core::GameModeNode LoadGameMode(const std::string &mode)
 {
@@ -120,6 +127,7 @@ TEST_CASE("ages_load_from_the_generated_document")
 	CHECK(!HasDuplicates(ids));
 }
 
+
 TEST_CASE("categories_load_from_the_generated_document")
 {
 	const Manifest::Core::Categories categories = LoadCategories();
@@ -138,6 +146,7 @@ TEST_CASE("categories_load_from_the_generated_document")
 
 	CHECK(!HasDuplicates(ids));
 }
+
 
 TEST_CASE("every_item_in_the_full_game_mode_has_a_price")
 {
@@ -165,6 +174,7 @@ TEST_CASE("every_item_in_the_full_game_mode_has_a_price")
 	}
 }
 
+
 // C04's goods (docs/history/stage-2-content-plan.md): the four food grains beside their seeds, the
 // household's medical supplies beside the specialised medicines, LPG, and the life-support consumables
 // in their own category.
@@ -186,6 +196,7 @@ TEST_CASE("the_household_and_life_support_goods_are_distinct_manifest_mode_items
 		CHECK(pGrain->categoryId == "CategoryConsumables");
 		CHECK(pGrain->unitType == TradeUnit::Tonne);
 	}
+
 	// The seeds keep their own prices, both by the tonne: a food grain is not a renamed seed.
 	for (const char *seed : {"ItemWheatSeeds", "ItemBarleySeeds", "ItemOatSeeds", "ItemRiceSeeds"})
 	{
@@ -239,6 +250,7 @@ TEST_CASE("the_household_and_life_support_goods_are_distinct_manifest_mode_items
 	}
 }
 
+
 // C04's hulls (D-059): the long-haul trader moved to data unchanged, and the two small hulls
 // with only their selected values, the rest left unset.
 TEST_CASE("the_hulls_carry_their_selected_values_and_leave_the_rest_unset")
@@ -281,6 +293,7 @@ TEST_CASE("the_hulls_carry_their_selected_values_and_leave_the_rest_unset")
 	CHECK_FALSE(compact.mass.has_value());
 }
 
+
 // T4's balance inputs against the plans' own worked examples (docs/economy.md, "Tuning";
 // docs/governance.md, "A tender's life"): the data carries the numbers, the prose the arithmetic.
 TEST_CASE("the_balance_tuning_reproduces_the_plans_worked_examples")
@@ -289,6 +302,7 @@ TEST_CASE("the_balance_tuning_reproduces_the_plans_worked_examples")
 	const Manifest::Content::TuningDefinition &tuning = Load("manifest").tuning;
 	const double intervalsPerDay = 86400.0 / tuning.economy.intervalSeconds;
 	CHECK(intervalsPerDay == 1440.0);
+
 	// A 100-credit wage payment: 90 to households, 10 to the treasury.
 	CHECK(100.0 * tuning.economy.wageTaxRate == doctest::Approx(10.0));
 
@@ -307,6 +321,7 @@ TEST_CASE("the_balance_tuning_reproduces_the_plans_worked_examples")
 	CHECK(daily(food, 25000.0) / intervalsPerDay == doctest::Approx(0.00868056).epsilon(1e-5));
 	CHECK(food.unit == TradeUnit::Tonne);
 	CHECK(food.items.size() == 8);
+
 	// 75,000 litres, in kilolitres.
 	const auto &water = need("NeedDrinkingWater");
 	CHECK(daily(water, 25000.0) * 1000.0 == doctest::Approx(75000.0));
@@ -315,6 +330,7 @@ TEST_CASE("the_balance_tuning_reproduces_the_plans_worked_examples")
 	CHECK(water.items[0].itemId == "ItemDrinkingWater");
 	const auto &medical = need("NeedBasicMedicalSupplies");
 	CHECK(daily(medical, 25000.0) == doctest::Approx(125.0));
+
 	// 50 g of salt a head a day, and a bar of soap a month.
 	const auto &salt = need("NeedSalt");
 	CHECK(daily(salt, 25000.0) == doctest::Approx(1.25));
@@ -339,6 +355,7 @@ TEST_CASE("the_balance_tuning_reproduces_the_plans_worked_examples")
 	    94.0);
 	CHECK(condition.healthLossPerHour / 60.0 == doctest::Approx(0.1));
 	CHECK(condition.happinessLossPerHour / 60.0 == doctest::Approx(0.2));
+
 	// At health 50 and happiness 50 the work rate is 56.25%, and 25% at 0 and 0.
 	const auto factor = [&](double value)
 	{ return condition.workRateFloor + (1.0 - condition.workRateFloor) * value / 100.0; };
@@ -349,6 +366,7 @@ TEST_CASE("the_balance_tuning_reproduces_the_plans_worked_examples")
 	CHECK(30.0 / tuning.lifeSupport.oxygenKilogramsPerOccupantDay == 30.0);
 	CHECK(tuning.lifeSupport.cartridgeOccupantDays == 30.0);
 	CHECK(tuning.concessions.termHours == 72.0);
+
 	// A 10,000-credit offer locks a 1,000-credit bond.
 	CHECK(10000.0 * tuning.procurement.performanceSecurityRate == doctest::Approx(1000.0));
 
@@ -365,6 +383,7 @@ TEST_CASE("the_balance_tuning_reproduces_the_plans_worked_examples")
 	using Totes = std::vector<std::pair<std::string, std::uint64_t>>;
 	REQUIRE(tuning.projects.size() == 2);
 	CHECK(tuning.projects[0].unlocksRecipe == "RecipeBronze");
+
 	// D-110's guild, queued before Bronze where smelting is not known.
 	CHECK(tuning.projects[1].projectId == "ProjectSmeltersGuild");
 	CHECK(tuning.projects[1].teachesSkill == "SkillSmelting");
@@ -372,6 +391,7 @@ TEST_CASE("the_balance_tuning_reproduces_the_plans_worked_examples")
 	CHECK(tuning.projects[1].workDays == 3);
 	CHECK(tuning.projects[0].workDays == 7);
 	CHECK(tuning.projects[0].priorityPremium == 0.5);
+
 	// D-101's windows and bounds.
 	const Manifest::Content::ProcurementTuning &procurement = tuning.procurement;
 	CHECK(procurement.minBidDays == 1);
@@ -388,6 +408,7 @@ TEST_CASE("the_balance_tuning_reproduces_the_plans_worked_examples")
 	CHECK(totes(tuning.recipes[0].inputs) == Totes{{"ItemCopper", 9}, {"ItemTin", 1}});
 	CHECK(totes(tuning.recipes[0].outputs) == Totes{{"ItemBronze", 10}});
 }
+
 
 TEST_CASE("every_item_carries_its_age_and_category_link")
 {
@@ -424,6 +445,7 @@ TEST_CASE("every_item_carries_its_age_and_category_link")
 		CHECK(std::find(categoryIds.begin(), categoryIds.end(), item.categoryId) != categoryIds.end());
 	}
 }
+
 
 TEST_CASE("the_id_of_a_definition_names_the_kind_of_thing_it_is")
 {
@@ -500,6 +522,7 @@ TEST_CASE("the_id_of_a_definition_names_the_kind_of_thing_it_is")
 	}
 }
 
+
 TEST_CASE("nulls_in_the_skill_data_never_arrive_as_the_word_null")
 {
 	// yaml-cpp renders a null as the scalar text "null". If that ever reaches the
@@ -540,6 +563,7 @@ TEST_CASE("nulls_in_the_skill_data_never_arrive_as_the_word_null")
 		CHECK(skill.resourceCostPerTier >= 0);
 	}
 }
+
 
 TEST_CASE("the_age_gates_are_the_ages")
 {
@@ -588,6 +612,7 @@ TEST_CASE("the_age_gates_are_the_ages")
 
 	CHECK_EQ(gatesWithNoPrerequisite, 1);
 }
+
 
 TEST_CASE("the_ship_systems_are_worth_the_trip")
 {
@@ -642,6 +667,7 @@ TEST_CASE("the_ship_systems_are_worth_the_trip")
 		CHECK(system->second.resourceCostPerTier >= 1);
 	}
 }
+
 
 TEST_CASE("the_standing_trees_are_in_the_game")
 {
@@ -716,6 +742,7 @@ TEST_CASE("the_standing_trees_are_in_the_game")
 	CHECK(crossTreeLinks >= 8);
 }
 
+
 TEST_CASE("one_clean_choice_locks_the_rest_of_the_standing")
 {
 	// CleanStanding is the one exclusive group in the shipped data, and it is the
@@ -774,6 +801,7 @@ TEST_CASE("one_clean_choice_locks_the_rest_of_the_standing")
 	CHECK(progression.GetCurrentTier("SkillLawTribunal") >= 1);
 }
 
+
 TEST_CASE("the_skill_tree_is_a_valid_graph")
 {
 	const Manifest::Core::GameModeNode manifest = LoadGameMode("manifest");
@@ -818,6 +846,7 @@ TEST_CASE("the_skill_tree_is_a_valid_graph")
 	CHECK(tierCapacity >= 227);
 }
 
+
 TEST_CASE("the_simple_game_mode_is_a_smaller_subset_of_the_full_one")
 {
 	const Manifest::Core::GameModeNode manifest = LoadGameMode("manifest");
@@ -854,6 +883,7 @@ TEST_CASE("the_simple_game_mode_is_a_smaller_subset_of_the_full_one")
 	}
 }
 
+
 TEST_CASE("the_universe_names_load")
 {
 	const Manifest::Core::UniverseNamePools &pools = Load("manifest").names;
@@ -865,6 +895,7 @@ TEST_CASE("the_universe_names_load")
 		CHECK(!pools.Find(poolName).empty());
 	}
 }
+
 
 TEST_CASE("the_generated_data_drives_a_universe")
 {
@@ -896,6 +927,7 @@ TEST_CASE("the_generated_data_drives_a_universe")
 
 	MANIFEST_CHECK_CONTAINS(simulation.StatusLine(), "8 worlds");
 }
+
 
 int main(int argc, char **argv)
 {

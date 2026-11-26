@@ -77,6 +77,7 @@ TEST_CASE("Star system: read, the hierarchy resolved and the periods derived")
 	CHECK(system.bodies[2].kind == BodyKind::Station);
 	CHECK(system.Find("Dock") == 2);
 	CHECK(system.Find("Nowhere") == -1);
+
 	// A sidereal year, and a low orbit's ninety-two minutes.
 	CHECK(system.bodies[1].orbit.period / 86400.0 == doctest::Approx(365.25).epsilon(1e-3));
 	CHECK(system.bodies[2].orbit.period == doctest::Approx(5569.6).epsilon(1e-4));
@@ -165,6 +166,7 @@ TEST_CASE("Star system: the sample system in the assets reads")
 	REQUIRE(station > 0);
 	CHECK(system.bodies[static_cast<std::size_t>(station)].kind == BodyKind::Station);
 	CHECK(system.bodies[static_cast<std::size_t>(station)].parentIndex == system.Find("Ostra"));
+
 	// Built to its layout in the docks' definitions (defs/stations), whose sphere its radius is.
 	CHECK(system.bodies[static_cast<std::size_t>(station)].layout == "ostra-highport");
 }
@@ -216,6 +218,7 @@ TEST_CASE("Star system: the sample gates keep to their planets, moons and stars,
 			const glm::dquat facing = JumpPointFacing(system, index, time);
 			const glm::dvec3 ahead = facing * glm::dvec3{0.0, 0.0, -1.0};
 			CHECK(glm::dot(ahead, glm::normalize(bodies[faced].metres - from)) == doctest::Approx(1.0));
+
 			// Level: its X axis is square to the system's +Y.
 			CHECK(std::abs((facing * glm::dvec3{1.0, 0.0, 0.0}).y) < 1.0e-9);
 		}

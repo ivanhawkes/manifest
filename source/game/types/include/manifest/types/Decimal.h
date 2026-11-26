@@ -20,6 +20,7 @@ class Decimal
 	static constexpr std::int64_t kScale = 1'000'000;
 
 	constexpr Decimal() = default;
+
 	template <std::integral T> constexpr Decimal(T whole)
 	{
 		const __int128_t raw = static_cast<__int128_t>(whole) * kScale;
@@ -33,27 +34,34 @@ class Decimal
 		result.m_raw = raw;
 		return result;
 	}
+
 	static constexpr Decimal Max()
 	{
 		return FromRaw(std::numeric_limits<std::int64_t>::max());
 	}
+
 	static constexpr Decimal Min()
 	{
 		return FromRaw(std::numeric_limits<std::int64_t>::min());
 	}
+
 	constexpr std::int64_t Raw() const
 	{
 		return m_raw;
 	}
+
 	constexpr std::int64_t Whole() const
 	{
 		return m_raw / kScale;
 	}
+
 	double ToDouble() const
 	{
 		return static_cast<double>(m_raw) / static_cast<double>(kScale);
 	}
+
 	std::string ToString() const;
+
 	// Computed prices cross from the model's double coefficients exactly once. Rejects
 	// nonfinite/out-of-range values and rounds to the nearest microcredit, ties away from zero.
 	static std::optional<Decimal> TryFromDouble(double value);
@@ -111,10 +119,12 @@ class Decimal
 	{
 		return Narrow(static_cast<__int128_t>(a.m_raw) + b.m_raw);
 	}
+
 	static constexpr std::optional<Decimal> TrySubtract(Decimal a, Decimal b)
 	{
 		return Narrow(static_cast<__int128_t>(a.m_raw) - b.m_raw);
 	}
+
 	static constexpr std::optional<Decimal> TryDivide(Decimal value, std::int64_t divisor)
 	{
 		if (divisor == 0)
@@ -123,14 +133,17 @@ class Decimal
 	}
 
 	constexpr auto operator<=>(const Decimal &) const = default;
+
 	friend constexpr Decimal operator+(Decimal a, Decimal b)
 	{
 		return Value(TryAdd(a, b));
 	}
+
 	friend constexpr Decimal operator-(Decimal a, Decimal b)
 	{
 		return Value(TrySubtract(a, b));
 	}
+
 	friend constexpr Decimal operator/(Decimal value, std::int64_t divisor)
 	{
 		return Value(TryDivide(value, divisor));
@@ -140,10 +153,12 @@ class Decimal
 	{
 		return Value(TrySubtract({}, *this));
 	}
+
 	constexpr Decimal &operator+=(Decimal other)
 	{
 		return *this = *this + other;
 	}
+
 	constexpr Decimal &operator-=(Decimal other)
 	{
 		return *this = *this - other;
@@ -155,22 +170,26 @@ class Decimal
 		return raw >= std::numeric_limits<std::int64_t>::min() &&
 		       raw <= std::numeric_limits<std::int64_t>::max();
 	}
+
 	static constexpr std::optional<Decimal> Narrow(__int128_t raw)
 	{
 		if (!Fits(raw))
 			return std::nullopt;
 		return FromRaw(static_cast<std::int64_t>(raw));
 	}
+
 	static constexpr void Require(bool condition)
 	{
 		if (!condition)
 			InvalidArithmetic();
 	}
+
 	static constexpr Decimal Value(std::optional<Decimal> result)
 	{
 		Require(result.has_value());
 		return *result;
 	}
+
 	[[noreturn]] static void InvalidArithmetic();
 	std::int64_t m_raw{0};
 };

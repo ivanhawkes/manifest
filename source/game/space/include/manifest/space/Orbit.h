@@ -22,6 +22,7 @@ struct OrbitalElements
 	double longitudeOfAscendingNode{0.0};
 	double argumentOfPeriapsis{0.0};
 	double meanAnomalyAtEpoch{0.0};
+
 	// Seconds per revolution. Zero in data means "from the parent's gravitational parameter",
 	// which StarSystem's Resolve fills in; Evaluate needs it positive for a non-zero orbit.
 	double period{0.0};

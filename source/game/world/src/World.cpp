@@ -114,6 +114,7 @@ void CreateInitialState(
 		registry.emplace<Stock>(employer);
 		registry.emplace<Production>(employer);
 		CreateAccount(world, identities, Kind::EmployerAccount, region.regionId, region.employerFunds);
+
 		// Queued in the scenario's order, the first its head (D-110).
 		std::uint64_t queued = 0;
 		for (const Content::ProjectSelection &project : region.projects)

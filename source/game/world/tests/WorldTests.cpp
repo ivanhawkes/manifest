@@ -63,6 +63,7 @@ TEST_CASE(
 	const entt::registry &registry = hosted.world.Registry();
 	CHECK(registry.view<const Organisation>().size() == 10);
 	CHECK(registry.view<const Region>().size() == 10);
+
 	// Three a region (public, households', employer's), and a venue's broker's and its own, ten each.
 	CHECK(registry.view<const Account>().size() == 50);
 
@@ -71,6 +72,7 @@ TEST_CASE(
 	REQUIRE(broker != entt::null);
 	CHECK(registry.get<Broker>(broker).operatorId == "OrganisationAnvilPortAuthority");
 	const Stock &stock = registry.get<Stock>(broker);
+
 	// Twenty goods and the ships' reaction mass (D-108).
 	CHECK(stock.holdings.size() == 21);
 	CHECK(!Broken(stock));

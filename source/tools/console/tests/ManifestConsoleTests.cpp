@@ -48,13 +48,20 @@ class ConfigDirectory
 	{
 		std::filesystem::create_directory(m_path);
 	}
+
+
 	~ConfigDirectory()
 	{
 		std::error_code ignored;
 		std::filesystem::remove_all(m_path, ignored);
 	}
+
+
 	ConfigDirectory(const ConfigDirectory &) = delete;
+
+
 	ConfigDirectory &operator=(const ConfigDirectory &) = delete;
+
 
 	const std::filesystem::path &Path() const
 	{
@@ -66,6 +73,7 @@ class ConfigDirectory
 	std::filesystem::path m_path;
 };
 } // namespace
+
 
 TEST_CASE("Manifest console: help, completion, history and clear use the shell's console")
 {
@@ -88,6 +96,7 @@ TEST_CASE("Manifest console: help, completion, history and clear use the shell's
 	CHECK(Execute(session, "version").kind == ConsoleLine::Kind::Output);
 }
 
+
 TEST_CASE(
     "Manifest console: malformed and unavailable commands are errors and leave the session usable")
 {
@@ -103,6 +112,7 @@ TEST_CASE(
 	CHECK(Execute(session, "load").kind == ConsoleLine::Kind::Output);
 	CHECK(session.IsConfigurationLoaded());
 }
+
 
 TEST_CASE("Manifest console: quoted paths and civilisation names reach the command as one argument")
 {
@@ -123,6 +133,7 @@ TEST_CASE("Manifest console: quoted paths and civilisation names reach the comma
 	CHECK(Execute(session, "show nonexistent").kind == ConsoleLine::Kind::Error);
 }
 
+
 TEST_CASE("Manifest console: the directory and the pack load the same content")
 {
 	ManifestConsole session{MANIFEST_MOD_DIRECTORY};
@@ -130,6 +141,7 @@ TEST_CASE("Manifest console: the directory and the pack load the same content")
 	const std::string pack = Execute(session, std::format("load \"{}\"", MANIFEST_MOD_PACK)).text;
 	CHECK(pack.substr(pack.find(": ")) == directory.substr(directory.find(": ")));
 }
+
 
 TEST_CASE("Manifest console: invalid numeric arguments never silently advance or regenerate")
 {
@@ -150,6 +162,7 @@ TEST_CASE("Manifest console: invalid numeric arguments never silently advance or
 	CHECK(session.GetSimulation().GetTick() == 2);
 }
 
+
 TEST_CASE(
     "Manifest console: the development workflow reports output and rejected upgrades report errors")
 {
@@ -164,6 +177,7 @@ TEST_CASE(
 	CHECK(Execute(session, "upgrade unknown").kind == ConsoleLine::Kind::Error);
 	CHECK(Execute(session, "status").text.find("resources 19") != std::string::npos);
 }
+
 
 TEST_CASE(
     "Manifest console: a failed reload preserves the session and a successful reload resets its world")
@@ -194,6 +208,7 @@ TEST_CASE(
 	CHECK(Execute(session, "tick").kind == ConsoleLine::Kind::Error);
 	CHECK(Execute(session, "generate").kind == ConsoleLine::Kind::Output);
 }
+
 
 TEST_CASE(
     "Manifest console: engine logs enter the shared scrollback and both exit names end the session")
@@ -241,6 +256,7 @@ TEST_CASE("Manifest console: hosted commands go through admission and queries, a
 	MANIFEST_CHECK_CONTAINS(
 	    Execute(session, "cargo load Ada Ship1 VenueOreHighport ItemCopper 3").text, "Ada's request 1");
 	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "InsufficientStock at step 1");
+
 	// A principal the world does not have is refused at admission and queues nothing.
 	CHECK(
 	    Execute(session, "cargo load Bea Ship1 VenueOreHighport ItemCopper 3").text ==
@@ -255,6 +271,7 @@ TEST_CASE("Manifest console: hosted commands go through admission and queries, a
 	CHECK(session.GetSimulation().GetTick() == 2);
 	MANIFEST_CHECK_CONTAINS(Execute(session, "status").text, "hosted: step 3");
 }
+
 
 TEST_CASE("Manifest console: host replaces the one hosted world, and a failed host keeps it")
 {
@@ -290,6 +307,7 @@ TEST_CASE("Manifest console: a long step goes on beside the console, which stop 
 	REQUIRE(Execute(session, "provision Ada \"Ada Co\"").kind == ConsoleLine::Kind::Output);
 	Execute(session, "step");
 	CHECK(Execute(session, "stop").kind == ConsoleLine::Kind::Error);
+
 	// A line as a frontend runs it, the run it starts left to go on.
 	const auto run = [&](std::string_view command)
 	{
@@ -342,6 +360,7 @@ TEST_CASE("Manifest console: connect plays on a server as the token's actor, and
 	Manifest::Remote::WriteServerKey(keyFile.Path(), key.secretKey);
 	Manifest::Remote::Server server{*pHosted, tokens.Path(), keyFile.Path(), "127.0.0.1", 0};
 	const std::string endpoint = std::format("127.0.0.1:{}", server.Port());
+
 	// The same server by another name, pinned to another server's key.
 	const std::string impostor = std::format("localhost:{}", server.Port());
 	const Manifest::Test::TempFile servers{std::format(
@@ -372,6 +391,7 @@ TEST_CASE("Manifest console: connect plays on a server as the token's actor, and
 	    Execute(session, "connect " + endpoint + " " + Jettison::Net::GenerateToken()).text ==
 	    "Connecting to " + endpoint + ".");
 	CHECK(await("Disconnected") == "Disconnected from " + endpoint + ": bad credential.");
+
 	// A server the list does not name is not connected to, and one pinned to another key is left.
 	CHECK(
 	    Execute(session, "connect 127.0.0.1:1 " + adminToken).text ==
@@ -382,6 +402,7 @@ TEST_CASE("Manifest console: connect plays on a server as the token's actor, and
 
 	Execute(session, "connect " + endpoint + " " + adminToken);
 	CHECK(await("Connected") == "Connected to " + endpoint + " as Operator; your next request is 1.");
+
 	// The server steps its own world: no one connected steps it, an administrator included.
 	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "the server steps its own world");
 	CHECK(Execute(session, "provision Ada \"Ada Freight\"").text == "Sent request 1 to the server.");
@@ -403,6 +424,7 @@ TEST_CASE("Manifest console: connect plays on a server as the token's actor, and
 	CHECK(await("queued").starts_with("Request 2 queued"));
 	CHECK(await("Request 2:", true) == "Request 2: Succeeded at step 2.");
 	CHECK(Execute(session, "book VenueOreHighport").kind == ConsoleLine::Kind::Error);
+
 	// Snapshots go out at most once an interval, so the step's may follow its reply.
 	const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{2};
 	while ((!session.Connected()->Latest() || session.Connected()->Latest()->step != 3) &&
@@ -422,6 +444,7 @@ TEST_CASE("Manifest console: connect plays on a server as the token's actor, and
 	CHECK(Execute(session, "disconnect").text == "Disconnected from " + endpoint + ".");
 	CHECK(session.Connected() == nullptr);
 	CHECK(Execute(session, "disconnect").kind == ConsoleLine::Kind::Error);
+
 	// Back to the local harness: observe needs a hosted world again.
 	CHECK(Execute(session, "observe").kind == ConsoleLine::Kind::Error);
 }
@@ -453,6 +476,7 @@ class CompressedContent
 		std::ofstream{mode} << kept;
 	}
 
+
 	std::string Path() const
 	{
 		return m_directory.Path().string();
@@ -462,6 +486,7 @@ class CompressedContent
 	ConfigDirectory m_directory;
 };
 
+
 // The price of the book's best order on a side, as book prints it.
 std::string BestPrice(const std::string &book, std::string_view side)
 {
@@ -470,6 +495,8 @@ std::string BestPrice(const std::string &book, std::string_view side)
 	const std::size_t at = book.find(" at ", line) + 4;
 	return book.substr(at, book.find(',', at) - at);
 }
+
+
 // The best price on a side of a good in the player's report of a venue, as observe shows it.
 std::string Reported(
     const std::string &view, std::string_view venue, std::string_view item, std::string_view side)
@@ -482,6 +509,7 @@ std::string Reported(
 	return view.substr(at, view.find(' ', at) - at);
 }
 } // namespace
+
 
 TEST_CASE("Manifest console: the vertical slice, furs bought at Ore, flown to Brine and sold there")
 {
@@ -551,6 +579,7 @@ TEST_CASE("Manifest console: the vertical slice, furs bought at Ore, flown to Br
 	const std::string arrived = Execute(session, "observe Ada").text;
 	MANIFEST_CHECK_CONTAINS(arrived, "VenueBrineHighport: live");
 	MANIFEST_CHECK_CONTAINS(arrived, "VenueOreHighport: stale, observed");
+
 	// Its households bought a tote over the cruise, and its bids rose with it.
 	MANIFEST_CHECK_CONTAINS(arrived, "ItemFurs: bid 103.971304 (2 totes, 4 prices)");
 	for (int tote = 0; tote < 2; ++tote)
@@ -567,6 +596,7 @@ TEST_CASE("Manifest console: the vertical slice, furs bought at Ore, flown to Br
 	CHECK(sold.substr(0, sold.find("\nmarkets")).find("ItemFurs") == std::string::npos);
 	MANIFEST_CHECK_CONTAINS(sold, "ItemFurs: bid");
 	MANIFEST_CHECK_CONTAINS(sold, "totes sold, last sold at");
+
 	// A bid under the market rests in the player's view until its cancel.
 	Execute(session, "trade buy Ada VenueBrineHighport ItemFurs 1 1");
 	Execute(session, "step");
@@ -623,6 +653,7 @@ TEST_CASE("Manifest console: a ship's hold and systems in the view, and an upgra
 		CAPTURE(command);
 		CHECK(Execute(session, command).kind == ConsoleLine::Kind::Error);
 	}
+
 	// A new company's credits are short of the offer's (D-096).
 	Execute(session, "fit Ada Ship1 OfferCargoHolds 1");
 	MANIFEST_CHECK_CONTAINS(
@@ -644,6 +675,7 @@ constexpr bool kOptimised = false;
 // the economy built since, leaving under 3% before the limit. Stepped, it took 4 min 50 s.
 constexpr double kJourneySeconds = 3.50;
 } // namespace
+
 
 // A journey dearer than half as much again as it was fails. Timed only in an optimised build without
 // sanitisers, alone (its ctest runs serially), and not on CI, whose machines are not Lythir.

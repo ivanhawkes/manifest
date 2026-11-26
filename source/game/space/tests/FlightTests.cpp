@@ -181,6 +181,7 @@ TEST_CASE("Flight: a ship takes flight controls only from the one at its helm, o
 	world.Step();
 
 	const FlightControls ahead{{0.0f, 0.0f, -1.0f}};
+
 	// Another player's ship, and the player's own that their behaviour flies: refused.
 	world.Commands().Push(SetFlightControls{two, flown, ahead});
 	world.Commands().Push(SetFlightControls{one, unflown, ahead});
@@ -257,6 +258,7 @@ TEST_CASE("Flight: a ship's thrust is what changed its velocity, none at a speed
 		REQUIRE(found);
 		return *found;
 	};
+
 	// At rest and asked for nothing, it fires nothing.
 	CHECK(fired() == Thrust{});
 
@@ -358,6 +360,7 @@ TEST_CASE("Flight: assist holds a ship to its reference, not to the system")
 {
 	Jettison::Sim::SimWorld world{kStep, kSeed};
 	Populate(world);
+
 	// A hulk coasting at 7 km/s, and a ship beside it at its speed.
 	const entt::entity hulk = Ship(world);
 	world.Registry().remove<Handling>(hulk);
@@ -410,6 +413,7 @@ TEST_CASE("Flight: an entity on rails is where its body is as each step ends")
 	CHECK(placed.position == StationAt(world.Clock().Now()).position);
 	CHECK(world.Registry().get<Jettison::Sim::Transform>(framed).position == placed.position);
 	CHECK(physics.FrameCount(kHalcyon) == 2);
+
 	// Moved with its orbit's velocity from the first step: the 7.7 km/s about the planet and the
 	// 30 km/s about the star, to within what a float holds.
 	const glm::dvec3 expected = StationVelocity(before);
@@ -463,6 +467,7 @@ TEST_CASE("Flight: gravity is the system's bodies pulling, and none outside a de
 	const glm::dvec3 pull = physics.Gravity(kHalcyon, high, 0.0) - starPull(high);
 	CHECK(glm::length(pull) == doctest::Approx(3.986004418e14 / (6.791e6 * 6.791e6)).epsilon(1e-9));
 	CHECK(glm::dot(glm::normalize(pull), -up) == doctest::Approx(1.0).epsilon(1e-12));
+
 	// Halfway to the centre, half the surface's.
 	const glm::dvec3 deep = planet + up * 3.1855e6;
 	CHECK(
@@ -566,6 +571,7 @@ struct Approach
 Approach Begin(Jettison::Sim::SimWorld &world)
 {
 	const entt::entity station = Station(world, "hub");
+
 	// The zone is the approach to the hub's end, which is 30 m from its centre: 32 m deep and 50 m
 	// across, a sensor on rails at its place on the station and in the station's frame.
 	entt::registry &registry = world.Registry();
@@ -577,6 +583,7 @@ Approach Begin(Jettison::Sim::SimWorld &world)
 	Body sensor{BodyKind::Kinematic, "zone"};
 	sensor.sensor = true;
 	registry.emplace<Body>(zone, sensor);
+
 	// A half turn about Y, so its -Z, ahead, points along the system's +Z, at the hub's end.
 	const entt::entity ship = Beside(
 	    world, "hull", 20000.0f, {0.0, 1.5, -190.0},
@@ -593,6 +600,7 @@ void Feed(Jettison::Sim::SimWorld &world, const Approach &approach)
 	{
 		case 0: Fly(world, approach.ship, holding); break;
 		case 10: Fly(world, approach.ship, {{0.0f, 0.0f, -0.4f}, {}, true, approach.station}); break;
+
 		// A roll on the way in, which turns the hull about the line it flies along.
 		case 60:
 			Fly(world, approach.ship,

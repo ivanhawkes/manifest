@@ -101,6 +101,7 @@ class MarketplaceService
 	explicit MarketplaceService(MarketplaceOptions options = {});
 
 	const MarketplaceOptions &Options() const;
+
 	void SetOptions(MarketplaceOptions options);
 
 	// ─── Venues ───
@@ -132,6 +133,7 @@ class MarketplaceService
 	// market in the world.
 	std::vector<std::string> MarketIds(
 	    const EntityStore &world, const std::string &civilisationId) const;
+
 	std::size_t MarketCount(const EntityStore &world) const;
 
 	const MarketplaceInfo *MarketAt(const EntityStore &world, const std::string &bodyId) const;
@@ -212,6 +214,7 @@ class MarketplaceService
 	bool BestAsk(
 	    const EntityStore &world, const std::string &marketId, const std::string &itemId,
 	    Decimal &price) const;
+
 	bool BestBid(
 	    const EntityStore &world, const std::string &marketId, const std::string &itemId,
 	    Decimal &price) const;

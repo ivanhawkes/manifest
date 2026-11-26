@@ -45,29 +45,39 @@ struct ContentSet
 {
 	// In the mode's order.
 	Core::Ages ages;
+
 	// Every category, in registry order: their order has no meaning to the game.
 	Core::Categories categories;
+
 	// The mode's items and skills, in its order.
 	Core::GameModeNode gameMode;
 	Core::UniverseNamePools names;
+
 	// Every hull, in registry order.
 	std::vector<Core::ShipClassSpec> hulls;
+
 	// Every offer a company may buy, in registry order.
 	std::vector<OfferDefinition> offers;
+
 	// Jettison's docks as authored (D-062), by record name: the pad classes, each hull's dock hull and
 	// cruise drive, by its Manifest.Hull's record name, and the station layouts.
 	Jettison::Dock::BerthClasses padClasses;
 	std::map<std::string, Jettison::Dock::VehicleDefinition, std::less<>> dockHulls;
 	std::map<std::string, Manifest::Space::CruiseDrive, std::less<>> drives;
 	std::map<std::string, Jettison::Dock::PlatformLayout, std::less<>> layouts;
+
 	// The balance record, tuning/balance.
 	TuningDefinition tuning;
+
 	// Every scenario by its name, checked against its own game mode, which need not be this set's.
 	std::map<std::string, ScenarioDefinition, std::less<>> scenarios;
+
 	// The scenario selected, by its name; empty for a set selected by game mode alone.
 	std::string scenario;
+
 	// The scenario's star systems, resolved, in its order; none with no scenario selected.
 	std::vector<Manifest::Space::StarSystem> systems;
+
 	// Over every definition loaded, the mode's or not, and the scenario selected.
 	ContentIdentity identity;
 };

@@ -28,6 +28,7 @@ constexpr double kStep = 1.0 / 60.0;
 const std::uint64_t kHalcyon = Jettison::Sim::FrameId("Halcyon");
 const std::uint64_t kVesper = Jettison::Sim::FrameId("Vesper");
 constexpr std::int64_t kToll = 2000;
+
 // Two minutes, at 60 steps a second.
 constexpr std::uint64_t kClearanceSteps = 7200;
 constexpr Jettison::Sim::Controller kPilot{Jettison::Sim::ControllerKind::Player, 1};
@@ -234,6 +235,7 @@ TEST_CASE("Gates: a cleared ship flown through the ring is sent, and its owner c
 	Fixture fixture;
 	entt::registry &registry = fixture.world.Registry();
 	const entt::entity gate = fixture.Gate();
+
 	// 400 m short of the ring at 100 m/s.
 	const entt::entity ship = fixture.Ship(400.0, 100.0f);
 	fixture.world.Commands().Push(Manifest::Space::RequestTransit{kPilot, ship, gate});
@@ -248,6 +250,7 @@ TEST_CASE("Gates: a cleared ship flown through the ring is sent, and its owner c
 	CHECK(cleared[0].lapses == asked + kClearanceSteps);
 	CHECK(fixture.GateOf(gate).holder == ship);
 	CHECK(registry.get<Manifest::Space::Transit>(ship) == Manifest::Space::Transit{{gate, true}});
+
 	// Nothing is charged until it enters.
 	CHECK(fixture.CreditsOf(ship) == 10000);
 
@@ -287,6 +290,7 @@ TEST_CASE("Gates: a ship not cleared passes through the ring with a reason, and 
 	entt::registry &registry = fixture.world.Registry();
 	const entt::entity gate = fixture.Gate();
 	const entt::entity ship = fixture.Ship(400.0, 100.0f);
+
 	// Waiting behind another, it is not cleared either.
 	const entt::entity first = fixture.Ship(3000.0, 0.0f);
 	const entt::entity waiting = fixture.Ship(500.0, 100.0f);
@@ -310,6 +314,7 @@ TEST_CASE("Gates: a ship not cleared passes through the ring with a reason, and 
 		CHECK(each.gate == gate);
 		CHECK(Jettison::Sim::Describe(each.reason) == "reason.space.not_cleared('Halcyon Gate')");
 	}
+
 	// Through and out the far side, in Halcyon still, on its credits, and still waiting.
 	for (const entt::entity each : {ship, waiting})
 	{
@@ -404,6 +409,7 @@ TEST_CASE("Gates: what cannot be cleared through a gate is refused, saying why")
 	CHECK(fixture.Events<Manifest::Space::TransitCleared>().size() == 1);
 	CHECK(refused({kPilot, ship, gate}) == "reason.space.already_cleared('Halcyon Gate')");
 	CHECK(refused({kPilot, elsewhere, gate}) == "reason.space.not_at_gate('Halcyon Gate')");
+
 	// Nothing was taken from any of them.
 	for (const entt::entity each : {ship, wide, elsewhere})
 		CHECK(fixture.CreditsOf(each) == 10000);
@@ -442,6 +448,7 @@ TEST_CASE("Gates: a cleared ship whose owner can no longer pay passes through, a
 	fixture.world.Commands().Push(Manifest::Space::RequestTransit{kPilot, next, gate});
 	fixture.Run(1);
 	fixture.Events<Manifest::Space::TransitCleared>();
+
 	// Spent, after it was cleared.
 	registry.get<Credits>(ship).amount = 500;
 
@@ -462,6 +469,7 @@ TEST_CASE("Gates: a cleared ship whose owner can no longer pay passes through, a
 	CHECK(fixture.CreditsOf(ship) == 500);
 	CHECK_FALSE(registry.all_of<Manifest::Space::OnLane>(ship));
 	CHECK_FALSE(registry.all_of<Manifest::Space::Transit>(ship));
+
 	// The next in the queue cleared in the same step.
 	const std::vector<Manifest::Space::TransitCleared> cleared =
 	    fixture.EventsOf<Manifest::Space::TransitCleared>(events);

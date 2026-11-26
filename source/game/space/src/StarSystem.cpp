@@ -214,6 +214,7 @@ glm::dquat JumpPointFacing(const StarSystem &system, std::size_t body, double si
 		if (kind == BodyKind::Planet || kind == BodyKind::Moon)
 			target = static_cast<std::size_t>(parent);
 	}
+
 	// The nearest of a kind, the first listed of two as near.
 	for (const BodyKind kind : {BodyKind::Planet, BodyKind::Station})
 	{

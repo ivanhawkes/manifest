@@ -78,6 +78,7 @@ constexpr std::array<StatInfo, 46> statTable{
 
 static_assert(statTable.size() == 46, "the stat table must cover every EffectStat enumerator");
 
+
 const StatInfo *FindStatInfo(EffectStat stat)
 {
 	for (const auto &info : statTable)
@@ -91,6 +92,7 @@ const StatInfo *FindStatInfo(EffectStat stat)
 	return nullptr;
 }
 } // namespace
+
 
 const char *DescribeEffectOrigin(EffectOrigin origin)
 {

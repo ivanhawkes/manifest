@@ -20,6 +20,7 @@ std::optional<Decimal> Decimal::TryFromDouble(double value)
 	return FromRaw(static_cast<std::int64_t>(raw));
 }
 
+
 void Decimal::InvalidArithmetic()
 {
 	// Recoverable boundary errors use Try* before mutating state. Reaching this is an
@@ -27,6 +28,7 @@ void Decimal::InvalidArithmetic()
 	JETTISON_VERIFY(false);
 	std::abort();
 }
+
 
 std::string Decimal::ToString() const
 {

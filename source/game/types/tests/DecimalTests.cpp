@@ -6,6 +6,7 @@
 
 using namespace Manifest::Core;
 
+
 TEST_CASE("Decimal parses authored prices exactly and refuses lossy input")
 {
 	CHECK(Decimal::TryParse("5.6312") == 5.6312_dec);
@@ -24,6 +25,7 @@ TEST_CASE("Decimal parses authored prices exactly and refuses lossy input")
 	CHECK(Decimal::Min().ToString() == "-9223372036854.775808");
 }
 
+
 TEST_CASE("Decimal price arithmetic checks overflow and truncates scalar division")
 {
 	CHECK((5.631201_dec / 2).Raw() == 2'815'600);
@@ -33,6 +35,7 @@ TEST_CASE("Decimal price arithmetic checks overflow and truncates scalar divisio
 	CHECK_FALSE(Decimal::TryDivide(Decimal::Min(), -1));
 	CHECK(Decimal::TryDivide(Decimal::Max(), 1) == Decimal::Max());
 }
+
 
 TEST_CASE("Computed prices round at an explicit floating point boundary")
 {

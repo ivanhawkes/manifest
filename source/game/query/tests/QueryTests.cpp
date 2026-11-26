@@ -52,6 +52,7 @@ struct Hosted
 		Manifest::Travel::OpenStations(world, fleet);
 	}
 
+
 	template <typename T> Result Run(const Actor &actor, std::string_view command, const T &payload)
 	{
 		const std::uint64_t sequence = requests.NextSequence(actor);
@@ -64,15 +65,18 @@ struct Hosted
 		return requests.Outcome(actor, sequence).value().result;
 	}
 
+
 	Result Provision(const std::string &principalId)
 	{
 		return Run(kHost, Company::kProvision, Company::Provision{principalId, principalId, "Co"});
 	}
 
+
 	World::Stock &Stock(const std::string &companyId)
 	{
 		return world.Registry().get<World::Stock>(identities.Find(Kind::Company, companyId));
 	}
+
 
 	Snapshot Observe(const Actor &actor) const
 	{
@@ -99,6 +103,7 @@ TEST_CASE("A player sees their own company as it was at the completed step, and 
 	const std::uint64_t hash = hosted.world.StateHash();
 	Snapshot loaded = hosted.Observe(kAda);
 	CHECK(hosted.world.StateHash() == hash);
+
 	// Ada's starting reports of the nine other stations of her system, Brine's among them, from the
 	// step she spawned in.
 	REQUIRE(loaded.markets.size() == 9);
@@ -224,6 +229,7 @@ TEST_CASE("Every player sees each region and its governor, and its governor its 
 	REQUIRE(
 	    hosted.Run(kAda, Company::kFound, Company::Found{"RegionForgeNorth", "Company1", "North"}) ==
 	    Result::Succeeded);
+
 	// Fixture bootstrap: Ada's region's policy, as SetDevelopment would set it.
 	registry.emplace<World::Development>(
 	    hosted.identities.Find(Kind::Region, "RegionForgeNorth"), true, 50'000);
@@ -251,12 +257,14 @@ TEST_CASE("Every player sees each region and its governor, and its governor its 
 	CHECK(north.treasury == 1'200'000);
 	CHECK(north.queue.empty());
 	CHECK(north.development == World::Development{true, 50'000});
+
 	// Bea sees whose it is, and none of its treasury, queue or policy.
 	RegionView seen = region(beas, "RegionForgeNorth");
 	CHECK(seen.governorName == "North");
 	CHECK(seen.playerGoverned);
 	CHECK_FALSE(seen.treasury.has_value());
 	CHECK_FALSE(seen.development.has_value());
+
 	// Open to founding, and an AI neighbour's, its figures the AI's alone, which the host sees.
 	CHECK(region(beas, "RegionForgeSouth").governorId.empty());
 	const RegionView east = region(adas, "RegionForgeEast");
@@ -269,6 +277,7 @@ TEST_CASE("Every player sees each region and its governor, and its governor its 
 	REQUIRE(hostsEast.queue.size() == 1);
 	CHECK(hostsEast.queue[0].project.projectId == "ProjectBronzeMetallurgy");
 	CHECK(hostsEast.queue[0].stock.empty());
+
 	// Observed again, nothing has changed: a reconnecting player sees the same.
 	CHECK(hosted.Observe(kAda) == adas);
 }

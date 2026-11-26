@@ -66,12 +66,15 @@ const Actor kHost{ActorKind::Administrator, "Host"};
 const Actor kAda{ActorKind::Principal, "Ada"};
 constexpr std::string_view kOre = "VenueOreHighport";
 constexpr std::string_view kBrine = "VenueBrineHighport";
+
 // The loop's good, made at Ore and wanted at Brine, its best run for a starter (W19's balance).
 constexpr std::string_view kGood = "ItemCopper";
 constexpr std::string_view kOxygen = "ItemOxygen";
 constexpr std::string_view kCartridges = "ItemCarbonScrubberCartridge";
+
 // OfferCargoHolds' tier 1 (D-096), the one credit sink of the loop.
 constexpr std::int64_t kHoldsCost = 27000;
+
 // A journey from Ore to Brine on the power law is minutes, so this bounds one with room to spare.
 constexpr std::uint64_t kJourneySteps = std::uint64_t{60} * 60 * 12;
 
@@ -83,8 +86,10 @@ struct Outcome
 	Result result{Result::Succeeded};
 	std::uint64_t hash{0};
 
+
 	bool operator==(const Outcome &) const = default;
 };
+
 
 // The credits the world holds: every account, a buy order's escrow and a batch's wages not yet paid.
 std::int64_t Credits(const entt::registry &registry)
@@ -99,6 +104,7 @@ std::int64_t Credits(const entt::registry &registry)
 			total += batch.wages - batch.paid;
 	return total;
 }
+
 
 // The whole totes of each item the world holds: every owner's holdings, reserved ones among them, and
 // every hold's lots and the totes opened for a ship's life support, each still a tote.
@@ -120,6 +126,7 @@ std::map<std::string, std::int64_t> Totes(const entt::registry &registry)
 
 using Batches = std::map<std::pair<std::string, std::string>, World::Batch>;
 
+
 Batches Underway(const entt::registry &registry)
 {
 	Batches batches;
@@ -128,6 +135,7 @@ Batches Underway(const entt::registry &registry)
 			batches.emplace(std::pair{batch.venueId, batch.itemId}, batch);
 	return batches;
 }
+
 
 // The totes of each item the batches before a step delivered in it: a batch that has gone, or been
 // followed by the next, its work begun again.
@@ -152,18 +160,23 @@ struct Hosted
 	Jettison::Sim::SimWorld &world{session->World()};
 	Manifest::Host::Services services{Manifest::Host::HostedServices(*session)};
 	std::vector<Outcome> trace;
+
 	// What the loop has spent on purpose: the credits it holds and these make what it started with.
 	std::int64_t sunk{0};
 	std::int64_t credits{0};
+
 	// The first step at which credits or goods appeared or went unaccounted for.
 	std::optional<std::uint64_t> creditBreach;
 	std::optional<std::uint64_t> goodsBreach;
+
 	// The totes batches delivered, and the steps something used goods up in (Trade::Consumed): each
 	// source and sink the ledger allows for, there to be seen happening.
 	std::int64_t made{0};
 	std::uint64_t consumptions{0};
+
 	// Steps through the journal when given, as a server does.
 	Manifest::Host::Journal *pJournal{nullptr};
+
 
 	explicit Hosted(
 	    const std::string &content,
@@ -174,6 +187,7 @@ struct Hosted
 	{
 	}
 
+
 	// The fixture's bootstrap: Ada provisioned at Ore by the host, and her ship's cruise the drive's
 	// power law Astralis keeps (D-088), so that Ore to Brine is minutes rather than the Manifest
 	// mode's days (D-090).
@@ -183,10 +197,12 @@ struct Hosted
 		    Run(kHost, Company::kProvision, Company::kVersion,
 		        Company::Provision{"Ada", "Ada", "Ada Co"}) == Result::Succeeded);
 		world.Registry().get<Manifest::Space::CruiseDrive>(Ship()).profile.reset();
+
 		// The company's starting credits are made by provisioning, so the ledger starts after it.
 		credits = Credits(world.Registry());
 		creditBreach.reset();
 	}
+
 
 	// After a load, the ledger is checked from the state loaded.
 	void Load(const std::vector<std::byte> &save)
@@ -194,6 +210,7 @@ struct Hosted
 		world.Load(save);
 		credits = Credits(world.Registry());
 	}
+
 
 	void Step()
 	{
@@ -205,6 +222,7 @@ struct Hosted
 			pJournal->Advance(world, 1);
 		else
 			world.Step();
+
 		// What the step used up, as each sink raised it.
 		std::map<std::string, std::int64_t> consumed;
 		for (const Jettison::Sim::SimEvent &raised : world.Events().Take())
@@ -214,6 +232,7 @@ struct Hosted
 		const std::uint64_t step = world.Clock().Step();
 		if (Credits(registry) + sunk != credits && !creditBreach)
 			creditBreach = step;
+
 		// Each item's totes change by exactly what batches delivered less what the step used up.
 		const std::map<std::string, std::int64_t> delivered = Delivered(batches, Underway(registry));
 		consumptions += consumed.empty() ? 0 : 1;
@@ -239,6 +258,7 @@ struct Hosted
 		}
 	}
 
+
 	// The request admitted as the actor's next and run in the next step, its outcome traced.
 	template <typename T>
 	Result Run(const Actor &actor, std::string_view command, std::uint32_t version, const T &payload)
@@ -256,6 +276,7 @@ struct Hosted
 		return completed->result;
 	}
 
+
 	Result Place(
 	    std::string_view venueId, std::string_view itemId, Side side, std::uint64_t totes,
 	    std::int64_t limit)
@@ -264,6 +285,7 @@ struct Hosted
 		    kAda, Trade::kPlace, Trade::kVersion,
 		    Trade::Place{std::string{venueId}, std::string{itemId}, side, totes, limit});
 	}
+
 
 	Result Move(
 	    std::string_view command, std::string_view venueId, std::string_view itemId,
@@ -274,10 +296,12 @@ struct Hosted
 		    Company::Move{"Ship1", std::string{venueId}, std::string{itemId}, totes});
 	}
 
+
 	Result Service(std::string_view command)
 	{
 		return Run(kAda, command, Company::kVersion, Company::Service{"Ship1"});
 	}
+
 
 	// Ada's company and her markets, as her query shows them.
 	CompanyView Seen() const
@@ -288,12 +312,14 @@ struct Hosted
 		return snapshot.companies[0];
 	}
 
+
 	ShipView Ship1() const
 	{
 		const CompanyView company = Seen();
 		REQUIRE(company.ships.size() == 1);
 		return company.ships[0];
 	}
+
 
 	MarketView Market(std::string_view venueId) const
 	{
@@ -305,6 +331,7 @@ struct Hosted
 		return {};
 	}
 
+
 	// The good's line of Ada's report of the venue.
 	World::Line Quote(std::string_view venueId, std::string_view itemId) const
 	{
@@ -315,10 +342,12 @@ struct Hosted
 		return {};
 	}
 
+
 	entt::entity Ship() const
 	{
 		return services.identities.Find(Kind::Ship, "Ship1");
 	}
+
 
 	// Steps until the ship's journey ends.
 	void RunJourney()
@@ -329,6 +358,7 @@ struct Hosted
 	}
 };
 
+
 // The company's totes of the item at the venue, available and reserved, 0 where it holds none.
 World::Holding Held(const CompanyView &company, std::string_view venueId, std::string_view itemId)
 {
@@ -337,6 +367,7 @@ World::Holding Held(const CompanyView &company, std::string_view venueId, std::s
 			return holding;
 	return {std::string{venueId}, std::string{itemId}, 0, 0};
 }
+
 
 std::uint64_t Aboard(const ShipView &ship, std::string_view itemId)
 {
@@ -356,11 +387,13 @@ struct Business
 	std::vector<World::Opened> opened;
 	std::size_t orders{0};
 
+
 	explicit Business(const CompanyView &company)
 	    : credits{company.credits}, holdings{company.holdings}, cargo{company.ships.at(0).cargo},
 	      opened{company.ships.at(0).opened}, orders{company.orders.size()}
 	{
 	}
+
 
 	bool operator==(const Business &) const = default;
 };
@@ -439,6 +472,7 @@ void ToCruise(Hosted &hosted)
 	REQUIRE(hosted.Ship1().journey->leg == Leg::Cruising);
 }
 
+
 // Cruising: the tanks refilled from the hold in flight, then docked at Brine, the cartridge replaced,
 // the copper unloaded and sold, the resting bid cancelled and the holds bought.
 void FromCruise(Hosted &hosted)
@@ -448,6 +482,7 @@ void FromCruise(Hosted &hosted)
 	REQUIRE(cruising.lifeSupport.tanks[0] < 10.0);
 	CHECK(hosted.Service(Company::kRefill) == Result::Succeeded);
 	const ShipView refilled = hosted.Ship1();
+
 	// Full, less the step's use drawn after the command.
 	MANIFEST_CHECK_NEAR(refilled.lifeSupport.tanks[0], 10.0, 1e-6);
 	CHECK(refilled.lifeSupport.tanks[1] == 10.0);
@@ -463,9 +498,11 @@ void FromCruise(Hosted &hosted)
 	CHECK(arrived.journey->leg == Leg::Arrived);
 	CHECK(arrived.dockedAt == kBrine);
 	CHECK(arrived.lifeSupport.connectedTo == kBrine);
+
 	// The cargo stayed with the ship.
 	CHECK(Aboard(arrived, kGood) == 2);
 	CHECK(Aboard(arrived, kCartridges) == 1);
+
 	// Brine is live now, and Ore as it froze.
 	CHECK(hosted.Market(kBrine).live);
 	CHECK(hosted.Market(kBrine).report.source == World::Source::Docked);
@@ -541,9 +578,12 @@ struct Scratch
 	{
 	}
 
+
 	Scratch(const Scratch &) = delete;
 
+
 	Scratch &operator=(const Scratch &) = delete;
+
 
 	~Scratch()
 	{
@@ -561,6 +601,7 @@ void CheckLedger(const Hosted &hosted)
 	    !hosted.creditBreach, "credits unaccounted for from step ", hosted.creditBreach.value_or(0));
 	CHECK_MESSAGE(
 	    !hosted.goodsBreach, "goods unaccounted for from step ", hosted.goodsBreach.value_or(0));
+
 	// Each source and sink the ledger allows for was seen at work.
 	CHECK(hosted.made > 0);
 	CHECK(hosted.consumptions > 0);
@@ -632,6 +673,7 @@ TEST_CASE("The trading fixture's loop, backed up in flight with a bid resting an
 	hosted.pJournal = &journal;
 	hosted.Bootstrap();
 	ToCruise(hosted);
+
 	// The server stopped in flight: its snapshot, and the backup of it.
 	journal.Stop(hosted.world);
 	std::vector<std::filesystem::path> backups;
@@ -647,6 +689,7 @@ TEST_CASE("The trading fixture's loop, backed up in flight with a bid resting an
 	restored.credits = Credits(restored.world.Registry());
 	restored.pJournal = &again;
 	CHECK(restored.world.StateHash() == hosted.world.StateHash());
+
 	// The bid resting with its escrow, the ship cruising and every request's outcome as it was.
 	const CompanyView company = restored.Seen();
 	REQUIRE(company.orders.size() == 1);
@@ -745,6 +788,7 @@ TEST_CASE("The trading fixture's cruise fast-forwarded is the one stepped, at ev
 // Nia's ship and Ada's, the trader the overlay adds and the player.
 const std::vector<std::string> kTraderShips{"Ship1", "Ship2"};
 
+
 // With no client connected, a scenario's NPC trader and a player whose ship has its standing policy
 // trade as the server's loop steps the world (D-097), passing over what it may (Jettison::Sim::Quiet).
 TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded and replayed alike")
@@ -759,6 +803,7 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 	entt::registry &registry = hosted.world.Registry();
 	const auto ship = [&](const Hosted &on, const std::string &id)
 	{ return on.services.identities.Find(Kind::Ship, id); };
+
 	// Both cruises on the drive's power law, as the bootstrap's, so that a trade is minutes (D-090).
 	for (const std::string &id : kTraderShips)
 		registry.get<Manifest::Space::CruiseDrive>(ship(hosted, id)).profile.reset();
@@ -800,6 +845,7 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 			const auto *journey = registry.try_get<const World::Journey>(ship(hosted, id));
 			padLost = padLost || (journey && journey->failure == World::Failure::PadLost);
 		}
+
 		// Saved with Ada's lot aboard and under way to its buyer.
 		const auto *pJourney = registry.try_get<const World::Journey>(ship(hosted, "Ship2"));
 		if (!midJob && jobs["Ship2"].phase == World::Phase::ToDestination && pJourney &&
@@ -812,16 +858,19 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 	for (const std::string &id : kTraderShips)
 	{
 		CHECK_MESSAGE(sales[id] > 0, id);
+
 		// What it holds counted at what it paid, since the run may end with a lot aboard.
 		const World::Job &job = registry.get<const World::Job>(ship(hosted, id));
 		CHECK_MESSAGE(balance(hosted, id) + (job.totes > 0 ? job.cost : 0) > 25000, id);
 	}
+
 	// Every arrival docked: none circled the point above its pad until the pad lapsed, as one did
 	// before Jettison's docks stopped a ship out along its pad's normal first.
 	CHECK_FALSE(padLost);
 	REQUIRE(midJob);
 	const std::uint64_t steps = end - first;
 	MESSAGE(steps << " steps in " << calls << " calls");
+
 	// The cruises passed over. A ship flown in a station's frame is steered every step, and here each
 	// docked wait has the other ship so flown: choosing per hour, both hop between the stations of
 	// Ore's one orbit (W21), so most of the run is flown so.
@@ -871,6 +920,7 @@ void ForwardTo(Hosted &hosted, std::uint64_t step)
 	}
 }
 
+
 // The metres of a cruise's course, waypoints included.
 double Metres(const Manifest::Space::Cruising &cruising)
 {
@@ -879,6 +929,7 @@ double Metres(const Manifest::Space::Cruising &cruising)
 		metres += glm::length(cruising.course[point] - cruising.course[point - 1]);
 	return metres;
 }
+
 
 // Ada provisioned at Ore on the manned drive, her reports Ore's Highport and Brine's alone, as
 // Trader's, so her lot is copper to Brine; the rest of her hold, for a heavy run, full of copper of
@@ -920,6 +971,7 @@ struct Departed
 	double seconds{0.0};
 };
 
+
 // Stepped, the ledger of credits kept, until the ship's policy has bought its lot, loaded it and set
 // out on its cruise: refuelled full as it left, its tanks less what the job is to charge to the lot,
 // the share of the cruise it thrusts its job's.
@@ -956,6 +1008,7 @@ Departed Depart(Hosted &hosted)
 	return timed;
 }
 
+
 // Two minutes about the step, stepped in a world loaded from the save before them, are the world
 // fast-forwarded across them, to the byte.
 void Across(Hosted &forwarded, std::uint64_t step)
@@ -972,6 +1025,7 @@ void Across(Hosted &forwarded, std::uint64_t step)
 	ForwardTo(forwarded, step + minute);
 	CHECK(forwarded.world.Save() == stepped.world.Save());
 }
+
 
 // Fast-forwarded until the ship's journey has docked at Brine.
 void Arrive(Hosted &hosted, const Departed &departed)
@@ -1001,6 +1055,7 @@ TEST_CASE(
 	Manned(light, false);
 	const Departed fast = Depart(light);
 	CHECK(fast.job.thrustBps == World::kFullThrustBps);
+
 	// Across its boost's end, at 2 g for its first hours and 1 g after.
 	const Jettison::Transit::ThrustSeconds fastThrust =
 	    Jettison::Transit::Thrust(*fast.cruising.profile, Metres(fast.cruising));
@@ -1008,6 +1063,7 @@ TEST_CASE(
 	Across(
 	    light, fast.cruising.departureStep + static_cast<std::uint64_t>(std::llround(
 	                                             fastThrust.boost / light.world.FixedStep())));
+
 	// Docked, its policy charges the lot its fuel and sells it.
 	Arrive(light, fast);
 	for (std::uint64_t step = 0; step < kJourneySteps && Aboard(light.Ship1(), kGood) > 0; ++step)
@@ -1018,6 +1074,7 @@ TEST_CASE(
 	Hosted heavy{MANIFEST_MOD_DIRECTORY};
 	Manned(heavy, true);
 	const Departed slow = Depart(heavy);
+
 	// Below the least of the shares listed: the most its tanks reach.
 	CHECK(slow.job.thrustBps < 1000);
 	CHECK(slow.job.reactionMassKilograms > fast.job.reactionMassKilograms);
@@ -1027,6 +1084,7 @@ TEST_CASE(
 	                << fast.job.reactionMassKilograms << " kg; heavy at " << slow.job.thrustBps
 	                << " bps, " << slow.seconds / 86400 << " days, " << slow.job.reactionMassKilograms
 	                << " kg");
+
 	// Across its thrust's end, where it starts to coast.
 	const Jettison::Transit::ThrustSeconds slowThrust =
 	    Jettison::Transit::Thrust(*slow.cruising.profile, Metres(slow.cruising));
@@ -1272,6 +1330,7 @@ TEST_CASE("A laden policy's burn is one its tanks fly once refuelled by whole to
 	entt::registry &registry = hosted.world.Registry();
 	hosted.credits = Credits(registry);
 	hosted.creditBreach.reset();
+
 	// Fixture bootstrap: Ore and Brine her only reports, her hold all but full and her tanks low, so
 	// whole totes of reaction mass leave them short of full.
 	std::erase_if(
@@ -1285,6 +1344,7 @@ TEST_CASE("A laden policy's burn is one its tanks fly once refuelled by whole to
 	        kAda, Manifest::Policy::kSet, Manifest::Policy::kVersion,
 	        Manifest::Policy::Set{"Ship1", true, 0, 0}) == Result::Succeeded);
 	const World::Job job = registry.get<World::Job>(hosted.Ship());
+
 	// Once estimated as tanks filled to the brim, it chose a burn the whole totes could not fly and
 	// was refused at every retry.
 	CHECK(job.phase != World::Phase::Blocked);
@@ -1302,6 +1362,7 @@ TEST_CASE("The ledger finds a tote lost in a step the households consume in")
 	    hosted.services.fleet.Content().tuning.economy.intervalSeconds / hosted.world.FixedStep()));
 	ForwardTo(hosted, turn * 10 - 1);
 	REQUIRE_FALSE(hosted.goodsBreach);
+
 	// A system no sink of the game's: a tote of the first holding with one, taken.
 	bool lost = false;
 	hosted.world.RegisterSystem(
@@ -1331,6 +1392,7 @@ TEST_CASE("The ledger finds a batch's totes lost where its item was held nowhere
 	Hosted hosted{MANIFEST_MOD_DIRECTORY};
 	hosted.Bootstrap();
 	entt::registry &registry = hosted.world.Registry();
+
 	// Fixture bootstrap: copper held nowhere and none of it on order, and a batch of it a tenth of a
 	// step from done.
 	std::vector<entt::entity> orders;
@@ -1354,6 +1416,7 @@ TEST_CASE("The ledger finds a batch's totes lost where its item was held nowhere
 	REQUIRE_FALSE(Totes(registry).contains(std::string{kGood}));
 	hosted.credits = Credits(registry);
 	hosted.creditBreach.reset();
+
 	// A system no sink of the game's: the batch's copper, taken as it is delivered.
 	std::uint64_t lost = 0;
 	hosted.world.RegisterSystem(
@@ -1412,6 +1475,7 @@ TEST_CASE("Eight days of two traders keep every broker's stock within half and t
 			{
 				const std::string key = identity.id + "/" + holding.itemId;
 				const std::uint64_t held = holding.available + holding.reserved;
+
 				// A good first stocked after the start has no target to hold to.
 				if (!targets.contains(key))
 					continue;
@@ -1441,6 +1505,7 @@ struct Flown
 	std::uint64_t docked{0};
 };
 
+
 Flown Provisioned(Hosted &hosted, const std::string &principal)
 {
 	REQUIRE(
@@ -1459,6 +1524,7 @@ Flown Provisioned(Hosted &hosted, const std::string &principal)
 	return {};
 }
 
+
 // The travel admitted as the actor's next, to run in the next step.
 void Admit(Hosted &hosted, const Flown &flown, std::string_view venueId)
 {
@@ -1471,6 +1537,7 @@ void Admit(Hosted &hosted, const Flown &flown, std::string_view venueId)
 	            std::string{Travel::kTravel}, Travel::kVersion, bytes)
 	        .status == Receipt::Status::Queued);
 }
+
 
 bool Arrived(const Hosted &hosted, const Flown &flown)
 {
@@ -1501,6 +1568,7 @@ TEST_CASE("Ships flown both ways between neighbouring stations of one orbit keep
 			flown->cruised = flown->came = flown->docked = 0;
 		}
 	};
+
 	// Three hours of steps.
 	constexpr std::uint64_t kBound = std::uint64_t{60} * 60 * 60 * 3;
 
@@ -1551,6 +1619,7 @@ TEST_CASE("Ships flown both ways between neighbouring stations of one orbit keep
 			if (Arrived(hosted, flown) && flown.came != 0 && flown.docked == 0)
 				flown.docked = now;
 		}
+
 		// Each pair's nearest between the step's ends, as their relative motion is straight over a
 		// step, neither clamped to a pad.
 		std::vector<glm::dvec3> is;
@@ -1605,10 +1674,13 @@ constexpr std::string_view kCassiter = "VenueCassiterDock";
 constexpr std::string_view kTin = "ItemTin";
 constexpr std::string_view kBronze = "ProjectBronzeMetallurgy";
 const std::string kProject = World::ProjectId("RegionForgeEast", kBronze);
+
 // Beyond a starter's credits: the project's ten totes bought, and the two bonds held as they are.
 constexpr std::int64_t kFunds = 300'000;
+
 // A cruise across the Crucible system on the power law is minutes; this bounds one at a day.
 constexpr std::uint64_t kCrossing = std::uint64_t{60} * 60 * 60 * 24;
+
 
 // The governance scenario as the host starts it, with no overlay: Ada provisioned at Forge Highport,
 // her cruise the drive's power law, as the trading fixture's bootstrap, and her company funded for the
@@ -1629,6 +1701,7 @@ void Governing(Hosted &hosted)
 	hosted.creditBreach.reset();
 }
 
+
 // The project's tender of the item, as Ada's snapshot posts it.
 Manifest::Query::TenderView Tendered(const Hosted &hosted, std::string_view itemId)
 {
@@ -1639,6 +1712,7 @@ Manifest::Query::TenderView Tendered(const Hosted &hosted, std::string_view item
 	FAIL("no tender of " << itemId);
 	return {};
 }
+
 
 // The limit of a buy that reaches the totes down the asks of Ada's report.
 std::int64_t Reach(
@@ -1656,11 +1730,13 @@ std::int64_t Reach(
 	return limit;
 }
 
+
 Result Send(Hosted &hosted, std::string_view venueId)
 {
 	return hosted.Run(
 	    kAda, Travel::kTravel, Travel::kVersion, Travel::Travel{"Ship1", std::string{venueId}});
 }
+
 
 // Fast-forwarded until the ship's journey has ended, docked at the venue.
 void Fly(Hosted &hosted, std::string_view venueId)
@@ -1674,6 +1750,7 @@ void Fly(Hosted &hosted, std::string_view venueId)
 	REQUIRE(hosted.Ship1().journey->leg == Leg::Arrived);
 	REQUIRE(hosted.Ship1().dockedAt == venueId);
 }
+
 
 // At Forge: the AI's two tenders for the project's inputs bid at their budgets, the copper bought and
 // loaded, and the ship sent to Cassiter, run until its cruise begins.
@@ -1710,6 +1787,7 @@ void ToCassiter(Hosted &hosted)
 	REQUIRE(hosted.Ship1().journey->leg == Leg::Cruising);
 }
 
+
 // Docked at Cassiter, the tin bought and loaded and flown to Forge; the two awards Ada's at the bid
 // close, the copper and the tin delivered, the project worked and the recipe unlocked.
 void FromCassiter(Hosted &hosted)
@@ -1719,6 +1797,7 @@ void FromCassiter(Hosted &hosted)
 	    hosted.Place(kCassiter, kTin, Side::Buy, 1, Reach(hosted, kCassiter, kTin, 1)) ==
 	    Result::Succeeded);
 	REQUIRE(hosted.Move(Company::kLoad, kCassiter, kTin, 1) == Result::Succeeded);
+
 	// Delivered before the bid close, refused: the tender is not yet a contract.
 	CHECK(
 	    hosted.Run(
@@ -1746,6 +1825,7 @@ void FromCassiter(Hosted &hosted)
 		CHECK(fulfilled.delivered == fulfilled.totes);
 		paid += fulfilled.price;
 	}
+
 	// Paid each total, the bonds returned, and the hold empty.
 	CHECK(
 	    hosted.Seen().credits ==
@@ -1832,6 +1912,7 @@ namespace
 {
 constexpr std::string_view kNorth = "RegionForgeNorth";
 constexpr std::string_view kGuild = "ProjectSmeltersGuild";
+
 // Bea's good: soap, which Forge still offers by then, when its foods have sold out.
 constexpr std::string_view kSoap = "ItemSoap";
 const Actor kBea{ActorKind::Principal, "Bea"};
@@ -2036,11 +2117,13 @@ void Develop(Hosted &hosted)
 	        .get<const World::Knowledge>(
 	            hosted.services.identities.Find(Kind::Region, std::string{kNorth}))
 	        .recipes == std::vector<std::string>{"RecipeBronze"});
+
 	// Forge East's AI worked its own Bronze, and Forge West, which queued nothing, knows nothing more.
 	CHECK(PhaseOf(hosted, "RegionForgeEast", kBronze) == World::ProjectPhase::Done);
 	CHECK(
 	    registry.get<const World::Knowledge>(
 	        hosted.services.identities.Find(Kind::Region, "RegionForgeWest")) == World::Knowledge{});
+
 	// Ada's view of her region: its treasury, both projects done in their order, and her policy.
 	const Manifest::Query::Snapshot adas =
 	    Manifest::Query::Observe(hosted.world, hosted.services.identities, kAda);
@@ -2060,6 +2143,7 @@ void Develop(Hosted &hosted)
 	CHECK(Credits(registry) + hosted.sunk == hosted.credits);
 	CHECK_FALSE(hosted.creditBreach);
 	CHECK_FALSE(hosted.goodsBreach);
+
 	// Bea's resting bid expired within its day, its escrow back, and her soap is where she bought it.
 	const CompanyView bea =
 	    Manifest::Query::Observe(hosted.world, hosted.services.identities, kBea).companies.at(0);
@@ -2084,6 +2168,7 @@ TEST_CASE(
 	Hosted hosted{MANIFEST_MOD_DIRECTORY, {}, "governance"};
 	const double fixedStep = hosted.world.FixedStep();
 	const auto hour = static_cast<std::uint64_t>(std::llround(3'600.0 / fixedStep));
+
 	// A flush an hour and a snapshot every twelve, so a crash days in falls after a few of each.
 	const Host::Cadence cadence{hour, 12 * hour};
 	const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.root / "world");
@@ -2098,6 +2183,7 @@ TEST_CASE(
 	const std::uint64_t joined = hosted.world.Clock().Step();
 	Join(hosted);
 	Away(hosted);
+
 	// The funds the fixture gives outside any request are in the snapshot the stop writes.
 	pJournal->Stop(hosted.world);
 	const std::uint64_t stopped = hosted.world.Clock().Step();
@@ -2127,6 +2213,7 @@ TEST_CASE(
 		while (served.world.Clock().Step() < crash)
 			ForwardTo(served, std::min(served.world.Clock().Step() + hour / 4, crash));
 	}
+
 	// The two snapshots it keeps are its own, the stop's pruned.
 	std::size_t snapshots = 0;
 	for (const std::filesystem::directory_entry &entry :

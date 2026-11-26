@@ -26,15 +26,18 @@ struct Body
 {
 	std::string name;
 	BodyKind kind{BodyKind::Planet};
+
 	// The name of the body this one orbits, listed before it; empty for the primary, which sits
 	// at the system frame's origin.
 	std::string parent;
 	OrbitalElements orbit;
 	Rotation rotation;
 	double radius{0.0};
+
 	// GM, in m^3/s^2: what a child's period is derived from when its data leaves it out. Zero
 	// for a body nothing orbits.
 	double gravitationalParameter{0.0};
+
 	// A station's layout, by definition name (Jettison::Dock::PlatformLayout): its decks, piers and
 	// berths. Empty for a station built to none, and for every other kind of body.
 	std::string layout;

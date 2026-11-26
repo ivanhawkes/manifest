@@ -17,21 +17,27 @@ struct ShipView
 {
 	std::string shipId;
 	std::string hullId;
+
 	// Empty when it is not docked.
 	std::string dockedAt;
 	std::vector<World::Lot> cargo;
+
 	// Its latest journey, under way or ended; none before its first.
 	std::optional<World::Journey> journey{};
+
 	// The totes opened for its life support, and its tanks, cartridges and connection (D-094).
 	std::vector<World::Opened> opened{};
 	World::LifeSupport lifeSupport{};
+
 	// The totes its hold carries, its hull's with its systems' (Company::Upgrade), and the systems
 	// its company has bought for it.
 	std::uint64_t hold{0};
 	std::vector<World::Fitting> systems{};
+
 	// Its standing policy and its job (D-097), none before its owner first sets one.
 	std::optional<World::Policy> policy{};
 	std::optional<World::Job> job{};
+
 	// Its fuel and the most it holds, its hull's with its systems' (D-107, D-108).
 	World::Fuel fuel{};
 	World::Fuel fuelTanks{};
@@ -60,12 +66,16 @@ struct CompanyView
 	std::string companyId;
 	std::string displayName;
 	std::int64_t credits{0};
+
 	// Its goods at every venue, by (venue, item).
 	std::vector<World::Holding> holdings;
+
 	// By ID.
 	std::vector<ShipView> ships;
+
 	// Its resting orders, oldest first.
 	std::vector<OrderView> orders{};
+
 	// Its sealed bids, by ID, which no other player sees.
 	std::vector<BidView> bids{};
 
@@ -105,6 +115,7 @@ struct RegionView
 	double health{0.0};
 	double happiness{0.0};
 	std::optional<std::int64_t> treasury{};
+
 	// Its projects in its queue's order, done and cancelled ones among them.
 	std::vector<ProjectView> queue{};
 	std::optional<World::Development> development{};
@@ -130,12 +141,16 @@ struct Snapshot
 {
 	// The clock's step: how many steps have completed.
 	std::uint64_t step{0};
+
 	// By ID: a player's own company, none before provisioning; every company for the Administrator.
 	std::vector<CompanyView> companies;
+
 	// By venue ID, a player's; none for the Administrator, which has no fleet to observe with.
 	std::vector<MarketView> markets{};
+
 	// Every tender the world holds, open and kept closed, by ID.
 	std::vector<TenderView> tenders{};
+
 	// Every region, by ID.
 	std::vector<RegionView> regions{};
 

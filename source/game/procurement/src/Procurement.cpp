@@ -42,6 +42,7 @@ struct Plan
 	World::ProjectNeeds needs;
 	std::vector<Content::ItemTotes> inputs;
 	std::vector<std::string> skills;
+
 	// What it gives its region once done: a recipe or a skill.
 	std::string recipeId;
 	std::string skillId;
@@ -59,16 +60,19 @@ struct Rules
 {
 	World::Identities *pIdentities{nullptr};
 	const Command::Requests *pRequests{nullptr};
+
 	// The bond's rate, in basis points of a winning total.
 	std::int64_t bondBps{0};
 	Trade::Pricer pricer;
 	Content::ProcurementTuning tuning;
 	std::map<std::string, Plan, std::less<>> plans;
+
 	// In the scenario's order.
 	std::vector<Area> areas;
 	std::map<std::string, double, std::less<>> unitsPerTote;
 	std::uint64_t stepsPerDay{0};
 	std::uint64_t turnSteps{0};
+
 
 	const Area &AreaOf(std::string_view regionId) const
 	{
@@ -88,6 +92,7 @@ entt::entity Required(const Rules &rules, Kind kind, const std::string &id)
 
 
 // ─── Projects ───
+
 
 bool Operational(const World::Facilities &facilities)
 {
@@ -193,6 +198,7 @@ void Work(SimWorld &world, const Rules &rules)
 			if (!region.operational ||
 			    !Startable(plan, stock, registry.get<const World::Knowledge>(region.entity)))
 				continue;
+
 			// A project holds no more than its inputs (Identities::Load, and delivery owes no more).
 			for (const World::Holding &holding : stock.holdings)
 				world.Events().Emit(
@@ -244,6 +250,7 @@ std::uint64_t WorkNext(const SimWorld &world, const Rules &rules)
 			case ProjectPhase::Working:
 				if (!region.operational)
 					return now;
+
 				// Run at now, the step's work is worked + 1; the last is workSteps.
 				next = std::min(
 				    next,
@@ -268,6 +275,7 @@ void WorkSkip(SimWorld &world, std::uint64_t passed)
 
 
 // ─── Tenders ───
+
 
 // Open or awarded: calling for its goods.
 bool Live(const World::Tender &tender)
@@ -313,6 +321,7 @@ std::uint64_t StillNeeded(
 	if (input == rules.plans.at(projectId).needs.inputs.end())
 		return 0;
 	std::uint64_t called = Held(registry.get<const World::Stock>(entity), itemId);
+
 	// What a contract has delivered is held already.
 	for (const auto [other, tender] : registry.view<const World::Tender>().each())
 		if (Live(tender) && tender.regionId == regionId && tender.projectId == projectId &&
@@ -344,6 +353,7 @@ Result Check(const entt::registry &registry, const Rules &rules, const Terms &te
 
 
 constexpr std::int64_t kMaxCredits = std::numeric_limits<std::int64_t>::max();
+
 
 // Credits the account. What procurement returns or pays out was the world's already, so only a
 // balance near the limit overflows, an invariant breach that stops the step rather than wrap.
@@ -490,6 +500,7 @@ void Settle(SimWorld &world, const Rules &rules, entt::entity entity)
 	const std::int64_t held = registry.get<const World::Account>(bond).balance;
 	const auto whole = static_cast<std::int64_t>(tender.totes);
 	const auto missing = static_cast<std::int64_t>(tender.totes - tender.delivered);
+
 	// Exactly, as World::Owed: the bond's remainder times the missing totes is below Q squared.
 	const std::int64_t forfeit =
 	    held / whole * missing +
@@ -626,6 +637,7 @@ Result Delivers(SimWorld &world, const Rules &rules, const Actor &actor, const D
 	const std::uint64_t accepted = std::min({lot->totes, tender.totes - tender.delivered, room});
 	if (accepted == 0)
 		return Result::CapacityExceeded;
+
 	// Its payment, and the bond back with the last tote, planned before anything is written.
 	World::Tender after = tender;
 	after.delivered += accepted;
@@ -846,6 +858,7 @@ void Issue(SimWorld &world, const Rules &rules, bool reliefs)
 	{
 		if (area.venues.empty())
 			continue;
+
 		// A player's region tenders under its policy, within its limit (D-110).
 		World::Development *pPolicy = nullptr;
 		std::int64_t committed = 0;
@@ -958,6 +971,7 @@ void Tenders(SimWorld &world, const Rules &rules)
 	std::ranges::sort(lapsing);
 	std::ranges::sort(closing);
 	std::set<std::string, std::less<>> regions;
+
 	// Defaults first, so a bond returned can fund an award closing in the same step.
 	for (const auto &[id, entity] : lapsing)
 	{
@@ -971,6 +985,7 @@ void Tenders(SimWorld &world, const Rules &rules)
 	}
 	for (const std::string &regionId : regions)
 		Prune(world, rules, regionId);
+
 	// Ended now, by this system or by a command before it: a default's totes are tendered again.
 	const bool ended = AnyClosedAt(registry, now);
 	const bool turnEnds = TurnEnds(now, rules);

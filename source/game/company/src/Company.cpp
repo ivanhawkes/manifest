@@ -64,9 +64,11 @@ struct Rules
 	double cartridgesPerTote{0.0};
 	double reactionMassPerTote{0.0};
 	double pelletsPerTote{0.0};
+
 	// What refuelling buys through (Trade::MakeBuyer).
 	Trade::Buyer buy{};
 	std::uint64_t windowSteps{0};
+
 	// A simulation hour in the world's steps, which the berth fee is charged by.
 	std::uint64_t hourSteps{0};
 };
@@ -140,6 +142,7 @@ std::optional<std::uint64_t> Hold(
 	if (!volume)
 		return std::nullopt;
 	const double totes = *volume;
+
 	// NaN fails the last comparison.
 	if (totes < 0.0 || totes > static_cast<double>(Core::kMaxHoldTotes) || std::trunc(totes) != totes)
 		return std::nullopt;
@@ -156,6 +159,7 @@ std::optional<World::Fuel> FuelTanks(
 	constexpr double kKilogramsPerTonne = 1000.0;
 	const std::optional<double> tonnes =
 	    ShipStat(rules, ship, pSystems, Core::EffectStat::FuelCapacity);
+
 	// NaN fails the comparison.
 	if (!tonnes || !(*tonnes >= 0.0) || !std::isfinite(*tonnes))
 		return std::nullopt;
@@ -381,6 +385,7 @@ Result Moved(SimWorld &world, const Rules &rules, const Actor &actor, const Move
 
 	if (!carried || lot->totes < move.totes)
 		return Result::InsufficientStock;
+
 	// A resting buy order keeps room for what it may still fill.
 	std::uint64_t warehoused = held ? holding->available + holding->reserved : 0;
 	for (const auto [entity, order] : registry.view<const World::Order>().each())
@@ -585,6 +590,7 @@ void Refuelled(SimWorld &world, const Rules &rules, entt::entity ship, std::int6
 		const std::uint64_t before = sealed();
 		Take(world, cargo, fuel.pelletItemId, rules.pelletsPerTote, given, 0.0);
 		held.pellets = given == space ? tanks->pellets : held.pellets + given;
+
 		// The sealed totes opened leave a job's lot of pellets, after any aboard beyond it.
 		if (auto *pJob = registry.try_get<World::Job>(ship); pJob != nullptr)
 		{
@@ -647,6 +653,7 @@ Result Upgraded(SimWorld &world, const Rules &rules, const Actor &actor, const U
 	const auto hull = rules.hulls.find(ship.hullId);
 	if (hull == rules.hulls.end() || !Fits(rules, *hull->second, systems))
 		return Result::NotFittable;
+
 	// A system that took room away could leave the cargo aboard more than the hold.
 	const std::optional<std::uint64_t> hold = Hold(rules, ship, &systems);
 	if (!hold || *hold < Carried(registry.get<World::Cargo>(shipEntity)))
@@ -773,6 +780,8 @@ void BreatheSkip(entt::registry &registry, const Rules &rules, double step, std:
 			DrawStep(registry, ship, lifeSupport, occupantDays, tuning.oxygenKilogramsPerOccupantDay);
 	}
 }
+
+
 // SetFees, from the principal directing the venue's operator, checked before it writes.
 Result FeesSet(SimWorld &world, const Rules &rules, const Actor &actor, const SetFees &set)
 {
@@ -910,6 +919,7 @@ void Berth(SimWorld &world, const Rules &rules)
 		const World::ClassFees *pClass =
 		    World::Find(fees, Content::FeeClass(rules.content, record.hullId));
 		JETTISON_VERIFY(pClass != nullptr);
+
 		// The occupants' share while the venue's life support keeps them (D-047, D-100).
 		const auto *pSupport = registry.try_get<const World::LifeSupport>(ship);
 		const std::int64_t occupants = pSupport && pSupport->connectedTo == record.dockedAt
@@ -934,6 +944,7 @@ void Berth(SimWorld &world, const Rules &rules)
 		const std::int64_t paid = std::min({due, account.balance, kMaxCredits - venue.balance});
 		account.balance -= paid;
 		venue.balance += paid;
+
 		// The hour's fee is a holding charge of the lot a standing job has aboard (D-097).
 		if (auto *pJob = registry.try_get<World::Job>(ship); pJob && pJob->totes > 0)
 			pJob->charges += std::min(fee, kMaxCredits - pJob->charges);
@@ -1025,6 +1036,7 @@ void RegisterCommands(
 	for (const Content::OfferDefinition &offer : content.offers)
 		if (rules->skills.contains(offer.skillId))
 			rules->offers.emplace(offer.offerId, &offer);
+
 	// Content refuses these too; a set built some other way is refused here.
 	for (const Core::ShipClassSpec &hull : content.hulls)
 		if (!Hold(*rules, {{}, hull.hullId, {}}, nullptr))
@@ -1054,6 +1066,7 @@ void RegisterCommands(
 	identities.SetLifeSupport(std::move(installed), lifeSupport.cartridgeOccupantDays);
 	for (const Content::VenueDefinition &venue : selected->second.venues)
 		rules->connections.emplace(venue.venueId, venue.lifeSupportCapacity);
+
 	// Content holds both to items of the game mode traded in their units.
 	const auto perTote = [&content](const std::string &itemId)
 	{

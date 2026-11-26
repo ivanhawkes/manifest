@@ -98,6 +98,7 @@ class Checker
 	{
 	}
 
+
 	// Names the record a failure is reported against.
 	void At(
 	    std::string_view directory, std::string_view name, std::string_view type, std::string_view id)
@@ -108,11 +109,13 @@ class Checker
 		m_id = id;
 	}
 
+
 	void Require(bool holds, std::string_view field, std::string_view problem) const
 	{
 		if (holds)
 			return;
 		const std::string path = std::format("{}/{}", m_directory, m_name);
+
 		// What the registry read: the topmost whole file, then the patches at or above its mount,
 		// in mount order. A layer under the whole file was replaced, and gave nothing.
 		const std::vector<Jettison::Vfs::Layer> wholes = m_files.ReadLayers(path + ".yaml");
@@ -204,6 +207,7 @@ void CheckItems(Checker &checker, const Jettison::Sim::DefinitionRegistry &regis
 		checker.Require(Positive(item.density), "density", "must be above 0");
 		checker.Require(
 		    Positive(item.packFactor) && item.packFactor <= 1.0, "packFactor", "must be in (0, 1]");
+
 		// A tote is priced by the units it holds, so they must be what it weighs: authored figures
 		// are rounded to six significant digits.
 		constexpr double kPackedTolerance = 0.001;
@@ -366,6 +370,7 @@ void CheckHulls(Checker &checker, const Jettison::Sim::DefinitionRegistry &regis
 			for (const double capacity : *hull.oxygenTanks)
 				checker.Require(Positive(capacity), "oxygenTanks", "a capacity must be above 0");
 		}
+
 		// Jolt keeps a body's mass as a float, which must hold it above 0.
 		const double mass = hull.mass.value_or(1.0);
 		checker.Require(
@@ -421,6 +426,7 @@ bool StartsPlayers(
 	const auto *pStarterDock =
 	    registry.Find<Jettison::Dock::VehicleDefinition>(RegistryName(scenario.starterHull));
 	const auto *pLayout = registry.Find<Jettison::Dock::PlatformLayout>(venue.layout);
+
 	// The scenario's traders take a pad and a connection each, and a player needs one more.
 	const auto traders = std::ssize(scenario.traders);
 	return venue.isPublic && venue.operational && venue.lifeSupportCapacity > traders &&
@@ -499,6 +505,7 @@ void CheckDocks(Checker &checker, const Jettison::Sim::DefinitionRegistry &regis
 		checker.Require(
 		    registry.Find<Dock::VehicleDefinition>(name) != nullptr, "dock",
 		    std::format("has no Dock.VehicleDefinition '{}'", name));
+
 		// A ship is a box of its dock hull's size, whose largest moment of inertia, its mass times its
 		// two larger sides squared over 12, Jolt keeps and decomposes in floats: held far below a
 		// float's largest, so that arithmetic cannot overflow.
@@ -550,6 +557,7 @@ std::optional<Manifest::Space::StarSystem> ResolvedSystem(
 	return system;
 }
 
+
 bool Fraction(double value)
 {
 	return std::isfinite(value) && value >= 0.0 && value <= 1.0;
@@ -564,8 +572,10 @@ bool NotNegative(double value)
 
 // The longest economic turn: a year of simulation seconds, so its steps fit any count.
 constexpr double kMaxIntervalSeconds = 365.0 * 24.0 * 3'600.0;
+
 // The most a starting balance holds: half the credits' range, so no payment into it overflows.
 constexpr std::int64_t kMaxFunds = std::int64_t{1} << 62;
+
 // The most whole credits of gross a withheld credit is for, within the credits' range.
 constexpr double kMaxPerTaxCredit = 0x1p62;
 
@@ -605,6 +615,7 @@ void CheckTuning(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 		checker.Require(
 		    Fraction(tuning.economy.wageTaxRate) && tuning.economy.wageTaxRate < 1.0,
 		    "economy.wageTaxRate", "must be in [0, 1)");
+
 		// A credit is withheld for each whole 1 / rate of gross paid, carried between payments.
 		checker.Require(
 		    tuning.economy.wageTaxRate <= 0.0 ||
@@ -640,6 +651,7 @@ void CheckTuning(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 				checker.Require(
 				    items.insert(selection.itemId).second, "needs",
 				    std::format("'{}' selects '{}' twice", need.needId, selection.itemId));
+
 				// Met 1:1 in the need's unit: an item in another needs a declared conversion first.
 				checker.Require(
 				    pItem->unitType == need.unit, "needs",
@@ -970,6 +982,7 @@ void CheckProjects(
 			    std::format(
 			        "'{}' project '{}' requires '{}', which the region does not know", region.regionId,
 			        project->projectId, skill.skillId));
+
 		// shortcut: every project is metallurgy's, worked at a workshop; a project names its
 		// facility when a second needs another.
 		checker.Require(
@@ -1065,6 +1078,7 @@ void CheckScenarios(
 			if (resolved)
 				bodies.emplace(system.systemId, *std::move(resolved));
 		}
+
 		// The body of that name and kind in the system, or null.
 		const auto bodyOf =
 		    [&](std::string_view systemId, std::string_view name,
@@ -1335,6 +1349,7 @@ ContentSet Build(
 		Manifest::Space::CruiseDrive &drive =
 		    content.drives.emplace(name, *registry.Find<Manifest::Space::CruiseDrive>(name))
 		        .first->second;
+
 		// The checks hold each drive to a hull of its name.
 		if (pMode->cruise)
 			drive.profile = registry.Find<Core::ShipClassSpec>(name)->occupants == 0

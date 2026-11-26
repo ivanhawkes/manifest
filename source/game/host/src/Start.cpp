@@ -86,6 +86,7 @@ class Game final : public Jettison::Host::Game
 	{
 	}
 
+
 	void RegisterTypes() override
 	{
 		Travel::RegisterTypes();
@@ -126,6 +127,7 @@ class Game final : public Jettison::Host::Game
 		Policy::ProvisionTraders(world, *m_pRequests, *m_pIdentities, m_content);
 	}
 
+
 	Services WorldServices() const
 	{
 		return {*m_pIdentities, *m_pRequests, *m_pFleet, m_content.identity};
@@ -134,6 +136,7 @@ class Game final : public Jettison::Host::Game
   private:
 	std::string m_scenario;
 	Content::ContentSet m_content;
+
 	// The world's own services, which outlive every call the session makes here.
 	World::Identities *m_pIdentities{nullptr};
 	Command::Requests *m_pRequests{nullptr};

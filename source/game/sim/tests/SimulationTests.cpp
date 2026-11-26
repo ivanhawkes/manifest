@@ -29,6 +29,7 @@ Manifest::Core::Ages MakeAges(std::size_t count)
 	return ages;
 }
 
+
 Manifest::Core::Categories MakeCategories(std::size_t count)
 {
 	Manifest::Core::Categories categories;
@@ -43,6 +44,7 @@ Manifest::Core::Categories MakeCategories(std::size_t count)
 
 	return categories;
 }
+
 
 Manifest::Core::Items MakeItems(std::size_t count)
 {
@@ -59,6 +61,7 @@ Manifest::Core::Items MakeItems(std::size_t count)
 
 	return items;
 }
+
 
 Manifest::Core::UniverseNamePools MakePools(std::size_t namesPerPool)
 {
@@ -79,6 +82,7 @@ Manifest::Core::UniverseNamePools MakePools(std::size_t namesPerPool)
 	return pools;
 }
 
+
 Manifest::Core::GenerateOptions MakeOptions(unsigned count, unsigned seed)
 {
 	Manifest::Core::GenerateOptions options;
@@ -95,6 +99,7 @@ struct Scenario
 	Manifest::Core::Items items = MakeItems(12);
 	Manifest::Core::UniverseNamePools pools = MakePools(20);
 };
+
 
 std::string Dump(const Manifest::Core::Civilisation &civ)
 {
@@ -176,6 +181,7 @@ TEST_CASE("generation_checks_its_inputs")
 	CHECK(!simulation.IsGenerated());
 }
 
+
 TEST_CASE("generation_is_deterministic")
 {
 	Scenario scenario;
@@ -215,6 +221,7 @@ TEST_CASE("generation_is_deterministic")
 	CHECK(!identical);
 }
 
+
 TEST_CASE("names_are_unique_and_come_from_the_pools")
 {
 	Scenario scenario;
@@ -248,6 +255,7 @@ TEST_CASE("names_are_unique_and_come_from_the_pools")
 	CHECK(simulation.FindCivilisation(simulation.GetCivilisations()[3].name) != nullptr);
 	CHECK(simulation.FindCivilisation("Civ-99") == nullptr);
 }
+
 
 TEST_CASE("scarce_goods_cost_more")
 {
@@ -288,6 +296,7 @@ TEST_CASE("scarce_goods_cost_more")
 	MANIFEST_CHECK_NEAR(simulation.GetPrice("Nope"), 0.0, 0.0001);
 }
 
+
 TEST_CASE("local_prices_move_with_the_local_balance")
 {
 	Scenario scenario;
@@ -318,6 +327,7 @@ TEST_CASE("local_prices_move_with_the_local_balance")
 
 	MANIFEST_CHECK_NEAR(simulation.GetLocalPrice("Nope", "Good0"), 0.0, 0.0001);
 }
+
 
 TEST_CASE("trade_routes_pay_for_themselves")
 {
@@ -352,6 +362,7 @@ TEST_CASE("trade_routes_pay_for_themselves")
 	CHECK_EQ(simulation.PlanTrade(3).size(), std::size_t(3));
 	CHECK_EQ(simulation.PlanTrade(0).size(), std::size_t(0));
 }
+
 
 TEST_CASE("ticks_move_production_consumption_and_trade")
 {
@@ -402,6 +413,7 @@ TEST_CASE("ticks_move_production_consumption_and_trade")
 	MANIFEST_CHECK_CONTAINS(simulation.StatusLine(), "price index");
 }
 
+
 TEST_CASE("advancing_needs_a_generated_universe")
 {
 	Manifest::Core::Simulation simulation;
@@ -413,6 +425,7 @@ TEST_CASE("advancing_needs_a_generated_universe")
 	MANIFEST_CHECK_CONTAINS(simulation.StatusLine(), "no universe");
 	MANIFEST_CHECK_CONTAINS(simulation.DescribeCivilisation("Civ-01"), "no civilisation");
 }
+
 
 TEST_CASE("describing_a_world")
 {
@@ -436,6 +449,7 @@ TEST_CASE("describing_a_world")
 	MANIFEST_CHECK_CONTAINS(text, "needs not produced");
 	MANIFEST_CHECK_CONTAINS(text, "shortages");
 }
+
 
 TEST_CASE("base_price_must_be_a_number")
 {
@@ -464,6 +478,7 @@ TEST_CASE("base_price_must_be_a_number")
 
 	MANIFEST_CHECK_CONTAINS(Manifest::Core::FormatNumber(12.3456), "12.35");
 }
+
 
 TEST_CASE("a_world_makes_only_the_goods_of_its_age_and_earlier")
 {
@@ -557,6 +572,7 @@ TEST_CASE("a_world_makes_only_the_goods_of_its_age_and_earlier")
 	CHECK(madeLateGoods > std::size_t(0));
 	CHECK(madeTimelessGoods > std::size_t(0));
 }
+
 
 TEST_CASE("medicine_and_knowledge_goods_are_demanded_at_every_age")
 {
@@ -677,6 +693,7 @@ TEST_CASE("the engine RNG produces the same generation and hundred-tick replay i
 		}
 		return hash;
 	};
+
 	// Prices have their own integer hash: quantization must agree across builds
 	// even when the unchanged floating quantity state still matches its old hash.
 	const auto priceHash = [&]()
@@ -709,6 +726,7 @@ TEST_CASE("the engine RNG produces the same generation and hundred-tick replay i
 	CHECK(priceHash() == 15444164946577136117ULL);
 }
 
+
 TEST_CASE("invalid authored prices preserve an existing universe")
 {
 	Scenario scenario;
@@ -737,6 +755,7 @@ TEST_CASE("invalid authored prices preserve an existing universe")
 	}
 }
 
+
 TEST_CASE("authored prices retain exact millionths and harmless trailing zeros")
 {
 	Scenario scenario;
@@ -749,6 +768,7 @@ TEST_CASE("authored prices retain exact millionths and harmless trailing zeros")
 	CHECK_EQ(Manifest::Core::Simulation::BasePrice(simulation.GetItems()[0]).Raw(), 1);
 	CHECK_EQ(Manifest::Core::Simulation::BasePrice(simulation.GetItems()[1]).Raw(), 5'631'200);
 }
+
 
 TEST_CASE("double scarcity and local ratios quantize only their resulting prices")
 {
@@ -767,6 +787,7 @@ TEST_CASE("double scarcity and local ratios quantize only their resulting prices
 	CHECK_EQ(civ.demand["Good0"], 4.0);
 }
 
+
 TEST_CASE("whole-credit settlement skips routes that would overflow the seller treasury")
 {
 	Scenario scenario;
@@ -774,6 +795,7 @@ TEST_CASE("whole-credit settlement skips routes that would overflow the seller t
 	std::string error;
 	REQUIRE(simulation.Generate(
 	    scenario.ages, scenario.categories, scenario.items, scenario.pools, MakeOptions(8, 2), error));
+
 	// Isolate one sale: the overflowing seller cannot also spend as a buyer.
 	for (const auto &civ : simulation.GetCivilisations())
 	{

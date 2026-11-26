@@ -29,6 +29,7 @@ namespace
 constexpr double kStep = 1.0 / 60.0;
 const std::uint64_t kHalcyon = Jettison::Sim::FrameId("Halcyon");
 const std::uint64_t kVesper = Jettison::Sim::FrameId("Vesper");
+
 // 40 s from Halcyon to Vesper, at 60 steps a second.
 constexpr std::uint64_t kTransitSteps = 2400;
 
@@ -152,6 +153,7 @@ TEST_CASE("Lanes: a ship enters the gate, is in no system for the transit, and l
 	CHECK(entries[0].transitSeconds == 40.0);
 	CHECK(fixture.SystemOf(ship) == Jettison::Sim::kNoFrame);
 	CHECK(fixture.world.Registry().all_of<Manifest::Space::OnLane>(ship));
+
 	// Physics removed its body in the step it entered.
 	CHECK(fixture.physics.BodyCount() == 0);
 
@@ -170,12 +172,14 @@ TEST_CASE("Lanes: a ship enters the gate, is in no system for the transit, and l
 	entt::registry &registry = fixture.world.Registry();
 	CHECK(fixture.SystemOf(ship) == kVesper);
 	CHECK_FALSE(registry.all_of<Manifest::Space::OnLane>(ship));
+
 	// In the frame of the refinery the gate keeps station by, so it can fly to it and dock.
 	CHECK(registry.get<Jettison::Physics::LocalFrame>(ship).body == "Corva Refinery");
 	CHECK(registry.get<Jettison::Physics::FlightControls>(ship).reference == entt::null);
 	const Manifest::Space::StarSystem vesper = AiTests::Vesper();
 	const double arrivedAt = fixture.world.Clock().Now();
 	const auto gate = static_cast<std::size_t>(vesper.Find("Vesper Gate"));
+
 	// Ahead of the ring, clear of its sensor by its hull and the clearance, looking the way it faces.
 	const glm::dquat facing = Manifest::Space::JumpPointFacing(vesper, gate, arrivedAt);
 	const double outAhead = Manifest::Space::Gates::kRingDepth / 2.0 +
@@ -186,6 +190,7 @@ TEST_CASE("Lanes: a ship enters the gate, is in no system for the transit, and l
 	        registry.get<Jettison::Sim::Transform>(ship).position,
 	        Where(vesper, "Vesper Gate", arrivedAt) + facing * glm::dvec3{0.0, 0.0, -outAhead}) < 1e-6);
 	CHECK(registry.get<Jettison::Sim::Transform>(ship).orientation == facing);
+
 	// At rest, whatever it entered the far gate at.
 	CHECK(registry.get<Jettison::Physics::Velocity>(ship) == Jettison::Physics::Velocity{});
 
@@ -197,6 +202,7 @@ TEST_CASE("Lanes: a ship enters the gate, is in no system for the transit, and l
 	CHECK(fixture.physics.FrameCount(kVesper) == 1);
 	const glm::dvec3 now = registry.get<Jettison::Sim::Transform>(ship).position;
 	const double time = fixture.world.Clock().Now();
+
 	// The gate turns about the refinery with the refinery's orbit, 5 km x 2 pi in 29 206 s, 1.08 m/s
 	// in the refinery's frame, which does not turn; the ship is still in it.
 	const glm::dvec3 cameOut =
@@ -227,6 +233,7 @@ TEST_CASE("Lanes: what no lane leaves through, or nothing in a system, is refuse
 	fixture.world.Commands().Push(Manifest::Space::EnterLane{{}, ship, "Vesper Gate"});
 	fixture.world.Commands().Push(Manifest::Space::EnterLane{{}, drifting, "Halcyon Gate"});
 	fixture.world.Commands().Push(Manifest::Space::EnterLane{{}, gone, "Halcyon Gate"});
+
 	// From a sender that does not command the ship.
 	fixture.world.Registry().emplace<Jettison::Sim::ControlledBy>(
 	    ship, Jettison::Sim::Controller{Jettison::Sim::ControllerKind::Player, 1});
@@ -317,6 +324,7 @@ TEST_CASE("Lanes: a transit shorter than a step takes one, and arrives as the st
 	fixture.world.Commands().Push(Manifest::Space::EnterLane{{}, probe, "Vesper Deep Gate"});
 	fixture.Run(1);
 	CHECK(fixture.SystemOf(probe) == Jettison::Sim::FrameId("Marrow"));
+
 	// Not a body, so given no frame.
 	CHECK_FALSE(registry.all_of<Jettison::Physics::LocalFrame>(probe));
 	CHECK(
@@ -338,6 +346,7 @@ TEST_CASE(
 	const entt::entity first = fixture.Ship();
 	const entt::entity second = fixture.Ship();
 	const entt::entity third = fixture.Ship();
+
 	// Two in one step, and the third a second later, while they still sit where they came out.
 	fixture.world.Commands().Push(Manifest::Space::EnterLane{{}, first, "Halcyon Gate"});
 	fixture.world.Commands().Push(Manifest::Space::EnterLane{{}, second, "Halcyon Gate"});
@@ -351,6 +360,7 @@ TEST_CASE(
 	const Manifest::Space::StarSystem vesper = AiTests::Vesper();
 	const auto at = [&](entt::entity ship)
 	{ return registry.get<Jettison::Sim::Transform>(ship).position; };
+
 	// The first ahead of the ring, as a ship alone would be; the second on the first ring about it,
 	// across the way the gate faces, a hull's breadth and the clearance out.
 	const double hull = fixture.physics.ShapeRadius("hull");
@@ -371,6 +381,7 @@ TEST_CASE(
 		CHECK(
 		    glm::distance(at(third), at(other)) >=
 		    2.0 * hull + Manifest::Space::LaneTravel::kArrivalClearance - 1e-6);
+
 	// Nothing came out inside another.
 	fixture.Run(30);
 	for (const Jettison::Physics::ContactEvent &contact : fixture.physics.Contacts())
@@ -400,6 +411,7 @@ TEST_CASE("Lanes: a transit fast-forwarded arrives as the one stepped does")
 		REQUIRE(forwarded.world.Save() == stepped.world.Save());
 	}
 	CHECK(forwarded.SystemOf(ship) == kVesper);
+
 	// The lane's in one call; each step after it, the ship in physics again, in its own.
 	CHECK(calls < 70);
 }

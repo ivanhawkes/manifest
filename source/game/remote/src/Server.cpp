@@ -31,10 +31,12 @@ using Jettison::Serialise::FormatVersion;
 
 constexpr Jettison::Core::Category kServer{"server"};
 constexpr FormatVersion kFormat{kVersion};
+
 // Sessions one actor may hold at once: a few frontends watching, as an idle game's player keeps.
 // shortcut: a real-time variant, where two sessions would both steer, wants one (a Superseded reason in
 // Jettison).
 constexpr std::size_t kSessionsPerActor = 3;
+
 // How often a session is sent its snapshot: a second, as an idle game's player watches it, where the
 // economy turns hourly and journeys take minutes to days.
 constexpr std::chrono::milliseconds kSnapshotInterval{1'000};
@@ -47,6 +49,7 @@ Jettison::Net::ServerConfig Config(
 	Jettison::Net::ServerConfig config;
 	config.address = std::move(address);
 	config.port = port;
+
 	// Moved, not copied, so the one text of it is the engine's, which wipes it once read.
 	config.secretKey = std::move(secretKey);
 	config.protocol = std::string{kProtocol};
@@ -169,6 +172,7 @@ void Server::Poll(std::chrono::milliseconds wait)
 		const Command::Requests &requests = Host::HostedServices(m_hosted).requests;
 		Send(m_net, event.session, Welcome{actor.kind, actor.id, requests.NextSequence(actor)});
 	}
+
 	// A verified session whose admission has not yet been polled has no queue, so takes nothing.
 	for (auto session = m_sessions.begin(); session != m_sessions.end();)
 	{

@@ -119,6 +119,7 @@ TEST_CASE("Galaxy: read, and each lane's ends resolved to their systems")
 	CHECK(galaxy.lanes[1].a.systemIndex == 2);
 	CHECK(galaxy.lanes[1].b.systemIndex == 1);
 	CHECK(galaxy.lanes[2].transitSeconds == 0.0);
+
 	// A lane's toll is its length at the galaxy's rate: 2 light years from Near to Middle, 5 from
 	// Middle to Far, and none from Middle to Branch, which has no position and is at the origin too.
 	CHECK(galaxy.tollPerLightYear == 1000);
@@ -255,10 +256,12 @@ TEST_CASE("Galaxy: the sample galaxy in the assets reads, and every lane ends at
 		CHECK_NOTHROW(CheckJumpPoints(galaxy, system, starSystem));
 		CHECK_FALSE(Exits(galaxy, system).empty());
 	}
+
 	// Halcyon to Marrow is two jumps, through Vesper.
 	REQUIRE(Exits(galaxy, 0).size() == 1);
 	CHECK(galaxy.systems[Exits(galaxy, 0)[0].destination].name == "Vesper");
 	CHECK(Exits(galaxy, 1).size() == 2);
+
 	// The star gates' lane is dearer than the moon gates'.
 	CHECK(galaxy.lanes[0].toll == 2000);
 	CHECK(galaxy.lanes[1].toll == 6000);

@@ -30,6 +30,7 @@ namespace Manifest::Content
 struct NamePoolDefinition
 {
 	std::string pool;
+
 	// In draw order.
 	std::vector<std::string> names;
 };
@@ -91,6 +92,7 @@ struct NeedDefinition
 	double weight{0.0};
 	double perThousandPerDay{0.0};
 	std::optional<Core::TradeUnit> unit;
+
 	// Each in the need's unit; none while the need's item is open.
 	std::vector<ItemSelection> items;
 };
@@ -133,6 +135,7 @@ struct LifeSupportTuning
 {
 	double oxygenKilogramsPerOccupantDay{0.0};
 	double cartridgeOccupantDays{0.0};
+
 	// The goods a ship's tanks are refilled with, by the kilogram, and its scrubber's cartridges, by
 	// the piece (D-094).
 	std::string oxygenItemId;
@@ -150,9 +153,11 @@ struct FuelTuning
 	int curveExponent{0};
 	double tankTonnesPerTonne{0.0};
 	double occupantKilograms{0.0};
+
 	// The goods a ship refuels with, each by the kilogram.
 	std::string reactionMassItemId{};
 	std::string pelletItemId{};
+
 	// The thrusts a policy choosing its burn prices each trade at, in basis points, each above 0 and at
 	// most full; and the seconds it allows each leg beside its cruise, for leaving and docking.
 	std::vector<std::uint32_t> thrustSharesBps{};
@@ -173,6 +178,7 @@ struct OfferDefinition
 	std::string offerId;
 	std::string skillId;
 	std::optional<OfferTarget> target;
+
 	// Whole credits, a tier.
 	std::int64_t cost{0};
 	int maxTier{0};
@@ -183,6 +189,7 @@ struct CompanyTuning
 {
 	// Whole credits, in its account.
 	std::int64_t startingCredits{0};
+
 	// Whole credits a company pays into a region's public account to found its homeworld there
 	// (D-110).
 	std::int64_t foundingPrice{0};
@@ -194,8 +201,10 @@ struct MarketTuning
 	// What a venue takes from each side of a fill, in basis points of its gross, fixed on an order
 	// as it is placed.
 	int listingFeeBps{0};
+
 	// A resting order's life, in simulation seconds, a whole number of fixed steps; 0 is none.
 	double orderLifeSeconds{0.0};
+
 	// The span a market report's sales volume is over, in simulation seconds, a whole number of fixed
 	// steps above 0 (docs/trading.md, "Market observations").
 	double salesWindowSeconds{0.0};
@@ -207,8 +216,10 @@ struct ClassChargesTuning
 {
 	// The Dock.BerthClassDefinition, by record name.
 	std::string padClass;
+
 	// Paid to the destination as a journey to it starts.
 	std::int64_t dockingFee{0};
+
 	// Paid by each ship docked at the venue as each simulation hour ends.
 	std::int64_t berthFeePerHour{0};
 };
@@ -232,14 +243,18 @@ struct ChargesTuning
 {
 	// One for each pad class the content defines.
 	std::vector<ClassChargesTuning> padClasses;
+
 	// Paid with the hour's berth fee for each occupant of a docked ship connected to the venue's life
 	// support (D-047).
 	std::int64_t berthFeePerOccupantHour{0};
+
 	// The yearly interest on a ship's arrears to the venue, in basis points, compounded daily.
 	int arrearsRateBps{0};
+
 	// The most any venue may charge, the game's usury limit, at most 1,000,000: arrearsRateBps is at
 	// most this.
 	int maxArrearsRateBps{0};
+
 	// Whole days, at most 36,500, a ship's arrears stand before its venue seizes its cargo for them.
 	int seizureGraceDays{0};
 	PricingTuning pricing;
@@ -250,6 +265,7 @@ struct BrokerTuning
 {
 	// Whole credits.
 	std::int64_t treasury{0};
+
 	// Between its bid and its ask, in basis points of the native price, half on each side.
 	int spreadBps{0};
 };
@@ -270,6 +286,7 @@ struct ProcurementTuning
 	std::uint32_t maxDeliveryDays{0};
 	std::uint32_t aiBidDays{0};
 	std::uint32_t aiDeliveryDays{0};
+
 	// A region's tenders not yet closed, a tender's bids, and the closed tenders a region keeps.
 	std::uint32_t maxOpenTenders{0};
 	std::uint32_t maxBids{0};
@@ -285,6 +302,7 @@ struct ProjectDefinition
 	std::vector<SkillSelection> requiredSkills;
 	std::vector<ItemTotes> inputs;
 	std::uint32_t workDays{0};
+
 	// The urgency its tenders' budgets are priced at by need (D-102): their goods at the venue's price
 	// times one and this.
 	double priorityPremium{0.0};
@@ -303,6 +321,7 @@ struct TuningDefinition
 {
 	EconomyTuning economy;
 	std::vector<NeedDefinition> needs;
+
 	// A category is in at most one.
 	std::vector<DemandBucket> optionalGoods;
 	ConditionTuning condition;
@@ -346,6 +365,7 @@ struct SystemDefinition
 {
 	std::string systemId;
 	std::string displayName;
+
 	// The scenario's systems it is directly connected to, each way: a system it names names it back
 	// without saying so (D-095). A new player's starting reports are of these systems' stations.
 	std::vector<SystemSelection> connections{};
@@ -394,19 +414,24 @@ struct RegionDefinition
 	std::string regionId;
 	std::string planetId;
 	std::string civilisationId;
+
 	// An organisation; empty for one no one governs yet.
 	std::string governorId;
 	double population{0.0};
+
 	// Whole credits.
 	std::int64_t householdFunds{0};
 	std::int64_t publicFunds{0};
+
 	// What its employer starts with, to fund its batches' wages.
 	std::int64_t employerFunds{0};
 	double health{0.0};
 	double happiness{0.0};
+
 	// What the region knows.
 	std::vector<SkillSelection> skills;
 	std::vector<FacilityDefinition> facilities;
+
 	// Its public projects, each a tuning project.
 	std::vector<ProjectSelection> projects;
 };
@@ -419,11 +444,13 @@ struct RegionSelection
 struct MarketEntry
 {
 	std::string itemId;
+
 	// One of the venue's regions: its employer makes the production, and its households want the demand
 	// of a good no need names as an optional good. Empty for a row that only sets the native price.
 	std::string regionId;
 	double production{0.0};
 	double demand{0.0};
+
 	// Totes (D-087), at most kMaxWarehouseTotes: its broker's at the start.
 	std::uint64_t stock{0};
 };
@@ -434,14 +461,18 @@ struct VenueDefinition
 {
 	std::string venueId;
 	std::string systemId;
+
 	// The planet it serves from; empty for one in open space.
 	std::string planetId;
 	std::string operatorId;
+
 	// Open to every company on equal terms, as the scenario's starter venue must be.
 	bool isPublic{false};
 	bool operational{false};
+
 	// The Dock.PlatformLayout it is built to, by record name: its pads are the hulls it docks.
 	std::string layout;
+
 	// Ships it can keep connected to working life support at once.
 	int lifeSupportCapacity{0};
 	std::vector<RegionSelection> regions;
@@ -460,10 +491,12 @@ struct TraderDefinition
 struct ScenarioDefinition
 {
 	std::string gameMode;
+
 	// The hull a new player starts in, parked at the starter venue, a neutral public spaceport the
 	// scenario's venues name (D-089).
 	std::string starterHull;
 	std::string starterVenue;
+
 	// A subset of the mode's items, in its order.
 	std::vector<ItemSelection> items;
 	std::vector<SystemDefinition> systems;
@@ -483,6 +516,7 @@ struct DefinitionType
 	Jettison::Serialise::YamlMigrations migrations;
 	std::string_view directory;
 	entt::meta_type type;
+
 	// The record's authored ID, or null for a type named by its file alone.
 	std::string_view (*id)(const entt::meta_any &definition);
 };

@@ -24,6 +24,7 @@ namespace
 {
 using namespace Manifest::Core;
 
+
 // The long-haul trader of data/ships/hulls.yaml, read from the staged package.
 const ShipClassSpec &LongHaulTrader()
 {
@@ -108,6 +109,7 @@ const std::vector<std::string> &ShippedEffectIds()
 	return ids;
 }
 
+
 // The tree the shipped data builds, as far as the catalogue check is concerned: one
 // node per effect the tree asks for.
 Skills ShippedTree()
@@ -131,6 +133,7 @@ Skills ShippedTree()
 	return tree;
 }
 
+
 // One node of the tree: a skill that buys maxTiers of targetEffectId, one tier at a
 // time, for cost points a tier. A node that buys nothing - an age gate - names no
 // effect, and a Tech node is knowledge a civilisation knows, not a system a hull fits.
@@ -150,6 +153,7 @@ SkillNode Node(
 	return node;
 }
 
+
 // A tree and the points that buy it. Both engines read a ProgressionManager, so a test
 // that walks a tree builds one, and the points of the pool pay for the tiers.
 ProgressionManager Tree(const std::vector<SkillNode> &nodes, int points)
@@ -162,6 +166,7 @@ ProgressionManager Tree(const std::vector<SkillNode> &nodes, int points)
 
 	return progression;
 }
+
 
 // A world with one civilisation's planet in it, and the market at that planet that the
 // market effects land on: a venue a world has to open before a law, a licence or a
@@ -177,6 +182,7 @@ EntityStore OpenWorld(const std::string &id, const std::string &name)
 
 	return world;
 }
+
 
 // One effect of one domain, for an engine tested against a catalogue of its own.
 EffectDefinition Effect(
@@ -194,6 +200,7 @@ EffectDefinition Effect(
 	return definition;
 }
 } // namespace
+
 
 TEST_CASE("the_ship_engine_lands_its_effects_on_the_hull")
 {
@@ -308,6 +315,7 @@ TEST_CASE("the_ship_engine_lands_its_effects_on_the_hull")
 	CHECK_EQ(engine.FittedEffects(world, "Nope").size(), 0u);
 	CHECK(!engine.DescribeShip(world, "Nope").empty());
 }
+
 
 TEST_CASE("the_hull_refuses_a_system_it_has_no_slot_for")
 {
@@ -428,6 +436,7 @@ TEST_CASE("the_hull_refuses_a_system_it_has_no_slot_for")
 	CHECK(!engine.BuildShip(world, "Trader", trader, "Civ-01", errorMessage));
 	CHECK_EQ(engine.ShipsOf(world, "Civ-01").size(), 1u);
 }
+
 
 TEST_CASE("the_shipped_tree_and_the_shipped_catalogue_agree")
 {
@@ -555,6 +564,7 @@ TEST_CASE("the_shipped_tree_and_the_shipped_catalogue_agree")
 	    {Effect("Broken", EffectDomain::Route, EffectOperator::Add, EffectStat::ShieldFront, 10.0)},
 	    errorMessage));
 }
+
 
 TEST_CASE("an_effect_reads_the_domain_of_the_store_it_lands_on")
 {
@@ -711,6 +721,7 @@ TEST_CASE("an_effect_reads_the_domain_of_the_store_it_lands_on")
 	    "Market Risk");
 	CHECK_EQ(AllEffectStats().size(), 46u);
 }
+
 
 TEST_CASE("the_civilisation_engine_lands_its_effects_on_the_stores_its_domain_owns")
 {
@@ -908,6 +919,7 @@ TEST_CASE("the_civilisation_engine_lands_its_effects_on_the_stores_its_domain_ow
 	CHECK(!engine.Apply(
 	    world, "Civ-01", "SkillHabitatDomes", "HabitatDomes", EffectOrigin::Skill, 0, errorMessage));
 }
+
 
 TEST_CASE("a_tree_walk_lands_every_effect_the_tree_buys")
 {
@@ -1121,6 +1133,7 @@ TEST_CASE("a_tree_walk_lands_every_effect_the_tree_buys")
 	MANIFEST_CHECK_NEAR(shipEngine.GetStat(world, "Trader-2", EffectStat::ShieldFront), 120.0, 1e-9);
 }
 
+
 TEST_CASE("an_effect_applies_the_way_its_operator_says")
 {
 	// What a tier buys, and how a stat starts when nothing has written it: the three
@@ -1311,6 +1324,7 @@ TEST_CASE("an_effect_applies_the_way_its_operator_says")
 	    civEngine.DescribeCivilisation(civWorld, "Civ-01").find("Terraform Atmosphere") !=
 	    std::string::npos);
 }
+
 
 TEST_CASE("a_skill_bought_twice_costs_once")
 {

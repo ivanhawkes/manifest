@@ -47,6 +47,8 @@ per machine ([D-051](decision-ledger.md#d-051)). Both are in [build and gates](b
   the game modules on the simulation's side are held to the same
   [rules](../../jettison/docs/coding-standards.md#simulation-code), under the contract of
   [D-002](decision-ledger.md#d-002).
-- **Declaration spacing:** Jettison checks its
-  [rule](../../jettison/docs/coding-standards.md#declaration-spacing) with
-  `scripts/space-declarations.py`. Manifest has no such script, so here the rule is house style.
+- **Declaration spacing:** Jettison's
+  [rule](../../jettison/docs/coding-standards.md#declaration-spacing), the blank line above a comment
+  that follows code included, holds here too, applied by Jettison's script run on this repository:
+  `../jettison/scripts/space-declarations.py --root .`, after a Debug build. Like the engine's, it
+  is not in the gate, and it changes nothing inside a string or other literal.

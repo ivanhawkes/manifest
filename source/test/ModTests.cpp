@@ -6,6 +6,7 @@
 #include <jettison/core/Version.h>
 #include <jettison/vfs/FileSystem.h>
 
+
 TEST_CASE("Manifest directory and pack expose identical content through the engine VFS")
 {
 	Jettison::Vfs::FileSystem directory;
@@ -15,6 +16,7 @@ TEST_CASE("Manifest directory and pack expose identical content through the engi
 
 	const auto files = directory.Enumerate("");
 	REQUIRE(files == pack.Enumerate(""));
+
 	// mod.yaml, and one record per definition and scenario.
 	const auto definitions = directory.Enumerate("manifest/definitions");
 	const auto scenarios = directory.Enumerate("manifest/scenarios");

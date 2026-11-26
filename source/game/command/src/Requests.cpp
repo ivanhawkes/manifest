@@ -296,6 +296,7 @@ std::function<void()> Requests::Load(
 	{
 		if (const std::optional<std::string> problem = Broken(ledger, saved.order))
 			reader.Fail(*problem);
+
 		// Execute takes a request off its ledger before decoding it, so one it cannot read is refused
 		// here rather than lost there.
 		for (const Request &request : ledger.pending)
@@ -310,6 +311,7 @@ std::function<void()> Requests::Load(
 		if (!actors.emplace(std::move(key), std::move(ledger)).second)
 			reader.Fail("an actor's ledger is saved twice");
 	}
+
 	// A pending request the queue lacks would answer its retry as queued for ever, and two queued
 	// out of admission's order would run out of it.
 	if (queued.size() > kQueueCapacity)

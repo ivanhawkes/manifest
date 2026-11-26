@@ -54,6 +54,7 @@ std::vector<Reply> Client::Poll(std::chrono::milliseconds wait)
 				else if (event.message.kind == static_cast<Jettison::Net::MessageKind>(Kind::Reply))
 				{
 					replies.push_back(BinaryArchive::Read<Reply>(event.message.body, kFormat));
+
 					// The refused sequence was not consumed, nor any sent after it.
 					if (m_welcome && replies.back().receipt.status == Command::Receipt::Status::Refused)
 						m_welcome->nextSequence = replies.back().nextSequence;

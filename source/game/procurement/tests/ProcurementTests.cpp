@@ -58,6 +58,7 @@ const Actor kAda{ActorKind::Principal, "Ada"};
 const Actor kBea{ActorKind::Principal, "Bea"};
 const Actor kDi{ActorKind::Principal, "Di"};
 const Actor kHost{ActorKind::Administrator, "Host"};
+
 // Seven days of one-second steps.
 constexpr std::uint64_t kWorkSteps = 7ULL * 86'400;
 
@@ -83,6 +84,7 @@ struct Hosted
 			    identities.Create(world.Registry(), Kind::Principal, name), name);
 	}
 
+
 	// Fixture bootstrap: Ada directs Forge East's council, as W13's founding will let a player.
 	void Direct()
 	{
@@ -91,6 +93,7 @@ struct Hosted
 		        identities.Find(Kind::Organisation, "OrganisationForgeEastCouncil"))
 		    .principalId = "Ada";
 	}
+
 
 	// Fixture bootstrap: a company of the principal's with its credits, as provisioning gives one.
 	void AddCompany(const std::string &principal, const std::string &company, std::int64_t credits)
@@ -106,6 +109,7 @@ struct Hosted
 		    identities.Create(registry, Kind::CompanyAccount, company), credits);
 	}
 
+
 	// The request admitted as the actor's next, to run in the next step; its sequence.
 	template <typename T>
 	std::uint64_t Queue(const Actor &actor, std::string_view command, const T &payload)
@@ -118,6 +122,7 @@ struct Hosted
 		return sequence;
 	}
 
+
 	Result Outcome(const Actor &actor, std::uint64_t sequence) const
 	{
 		const auto completed = requests.Outcome(actor, sequence);
@@ -125,12 +130,14 @@ struct Hosted
 		return completed->result;
 	}
 
+
 	World::Tender TenderOf(const std::string &id) const
 	{
 		const entt::entity entity = identities.Find(Kind::Tender, id);
 		REQUIRE(entity != entt::null);
 		return world.Registry().get<World::Tender>(entity);
 	}
+
 
 	// The request admitted as the actor's next and run in the next step.
 	template <typename T> Result Run(const Actor &actor, std::string_view command, const T &payload)
@@ -146,6 +153,7 @@ struct Hosted
 		return completed->result;
 	}
 
+
 	Result Publishes(
 	    std::string_view item, std::uint64_t totes, std::int64_t budget = 1'000,
 	    std::uint32_t bidDays = 2, std::uint32_t deliveryDays = 30, const Actor &actor = kAda)
@@ -157,6 +165,7 @@ struct Hosted
 		        budget, bidDays, deliveryDays});
 	}
 
+
 	std::int64_t Balance(Kind kind, const std::string &id) const
 	{
 		const entt::entity account = identities.Find(kind, id);
@@ -164,10 +173,12 @@ struct Hosted
 		return world.Registry().get<World::Account>(account).balance;
 	}
 
+
 	std::int64_t Public() const
 	{
 		return Balance(Kind::PublicAccount, std::string{kEast});
 	}
+
 
 	// Every tender, by ID.
 	std::map<std::string, World::Tender> Tenders() const
@@ -179,6 +190,7 @@ struct Hosted
 		return tenders;
 	}
 
+
 	// Every project tender, by ID: the relief tenders the AI calls for short households left out.
 	std::map<std::string, World::Tender> ProjectTenders() const
 	{
@@ -187,11 +199,13 @@ struct Hosted
 		return tenders;
 	}
 
+
 	void FastForwardTo(std::uint64_t step)
 	{
 		while (world.Clock().Step() < step)
 			world.FastForward(step);
 	}
+
 
 	entt::entity ProjectEntity() const
 	{
@@ -201,21 +215,25 @@ struct Hosted
 		return project;
 	}
 
+
 	World::Project &Project()
 	{
 		return world.Registry().get<World::Project>(ProjectEntity());
 	}
+
 
 	World::Stock &Held()
 	{
 		return world.Registry().get<World::Stock>(ProjectEntity());
 	}
 
+
 	World::Knowledge &Knows(std::string_view region = kEast)
 	{
 		return world.Registry().get<World::Knowledge>(
 		    identities.Find(Kind::Region, std::string{region}));
 	}
+
 
 	// Fixture bootstrap: the workshop put out of action or back, which nothing in the game does yet.
 	void SetWorkshop(bool operational)
@@ -226,11 +244,13 @@ struct Hosted
 		    .operational = operational;
 	}
 
+
 	// Fixture bootstrap: what deliveries would put in the project's stock.
 	void Deliver(std::vector<World::Holding> holdings)
 	{
 		Held().holdings = std::move(holdings);
 	}
+
 
 	// A company of the principal's, provisioned as a player's is, its starter ship docked at Forge
 	// Highport carrying the lots (fixture bootstrap, as buying and loading would).
@@ -244,15 +264,18 @@ struct Hosted
 		Cargo(shipId).lots = std::move(lots);
 	}
 
+
 	World::Ship &Ship(const std::string &shipId)
 	{
 		return world.Registry().get<World::Ship>(identities.Find(Kind::Ship, shipId));
 	}
 
+
 	World::Cargo &Cargo(const std::string &shipId)
 	{
 		return world.Registry().get<World::Cargo>(identities.Find(Kind::Ship, shipId));
 	}
+
 
 	// The tender awarded to the company at the total: its bid placed and its bid close run.
 	void Award(
@@ -264,6 +287,7 @@ struct Hosted
 		REQUIRE(TenderOf(tenderId).state == TenderState::Awarded);
 		REQUIRE(TenderOf(tenderId).companyId == companyId);
 	}
+
 
 	void Start()
 	{
@@ -462,6 +486,7 @@ TEST_CASE("A save whose project holds or has worked what it may not does not loa
 		    broken.Project().phase = ProjectPhase::Done;
 	    });
 	refused([](Hosted &broken) { broken.Project().projectId = "ProjectNowhere"; });
+
 	// Two projects of one region under way.
 	refused(
 	    [](Hosted &broken)
@@ -565,6 +590,7 @@ TEST_CASE("A tender with no award closes at its bid close, its budget back, and 
 	CHECK(
 	    hosted.identities.Find(Kind::TenderAccount, TenderId(kEast, kBronze, "ItemCopper", 1)) ==
 	    entt::null);
+
 	// The relief tenders share the sequence, so the new ones are found by their item.
 	std::map<std::string, std::size_t> reopened;
 	for (const auto &[id, tender] : tenders)
@@ -575,6 +601,7 @@ TEST_CASE("A tender with no award closes at its bid close, its budget back, and 
 			++reopened[tender.itemId];
 		}
 	CHECK(reopened == std::map<std::string, std::size_t>{{"ItemCopper", 1}, {"ItemTin", 1}});
+
 	// The public account has had its tax since, and holds back only its open budgets, relief
 	// tenders' among them.
 	std::int64_t reserved = 0;
@@ -614,6 +641,7 @@ TEST_CASE("The governor's director publishes and cancels, and every refusal writ
 	unchanged(
 	    Result::UnknownTarget, publish({east, "ProjectNowhere", "ItemCopper", forge, 1, 1'000, 2, 30}));
 	unchanged(Result::UnknownTarget, [&] { return hosted.Publishes("ItemOats", 1); });
+
 	// Forge West has no project, and its governor is the AI's.
 	unchanged(
 	    Result::UnknownTarget,
@@ -637,6 +665,7 @@ TEST_CASE("The governor's director publishes and cancels, and every refusal writ
 	                                      east, bronze, "", "ItemCopper", forge, 4, 2'000, published,
 	                                      published + 7 * kDay, 60, TenderState::Open, 0});
 	CHECK(hosted.Public() == funds - 2'000);
+
 	// Five copper are left to call for.
 	unchanged(Result::InvalidQuantity, [&] { return hosted.Publishes("ItemCopper", 6); });
 	CHECK(hosted.Publishes("ItemCopper", 5) == Result::Succeeded);
@@ -651,6 +680,7 @@ TEST_CASE("The governor's director publishes and cancels, and every refusal writ
 	CHECK(hosted.identities.Find(Kind::TenderAccount, first) == entt::null);
 	CHECK(hosted.Public() == funds - 1'000);
 	unchanged(Result::Closed, [&] { return hosted.Run(kAda, kCancel, Cancel{first}); });
+
 	// The copper it called for can be called for again.
 	CHECK(hosted.Publishes("ItemCopper", 4) == Result::Succeeded);
 }
@@ -831,6 +861,7 @@ TEST_CASE("Sealed bids are placed, replaced at their revision and withdrawn, eac
 	CHECK(bid(kBea, "CompanyB", 7'000, 2, "TenderNowhere") == Result::UnknownTarget);
 	CHECK(bid(kBea, "CompanyB", 0, 2) == Result::InvalidPrice);
 	CHECK(bid(kBea, "CompanyB", 10'001, 2) == Result::InvalidPrice);
+
 	// The governor's own company bids as any other.
 	CHECK(bid(kAda, "CompanyA", 9'000, 0) == Result::Succeeded);
 
@@ -868,6 +899,7 @@ TEST_CASE("At its bid close a tender goes to its lowest bid, then the earliest, 
 	hosted.AddCompany("Ada", "CompanyA", 10'000);
 	REQUIRE(hosted.Publishes("ItemTin", 1, 10'000, 1, 30) == Result::Succeeded);
 	const std::string tin = TenderId(kEast, kBronze, "ItemTin", 1);
+
 	// Cy's is admitted after Bea's, in the same step, at the same total.
 	const std::uint64_t beas = hosted.Queue(kBea, kBid, Bid{tin, "CompanyB", 6'000, 0});
 	const std::uint64_t cys =
@@ -895,6 +927,7 @@ TEST_CASE("At its bid close a tender goes to its lowest bid, then the earliest, 
 	CHECK(hosted.Balance(Kind::CompanyAccount, "CompanyB") == 9'400);
 	CHECK(hosted.Balance(Kind::CompanyAccount, "CompanyC") == 10'000);
 	CHECK(hosted.world.Registry().view<const World::Bid>().empty());
+
 	// Posted: the winner and its total, seen by a player who did not bid.
 	Manifest::Query::Snapshot seen = Manifest::Query::Observe(hosted.world, hosted.identities, kAda);
 	std::erase_if(seen.tenders, [](const auto &view) { return view.tender.projectId.empty(); });
@@ -911,6 +944,7 @@ TEST_CASE("Equal totals accepted in one step and order go to the company of the 
 	hosted.AddCompany("Ada", "CompanyA", 10'000);
 	REQUIRE(hosted.Publishes("ItemTin", 1, 10'000, 1) == Result::Succeeded);
 	const std::string tin = TenderId(kEast, kBronze, "ItemTin", 1);
+
 	// As agents act, after their step's requests: Bea's first.
 	CHECK(
 	    hosted.requests.Act(hosted.world, kBea, kBid, kVersion, Bid{tin, "CompanyB", 5'000, 0}) ==
@@ -984,6 +1018,7 @@ TEST_CASE("A bid or withdrawal at its tender's bid close is refused, and a tende
 	CHECK(
 	    hosted.Run(Actor{ActorKind::Principal, "P32"}, kBid, Bid{tin, "CompanyP32", 9'000, 0}) ==
 	    Result::LimitReached);
+
 	// A replacement is no new bid.
 	CHECK(hosted.Run(kBea, kBid, Bid{tin, "CompanyB", 8'000, 1}) == Result::Succeeded);
 
@@ -1093,6 +1128,7 @@ TEST_CASE("Deliveries are paid their share of the total, an excess stays aboard,
 	CHECK(hosted.Balance(Kind::CompanyAccount, "Company1") == credits + 444);
 	CHECK(hosted.Cargo("Ship1").lots.empty());
 	CHECK(hosted.Run(kDi, kDeliver, deliver) == Result::InsufficientStock);
+
 	// 7 of 9: 777.8, to the nearest 778, so this one is paid 334.
 	hosted.Cargo("Ship1").lots = {{"ItemCopper", 3}};
 	CHECK(hosted.Run(kDi, kDeliver, deliver) == Result::Succeeded);
@@ -1116,6 +1152,7 @@ TEST_CASE("Deliveries are paid their share of the total, an excess stays aboard,
 	    std::vector<World::Holding>{{std::string{kForge}, "ItemCopper", 9, 0}});
 	CHECK(hosted.Run(kDi, kDeliver, deliver) == Result::Closed);
 	CHECK(hosted.Run(kDi, kAbandon, Abandon{copper}) == Result::Closed);
+
 	// Posted, its deliveries with it.
 	Manifest::Query::Snapshot seen = Manifest::Query::Observe(hosted.world, hosted.identities, kAda);
 	std::erase_if(seen.tenders, [](const auto &view) { return view.tender.projectId.empty(); });
@@ -1172,6 +1209,7 @@ TEST_CASE("A delivery its supplier's account cannot be paid for is refused, and 
 	    hosted.identities.Find(Kind::CompanyAccount, "Company1"));
 	constexpr std::int64_t kNearLimit = std::numeric_limits<std::int64_t>::max() - 10;
 	company.balance = kNearLimit;
+
 	// 2 of 9 of 100 is 22 credits, past the account's room of 10: nothing delivered or paid.
 	CHECK(hosted.Run(kDi, kDeliver, Deliver{copper, "Ship1"}) == Result::CapacityExceeded);
 	CHECK(hosted.TenderOf(copper).delivered == 0);
@@ -1213,6 +1251,7 @@ TEST_CASE("At its delivery close a contract short of its totes is in default, it
 	CHECK(defaulted.state == TenderState::Defaulted);
 	CHECK(defaulted.closed == close);
 	CHECK(defaulted.delivered == 4);
+
 	// The total's 556 unpaid and the bond's share of the five missing, 55.6 rounded down, are the
 	// public account's; the bond's other 45 is the supplier's again.
 	CHECK(hosted.Public() == publicFunds + 556 + 55);
@@ -1223,6 +1262,7 @@ TEST_CASE("At its delivery close a contract short of its totes is in default, it
 	    hosted.Held().holdings ==
 	    std::vector<World::Holding>{{std::string{kForge}, "ItemCopper", 4, 0}});
 	CHECK(hosted.Cargo("Ship1").lots == std::vector<World::Lot>{{"ItemCopper", 5}});
+
 	// What its default leaves the project needing may be tendered again.
 	CHECK(hosted.Publishes("ItemCopper", 6) == Result::InvalidQuantity);
 	CHECK(hosted.Publishes("ItemCopper", 5) == Result::Succeeded);
@@ -1234,6 +1274,7 @@ TEST_CASE("A contract passed over to its delivery close leaves the bytes steppin
 	Hosted stepped;
 	Hosted passed;
 	const std::string copper = TenderId(kEast, kBronze, "ItemCopper", 1);
+
 	// A player's tender, published in the world's second step, so its closes fall on no turn's end.
 	for (Hosted *pHosted : {&stepped, &passed})
 	{
@@ -1279,6 +1320,7 @@ TEST_CASE(
 	REQUIRE(again.size() == 1);
 	CHECK(again[0].published == now);
 	CHECK(again[0].totes == 9);
+
 	// The whole total and the whole bond back, the new tender's budget reserved.
 	CHECK(hosted.Public() == publicFunds + 1'000 + 100 - again[0].budget);
 	CHECK(hosted.Run(kDi, kAbandon, Abandon{copper}) == Result::Closed);
@@ -1348,6 +1390,7 @@ TEST_CASE(
 	{
 		return broken.world.Registry().get<World::Tender>(broken.identities.Find(Kind::Tender, copper));
 	};
+
 	// Its account holds the total less the 444 paid.
 	refused(
 	    [&](Hosted &broken)
@@ -1374,6 +1417,7 @@ TEST_CASE("A governor's queue runs its projects in order, and a cancel keeps wha
 	constexpr std::string_view kGuild = "ProjectSmeltersGuild";
 	Hosted hosted;
 	entt::registry &registry = hosted.world.Registry();
+
 	// Fixture bootstrap: Ada directs Forge West's council, as founding lets a player, and its
 	// workshop stands.
 	registry
@@ -1464,6 +1508,7 @@ TEST_CASE("A player's development policy tenders the head's inputs within its li
 	const std::string west{kWest};
 	Hosted hosted;
 	entt::registry &registry = hosted.world.Registry();
+
 	// Fixture bootstrap: Ada directs Forge West's council, and its guild is queued.
 	registry
 	    .get<World::Organisation>(

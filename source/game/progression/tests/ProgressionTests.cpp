@@ -25,6 +25,7 @@ Manifest::Core::SkillNode MakeSkill(
 	return node;
 }
 
+
 Manifest::Core::Prerequisite Needs(const std::string &id, int tier = 1)
 {
 	Manifest::Core::Prerequisite prerequisite;
@@ -63,6 +64,7 @@ TEST_CASE("register_rejects_broken_nodes")
 	MANIFEST_CHECK_CONTAINS(errorMessage, "registered twice");
 }
 
+
 TEST_CASE("build_reports_unknown_prerequisite")
 {
 	Manifest::Core::ProgressionManager progression;
@@ -73,6 +75,7 @@ TEST_CASE("build_reports_unknown_prerequisite")
 	MANIFEST_CHECK_CONTAINS(errorMessage, "SkillSmelting");
 	MANIFEST_CHECK_CONTAINS(errorMessage, "unknown node 'Bellowing'");
 }
+
 
 TEST_CASE("build_detects_a_prerequisite_cycle")
 {
@@ -92,6 +95,7 @@ TEST_CASE("build_detects_a_prerequisite_cycle")
 	MANIFEST_CHECK_CONTAINS(errorMessage, "SkillMetalworking -> SkillSmelting -> SkillMetalworking");
 }
 
+
 TEST_CASE("build_rejects_a_tier_that_cannot_be_reached")
 {
 	Manifest::Core::ProgressionManager progression;
@@ -106,6 +110,7 @@ TEST_CASE("build_rejects_a_tier_that_cannot_be_reached")
 	CHECK(!progression.Build(nodes, errorMessage));
 	MANIFEST_CHECK_CONTAINS(errorMessage, "maxTiers 2");
 }
+
 
 TEST_CASE("build_rejects_a_prerequisite_that_competes_with_its_node")
 {
@@ -123,6 +128,7 @@ TEST_CASE("build_rejects_a_prerequisite_that_competes_with_its_node")
 	MANIFEST_CHECK_CONTAINS(errorMessage, "MedicinePath");
 	MANIFEST_CHECK_CONTAINS(errorMessage, "can never be researched");
 }
+
 
 TEST_CASE("tiers_stop_at_maxTiers")
 {
@@ -143,6 +149,7 @@ TEST_CASE("tiers_stop_at_maxTiers")
 	CHECK_EQ(progression.GetMaxTiers("Nope"), 0);
 	CHECK_EQ(progression.TryUpgrade("Nope"), Manifest::Core::UpgradeResult::UnknownNode);
 }
+
 
 TEST_CASE("prerequisites_gate_the_upgrade")
 {
@@ -168,6 +175,7 @@ TEST_CASE("prerequisites_gate_the_upgrade")
 	CHECK_EQ(progression.TryUpgrade("SkillSmelting"), Manifest::Core::UpgradeResult::Success);
 	CHECK_EQ(progression.GetCurrentTier("SkillSmelting"), 1);
 }
+
 
 TEST_CASE("exclusive_group_locks_out_the_rivals")
 {
@@ -198,6 +206,7 @@ TEST_CASE("exclusive_group_locks_out_the_rivals")
 	CHECK_EQ(progression.GetCurrentTier("SkillFoodProcessing"), 0);
 }
 
+
 TEST_CASE("resources_are_spent_and_needed")
 {
 	Manifest::Core::ProgressionManager progression;
@@ -224,6 +233,7 @@ TEST_CASE("resources_are_spent_and_needed")
 	CHECK_EQ(progression.GetResources(), 0);
 }
 
+
 TEST_CASE("a_failed_upgrade_leaves_the_state_alone")
 {
 	Manifest::Core::ProgressionManager progression;
@@ -246,6 +256,7 @@ TEST_CASE("a_failed_upgrade_leaves_the_state_alone")
 	CHECK_EQ(progression.GetResources(), 10);
 }
 
+
 TEST_CASE("build_replaces_the_previous_tree")
 {
 	Manifest::Core::ProgressionManager progression;
@@ -262,6 +273,7 @@ TEST_CASE("build_replaces_the_previous_tree")
 	CHECK_EQ(progression.GetResources(), 0);
 	CHECK_EQ(progression.GetRegistry().size(), std::size_t(1));
 }
+
 
 TEST_CASE("iteration_order_is_sorted")
 {
@@ -282,6 +294,7 @@ TEST_CASE("iteration_order_is_sorted")
 	CHECK_EQ(ids[1], std::string("SkillMining"));
 	CHECK_EQ(ids[2], std::string("SkillResearch"));
 }
+
 
 TEST_CASE("text_for_the_user_interface")
 {

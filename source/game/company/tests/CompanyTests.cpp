@@ -66,6 +66,7 @@ struct Hosted
 	{
 	}
 
+
 	// On content a test has changed, which must outlive it.
 	explicit Hosted(const Manifest::Content::ContentSet &set)
 	    : content{set}, identities{(RegisterTypes(), World::RegisterWorld(world))},
@@ -78,6 +79,7 @@ struct Hosted
 		Manifest::Travel::OpenStations(world, fleet);
 	}
 
+
 	// The request admitted as the actor's next.
 	template <typename T>
 	Receipt Admit(
@@ -88,6 +90,7 @@ struct Hosted
 		return requests.Admit(
 		    world, actor, requests.NextSequence(actor), std::string{command}, version, bytes);
 	}
+
 
 	// The request admitted, as the actor's next, and run in the next step.
 	template <typename T>
@@ -101,6 +104,7 @@ struct Hosted
 		return Outcome(actor, sequence);
 	}
 
+
 	Result Outcome(const Actor &actor, std::uint64_t sequence) const
 	{
 		const auto completed = requests.Outcome(actor, sequence);
@@ -108,25 +112,30 @@ struct Hosted
 		return completed->result;
 	}
 
+
 	Result Provision(const std::string &principalId)
 	{
 		return Run(kHost, kProvision, Manifest::Company::Provision{principalId, principalId, "Co"});
 	}
+
 
 	Result Load(const Actor &actor, const Move &move)
 	{
 		return Run(actor, kLoad, move);
 	}
 
+
 	Result Unload(const Actor &actor, const Move &move)
 	{
 		return Run(actor, kUnload, move);
 	}
 
+
 	Snapshot Observe(const Actor &actor) const
 	{
 		return Manifest::Query::Observe(world, identities, actor);
 	}
+
 
 	// The player's own company, as their query shows it.
 	CompanyView Seen(const Actor &actor) const
@@ -136,6 +145,7 @@ struct Hosted
 		return snapshot.companies[0];
 	}
 
+
 	entt::entity Find(Kind kind, const std::string &id) const
 	{
 		const entt::entity found = identities.Find(kind, id);
@@ -143,25 +153,30 @@ struct Hosted
 		return found;
 	}
 
+
 	World::Stock &Stock(const std::string &companyId)
 	{
 		return world.Registry().get<World::Stock>(Find(Kind::Company, companyId));
 	}
+
 
 	World::LifeSupport &Support(const std::string &shipId)
 	{
 		return world.Registry().get<World::LifeSupport>(Find(Kind::Ship, shipId));
 	}
 
+
 	World::Cargo &Hold(const std::string &shipId)
 	{
 		return world.Registry().get<World::Cargo>(Find(Kind::Ship, shipId));
 	}
 
+
 	World::Ship &Record(const std::string &shipId)
 	{
 		return world.Registry().get<World::Ship>(Find(Kind::Ship, shipId));
 	}
+
 
 	Result Service(const Actor &actor, std::string_view command, const std::string &shipId)
 	{
@@ -211,6 +226,7 @@ TEST_CASE("Provisioning gives a player a company, its credits and a ship docked 
 	Hosted hosted;
 	CHECK(hosted.Observe(kAda).companies.empty());
 	CHECK(hosted.Provision("Ada") == Result::Succeeded);
+
 	// Its tanks full and its cartridge fresh, once (D-045, D-050), and connected to Ore's life support;
 	// its 4 t of reaction mass tanks and its 12.5 kg pellet magazine full (D-108).
 	const World::LifeSupport granted{{10.0, 10.0, 10.0}, {30.0}, "VenueOreHighport"};
@@ -246,6 +262,7 @@ TEST_CASE("Provisioning gives a player a company, its credits and a ship docked 
 	const std::size_t entities = registry.view<const World::Identity>().size();
 	CHECK(hosted.Provision("Ada") == Result::AlreadyProvisioned);
 	CHECK(hosted.Run(kHost, kProvision, Provision{"", "", ""}) == Result::MalformedPayload);
+
 	// An ID admission would refuse to act as.
 	const std::string longest(Manifest::Command::kMaxActorIdBytes, 'A');
 	CHECK(hosted.Provision(longest + "A") == Result::MalformedPayload);
@@ -283,6 +300,7 @@ TEST_CASE("A ship on station life support uses none of its own, and off it draws
 	for (int step = 0; step < 10; ++step)
 		hosted.world.Step();
 	CHECK(hosted.Support("Ship1") == granted);
+
 	// A retried provisioning is refused and restores nothing.
 	hosted.Support("Ship1").tanks[0] = 5.0;
 	CHECK(hosted.Provision("Ada") == Result::AlreadyProvisioned);
@@ -291,6 +309,7 @@ TEST_CASE("A ship on station life support uses none of its own, and off it draws
 
 	// Fixture bootstrap: Ada's ship off its pad, as travel leaves it when it lets go.
 	hosted.Record("Ship1").dockedAt.clear();
+
 	// An hour of 1 s steps at one occupant: 1/24 kg of oxygen and 1/24 of an occupant-day.
 	for (int step = 0; step < 3600; ++step)
 		hosted.world.Step();
@@ -319,6 +338,7 @@ TEST_CASE("A ship docked with every connection taken draws its own until one is 
 	Hosted hosted;
 	for (const std::string principal : {"Ada", "Bea", "Cy", "Di"})
 		REQUIRE(hosted.Provision(principal) == Result::Succeeded);
+
 	// Fixture bootstrap, as travel's undocking and docking would leave them: Ada's ship leaves, Eve
 	// takes the connection it let go of, and Ada's docks again, at a venue with none free.
 	hosted.Record("Ship1").dockedAt.clear();
@@ -350,6 +370,7 @@ TEST_CASE("Refill and Replace take the life-support goods from the hold, opening
 	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
 	REQUIRE(hosted.Provision("Bea") == Result::Succeeded);
 	CHECK(hosted.Service(kAda, kRefill, "Ship1") == Result::CapacityExceeded);
+
 	// Fixture bootstrap: tanks used to 2, 10 and 0 kg and a cartridge to 12 occupant-days. Docked and
 	// connected, the ship uses none of them while the commands run.
 	hosted.Support("Ship1").tanks = {2.0, 10.0, 0.0};
@@ -371,6 +392,7 @@ TEST_CASE("Refill and Replace take the life-support goods from the hold, opening
 	CHECK(hosted.Hold("Ship1").lots == std::vector<World::Lot>{{"ItemCarbonScrubberCartridge", 1}});
 	CHECK(hosted.Hold("Ship1").opened == std::vector<World::Opened>{{"ItemOxygen", 110.25}});
 	CHECK(hosted.Service(kAda, kRefill, "Ship1") == Result::CapacityExceeded);
+
 	// The opened tote is drawn on first; it is no tote to unload.
 	support.tanks[1] = 9.0;
 	CHECK(hosted.Service(kAda, kRefill, "Ship1") == Result::Succeeded);
@@ -470,6 +492,7 @@ TEST_CASE("Loading and unloading conserve the goods between the venue and the ho
 		const CompanyView ada = hosted.Seen(kAda);
 		CHECK(AtVenue(ada, "VenueOreHighport", "ItemCopper") == atVenue);
 		CHECK(Aboard(ada, "Ship1", "ItemCopper") == aboard);
+
 		// Nothing is kept as a record of zero.
 		CHECK(ada.holdings.empty() == (atVenue == 0));
 		CHECK(ada.ships[0].cargo.empty() == (aboard == 0));
@@ -485,6 +508,7 @@ TEST_CASE("Loading and unloading conserve the goods between the venue and the ho
 	CHECK(hosted.Load(kAda, move(10)) == Result::Succeeded);
 	split(0, 10);
 	CHECK(hosted.Seen(kAda).credits == 25000);
+
 	// Unloading at a venue holding none of the item makes its holding, in its place.
 	hosted.Stock("Company1").holdings = {
 	    {"VenueA", "ItemCopper", 1, 0}, {"VenueZ", "ItemCopper", 1, 0}};
@@ -536,6 +560,7 @@ TEST_CASE("A rejected move writes nothing")
 		CHECK((aboard ? hosted.Load(kAda, move) : hosted.Unload(kAda, move)) == expected);
 		CHECK(hosted.Seen(kAda) == before);
 	}
+
 	// A player with no company of their own, or a ship of someone else's.
 	entt::registry &registry = hosted.world.Registry();
 	registry.emplace<World::Principal>(
@@ -548,6 +573,7 @@ TEST_CASE("A rejected move writes nothing")
 	const CompanyView undocked = hosted.Seen(kAda);
 	CHECK(hosted.Load(kAda, copper(1)) == Result::NotDocked);
 	CHECK(hosted.Unload(kAda, {"Ship1", "VenueOreHighport", "ItemTin", 1}) == Result::NotDocked);
+
 	// Off its pad it draws on its own life support, which the moves leave alone.
 	CHECK(hosted.Seen(kAda).holdings == undocked.holdings);
 	CHECK(hosted.Seen(kAda).ships[0].cargo == undocked.ships[0].cargo);
@@ -617,6 +643,7 @@ TEST_CASE("A warehouse holds at most its limit of one item for one owner")
 	const Move one{"Ship1", "VenueOreHighport", "ItemCopper", 1};
 	hosted.Stock("Company1").holdings = {{"VenueOreHighport", "ItemCopper", 1, 0}};
 	REQUIRE(hosted.Load(kAda, one) == Result::Succeeded);
+
 	// Full with what is available and what is reserved together.
 	hosted.Stock("Company1").holdings = {
 	    {"VenueOreHighport", "ItemCopper", Manifest::Core::kMaxWarehouseTotes - 1, 1}};
@@ -659,6 +686,7 @@ TEST_CASE(
 	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
 	REQUIRE(hosted.Provision("Bea") == Result::Succeeded);
 	const entt::registry &registry = hosted.world.Registry();
+
 	// Two regions of one planet, each with its own two accounts: a player governs one, not the planet.
 	CHECK(
 	    registry.get<World::Region>(hosted.Find(Kind::Region, "RegionForgeNorth")).planetId ==
@@ -743,6 +771,7 @@ TEST_CASE("A company's credits buy its ship a tier of fuel bunkers, and its tank
 	const CompanyView bought = hosted.Seen(kAda);
 	CHECK(bought.credits == 0);
 	CHECK(bought.ships[0].systems == std::vector<World::Fitting>{{"SkillShipFuelBunkers", 1}});
+
 	// 18 t more of reaction mass tanks, which it refuels into; what it had is still aboard, and the
 	// magazine is the hull's.
 	CHECK(bought.ships[0].fuelTanks.reactionMass == doctest::Approx(22000.0));
@@ -770,6 +799,7 @@ TEST_CASE("A company's credits buy its ship a tier of cargo holds, once, and its
 	Hosted hosted;
 	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
 	const Upgrade holds{"Ship1", "OfferCargoHolds", 1};
+
 	// A new company's 25,000 credits are short of the offer's 27,000 (D-096).
 	const CompanyView start = hosted.Seen(kAda);
 	CHECK(start.ships[0].hold == 160);
@@ -852,6 +882,7 @@ TEST_CASE("A refused upgrade pays nothing and fits nothing")
 	std::ranges::find(
 	    unprepared.gameMode.skills, "SkillShipCargoHolds", &Manifest::Core::SkillNode::skillId)
 	    ->requiredSkills = {{"SkillShipFuelBunkers", 1}};
+
 	// A second skill of the same effect, which would take the first's place in the hold.
 	ContentSet twin = Scenario("trading");
 	Manifest::Core::SkillNode second = *std::ranges::find(
@@ -949,6 +980,7 @@ TEST_CASE(
 	}
 }
 
+
 TEST_CASE("Two systems of one exclusive group are neither bought nor loaded together")
 {
 	// Cargo holds and a stealth coating made rivals, the starter given a slot for each.
@@ -990,6 +1022,7 @@ TEST_CASE("An upgrade saved pending, retried after the load and replayed from th
 	hosted.world.SetRecording(true);
 	hosted.Admit(kHost, kProvision, Provision{"Ada", "Ada", "Co"});
 	hosted.world.Step();
+
 	// As one completed trade leaves it (W15's furs run ended at 29,590), written as bootstrap between
 	// the first two steps.
 	Credits(hosted, "Company1").balance = 29590;
@@ -1031,6 +1064,7 @@ TEST_CASE("An upgrade saved pending, retried after the load and replayed from th
 	CHECK(replayed.Seen(kAda) == bought);
 }
 
+
 TEST_CASE("Requests run in their step in admission order, the later seeing what the earlier did")
 {
 	Hosted hosted{"governance"};
@@ -1040,6 +1074,7 @@ TEST_CASE("Requests run in their step in admission order, the later seeing what 
 	const Move six{"Ship1", "VenueForgeHighport", "ItemCopper", 6};
 	const Receipt first = hosted.Admit(kAda, kLoad, six);
 	const Receipt second = hosted.Admit(kAda, kLoad, six);
+
 	// Two players provisioned in one step.
 	const Receipt bea = hosted.Admit(kHost, kProvision, Provision{"Bea", "Bea", "Co"});
 	const Receipt cy = hosted.Admit(kHost, kProvision, Provision{"Cy", "Cy", "Co"});
@@ -1186,6 +1221,7 @@ TEST_CASE(
 	Hosted hosted;
 	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
 	entt::registry &registry = hosted.world.Registry();
+
 	// Bea directs the venues' operator, so the day's end leaves their fees as this test sets them.
 	registry.get<World::Organisation>(hosted.Find(Kind::Organisation, "OrganisationAnvilPortAuthority"))
 	    .principalId = "Bea";
@@ -1409,6 +1445,7 @@ TEST_CASE("A save past content's bounds on fees, opened totes or a tax carry doe
 		return source.world.Registry().get<World::Fees>(
 		    source.Find(Kind::Market, "VenueBrineHighport"));
 	};
+
 	// Fees of no pad class, or none at all, which travel to the venue would find none of.
 	refused([&](Hosted &source) { fees(source).classes.clear(); }, "not of every pad class");
 	refused(

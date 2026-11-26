@@ -41,7 +41,9 @@ class ManifestConsole
 	// pins the key the server list gives its endpoint (Remote::ReadServers), Host::DefaultServers when
 	// none is given.
 	explicit ManifestConsole(std::string contentSource, std::filesystem::path servers = {});
+
 	ManifestConsole(const ManifestConsole &) = delete;
+
 	ManifestConsole &operator=(const ManifestConsole &) = delete;
 
 	Jettison::DevTools::Console &GetConsole()
@@ -95,6 +97,7 @@ class ManifestConsole
 	{
 		std::uint64_t steps{};
 		std::uint64_t taken{};
+
 		// The ships on a journey since the run began; the first whose journey ends ends the run.
 		std::vector<entt::entity> underWay;
 		entt::entity ended{entt::null};
@@ -102,51 +105,82 @@ class ManifestConsole
 	using Handler = std::function<std::string(Arguments)>;
 
 	void RegisterCommands();
+
 	void RegisterCommand(
 	    std::string name, std::string help, std::size_t minimum, std::size_t maximum, Handler run);
 
 	std::string CommandVersion();
+
 	std::string CommandStatus();
+
 	std::string CommandLoad(const std::string &source);
+
 	std::string CommandGenerate(Arguments arguments);
+
 	std::string CommandList();
+
 	std::string CommandShow(const std::string &argument);
+
 	std::string CommandPrices(Arguments arguments);
+
 	std::string CommandPlan(Arguments arguments);
+
 	std::string CommandTick(Arguments arguments);
+
 	std::string CommandSkills();
+
 	std::string CommandUpgrade(const std::string &argument);
 
 	std::string CommandHost(const std::string &scenario);
+
 	std::string CommandObserve(Arguments arguments);
+
 	std::string CommandProvision(const std::string &principalId, const std::string &companyName);
+
 	std::string CommandCargo(Arguments arguments);
+
 	std::string CommandTrade(Arguments arguments);
+
 	std::string CommandCancel(Arguments arguments);
+
 	std::string CommandTravel(Arguments arguments);
+
 	std::string CommandService(Arguments arguments);
+
 	std::string CommandFit(Arguments arguments);
+
 	std::string CommandBook(Arguments arguments);
+
 	std::string CommandStep(Arguments arguments);
+
 	std::string CommandStop();
+
 	// Steps the run for at most the budget; true once it is over.
 	bool Advance(std::chrono::milliseconds budget);
+
 	// What the run did, and the requests it ran; the run is over.
 	std::string StepReport(bool stopped);
+
 	std::string CommandConnect(const std::string &endpoint, const std::string &token);
+
 	std::string CommandDisconnect();
+
 	std::string Admit(
 	    const Command::Actor &actor, std::string_view command, std::uint32_t version,
 	    std::span<const std::byte> payload);
+
 	std::string Send(
 	    std::string_view command, std::uint32_t version, std::span<const std::byte> payload);
+
 	// A player's request: the operands follow the principal at arguments[first], which is not given
 	// when connected, as the actor is the token's. Throws the usage for any other count.
 	Arguments Operands(
 	    Arguments arguments, std::size_t first, std::size_t count, std::string_view usage) const;
+
 	std::string Queue(
 	    Arguments arguments, std::size_t first, std::string_view command, std::uint32_t version,
 	    std::span<const std::byte> payload);
+
 	Jettison::Host::Session &Hosted();
 
 	Manifest::Content::ContentSet m_content;
@@ -158,6 +192,7 @@ class ManifestConsole
 	bool m_quitRequested{false};
 
 	std::unique_ptr<Jettison::Host::Session> m_pHosted;
+
 	// Requests admitted here whose results step has not yet printed, oldest first.
 	std::vector<std::pair<Command::Actor, std::uint64_t>> m_unreported;
 	std::optional<Run> m_run;

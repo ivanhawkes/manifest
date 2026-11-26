@@ -46,9 +46,11 @@ constexpr std::int64_t kMaxCredits = std::numeric_limits<std::int64_t>::max();
 constexpr double kSecondsPerDay = 86400.0;
 constexpr double kKilogramsPerTonne = 1000.0;
 constexpr double kMicrocreditsPerCredit = 1e6;
+
 // The fuel a leg is estimated to leave in its tanks at the least, a gram, so that Travel::Burned's
 // rounding up of its own sums never refuses a thrust chosen as the most the tanks allow.
 constexpr double kFuelMarginKilograms = 0.001;
+
 // A job's decisions in one step: choosing leads at once to buying where its ship is docked, or to
 // selling, and a blocked job's retry to choosing.
 constexpr int kMaxDecisions = 4;
@@ -60,6 +62,7 @@ struct Rules
 	Command::Requests &requests;
 	World::Identities &identities;
 	const Content::ContentSet &content;
+
 	// The scenario's venues and items, in its order, each item with the count of its units a tote holds
 	// and a tote's tonnes, packed.
 	struct Item
@@ -73,6 +76,7 @@ struct Rules
 	int feeBps{0};
 	std::uint64_t turnSteps{0};
 	std::uint64_t daySteps{0};
+
 	// How long arrears stand before their ship's cargo is seized, in steps.
 	std::uint64_t graceSteps{0};
 };
@@ -204,6 +208,7 @@ std::vector<Leg> Legs(
 		JETTISON_VERIFY(station != entt::null);
 		return registry.get<const Jettison::Sim::Transform>(station).position;
 	};
+
 	// Where the ship is, its pad's place while docked, as Travel::Travel measures a leg from.
 	const glm::dvec3 here = registry.get<const Jettison::Sim::Transform>(ship).position;
 	const bool atSource = sourceId.empty() || record.dockedAt == sourceId;
@@ -305,6 +310,7 @@ Route Priced(
 		};
 		const World::Line *pMass = sold(tuning.reactionMassItemId);
 		const World::Line *pPellets = sold(tuning.pelletItemId);
+
 		// shortcut: a venue selling pellets is taken to fill the magazine, which takes a tote in the
 		// hold; refine when a policy's estimate is seen refused for its pellets.
 		const World::Fuel start{
@@ -337,6 +343,7 @@ std::int64_t CeilDiv(std::int64_t a, std::uint64_t n, std::uint64_t t)
 {
 	const __int128 product = static_cast<__int128>(a) * n;
 	const __int128 divisor = t;
+
 	// Division truncates toward 0, which rounds a negative quotient up already.
 	return static_cast<std::int64_t>(
 	    product / divisor + (product > 0 && product % divisor != 0 ? 1 : 0));
@@ -370,31 +377,37 @@ struct Context
 	entt::entity ship;
 	std::string shipId;
 	Actor owner;
+
 	// Its blockage before this step's retry, so that blocking again for the same reason keeps the step
 	// it first blocked at.
 	World::Blockage was{World::Blockage::None};
 	std::uint64_t wasSince{0};
+
 
 	entt::registry &Registry() const
 	{
 		return world.Registry();
 	}
 
+
 	World::Job &Job() const
 	{
 		return Registry().get<World::Job>(ship);
 	}
+
 
 	const World::Policy &Policy() const
 	{
 		return Registry().get<const World::Policy>(ship);
 	}
 
+
 	// The thrust the job's legs fly: its policy's own, or the one chosen with its trade.
 	std::uint32_t Thrust() const
 	{
 		return Policy().thrustBps != 0 ? Policy().thrustBps : Job().thrustBps;
 	}
+
 
 	// What the route from where the ship is comes to at the thrust, with that many tonnes of lot.
 	Route Priced(const std::vector<Leg> &legs, std::uint32_t thrustBps, double lotTonnes) const
@@ -403,22 +416,26 @@ struct Context
 		    Registry(), rules.identities, rules.content, ship, legs, thrustBps, lotTonnes);
 	}
 
+
 	std::vector<Leg> Legs(std::string_view sourceId, std::string_view destinationId) const
 	{
 		return ::Manifest::Policy::Legs(
 		    Registry(), rules.identities, rules.content, ship, sourceId, destinationId);
 	}
 
+
 	const World::Ship &Record() const
 	{
 		return Registry().get<const World::Ship>(ship);
 	}
+
 
 	const World::Reports &Reports() const
 	{
 		return Registry().get<const World::Reports>(
 		    Required(rules.identities, Kind::Principal, owner.id));
 	}
+
 
 	std::int64_t Balance() const
 	{
@@ -427,6 +444,7 @@ struct Context
 		        Required(rules.identities, Kind::CompanyAccount, Record().companyId))
 		    .balance;
 	}
+
 
 	// The company's totes of the item available at the venue.
 	std::uint64_t Available(const std::string &venueId, const std::string &itemId) const
@@ -439,6 +457,7 @@ struct Context
 		return holding == stock.holdings.end() ? 0 : holding->available;
 	}
 
+
 	std::uint64_t FreeHold() const
 	{
 		const World::Ship &record = Record();
@@ -450,6 +469,7 @@ struct Context
 		return free - std::min<std::uint64_t>(free, cargo.opened.size());
 	}
 
+
 	const Rules::Item &Item(const std::string &itemId) const
 	{
 		const auto item = std::ranges::find(rules.items, itemId, &Rules::Item::itemId);
@@ -457,16 +477,19 @@ struct Context
 		return *item;
 	}
 
+
 	double UnitsPerTote(const std::string &itemId) const
 	{
 		return Item(itemId).unitsPerTote;
 	}
+
 
 	template <typename T>
 	Result Act(std::string_view command, std::uint32_t version, const T &payload) const
 	{
 		return rules.requests.Act(world, owner, command, version, payload);
 	}
+
 
 	// Cancels what is left of the orders the job placed at the venue, the world's own (request 0).
 	void CancelRest(const std::string &venueId, const std::string &itemId) const
@@ -482,6 +505,7 @@ struct Context
 			    Act(Trade::kCancel, Trade::kVersion, Trade::Cancel{orderId}) == Result::Succeeded);
 	}
 
+
 	void Block(World::Blockage blockage) const
 	{
 		World::Job &job = Job();
@@ -489,10 +513,12 @@ struct Context
 		job.phase = Phase::Blocked;
 		job.blockedSince = blockage == was ? wasSince : now;
 		job.blockage = blockage;
+
 		// The next economic turn's last step, after the brokers' requote; never this one.
 		const std::uint64_t after = now + 1;
 		job.retry = after + (rules.turnSteps - 1 - after % rules.turnSteps);
 	}
+
 
 	// Starts the ship's journey to the venue, its docking fee a charge of the lot aboard; blocked when
 	// the journey is refused.
@@ -546,6 +572,8 @@ struct Walked
 	std::int64_t total{0};
 	std::int64_t limit{0};
 };
+
+
 std::optional<Walked> Walk(
     const std::vector<World::Level> &side, std::uint64_t totes, double units, int feeBps, bool buying)
 {
@@ -582,6 +610,7 @@ std::optional<Deal> Estimate(
 	const double units = context.UnitsPerTote(itemId);
 	const int feeBps = context.rules.feeBps;
 	const std::uint64_t most = std::min({Totes(ask.asks), Totes(bid.bids), free});
+
 	// Each tote further fills at a worse price on both sides, so the best count is at a level's edge
 	// or a cap: what the hold, either side or the funds at a level's escrow allow, the lot's fuel
 	// rising with its mass.
@@ -685,6 +714,7 @@ std::optional<std::int64_t> WalkLimit(
 		sold += taken;
 		proceeds += *each;
 		const auto fills = static_cast<std::int64_t>(std::min<std::uint64_t>(sold, Trade::kMaxFills));
+
 		// In half credits, past the credits' range when the least is near its limit.
 		if (level.price < *limit && 2 * static_cast<__int128>(proceeds) -
 		                                    static_cast<__int128>(kRoundingHalvesPerFill) * fills >=
@@ -709,6 +739,7 @@ std::optional<Deal> ChooseTrade(const Context &context)
 	const std::uint32_t fixed = context.Policy().thrustBps;
 	const std::vector<std::uint32_t> listed =
 	    fixed != 0 ? std::vector{fixed} : context.rules.content.tuning.fuel.thrustSharesBps;
+
 	// Each route's legs, by source and destination.
 	std::vector<std::vector<Leg>> routes(venues.size() * venues.size());
 	for (std::size_t source = 0; source < venues.size(); ++source)
@@ -798,6 +829,7 @@ std::optional<std::string> ChooseDestination(const Context &context)
 		    context.rules.feeBps);
 		if (!limit || pBid->Bid() < *limit)
 			continue;
+
 		// The bids at the limit or above, as far as the lot goes.
 		std::uint64_t sellable = 0;
 		for (const World::Level &level : pBid->bids)
@@ -888,6 +920,7 @@ std::optional<Tendered> ChooseTender(const Context &context, const std::optional
 			         : std::nullopt;
 			if (!buy)
 				continue;
+
 			// Bought at the venue itself, the one leg is there from where the ship is.
 			const std::vector<Leg> legs = sourceId == tender.venueId
 			                                  ? context.Legs({}, tender.venueId)
@@ -902,6 +935,7 @@ std::optional<Tendered> ChooseTender(const Context &context, const std::optional
 			if (!thrust || !fuelled(*thrust))
 				continue;
 			const Route route = context.Priced(legs, *thrust, tonnes);
+
 			// A contract it could not deliver within its window is not bid on: won, it would default.
 			if (route.seconds > static_cast<double>(tender.deliveryDays) * kSecondsPerDay)
 				continue;
@@ -1225,6 +1259,7 @@ bool Decide(Context &context)
 				context.Block(World::Blockage::JourneyFailed);
 				return false;
 			}
+
 			// The life support drawn and the fuel burned on the way, charged to the lot at the
 			// company's last prices as the ship docks (D-100, W21).
 			if (!record.dockedAt.empty() &&
@@ -1260,6 +1295,7 @@ bool Decide(Context &context)
 		case Phase::Bidding:
 			if (context.world.Clock().Step() < job.retry)
 				return false;
+
 			// Won, its contract's next leg; lost, or unawarded, a trade.
 			if (Contracted(context) == nullptr)
 				job = World::Job{};
@@ -1455,6 +1491,7 @@ std::optional<std::int64_t> SellLimit(
 		const auto fills = static_cast<double>(std::min<std::uint64_t>(n, Trade::kMaxFills));
 		most = std::max(most, (share + 1.5 * fills) / (static_cast<double>(n) * unitsPerTote * keep));
 	}
+
 	// A part in a billion over and a microcredit more, for the doubles the price rules compute in.
 	const double micro = std::ceil(most * 1e6 * (1.0 + 1e-9)) + 1.0;
 	if (!std::isfinite(micro) || micro >= 0x1p63)
@@ -1542,6 +1579,7 @@ void Register(
 	if (!(turn >= 1.0))
 		throw std::invalid_argument{"economy.intervalSeconds is less than one of the world's steps"};
 	rules->turnSteps = static_cast<std::uint64_t>(turn);
+
 	// A day as the berth fees count it, in whole hours of steps.
 	rules->daySteps = static_cast<std::uint64_t>(std::round(3600.0 / world.FixedStep())) * 24;
 	rules->graceSteps =

@@ -41,9 +41,11 @@ struct OnLane
 	// The system it left (Jettison::Sim::FrameId) and the jump point it entered by.
 	std::uint64_t from{0};
 	std::string departure;
+
 	// The system it arrives in and the jump point it arrives at.
 	std::uint64_t to{0};
 	std::string arrival;
+
 	// The clock's step count once it has arrived (Jettison::Time::SimClock::Step): it arrives as the
 	// step before that one ends.
 	std::uint64_t arrivalStep{0};
@@ -125,6 +127,7 @@ class LaneTravel
 {
   public:
 	static constexpr std::string_view kSystemName = "lanes";
+
 	// Metres kept between the hull of a body coming out of a gate and every other's: a steered
 	// ship's clearance (Jettison::Ai::Steered).
 	static constexpr double kArrivalClearance = 20.0;
@@ -163,6 +166,7 @@ class LaneTravel
 
 	const Jettison::Physics::PhysicsWorld &m_physics;
 	std::optional<Space::Galaxy> m_galaxy;
+
 	// By Jettison::Sim::FrameId; looked up, and ordered regardless.
 	std::map<std::uint64_t, Space::StarSystem> m_systems;
 };

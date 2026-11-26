@@ -26,6 +26,7 @@ EffectDefinition MakeEffect(
 	return definition;
 }
 
+
 // A modifier that adds perTier of the stat for every tier bought. The numbers below
 // are the scaffold's working figures, chosen so that three tiers of a system move the
 // stat by a half to a third of its base value: a shield bank at tier 3 is a screen
@@ -40,6 +41,7 @@ EffectModifier Add(EffectStat stat, double perTier)
 	return modifier;
 }
 
+
 EffectModifier Multiply(EffectStat stat, double perTier)
 {
 	EffectModifier modifier;
@@ -49,6 +51,7 @@ EffectModifier Multiply(EffectStat stat, double perTier)
 
 	return modifier;
 }
+
 
 // The effects every node in the shipped tree asks for, by domain. The ids are the
 // `targetEffectID` strings of data/skill-tree, spelled there and here, and
@@ -287,6 +290,7 @@ std::vector<EffectDefinition> BodyEffectDefinitions()
 	};
 }
 } // namespace
+
 
 bool EffectCatalogue::Register(const EffectDefinition &definition, std::string &errorMessage)
 {
