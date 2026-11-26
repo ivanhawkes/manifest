@@ -10,13 +10,15 @@ build next. What is built is documented elsewhere: hulls, cargo and upgrades in
 
 ## Where things stand
 
-- **Three hulls are authored** in `data/ships/hulls.yaml`: the lone-trader starter, the compact
-  single-seat and the long-haul trader. Only the starter is a scenario's starter hull, and no
-  command buys, sells or transfers a ship.
-- **One drive class for every hull**: a clean fusion [torch](glossary.md#torch), burning
-  [reaction mass](glossary.md#reaction-mass) and [fusion pellets](glossary.md#fusion-pellets) at
-  the rates in `balance.yaml`'s `fuel` section, on the Manifest mode's manned and unmanned
-  [cruise profiles](glossary.md#cruise-profile) (`data/game-mode/manifest.yaml`, `cruise`).
+- **The hulls are authored** in `data/ships/hulls.yaml` ([companies](companies.md#hulls)): four
+  designs (the lone-trader starter, the compact single-seat, the long-haul trader and the medium
+  freighter), a type for each [pad class](glossary.md#pad-class) and nine civilian types. A game
+  mode selects the hulls and drives a player is shown ([content](content.md#game-modes)). Only the
+  starter is a scenario's starter hull, and no command buys, sells or transfers a ship.
+- **Two drive classes** in `data/ships/drives.yaml`: a clean fusion
+  [torch](glossary.md#torch), burning [reaction mass](glossary.md#reaction-mass) and
+  [fusion pellets](glossary.md#fusion-pellets), and the hauler fusion drive of the larger hulls,
+  below.
 - **Only the starter has life support authored**: three 10 kg
   [oxygen tanks](glossary.md#oxygen-tank) and one scrubber [cartridge](glossary.md#cartridge).
   The world keeps each tank's oxygen apart (`World::LifeSupport::tanks`), draws them in order,
@@ -60,10 +62,10 @@ The new fuels are new trade goods:
 
 - **Deuterium pellets** (`ItemDeuteriumPellets`, about 60 credits a kg), made wherever there is
   water.
-- **Pulse units** (`ItemPulseUnits`, counted by the unit, 100 kg and about 150 credits each),
+- **Pulse units** (`ItemPulseUnits`, counted by the unit, 100 kg and 10 credits each),
   made only at polity-operated venues and sold only to a ship whose owner that
   [polity](glossary.md#polity) licenses. Carried without a licence, they are contraband. No licence
-  exists in the code yet; W22 designs one.
+  exists in the code yet; one is [planned](#the-licence).
 
 The hauler's neutrons want shielding, which is hull mass. The pulse drive's fallout is why its
 radius covers populated bodies too.
@@ -95,7 +97,8 @@ flowchart LR
 - **Emergency override.** A pulse ship's owner may light the drive inside the radius. The polity
   whose station or body it is fines the company, and each [region](glossary.md#region) the ship
   passes loses [health](glossary.md#health) and [happiness](glossary.md#happiness). It is a choice
-  for a desperate or greedy player; the fine and the harm are W22's to set.
+  for a desperate or greedy player; the fine and the harm are
+  [planned](#the-emergency-override).
 
 The cruise and `ClearOf` are Manifest's own code since the space extraction (`source/game/space`),
 so the crossing is a Manifest change. Steering was measured against it on 2026-11-26: it holds a ship
@@ -111,20 +114,206 @@ Built (W22a): `HullFreighterMedium`, a medium freighter of 2,500 t on the hauler
 deuterium magazine and four crew; every number a first guess. No company flies one in a scenario yet:
 `Company::Provision` gives every company the scenario's starter hull, and only the fixture's overlay
 makes the freighter that. Deuterium pellets (`ItemDeuteriumPellets`) are an item, sold at no venue
-yet. Open for [W22b](delivery-order.md#w22b), with the pulse carrier:
+yet. What is left is [W22b](delivery-order.md#w22b), designed below.
 
-- the larger pad classes it docks at: today `data/docks/pads/` has skiff to cruiser; the
-  dreadnought and heavy-destroyer sizes are proposals ([D-058](decision-ledger.md#d-058));
-- the dry dock, a resupply platform shaped like an oil rig in space, two large pads and smaller
-  ones, home to some 500 crew and technicians. Its layout, what its hangars hold, and what
-  resupply and repair do and cost are not designed;
-- a way for a company to own it, since no command buys a ship.
+### W22b: the design
 
-W22 changes travel, the company's provisioning, the [policy](glossary.md#policy-standing)'s
-estimates, and the saved ship and drive state.
+Settled by the user on 2026-11-27, every recommendation below accepted
+([D-117](decision-ledger.md#d-117)). Every number is a first guess, chosen for a game that plays
+well and to be tuned in play. The pad classes are the eleven, shuttle to titan, in
+`data/docks/pads/`; the classes above destroyer dock only at a dry dock
+([D-058](decision-ledger.md#d-058)).
 
-**Done when** a hauler and a pulse carrier each leave and reach a station through its radius, with
-the fuel and time of each shown, and an override's fine and harm are shown.
+#### The pulse drive as a record
+
+`DrivePulse` in `data/ships/drives.yaml` puts the table's numbers into data, with three changes to
+the record:
+
+| Field | Value | Change to the record |
+| --- | --- | --- |
+| `exhaustKms` | Left out | Optional: a drive without one burns no reaction mass, since pulse units are their own |
+| `pelletItemId` | `ItemPulseUnits` | May name an item traded by the unit, its mass a unit from its density, pack factor and units a cubic metre; a leg's burn rounds up to whole units |
+| `pelletMilligramsPerTonneKms` | 333,564 | None: 0.0033 units of 100 kg a tonne-km/s, the rocket equation at 1% of light speed |
+| `curveExponent` | 0 | None: no dearer above 1 g, since acceleration is what the pulse drive sells |
+| `exclusionRadius` | 100,000 km | None |
+| `bodyExclusionRadius` | 100,000 km | New, optional: the height above a populated body's surface it may not thrust within |
+| `override` | 10 credits a tonne; 20 health, 40 happiness | New, optional: the [override](#the-emergency-override)'s fine and harm; a drive with none may not override |
+| `cruise` | 2 g for 2 hours of a trip, 0.5 g sustained, manned or not | None |
+
+`ItemPulseUnits` joins `data/trade-items/fuels.yaml`, by the unit, eight to the cubic metre (one a
+tote) at a density of 1.6 and a pack factor of 0.5, so a unit is 100 kg; it is
+[licensed](#the-licence).
+
+**Its price.** At 150 credits a unit, the first guess, the pulse drive costs 0.50 credits a
+tonne-km/s, seventeen times the hauler's 0.030 and the torch's 0.028 at 1 g, and no pulse carrier
+could pay for a trip. Instead: 10 credits a unit, 0.033 a tonne-km/s, level with the hauler and
+cheaper than the torch above about 1.1 g.
+
+**Refuelling the magazine.** The refueller buys one tote of pellets into a hold with none, so the
+freighter's 100 kg magazine, eight totes of deuterium, gets 12.5 kg a refuel. Instead it buys the
+totes the magazine's room needs, less the whole totes aboard, then fills the magazine as it does
+today. The starter's 12.5 kg magazine still takes one tote.
+
+#### The pulse carrier
+
+`HullPulseCarrier` ("Pulse bulk carrier") is the first hull a player can fly on the pulse drive: a
+design of the hauler (`HullHauler`), as the medium freighter is of the freighter.
+
+| Field | Value |
+| --- | --- |
+| Dock hull | 280 x 76 x 56 m on a cruiser pad, so it docks only at a dry dock |
+| `mass` | 12,000 t as built, most of it the pusher plate and its shock absorbers |
+| `CargoVolume` | 160,000 totes, 20,000 m³ |
+| `FuelCapacity` | Left out: no reaction mass tanks |
+| `pelletMagazine` | 2,500,000 kg, 25,000 pulse units, outside the hold |
+| `occupants` | 12 |
+| `oxygenTanks`, `scrubberCartridges` | Six tanks of 200 kg and 30 cartridges: 100 and 75 days for the crew |
+| `fitableEffects` | `CargoHolds` |
+| `driveId` | `DrivePulse` |
+
+It has its dock hull and power-law cruise drive in `data/docks/` as every hull has, and the
+`manifest` mode selects it and `DrivePulse`; `astralis`, the torch's mode, selects neither. Laden to
+about 25,000 t, it flies Ore to Brine at the policy's 10% thrust share and 0.1 g in about 34 days,
+burning about 24,000 units (2,400 t), 240,000 credits at 10 credits a unit.
+
+#### The licence
+
+A [polity](glossary.md#polity) licenses a company to buy pulse units at the venues it operates.
+
+- **Licensed goods.** An item gains `licensed`. Content refuses a market row of a licensed item at a
+  venue whose operator is not a polity. `Trade::Place` refuses `NotAuthorised` a company's buy of
+  one unless the company holds the venue operator's licence, and any company's sell of one: only
+  the venue sells them. Refuelling buys through the book, so it is checked alike; a standing
+  policy never trades a licensed item.
+- **State.** `World::Licences` on a company: the polities licensing it, by ID, in order.
+- **From an AI polity.** `Manifest.Company.Apply{organisationId}`, sent by the company's
+  principal, is granted at once for `licence.feeCredits` in `balance.yaml` (50,000, two cargo-hold
+  upgrades), paid evenly to the treasuries of the regions the polity governs, or to no one if it
+  governs none. Refused `UnknownTarget` (no such polity), `NotAuthorised` (a player directs it),
+  `AlreadyLicensed` (a new result) and `InsufficientFunds`.
+- **From a player's polity.** `Manifest.Company.SetLicence{organisationId, companyId, granted}`,
+  sent by the polity's director, grants or revokes, free.
+- **Revoked** by an AI polity when the company's ship overrides within its sphere
+  ([below](#the-emergency-override)). Units carried without a licence are contraband in
+  name only: nothing inspects or seizes them yet.
+
+#### The dry dock
+
+A dry dock with pads up to a battleship's. No platform has a titan pad: a titan-class ship, a
+titan or an ark, docks with no other ship, but flies to a coordinate and parks, and the dry dock
+docks with it ([D-058](decision-ledger.md#d-058)). That needs a platform that flies to a parked
+vehicle and docks with it, which Jettison's docks do not do, so it is a Jettison provision of its
+own and not W22b's; a dry dock with dreadnought pads waits, likewise, for a hull that needs it.
+
+- **Layout.** `data/docks/stations/drydock.yaml`, a `Dock.PlatformLayout` shaped like an oil rig
+  hung in space. A 300 x 80 x 300 m central deck holds the quarters of its 500 crew and technicians
+  and its storage hangars. Two piers of 640 x 20 x 200 m along ±X each carry one battleship pad
+  (180 x 540 m), which takes a cruiser, a battlecruiser or a battleship. Two piers along ±Z carry
+  the smaller pads: two destroyer, two frigate, four corvette, four cutter, four skiff and four
+  shuttle pads, two of the shuttle pads display berths showing `HullShuttle`, the shuttles on hand.
+  Every berth offers `dry-dock`. The implementer places the smaller pads; `CheckLayout` holds them
+  to the piers.
+- **Where.** One about each planet of the trading scenario, 80,000 km out, twice the highports'
+  orbit, so its traffic keeps apart from theirs: `VenueOreYards` and `VenueBrineYards`, bodies of
+  `data/systems/system-anvil.yaml`. Each is operated by the Anvil Port Authority, a polity, so it
+  may sell pulse units, and serves its planet's port region (Ore Highlands, Brine Coast) as the
+  highport does. The governance scenario has none until a hull there needs one.
+- **Resupply** is an ordinary venue's, at the default fees by fee class: 12 life-support
+  connections, and a market of reaction mass (100,000 kg a day), deuterium, pulse units (10,000 a
+  day, 30,000 in stock), oxygen and cartridges. So that a pulse carrier has cargo, each also trades
+  its region's bulk goods: copper, rice, lentils and drinking water at Ore Yards; glassware, soap
+  and wheat at Brine Yards.
+- **Repair.** Nothing damages a ship yet, so W22b builds none; the `dry-dock` feature marks the
+  berths that will offer it. The 500 people are the platform's own, not ships' occupants on its
+  life support.
+
+#### A scenario's hull grants
+
+A scenario authors `grants`, each a `grantId`, `hullId`, `venueId` and `price`. The scenario
+chooses the hull and the venue; a player chooses only whether and when to claim.
+
+- **`Manifest.Company.Claim{grantId}`**, sent by the company's principal, makes a ship of the
+  grant's hull at its venue as provisioning makes the starter (one helper serves both): life
+  support, tanks and magazine full, parked on the smallest free pad it fits, connected if a
+  connection is free. The price is paid to no one, as an upgrade's is. Each grant once a company.
+  Refused `UnknownTarget`, `AlreadyClaimed` (a new result), `NoPadFree` and `InsufficientFunds`.
+- **State.** `World::Claims` on a company: the grants it has claimed, by ID, in order.
+- **Content** refuses a grant whose hull has no `mass`, is not one of its scenario's game mode's
+  hulls ([content](content.md#game-modes)), or fits no pad of its venue, display aside.
+- **The trading scenario's two:** `GrantFreighterMedium`, the medium freighter at Ore Highport for
+  400,000 credits, and `GrantPulseCarrier` at Ore Yards for 6,000,000. A company then owns two or
+  more ships; travel, policies and the snapshot already work by ship. The shipyard,
+  [L48](delivery-order.md#l48), may later replace grants or keep them as a scenario's rewards.
+
+#### Where deuterium is sold
+
+Every venue that makes reaction mass, which is water ice, makes deuterium pellets: every venue of
+both scenarios and the yards, a row for the venue's region of 200 kg a day with 16 totes (200 kg)
+in stock, two of the freighter's magazines. The torch's pellets stay at one station a planet.
+
+#### The radius about populated bodies
+
+A populated body is a planet or moon that a region of more than 0 people names. Its sphere reaches
+the drive's `bodyExclusionRadius` above its surface; a station's, `exclusionRadius` about it.
+
+- **Each end's clearance**, worked out by `travel` as a journey starts: the most, over the spheres
+  that hold that end's station, of the sphere's radius plus the station's distance from its centre,
+  so any course out leaves them all. At Ore Yards it is 100,000 + 6,371 + 80,000 = 186,371 km,
+  about two hours on thrusters at 15 m/s².
+- **Two clearances.** `Space::CruiseDrive` and `Space::Cruising` split `clearance` into
+  `departureClearance` and `arrivalClearance`, which `travel` writes as it writes the flown
+  profile. The hauler's stay its 1,000 km. `Policy::EstimateRoute` takes both.
+- **Not checked:** a course passing another populated body while the drive thrusts, which needs a
+  course round bodies ([L37](delivery-order.md#l37)).
+
+#### The emergency override
+
+`Manifest.Travel.Travel` version 3 adds `override`, default off. With it, a drive that has an
+`override` record lights within its radius: both clearances are 0, and `Space::ClearOf` still
+flies the ship out of the 2 km reach first. A drive with none is refused `InvalidQuantity`. As the
+journey starts, for each sphere that either end lies in:
+
+- **The fine:** the record's 10 credits a tonne aboard, paid with the docking fee and refused
+  `InsufficientFunds` with it; a station's to its venue's account, a body's evenly to its regions'
+  treasuries, any remainder to the first by ID.
+- **The harm:** each region on the body loses 20 [health](glossary.md#health) and 40
+  [happiness](glossary.md#happiness), held at 0, and recovers as the economy's condition does.
+- **Revocation:** each AI-run polity whose station or region it is revokes the company's licence.
+
+A pulse carrier of 25,000 t overriding out of Ore Yards pays about 500,000 credits (the yards' and
+Ore's spheres), and Ore's five regions fall to 80 health and 60 happiness, about seven hours'
+recovery when supplied, to save some four hours on thrusters. The journey records `override` and
+its `fine`, shown in the ship's view.
+
+#### Saves, Jettison and the modules
+
+- **Saves.** The [state inventory](world.md#the-state-inventory) gains `Licences` and `Claims` on
+  a company and `Journey`'s `override` and `fine`, and the cruise's two clearances replace its
+  one. A load refuses a licence from no polity, a claim of no grant of the scenario and a fine
+  below 0. Formats change in place, with no migration, as for every format before player testing.
+- **Jettison.** None needed for W22b: the layout's decks, piers, features and display vehicles,
+  `Dock::Fits`, `Park` and `RequestBerth` are at the pin, and the cruise is Manifest's. W22b3
+  proves a 280 m hull docks at a battleship pad; if it cannot, that is a Jettison item first. A
+  dry dock docking with a parked titan-class ship is a later Jettison provision (above).
+- **Modules.** `content` (the drive, item, grant and venue rules), `space` (the two clearances),
+  `travel` (fuel by the unit, the clearances, the override), `company` (refuelling, `Apply`,
+  `SetLicence`, `Claim`), `trade` (licensed goods), `policy` (estimates, licensed goods),
+  `query` and `console` (licences, grants, the override), and `world` (the state).
+
+#### The steps
+
+Each is one commit chunk, its suites and tidy passing, in this order.
+
+| Step | What | Done when |
+| --- | --- | --- |
+| W22b1 | Fuel by the unit: `exhaustKms` optional, a unit-counted fuel, `ItemPulseUnits`, `DrivePulse`; the magazine refuelled by the totes it needs; deuterium at every venue | The `travel` suite pins a pulse leg's burn in whole units on a test hull, and the `company` suite refuels the freighter's 100 kg magazine at a venue selling deuterium |
+| W22b2 | The radius about populated bodies and the two clearances | The `space` and `travel` suites cross a pulse ship out of a planet's sphere and into another's on thrusters, fuel burnt only over the drive's metres, and a save mid-crossing loads |
+| W22b3 | The dry dock and the pulse carrier: `drydock.yaml`, the two yards, `HullPulseCarrier` | `content` fits the carrier only to the yards' battleship pads, and a fixture flies one from Ore Yards to Brine Yards, its fuel and time shown |
+| W22b4 | The licence: `licensed`, `Licences`, `Apply`, `SetLicence` | An unlicensed buy of pulse units is refused, a licensed one fills, and a player's polity grants and revokes, through a save |
+| W22b5 | Hull grants: `grants`, `Claim`, `Claims` | A company claims the freighter, flies it and refuels its deuterium, and a second claim is refused, through a save |
+| W22b6 | The override: `Travel` version 3, the fine, the harm and the revocation | The fixture's carrier overrides out of Ore Yards, its fine reaches the yards and Ore's treasuries, Ore's regions lose health and happiness, its licence is revoked, and the snapshot shows each |
+
+**Done when** W22b6 is: the [W22b row](delivery-order.md#w22b)'s criterion.
 
 ## Modular oxygen banks
 
