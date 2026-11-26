@@ -1,0 +1,8 @@
+# The military shuttle's hull, 6.5 x 4.5 x 1.8 m, on a shuttle pad. A hull of Jettison's docks
+# (Dock.VehicleDefinition): metres, its nose along -Z.
+version: 3
+displayName: Shuttle
+length: 6.5
+beam: 4.5
+height: 1.8
+berth: shuttle

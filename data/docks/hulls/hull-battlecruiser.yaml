@@ -1,0 +1,8 @@
+# The military battlecruiser's hull, 370 x 80 x 65 m, on a battlecruiser pad. A hull of Jettison's docks
+# (Dock.VehicleDefinition): metres, its nose along -Z.
+version: 3
+displayName: Battlecruiser
+length: 370
+beam: 80
+height: 65
+berth: battlecruiser

@@ -2,6 +2,6 @@
 # A pad class of Jettison's docks (Dock.BerthClassDefinition, D-058): metres, the largest hull length
 # by beam by height and the pad width by length.
 version: 2
-rank: 0
+rank: 1
 largestVehicle: [9.8, 6.4, 1.8]
 berthSize: [8, 10]

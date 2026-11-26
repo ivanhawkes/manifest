@@ -1,0 +1,8 @@
+# The civilian hauler's hull, 290 x 80 x 60 m, on a cruiser pad. A hull of Jettison's docks
+# (Dock.VehicleDefinition): metres, its nose along -Z.
+version: 3
+displayName: Hauler
+length: 290
+beam: 80
+height: 60
+berth: cruiser

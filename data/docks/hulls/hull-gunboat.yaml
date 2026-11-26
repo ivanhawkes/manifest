@@ -1,0 +1,8 @@
+# The military gunboat's hull, 22 x 18 x 8 m, on a corvette pad. A hull of Jettison's docks
+# (Dock.VehicleDefinition): metres, its nose along -Z.
+version: 3
+displayName: Gunboat
+length: 22
+beam: 18
+height: 8
+berth: corvette

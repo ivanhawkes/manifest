@@ -1,0 +1,8 @@
+# The civilian brig's hull, 25 x 18 x 7 m, on a corvette pad. A hull of Jettison's docks
+# (Dock.VehicleDefinition): metres, its nose along -Z.
+version: 3
+displayName: Brig
+length: 25
+beam: 18
+height: 7
+berth: corvette

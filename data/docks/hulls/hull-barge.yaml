@@ -1,0 +1,8 @@
+# The civilian barge's hull, 450 x 120 x 80 m, on a battleship pad. A hull of Jettison's docks
+# (Dock.VehicleDefinition): metres, its nose along -Z.
+version: 3
+displayName: Barge
+length: 450
+beam: 120
+height: 80
+berth: battleship

@@ -1,0 +1,8 @@
+# The military destroyer's hull, 135 x 45 x 28 m, on a destroyer pad. A hull of Jettison's docks
+# (Dock.VehicleDefinition): metres, its nose along -Z.
+version: 3
+displayName: Destroyer
+length: 135
+beam: 45
+height: 28
+berth: destroyer

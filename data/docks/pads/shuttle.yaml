@@ -1,0 +1,7 @@
+# The smallest class: a shuttle's or a compact single-seat's pad.
+# A pad class of Jettison's docks (Dock.BerthClassDefinition, D-058): metres, the largest hull length
+# by beam by height and the pad width by length.
+version: 2
+rank: 0
+largestVehicle: [7, 5, 1.8]
+berthSize: [6, 8]

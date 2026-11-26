@@ -1,0 +1,8 @@
+# The military titan's hull, 950 x 240 x 190 m, on a titan pad. A hull of Jettison's docks
+# (Dock.VehicleDefinition): metres, its nose along -Z.
+version: 3
+displayName: Titan
+length: 950
+beam: 240
+height: 190
+berth: titan

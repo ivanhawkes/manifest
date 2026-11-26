@@ -1,0 +1,8 @@
+# The civilian galleon's hull, 260 x 75 x 55 m, on a cruiser pad. A hull of Jettison's docks
+# (Dock.VehicleDefinition): metres, its nose along -Z.
+version: 3
+displayName: Galleon
+length: 260
+beam: 75
+height: 55
+berth: cruiser

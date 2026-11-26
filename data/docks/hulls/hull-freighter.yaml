@@ -1,0 +1,8 @@
+# The civilian freighter's hull, 130 x 45 x 30 m, on a destroyer pad. A hull of Jettison's docks
+# (Dock.VehicleDefinition): metres, its nose along -Z.
+version: 3
+displayName: Freighter
+length: 130
+beam: 45
+height: 30
+berth: destroyer

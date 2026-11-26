@@ -117,10 +117,10 @@ using Items = std::vector<ItemNode>;
 // 500 mm a side, for any good. Every count of goods is in totes, eight to the IBC.
 inline constexpr std::uint64_t kTotesPerIbc = 8;
 
-// The most a hull's hold carries is the largest hull class's envelope, the heavy destroyer's
-// 600 x 160 x 120 m (docs/history/small-trader-and-docking-plan.md, "Ship size classes and the resupply
-// platform"): no hold is bigger than its hull. Content and the commands each refuse a hull over it.
-inline constexpr std::uint64_t kMaxHoldTotes = 11'520'000 * kTotesPerIbc;
+// The most a hull's hold carries is the largest pad class's envelope, the titan's 1,000 x 250 x 200 m
+// (data/docks/pads/titan.yaml): no hold is bigger than its hull. Content and the commands each refuse a
+// hull over it.
+inline constexpr std::uint64_t kMaxHoldTotes = 50'000'000 * kTotesPerIbc;
 
 // The most one owner holds of one item at one venue's warehouse: a hundred of the largest holds.
 // Even in gold's troy ounces, 77,644 to the tote, that many is below 2^53 units.

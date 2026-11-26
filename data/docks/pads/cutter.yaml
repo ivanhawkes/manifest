@@ -1,0 +1,7 @@
+# A cutter's or a sloop's pad.
+# A pad class of Jettison's docks (Dock.BerthClassDefinition, D-058): metres, the largest hull length
+# by beam by height and the pad width by length.
+version: 2
+rank: 2
+largestVehicle: [16, 10, 4]
+berthSize: [20, 22]

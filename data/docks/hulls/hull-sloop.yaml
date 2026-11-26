@@ -1,0 +1,8 @@
+# The civilian sloop's hull, 14 x 8 x 3 m, on a cutter pad. A hull of Jettison's docks
+# (Dock.VehicleDefinition): metres, its nose along -Z.
+version: 3
+displayName: Sloop
+length: 14
+beam: 8
+height: 3
+berth: cutter

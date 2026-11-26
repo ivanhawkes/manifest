@@ -211,7 +211,7 @@ class CruiseTravel
 	// ship is a few kilometres off a station or a gate and clear of a planet's air; and no nearer a
 	// body with gravity than where it pulls at kArrivalGravity. A station's or a gate's frame falls
 	// round its planet with the ship, but a planet's own pull is the ship's to hold against: at 1.25
-	// radii Corva pulls at 16.6 m/s², past a shuttle's 15 m/s² of reverse thrust, where a fifteenth of
+	// radii Corva pulls at 16.6 m/s², past a skiff's 15 m/s² of reverse thrust, where a fifteenth of
 	// that leaves its assist all it needs (Ostra's is 20,000 km out, Corva's 356,000 km).
 	static constexpr double kArrivalStandoff = 4000.0;
 	static constexpr double kArrivalRadiusShare = 1.25;

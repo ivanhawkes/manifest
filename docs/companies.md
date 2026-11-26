@@ -212,9 +212,13 @@ chosen is left out, not guessed.
 | `HullLoneTraderStarter` | 160 totes | The starter: one occupant, three 10 kg tanks, one cartridge, 4 t of tanks, a 12.5 kg magazine, 20 t; slots for cargo holds and fuel bunkers. |
 | `HullCompactSingle` | 32 totes | One occupant in a truck-cab cabin ([D-044](decision-ledger.md#d-044)); its life support, fittings and purpose are open. |
 | `HullTraderLongHaul` | 7,200 totes | The hull the full ship skill tree is balanced against; no scenario starts a player in it or sells its tiers. |
+| `HullFreighterMedium` | 4,000 totes | A 2,500 t freighter on the hauler fusion drive, four crew; no command buys one yet ([W22b](delivery-order.md#w22b)). |
+| `HullShuttle` to `HullTitan`, `HullGunboat` | 21 to 1.7 million totes | One military type for each [pad class](glossary.md#pad-class), and the gunboat on a corvette's; a name, a description, a drive and a first-guess hold alone. |
+| `HullSloop`, `HullBrig`, `HullGalleon`, `HullFreighter`, `HullHauler`, `HullBarge`, `HullCarrier`, `HullSupercarrier`, `HullArk` | 270 to 20 million totes | Civilian and merchant types, each on the smallest military class it fits, as sparsely authored. |
 
 A hull's size and the berth class it docks at are a separate record of the engine's, a
-`Dock.VehicleDefinition` in `data/docks/hulls/` (the starter is a skiff), and its drive is in
+`Dock.VehicleDefinition` in `data/docks/hulls/` (the starter is a skiff, the compact single-seat a
+shuttle), and its drive is in
 `data/docks/drives/`. Which berth a hull fits is Jettison's rule
 ([docks](../../jettison/docs/docks.md#which-berth-a-vehicle-fits)); the drives are in
 [travel](travel.md).

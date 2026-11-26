@@ -1,0 +1,8 @@
+# The military dreadnought's hull, 580 x 150 x 110 m, on a dreadnought pad. A hull of Jettison's docks
+# (Dock.VehicleDefinition): metres, its nose along -Z.
+version: 3
+displayName: Dreadnought
+length: 580
+beam: 150
+height: 110
+berth: dreadnought

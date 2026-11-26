@@ -1,0 +1,8 @@
+# The civilian supercarrier's hull, 600 x 160 x 120 m, on a dreadnought pad. A hull of Jettison's docks
+# (Dock.VehicleDefinition): metres, its nose along -Z.
+version: 3
+displayName: Supercarrier
+length: 600
+beam: 160
+height: 120
+berth: dreadnought

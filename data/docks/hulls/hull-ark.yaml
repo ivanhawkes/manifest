@@ -1,0 +1,8 @@
+# The civilian ark's hull, 1000 x 250 x 200 m, on a titan pad. A hull of Jettison's docks
+# (Dock.VehicleDefinition): metres, its nose along -Z.
+version: 3
+displayName: Ark
+length: 1000
+beam: 250
+height: 200
+berth: titan

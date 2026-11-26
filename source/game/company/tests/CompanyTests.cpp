@@ -1210,7 +1210,7 @@ TEST_CASE("A save with work pending, and a replay from the start, carry the comp
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves only
 	// with what a save holds or the engine's save format, and a change that moves it says so.
-	CHECK(hosted.world.StateHash() == 0xca792fde0031c34aULL);
+	CHECK(hosted.world.StateHash() == 0x70fa26f0c418ffeeULL);
 }
 
 
@@ -1234,7 +1234,7 @@ TEST_CASE(
 	    registry.get<World::Account>(hosted.Find(Kind::VenueAccount, "VenueBrineHighport"));
 	const World::Fees &posted =
 	    registry.get<World::Fees>(hosted.Find(Kind::Market, "VenueOreHighport"));
-	CHECK(posted.classes.size() == 5);
+	CHECK(posted.classes.size() == 11);
 	REQUIRE(World::Find(posted, "skiff"));
 	CHECK(*World::Find(posted, "skiff") == World::ClassFees{"skiff", 100, 20});
 	CHECK(posted.berthPerOccupantHour == 2);

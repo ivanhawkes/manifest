@@ -1,5 +1,5 @@
-# The long-haul trader's hull: a frigate, the Jettison sample's transport, 56 x 28 x 14 m. A hull of
-# Jettison's docks (Dock.VehicleDefinition): metres, its nose along -Z.
+# The long-haul trader's hull: a frigate, 56 x 28 x 14 m. A hull of Jettison's docks
+# (Dock.VehicleDefinition): metres, its nose along -Z.
 version: 3
 displayName: Long-haul trader
 length: 56

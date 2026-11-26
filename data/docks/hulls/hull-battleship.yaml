@@ -1,0 +1,8 @@
+# The military battleship's hull, 430 x 110 x 85 m, on a battleship pad. A hull of Jettison's docks
+# (Dock.VehicleDefinition): metres, its nose along -Z.
+version: 3
+displayName: Battleship
+length: 430
+beam: 110
+height: 85
+berth: battleship

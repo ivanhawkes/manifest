@@ -17,7 +17,7 @@ standing jobs that pay these charges are in [policies](policies.md).
 | Term | Meaning |
 | --- | --- |
 | [Venue](glossary.md#venue) | A market at a station (`Content::VenueDefinition`). Its operator is an [organisation](glossary.md#organisation); its fees and its pricing level are saved on its market entity. |
-| [Berth](glossary.md#berth) and [pad class](glossary.md#pad-class) | A berth is a landing place on the station's [platform](../../jettison/docs/glossary.md#platform). Its class is a Jettison [berth class](../../jettison/docs/glossary.md#berth-class), authored in `data/docks/pads` (`skiff`, `corvette`, `frigate`, `destroyer`, `cruiser`). |
+| [Berth](glossary.md#berth) and [pad class](glossary.md#pad-class) | A berth is a landing place on the station's [platform](../../jettison/docs/glossary.md#platform). Its class is a Jettison [berth class](../../jettison/docs/glossary.md#berth-class), authored in `data/docks/pads`, `shuttle` to `titan` ([D-058](decision-ledger.md#d-058)). |
 | [Fee class](glossary.md#fee-class) | The pad class a ship is charged by: the berth class its hull's [vehicle](../../jettison/docs/glossary.md#vehicle) definition names (`Content::FeeClass`), the smallest it fits, whichever berth it is given. The starter is a `skiff`. |
 | [Life support](glossary.md#life-support) | Oxygen and carbon-dioxide scrubbing for a ship's occupants. A docked ship may be connected to the station's; otherwise it draws on its own. |
 | Connection | One of a venue's `lifeSupportCapacity` places on its life support. A connected ship uses none of its own supplies. |
@@ -127,8 +127,9 @@ A journey is refused `InsufficientFunds` unless the company's account holds the 
 docking fee and the ship's arrears together. As it starts, the journey pays the docking fee to the
 destination and the arrears to the venue the ship leaves.
 
-The default class fees rise with berth area from the skiff's 100 to dock and 20 an hour to the
-cruiser's 54,000 and 10,800; a connected occupant adds 2 an hour
+The default class fees rise with berth area, 1.25 credits a square metre to dock and a fifth of that
+an hour, from the shuttle's 60 and 12 to the titan's 495,000 and 99,000; a connected occupant adds 2
+an hour
 (`charges.berthFeePerOccupantHour`).
 
 ### Setting fees: the operator's command

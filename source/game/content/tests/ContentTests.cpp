@@ -303,10 +303,10 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	    "baseStats Cargo Volume must be finite and not below 0");
 
 	// A hold is whole totes, none bigger than the largest hull class's envelope.
-	for (const std::string_view volume : {"18446744073709551616", "92160001", "160.5"})
+	for (const std::string_view volume : {"18446744073709551616", "400000001", "160.5"})
 		CheckRefused(
 		    starter, std::format("version: 1\nbaseStats: {{CargoVolume: {}}}\n", volume),
-		    "CargoVolume must be a whole number of totes up to 92160000");
+		    "CargoVolume must be a whole number of totes up to 400000000");
 	CheckRefused(
 	    starter, "version: 1\nfitableEffects: [Teleport]\n",
 	    "fitableEffects 'Teleport' names no effect");
@@ -435,8 +435,11 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	const auto classes = [](std::string_view skiff)
 	{
 		return std::format(
-		    "version: 1\ncharges:\n  padClasses:\n    - {}\n    - {{padClass: corvette}}\n"
-		    "    - {{padClass: frigate}}\n    - {{padClass: destroyer}}\n    - {{padClass: cruiser}}\n",
+		    "version: 1\ncharges:\n  padClasses:\n    - {}\n    - {{padClass: shuttle}}\n"
+		    "    - {{padClass: cutter}}\n    - {{padClass: corvette}}\n    - {{padClass: frigate}}\n"
+		    "    - {{padClass: destroyer}}\n    - {{padClass: cruiser}}\n"
+		    "    - {{padClass: battlecruiser}}\n    - {{padClass: battleship}}\n"
+		    "    - {{padClass: dreadnought}}\n    - {{padClass: titan}}\n",
 		    skiff);
 	};
 	CheckRefused(balance, classes("{padClass: skiff, dockingFee: -1}"), "'skiff' has a fee below 0");
@@ -446,8 +449,10 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	CheckRefused(balance, classes("{padClass: corvette}"), "'corvette' is charged twice");
 	CheckRefused(
 	    balance,
-	    "version: 1\ncharges:\n  padClasses: [{padClass: corvette}, {padClass: frigate}, "
-	    "{padClass: destroyer}, {padClass: cruiser}]\n",
+	    "version: 1\ncharges:\n  padClasses: [{padClass: shuttle}, {padClass: cutter}, "
+	    "{padClass: corvette}, {padClass: frigate}, {padClass: destroyer}, {padClass: cruiser}, "
+	    "{padClass: battlecruiser}, {padClass: battleship}, {padClass: dreadnought}, "
+	    "{padClass: titan}]\n",
 	    "pad class 'skiff' has no fees");
 	CheckRefused(
 	    balance, "version: 1\ncharges: {berthFeePerOccupantHour: -1}\n",
@@ -842,7 +847,7 @@ TEST_CASE("Each hull docks at the highport on the pads its class and size fit (D
 	Dock::BerthClasses classes;
 	for (const std::string &name : loaded.registry.Names<Dock::BerthClassDefinition>())
 		classes.emplace(name, *loaded.registry.Find<Dock::BerthClassDefinition>(name));
-	CHECK(classes.size() == 5);
+	CHECK(classes.size() == 11);
 	const auto hull = [&](std::string_view id) -> const Dock::VehicleDefinition &
 	{
 		const auto *pHull = loaded.registry.Find<Dock::VehicleDefinition>(RegistryName(id));
@@ -1096,8 +1101,8 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	    trading, venue("market: [{itemId: ItemSalt, production: -1}]"),
 	    "'VenueBrineHighport' market 'ItemSalt' rates must be finite and not below 0");
 	CheckRefused(
-	    trading, venue("market: [{itemId: ItemSalt, stock: 9216000001}]"),
-	    "'VenueBrineHighport' market 'ItemSalt' stock is more than a warehouse holds, 9216000000 "
+	    trading, venue("market: [{itemId: ItemSalt, stock: 40000000001}]"),
+	    "'VenueBrineHighport' market 'ItemSalt' stock is more than a warehouse holds, 40000000000 "
 	    "totes");
 
 	// The starter venue must be an operational public station that docks the starter and has life

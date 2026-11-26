@@ -1,0 +1,8 @@
+# The military corvette's hull, 24 x 16 x 7 m, on a corvette pad. A hull of Jettison's docks
+# (Dock.VehicleDefinition): metres, its nose along -Z.
+version: 3
+displayName: Corvette
+length: 24
+beam: 16
+height: 7
+berth: corvette

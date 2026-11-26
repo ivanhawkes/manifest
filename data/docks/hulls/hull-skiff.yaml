@@ -1,0 +1,8 @@
+# The military skiff's hull, 9 x 6 x 1.8 m, on a skiff pad. A hull of Jettison's docks
+# (Dock.VehicleDefinition): metres, its nose along -Z.
+version: 3
+displayName: Skiff
+length: 9
+beam: 6
+height: 1.8
+berth: skiff

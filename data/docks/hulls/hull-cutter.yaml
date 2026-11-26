@@ -1,0 +1,8 @@
+# The military cutter's hull, 15 x 9 x 3.5 m, on a cutter pad. A hull of Jettison's docks
+# (Dock.VehicleDefinition): metres, its nose along -Z.
+version: 3
+displayName: Cutter
+length: 15
+beam: 9
+height: 3.5
+berth: cutter

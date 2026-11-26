@@ -538,8 +538,9 @@ A directory of content in one Jettison pack file. A build carries Manifest's as
 ### Pad class
 
 A size of pad, a Jettison [berth class](../../jettison/docs/glossary.md#berth-class) Manifest
-authors (`data/docks/pads`): skiff, corvette, frigate, destroyer and cruiser. A hull lands on the
-smallest class it fits, which is also its [fee class](#fee-class). See [stations](stations.md).
+authors (`data/docks/pads`), eleven of them from shuttle to titan
+([D-058](decision-ledger.md#d-058)). A hull lands on the smallest class it fits, which is also its
+[fee class](#fee-class). See [stations](stations.md).
 
 ### Payroll
 

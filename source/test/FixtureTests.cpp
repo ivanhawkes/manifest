@@ -657,7 +657,7 @@ TEST_CASE("The trading fixture's loop, saved in flight with a bid resting and re
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves with
 	// what a save holds, the fixture's content or stream, or the engine's movement or save format.
-	CHECK(hosted.world.StateHash() == 0xd1a81a1d275035d2ULL);
+	CHECK(hosted.world.StateHash() == 0xf8d787b3478a8f2aULL);
 }
 
 
@@ -710,7 +710,7 @@ TEST_CASE("The trading fixture's loop, backed up in flight with a bid resting an
 	// Served on from the restore, through the journal, it reaches the loop's own world.
 	FromCruise(restored);
 	CheckLedger(restored);
-	CHECK(restored.world.StateHash() == 0xd1a81a1d275035d2ULL);
+	CHECK(restored.world.StateHash() == 0xf8d787b3478a8f2aULL);
 }
 
 
@@ -902,7 +902,7 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 	CHECK(replayed.world.StateHash() == hosted.world.StateHash());
 
 	// The same in every build the gate runs; it moves as the fixture's does.
-	CHECK(hosted.world.StateHash() == 0x3e2971376e2cfb2aULL);
+	CHECK(hosted.world.StateHash() == 0x0fffe7e36036054aULL);
 }
 
 
@@ -1976,7 +1976,7 @@ TEST_CASE("The governance fixture's project, tendered, supplied, worked and unlo
 
 	// The same in every build the gate runs; it moves with what a save holds, the governance
 	// scenario's content or the stream.
-	CHECK(hosted.world.StateHash() == 0xd1eadc7abbc91e5fULL);
+	CHECK(hosted.world.StateHash() == 0x4ab89da6fa535f7fULL);
 }
 
 
@@ -2332,5 +2332,5 @@ TEST_CASE(
 
 	// The same in every build the gate runs; it moves with what a save holds, the governance
 	// scenario's content or the stream.
-	CHECK(hosted.world.StateHash() == 0x4a25c6465f6f26e5ULL);
+	CHECK(hosted.world.StateHash() == 0x432295f50f4a5fc5ULL);
 }

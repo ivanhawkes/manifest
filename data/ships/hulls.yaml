@@ -113,3 +113,156 @@ hull-base:
         CargoVolume: 32
       occupants: 1
       driveId: DriveTorch
+
+  # The size classes as ship types (data/docks/pads), each a hull of its own on the smallest pad class
+  # it fits. Only the name, the description, the drive and the hold are selected: the torch to a
+  # frigate's size, the hauler fusion drive above it until the pulse drive (W22b); the hold, in totes, a
+  # first guess at a share of the hull's envelope, a warship's 0.5% to 5%, a merchant's 2% to 25%.
+  # Military types first, each on its own class's pad or, the gunboat, a corvette's.
+  - hull:
+      hullId: HullShuttle
+      className: Shuttle
+      description: Short-range transport
+      baseStats: {CargoVolume: 21}
+      driveId: DriveTorch
+
+  - hull:
+      hullId: HullSkiff
+      className: Skiff
+      description: Small utility vessel
+      baseStats: {CargoVolume: 39}
+      driveId: DriveTorch
+
+  - hull:
+      hullId: HullCutter
+      className: Cutter
+      description: Light patrol or courier
+      baseStats: {CargoVolume: 76}
+      driveId: DriveTorch
+
+  - hull:
+      hullId: HullCorvette
+      className: Corvette
+      description: Light combat or escort
+      baseStats: {CargoVolume: 220}
+      driveId: DriveTorch
+
+  - hull:
+      hullId: HullGunboat
+      className: Gunboat
+      description: Small, heavily armed vessel
+      baseStats: {CargoVolume: 130}
+      driveId: DriveTorch
+
+  - hull:
+      hullId: HullFrigate
+      className: Frigate
+      description: Escort or multipurpose vessel
+      baseStats: {CargoVolume: 1700}
+      driveId: DriveTorch
+
+  - hull:
+      hullId: HullDestroyer
+      className: Destroyer
+      description: Medium combat vessel
+      baseStats: {CargoVolume: 14000}
+      driveId: DriveHaulerFusion
+
+  - hull:
+      hullId: HullCruiser
+      className: Cruiser
+      description: Large, long-range vessel
+      baseStats: {CargoVolume: 86000}
+      driveId: DriveHaulerFusion
+
+  - hull:
+      hullId: HullBattlecruiser
+      className: Battlecruiser
+      description: Heavy, fast combat vessel
+      baseStats: {CargoVolume: 77000}
+      driveId: DriveHaulerFusion
+
+  - hull:
+      hullId: HullBattleship
+      className: Battleship
+      description: Heavy combat vessel
+      baseStats: {CargoVolume: 160000}
+      driveId: DriveHaulerFusion
+
+  - hull:
+      hullId: HullDreadnought
+      className: Dreadnought
+      description: Super-heavy capital ship
+      baseStats: {CargoVolume: 380000}
+      driveId: DriveHaulerFusion
+
+  - hull:
+      hullId: HullTitan
+      className: Titan
+      description: Enormous capital ship
+      baseStats: {CargoVolume: 1700000}
+      driveId: DriveHaulerFusion
+
+  # Civilian and merchant types, on the military classes' pads, each no smaller than the ship.
+  - hull:
+      hullId: HullSloop
+      className: Sloop
+      description: Small, independent vessel
+      baseStats: {CargoVolume: 270}
+      driveId: DriveTorch
+
+  - hull:
+      hullId: HullBrig
+      className: Brig
+      description: Small to medium vessel with a nautical heritage
+      baseStats: {CargoVolume: 2500}
+      driveId: DriveTorch
+
+  - hull:
+      hullId: HullGalleon
+      className: Galleon
+      description: Large merchant or armed trading vessel
+      baseStats: {CargoVolume: 860000}
+      driveId: DriveHaulerFusion
+
+  - hull:
+      hullId: HullFreighter
+      className: Freighter
+      description: Dedicated cargo transport
+      baseStats: {CargoVolume: 280000}
+      driveId: DriveHaulerFusion
+
+  - hull:
+      hullId: HullHauler
+      className: Hauler
+      description: Bulk cargo transport
+      baseStats: {CargoVolume: 2200000}
+      driveId: DriveHaulerFusion
+
+  - hull:
+      hullId: HullBarge
+      className: Barge
+      description: Slow, high-capacity cargo vessel
+      baseStats: {CargoVolume: 8600000}
+      driveId: DriveHaulerFusion
+
+  - hull:
+      hullId: HullCarrier
+      className: Carrier
+      description: Vessel carrying smaller ships
+      baseStats: {CargoVolume: 730000}
+      driveId: DriveHaulerFusion
+
+  - hull:
+      hullId: HullSupercarrier
+      className: Supercarrier
+      description: Exceptionally large carrier
+      baseStats: {CargoVolume: 1800000}
+      driveId: DriveHaulerFusion
+
+  - hull:
+      hullId: HullArk
+      className: Ark
+      description: Massive colony or population transport
+      baseStats: {CargoVolume: 20000000}
+      driveId: DriveHaulerFusion

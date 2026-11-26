@@ -137,14 +137,21 @@ market:
 # venue's operator's to change. A ship pays by its fee class, its hull's pad class: a docking fee as a
 # journey to the venue starts, and as each simulation hour ends, for each ship docked there, a berth
 # fee and a share for each occupant it keeps connected to the venue's life support. The class fees
-# rise with pad area from the skiff's 80 m² (the user's, 2026-11-21).
+# rise with pad area from the skiff's 80 m² (the user's, 2026-11-21), 1.25 credits a square metre to dock
+# and a fifth of that an hour.
 charges:
   padClasses:
+    - {padClass: shuttle, dockingFee: 60, berthFeePerHour: 12}
     - {padClass: skiff, dockingFee: 100, berthFeePerHour: 20}
+    - {padClass: cutter, dockingFee: 550, berthFeePerHour: 110}
     - {padClass: corvette, dockingFee: 1750, berthFeePerHour: 350}
     - {padClass: frigate, dockingFee: 5625, berthFeePerHour: 1125}
     - {padClass: destroyer, dockingFee: 18000, berthFeePerHour: 3600}
     - {padClass: cruiser, dockingFee: 54000, berthFeePerHour: 10800}
+    - {padClass: battlecruiser, dockingFee: 77000, berthFeePerHour: 15400}
+    - {padClass: battleship, dockingFee: 121500, berthFeePerHour: 24300}
+    - {padClass: dreadnought, dockingFee: 216000, berthFeePerHour: 43200}
+    - {padClass: titan, dockingFee: 495000, berthFeePerHour: 99000}
   berthFeePerOccupantHour: 2
   # Yearly interest on unpaid berth fees, in basis points, compounded daily on what is owed, and the
   # game's usury limit, the most any venue may set (the user's, 2026-11-21).

@@ -1,0 +1,8 @@
+# The civilian carrier's hull, 440 x 115 x 90 m, on a battleship pad. A hull of Jettison's docks
+# (Dock.VehicleDefinition): metres, its nose along -Z.
+version: 3
+displayName: Carrier
+length: 440
+beam: 115
+height: 90
+berth: battleship

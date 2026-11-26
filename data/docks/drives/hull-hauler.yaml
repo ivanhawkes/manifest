@@ -1,0 +1,6 @@
+# How long the hauler's cruises across a system take (Space.CruiseDrive): 75 s for 100,000 km,
+# rising as the distance's fourth root. Provisional until long hauls are tuned.
+version: 1
+seconds: 75
+reference: 1.0e8
+exponent: 0.25
