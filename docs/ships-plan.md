@@ -189,7 +189,9 @@ journey for 1 g (`Policy.cpp`), which `travel` refuses of a drive whose sustaine
 less (the hauler's 0.3 g, the pulse drive's 0.5 g). It asks instead the least of 1 g and the drive's
 sustained acceleration, which flies the drive's whole profile at the thrust share it chooses. Its
 estimate's fuel margin applies only to a fuel the drive burns, so a hull with no reaction mass tanks
-is not taken as unfuelled.
+is not taken as unfuelled. For a trade, a resale or a tender it considers only the venues with a pad
+the hull fits (`Dock::Fits`), so it never sends the carrier to a highport; and `travel` refuses
+`NoPadFits` (a new result) a journey to a venue with none, before any fuel is spent.
 
 #### The licence
 
@@ -199,7 +201,9 @@ A [polity](glossary.md#polity) licenses a company to buy pulse units at the venu
   venue whose operator is not a polity. `Trade::Post`, which every buy passes (a command's through
   `Place`, refuelling's through `BoughtNow`), refuses `NotAuthorised` a company's buy order of one
   unless the company holds the venue operator's licence, and any company's sell order of one: only
-  the venue sells them. A standing policy never trades a licensed item.
+  the venue sells them. A standing policy never trades a licensed item, and its route estimate
+  counts a venue's licensed fuel only for a company that the same check (`Trade::MayBuy`) lets buy
+  it; fuel already aboard counts as ever.
 - **State.** `World::Licences` on a company: the polities licensing it, by ID, in order.
 - **From an AI polity.** `Manifest.Company.Apply{organisationId}`, sent by the company's
   principal, is granted at once for `licence.feeCredits` in `balance.yaml` (50,000, two cargo-hold
@@ -284,11 +288,16 @@ the drive's `bodyExclusionRadius` above its surface; a station's, `exclusionRadi
   and the clearance 260,000 km, about 2.3 hours on thrusters from rest to rest at 15 m/s².
 - **Crossed in the body's frame.** A crossing is flown relative to its end's body, as a ship
   leaving orbit keeps the planet's motion: `Space::CruiseTravel` places a crossing ship from the
-  body where it is that step, and plans the course between from where the departure crossing ends,
-  at its time, to where the arrival crossing begins. Today's crossings are relative to the course's
-  carrier, the star between planets, which leaves a planet's ship behind as it orbits on (about
-  250,000 km in the 2.3 hours); the hauler's 1,000 km crossing moves to its body's frame too, and
-  the W22a fixtures' pins move with it.
+  body where it is that step.
+- **Carried between.** The driven course keeps the departure body's motion and gains the arrival
+  body's: `Underway` places the ship at the course's point plus, by the share of the course still to
+  fly, the departure body's motion since its crossing ended, and, by the share flown, the arrival
+  body's motion still to come before the arrival crossing begins. At each end that is the crossing's
+  own place, so the frames join without a jump, and near each end the ship moves with that end's
+  body, which cannot catch it. Today's crossings are relative to the course's carrier, the star
+  between planets, which leaves a planet's ship behind as it orbits on (about 250,000 km in the 2.3
+  hours); the hauler's 1,000 km crossing and its course move to these frames too, and the W22a
+  fixtures' pins move with it.
 - **Two clearances.** `Space::CruiseDrive` and `Space::Cruising` split `clearance` into
   `departureClearance` and `arrivalClearance`, which `travel` writes as it writes the flown
   profile. The hauler's stay its 1,000 km. `Policy::EstimateRoute` takes both.
@@ -340,9 +349,9 @@ Each is one commit chunk, its suites and tidy passing, in this order.
 | Step | What | Done when |
 | --- | --- | --- |
 | W22b1 | Fuel by the unit: `exhaustKms` optional, a unit-counted fuel, `ItemPulseUnits`, `DrivePulse`; the magazine refuelled by the totes it needs; deuterium at every venue | The `travel` suite pins a pulse leg's burn in whole units on a test hull, its kilograms and its price by the unit; the `company` suite refuels the freighter's 100 kg magazine at a venue selling deuterium and a pulse magazine by the unit; and a standing policy flies the medium freighter on a trade |
-| W22b2 | The radius about populated bodies and the two clearances | The `space` and `travel` suites cross a pulse ship out of a planet's ball and into another's on thrusters, in each body's frame, the ship at the crossing's end outside every sphere about the body where the bodies then are; fuel is burnt only over the drive's metres; and a save mid-crossing loads |
-| W22b3 | The dry dock and the pulse carrier: `drydock.yaml`, the two yards, `HullPulseCarrier` | `content` passes the yards' markets and fits the carrier only to their battleship pads, and a fixture's standing policy flies one from Ore Yards to Brine Yards, its fuel and time shown |
-| W22b4 | The licence: `licensed`, `Licences`, `Apply`, `SetLicence` | An unlicensed buy of pulse units is refused, by command and by refuelling, a licensed one fills, a revocation cancels the company's resting buys, and a player's polity grants and revokes, through a save |
+| W22b2 | The radius about populated bodies and the two clearances | The `space` and `travel` suites cross a pulse ship out of a planet's ball and into another's on thrusters, in each body's frame; stepped through the whole cruise from several starting phases, the ship is never inside the departure ball once its crossing has left it, nor inside the arrival ball before its own crossing; fuel is burnt only over the drive's metres; and a save mid-crossing loads |
+| W22b3 | The dry dock and the pulse carrier: `drydock.yaml`, the two yards, `HullPulseCarrier` | `content` passes the yards' markets and fits the carrier only to their battleship pads, and a fixture's standing policy flies one from Ore Yards to Brine Yards, its fuel and time shown, and passes over a better trade at a highport no pad of which fits it; `travel` refuses `NoPadFits` a journey there |
+| W22b4 | The licence: `licensed`, `Licences`, `Apply`, `SetLicence` | An unlicensed buy of pulse units is refused, by command and by refuelling, a licensed one fills, a revocation cancels the company's resting buys, a revoked carrier with a depleted magazine is estimated unfuelled and loads nothing, and a player's polity grants and revokes, through a save |
 | W22b5 | Hull grants: `grants`, `Claim`, `Claims` | A company claims the freighter, flies it and refuels its deuterium, and a second claim is refused, through a save |
 | W22b6 | The override: `Travel` version 3, the fine, the harm and the revocation | The fixture's carrier overrides from Ore Yards to Brine Yards, fined for every sphere at each end, each fine reaching its station's account or its planet's treasuries; Ore's and Brine's regions lose health and happiness; its licences are revoked; and the snapshot shows each |
 
