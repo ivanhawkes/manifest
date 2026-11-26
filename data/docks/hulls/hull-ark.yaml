@@ -1,4 +1,5 @@
-# The civilian ark's hull, 1000 x 250 x 200 m, on a titan pad. A hull of Jettison's docks
+# The civilian ark's hull, 1000 x 250 x 200 m, of the titan class. It parks at a
+# coordinate and the dry dock docks with it (D-058). A hull of Jettison's docks
 # (Dock.VehicleDefinition): metres, its nose along -Z.
 version: 3
 displayName: Ark

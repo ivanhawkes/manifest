@@ -1,4 +1,4 @@
-# A corvette's, a gunboat's or a brig's pad, the Jettison sample's size.
+# A corvette's or a brig's pad, the Jettison sample's size.
 # A pad class of Jettison's docks (Dock.BerthClassDefinition, D-058): metres, the largest hull length
 # by beam by height and the pad width by length.
 version: 2

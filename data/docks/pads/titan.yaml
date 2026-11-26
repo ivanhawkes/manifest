@@ -1,4 +1,5 @@
-# The largest class, a titan's or an ark's; no standard station has one.
+# The largest class, a titan's or an ark's. No platform has a titan pad: a titan-class ship docks with
+# no other ship, but flies to a coordinate and parks, and the dry dock docks with it (D-058).
 # A pad class of Jettison's docks (Dock.BerthClassDefinition, D-058): metres, the largest hull length
 # by beam by height and the pad width by length.
 version: 2

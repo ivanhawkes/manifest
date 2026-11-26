@@ -332,7 +332,6 @@ hulls:
   - hullId: HullSkiff
   - hullId: HullCutter
   - hullId: HullCorvette
-  - hullId: HullGunboat
   - hullId: HullFrigate
   - hullId: HullDestroyer
   - hullId: HullCruiser

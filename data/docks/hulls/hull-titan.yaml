@@ -1,4 +1,5 @@
-# The military titan's hull, 950 x 240 x 190 m, on a titan pad. A hull of Jettison's docks
+# The military titan's hull, 950 x 240 x 190 m, of the titan class. It parks at a
+# coordinate and the dry dock docks with it (D-058). A hull of Jettison's docks
 # (Dock.VehicleDefinition): metres, its nose along -Z.
 version: 3
 displayName: Titan

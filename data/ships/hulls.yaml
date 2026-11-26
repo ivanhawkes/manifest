@@ -118,7 +118,7 @@ hull-base:
   # it fits. Only the name, the description, the drive and the hold are selected: the torch to a
   # frigate's size, the hauler fusion drive above it until the pulse drive (W22b); the hold, in totes, a
   # first guess at a share of the hull's envelope, a warship's 0.5% to 5%, a merchant's 2% to 25%.
-  # Military types first, each on its own class's pad or, the gunboat, a corvette's.
+  # Military types first, each on its own class's pad.
   - hull:
       hullId: HullShuttle
       className: Shuttle
@@ -145,13 +145,6 @@ hull-base:
       className: Corvette
       description: Light combat or escort
       baseStats: {CargoVolume: 220}
-      driveId: DriveTorch
-
-  - hull:
-      hullId: HullGunboat
-      className: Gunboat
-      description: Small, heavily armed vessel
-      baseStats: {CargoVolume: 130}
       driveId: DriveTorch
 
   - hull:
