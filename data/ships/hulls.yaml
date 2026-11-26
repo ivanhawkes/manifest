@@ -84,6 +84,25 @@ hull-base:
       mass: 20000
       driveId: DriveTorch
 
+  # The first larger hull (W22, D-108): a medium freighter of 2,500 t as it flies, on the hauler fusion
+  # drive, its 4,000-tote hold 500 cubic metres, 400 t of reaction mass tanks and a 100 kg deuterium
+  # magazine; four crew, four 50 kg oxygen tanks and two scrubber cartridges. Docks at a destroyer pad.
+  # No command buys one yet (L48). Every number is a first guess for later balance.
+  - hull:
+      hullId: HullFreighterMedium
+      className: Medium freighter
+      description: A fusion hauler of thousands of tonnes, kept clear of stations
+      baseStats:
+        CargoVolume: 4000
+        FuelCapacity: 400
+      fitableEffects: [CargoHolds, FuelBunkers]
+      occupants: 4
+      oxygenTanks: [50, 50, 50, 50]
+      scrubberCartridges: 2
+      pelletMagazine: 100
+      mass: 2500000
+      driveId: DriveHaulerFusion
+
   # The compact single-occupant ship (D-044): 32 totes of cargo and a truck-cab cabin. Its
   # life support and its fittings against the 32-tote limit are open.
   - hull:

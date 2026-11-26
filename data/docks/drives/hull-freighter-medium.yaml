@@ -1,0 +1,7 @@
+# How long the medium freighter's cruises across a system take on the power law (Space.CruiseDrive),
+# in a mode with no cruise: slower than the frigate's 45 s for 100,000 km, rising as the distance's
+# fourth root. Provisional until long hauls are tuned.
+version: 1
+seconds: 60
+reference: 1.0e8
+exponent: 0.25

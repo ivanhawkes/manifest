@@ -1,0 +1,3 @@
+version: 1
+# A player started in the medium freighter, which no command buys yet (W22, L48).
+starterHull: HullFreighterMedium

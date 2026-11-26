@@ -1126,6 +1126,78 @@ TEST_CASE(
 }
 
 
+TEST_CASE(
+    "A hauler crosses its drive's 1,000 km on thrusters at each end, burning deuterium only between")
+{
+	Hosted hosted{MANIFEST_MOD_DIRECTORY, {MANIFEST_FIXTURE_OVERLAY, MANIFEST_FREIGHTER_OVERLAY}};
+	REQUIRE(
+	    hosted.Run(
+	        kHost, Company::kProvision, Company::kVersion,
+	        Company::Provision{"Ada", "Ada", "Ada Co"}) == Result::Succeeded);
+	entt::registry &registry = hosted.world.Registry();
+	const entt::entity ship = hosted.Ship();
+	CHECK(registry.get<const World::Ship>(ship).hullId == "HullFreighterMedium");
+	const Manifest::Space::CruiseDrive drive = registry.get<const Manifest::Space::CruiseDrive>(ship);
+	CHECK(drive.clearance == 998'000.0);
+	const World::Fuel before = hosted.Ship1().fuel;
+	CHECK(before == World::Fuel{400'000.0, 100.0});
+
+	// To Vale, a station of Ore's, at the hauler's sustained 0.3 g.
+	constexpr std::string_view kVale = "VenueOreValeStation";
+	const double metres = glm::distance(
+	    registry.get<const Jettison::Sim::Transform>(ship).position,
+	    registry
+	        .get<const Jettison::Sim::Transform>(
+	            Travel::StationOf(registry, hosted.services.fleet.Content(), kVale))
+	        .position);
+	REQUIRE(
+	    hosted.Run(
+	        kAda, Travel::kTravel, Travel::kVersion,
+	        Travel::Travel{"Ship1", std::string{kVale}, World::kFullThrustBps, 300}) ==
+	    Result::Succeeded);
+	const World::Fuel after = hosted.Ship1().fuel;
+	const World::Fuel burned{before.reactionMass - after.reactionMass, before.pellets - after.pellets};
+
+	// The drive's metres alone burn: the 2,000 km crossed on thrusters burn nothing.
+	const Manifest::Content::DriveDefinition &hauler =
+	    *Manifest::Content::DriveOf(hosted.services.fleet.Content(), "HullFreighterMedium");
+	CHECK(hauler.pelletItemId == "ItemDeuteriumPellets");
+	CHECK(
+	    burned.reactionMass ==
+	    doctest::Approx(
+	        Travel::Burned(
+	            hauler, *registry.get<const Manifest::Space::CruiseDrive>(ship).profile,
+	            Travel::TonnesAboard(
+	                registry, hosted.services.identities, hosted.services.fleet.Content(), ship) +
+	                (burned.reactionMass + burned.pellets) / 1000.0,
+	            metres - 2.0 * drive.clearance)
+	            .reactionMass)
+	        .epsilon(0.001));
+	CHECK(burned.pellets > 0.0);
+
+	for (std::uint64_t step = 0; step < kJourneySteps && hosted.Ship1().journey->leg != Leg::Cruising;
+	     ++step)
+		hosted.Step();
+	REQUIRE(hosted.Ship1().journey->leg == Leg::Cruising);
+	const Manifest::Space::Cruising cruising = registry.get<const Manifest::Space::Cruising>(ship);
+	CHECK(cruising.clearance == 998'000.0);
+	const double seconds =
+	    static_cast<double>(cruising.arrivalStep - cruising.departureStep) * hosted.world.FixedStep();
+	const double crossing = 2.0 * std::sqrt(998'000.0 / 15.0);
+	CHECK(seconds > 2.0 * crossing);
+	MESSAGE(
+	    "Ore Highport to Vale by hauler: " << metres / 1000.0 << " km, cruising " << seconds / 3600.0
+	                                       << " h, two crossings of " << crossing << " s each, "
+	                                       << burned.reactionMass << " kg of reaction mass and "
+	                                       << burned.pellets << " kg of deuterium");
+
+	ForwardTo(hosted, cruising.arrivalStep - 1);
+	hosted.RunJourney();
+	CHECK(hosted.Ship1().journey->leg == Leg::Arrived);
+	CHECK(hosted.Ship1().dockedAt == kVale);
+}
+
+
 // Bo, a player whose company is given a million credits for the purpose, buys every ask resting at
 // the venue for the item, a turn at a time, until its broker has none left to post: a shortage made
 // through the book, the broker's next quotes at an empty stock.

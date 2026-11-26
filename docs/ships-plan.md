@@ -25,7 +25,8 @@ build next. What is built is documented elsewhere: hulls, cargo and upgrades in
 
 ## Drives past the torch
 
-Queued as [W22](delivery-order.md#w22), to be built with the first larger hull a player can fly.
+Built in part by W22a (2026-11-26): the drive as a record, the hauler fusion drive, its exclusion
+radius and the medium freighter. The pulse drive and what is left are [W22b](delivery-order.md#w22b).
 The torch suits a skiff to a corvette. Hauling thousands of tonnes on it would burn pellets no
 trade could pay for, so larger hulls fly dirtier drives that are cheaper a tonne moved but must
 keep away from stations ([D-108](decision-ledger.md#d-108)).
@@ -41,8 +42,9 @@ A drive class becomes a record, `Manifest.Drive`, which a hull names. It holds:
 | Caps | Its sustained and boost accelerations and the boost's length, manned and unmanned |
 | Exclusion radius | How close to a station (or populated body) it may thrust |
 
-Until a second class is built, the torch's numbers stay where they are: `fuel` in
-`balance.yaml` and the mode's `cruise` profiles ([D-090](decision-ledger.md#d-090)).
+Built (W22a): `data/ships/drives.yaml`, the torch's numbers moved there from `fuel` in
+`balance.yaml`; a drive with no `cruise` of its own flies the mode's profiles
+([D-090](decision-ledger.md#d-090)), and the hauler has its own. A hull names its drive by `driveId`.
 
 ### The three classes
 
@@ -104,7 +106,12 @@ still flies a ship out of the 2 km reach first. Only the drive's own metres burn
 
 ### The first larger hull
 
-No hull a player can fly needs a dirty drive yet. W22 starts with one, and with it:
+Built (W22a): `HullFreighterMedium`, a medium freighter of 2,500 t on the hauler fusion drive, 120 x
+40 x 25 m on a destroyer pad, with a 4,000-tote hold, 400 t of reaction mass tanks, a 100 kg
+deuterium magazine and four crew; every number a first guess. No company flies one in a scenario yet:
+`Company::Provision` gives every company the scenario's starter hull, and only the fixture's overlay
+makes the freighter that. Deuterium pellets (`ItemDeuteriumPellets`) are an item, sold at no venue
+yet. Open for [W22b](delivery-order.md#w22b), with the pulse carrier:
 
 - the larger pad classes it docks at: today `data/docks/pads/` has skiff to cruiser; the
   dreadnought and heavy-destroyer sizes are proposals ([D-058](decision-ledger.md#d-058));

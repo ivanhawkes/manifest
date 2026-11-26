@@ -58,6 +58,20 @@ item-base:
       density: 0.2
       packFactor: 0.5
 
+  # The hauler fusion drive's fuel (D-108): deuterium alone, separated from water wherever there is
+  # any, so a twentieth of the torch's pellets' price; packed as they are.
+  - item:
+      itemId: ItemDeuteriumPellets
+      categoryId: CategoryFuels
+      ageId: AgeSpace
+      displayName: Deuterium pellets
+      description: Deuterium, the fuel a hauler's fusion drive burns
+      unitsPerCubicMetre: 100
+      basePrice: 60
+      unitType: Kilogram
+      density: 0.2
+      packFactor: 0.5
+
   - item:
       itemId: ItemCoal
       categoryId: CategoryFuels

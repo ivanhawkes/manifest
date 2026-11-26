@@ -95,15 +95,15 @@ previous records and a deleted source leaves no record behind. The scenarios are
 | --- | --- | --- | --- |
 | `base/ages.yaml` | `Manifest.Age` | `definitions/ages` | 14 |
 | `trade-items/categories.yaml` | `Manifest.Category` | `definitions/categories` | 43 |
-| `trade-items/*.yaml` (`item-base`) | `Manifest.Item` | `definitions/items` | 160 |
+| `trade-items/*.yaml` (`item-base`) | `Manifest.Item` | `definitions/items` | 161 |
 | `skill-tree/*.yaml` (`skill-base`) | `Manifest.Skill` | `definitions/skills` | 85 |
-| `ships/hulls.yaml` (`hull-base`) | `Manifest.Hull` | `definitions/hulls` | 3 |
-| `ships/drives.yaml` (`drive-base`) | `Manifest.Drive` | `definitions/drive-classes` | 1 |
+| `ships/hulls.yaml` (`hull-base`) | `Manifest.Hull` | `definitions/hulls` | 4 |
+| `ships/drives.yaml` (`drive-base`) | `Manifest.Drive` | `definitions/drive-classes` | 2 |
 | `offers/*.yaml` | `Manifest.Offer` | `definitions/offers` | 2 |
 | `docks/pads/*.yaml` | `Dock.BerthClassDefinition` | `definitions/pads` | 5 |
-| `docks/hulls/*.yaml` | `Dock.VehicleDefinition` | `definitions/dock-hulls` | 3 |
+| `docks/hulls/*.yaml` | `Dock.VehicleDefinition` | `definitions/dock-hulls` | 4 |
 | `docks/stations/*.yaml` | `Dock.PlatformLayout` | `definitions/stations` | 1 |
-| `docks/drives/*.yaml` | `Space.CruiseDrive` | `definitions/drives` | 3 |
+| `docks/drives/*.yaml` | `Space.CruiseDrive` | `definitions/drives` | 4 |
 | `systems/*.yaml` | `Space.StarSystem` | `definitions/systems` | 2 |
 | `universe/solar-system-names.yaml` | `Manifest.NamePool` | `definitions/name-pools` | 2 |
 | `game-mode/*.yaml` | `Manifest.GameMode` | `definitions/game-modes` | 2 |

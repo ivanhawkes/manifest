@@ -1,0 +1,8 @@
+# The medium freighter's hull, 120 x 40 x 25 m, within a destroyer pad's largest vehicle (140 x 50 x
+# 30). A hull of Jettison's docks (Dock.VehicleDefinition): metres, its nose along -Z.
+version: 3
+displayName: Medium freighter
+length: 120
+beam: 40
+height: 25
+berth: destroyer

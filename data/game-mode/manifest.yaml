@@ -254,6 +254,7 @@ items:
   - itemId: ItemLPG
   - itemId: ItemReactionMass
   - itemId: ItemFusionPellets
+  - itemId: ItemDeuteriumPellets
   - itemId: ItemBasicMedicalSupplies
   - itemId: ItemAnesthetics
   - itemId: ItemAnalgesics

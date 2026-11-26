@@ -21,3 +21,18 @@ drive-base:
       pelletMilligramsPerTonneKms: 16.5
       curveExponent: 2
       exclusionRadius: 2000
+
+  # The hauler fusion drive of medium freighters, thousands of tonnes: deuterium fusion, its exhaust
+  # 3% of light speed, 0.111 kg of reaction mass and 40 mg of deuterium a tonne-km/s, its neutrons
+  # keeping it 1,000 km from every station. Manned or not, 0.6 g for at most 6 hours of a trip, 3
+  # speeding up and 3 slowing down, and 0.3 g between.
+  - drive:
+      driveId: DriveHaulerFusion
+      exhaustKms: 8994
+      pelletItemId: ItemDeuteriumPellets
+      pelletMilligramsPerTonneKms: 40
+      curveExponent: 2
+      exclusionRadius: 1.0e6
+      cruise:
+        manned: {boostAcceleration: 5.88399, boostSeconds: 21600, sustainedAcceleration: 2.941995}
+        unmanned: {boostAcceleration: 5.88399, boostSeconds: 21600, sustainedAcceleration: 2.941995}

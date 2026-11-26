@@ -14,7 +14,8 @@ target_compile_definitions(manifest_fixture_tests PRIVATE
     MANIFEST_MOD_DIRECTORY="${MANIFEST_MOD_DIRECTORY}"
     MANIFEST_MOD_PACK="${MANIFEST_PACK}"
     MANIFEST_FIXTURE_OVERLAY="${CMAKE_CURRENT_SOURCE_DIR}/overlays/quick-batches"
-    MANIFEST_TRADER_OVERLAY="${CMAKE_CURRENT_SOURCE_DIR}/overlays/one-trader")
+    MANIFEST_TRADER_OVERLAY="${CMAKE_CURRENT_SOURCE_DIR}/overlays/one-trader"
+    MANIFEST_FREIGHTER_OVERLAY="${CMAKE_CURRENT_SOURCE_DIR}/overlays/freighter")
 add_dependencies(manifest_fixture_tests manifest_validate_pack)
 # Its longest cases are suites of their own, run beside the rest; the rest is every case they do
 # not match, so a case added or renamed still runs.

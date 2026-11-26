@@ -793,7 +793,7 @@ actor's sessions. See [the dedicated server](server.md) and Jettison's
 
 The clean fusion drive of the small hulls, skiff to corvette (D-108): it burns [reaction
 mass](#reaction-mass) at its `exhaustKms` and [fusion pellets](#fusion-pellets), more of both the
-heavier the ship and the harder the [burn](#burn). Larger drives are planned. See [travel and
+heavier the ship and the harder the [burn](#burn). The hauler fusion drive of medium freighters is the next class up (`data/ships/drives.yaml`). See [travel and
 fuel](travel.md).
 
 ### Tote

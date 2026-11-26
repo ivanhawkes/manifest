@@ -218,6 +218,7 @@ TEST_CASE("the_household_and_life_support_goods_are_distinct_manifest_mode_items
 	    {"ItemLPG", "CategoryFuels", TradeUnit::Tonne},
 	    {"ItemReactionMass", "CategoryFuels", TradeUnit::Kilogram},
 	    {"ItemFusionPellets", "CategoryFuels", TradeUnit::Kilogram},
+	    {"ItemDeuteriumPellets", "CategoryFuels", TradeUnit::Kilogram},
 	    {"ItemOxygen", "CategoryLifeSupport", TradeUnit::Kilogram},
 	    {"ItemCarbonScrubberCartridge", "CategoryLifeSupport", TradeUnit::Unit},
 	    {"ItemDrinkingWater", "CategoryWater", TradeUnit::Kilolitre},
@@ -236,10 +237,13 @@ TEST_CASE("the_household_and_life_support_goods_are_distinct_manifest_mode_items
 	const double cubeMass = cartridge.density * 1000.0 * cartridge.packFactor;
 	CHECK(cubeMass / cartridge.unitsPerCubicMetre == doctest::Approx(41.0).epsilon(0.01));
 
-	// A torch's two fuels (D-108), by the kilogram, of the Space Age: reaction mass, water ice at 1,000
-	// kg to the cubic metre packed at 0.9, 112.5 kg a tote; pellets 100 kg to the cube, 12.5 a tote.
+	// The drives' fuels (D-108), by the kilogram, of the Space Age: reaction mass, water ice at 1,000
+	// kg to the cubic metre packed at 0.9, 112.5 kg a tote; the torch's pellets and the hauler's
+	// deuterium 100 kg to the cube, 12.5 a tote.
 	for (const auto &[itemId, tote, price] :
-	     {std::tuple{"ItemReactionMass", 112.5, "0.25"}, {"ItemFusionPellets", 12.5, "1200"}})
+	     {std::tuple{"ItemReactionMass", 112.5, "0.25"},
+	      {"ItemFusionPellets", 12.5, "1200"},
+	      {"ItemDeuteriumPellets", 12.5, "60"}})
 	{
 		CAPTURE(itemId);
 		const Manifest::Core::ItemNode &fuel = *find(itemId);
@@ -283,6 +287,30 @@ TEST_CASE("the_hulls_carry_their_selected_values_and_leave_the_rest_unset")
 	CHECK(starter.pelletMagazine == 12.5);
 	CHECK(starter.fitableEffects == std::vector<std::string>{"CargoHolds", "FuelBunkers"});
 	CHECK(starter.mass == 20000.0);
+
+	const ShipClassSpec &freighter = find("HullFreighterMedium");
+	CHECK(
+	    freighter.baseStats ==
+	    std::map<EffectStat, double>{
+	        {EffectStat::CargoVolume, 4000.0}, {EffectStat::FuelCapacity, 400.0}});
+	CHECK(freighter.occupants == 4);
+	CHECK(freighter.pelletMagazine == 100.0);
+	CHECK(freighter.mass == 2.5e6);
+	CHECK(freighter.driveId == "DriveHaulerFusion");
+	CHECK(starter.driveId == "DriveTorch");
+
+	// The hauler's rates are the plan's (D-108): 3% of light speed, 0.111 kg of reaction mass and
+	// 40 mg of deuterium a tonne-km/s, 0.3 g sustained and 0.6 g for 6 hours, 1,000 km from a station.
+	const Manifest::Content::DriveDefinition &hauler =
+	    Load("manifest").driveClasses.at("DriveHaulerFusion");
+	CHECK(1000.0 / hauler.exhaustKms == doctest::Approx(0.111).epsilon(0.002));
+	CHECK(hauler.pelletMilligramsPerTonneKms == 40.0);
+	CHECK(hauler.exclusionRadius == 1.0e6);
+	REQUIRE(hauler.cruise.has_value());
+	CHECK(hauler.cruise->manned == hauler.cruise->unmanned);
+	CHECK(hauler.cruise->manned.sustainedAcceleration == doctest::Approx(0.3 * 9.80665));
+	CHECK(hauler.cruise->manned.boostAcceleration == doctest::Approx(0.6 * 9.80665));
+	CHECK(hauler.cruise->manned.boostSeconds == 21600.0f);
 
 	const ShipClassSpec &compact = find("HullCompactSingle");
 	CHECK(compact.baseStats == std::map<EffectStat, double>{{EffectStat::CargoVolume, 32.0}});
