@@ -298,17 +298,25 @@ the drive's `bodyExclusionRadius` above its surface; a station's, `exclusionRadi
   body's motion still to come before the arrival crossing begins. At each end that is the crossing's
   own place, so the frames join without a jump, and near each end the ship moves with that end's
   body, which cannot catch it.
-- **Checked, not assumed.** The blend keeps the course near its ends with the bodies, but at a low
-  thrust share the pull towards the arrival body can bring a slow ship back inside a sphere while it
-  still thrusts. So as a journey starts, `travel` samples the planned cruise each minute of its
-  thrusting, against every sphere about each end's body where the bodies then are, each widened by a
-  minute's travel at the ship's speed then. Where the drive would thrust inside one, it lengthens
-  that end's crossing by the shortfall and plans again, at most `kClearanceRounds` (4) times, then
-  refuses `InsideRadius` (a new result). `Policy::EstimateRoute` uses the clearances the check
-  settles. Today's crossings are relative to the course's carrier, the star between planets, which
-  leaves a planet's ship behind as it orbits on (about 250,000 km in the 2.3 hours); the hauler's
-  1,000 km crossing and its course move to these frames too, and the W22a fixtures' pins move with
-  it.
+- **Checked as flown, not assumed.** The waypoints clear the solid bodies on the course as
+  plotted, in the carrier's frame, but the blend moves it, by tens of millions of kilometres
+  mid-course, and at a low thrust share the pull towards the arrival body can bring a slow ship
+  back inside a sphere while it still thrusts. So the course the ship flies is the one checked: as
+  a journey starts, `travel` samples the blended cruise each minute while the drive thrusts and
+  each hour while it coasts, where the bodies then are. Each sample is tested against every solid
+  star, planet and moon, at its radius plus `kCourseClearance`, and, while the drive thrusts,
+  against every sphere about each end's body; each is widened by the ship's travel relative to
+  that body over the sample's interval. Where the drive thrusts inside a sphere, `travel`
+  lengthens that end's crossing by the shortfall; where the ship would come within a solid body,
+  it adds to the plotted obstacles a sphere at the body's place in the course's frame at that time
+  (its place less the blend's offset then), so widened. It plans again, at most
+  `kClearanceRounds` (4) times, then refuses `InsideRadius` (a new result) for a sphere or
+  `NoCourse` for a body. One function does it, which `Policy::EstimateRoute` calls too, so an
+  estimate uses the clearances and course the check settles; a carrier's 34-day journey is some
+  820 coasting samples and the thrusting minutes, against a system's few dozen bodies. Today's
+  crossings are relative to the course's carrier, the star between planets, which leaves a
+  planet's ship behind as it orbits on (about 250,000 km in the 2.3 hours); the hauler's 1,000 km
+  crossing and its course move to these frames too, and the W22a fixtures' pins move with it.
 - **Two clearances.** `Space::CruiseDrive` and `Space::Cruising` split `clearance` into
   `departureClearance` and `arrivalClearance`, which `travel` writes as it writes the flown
   profile. The hauler's stay its 1,000 km. `Policy::EstimateRoute` takes both.
@@ -318,6 +326,9 @@ the drive's `bodyExclusionRadius` above its surface; a station's, `exclusionRadi
   of its system.
 - **Not checked:** a course passing another populated body while the drive thrusts, which needs a
   course round bodies ([L37](delivery-order.md#l37)).
+- **Later, in Jettison.** The blend stands in for a ship that leaves with its body's velocity and
+  arrives with the target's: a motion profile with a velocity at each end, a Jettison provision,
+  would fly that directly and retire the blend and its re-plotting ([L37](delivery-order.md#l37)).
 
 #### The emergency override
 
@@ -352,7 +363,7 @@ its `fine`, shown in the ship's view.
   proves a 280 m hull docks at a battleship pad; if it cannot, that is a Jettison item first. A
   dry dock docking with a parked titan-class ship is a later Jettison provision (above).
 - **Modules.** `content` (the drive, item, grant and venue rules), `space` (the two clearances,
-  crossed in the body's frame), `travel` (fuel by the unit, the clearances, the override), `company`
+  crossed in the body's frame, the cruise checked as flown), `travel` (fuel by the unit, the clearances, the override), `company`
   (refuelling, `Apply`, `SetLicence`, `Claim`), `trade` (licensed goods in `Post`, cancelled on
   revocation), `policy` (the acceleration it asks, estimates by the unit, licensed goods), `query`
   and `console` (licences, grants, the override), and `world` (the state).
@@ -364,7 +375,7 @@ Each is one commit chunk, its suites and tidy passing, in this order.
 | Step | What | Done when |
 | --- | --- | --- |
 | W22b1 | Fuel by the unit: `exhaustKms` optional, a unit-counted fuel, `ItemPulseUnits`, `DrivePulse`; the magazine refuelled by the totes it needs; deuterium at every venue | The `travel` suite pins a pulse leg's burn in whole units on a test hull, its kilograms and its price by the unit; the `company` suite refuels the freighter's 100 kg magazine at a venue selling deuterium and a pulse magazine by the unit; a policy keeps hold room for the refuel and a partly used starter magazine is topped up; and a standing policy flies the medium freighter on a trade |
-| W22b2 | The radius about populated bodies and the two clearances | The `space` and `travel` suites cross a pulse ship out of a planet's ball and into another's on thrusters, in each body's frame; stepped through the whole cruise from several starting phases and thrust shares, the review's day-460 case at 20 basis points among them, the drive never thrusts inside a sphere; a journey whose check cannot clear is refused `InsideRadius`; fuel is burnt only over the drive's metres; and a save mid-crossing and mid-coast, loaded, moves on as an unsaved run does, fast-forward included |
+| W22b2 | The radius about populated bodies and the two clearances | The `space` and `travel` suites cross a pulse ship out of a planet's ball and into another's on thrusters, in each body's frame; stepped through the whole cruise from several starting phases and thrust shares, the review's day-460 case at 20 basis points and day-751 case at 1,000 among them, the drive never thrusts inside a sphere and the ship never comes within a solid body's radius plus `kCourseClearance`, coasting included; a journey whose check cannot clear is refused `InsideRadius`, or `NoCourse` for a body; fuel is burnt only over the drive's metres; and a save mid-crossing and mid-coast, loaded, moves on as an unsaved run does, fast-forward included |
 | W22b3 | The dry dock and the pulse carrier: `drydock.yaml`, the two yards, `HullPulseCarrier` | `content` passes the yards' markets and fits the carrier only to their battleship pads, and a fixture's standing policy flies one from Ore Yards to Brine Yards, its fuel and time shown, and passes over a better trade at a highport no pad of which fits it; `travel` refuses `NoPadFits` a journey there |
 | W22b4 | The licence: `licensed`, `Licences`, `Apply`, `SetLicence` | An unlicensed buy of pulse units is refused, by command and by refuelling, a licensed one fills, a revocation cancels the company's resting buys, a revoked carrier with a depleted magazine is estimated unfuelled and loads nothing, and a player's polity grants and revokes, through a save |
 | W22b5 | Hull grants: `grants`, `Claim`, `Claims` | A company claims the freighter, flies it and refuels its deuterium, and a second claim is refused, through a save |
