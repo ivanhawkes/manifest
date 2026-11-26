@@ -638,6 +638,15 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	CheckRefused(
 	    astralis, "version: 1\nages: [{ageId: AgeNowhere}]\n", "ages 'AgeNowhere' names nothing");
 	CheckRefused(
+	    astralis, "version: 1\nhulls: !append [{hullId: HullNowhere}]\n",
+	    "hulls 'HullNowhere' names nothing");
+	CheckRefused(
+	    astralis, "version: 1\ndrives: !append [{driveId: DriveNowhere}]\n",
+	    "drives 'DriveNowhere' names nothing");
+	CheckRefused(
+	    astralis, "version: 1\nhulls: !append [{hullId: HullFreighterMedium}]\n",
+	    "hulls 'HullFreighterMedium' flies drive 'DriveHaulerFusion', which the mode does not select");
+	CheckRefused(
 	    astralis, "version: 1\nskills: [{skillId: AgeStone}, {skillId: AgeStone}]\n",
 	    "skills selects 'AgeStone' twice");
 
@@ -889,6 +898,10 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	CheckRefused(
 	    trading, "version: 1\nitems: !append [{itemId: ItemCopper}]\n",
 	    "items selects 'ItemCopper' twice");
+	CheckRefused(
+	    "manifest/definitions/game-modes/manifest.patch.yaml",
+	    "version: 1\nhulls: [{hullId: HullTraderLongHaul}]\n",
+	    "starterHull 'HullLoneTraderStarter' is not one of mode 'manifest''s hulls");
 	CheckRefused(
 	    trading, "version: 1\nsystems: !append [{systemId: SystemAnvil}]\n",
 	    "systems 'SystemAnvil' is given twice");

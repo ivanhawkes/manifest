@@ -949,6 +949,10 @@ Core::GameModeNode Resolve(
 		if (node.displayName.empty())
 			node.displayName = node.skillId;
 	}
+	for (const HullSelection &hull : mode.hulls)
+		resolved.hullIds.push_back(hull.hullId);
+	for (const DriveSelection &drive : mode.drives)
+		resolved.driveIds.push_back(drive.driveId);
 	return resolved;
 }
 
@@ -967,6 +971,19 @@ void CheckGameModes(Checker &checker, const Jettison::Sim::DefinitionRegistry &r
 		CheckSelections(
 		    checker, registry, mode.skills, &SkillSelection::skillId, &Core::SkillNode::skillId,
 		    "skills");
+		CheckSelections(
+		    checker, registry, mode.hulls, &HullSelection::hullId, &Core::ShipClassSpec::hullId,
+		    "hulls");
+		CheckSelections(
+		    checker, registry, mode.drives, &DriveSelection::driveId, &DriveDefinition::driveId,
+		    "drives");
+		for (const HullSelection &selected : mode.hulls)
+			if (const auto *pHull = registry.Find<Core::ShipClassSpec>(RegistryName(selected.hullId)))
+				checker.Require(
+				    Contains(mode.drives, pHull->driveId, &DriveSelection::driveId), "hulls",
+				    std::format(
+				        "'{}' flies drive '{}', which the mode does not select", selected.hullId,
+				        pHull->driveId));
 
 		if (mode.cruise)
 			for (const auto &[crew, profile] :
@@ -1222,6 +1239,10 @@ void CheckScenarios(
 		checker.Require(
 		    pStarter->mass.has_value(), "starterHull",
 		    std::format("'{}' has no mass to fly with", scenario.starterHull));
+		checker.Require(
+		    Contains(pMode->hulls, scenario.starterHull, &HullSelection::hullId), "starterHull",
+		    std::format(
+		        "'{}' is not one of mode '{}''s hulls", scenario.starterHull, scenario.gameMode));
 
 		(void)ListIds(checker, scenario.venues, &VenueDefinition::venueId, "venues");
 		(void)ListIds(checker, scenario.traders, &TraderDefinition::principalId, "traders");

@@ -186,6 +186,10 @@ void RegisterTypes()
 		    .Field<&ItemSelection::itemId>("itemId", kDefined);
 		RegisterType<SkillSelection>("Manifest.SkillSelection")
 		    .Field<&SkillSelection::skillId>("skillId", kDefined);
+		RegisterType<HullSelection>("Manifest.HullSelection")
+		    .Field<&HullSelection::hullId>("hullId", kDefined);
+		RegisterType<DriveSelection>("Manifest.DriveSelection")
+		    .Field<&DriveSelection::driveId>("driveId", kDefined);
 		RegisterType<ItemTotes>("Manifest.ItemTotes")
 		    .Field<&ItemTotes::itemId>("itemId", kDefined)
 		    .Field<&ItemTotes::totes>("totes", kDefined);
@@ -311,6 +315,8 @@ void RegisterTypes()
 		    .Field<&GameModeDefinition::ages>("ages", kDefined)
 		    .Field<&GameModeDefinition::items>("items", kDefined)
 		    .Field<&GameModeDefinition::skills>("skills", kDefined)
+		    .Field<&GameModeDefinition::hulls>("hulls", kDefined)
+		    .Field<&GameModeDefinition::drives>("drives", kDefined)
 		    .Field<&GameModeDefinition::cruise>("cruise", kDefined);
 
 		RegisterEnum<OrganisationKind>("Manifest.OrganisationKind")

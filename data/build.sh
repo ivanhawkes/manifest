@@ -150,7 +150,9 @@ for mode in game-mode/*.yaml; do
     | {"version": 1,
        "ages": [$ages.ages[].age | {"ageId": .ageId}],
        "items": $mode.items,
-       "skills": $mode.skills}
+       "skills": $mode.skills,
+       "hulls": $mode.hulls,
+       "drives": $mode.drives}
     | (select($mode.cruise != null) | .cruise = $mode.cruise) // .
     | ... comments=""
   ' > "$records_dir/game-modes/$(basename "$mode")"

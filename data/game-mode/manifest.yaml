@@ -319,3 +319,37 @@ items:
   # Life support
   - itemId: ItemOxygen
   - itemId: ItemCarbonScrubberCartridge
+
+# The hulls and drives the full game shows, every one, in the order a player is shown them: a hull or a drive left out is
+# never listed. Each selected hull's drive is selected, and a scenario of this mode starts its
+# companies in one of these hulls.
+hulls:
+  - hullId: HullLoneTraderStarter
+  - hullId: HullCompactSingle
+  - hullId: HullTraderLongHaul
+  - hullId: HullFreighterMedium
+  - hullId: HullShuttle
+  - hullId: HullSkiff
+  - hullId: HullCutter
+  - hullId: HullCorvette
+  - hullId: HullGunboat
+  - hullId: HullFrigate
+  - hullId: HullDestroyer
+  - hullId: HullCruiser
+  - hullId: HullBattlecruiser
+  - hullId: HullBattleship
+  - hullId: HullDreadnought
+  - hullId: HullTitan
+  - hullId: HullSloop
+  - hullId: HullBrig
+  - hullId: HullGalleon
+  - hullId: HullFreighter
+  - hullId: HullHauler
+  - hullId: HullBarge
+  - hullId: HullCarrier
+  - hullId: HullSupercarrier
+  - hullId: HullArk
+
+drives:
+  - driveId: DriveTorch
+  - driveId: DriveHaulerFusion

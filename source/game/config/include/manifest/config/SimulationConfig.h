@@ -166,9 +166,13 @@ struct SkillNode
 
 using Skills = std::vector<SkillNode>;
 
+// A game mode resolved: its goods and skill nodes, and the IDs of the hulls and drives it shows a
+// player, each in the mode's order.
 struct GameModeNode
 {
 	Items items;
 	Skills skills;
+	std::vector<std::string> hullIds;
+	std::vector<std::string> driveIds;
 };
 } // namespace Manifest::Core

@@ -884,6 +884,20 @@ TEST_CASE("the_simple_game_mode_is_a_smaller_subset_of_the_full_one")
 	CHECK(astralis.items.size() < manifest.items.size());
 	CHECK(astralis.skills.size() >= 85);
 
+	// The full game shows every hull and drive; the short one the torch and the hulls that fly it.
+	const Manifest::Content::ContentSet full = Load("manifest");
+	CHECK(manifest.hullIds.size() == full.hulls.size());
+	CHECK(manifest.driveIds.size() == full.driveClasses.size());
+	CHECK(astralis.driveIds == std::vector<std::string>{"DriveTorch"});
+	CHECK(astralis.hullIds.size() < manifest.hullIds.size());
+	for (const std::string &hullId : astralis.hullIds)
+	{
+		CHECK(std::ranges::find(manifest.hullIds, hullId) != manifest.hullIds.end());
+		CHECK(
+		    std::ranges::find(full.hulls, hullId, &Manifest::Core::ShipClassSpec::hullId)->driveId ==
+		    "DriveTorch");
+	}
+
 	// The small game keeps the whole tree, so a quick match exercises the age gates and
 	// the ship systems, not only the crafts.
 	CHECK_EQ(astralis.skills.size(), manifest.skills.size());

@@ -316,8 +316,9 @@ that rises steeply above 1 g (the drive's `curveExponent`). See [travel and fuel
 
 ### Game mode
 
-A selection of ages, items and skills (`Content::GameModeDefinition`, `data/game-mode`), with an
-optional [cruise profile](#cruise-profile) for its hulls: `manifest`, the full game, and `astralis`.
+A selection of ages, items, skills, hulls and drives (`Content::GameModeDefinition`,
+`data/game-mode`), with an optional [cruise profile](#cruise-profile) for its hulls: `manifest`, the
+full game, and `astralis`. A player is shown only the hulls and drives its mode selects.
 A [scenario](#scenario) names the mode it runs. See [content](content.md).
 
 ### Gate

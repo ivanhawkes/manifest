@@ -162,3 +162,22 @@ items:
   # Medicine
   - itemId: ItemBasicMedicalSupplies
   - itemId: ItemAnalgesics
+
+# The hulls and drives the short game shows, the torch and the hulls that fly it, in the order a player is shown them: a hull or a drive left out is
+# never listed. Each selected hull's drive is selected, and a scenario of this mode starts its
+# companies in one of these hulls.
+hulls:
+  - hullId: HullLoneTraderStarter
+  - hullId: HullCompactSingle
+  - hullId: HullTraderLongHaul
+  - hullId: HullShuttle
+  - hullId: HullSkiff
+  - hullId: HullCutter
+  - hullId: HullCorvette
+  - hullId: HullGunboat
+  - hullId: HullFrigate
+  - hullId: HullSloop
+  - hullId: HullBrig
+
+drives:
+  - driveId: DriveTorch

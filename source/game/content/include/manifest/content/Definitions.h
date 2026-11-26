@@ -52,6 +52,16 @@ struct SkillSelection
 	std::string skillId;
 };
 
+struct HullSelection
+{
+	std::string hullId;
+};
+
+struct DriveSelection
+{
+	std::string driveId;
+};
+
 // A cruise limited by acceleration (D-090): the profile of a hull that carries people, its occupants
 // given or left out, and of one whose occupants are 0.
 struct CruiseModel
@@ -63,11 +73,15 @@ struct CruiseModel
 // A game mode has no ID field: it is named by its file. Each list is in the order the game uses,
 // which the registry's sorted names would not give. A mode with no cruise keeps each hull's drive as
 // authored, the time-compressed power law (D-088); one with a cruise gives each drive its profile.
+// Its hulls and drives are the ones a game of it shows a player, every other one kept out of its
+// lists; a selected hull's drive is selected too.
 struct GameModeDefinition
 {
 	std::vector<AgeSelection> ages;
 	std::vector<ItemSelection> items;
 	std::vector<SkillSelection> skills;
+	std::vector<HullSelection> hulls;
+	std::vector<DriveSelection> drives;
 	std::optional<CruiseModel> cruise;
 };
 

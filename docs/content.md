@@ -18,7 +18,7 @@ Manifest owns the record types, their rules and the data.
 | --- | --- |
 | [Definition](glossary.md#definition) | One versioned YAML record the engine's [definition registry](../../jettison/docs/glossary.md#definition-registry) loads, such as an item or a hull. |
 | [Content set](glossary.md#content-set) | Every definition loaded and checked as one whole, resolved for one game mode (`Content::ContentSet`). A game runs on nothing else. |
-| [Game mode](glossary.md#game-mode) | The goods and skill nodes a kind of game plays with, in order, and its cruise model: `manifest` (long, everything) and `astralis` (short, 30 goods). |
+| [Game mode](glossary.md#game-mode) | The goods, skill nodes, hulls and drives a kind of game plays with, in order, and its cruise model: `manifest` (long, everything) and `astralis` (short, 30 goods). |
 | [Scenario](glossary.md#scenario) | The world a game starts from: its systems, planets, regions, venues and starter. It names its game mode. |
 | [Pack](glossary.md#pack) | The content as one compressed file, `manifest.pack`, read exactly as the directory would be. |
 | [Mod](glossary.md#mod), [overlay](glossary.md#overlay) | A package mounted over the Manifest package, adding records or patching them. |
@@ -308,12 +308,15 @@ patch can merge into it by ID (`!merge=itemId`):
 | --- | --- |
 | `ages` | Written by `build.sh` from `base/ages.yaml`: every age, in order. |
 | `items`, `skills` | The goods and skill nodes it plays with, in the order the game uses. |
+| `hulls`, `drives` | The hulls and drive classes a game of it shows a player, in the order shown; one left out is never listed. Resolved as `Core::GameModeNode::hullIds` and `driveIds`, the filter a UI lists from. |
 | `cruise` | Optional. A `manned` and an `unmanned` Jettison motion profile; a hull with 0 occupants flies the unmanned one. Left out, each hull keeps its drive's time-compressed power law. |
 
 `manifest` selects all 160 goods and 85 nodes and cruises by acceleration
 ([D-090](decision-ledger.md#d-090)). `astralis` selects the 30 goods an industrial-age world
 trades most ([D-067](decision-ledger.md#d-067)), the whole tree, and no cruise model
-([D-061](decision-ledger.md#d-061)). Both selections must name existing definitions, once, and
+([D-061](decision-ledger.md#d-061)). `manifest` shows every hull and both drives; `astralis` the
+torch and the hulls that fly it. Every selection must name existing definitions, once; a selected
+hull's drive must be selected, and a scenario's starter hull must be one of its mode's hulls; and
 the tree a mode selects must build as a graph with no cycle and every prerequisite inside it.
 
 ### Scenarios
