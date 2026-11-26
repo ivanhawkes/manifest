@@ -13,6 +13,7 @@
 #include <vector>
 
 #include <jettison/net/Client.h>
+#include <jettison/net/Key.h>
 #include <jettison/net/Token.h>
 #include <jettison/serialise/Archive.h>
 
@@ -22,6 +23,7 @@
 #include <manifest/host/Start.h>
 #include <manifest/host/WorldDirectory.h>
 #include <manifest/remote/Client.h>
+#include <manifest/remote/Keys.h>
 #include <manifest/remote/Server.h>
 #include <manifest/remote/Tokens.h>
 #include <manifest/trade/Trade.h>
@@ -47,11 +49,13 @@ std::vector<std::byte> Load(std::uint32_t quantity)
 }
 
 
-// A client that is not Manifest's, presenting the token: it sends whatever the test makes it.
-Jettison::Net::Client RawClient(std::uint16_t port, const std::string &token)
+// A client that is not Manifest's, pinning the key and presenting the token: it sends whatever the
+// test makes it.
+Jettison::Net::Client RawClient(std::uint16_t port, const std::string &key, const std::string &token)
 {
 	Jettison::Net::ClientConfig config;
 	config.port = port;
+	config.serverKey = key;
 	config.protocol = {std::string{kProtocol}, kVersion};
 	for (const char character : token)
 		config.credential.push_back(static_cast<std::byte>(character));
@@ -59,15 +63,16 @@ Jettison::Net::Client RawClient(std::uint16_t port, const std::string &token)
 }
 
 
-// A hosted world, with a home region for each of two players, served on an ephemeral loopback port, its
-// operator having issued a token to Ada, to Bea and to an administrator.
+// A hosted world, with a home region for each of two players, served on an ephemeral loopback port with
+// the key its clients pin, its operator having issued a token to Ada, to Bea and to an administrator.
 struct Served
 {
 	explicit Served(const std::string &scenario = "governance")
 	    : pSession{Manifest::Host::Start({MANIFEST_MOD_DIRECTORY, {}, scenario})}
 	{
 		Write();
-		pServer = std::make_unique<Server>(*pSession, tokens.Path(), "127.0.0.1", 0);
+		WriteServerKey(keyFile.Path(), key.secretKey);
+		pServer = std::make_unique<Server>(*pSession, tokens.Path(), keyFile.Path(), "127.0.0.1", 0);
 	}
 
 	void Write()
@@ -81,7 +86,7 @@ struct Served
 
 	Client Connect(const std::string &token) const
 	{
-		return {"127.0.0.1", pServer->Port(), token};
+		return {"127.0.0.1", pServer->Port(), key.publicKey, token};
 	}
 
 	// Both ends polled until done holds, for at most two seconds; the client's replies kept.
@@ -144,7 +149,7 @@ struct Served
 		pJournal = std::make_unique<Manifest::Host::Journal>(
 		    *directory, Manifest::Host::RunningIdentity(*pSession));
 		pJournal->Recover(pSession->World());
-		pServer = std::make_unique<Server>(*pSession, tokens.Path(), "127.0.0.1", 0);
+		pServer = std::make_unique<Server>(*pSession, tokens.Path(), keyFile.Path(), "127.0.0.1", 0);
 	}
 
 	// The client's snapshot of the world as it now is, once it arrives.
@@ -176,6 +181,8 @@ struct Served
 	std::string bea = Jettison::Net::GenerateToken();
 	std::string admin = Jettison::Net::GenerateToken();
 	Manifest::Test::TempFile tokens{"", ".tokens.yaml"};
+	Jettison::Net::ServerKey key = Jettison::Net::GenerateServerKey();
+	Manifest::Test::TempFile keyFile{"", ".key"};
 	std::unique_ptr<Jettison::Host::Session> pSession;
 	std::optional<Manifest::Host::WorldDirectory> directory;
 	std::unique_ptr<Manifest::Host::Journal> pJournal;
@@ -245,6 +252,58 @@ TEST_CASE("a token file keeps digests and resolves only the tokens it was issued
 
 	const Manifest::Test::TempFile broken{"tokens: [", ".tokens.yaml"};
 	CHECK_THROWS_AS(ReadTokens(broken.Path()), std::runtime_error);
+}
+
+
+TEST_CASE("a server list pins each endpoint's key as written, and the build's pins none")
+{
+	const std::string key = Jettison::Net::GenerateServerKey().publicKey;
+	const Manifest::Test::TempFile file{
+	    "version: 1\nservers:\n  - endpoint: 127.0.0.1:47720\n    key: " + key + "\n"};
+	const ServerList list = ReadServers(file.Path());
+	CHECK(PinnedKey(list, "127.0.0.1:47720") == key);
+	CHECK_FALSE(PinnedKey(list, "localhost:47720").has_value());
+	CHECK(ReadServers(MANIFEST_SERVERS).servers.empty());
+
+	const Manifest::Test::TempFile broken{"servers: ["};
+	CHECK_THROWS_AS(ReadServers(broken.Path()), std::runtime_error);
+	CHECK_THROWS_AS(ReadServers(file.Path() + ".none"), std::runtime_error);
+}
+
+
+TEST_CASE("a client pinning another server's key is refused, and a server needs a key file with a key")
+{
+	Served served;
+	Client elsewhere{
+	    "127.0.0.1", served.pServer->Port(), Jettison::Net::GenerateServerKey().publicKey,
+	    served.admin};
+	CHECK_FALSE(served.Welcome(elsewhere));
+	CHECK(elsewhere.Closed() == Reason::KeyMismatch);
+
+	// The secret is its owner's alone, and reads back as it was written.
+	using std::filesystem::perms;
+	CHECK(
+	    (std::filesystem::status(served.keyFile.Path()).permissions() & perms::mask) ==
+	    (perms::owner_read | perms::owner_write));
+	CHECK(ReadServerKey(served.keyFile.Path()) == served.key.secretKey);
+
+	// No server starts on a key file missing or holding no key, and each names the file.
+	const auto refusal = [&](const std::string &key)
+	{
+		try
+		{
+			Server server{*served.pSession, served.tokens.Path(), key, "127.0.0.1", 0};
+		}
+		catch (const std::runtime_error &error)
+		{
+			return std::string{error.what()};
+		}
+		return std::string{"started"};
+	};
+	const std::string missing = served.keyFile.Path() + ".none";
+	CHECK(refusal(missing) == std::format("the server key file {} cannot be read", missing));
+	const Manifest::Test::TempFile cut{served.key.secretKey.substr(1)};
+	CHECK(refusal(cut.Path()) == std::format("the server key file {} holds no secret key", cut.Path()));
 }
 
 
@@ -328,7 +387,7 @@ TEST_CASE("a remote session is closed for a revoked token, a bad message and the
 
 	// A client that is not Manifest's sends something that is not a request.
 	served.Write();
-	Jettison::Net::Client raw = RawClient(served.pServer->Port(), served.admin);
+	Jettison::Net::Client raw = RawClient(served.pServer->Port(), served.key.publicKey, served.admin);
 	std::optional<Reason> closed;
 	const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{2};
 	while (!closed && std::chrono::steady_clock::now() < deadline)
@@ -426,7 +485,8 @@ TEST_CASE("several players are served at once, and one actor holds at most three
 	for (int attempt = 0; attempt < 20 && !(pAgain && pAgain->Welcomed()); ++attempt)
 	{
 		(void)third.Poll(std::chrono::milliseconds{10});
-		pAgain = std::make_unique<Client>("127.0.0.1", served.pServer->Port(), served.ada);
+		pAgain = std::make_unique<Client>(
+		    "127.0.0.1", served.pServer->Port(), served.key.publicKey, served.ada);
 		(void)served.Welcome(*pAgain);
 	}
 	REQUIRE(pAgain->Welcomed().has_value());
@@ -604,7 +664,7 @@ TEST_CASE("a full queue answers QueueFull, and a flood past the inbound bound cl
 	CHECK(served.Await(admin, last - 1, Receipt::Status::Queued).has_value());
 
 	// Far more than a session may have waiting, sent before the server takes in any.
-	Jettison::Net::Client flood = RawClient(served.pServer->Port(), served.ada);
+	Jettison::Net::Client flood = RawClient(served.pServer->Port(), served.key.publicKey, served.ada);
 	const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{2};
 	while (!flood.Admitted() && std::chrono::steady_clock::now() < deadline)
 	{

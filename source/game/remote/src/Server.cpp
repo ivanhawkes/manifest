@@ -13,10 +13,12 @@
 #include <utility>
 
 #include <jettison/core/Log.h>
+#include <jettison/net/Key.h>
 #include <jettison/serialise/Archive.h>
 
 #include <manifest/host/Start.h>
 #include <manifest/query/Query.h>
+#include <manifest/remote/Keys.h>
 #include <manifest/remote/Protocol.h>
 #include <manifest/world/State.h>
 
@@ -38,11 +40,15 @@ constexpr std::size_t kSessionsPerActor = 3;
 constexpr std::chrono::milliseconds kSnapshotInterval{1'000};
 
 
-Jettison::Net::ServerConfig Config(std::string address, std::uint16_t port)
+Jettison::Net::ServerConfig Config(
+    std::string address, std::uint16_t port, std::string secretKey, std::string &publicKey)
 {
+	publicKey = Jettison::Net::PublicKeyOf(secretKey);
 	Jettison::Net::ServerConfig config;
 	config.address = std::move(address);
 	config.port = port;
+	// Moved, not copied, so the one text of it is the engine's, which wipes it once read.
+	config.secretKey = std::move(secretKey);
 	config.protocol = std::string{kProtocol};
 	config.versions = {kVersion};
 	config.snapshotInterval = kSnapshotInterval;
@@ -88,12 +94,12 @@ void Send(Jettison::Net::Server &net, Jettison::Net::SessionId id, const T &mess
 
 
 Server::Server(
-    Jettison::Host::Session &session, std::filesystem::path tokens, std::string address,
-    std::uint16_t port)
+    Jettison::Host::Session &session, std::filesystem::path tokens, const std::filesystem::path &key,
+    std::string address, std::uint16_t port)
     : m_hosted{session}, m_tokensPath{std::move(tokens)}, m_tokensWritten{WrittenAt(m_tokensPath)},
       m_tokens{ReadTokens(m_tokensPath)},
       m_net{
-          Config(std::move(address), port),
+          Config(std::move(address), port, ReadServerKey(key), m_publicKey),
           [this](Jettison::Net::SessionId id, std::span<const std::byte> credential)
           { return Verify(id, credential); }}
 {

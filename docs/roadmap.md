@@ -58,9 +58,9 @@ ship gets a settled purpose ([L48](delivery-order.md#l48)). The designs are in t
 ## Hosting and recovery
 
 The dedicated server runs a world with no player connected, and recovers it after a crash. Before it
-is hosted for the public, connections are encrypted (Jettison's
-[J01](../../jettison/docs/roadmap.md#j01), [D-081](decision-ledger.md#d-081)), and the service is
-hardened, profiled and soaked unattended ([L01](delivery-order.md#l01)). Saves move off the thread
+is hosted for the public, the service is hardened, profiled and soaked unattended
+([L01](delivery-order.md#l01)); its connections are already sealed to the server's key (Jettison's
+[J01](../../jettison/docs/history/neutral-sdk.md#j01-encryption), [D-081](decision-ledger.md#d-081)). Saves move off the thread
 that steps the world, so a growing world's writes stall neither a step nor a frame
 ([L40](delivery-order.md#l40)). Stage 5 left the terminal UI's retry, the bundle's container tests
 and stripped release binaries ([L41](delivery-order.md#l41)). The built contracts are [the

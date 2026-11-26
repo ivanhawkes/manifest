@@ -16,14 +16,16 @@
 
 namespace Manifest::Remote
 {
-// The client end of Server, for a frontend: connects with a token as it is made and is welcomed
-// as the token's actor, or closed with the reason. It submits intentions and keeps the newest
+// The client end of Server, for a frontend: connects with a token as it is made, to the server holding
+// the key it pins (PinnedKey), and is welcomed as the token's actor, or closed with the reason:
+// KeyMismatch for a server that does not hold it. It submits intentions and keeps the newest
 // snapshot; it never steps or holds a world. To reconnect, make another.
 class Client
 {
   public:
-	// Throws std::runtime_error when the address does not resolve.
-	Client(std::string address, std::uint16_t port, std::string_view token);
+	// Throws std::runtime_error when the address does not resolve, and std::invalid_argument for a
+	// server key that is not one (Jettison::Net::ClientConfig::serverKey).
+	Client(std::string address, std::uint16_t port, std::string serverKey, std::string_view token);
 
 	// What arrived, waiting up to wait for the first of it: the replies in order. A snapshot only
 	// replaces Latest, and one older than it is dropped by the transport.

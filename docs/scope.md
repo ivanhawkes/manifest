@@ -80,7 +80,7 @@ How: [the host](host.md), [the server](server.md), [the console and the terminal
 | The world catching up for time the server was down | Deferred | Downtime pauses the world ([D-011](decision-ledger.md#d-011)) |
 | Saves off the step's thread | Planned, [L40](delivery-order.md#l40) | A large snapshot should not stall the step ([D-115](decision-ledger.md#d-115)) |
 | Stage 5's loose ends (TUI retry, the bundle test, debug files) | Planned, [L41](delivery-order.md#l41) | |
-| Encrypted connections, hosting outside a trusted network | Planned, [J01](../../jettison/docs/roadmap.md#j01) | Connections are plaintext on loopback or a LAN until Jettison seals them ([D-081](decision-ledger.md#d-081)) |
+| Encrypted connections, hosting outside a trusted network | In, Jettison's [J01](../../jettison/docs/history/neutral-sdk.md#j01-encryption) | Every connection sealed to the server's key, which clients pin ([D-081](decision-ledger.md#d-081)) |
 | Deployment hardening, capacity profiling, unattended soak | Planned, [L01](delivery-order.md#l01) | Before public hosting |
 | The graphical client | Planned, [L15](delivery-order.md#l15) | Shares the server interface with the TUI ([D-012](decision-ledger.md#d-012)); its screens are listed in the [roadmap](roadmap.md#the-graphical-client) |
 | The development [sandbox](glossary.md#sandbox) | In | The older skill-tree and effects model, reached only from the console ([the sandbox](sandbox.md)) |

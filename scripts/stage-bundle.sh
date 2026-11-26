@@ -35,7 +35,8 @@ stage="$out/$name"
 rm -rf "$stage" "$out/$name.tar.gz"
 mkdir -p "$stage/bin" "$stage/share/manifest" "$stage/share/doc/manifest"
 install -m 0755 "${binaries[@]/#/$build/}" "$stage/bin/"
-install -m 0644 "$build/share/manifest/manifest.pack" "$stage/share/manifest/"
+install -m 0644 "$build/share/manifest/manifest.pack" "$build/share/manifest/servers.yaml" \
+  "$stage/share/manifest/"
 
 {
   echo "version: $version"

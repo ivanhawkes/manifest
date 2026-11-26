@@ -118,6 +118,9 @@ include(cmake/Distribution.cmake)
 set(MANIFEST_MOD_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/mods/manifest")
 # Where a distribution's executables find it (Manifest::Host::DefaultContent).
 set(MANIFEST_PACK "${CMAKE_CURRENT_BINARY_DIR}/share/manifest/manifest.pack")
+# The servers a client of this build pins the keys of, beside the content (Manifest::Host::DefaultServers).
+set(MANIFEST_SERVERS "${CMAKE_CURRENT_BINARY_DIR}/share/manifest/servers.yaml")
+configure_file(source/apps/manifest/servers.yaml "${MANIFEST_SERVERS}" COPYONLY)
 add_subdirectory(source)
 
 # A mod is content, not a native shared library. Keep its virtual paths stable in

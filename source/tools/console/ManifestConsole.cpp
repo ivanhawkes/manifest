@@ -18,8 +18,10 @@
 #include <jettison/serialise/Archive.h>
 
 #include <manifest/company/Company.h>
+#include <manifest/host/Locations.h>
 #include <manifest/host/Start.h>
 #include <manifest/query/Query.h>
+#include <manifest/remote/Keys.h>
 #include <manifest/trade/Trade.h>
 #include <manifest/travel/Travel.h>
 #include <manifest/world/State.h>
@@ -218,7 +220,8 @@ std::string Describe(const Query::Snapshot &snapshot, std::string_view as)
 }
 } // namespace
 
-ManifestConsole::ManifestConsole(std::string contentSource) : m_contentSource{std::move(contentSource)}
+ManifestConsole::ManifestConsole(std::string contentSource, std::filesystem::path servers)
+    : m_contentSource{std::move(contentSource)}, m_servers{std::move(servers)}
 {
 	// A connected console writes these payloads with no hosted world to have registered them.
 	Trade::RegisterTypes();
@@ -325,8 +328,10 @@ void ManifestConsole::RegisterCommands()
 	    "stop", "stop: ends the run of steps under way at the step it has reached, and reports it", 0,
 	    0, [this](Arguments) { return CommandStop(); });
 	RegisterCommand(
-	    "connect", "connect <host:port> <token>: plays on a server as the token's actor", 2, 2,
-	    [this](Arguments arguments) { return CommandConnect(arguments[0], arguments[1]); });
+	    "connect",
+	    "connect <host:port> <token>: plays on a server as the token's actor, the server's key "
+	    "pinned from the server list",
+	    2, 2, [this](Arguments arguments) { return CommandConnect(arguments[0], arguments[1]); });
 	RegisterCommand(
 	    "disconnect", "disconnect: leaves the server; the world goes on without you", 0, 0,
 	    [this](Arguments) { return CommandDisconnect(); });
@@ -1011,9 +1016,15 @@ std::string ManifestConsole::CommandConnect(const std::string &endpoint, const s
 	if (colon == std::string::npos || colon == 0)
 		throw std::runtime_error{std::format("expected host:port, got '{}'", endpoint)};
 	const std::array<std::string, 1> port{endpoint.substr(colon + 1)};
+	const auto number = static_cast<std::uint16_t>(ParseCount(port, 0, 0, 1, 65535));
+	const std::filesystem::path servers = m_servers.empty() ? Host::DefaultServers() : m_servers;
+	std::optional<std::string> key = Remote::PinnedKey(Remote::ReadServers(servers), endpoint);
+	if (!key)
+		throw std::runtime_error{
+		    std::format("The server list {} pins no key for {}.", servers.string(), endpoint)};
 	// A failed connect keeps the connection there was; a replaced one is closed.
-	auto pRemote = std::make_unique<Remote::Client>(
-	    endpoint.substr(0, colon), static_cast<std::uint16_t>(ParseCount(port, 0, 0, 1, 65535)), token);
+	auto pRemote =
+	    std::make_unique<Remote::Client>(endpoint.substr(0, colon), number, std::move(*key), token);
 	if (m_pRemote)
 		m_pRemote->Disconnect();
 	m_pRemote = std::move(pRemote);

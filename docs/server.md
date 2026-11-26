@@ -16,6 +16,8 @@ Jettison's: see [networking](../../jettison/docs/networking.md).
 | Client | `Remote::Client`: one connection to a server, for a frontend. It never holds or steps a world. It is spent once closed; to reconnect, make another. |
 | [Token](glossary.md#token) | A bearer token: 64 hex characters that `manifest-token` prints once. Whoever presents it connects as the actor it was issued to. |
 | Token file | The server's list of credentials: each token's digest, never the token, with the actor it names. YAML, written by `manifest-token`. |
+| Server key | The server's key pair (Jettison's `Net::ServerKey`). `manifest-token key` keeps the secret half in the key file, its owner's alone, and prints the public half, which every client pins. |
+| Server list | A client's pinned keys: each server's `host:port` with the public half of its key. YAML; a build ships one beside its content, and a player's own is read instead when it is there. |
 | [Actor](glossary.md#actor) | Who a request acts for: a player's [principal](glossary.md#principal), or the administrator. A remote session's actor comes only from its token, never from a message. |
 | [Session](glossary.md#session) | One admitted connection. A reconnection is a new session for the same actor. An actor may hold three at once. |
 | [Snapshot (query)](glossary.md#snapshot-query) | `Query::Snapshot`: what one actor may see of the world at a step, as `Query::Observe` builds it. It is the body of every network snapshot the server sends. |
@@ -184,13 +186,27 @@ at step 0 (measured 2026-11-23), which Jettison's 64 KiB default dropped ten ord
 under the 256 KiB at which an unreliable message still crosses whole. A view longer than the limit
 is logged and not sent.
 
-### Connections are plaintext
+### Connections are sealed
 
-Nothing is encrypted yet, so a token sent over the network can be read by anyone on the path. Run
-the server on loopback or a trusted LAN only ([D-081](decision-ledger.md#d-081)). Hosting outside a
-trusted network waits for Jettison's encryption: a key exchange in the hello, the server's public
-key pinned by the client, then every packet sealed ([J01](../../jettison/docs/roadmap.md#j01)). TLS
-is not used, since it does not run over UDP.
+Every message is sealed to keys made, connection by connection, with the server's key
+([D-081](decision-ledger.md#d-081)): the token in the hello included, so no one on the path reads it
+or poses as the server. How the handshake and the sealing work is Jettison's
+([networking](../../jettison/docs/networking.md),
+[J01](../../jettison/docs/history/neutral-sdk.md#j01-encryption)). TLS is not used, since it does not run over UDP.
+
+The server reads its secret key at start (`Remote::ReadServerKey`) and fails, naming the file, when
+the file is missing or holds no key. `manifest-token key` writes it through Jettison's durable
+write, 0600 from the moment it is made, in a 0700 directory when it is the default place, and refuses to
+replace a key already there unless given `--replace`.
+
+A client pins the server's public key from its server list (`Remote::ReadServers`,
+`Remote::PinnedKey`), looked up by the endpoint exactly as `connect` takes it. A server that does
+not hold the pinned key is closed as `KeyMismatch` before the token is sent, and so is a client
+pinning another server's key. The list is the player's `$XDG_CONFIG_HOME/manifest/servers.yaml`
+when it is there, else the one the build ships beside its content
+(`share/manifest/servers.yaml`, from `source/apps/manifest/servers.yaml`), which is how a test build
+carries its server's key (`Host::DefaultServers`). A secret lost or leaked is a new key, and every
+client given its public half.
 
 ## Using it
 
@@ -225,13 +241,25 @@ tokens:
 `manifest-token` exits 1 when the actor has no token to revoke or the file cannot be read or
 written, and 2 for a bad command line. Revoking a token closes its sessions on a running server.
 
+Make the server's key once. The public half goes to stdout, for every client to pin, and the
+server names it again in its serving line at each start; the file keeps the secret, 0600. Without `--key`, the file is `$XDG_CONFIG_HOME/manifest/server-key`.
+A key already there is kept, and the command exits 1, unless `--replace` is given:
+
+```console
+$ manifest-token --key server-key key
+3c0f2a1e9b7d4c5a8e6f1d2b3a4c5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d
+$ manifest-token --key server-key key
+server-key already holds a key: --replace makes a new one, which every client must then pin
+```
+
 Start the server. `--serve` follows the host's own options (`--content`, `--scenario`, `--overlay`;
 see [the host](host.md)):
 
 ```console
-$ manifest --scenario trading --serve --world world --tokens tokens.yaml --backups backups
+$ manifest --scenario trading --serve --world world --tokens tokens.yaml --key server-key \
+    --backups backups
 [info] [manifest] ready, from .../share/manifest/manifest.pack, scenario trading
-[info] [manifest] serving on 127.0.0.1:47720 at step 0, world 3d8facdd32ac93e5b0e26772a7c9b08f at batch 0
+[info] [manifest] serving on 127.0.0.1:47720 at step 0, world 3d8facdd32ac93e5b0e26772a7c9b08f at batch 0, key 3c0f2a1e9b7d4c5a8e6f1d2b3a4c5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d
 ^C
 [info] [manifest] stopping at step 161, batch 1, 0.0 s dropped
 ```
@@ -240,6 +268,7 @@ $ manifest --scenario trading --serve --world world --tokens tokens.yaml --backu
 | --- | --- | --- |
 | `--world <directory>` | `$XDG_DATA_HOME/manifest/world` | The world's directory, made or recovered, held by one server at a time |
 | `--tokens <file>` | `$XDG_CONFIG_HOME/manifest/tokens` | The token file; the server fails to start without one |
+| `--key <file>` | `$XDG_CONFIG_HOME/manifest/server-key` | The server's secret key; the server fails to start without one |
 | `--address <ipv4>` | `127.0.0.1` | The address to listen on, dotted IPv4; `0.0.0.0` for every interface |
 | `--port <n>` | `0` | The UDP port; 0 takes an ephemeral one, which the serving line names |
 | `--flush-seconds <n>` | 30 | How often the journal is written: the most a crash loses |
@@ -253,7 +282,17 @@ file that cannot be read, exits 1.
 ### Play from the console or the terminal UI
 
 The console's `connect <host:port> <token>` plays on a server as the token's actor, and `disconnect`
-leaves it while the world goes on. While connected, `observe`, `provision`, `cargo`, `trade`,
+leaves it while the world goes on. It pins the key the [server list](#connections-are-sealed) gives
+the endpoint, and refuses an endpoint the list does not name. A player adds a server to their own
+list, `$XDG_CONFIG_HOME/manifest/servers.yaml`, with the public key its operator gave them:
+
+```yaml
+version: 1
+servers:
+  - endpoint: 127.0.0.1:47720
+    key: 3c0f2a1e9b7d4c5a8e6f1d2b3a4c5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d
+```
+ While connected, `observe`, `provision`, `cargo`, `trade`,
 `cancel`, `travel`, `service` and `fit` go to the server, and take no principal: the actor is the
 token's. `step` and `book` are refused, since the server steps its own world and the book is the
 host's view. The terminal UI shows the connection in its side pane. These lines are from the
@@ -285,12 +324,14 @@ The console's commands themselves are in [the console and the terminal UI](conso
 
 ### Write a client in C++
 
-A frontend makes a `Remote::Client`, polls until it is welcomed, then submits payloads. This is from
-`source/game/remote/tests/RemoteTests.cpp`, where `Await` polls both ends until the reply arrives:
+A frontend makes a `Remote::Client` with the server's public key, polls until it is welcomed, then
+submits payloads. This is from `source/game/remote/tests/RemoteTests.cpp`, where `Await` polls both
+ends until the reply arrives:
 
 ```cpp
-Client player{"127.0.0.1", port, adaToken};
-// Poll until player.Welcomed() is set, or player.Closed() gives the reason it was refused.
+Client player{"127.0.0.1", port, serverKey, adaToken};
+// Poll until player.Welcomed() is set, or player.Closed() gives the reason it was refused:
+// KeyMismatch for a server that does not hold the key.
 const std::vector<std::byte> move = Jettison::Serialise::BinaryArchive::Write(
     Company::Move{"Ship1", "VenueForgeHighport", "ItemCopper", 1},
     Jettison::Serialise::FormatVersion{Company::kVersion});
@@ -302,7 +343,7 @@ const std::uint64_t sequence = player.Submit(Company::kLoad, Company::kVersion, 
 After a reconnect, a request whose completion never arrived is sent again under its first sequence:
 
 ```cpp
-Client again{"127.0.0.1", port, adminToken};
+Client again{"127.0.0.1", port, serverKey, adminToken};
 REQUIRE(served.Welcome(again));
 REQUIRE(again.Retry(sequence, Company::kProvision, Company::kVersion, Provision("Ada")));
 CHECK(
@@ -311,8 +352,8 @@ CHECK(
 
 ## Limits and open work
 
-- Plaintext only: hosting outside a trusted network waits for encryption
-  ([J01](../../jettison/docs/roadmap.md#j01)).
+- One key a server, pinned: a new key means every client given its public half. A client with no
+  entry for an endpoint does not connect; there is no trust on first use.
 - Deployment hardening, capacity profiling and an unattended soak before public hosting
   ([L01](delivery-order.md#l01)).
 - The terminal UI retries nothing: a player whose request was lost in a crash sends it again by hand
@@ -330,7 +371,8 @@ CHECK(
 The settled choices are in [decisions](decision-ledger.md#the-dedicated-server-and-remote-clients):
 the split between Jettison's networking and Manifest's server ([D-057](decision-ledger.md#d-057)),
 UDP through ENet ([D-079](decision-ledger.md#d-079)), bearer tokens
-([D-080](decision-ledger.md#d-080)), plaintext until encryption ([D-081](decision-ledger.md#d-081)),
+([D-080](decision-ledger.md#d-080)), every connection sealed to the server's key
+([D-081](decision-ledger.md#d-081)),
 and three sessions an actor ([D-082](decision-ledger.md#d-082)). How the server came to be is in the
 records: the [network
 contract](history/gameplay-and-server-plan.md#network-contract-n01-2026-11-20), [the dedicated
@@ -342,14 +384,18 @@ clients](history/stage-4.md#n03-several-clients-reconnects-and-bounds--2026-11-2
 - `source/game/remote`: the module, on `query`, `host` and `Jettison::Net`.
   - `include/manifest/remote/Protocol.h`: `kProtocol`, `kVersion`, `kMaxMessageBytes`, `Kind`,
     `Welcome`, `Submit`, `Reply`, `RegisterTypes`.
-  - `include/manifest/remote/Server.h`: `Server` (`Poll`, `Publish`, `Stop`, `Stopping`).
+  - `include/manifest/remote/Server.h`: `Server` (`Poll`, `Publish`, `Stop`, `Stopping`,
+    `PublicKey`).
   - `include/manifest/remote/Client.h`: `Client` (`Poll`, `Submit`, `Retry`, `Disconnect`,
     `Welcomed`, `Closed`, `Latest`).
   - `include/manifest/remote/Tokens.h`: `Credential`, `TokenFile`, `ReadTokens`, `WriteTokens`,
     `Resolve`.
+  - `include/manifest/remote/Keys.h`: `ReadServerKey`, `WriteServerKey`, `PinnedServer`,
+    `ServerList`, `ReadServers`, `PinnedKey`.
 - `source/apps/manifest/main.cpp`: `--serve` and its loop; `source/apps/manifest/token.cpp`:
-  `manifest-token`.
+  `manifest-token`; `source/apps/manifest/servers.yaml`: the server list a build ships.
 - Tests: the `remote` suite (`source/game/remote/tests/RemoteTests.cpp`); `cli_serve`
   (`source/apps/manifest/serve-smoke.sh`: served with no client, killed, recovered, stopped,
-  restored); `cli_serve_missing_tokens`, `cli_serve_no_home`, `token_no_home`, `token_revoke_none`,
+  restored, and its key made, refused a replacement unasked, and refused missing or holding no key);
+  `cli_serve_missing_tokens`, `cli_serve_no_home`, `token_no_home`, `token_revoke_none`,
   `token_no_arguments`; the `console` suite's connect case.

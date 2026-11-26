@@ -1,0 +1,5 @@
+# The servers this build's clients connect to, each by its host:port as connect takes it, with the
+# public half of its key, which manifest-token key printed. A player's own list,
+# $XDG_CONFIG_HOME/manifest/servers.yaml, is read instead when it is there (docs/server.md).
+version: 1
+servers: []

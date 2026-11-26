@@ -4,6 +4,7 @@
 
 #include <manifest/company/Company.h>
 #include <manifest/query/Query.h>
+#include <manifest/remote/Keys.h>
 #include <manifest/remote/Tokens.h>
 #include <manifest/world/State.h>
 
@@ -101,6 +102,11 @@ void RegisterTypes()
 		    .Field<&Credential::id>("id", kSaved);
 		RegisterType<TokenFile>("Manifest.Remote.TokenFile")
 		    .Field<&TokenFile::tokens>("tokens", kSaved);
+		RegisterType<PinnedServer>("Manifest.Remote.PinnedServer")
+		    .Field<&PinnedServer::endpoint>("endpoint", kSaved)
+		    .Field<&PinnedServer::key>("key", kSaved);
+		RegisterType<ServerList>("Manifest.Remote.ServerList")
+		    .Field<&ServerList::servers>("servers", kSaved);
 		return true;
 	}();
 	(void)registered;

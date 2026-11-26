@@ -16,7 +16,13 @@ std::filesystem::path DefaultContent();
 std::filesystem::path DefaultWorld();
 std::filesystem::path DefaultBackups();
 std::filesystem::path DefaultTokens();
+std::filesystem::path DefaultServerKey();
 std::filesystem::path DefaultTranscript();
+
+// The servers a client pins the keys of (Remote::ServerList): the player's,
+// $XDG_CONFIG_HOME/manifest/servers.yaml, when it is there, else the one the build ships beside its
+// content. Throws as the others do.
+std::filesystem::path DefaultServers();
 
 // Makes the directory and each one above it that is missing, durably
 // (Jettison::Core::CreateDirectoriesDurably), each it makes private to its owner (0700) from the moment

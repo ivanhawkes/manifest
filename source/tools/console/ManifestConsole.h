@@ -3,6 +3,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -36,8 +37,10 @@ namespace Manifest::Tools
 class ManifestConsole
 {
   public:
-	// The content is the Manifest package, a directory or a pack, which load mounts on its own.
-	explicit ManifestConsole(std::string contentSource);
+	// The content is the Manifest package, a directory or a pack, which load mounts on its own. connect
+	// pins the key the server list gives its endpoint (Remote::ReadServers), Host::DefaultServers when
+	// none is given.
+	explicit ManifestConsole(std::string contentSource, std::filesystem::path servers = {});
 	ManifestConsole(const ManifestConsole &) = delete;
 	ManifestConsole &operator=(const ManifestConsole &) = delete;
 
@@ -159,6 +162,7 @@ class ManifestConsole
 	std::vector<std::pair<Command::Actor, std::uint64_t>> m_unreported;
 	std::optional<Run> m_run;
 
+	std::filesystem::path m_servers;
 	std::unique_ptr<Remote::Client> m_pRemote;
 	std::string m_remoteEndpoint;
 

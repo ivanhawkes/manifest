@@ -14,9 +14,11 @@
 #include <vector>
 
 #include <jettison/core/Log.h>
+#include <jettison/net/Key.h>
 #include <jettison/net/Token.h>
 
 #include <manifest/host/Start.h>
+#include <manifest/remote/Keys.h>
 #include <manifest/remote/Server.h>
 #include <manifest/remote/Tokens.h>
 
@@ -335,11 +337,19 @@ TEST_CASE("Manifest console: connect plays on a server as the token's actor, and
 	    tokens.Path(), {{{Jettison::Net::DigestToken(adminToken), ActorKind::Administrator, "Operator"},
 	                     {Jettison::Net::DigestToken(adaToken), ActorKind::Principal, "Ada"}}});
 	const auto pHosted = Manifest::Host::Start({MANIFEST_MOD_DIRECTORY, {}, "trading"});
-	Manifest::Remote::Server server{*pHosted, tokens.Path(), "127.0.0.1", 0};
+	const Jettison::Net::ServerKey key = Jettison::Net::GenerateServerKey();
+	const Manifest::Test::TempFile keyFile{"", ".key"};
+	Manifest::Remote::WriteServerKey(keyFile.Path(), key.secretKey);
+	Manifest::Remote::Server server{*pHosted, tokens.Path(), keyFile.Path(), "127.0.0.1", 0};
 	const std::string endpoint = std::format("127.0.0.1:{}", server.Port());
+	// The same server by another name, pinned to another server's key.
+	const std::string impostor = std::format("localhost:{}", server.Port());
+	const Manifest::Test::TempFile servers{std::format(
+	    "version: 1\nservers:\n  - endpoint: {}\n    key: {}\n  - endpoint: {}\n    key: {}\n",
+	    endpoint, key.publicKey, impostor, Jettison::Net::GenerateServerKey().publicKey)};
 
 	// Both ends polled, the world stepped when asked, until the console prints the line.
-	ManifestConsole session{MANIFEST_MOD_DIRECTORY};
+	ManifestConsole session{MANIFEST_MOD_DIRECTORY, servers.Path()};
 	const auto await = [&](std::string_view expected, bool step = false)
 	{
 		if (step)
@@ -362,6 +372,13 @@ TEST_CASE("Manifest console: connect plays on a server as the token's actor, and
 	    Execute(session, "connect " + endpoint + " " + Jettison::Net::GenerateToken()).text ==
 	    "Connecting to " + endpoint + ".");
 	CHECK(await("Disconnected") == "Disconnected from " + endpoint + ": bad credential.");
+	// A server the list does not name is not connected to, and one pinned to another key is left.
+	CHECK(
+	    Execute(session, "connect 127.0.0.1:1 " + adminToken).text ==
+	    std::format("connect: The server list {} pins no key for 127.0.0.1:1.", servers.Path()));
+	CHECK(session.Connected() == nullptr);
+	Execute(session, "connect " + impostor + " " + adminToken);
+	CHECK(await("Disconnected") == "Disconnected from " + impostor + ": key mismatch.");
 
 	Execute(session, "connect " + endpoint + " " + adminToken);
 	CHECK(await("Connected") == "Connected to " + endpoint + " as Operator; your next request is 1.");

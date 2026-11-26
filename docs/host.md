@@ -107,6 +107,8 @@ default, and the option still overrides it.
 | The world | `$XDG_DATA_HOME/manifest/world` | `--world` |
 | Backups | `$XDG_DATA_HOME/manifest/backups`, written by default | `--backups` |
 | The token file | `$XDG_CONFIG_HOME/manifest/tokens` | `--tokens` |
+| The server's secret key, 0600 | `$XDG_CONFIG_HOME/manifest/server-key` | `--key` |
+| A client's server list | `$XDG_CONFIG_HOME/manifest/servers.yaml` when it is there, else `<bin>/../share/manifest/servers.yaml` | none |
 | The TUI's transcript | `$XDG_STATE_HOME/manifest/tui-session.log` | none |
 | The server's log | stderr, for the service manager to keep | none |
 
@@ -171,9 +173,10 @@ installed.
 manifest-<version>-<game tree's first 12>-linux-x86_64/
   bin/manifest                     the server, --check-startup and --restore
   bin/manifest-validate            the content validator
-  bin/manifest-token               the token file's tool
+  bin/manifest-token               the token file's and the server key's tool
   bin/manifest_tui                 the terminal UI
   share/manifest/manifest.pack     the content, packed as the build packs it
+  share/manifest/servers.yaml      the servers its clients pin the keys of (none unless a test build adds one)
   share/manifest/BUILD             the version, game and SDK revisions, scenarios' fingerprints
   share/doc/manifest/              Manifest's LICENSE and every linked source tree's licence
 ```
@@ -201,7 +204,7 @@ flowchart LR
     subgraph X["XDG directories, each 0700"]
         world["~/.local/share/manifest/world"]
         backups["~/.local/share/manifest/backups"]
-        tokens["~/.config/manifest/tokens"]
+        tokens["~/.config/manifest/tokens and server-key"]
         log["~/.local/state/manifest/tui-session.log"]
     end
     bin -- "reads, found from /proc/self/exe" --> pack
@@ -328,8 +331,9 @@ bin/manifest-validate --scenario trading
 # validate: mount 1: manifest, from <bundle>/share/manifest/manifest.pack
 # validate: valid: scenario trading, game mode manifest, content <fingerprint>
 token="$(bin/manifest-token issue administrator Operator)"
+key="$(bin/manifest-token key)"
 bin/manifest --scenario trading --serve &
-# manifest: serving on 127.0.0.1:<port> at step 0, world <id> at batch <n>
+# manifest: serving on 127.0.0.1:<port> at step 0, world <id> at batch <n>, key <public key>
 kill -TERM %1
 # manifest: stopping at step <step>, batch <n>, <seconds> s dropped
 bin/manifest --scenario trading --restore ~/.local/share/manifest/backups/<backup> \

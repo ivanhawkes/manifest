@@ -17,7 +17,8 @@ namespace Manifest::Remote
 // Serves a started session's world (Host::Start) to remote clients: each admitted by a token from
 // the token file, as the actor it names, never an NPC's principal (D-097), its requests admitted
 // through the world's one admission path and its snapshot filtered to what that actor may see.
-// Plaintext, for loopback or a LAN (D-081). Single-threaded, as Jettison::Net is: the caller polls
+// Sealed to keys made with the server's secret key, which each client pins the public half of (D-081),
+// so it may be hosted on an open network. Single-threaded, as Jettison::Net is: the caller polls
 // between steps and steps the world itself, which steps the same with no session. An actor may hold
 // three sessions at once, each sent its own replies and the actor's snapshot; a fourth is closed as
 // ServerFull. Destroying it tells every client Shutdown.
@@ -25,12 +26,19 @@ class Server
 {
   public:
 	// The address is dotted IPv4 or empty for every interface, the port 0 for an ephemeral one.
-	// Throws std::runtime_error when the token file cannot be read or the address bound.
+	// Throws std::runtime_error when the token file or the key file (ReadServerKey) cannot be read, or
+	// the address bound.
 	Server(
-	    Jettison::Host::Session &session, std::filesystem::path tokens, std::string address,
-	    std::uint16_t port);
+	    Jettison::Host::Session &session, std::filesystem::path tokens,
+	    const std::filesystem::path &key, std::string address, std::uint16_t port);
 
 	std::uint16_t Port() const;
+
+	// The public half of the server's key, for its operator to give the clients to pin.
+	const std::string &PublicKey() const
+	{
+		return m_publicKey;
+	}
 
 	// Admits connections and requests, waiting up to wait for the first: every request gets its
 	// receipt. Reads the token file again when it has changed and closes, as Revoked, every session
@@ -67,6 +75,8 @@ class Server
 	TokenFile m_tokens;
 	std::map<Jettison::Net::SessionId, Session> m_sessions;
 	bool m_stopped{false};
+	// Before m_net, whose configuration sets it from the secret.
+	std::string m_publicKey;
 	Jettison::Net::Server m_net;
 };
 } // namespace Manifest::Remote

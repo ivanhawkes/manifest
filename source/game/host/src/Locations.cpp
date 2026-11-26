@@ -33,6 +33,24 @@ std::filesystem::path DefaultTokens()
 }
 
 
+std::filesystem::path DefaultServerKey()
+{
+	return Jettison::Platform::ResolvePath(Jettison::Platform::Directory::Config, "manifest") /
+	       "server-key";
+}
+
+
+std::filesystem::path DefaultServers()
+{
+	std::filesystem::path own =
+	    Jettison::Platform::ResolvePath(Jettison::Platform::Directory::Config, "manifest") /
+	    "servers.yaml";
+	if (std::filesystem::exists(own))
+		return own;
+	return DefaultContent().parent_path() / "servers.yaml";
+}
+
+
 std::filesystem::path DefaultTranscript()
 {
 	return Jettison::Platform::ResolvePath(Jettison::Platform::Directory::State, "manifest") /

@@ -297,7 +297,7 @@ it, serves it again, stops it, and restores its backup:
 manifest --content "$content" --scenario trading --serve --world "$work/world" \
   --tokens "$work/tokens.yaml" --port 0 --flush-seconds 1 --snapshot-seconds 2 \
   --backups "$work/backups"
-# serving on 127.0.0.1:<port> at step 0, world <32 hex digits> at batch 0
+# serving on 127.0.0.1:<port> at step 0, world <32 hex digits> at batch 0, key <64 hex digits>
 
 manifest --content "$content" --scenario trading --restore "$backup" --world "$work/restored"
 # restored world <32 hex digits> at batch <n>, step <s>, into .../restored

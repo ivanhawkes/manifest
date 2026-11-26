@@ -1,21 +1,23 @@
 // manifest <options> --check-startup (Manifest::Host::kOptionsUsage): starts Manifest on the content,
 // reports it ready, shuts down and exits 0.
-// manifest <options> --serve [--world <directory>] [--tokens <file>] [--address <ipv4>] [--port <n>]
-// [--flush-seconds <n>] [--snapshot-seconds <n>] [--backups <directory>]: the dedicated server. It
-// holds the world's directory, makes the world there or recovers it from its newest snapshot and the
-// journal after it, then steps it unattended at its fixed step, with or without clients. It writes
-// what has run to the journal every flush interval, 30 s unless given, which is the most a crash
-// loses, and a snapshot every snapshot interval, an hour unless given (Manifest::Host::Journal), with
-// a backup of each in the directory for them, outside the world's. It admits the clients the
-// token file names (manifest-token), and stops cleanly on SIGINT or SIGTERM: it admits nothing more,
-// runs what it admitted in one last step, answers it and writes a snapshot, losing nothing. The port
-// defaults to 0, an ephemeral one, which the serving line names.
+// manifest <options> --serve [--world <directory>] [--tokens <file>] [--key <file>]
+// [--address <ipv4>] [--port <n>] [--flush-seconds <n>] [--snapshot-seconds <n>]
+// [--backups <directory>]: the dedicated server. It holds the world's directory, makes the world there
+// or recovers it from its newest snapshot and the journal after it, then steps it unattended at its
+// fixed step, with or without clients. It writes what has run to the journal every flush interval,
+// 30 s unless given, which is the most a crash loses, and a snapshot every snapshot interval, an hour
+// unless given (Manifest::Host::Journal), with a backup of each in the directory for them, outside the
+// world's. It admits the clients the token file names (manifest-token), sealing every connection to
+// keys made with the secret key manifest-token key wrote, whose public half each client pins, and
+// stops cleanly on SIGINT or SIGTERM: it admits nothing more, runs what it admitted in one last step,
+// answers it and writes a snapshot, losing nothing. The port defaults to 0, an ephemeral one, which
+// the serving line names, with the public half of the key.
 // manifest <options> --restore <backup> [--world <directory>]: restores the backup into the
 // directory, which must be empty, and recovers it to check it, for --serve to serve. The backup is
 // only read.
-// The world, its backups and the token file default to Manifest::Host::DefaultWorld's and the others',
-// each directory made private when it is first written to. A failed start-up exits 1, a bad command
-// line 2.
+// The world, its backups, the token file and the key default to Manifest::Host::DefaultWorld's and
+// the others', each directory made private when it is first written to. A failed start-up exits 1, a
+// bad command line 2.
 #include <manifest/host/Journal.h>
 #include <manifest/host/Locations.h>
 #include <manifest/host/Start.h>
@@ -59,8 +61,9 @@ int Usage()
 	std::fputs(
 	    std::format(
 	        "usage: manifest {} --check-startup\n"
-	        "       manifest {} --serve [--world <directory>] [--tokens <file>] [--address <ipv4>] "
-	        "[--port <n>] [--flush-seconds <n>] [--snapshot-seconds <n>] [--backups <directory>]\n"
+	        "       manifest {} --serve [--world <directory>] [--tokens <file>] [--key <file>] "
+	        "[--address <ipv4>] [--port <n>] [--flush-seconds <n>] [--snapshot-seconds <n>] "
+	        "[--backups <directory>]\n"
 	        "       manifest {} --restore <backup> [--world <directory>]\n",
 	        options, options, options)
 	        .c_str(),
@@ -88,6 +91,7 @@ struct Serve
 {
 	Place world;
 	Place tokens;
+	Place key;
 	Place backups;
 	std::string address{"127.0.0.1"};
 	std::uint16_t port{0};
@@ -105,8 +109,8 @@ template <typename T> bool ReadNumber(std::string_view text, T &number)
 }
 
 
-// None unless the rest is --serve then the optional world, tokens, endpoint, intervals and backups,
-// each once, an interval at least a second.
+// None unless the rest is --serve then the optional world, tokens, key, endpoint, intervals and
+// backups, each once, an interval at least a second.
 std::optional<Serve> ParseServe(const std::vector<std::string_view> &rest)
 {
 	if (rest.empty() || rest[0] != "--serve" || rest.size() % 2 == 0)
@@ -114,6 +118,7 @@ std::optional<Serve> ParseServe(const std::vector<std::string_view> &rest)
 	Serve serve;
 	bool directory = false;
 	bool tokens = false;
+	bool key = false;
 	bool address = false;
 	bool port = false;
 	bool flush = false;
@@ -126,6 +131,8 @@ std::optional<Serve> ParseServe(const std::vector<std::string_view> &rest)
 			serve.world = value;
 		else if (rest[index] == "--tokens" && !std::exchange(tokens, true))
 			serve.tokens = value;
+		else if (rest[index] == "--key" && !std::exchange(key, true))
+			serve.key = value;
 		else if (rest[index] == "--backups" && !std::exchange(backups, true))
 			serve.backups = value;
 		else if (rest[index] == "--address" && !std::exchange(address, true))
@@ -158,6 +165,7 @@ void RunServer(Jettison::Host::Session &session, const Serve &serve)
 	Jettison::Sim::SimWorld &world = session.World();
 	const std::filesystem::path backups = ResolvePlace(serve.backups, Manifest::Host::DefaultBackups);
 	const std::filesystem::path tokens = ResolvePlace(serve.tokens, Manifest::Host::DefaultTokens);
+	const std::filesystem::path key = ResolvePlace(serve.key, Manifest::Host::DefaultServerKey);
 	// Before a client can reach the server: the world held, and brought to its journal's last step.
 	const Manifest::Host::WorldDirectory directory =
 	    Manifest::Host::OpenWorldDirectory(ResolvePlace(serve.world, Manifest::Host::DefaultWorld));
@@ -173,12 +181,13 @@ void RunServer(Jettison::Host::Session &session, const Serve &serve)
 	    {},
 	    {backups}};
 	journal.Recover(world);
-	Manifest::Remote::Server server{session, tokens, serve.address, serve.port};
+	Manifest::Remote::Server server{session, tokens, key, serve.address, serve.port};
 	std::signal(SIGINT, [](int) { g_stopping = 1; });
 	std::signal(SIGTERM, [](int) { g_stopping = 1; });
 	Jettison::Core::Log(
-	    Jettison::Core::Severity::Info, kManifest, "serving on {}:{} at step {}, world {} at batch {}",
-	    serve.address, server.Port(), world.Clock().Step(), journal.World(), journal.Head());
+	    Jettison::Core::Severity::Info, kManifest,
+	    "serving on {}:{} at step {}, world {} at batch {}, key {}", serve.address, server.Port(),
+	    world.Clock().Step(), journal.World(), journal.Head(), server.PublicKey());
 
 	Jettison::Time::FixedStepAccumulator steps{world.FixedStep()};
 	auto last = std::chrono::steady_clock::now();
@@ -274,8 +283,8 @@ int main(int argc, char **argv)
 	catch (const std::runtime_error &error)
 	{
 		// A failed start-up (Jettison::Host::StartupError), the default content or place that cannot
-		// be found, the world's directory, journal, token file or address the server could not take,
-		// a write of the journal's that failed, or a backup that does not restore.
+		// be found, the world's directory, journal, token file, key or address the server could not
+		// take, a write of the journal's that failed, or a backup that does not restore.
 		Jettison::Core::Log(Severity::Error, kManifest, "{}", error.what());
 		return 1;
 	}

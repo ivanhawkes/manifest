@@ -11,12 +11,14 @@ using Jettison::Serialise::BinaryArchive;
 constexpr Jettison::Serialise::FormatVersion kFormat{kVersion};
 
 
-Jettison::Net::ClientConfig Config(std::string address, std::uint16_t port, std::string_view token)
+Jettison::Net::ClientConfig Config(
+    std::string address, std::uint16_t port, std::string serverKey, std::string_view token)
 {
 	RegisterTypes();
 	Jettison::Net::ClientConfig config;
 	config.address = std::move(address);
 	config.port = port;
+	config.serverKey = std::move(serverKey);
 	config.protocol = {std::string{kProtocol}, kVersion};
 	config.limits.maxMessageBytes = kMaxMessageBytes;
 	const auto bytes = std::as_bytes(std::span{token});
@@ -26,8 +28,8 @@ Jettison::Net::ClientConfig Config(std::string address, std::uint16_t port, std:
 } // namespace
 
 
-Client::Client(std::string address, std::uint16_t port, std::string_view token)
-    : m_net{Config(std::move(address), port, token)}
+Client::Client(std::string address, std::uint16_t port, std::string serverKey, std::string_view token)
+    : m_net{Config(std::move(address), port, std::move(serverKey), token)}
 {
 }
 

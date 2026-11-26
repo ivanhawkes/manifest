@@ -146,8 +146,10 @@ While a run is under way, `step`, `host` and `connect` are refused.
 ### Connected to a server
 
 `connect <host:port> <token>` plays on a dedicated server ([the server](server.md)) as the
-token's actor. A failed connect keeps the connection there was; a new one replaces it. While
-connected:
+token's actor, pinning the server's key from the
+[server list](server.md#connections-are-sealed); an endpoint the list does not name is refused,
+and a server that does not hold the pinned key ends in `Disconnected from ...: key mismatch.`. A
+failed connect keeps the connection there was; a new one replaces it. While connected:
 
 - The players' commands drop the principal argument, since the actor is the token's.
   `provision` needs an administrator's token.

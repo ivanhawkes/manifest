@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # The distribution run as its operator runs it, every place left to its default
 # (docs/host.md, "The distribution"): from an empty directory, the content found beside the executables,
-# and the world, its backups, the token file and the TUI's transcript under HOME's XDG directories, each
-# made private. A start; the pack validated; an administrator's token issued; the server started on a
-# new world, the TUI (when there is one) connected to it with the token, and the server stopped, which
+# and the world, its backups, the token file, the server's key and the TUI's transcript under HOME's XDG
+# directories, each made private. A start; the pack validated; an administrator's token issued and the
+# server's key made; the server started on a new world, the TUI (when there is one) connected to it
+# with the token, pinning the key from the player's server list, and the server stopped, which
 # writes a snapshot and its backup; the backup restored into a new directory at the step the server
 # stopped at.
 # bundle-smoke.sh <prefix>, the directory holding bin/ and share/manifest/, a bundle's or a build
@@ -38,6 +39,9 @@ grep -qF "mount 1: manifest, from $pack" "$logs/validate" || fail 'it did not va
 
 token="$("$bin/manifest-token" issue administrator Operator)"
 [[ -s "$HOME/.config/manifest/tokens" ]] || fail 'the token file is not where it belongs'
+key="$("$bin/manifest-token" key)"
+[[ "$(stat -c %a "$HOME/.config/manifest/server-key")" == 600 ]] || fail 'the key file is not private'
+[[ -f "$prefix/share/manifest/servers.yaml" ]] || fail 'the server list is not beside the content'
 
 "$bin/manifest" --scenario trading --serve > "$logs/server" 2>&1 &
 server=$!
@@ -47,8 +51,11 @@ for _ in $(seq 100); do
 done
 port="$(sed -nE 's/.*serving on 127\.0\.0\.1:([0-9]+) at step 0, world .*/\1/p' "$logs/server")"
 [[ -n "$port" ]] || fail 'the server did not start on a new world'
+grep -q "key $key$" "$logs/server" || fail 'the serving line does not name the public key'
 
 if [[ -x "$bin/manifest_tui" ]]; then
+  printf 'version: 1\nservers:\n  - endpoint: 127.0.0.1:%s\n    key: %s\n' "$port" "$key" \
+    > "$HOME/.config/manifest/servers.yaml"
   # A terminal for it, typed into a line at a time, and quit with Ctrl-D.
   {
     sleep 3
