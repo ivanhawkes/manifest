@@ -327,9 +327,13 @@ the drive's `bodyExclusionRadius` above its surface; a station's, `exclusionRadi
   solved later, after undocking and clearing: `Space::CruiseTravel::Start` runs the same check
   from the ship's own place and step, and flies and saves the course it settles, so a load
   continues it without checking again. The minutes spent clearing move the bodies little, but the
-  course may still differ: where Start's settled driven metres exceed those paid for, the extra is
-  burnt from the fuel aboard, and where that is short of the extra plus the fuel margin the cruise
-  is refused (`Failure::CruiseRefused`, as today when a cruise cannot start).
+  course may still differ. `World::Journey` saves `paid`, the reaction mass and pellets admission
+  burnt, so a save while undocking or clearing keeps the baseline. Start works out the burn for its
+  settled course on the mass admission used (the mass aboard now plus `paid`) and settles the
+  difference both ways in whole units: more is burnt from the fuel aboard, and where that is short
+  of it plus the fuel margin the cruise is refused (`Failure::CruiseRefused`, as today when a
+  cruise cannot start); less is returned to the tanks and magazine. A job's fuel kilograms move with
+  it.
 - **Two clearances.** `Space::CruiseDrive` and `Space::Cruising` split `clearance` into
   `departureClearance` and `arrivalClearance`, which `travel` writes as it writes the flown
   profile. The hauler's stay its 1,000 km. `Policy::EstimateRoute` takes both.
@@ -367,10 +371,11 @@ its `fine`, shown in the ship's view.
 
 #### Saves, Jettison and the modules
 
-- **Saves.** The [state inventory](world.md#the-state-inventory) gains `Licences` and `Claims` on
-  a company and `Journey`'s `override` and `fine`, and the cruise's two clearances replace its
-  one. A load refuses a licence from no polity, a claim of no grant of the scenario and a fine
-  below 0. Formats change in place, with no migration, as for every format before player testing.
+- **Saves.** The [state inventory](world.md#the-state-inventory) gains `Licences` and `Claims` on a
+  company and `Journey`'s `override`, `fine` and `paid`, and the cruise's two clearances replace its
+  one, with its `departureBody`. A load refuses a licence from no polity, a claim of no grant of the
+  scenario and a fine or a paid fuel below 0. Formats change in place, with no migration, as for
+  every format before player testing.
 - **Jettison.** None needed for W22b: the layout's decks, piers, features and display vehicles,
   `Dock::Fits`, `Park` and `RequestBerth` are at the pin, and the cruise is Manifest's. W22b3
   proves a 280 m hull docks at a battleship pad; if it cannot, that is a Jettison item first. A
@@ -389,7 +394,7 @@ Each is one commit chunk, its suites and tidy passing, in this order.
 | Step | What | Done when |
 | --- | --- | --- |
 | W22b1 | Fuel by the unit: `exhaustKms` optional, a unit-counted fuel, `ItemPulseUnits`, `DrivePulse`; the magazine refuelled by the totes it needs; deuterium at every venue | The `travel` suite pins a pulse leg's burn in whole units on a test hull, its kilograms and its price by the unit; the `company` suite refuels the freighter's 100 kg magazine at a venue selling deuterium and a pulse magazine by the unit; a policy keeps hold room for the refuel, a partly used starter magazine is topped up, and after a partial sale the next journey is estimated at the pellets the hold can take; and a standing policy flies the medium freighter on a trade |
-| W22b2 | The radius about populated bodies and the two clearances | The `space` and `travel` suites cross a pulse ship out of a planet's ball and into another's on thrusters, in each body's frame; stepped through the whole cruise from several starting phases and thrust shares, the review's day-460 case at 20 basis points and day-751 case at 1,000 among them, the drive never thrusts inside a sphere and the ship never comes within a solid body's radius plus `kCourseClearance`, coasting included; a journey whose check cannot clear is refused `InsideRadius`, or `NoCourse` for a body; fuel is burnt only over the drive's metres; a hosted departure that needs a detour is followed through undocking, clearing and the cruise, its movement the checked course's and its fuel that course's driven metres; and a save mid-crossing and mid-coast, loaded, moves on as an unsaved run does, fast-forward included |
+| W22b2 | The radius about populated bodies and the two clearances | The `space` and `travel` suites cross a pulse ship out of a planet's ball and into another's on thrusters, in each body's frame; stepped through the whole cruise from several starting phases and thrust shares, the review's day-460 case at 20 basis points and day-751 case at 1,000 among them, the drive never thrusts inside a sphere and the ship never comes within a solid body's radius plus `kCourseClearance`, coasting included; a journey whose check cannot clear is refused `InsideRadius`, or `NoCourse` for a body; fuel is burnt only over the drive's metres; a hosted departure that needs a detour is followed through undocking, clearing and the cruise, its movement the checked course's and its fuel that course's driven metres, a shorter final course refunded and a longer one charged, and a save made while undocking or clearing continuing as an unsaved run does; and a save mid-crossing and mid-coast, loaded, moves on as an unsaved run does, fast-forward included |
 | W22b3 | The dry dock and the pulse carrier: `drydock.yaml`, the two yards, `HullPulseCarrier` | `content` passes the yards' markets and fits the carrier only to their battleship pads, and a fixture's standing policy flies one from Ore Yards to Brine Yards, its fuel and time shown, and passes over a better trade at a highport no pad of which fits it; `travel` refuses `NoPadFits` a journey there |
 | W22b4 | The licence: `licensed`, `Licences`, `Apply`, `SetLicence` | An unlicensed buy of pulse units is refused, by command and by refuelling, a licensed one fills, a revocation cancels the company's resting buys, a revoked carrier with a depleted magazine is estimated unfuelled and loads nothing, and a player's polity grants and revokes, through a save |
 | W22b5 | Hull grants: `grants`, `Claim`, `Claims` | A company claims the freighter, flies it and refuels its deuterium, and a second claim is refused, through a save |
