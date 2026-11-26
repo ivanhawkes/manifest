@@ -154,6 +154,14 @@ freighter's 100 kg magazine, eight totes of deuterium, gets 12.5 kg a refuel. In
 totes the magazine's room needs, less the whole totes aboard, then fills the magazine as it does
 today. The starter's 12.5 kg magazine still takes one tote.
 
+**Units and kilograms.** A magazine, a burn and a job's fuel stay in kilograms (`World::Fuel`,
+`Job::pelletKilograms`); a fuel item's traded unit is converted at its kilograms a unit, from its
+density, pack factor and units a cubic metre (1 for the kilogram-traded fuels, 100 for a pulse
+unit). Refuelling adds the units bought times that; a burn is rounded up to whole units and then
+converted; and the policy's estimate and a job's settlement price a kilogram at the unit's price
+over its kilograms, so a pulse unit burnt costs 10 credits, not 1,000. A save holds kilograms, as
+today.
+
 #### The pulse carrier
 
 `HullPulseCarrier` ("Pulse bulk carrier") is the first hull a player can fly on the pulse drive: a
@@ -173,18 +181,25 @@ design of the hauler (`HullHauler`), as the medium freighter is of the freighter
 
 It has its dock hull and power-law cruise drive in `data/docks/` as every hull has, and the
 `manifest` mode selects it and `DrivePulse`; `astralis`, the torch's mode, selects neither. Laden to
-about 25,000 t, it flies Ore to Brine at the policy's 10% thrust share and 0.1 g in about 34 days,
-burning about 24,000 units (2,400 t), 240,000 credits at 10 credits a unit.
+about 25,000 t and commanded at a 10% thrust share and 0.1 g, it flies Ore to Brine in about 34
+days, burning about 24,000 units (2,400 t), 240,000 credits at 10 credits a unit.
+
+**The standing policy** flies it, and the medium freighter, which it cannot today: it asks every
+journey for 1 g (`Policy.cpp`), which `travel` refuses of a drive whose sustained acceleration is
+less (the hauler's 0.3 g, the pulse drive's 0.5 g). It asks instead the least of 1 g and the drive's
+sustained acceleration, which flies the drive's whole profile at the thrust share it chooses. Its
+estimate's fuel margin applies only to a fuel the drive burns, so a hull with no reaction mass tanks
+is not taken as unfuelled.
 
 #### The licence
 
 A [polity](glossary.md#polity) licenses a company to buy pulse units at the venues it operates.
 
 - **Licensed goods.** An item gains `licensed`. Content refuses a market row of a licensed item at a
-  venue whose operator is not a polity. `Trade::Place` refuses `NotAuthorised` a company's buy of
-  one unless the company holds the venue operator's licence, and any company's sell of one: only
-  the venue sells them. Refuelling buys through the book, so it is checked alike; a standing
-  policy never trades a licensed item.
+  venue whose operator is not a polity. `Trade::Post`, which every buy passes (a command's through
+  `Place`, refuelling's through `BoughtNow`), refuses `NotAuthorised` a company's buy order of one
+  unless the company holds the venue operator's licence, and any company's sell order of one: only
+  the venue sells them. A standing policy never trades a licensed item.
 - **State.** `World::Licences` on a company: the polities licensing it, by ID, in order.
 - **From an AI polity.** `Manifest.Company.Apply{organisationId}`, sent by the company's
   principal, is granted at once for `licence.feeCredits` in `balance.yaml` (50,000, two cargo-hold
@@ -194,7 +209,9 @@ A [polity](glossary.md#polity) licenses a company to buy pulse units at the venu
 - **From a player's polity.** `Manifest.Company.SetLicence{organisationId, companyId, granted}`,
   sent by the polity's director, grants or revokes, free.
 - **Revoked** by an AI polity when the company's ship overrides within its sphere
-  ([below](#the-emergency-override)). Units carried without a licence are contraband in
+  ([below](#the-emergency-override)), or by a player's polity. Revoking cancels the company's
+  resting buys of licensed items at the polity's venues (`Trade::CancelAt`), their escrow returned,
+  so no ask fills them later. Units carried without a licence are contraband in
   name only: nothing inspects or seizes them yet.
 
 #### The dry dock
@@ -220,9 +237,10 @@ own and not W22b's; a dry dock with dreadnought pads waits, likewise, for a hull
   highport does. The governance scenario has none until a hull there needs one.
 - **Resupply** is an ordinary venue's, at the default fees by fee class: 12 life-support
   connections, and a market of reaction mass (100,000 kg a day), deuterium, pulse units (10,000 a
-  day, 30,000 in stock), oxygen and cartridges. So that a pulse carrier has cargo, each also trades
-  its region's bulk goods: copper, rice, lentils and drinking water at Ore Yards; glassware, soap
-  and wheat at Brine Yards.
+  day, 30,000 in stock), oxygen and cartridges. As every venue serving a region must, each trades
+  every item of every essential need (`tuning.needs`; [scenarios](content.md#scenarios)). So that a
+  pulse carrier has cargo, each also trades its region's bulk goods: copper, rice, lentils and
+  drinking water at Ore Yards; glassware, soap and wheat at Brine Yards.
 - **Repair.** Nothing damages a ship yet, so W22b builds none; the `dry-dock` feature marks the
   berths that will offer it. The 500 people are the platform's own, not ships' occupants on its
   life support.
@@ -256,10 +274,21 @@ in stock, two of the freighter's magazines. The torch's pellets stay at one stat
 A populated body is a planet or moon that a region of more than 0 people names. Its sphere reaches
 the drive's `bodyExclusionRadius` above its surface; a station's, `exclusionRadius` about it.
 
-- **Each end's clearance**, worked out by `travel` as a journey starts: the most, over the spheres
-  that hold that end's station, of the sphere's radius plus the station's distance from its centre,
-  so any course out leaves them all. At Ore Yards it is 100,000 + 6,371 + 80,000 = 186,371 km,
-  about two hours on thrusters at 15 m/s².
+- **Each end's ball**, about the body the end's station orbits: the most of the body's sphere and,
+  for each station orbiting it, the station's orbit plus its `exclusionRadius`. The bodies and
+  stations move, but the ball about the body holds every sphere about it, whatever their phase. A
+  station orbiting the star has its own sphere only.
+- **Each end's clearance**, worked out by `travel` as a journey starts: the ball's radius plus the
+  station's distance from the body's centre, so any course out leaves it. At Ore Yards the ball is
+  the yards' orbit plus 100,000 km, 180,000 km, more than Ore's 106,371 or the highports' 142,000,
+  and the clearance 260,000 km, about 2.3 hours on thrusters from rest to rest at 15 m/s².
+- **Crossed in the body's frame.** A crossing is flown relative to its end's body, as a ship
+  leaving orbit keeps the planet's motion: `Space::CruiseTravel` places a crossing ship from the
+  body where it is that step, and plans the course between from where the departure crossing ends,
+  at its time, to where the arrival crossing begins. Today's crossings are relative to the course's
+  carrier, the star between planets, which leaves a planet's ship behind as it orbits on (about
+  250,000 km in the 2.3 hours); the hauler's 1,000 km crossing moves to its body's frame too, and
+  the W22a fixtures' pins move with it.
 - **Two clearances.** `Space::CruiseDrive` and `Space::Cruising` split `clearance` into
   `departureClearance` and `arrivalClearance`, which `travel` writes as it writes the flown
   profile. The hauler's stay its 1,000 km. `Policy::EstimateRoute` takes both.
@@ -280,9 +309,12 @@ journey starts, for each sphere that either end lies in:
   [happiness](glossary.md#happiness), held at 0, and recovers as the economy's condition does.
 - **Revocation:** each AI-run polity whose station or region it is revokes the company's licence.
 
-A pulse carrier of 25,000 t overriding out of Ore Yards pays about 500,000 credits (the yards' and
-Ore's spheres), and Ore's five regions fall to 80 health and 60 happiness, about seven hours'
-recovery when supplied, to save some four hours on thrusters. The journey records `override` and
+An override clears both ends, so a pulse carrier of 25,000 t overriding from Ore Yards to Brine
+Yards is fined at each: 250,000 credits a sphere, for the yards', the planet's and those of the
+highports within 100,000 km of the yards, two or three of the planet's five by where they are in
+their orbits. That is four or five spheres an end, 2,000,000 to 2,500,000 credits in all, to save
+some 4.6 hours on thrusters. Ore's and Brine's regions fall to 80 health and 60 happiness, about
+seven hours' recovery when supplied. The journey records `override` and
 its `fine`, shown in the ship's view.
 
 #### Saves, Jettison and the modules
@@ -295,10 +327,11 @@ its `fine`, shown in the ship's view.
   `Dock::Fits`, `Park` and `RequestBerth` are at the pin, and the cruise is Manifest's. W22b3
   proves a 280 m hull docks at a battleship pad; if it cannot, that is a Jettison item first. A
   dry dock docking with a parked titan-class ship is a later Jettison provision (above).
-- **Modules.** `content` (the drive, item, grant and venue rules), `space` (the two clearances),
-  `travel` (fuel by the unit, the clearances, the override), `company` (refuelling, `Apply`,
-  `SetLicence`, `Claim`), `trade` (licensed goods), `policy` (estimates, licensed goods),
-  `query` and `console` (licences, grants, the override), and `world` (the state).
+- **Modules.** `content` (the drive, item, grant and venue rules), `space` (the two clearances,
+  crossed in the body's frame), `travel` (fuel by the unit, the clearances, the override), `company`
+  (refuelling, `Apply`, `SetLicence`, `Claim`), `trade` (licensed goods in `Post`, cancelled on
+  revocation), `policy` (the acceleration it asks, estimates by the unit, licensed goods), `query`
+  and `console` (licences, grants, the override), and `world` (the state).
 
 #### The steps
 
@@ -306,12 +339,12 @@ Each is one commit chunk, its suites and tidy passing, in this order.
 
 | Step | What | Done when |
 | --- | --- | --- |
-| W22b1 | Fuel by the unit: `exhaustKms` optional, a unit-counted fuel, `ItemPulseUnits`, `DrivePulse`; the magazine refuelled by the totes it needs; deuterium at every venue | The `travel` suite pins a pulse leg's burn in whole units on a test hull, and the `company` suite refuels the freighter's 100 kg magazine at a venue selling deuterium |
-| W22b2 | The radius about populated bodies and the two clearances | The `space` and `travel` suites cross a pulse ship out of a planet's sphere and into another's on thrusters, fuel burnt only over the drive's metres, and a save mid-crossing loads |
-| W22b3 | The dry dock and the pulse carrier: `drydock.yaml`, the two yards, `HullPulseCarrier` | `content` fits the carrier only to the yards' battleship pads, and a fixture flies one from Ore Yards to Brine Yards, its fuel and time shown |
-| W22b4 | The licence: `licensed`, `Licences`, `Apply`, `SetLicence` | An unlicensed buy of pulse units is refused, a licensed one fills, and a player's polity grants and revokes, through a save |
+| W22b1 | Fuel by the unit: `exhaustKms` optional, a unit-counted fuel, `ItemPulseUnits`, `DrivePulse`; the magazine refuelled by the totes it needs; deuterium at every venue | The `travel` suite pins a pulse leg's burn in whole units on a test hull, its kilograms and its price by the unit; the `company` suite refuels the freighter's 100 kg magazine at a venue selling deuterium and a pulse magazine by the unit; and a standing policy flies the medium freighter on a trade |
+| W22b2 | The radius about populated bodies and the two clearances | The `space` and `travel` suites cross a pulse ship out of a planet's ball and into another's on thrusters, in each body's frame, the ship at the crossing's end outside every sphere about the body where the bodies then are; fuel is burnt only over the drive's metres; and a save mid-crossing loads |
+| W22b3 | The dry dock and the pulse carrier: `drydock.yaml`, the two yards, `HullPulseCarrier` | `content` passes the yards' markets and fits the carrier only to their battleship pads, and a fixture's standing policy flies one from Ore Yards to Brine Yards, its fuel and time shown |
+| W22b4 | The licence: `licensed`, `Licences`, `Apply`, `SetLicence` | An unlicensed buy of pulse units is refused, by command and by refuelling, a licensed one fills, a revocation cancels the company's resting buys, and a player's polity grants and revokes, through a save |
 | W22b5 | Hull grants: `grants`, `Claim`, `Claims` | A company claims the freighter, flies it and refuels its deuterium, and a second claim is refused, through a save |
-| W22b6 | The override: `Travel` version 3, the fine, the harm and the revocation | The fixture's carrier overrides out of Ore Yards, its fine reaches the yards and Ore's treasuries, Ore's regions lose health and happiness, its licence is revoked, and the snapshot shows each |
+| W22b6 | The override: `Travel` version 3, the fine, the harm and the revocation | The fixture's carrier overrides from Ore Yards to Brine Yards, fined for every sphere at each end, each fine reaching its station's account or its planet's treasuries; Ore's and Brine's regions lose health and happiness; its licences are revoked; and the snapshot shows each |
 
 **Done when** W22b6 is: the [W22b row](delivery-order.md#w22b)'s criterion.
 
