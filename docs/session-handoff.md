@@ -17,7 +17,9 @@ open work, in order, is the [task queue](delivery-order.md).
 
 ## Next
 
-The queue's later workstreams wait until the user has played the first loop for a day or two (the
-user's, 2026-11-24). Its first row, the drives past the torch ([W22](delivery-order.md#w22)), waits
-for the first larger hull. Saves still run on the step's thread
-([L40](delivery-order.md#l40), [D-115](decision-ledger.md#d-115)).
+The user plays the first loop in the graphical client ([L15](delivery-order.md#l15)), not the
+terminal UI, which is mainly for administration (the user's, 2026-11-27). L15 stands on Jettison's
+[J30](../../jettison/docs/roadmap.md#j30), started 2026-11-27, and on [L04](delivery-order.md#l04),
+[L05](delivery-order.md#l05) and [L29](delivery-order.md#l29). The queue's first row, the drives past
+the torch ([W22](delivery-order.md#w22)), waits for the first larger hull. Saves still run on the
+step's thread ([L40](delivery-order.md#l40), [D-115](decision-ledger.md#d-115)).

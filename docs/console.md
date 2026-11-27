@@ -1,6 +1,9 @@
 # The console and the terminal UI
 
-The development console is how a developer plays Manifest without a graphical client. It types
+The development console is how a developer or an administrator drives Manifest without a graphical
+client. The terminal UI is mainly for administration, but it can also play the first loop: a
+player's commands all run from it ([L44](delivery-order.md#l44) adds those it lacks), while most
+players play in the [graphical client](roadmap.md#the-graphical-client). The console types
 commands at a [hosted world](glossary.md#hosted-world), the same world a server runs, and reads
 back what a player would see. It also drives the older [sandbox](glossary.md#sandbox) simulation,
 and it can connect to a dedicated server as a player. The terminal UI, `manifest_tui`, puts the
