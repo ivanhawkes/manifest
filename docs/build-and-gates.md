@@ -161,9 +161,12 @@ Run nothing else beside a build or clang-tidy.
 ### Lanes
 
 Work happens in three kept worktrees beside the engine's three. The primary checkout,
-`~/projects/manifest`, stays on `feature-base` for merges; each task is written, gated and reviewed in
+`~/projects/manifest`, stays on `feature-base` for merges; each task is written and checked in
 `manifest.lane-b` or `manifest.lane-c`, cut from `feature-base` and merged back by fast-forward, so
-one lane can wait on a gate or a cross-review while the next task starts in the other. The engine's
+one lane can wait on a cross-review while the next task starts in the other. Work runs in batches
+across both repositories' lanes: a piece is ready to merge when it builds and its suites pass, and
+the gate, tidy and the format check run once on `feature-base` after the batch is merged, before a
+push (Jettison's [batches](../../jettison/docs/build-and-gates.md#batches)). The engine's
 `scripts/lanes.sh` lists both repositories' lanes, and a task's plan warns of any clash with the
 other lanes' work before it begins. A lane builds
 against the engine's pin, or against the engine lane of its letter with
