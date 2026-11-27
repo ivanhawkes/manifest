@@ -82,6 +82,9 @@ struct CompanyView
 	// The polities licensing it to buy their venues' licensed goods, in the order granted (W22b).
 	std::vector<std::string> licences{};
 
+	// The scenario's grants it has claimed, in the order claimed (W22b).
+	std::vector<std::string> claims{};
+
 	bool operator==(const CompanyView &) const = default;
 };
 

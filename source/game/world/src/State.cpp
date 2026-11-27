@@ -555,6 +555,7 @@ void RegisterTypes()
 		    .Field<&Fuel::reactionMass>("reactionMass", kSaved)
 		    .Field<&Fuel::pellets>("pellets", kSaved);
 		RegisterType<Licences>("Manifest.World.Licences").Field<&Licences::polities>("polities", kSaved);
+		RegisterType<Claims>("Manifest.World.Claims").Field<&Claims::grants>("grants", kSaved);
 		RegisterType<Journey>("Manifest.World.Journey")
 		    .Field<&Journey::venueId>("venueId", kSaved)
 		    .Field<&Journey::leg>("leg", kSaved)

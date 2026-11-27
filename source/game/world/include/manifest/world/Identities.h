@@ -122,6 +122,13 @@ class Identities final : public Jettison::Sim::WorldService
 	// The pad classes every venue's Fees name, each once and in name order, and the highest arrears
 	// rate one may post (D-100), which Load holds each Fees to. Unset, a load checks each Fees' own
 	// rules alone.
+	// The scenario's grants, which Load holds each company's Claims to. Unset, a load checks only that
+	// none is claimed twice.
+	void SetGrants(std::vector<std::string> grants)
+	{
+		m_grants = std::move(grants);
+	}
+
 	void SetCharges(std::vector<std::string> padClasses, int maxArrearsRateBps)
 	{
 		m_padClasses = std::move(padClasses);
@@ -175,6 +182,7 @@ class Identities final : public Jettison::Sim::WorldService
 	double m_freshCartridge{0.0};
 	std::optional<std::map<std::string, ProjectNeeds, std::less<>>> m_projects;
 	std::optional<std::vector<std::string>> m_padClasses;
+	std::optional<std::vector<std::string>> m_grants;
 	int m_maxArrearsRateBps{0};
 	std::optional<std::map<std::string, double, std::less<>>> m_unitsPerTote;
 	std::int64_t m_perTaxCredit{0};

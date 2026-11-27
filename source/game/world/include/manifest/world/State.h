@@ -314,6 +314,15 @@ struct Licences
 	bool operator==(const Licences &) const = default;
 };
 
+// The scenario's grants a company has claimed (W22b; Company::Claim), by grant ID, in the order
+// claimed, each once; on its Company. None for a company that has claimed none.
+struct Claims
+{
+	std::vector<std::string> grants;
+
+	bool operator==(const Claims &) const = default;
+};
+
 // A ship's journey to a venue, from the Travel command that started it, on the ship's entity. One is
 // under way until its leg is Arrived or Failed, which a new journey replaces.
 struct Journey

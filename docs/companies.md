@@ -65,8 +65,22 @@ command changes nothing.
 | `Manifest.Company.SetRefuel` | `SetRefuel` | the ship's owner | [travel](travel.md) |
 | `Manifest.Company.SetFees` | `SetFees` | the venue operator's principal | [stations](stations.md) |
 | `Manifest.Company.Found` | `Found` | the company's principal | [governance](governance.md) |
+| `Manifest.Company.Claim` | `Claim` | the company's principal | [Hull grants](#hull-grants) |
 | `Manifest.Company.Apply` | `Apply` | the company's principal | [Licences](#licences) |
 | `Manifest.Company.SetLicence` | `SetLicence` | the polity's director | [Licences](#licences) |
+
+### Hull grants
+
+A scenario authors `grants`, each a `grantId`, `hullId`, `venueId` and `price`: the scenario
+chooses the hull and the venue, a player only whether and when to claim. `Claim{grantId}`, sent by a
+company's principal, makes a ship of the grant's hull at its venue as provisioning makes the starter
+(one helper serves both): life support, tanks and magazine full, parked on the smallest free pad it
+fits, connected if a connection is free. The price is paid to no one, as an upgrade's is. Each grant
+once a company, its claims the company's `World::Claims`, shown in its snapshot. Refused
+`UnknownTarget`, `AlreadyClaimed`, `NoPadFree` and `InsufficientFunds`. Content refuses a grant
+whose hull has no `mass`, is not one of the game mode's hulls, or fits no pad of its venue, display
+aside. The trading scenario grants the medium freighter at Ore's highport for 400,000 credits and the
+pulse carrier at Ore's yards for 6,000,000; a company then owns two ships or more.
 
 ### Licences
 
@@ -237,7 +251,7 @@ chosen is left out, not guessed.
 | `HullLoneTraderStarter` | 160 totes | The starter: one occupant, three 10 kg tanks, one cartridge, 4 t of tanks, a 12.5 kg magazine, 20 t; slots for cargo holds and fuel bunkers. |
 | `HullCompactSingle` | 32 totes | One occupant in a truck-cab cabin ([D-044](decision-ledger.md#d-044)); its life support, fittings and purpose are open. |
 | `HullTraderLongHaul` | 7,200 totes | The hull the full ship skill tree is balanced against; no scenario starts a player in it or sells its tiers. |
-| `HullFreighterMedium` | 4,000 totes | A 2,500 t freighter on the hauler fusion drive, four crew; no command buys one yet ([W22b](delivery-order.md#w22b)). |
+| `HullFreighterMedium` | 4,000 totes | A 2,500 t freighter on the hauler fusion drive, four crew; the trading scenario grants one ([Hull grants](#hull-grants)). |
 | `HullPulseCarrier` | 160,000 totes | A 12,000 t bulk carrier on the pulse drive, twelve crew, a 25,000-unit magazine and no reaction mass tanks; on a cruiser pad, so it docks only at a dry dock ([ships plan](ships-plan.md#the-pulse-carrier)). |
 | `HullShuttle` to `HullTitan` | 21 to 1.7 million totes | One military type for each [pad class](glossary.md#pad-class); a name, a description, a drive and a first-guess hold alone. |
 | `HullSloop`, `HullBrig`, `HullGalleon`, `HullFreighter`, `HullHauler`, `HullBarge`, `HullCarrier`, `HullSupercarrier`, `HullArk` | 270 to 20 million totes | Civilian and merchant types, each on the smallest military class it fits, as sparsely authored. |

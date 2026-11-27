@@ -524,6 +524,17 @@ struct TraderDefinition
 	std::string companyName;
 };
 
+// A hull the scenario grants a company once, at its venue, for its price in whole credits, paid to no
+// one (W22b; docs/ships-plan.md, "A scenario's hull grants"): the scenario chooses the hull and the
+// venue, a player only whether and when to claim it (Company::Claim).
+struct GrantDefinition
+{
+	std::string grantId;
+	std::string hullId;
+	std::string venueId;
+	std::int64_t price{0};
+};
+
 struct ScenarioDefinition
 {
 	std::string gameMode;
@@ -542,6 +553,7 @@ struct ScenarioDefinition
 	std::vector<RegionDefinition> regions;
 	std::vector<VenueDefinition> venues;
 	std::vector<TraderDefinition> traders;
+	std::vector<GrantDefinition> grants;
 };
 
 // A type the registry loads, in the order the content manifest lists the types.

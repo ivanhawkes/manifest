@@ -147,6 +147,20 @@ void Revoke(
     Jettison::Sim::SimWorld &world, World::Identities &identities, const Content::ContentSet &content,
     const std::string &companyId, const std::string &polityId);
 
+// The players' command by which their company claims one of the scenario's hull grants (W22b;
+// docs/ships-plan.md, "A scenario's hull grants"): a ship of the grant's hull at its venue, made as
+// provisioning makes the starter, its life support, tanks and magazine full, parked on the smallest
+// free pad it fits and connected to the venue's life support where a connection is free; the price
+// paid to no one, as an upgrade's is. The sender's company is the one its principal owns; each grant
+// once a company. Refused, writing nothing, for a sender with no company or no such grant
+// (UnknownTarget), a grant claimed already (AlreadyClaimed), no free pad the hull fits (NoPadFree) and
+// the price more than the company's account holds (InsufficientFunds).
+struct Claim
+{
+	std::string grantId;
+};
+
+inline constexpr std::string_view kClaim = "Manifest.Company.Claim";
 inline constexpr std::string_view kProvision = "Manifest.Company.Provision";
 inline constexpr std::string_view kApply = "Manifest.Company.Apply";
 inline constexpr std::string_view kSetLicence = "Manifest.Company.SetLicence";

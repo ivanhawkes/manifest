@@ -209,6 +209,31 @@ entt::entity Created(SimWorld &world, World::Identities &identities, Kind kind, 
 }
 
 
+// A new ship of the hull for the company at the venue, as provisioning makes the starter and a claim
+// a grant's: its life support, tanks and magazine full, parked on the pad, docked, and connected to the
+// venue's life support where it may be.
+void Commissioned(
+    SimWorld &world, Rules &rules, const std::string &shipId, const std::string &companyId,
+    const std::string &hullId, const std::string &venueId, entt::entity pad, bool connected)
+{
+	entt::registry &registry = world.Registry();
+	const entt::entity ship = Created(world, rules.identities, Kind::Ship, shipId);
+	registry.emplace<World::Ship>(ship, companyId, hullId, venueId);
+	registry.emplace<World::Cargo>(ship);
+	const Core::ShipClassSpec &hull = *rules.hulls.at(hullId);
+	registry.emplace<World::LifeSupport>(
+	    ship, hull.oxygenTanks.value_or(std::vector<double>{}),
+	    std::vector<double>(
+	        static_cast<std::size_t>(hull.scrubberCartridges.value_or(0)),
+	        rules.content.tuning.lifeSupport.cartridgeOccupantDays),
+	    connected ? venueId : std::string{});
+	const std::optional<World::Fuel> tanks = FuelTanks(rules, registry.get<World::Ship>(ship), nullptr);
+	JETTISON_VERIFY(tanks.has_value());
+	registry.emplace<World::Fuel>(ship, *tanks);
+	rules.fleet.Park(world, ship, pad, hullId, companyId);
+}
+
+
 Result Provisioned(SimWorld &world, Rules &rules, const Provision &provision)
 {
 	// Admission's bound, so the principal made can act.
@@ -237,20 +262,43 @@ Result Provisioned(SimWorld &world, Rules &rules, const Provision &provision)
 	registry.emplace<World::Account>(
 	    Created(world, identities, Kind::CompanyAccount, companyId),
 	    rules.content.tuning.company.startingCredits);
-	const entt::entity ship = Created(world, identities, Kind::Ship, shipId);
-	registry.emplace<World::Ship>(ship, companyId, rules.scenario.starterHull, venueId);
-	registry.emplace<World::Cargo>(ship);
-	const Core::ShipClassSpec &hull = *rules.hulls.at(rules.scenario.starterHull);
-	registry.emplace<World::LifeSupport>(
-	    ship, hull.oxygenTanks.value_or(std::vector<double>{}),
-	    std::vector<double>(
-	        static_cast<std::size_t>(hull.scrubberCartridges.value_or(0)),
-	        rules.content.tuning.lifeSupport.cartridgeOccupantDays),
-	    venueId);
-	const std::optional<World::Fuel> tanks = FuelTanks(rules, registry.get<World::Ship>(ship), nullptr);
-	JETTISON_VERIFY(tanks.has_value());
-	registry.emplace<World::Fuel>(ship, *tanks);
-	rules.fleet.Park(world, ship, pad, rules.scenario.starterHull, companyId);
+	Commissioned(world, rules, shipId, companyId, rules.scenario.starterHull, venueId, pad, true);
+	return Result::Succeeded;
+}
+
+
+Result Claimed(SimWorld &world, Rules &rules, const Actor &actor, const Claim &claim)
+{
+	entt::registry &registry = world.Registry();
+	entt::entity company = entt::null;
+	std::string companyId;
+	for (const auto [entity, owned, identity] :
+	     registry.view<const World::Company, const World::Identity>().each())
+		if (owned.principalId == actor.id)
+		{
+			company = entity;
+			companyId = identity.id;
+		}
+	const auto grant =
+	    std::ranges::find(rules.scenario.grants, claim.grantId, &Content::GrantDefinition::grantId);
+	if (company == entt::null || grant == rules.scenario.grants.end())
+		return Result::UnknownTarget;
+	if (const auto *pClaims = registry.try_get<const World::Claims>(company);
+	    pClaims && std::ranges::find(pClaims->grants, claim.grantId) != pClaims->grants.end())
+		return Result::AlreadyClaimed;
+	const entt::entity pad = rules.fleet.FreePad(registry, grant->venueId, grant->hullId);
+	if (pad == entt::null)
+		return Result::NoPadFree;
+	World::Account &paying =
+	    registry.get<World::Account>(rules.identities.Find(Kind::CompanyAccount, companyId));
+	if (paying.balance < grant->price)
+		return Result::InsufficientFunds;
+
+	paying.balance -= grant->price;
+	registry.get_or_emplace<World::Claims>(company).grants.push_back(claim.grantId);
+	Commissioned(
+	    world, rules, Issued(rules.identities, Kind::Ship), companyId, grant->hullId, grant->venueId, pad,
+	    Connected(registry, grant->venueId) < rules.connections.at(grant->venueId));
 	return Result::Succeeded;
 }
 
@@ -1128,6 +1176,7 @@ void RegisterTypes()
 		RegisterType<SetFees>("Manifest.Company.SetFees")
 		    .Field<&SetFees::venueId>("venueId", kSaved)
 		    .Field<&SetFees::fees>("fees", kSaved);
+		RegisterType<Claim>("Manifest.Company.Claim").Field<&Claim::grantId>("grantId", kSaved);
 		RegisterType<Apply>("Manifest.Company.Apply")
 		    .Field<&Apply::organisationId>("organisationId", kSaved);
 		RegisterType<SetLicence>("Manifest.Company.SetLicence")
@@ -1183,6 +1232,10 @@ void RegisterCommands(
 		padClasses.push_back(charged.padClass);
 	std::ranges::sort(padClasses);
 	identities.SetCharges(std::move(padClasses), content.tuning.charges.maxArrearsRateBps);
+	std::vector<std::string> grants;
+	for (const Content::GrantDefinition &grant : selected->second.grants)
+		grants.push_back(grant.grantId);
+	identities.SetGrants(std::move(grants));
 	identities.SetHolds([rules](const World::Ship &ship, const World::Systems *pSystems)
 	                    { return Hold(*rules, ship, pSystems); });
 	identities.SetFuelTanks([rules](const World::Ship &ship, const World::Systems *pSystems)
@@ -1219,6 +1272,10 @@ void RegisterCommands(
 	    std::string{kProvision}, kVersion, Command::ActorKind::Administrator,
 	    [rules](SimWorld &target, const Actor & /*actor*/, const Provision &provision)
 	    { return Provisioned(target, *rules, provision); });
+	requests.Register<Claim>(
+	    std::string{kClaim}, kVersion, Command::ActorKind::Principal,
+	    [rules](SimWorld &target, const Actor &actor, const Claim &claim)
+	    { return Claimed(target, *rules, actor, claim); });
 	requests.Register<Apply>(
 	    std::string{kApply}, kVersion, Command::ActorKind::Principal,
 	    [rules](SimWorld &target, const Actor &actor, const Apply &apply)

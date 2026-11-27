@@ -657,7 +657,7 @@ TEST_CASE("The trading fixture's loop, saved in flight with a bid resting and re
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves with
 	// what a save holds, the fixture's content or stream, or the engine's movement or save format.
-	CHECK(hosted.world.StateHash() == 0x26a658c52c88e821ULL);
+	CHECK(hosted.world.StateHash() == 0xbf279b82f4f7b401ULL);
 }
 
 
@@ -710,7 +710,7 @@ TEST_CASE("The trading fixture's loop, backed up in flight with a bid resting an
 	// Served on from the restore, through the journal, it reaches the loop's own world.
 	FromCruise(restored);
 	CheckLedger(restored);
-	CHECK(restored.world.StateHash() == 0x26a658c52c88e821ULL);
+	CHECK(restored.world.StateHash() == 0xbf279b82f4f7b401ULL);
 }
 
 
@@ -902,7 +902,7 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 	CHECK(replayed.world.StateHash() == hosted.world.StateHash());
 
 	// The same in every build the gate runs; it moves as the fixture's does.
-	CHECK(hosted.world.StateHash() == 0x786f7a042a5db00cULL);
+	CHECK(hosted.world.StateHash() == 0x660c7263a35d5269ULL);
 }
 
 
@@ -1707,6 +1707,69 @@ TEST_CASE("A player's polity grants a company its licence and revokes it, throug
 }
 
 
+TEST_CASE("A company claims the freighter, flies it and refuels its deuterium, and claims it once, through a save")
+{
+	Hosted hosted{MANIFEST_MOD_DIRECTORY};
+	hosted.Bootstrap();
+	entt::registry &registry = hosted.world.Registry();
+	const std::string companyId = hosted.Seen().companyId;
+	const auto fund = [&](Hosted &on, const std::string &id, std::int64_t credits)
+	{
+		on.world.Registry().patch<World::Account>(
+		    on.services.identities.Find(Kind::CompanyAccount, id),
+		    [&](World::Account &account) { account.balance = credits; });
+	};
+
+	// Short of the price, refused; funded, claimed at Ore's highport, the price paid to no one.
+	CHECK(hosted.Run(kAda, Company::kClaim, Company::kVersion, Company::Claim{"GrantFreighterMedium"}) ==
+	      Result::InsufficientFunds);
+	fund(hosted, companyId, 1'000'000);
+	CHECK(hosted.Run(kAda, Company::kClaim, Company::kVersion, Company::Claim{"GrantNowhere"}) ==
+	      Result::UnknownTarget);
+	REQUIRE(hosted.Run(kAda, Company::kClaim, Company::kVersion, Company::Claim{"GrantFreighterMedium"}) ==
+	        Result::Succeeded);
+	const CompanyView claimed = hosted.Seen();
+	CHECK(claimed.credits == 600'000);
+	CHECK(claimed.claims == std::vector<std::string>{"GrantFreighterMedium"});
+	REQUIRE(claimed.ships.size() == 2);
+	const ShipView &freighter = claimed.ships[1];
+	CHECK(freighter.hullId == "HullFreighterMedium");
+	CHECK(freighter.dockedAt == kOre);
+	CHECK(freighter.fuel == World::Fuel{400'000.0, 100.0});
+	CHECK(freighter.lifeSupport.connectedTo == kOre);
+	CHECK(hosted.Run(kAda, Company::kClaim, Company::kVersion, Company::Claim{"GrantFreighterMedium"}) ==
+	      Result::AlreadyClaimed);
+
+	// Saved and loaded, a second claim is still refused.
+	Hosted loaded{MANIFEST_MOD_DIRECTORY};
+	loaded.Load(hosted.world.Save());
+	CHECK(loaded.Seen().claims == std::vector<std::string>{"GrantFreighterMedium"});
+	CHECK(loaded.Run(kAda, Company::kClaim, Company::kVersion, Company::Claim{"GrantFreighterMedium"}) ==
+	      Result::AlreadyClaimed);
+
+	// Its magazine part spent, it flies to Vale at its 0.3 g, refuelled by the totes of deuterium the
+	// magazine needs, which Ore's highport sells.
+	const entt::entity ship = loaded.services.identities.Find(Kind::Ship, freighter.shipId);
+	loaded.world.Registry().patch<World::Fuel>(ship, [](World::Fuel &fuel) { fuel.pellets = 4.0; });
+	REQUIRE(
+	    loaded.Run(
+	        kAda, Travel::kTravel, Travel::kVersion,
+	        Travel::Travel{freighter.shipId, "VenueOreValeStation", World::kFullThrustBps, 300}) ==
+	    Result::Succeeded);
+	const ShipView flown = loaded.Seen().ships[1];
+	CHECK(flown.fuel.pellets > 90.0);
+	CHECK(std::ranges::find(flown.opened, "ItemDeuteriumPellets", &World::Opened::itemId) != flown.opened.end());
+
+	// A save claiming no grant of the scenario is refused.
+	registry.get<World::Claims>(hosted.services.identities.Find(Kind::Company, companyId)).grants = {
+	    "GrantNowhere"};
+	Hosted refused{MANIFEST_MOD_DIRECTORY};
+	CHECK_THROWS_WITH_AS(
+	    refused.world.Load(hosted.world.Save()), doctest::Contains("no grant of the scenario"),
+	    Jettison::Serialise::FormatError);
+}
+
+
 // Prices settling over a long run (D-102): with Ada and Nia trading on their standing policies,
 // eight days leave every broker's stock of every good, so its prices, about its target, the
 // seeded stock: never below half of it, a tote spared a small target's rounding, nor past twice it.
@@ -2294,7 +2357,7 @@ TEST_CASE("The governance fixture's project, tendered, supplied, worked and unlo
 
 	// The same in every build the gate runs; it moves with what a save holds, the governance
 	// scenario's content or the stream.
-	CHECK(hosted.world.StateHash() == 0x72978768483c76f3ULL);
+	CHECK(hosted.world.StateHash() == 0x838dcb6a3c72d0faULL);
 }
 
 
@@ -2650,5 +2713,5 @@ TEST_CASE(
 
 	// The same in every build the gate runs; it moves with what a save holds, the governance
 	// scenario's content or the stream.
-	CHECK(hosted.world.StateHash() == 0x5c2b6c0464d82312ULL);
+	CHECK(hosted.world.StateHash() == 0xd5eeb71372786258ULL);
 }

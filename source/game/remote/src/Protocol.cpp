@@ -59,7 +59,8 @@ void RegisterTypes()
 		    .Field<&Query::CompanyView::ships>("ships", kSaved)
 		    .Field<&Query::CompanyView::orders>("orders", kSaved)
 		    .Field<&Query::CompanyView::bids>("bids", kSaved)
-		    .Field<&Query::CompanyView::licences>("licences", kSaved);
+		    .Field<&Query::CompanyView::licences>("licences", kSaved)
+		    .Field<&Query::CompanyView::claims>("claims", kSaved);
 		RegisterType<Query::MarketView>("Manifest.Query.MarketView")
 		    .Field<&Query::MarketView::report>("report", kSaved)
 		    .Field<&Query::MarketView::live>("live", kSaved);

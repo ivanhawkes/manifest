@@ -1167,6 +1167,16 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	    "'VenueBrineHighport' market 'ItemSalt' stock is more than a warehouse holds, 40000000000 "
 	    "totes");
 
+	// A grant's hull flies and fits a pad of its venue (W22b).
+	CheckRefused(
+	    trading,
+	    "version: 1\ngrants: !merge=grantId\n  - {grantId: GrantPulseCarrier, venueId: VenueOreHighport}\n",
+	    "'GrantPulseCarrier' hull 'HullPulseCarrier' fits no pad of venue 'VenueOreHighport'");
+	CheckRefused(
+	    trading,
+	    "version: 1\ngrants: !merge=grantId\n  - {grantId: GrantPulseCarrier, hullId: HullHauler}\n",
+	    "'GrantPulseCarrier' hull 'HullHauler' names no hull with a mass to fly with");
+
 	// The starter venue must be an operational public station that docks the starter and has life
 	// support to spare (D-047, D-089); each lack alone refuses it. Its operator is one of the
 	// scenario's organisations, none a player's, so it is neutral.

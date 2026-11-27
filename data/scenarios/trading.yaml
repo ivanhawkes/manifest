@@ -46,6 +46,13 @@ items:
   - itemId: ItemDeuteriumPellets
   - itemId: ItemPulseUnits
 
+# The hulls a company may claim once (W22b; docs/ships-plan.md, "A scenario's hull grants"): the medium
+# freighter at Ore's highport and the pulse carrier at Ore's yards, each for a price paid to no one.
+grants:
+  - {grantId: GrantFreighterMedium, hullId: HullFreighterMedium, venueId: VenueOreHighport,
+     price: 400000}
+  - {grantId: GrantPulseCarrier, hullId: HullPulseCarrier, venueId: VenueOreYards, price: 6000000}
+
 systems:
   - {systemId: SystemAnvil, displayName: Anvil}
 

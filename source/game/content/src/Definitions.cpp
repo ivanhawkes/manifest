@@ -385,6 +385,11 @@ void RegisterTypes()
 		    .Field<&VenueDefinition::lifeSupportCapacity>("lifeSupportCapacity", kDefined)
 		    .Field<&VenueDefinition::regions>("regions", kDefined)
 		    .Field<&VenueDefinition::market>("market", kDefined);
+		RegisterType<GrantDefinition>("Manifest.Grant")
+		    .Field<&GrantDefinition::grantId>("grantId", kDefined)
+		    .Field<&GrantDefinition::hullId>("hullId", kDefined)
+		    .Field<&GrantDefinition::venueId>("venueId", kDefined)
+		    .Field<&GrantDefinition::price>("price", kDefined);
 		RegisterType<TraderDefinition>("Manifest.Trader")
 		    .Field<&TraderDefinition::principalId>("principalId", kDefined)
 		    .Field<&TraderDefinition::displayName>("displayName", kDefined)
@@ -400,7 +405,8 @@ void RegisterTypes()
 		    .Field<&ScenarioDefinition::organisations>("organisations", kDefined)
 		    .Field<&ScenarioDefinition::regions>("regions", kDefined)
 		    .Field<&ScenarioDefinition::venues>("venues", kDefined)
-		    .Field<&ScenarioDefinition::traders>("traders", kDefined);
+		    .Field<&ScenarioDefinition::traders>("traders", kDefined)
+		    .Field<&ScenarioDefinition::grants>("grants", kDefined);
 		return true;
 	}();
 	(void)registered;

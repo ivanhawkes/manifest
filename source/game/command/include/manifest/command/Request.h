@@ -72,8 +72,9 @@ enum class Result
 	NoCourse,
 	// Travel to a venue no pad of which the ship's hull fits (W22b).
 	NoPadFits,
-	// A licence applied for that the company holds already (W22b).
-	AlreadyLicensed
+	// A licence applied for that the company holds already, or a grant it has claimed (W22b).
+	AlreadyLicensed,
+	AlreadyClaimed
 };
 
 enum class ActorKind

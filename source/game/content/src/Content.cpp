@@ -1256,6 +1256,8 @@ void CheckScenarios(
 
 		(void)ListIds(checker, scenario.venues, &VenueDefinition::venueId, "venues");
 		(void)ListIds(checker, scenario.traders, &TraderDefinition::principalId, "traders");
+
+
 		for (const VenueDefinition &venue : scenario.venues)
 		{
 			const auto problem = [&](std::string_view text)
@@ -1365,6 +1367,35 @@ void CheckScenarios(
 		    std::format(
 		        "'{}' must be an operational public station that docks '{}' with life support to spare",
 		        scenario.starterVenue, scenario.starterHull));
+
+		// A grant's hull flies, is the mode's, and fits a pad of its venue, display ones aside (W22b).
+		(void)ListIds(checker, scenario.grants, &GrantDefinition::grantId, "grants");
+		for (const GrantDefinition &grant : scenario.grants)
+		{
+			const auto problem = [&](std::string_view text)
+			{ return std::format("'{}' {}", grant.grantId, text); };
+			const auto *pHull = registry.Find<Core::ShipClassSpec>(RegistryName(grant.hullId));
+			checker.Require(
+			    pHull != nullptr && pHull->hullId == grant.hullId && pHull->mass.has_value(), "grants",
+			    problem(std::format("hull '{}' names no hull with a mass to fly with", grant.hullId)));
+			checker.Require(
+			    Contains(pMode->hulls, grant.hullId, &HullSelection::hullId), "grants",
+			    problem(std::format("hull '{}' is not one of the mode's hulls", grant.hullId)));
+			const auto venue = std::ranges::find(scenario.venues, grant.venueId, &VenueDefinition::venueId);
+			const auto *pDock = registry.Find<Jettison::Dock::VehicleDefinition>(RegistryName(grant.hullId));
+			const auto *pLayout = venue == scenario.venues.end()
+			                          ? nullptr
+			                          : registry.Find<Jettison::Dock::PlatformLayout>(venue->layout);
+			checker.Require(
+			    pDock != nullptr && pLayout != nullptr &&
+			        std::ranges::any_of(
+			            pLayout->berths,
+			            [&](const Jettison::Dock::BerthLayout &pad)
+			            { return !pad.display && Jettison::Dock::Fits(classes, *pDock, pad.berthClass); }),
+			    "grants",
+			    problem(std::format("hull '{}' fits no pad of venue '{}'", grant.hullId, grant.venueId)));
+			checker.Require(grant.price >= 0, "grants", problem("price must not be below 0"));
+		}
 	}
 }
 
