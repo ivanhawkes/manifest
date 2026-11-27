@@ -19,7 +19,8 @@ open work, in order, is the [task queue](delivery-order.md).
 
 The user plays the first loop in the graphical client ([L15a](delivery-order.md#l15a)), not the
 terminal UI, which is mainly for administration (the user's, 2026-11-27). L15a stands on Jettison's
-J30, done 2026-11-27 (the shell starts a `Host::Game` through a session); the owners' screens were
+J30, done 2026-11-27 (the shell starts a `Host::Game` through a session) and in the pin since
+2026-11-27, at Jettison's `165fada`; the owners' screens were
 split off as [L15b](delivery-order.md#l15b) on 2026-11-27, which waits on [L04](delivery-order.md#l04),
 [L05](delivery-order.md#l05) and [L29](delivery-order.md#l29). L29's open choices are settled
 ([D-120](decision-ledger.md#d-120)). The queue's first row, the drives past

@@ -13,6 +13,7 @@
 #include <initializer_list>
 #include <map>
 #include <set>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -617,13 +618,17 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	CheckRefused(latin, "version: 1\nnames: []\n", "Manifest.NamePool 'latin': names holds none");
 	CheckRefused(latin, "version: 1\nnames: [Aaron, '']\n", "names holds an empty name");
 
-	// A file named ".yaml" is a record whose name is empty, and so is its ID if it gives none.
-	CheckRefused(
-	    "manifest/definitions/name-pools/.yaml", "version: 1\nnames: [Abba]\n",
-	    "Manifest.NamePool '': pool is required");
-	CheckRefused(
-	    "manifest/definitions/game-modes/.yaml", "version: 1\n",
-	    "Manifest.GameMode '': name is required");
+	// A file named ".yaml" has no record name: the engine refuses it before any record is read.
+	for (const std::string_view path :
+	     {"manifest/definitions/name-pools/.yaml", "manifest/definitions/game-modes/.yaml"})
+	{
+		CAPTURE(path);
+		const Overlay overlay;
+		overlay.Write(std::string{path}, "version: 1\n");
+		CHECK_THROWS_WITH_AS(
+		    (void)LoadWith(overlay), doctest::Contains("has no extension to patch beside"),
+		    std::invalid_argument);
+	}
 	CheckRefused(
 	    "manifest/definitions/name-pools/coptic.yaml", "version: 1\npool: Coptic\nnames: [Abba]\n",
 	    "Manifest.NamePool 'Coptic': pool must be the record's name");

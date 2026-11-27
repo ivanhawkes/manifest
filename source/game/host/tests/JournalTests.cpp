@@ -155,7 +155,8 @@ struct Disk
 			{
 				std::filesystem::create_directories(path.parent_path());
 				std::ofstream partial{
-				    path.string() + std::string{Jettison::Core::kPartialSuffix}, std::ios::binary};
+				    path.parent_path() / (std::string{Jettison::Core::kPartialPrefix} + ".half"),
+				    std::ios::binary};
 				partial.write(
 				    reinterpret_cast<const char *>(bytes.data()),
 				    static_cast<std::streamsize>(bytes.size() / 2));
