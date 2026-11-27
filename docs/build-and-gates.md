@@ -85,6 +85,7 @@ suites live in `source/test/`.
 | `types`, `universe`, `progression`, `sim`, `ecs`, `market` | The [sandbox](sandbox.md) modules. `sim` pins the generated and replayed state's hash | `source/game/<module>/tests` |
 | `space`, `content`, `world`, `command`, `travel`, `trade`, `company`, `procurement`, `policy`, `query`, `host`, `remote` | One per [hosted world](glossary.md#hosted-world) module | `source/game/<module>/tests` |
 | `effects` | Effects applied across modules | `source/test/EffectsIntegrationTests.cpp` |
+| `client_model` | The graphical client's model: the first loop played through it, Ore to Brine, with no window | `source/apps/client/tests` |
 | `fixture` and `fixture_cruise`, `_alone`, `_prices`, `_burn`, `_traffic`, `_governance`, `_development` | Whole scenarios played through the host, from the content directory and the pack. The seven long cases are suites of their own so they run side by side; `fixture` runs every other case | `source/test/FixtureTests.cpp` |
 | `data`, `packaging`, `mod` | The generated records, the packer's refusals, and the staged mod and pack mounted through the engine's VFS | `source/test/` |
 | `sdk_import` | Configures Manifest under a parent with stand-in SDK targets, complete and partial, without fetching or building | `source/test/sdk-import` |
