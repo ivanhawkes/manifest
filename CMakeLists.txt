@@ -144,6 +144,14 @@ add_custom_target(manifest_mod
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${CMAKE_CURRENT_SOURCE_DIR}/mods/manifest/strings" "${MANIFEST_MOD_DIRECTORY}/strings"
     VERBATIM)
+# The client's fallback face for Japanese, fetched by source/external, loaded from fonts/ by the shell.
+if(MANIFEST_BUILD_CLIENT)
+    add_custom_command(TARGET manifest_mod POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${MANIFEST_MOD_DIRECTORY}/fonts"
+        COMMAND ${CMAKE_COMMAND} -E copy
+            "${MANIFEST_NOTO_SANS_JP}" "${MANIFEST_MOD_DIRECTORY}/fonts/NotoSansJP-Regular.otf"
+        VERBATIM)
+endif()
 if(TARGET manifest_data)
     add_dependencies(manifest_mod manifest_data)
 else()

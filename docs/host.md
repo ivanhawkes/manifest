@@ -178,7 +178,7 @@ manifest-<version>-<game tree's first 12>-linux-x86_64/
   share/manifest/manifest.pack     the content, packed as the build packs it
   share/manifest/servers.yaml      the servers its clients pin the keys of (none unless a test build adds one)
   share/manifest/BUILD             the version, game and SDK revisions, scenarios' fingerprints
-  share/doc/manifest/              Manifest's LICENSE and every linked source tree's licence
+  share/doc/manifest/              Manifest's LICENSE, every linked source tree's licence and the packed font's
 ```
 
 `BUILD` says which build a bundle is, in the same values a world's identity file records:
@@ -273,7 +273,8 @@ A clean checkout is required so that the game tree in the bundle's name is a com
 come from ninja's own record of the build (`ninja -t inputs`, `-t deps`): every fetched source tree
 an object of the four was compiled from or included a header of. A tree with no licence file fails
 the staging. MikkTSpace's licence is the leading comment of `mikktspace.h`, so that file is copied.
-`libstdc++` and `libgcc` are under the GCC Runtime Library Exception, which sets no condition on a
+The pack's Noto Sans JP font is no source tree: its licence (SIL OFL 1.1), fetched with it, is copied as
+`notosansjp/LICENSE`. `libstdc++` and `libgcc` are under the GCC Runtime Library Exception, which sets no condition on a
 program compiled with them, so their licence is not shipped. The tarball is the same bytes from the
 same commit.
 

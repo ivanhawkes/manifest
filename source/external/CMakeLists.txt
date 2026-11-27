@@ -1,7 +1,7 @@
 # Jettison feature-base, pinned rather than following main or a moving branch.
 # Updating this commit and the development shell is one SDK change. Fetch the engine
 # first: EnTT, yaml-cpp and doctest must be its targets, never second copies here.
-set(MANIFEST_JETTISON_REVISION 38d85052dddac6e77af8e15ce33cf929676277c1)
+set(MANIFEST_JETTISON_REVISION 3c934b67ca32f8810200fe437b3e73b49ae6267c)
 set(JETTISON_SOURCE_DIR "" CACHE PATH "Use a local Jettison checkout instead of the pinned revision")
 if(NOT TARGET Jettison::Math)
     if(JETTISON_SOURCE_DIR)
@@ -18,6 +18,25 @@ if(NOT TARGET Jettison::Math)
         set(JETTISON_INSTALL OFF)
         FetchContent_MakeAvailable(jettison)
     endblock()
+endif()
+
+# The Japanese table's font (docs/client.md, "Languages"): Noto's own published subset of Noto Sans JP,
+# so nothing is subset here and no font is committed (SIL OFL 1.1, whose licence is fetched with it and
+# travels with the bundle). Chosen over subsetting the full font because the shell's fonts take a
+# ready file and no font tool is in the development shell. The pack stages it under fonts/.
+if(MANIFEST_BUILD_CLIENT)
+    set(MANIFEST_NOTO_CJK_TAG Sans2.004)
+    set(MANIFEST_NOTO_CJK_URL https://raw.githubusercontent.com/notofonts/noto-cjk/${MANIFEST_NOTO_CJK_TAG})
+    FetchContent_Declare(notosansjp-font
+        URL ${MANIFEST_NOTO_CJK_URL}/Sans/SubsetOTF/JP/NotoSansJP-Regular.otf
+        URL_HASH SHA256=dff723ba59d57d136764a04b9b2d03205544f7cd785a711442d6d2d085ac5073
+        DOWNLOAD_NO_EXTRACT TRUE)
+    FetchContent_Declare(notosansjp-licence
+        URL ${MANIFEST_NOTO_CJK_URL}/LICENSE
+        URL_HASH SHA256=6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2
+        DOWNLOAD_NO_EXTRACT TRUE)
+    FetchContent_MakeAvailable(notosansjp-font notosansjp-licence)
+    set(MANIFEST_NOTO_SANS_JP "${notosansjp-font_SOURCE_DIR}/NotoSansJP-Regular.otf" PARENT_SCOPE)
 endif()
 
 # Everything Manifest takes from the SDK, however it arrived: a parent's partial SDK fails here,

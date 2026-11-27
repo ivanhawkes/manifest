@@ -28,6 +28,10 @@ pin move copies all three from that commit. `scripts/check-env-parity.sh` compar
 the pin's committed files and never reads `JETTISON_SOURCE_DIR`; `scripts/test-env-parity.sh`
 tests the checker itself. CI runs both first.
 
+Beside the engine, `source/external/CMakeLists.txt` fetches one file for the client: Noto's
+`NotoSansJP-Regular.otf` and its `LICENSE`, each by URL and SHA-256, never committed
+([the Japanese font](client.md#languages)). A new font or other fetched file is pinned the same way and its licence read in the source repository's own file.
+
 The engine is added with `EXCLUDE_FROM_ALL`: configuring loads its whole SDK, but a build compiles
 only the engine modules Manifest links, plus the packer. `source/external/CMakeLists.txt` is also
 the import boundary: configuring fails, naming each one, unless every engine target and helper

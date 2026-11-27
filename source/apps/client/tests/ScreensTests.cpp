@@ -1,6 +1,7 @@
 #include "TestHelpers.h"
 
 #include <array>
+#include <cstddef>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -21,6 +22,11 @@ namespace
 // The frame the screens are laid out in, the shell's default window's.
 constexpr int kWidth = 1920;
 constexpr int kHeight = 1080;
+
+// The mount the game's content is, above the engine's assets (0): where the shell looks for the game's
+// fonts, its Japanese face one.
+constexpr std::size_t kFirstGameMount = 1;
+constexpr std::size_t kGameFonts = 1;
 } // namespace
 
 
@@ -37,6 +43,7 @@ TEST_CASE("Every screen of the client loads and shows its world with no problem"
 	for (const std::string_view font : {"fonts/Roboto-Medium.ttf", "fonts/Hack-Regular.ttf"})
 		ui.LoadFont(font);
 	ui.LoadFont("fonts/DroidSans.ttf", true);
+	CHECK(ui.LoadFallbackFonts("fonts", kFirstGameMount) == kGameFonts);
 	ui.SetLanguage("en");
 
 	ClientGame game{session->GetGame()};

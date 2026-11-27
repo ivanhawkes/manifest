@@ -75,6 +75,14 @@ for tree in "${trees[@]}"; do
   install -m 0644 "${files[@]}" "$licences/$tree/"
 done
 
+# The font in the pack is no source tree compiled in: Noto Sans JP's licence (SIL OFL 1.1), fetched with
+# it by source/external, travels with the pack.
+font_licence="$build/_deps/notosansjp-licence-src/LICENSE"
+if [[ -f "$font_licence" ]]; then
+  mkdir -p "$licences/notosansjp"
+  install -m 0644 "$font_licence" "$licences/notosansjp/"
+fi
+
 # The same bytes from the same commit: no owners, times or order of the machine's.
 tar --sort=name --owner=0 --group=0 --numeric-owner --mtime="@$(git log -1 --format=%ct)" \
   -C "$out" -cf - "$name" | gzip -n > "$out/$name.tar.gz"

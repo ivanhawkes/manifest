@@ -155,7 +155,7 @@ std::vector<std::string> Compare(const Table &base, std::string_view language, c
 
 
 // The four languages' check (L43): every key in every language the client ships, the engine's own
-// texts with Manifest's, naming the same placeholders as English.
+// texts (read from the engine's assets) with Manifest's, naming the same placeholders as English.
 TEST_CASE("Every language the client ships has every key, with the base's placeholders")
 {
 	Jettison::Vfs::FileSystem files;
@@ -170,6 +170,26 @@ TEST_CASE("Every language the client ships has every key, with the base's placeh
 	const Table &base = tables.find(StringTable::kBaseLanguage)->second;
 	CHECK(base.contains("manifest.start.provision"));
 	CHECK(base.contains("saves.title"));
+	for (const std::string_view language : kLanguages)
+		for (const std::string &problem : Compare(base, language, tables.find(language)->second))
+			FAIL_CHECK(problem);
+}
+
+
+// The engine ships its own text (the saves screen, the number format and its reasons) in all four
+// languages, so no game carries a copy: its assets alone, with no content mounted, are complete.
+TEST_CASE("The engine's own tables are in every language the client ships, with no content mounted")
+{
+	Jettison::Vfs::FileSystem files;
+	files.AddMount({"engine", MANIFEST_ENGINE_ASSETS});
+	const Tables tables = Read(files);
+	for (const std::string_view language : kLanguages)
+	{
+		CAPTURE(language);
+		REQUIRE(tables.contains(language));
+		CHECK(tables.find(language)->second.contains("saves.title"));
+	}
+	const Table &base = tables.find(StringTable::kBaseLanguage)->second;
 	for (const std::string_view language : kLanguages)
 		for (const std::string &problem : Compare(base, language, tables.find(language)->second))
 			FAIL_CHECK(problem);

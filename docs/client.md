@@ -59,14 +59,25 @@ manifest_client --offscreen --run "@5 press provision" --run "@30 screen market"
 ### Languages
 
 The words are in English, French, German and Japanese, every key in all four:
-`strings/<tag>/manifest.yaml` for the screens, read over English. Jettison ships its own text, the saves screen, the number format
-and its reasons, in English and German only, so Manifest ships French and Japanese tables of it too
-(`saves.yaml`, `numbers.yaml`, `reasons.yaml`). The player's `ui.language` setting, or the console's
+`strings/<tag>/manifest.yaml` for the screens, read over English. Jettison ships its own text, the
+saves screen, the number format and its reasons (`saves.yaml`, `numbers.yaml`, `reasons.yaml`), in the
+same four languages, so Manifest carries none of it. The player's `ui.language` setting, or the console's
 `language <tag>`, chooses one ([Jettison's language](../../jettison/docs/ui.md#the-language)).
 
 Where a language orders a sentence its own way, the key holds the screen's data expression rather
 than the document, so `manifest.company.docked` is `Docked at {{ship.dockedAt}}` in English and
 `{{ship.dockedAt}}に停泊中` in Japanese. Units and symbols (kg, g, %, /) stay in the documents.
+
+**The Japanese font.** The engine's faces have no Japanese, so the package ships Noto Sans JP,
+Noto's own published subset (`Sans/SubsetOTF/JP/NotoSansJP-Regular.otf` of
+[notofonts/noto-cjk](https://github.com/notofonts/noto-cjk), tag `Sans2.004`), as `fonts/NotoSansJP-Regular.otf`:
+the shell loads every font under a game's `fonts/` as a fallback face after Droid Sans, so a
+character no other face has is drawn from it ([Jettison's fonts](../../jettison/docs/ui.md#the-game-ui)).
+It is fetched at configure time by `source/external/CMakeLists.txt`, by URL and SHA-256, with its
+licence, and staged into the mod by `manifest_mod`: no font is committed. The licence is the SIL Open
+Font License 1.1, from the repository's own `LICENSE`; it travels with the pack, as
+`share/doc/manifest/notosansjp/LICENSE` in the [bundle](host.md#the-distribution). `client_screens`
+fails on a character no face has, which the UI logs and counts as a problem.
 
 The translations are first drafts. They stress the layout now, with German's long words, French's
 diacritics and Japanese kanji, and native translators replace them before release
@@ -117,7 +128,7 @@ render test needs the lamp: it checks that a frame's light clusters list a light
 | --- | --- |
 | `client_model` | The first loop through the model: provisioned at Ore, two totes of furs bought and loaded, flown to Brine with fast-forward, unloaded and sold for more; the journey's bounds, a refusal made before sending, and the save's section restored |
 | `client_screens` | Every screen loaded over a started world with nothing RmlUi or the string table counts as a problem, the start giving way to the company's, the navigation, and the flight panel shown under way; then every screen again in French, German and Japanese, every translation taken |
-| `client_strings` | Every key English has, the engine's and the client's, in French, German and Japanese and no key beyond them; each text naming English's placeholders and data expressions, and a key with plural forms holding those its language's rule needs (Japanese only `other`). A failure names the language and the key |
+| `client_strings` | Every key English has, the engine's (read from its assets alone, too) and the client's, in French, German and Japanese and no key beyond them; each text naming English's placeholders and data expressions, and a key with plural forms holding those its language's rule needs (Japanese only `other`). A failure names the language and the key |
 | `client_smoke` | The engine's render test sequence played by the client offscreen on lavapipe (`client-smoke.sh`): its save and load carry the client's section, and its game UI stage provisions the player and buys a tote at the market's first ask through the screens |
 
 ## Using it
@@ -136,8 +147,7 @@ It is built in every preset with the engine's presentation (`MANIFEST_BUILD_CLIE
   mount in the client.
 - It is not in the [bundle](glossary.md#bundle) yet, and plays only a local world, not a server's.
 - Goods, ships and venues are shown by their IDs, not their names.
-- Japanese draws as empty boxes: the engine's UI fonts have no CJK glyphs, and no check counts a
-  glyph missing ([Jettison's J15](../../jettison/docs/roadmap.md#j15)).
+- The Japanese font is one weight, Regular.
 - What is still to come is listed in [the graphical client](roadmap.md#the-graphical-client).
 
 ## Source
