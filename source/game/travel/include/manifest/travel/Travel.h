@@ -58,18 +58,30 @@ inline constexpr double kStandardGravity = 9.80665;
 // one with none, the power law, burns nothing. As it starts it pays the fee to the venue's account and
 // the arrears to the account of the venue it leaves (D-097), and takes the leg's fuel from the tanks,
 // adding it to the ship's World::Job while the job's lot is aboard, for the job to charge to the lot.
+//
+// With override (W22b's emergency override; docs/ships-plan.md, "The emergency override"), a drive
+// that has an override record lights within its radius: no crossing at either end, the ship flown out
+// of the station's reach alone; a drive with none is refused InvalidQuantity. For each sphere the drive
+// keeps from (ExclusionOf) that either end lies in as it starts, the company is fined the record's
+// credits for each tonne aboard, paid with the docking fee and refused InsufficientFunds with it: a
+// station's sphere's to its venue's account, a planet's evenly to the public accounts of the regions on
+// it, the remainder to the first by ID; each region on a planet struck loses the record's health and
+// happiness, held at 0; and each polity the AI runs whose station or region was struck revokes the
+// company's licence (Fleet::Revoke). The journey records the override and its fine.
 struct Travel
 {
 	std::string shipId;
 	std::string venueId;
 	std::uint32_t thrustBps{kFullThrustBps};
 	std::uint32_t accelerationMilliG{kMilliGPerG};
+	bool override{false};
 };
 
 inline constexpr std::string_view kTravel = "Manifest.Travel.Travel";
 
-// Version 2 added the burn; a version-1 command is refused as one of no registered version is.
-inline constexpr std::uint32_t kVersion = 2;
+// Version 2 added the burn, version 3 the override; an earlier command is refused as one of no
+// registered version is.
+inline constexpr std::uint32_t kVersion = 3;
 
 // The most a drive of the mode's profile can sustain, in thousandths of g, to the nearest.
 std::uint32_t MostMilliG(const Jettison::Transit::MotionProfile &mode);
@@ -192,6 +204,22 @@ class Fleet
 			m_refueller(world, ship, reserve);
 	}
 
+	// What an override's revocation does: the company's, which takes the polity's licence from the
+	// company (Company::Revoke). Unset, nothing.
+	using Revoker = std::function<void(
+	    Jettison::Sim::SimWorld &, const std::string &companyId, const std::string &polityId)>;
+
+	void SetRevoker(Revoker revoker)
+	{
+		m_revoker = std::move(revoker);
+	}
+
+	void Revoke(Jettison::Sim::SimWorld &world, const std::string &companyId, const std::string &polityId) const
+	{
+		if (m_revoker)
+			m_revoker(world, companyId, polityId);
+	}
+
 	const Content::ContentSet &Content() const
 	{
 		return m_content;
@@ -202,6 +230,7 @@ class Fleet
 	Jettison::Physics::PhysicsWorld &m_physics;
 	const Content::ContentSet &m_content;
 	Refueller m_refueller;
+	Revoker m_revoker;
 };
 
 // Attaches Jettison's physics, its spatial index, steering, the docks, the lanes and cruising, as the

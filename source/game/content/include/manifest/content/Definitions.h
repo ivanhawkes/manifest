@@ -62,6 +62,16 @@ struct DriveSelection
 	std::string driveId;
 };
 
+// A pulse drive's emergency override (W22b; docs/ships-plan.md, "The emergency override"): the fine, in
+// credits for each tonne aboard, for each sphere either end of a journey lies in, and the health and
+// happiness each region on a body whose sphere it is loses.
+struct OverrideDefinition
+{
+	double fineCreditsPerTonne{0.0};
+	double health{0.0};
+	double happiness{0.0};
+};
+
 // A cruise limited by acceleration (D-090): the profile of a hull that carries people, its occupants
 // given or left out, and of one whose occupants are 0.
 struct CruiseModel
@@ -190,6 +200,9 @@ struct DriveDefinition
 	double exclusionRadius{0.0};
 	std::optional<CruiseModel> cruise;
 	std::optional<double> bodyExclusionRadius;
+
+	// What lighting it within its radius costs; a drive with none may not.
+	std::optional<OverrideDefinition> override;
 };
 
 // Who an offer is bought for: a company's own ship, the one target so far.

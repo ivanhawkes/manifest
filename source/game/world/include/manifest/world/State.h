@@ -338,6 +338,11 @@ struct Journey
 	// settles against the course it then flies (Travel::Travel).
 	Fuel paid{};
 
+	// Whether its drive lit within its radius (W22b's override), and what its company was fined for
+	// it as it started, whole credits, at least 0.
+	bool override{false};
+	std::int64_t fine{0};
+
 	bool operator==(const Journey &) const = default;
 
 	bool Ended() const

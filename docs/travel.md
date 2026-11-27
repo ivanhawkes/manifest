@@ -75,6 +75,7 @@ Every engine command `travel` sends goes as the ship's company: a player
 | `venueId` | The venue to fly to | |
 | `thrustBps` | The thrust share, in basis points, 1 to 10,000 | 10,000 (100%) |
 | `accelerationMilliG` | The acceleration, in thousandths of g, at least 100 | 1,000 (1 g) |
+| `override` | Light the drive within its radius ([the emergency override](#the-emergency-override)) | off |
 
 The command checks everything before it writes, then pays, burns and starts the journey in the
 step it runs in. This diagram shows the order.
@@ -112,7 +113,7 @@ The refusals, each a `Command::Result`:
 As the journey starts, the company pays the destination's docking fee for the ship's
 [fee class](glossary.md#fee-class) to the destination venue's account. It pays any arrears to the
 venue the ship is leaving, and the arrears are cleared ([stations](stations.md) owns fees and
-arrears). A version-1 command is refused as a command of no registered version is.
+arrears). A command of an earlier version than 3 is refused as one of no registered version is.
 
 ### The burn
 
@@ -189,6 +190,26 @@ The `travel` suite pins the arithmetic on the starter: 27 t with two totes of co
 km at 1 g with no boost, burns about 3,549 kg of reaction mass and 1.76 kg of pellets. The starter's
 tanks hold 4 t, so with its hold full of copper (about 177 t) it cannot fly that leg at full
 thrust, and its policy picks a share its tanks reach.
+
+### The emergency override
+
+`Manifest.Travel.Travel` version 3 adds `override`. With it, a drive with an `override` record in
+`data/ships/drives.yaml` (the pulse drive's) lights within its radius: no crossing at either end,
+`Space::ClearOf` still flying the ship out of the station's 2 km reach first. A drive with none is
+refused `InvalidQuantity`. As the journey starts, for each sphere the drive keeps from
+(`Travel::ExclusionOf`) that either end lies in:
+
+- **The fine**: the record's `fineCreditsPerTonne` (10) for each tonne aboard, paid with the docking
+  fee and refused `InsufficientFunds` with it; a station's sphere's to its venue's account, a
+  planet's evenly to the public accounts of the regions on it, the remainder to the first by ID.
+- **The harm**: each region on a planet struck loses the record's `health` (20) and `happiness`
+  (40), held at 0, and recovers as the economy's condition does.
+- **Revocation**: each polity the AI runs whose station or region was struck revokes the company's
+  licence (`Fleet::SetRevoker`, which `company` sets to `Company::Revoke`).
+
+The journey records `override` and its `fine`, shown in the ship's view. The fixture's pulse carrier
+overriding from Ore's yards to Brine's lies in four spheres at each end, the yards', the planet's and
+two highports', and is fined 145,012 credits for each, 1,160,096 in all.
 
 ### Refuelling
 
@@ -328,8 +349,8 @@ A hull's fuel storage, in `data/ships/hulls.yaml`: `FuelCapacity` among its `bas
 
 ## Limits and open work
 
-- No hull flies the pulse drive until the pulse carrier ([W22b](delivery-order.md#w22b),
-  [ships plan](ships-plan.md)); the travel suite flies the starter on it through an overlay.
+- The console has no override or licence commands, and no venue sells a tow out of a radius
+  ([ships plan](ships-plan.md#the-exclusion-radius)).
 - A torch's leg is priced on the straight line to the destination's station as it starts, not on
   the cruise's course round bodies to where the station will be; a policy's estimate prices every
   drive so (a `shortcut:` in `Policy.cpp`).

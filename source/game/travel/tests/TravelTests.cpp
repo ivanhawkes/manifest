@@ -564,7 +564,7 @@ TEST_CASE("A burn is its mode's profile at the most it sustains, and that accele
 TEST_CASE("A burn's fuel is the plan's: the starter to Brine at 1 g, all its rates rising above it")
 {
 	const Manifest::Content::DriveDefinition tuning{"DriveTorch", 29979.0, "ItemFusionPellets", 16.5, 2,
-	                                                2000.0,       {}, {}};
+	                                                2000.0,       {}, {}, {}};
 	const auto g = static_cast<float>(kGravity);
 
 	// 27 t, two totes of copper aboard, 396 million km at 1 g: 3,941 km/s.
@@ -591,7 +591,7 @@ TEST_CASE("A burn's fuel is the plan's: the starter to Brine at 1 g, all its rat
 TEST_CASE("A pulse drive burns whole units of its pellets and no reaction mass")
 {
 	const Manifest::Content::DriveDefinition pulse{
-	    "DrivePulse", std::nullopt, "ItemPulseUnits", 333564.0, 0, 1.0e8, {}, 1.0e8};
+	    "DrivePulse", std::nullopt, "ItemPulseUnits", 333564.0, 0, 1.0e8, {}, 1.0e8, {}};
 	const auto g = static_cast<float>(kGravity);
 	constexpr double kUnitKilograms = 100.0;
 

@@ -45,10 +45,11 @@ settled.
 
 ## Ships and drives
 
-Today a skiff to a corvette flies a clean fusion [torch](glossary.md#torch). Larger hulls come next,
-on dirtier drives: the hauler's deuterium fusion and the nuclear pulse drive, each with its own fuel
-and an exclusion radius round stations it may not thrust within ([W22](delivery-order.md#w22),
-[D-108](decision-ledger.md#d-108)). Life support grows with them: oxygen in a bank of separately
+A skiff to a corvette flies a clean fusion [torch](glossary.md#torch), the medium freighter the
+hauler's deuterium fusion and the pulse carrier the nuclear pulse drive, each with its own fuel and an
+exclusion radius it may not thrust within, the pulse drive's about populated bodies too, licensed by
+a polity and overridden at a fine ([W22b](history/tasks.md#w22b), [D-108](decision-ledger.md#d-108),
+[D-117](decision-ledger.md#d-117)). Life support grows with them: oxygen in a bank of separately
 exchangeable tanks scaled to the hull ([L07](delivery-order.md#l07)), algae recycling that stretches
 a ship's reach ([L34](delivery-order.md#l34)), and a consequence for running out
 ([L45](delivery-order.md#l45)). Ships are bought and sold at a venue's shipyard, and the compact

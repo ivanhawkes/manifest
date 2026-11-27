@@ -10,14 +10,16 @@ build next. What is built is documented elsewhere: hulls, cargo and upgrades in
 
 ## Where things stand
 
-- **The hulls are authored** in `data/ships/hulls.yaml` ([companies](companies.md#hulls)): four
-  designs (the lone-trader starter, the compact single-seat, the long-haul trader and the medium
-  freighter), a type for each [pad class](glossary.md#pad-class) and nine civilian types. A game
-  mode selects the hulls and drives a player is shown ([content](content.md#game-modes)). Only the
-  starter is a scenario's starter hull, and no command buys, sells or transfers a ship.
-- **Two drive classes** in `data/ships/drives.yaml`: a clean fusion
+- **The hulls are authored** in `data/ships/hulls.yaml` ([companies](companies.md#hulls)): five
+  designs (the lone-trader starter, the compact single-seat, the long-haul trader, the medium
+  freighter and the pulse carrier), a type for each [pad class](glossary.md#pad-class) and nine
+  civilian types. A game mode selects the hulls and drives a player is shown
+  ([content](content.md#game-modes)). The starter is a scenario's starter hull, and a scenario's
+  grants give the freighter and the carrier ([companies](companies.md#hull-grants)); no command buys,
+  sells or transfers a ship.
+- **Three drive classes** in `data/ships/drives.yaml`: a clean fusion
   [torch](glossary.md#torch), burning [reaction mass](glossary.md#reaction-mass) and
-  [fusion pellets](glossary.md#fusion-pellets), and the hauler fusion drive of the larger hulls,
+  [fusion pellets](glossary.md#fusion-pellets), the hauler fusion drive, and the pulse drive,
   below.
 - **Only the starter has life support authored**: three 10 kg
   [oxygen tanks](glossary.md#oxygen-tank) and one scrubber [cartridge](glossary.md#cartridge).
@@ -34,8 +36,9 @@ and deuterium at every venue; and by W22b2 (2026-11-27): the radius about popula
 clearances, crossings flown in their bodies' frames and the cruise checked as flown; and by W22b3
 (2026-11-27): the dry dock, the two yards and the pulse carrier, which a policy keeps to venues with
 a pad it fits; by W22b4 (2026-11-27): the licence ([companies](companies.md#licences)); and by
-W22b5 (2026-11-27): the scenario's hull grants ([companies](companies.md#hull-grants)). What is left
-is [W22b](delivery-order.md#w22b).
+W22b5 (2026-11-27): the scenario's hull grants ([companies](companies.md#hull-grants)); and by W22b6
+(2026-11-27): the emergency override ([travel](travel.md#the-emergency-override)). W22b is done
+([history](history/tasks.md)).
 The torch suits a skiff to a corvette. Hauling thousands of tonnes on it would burn pellets no
 trade could pay for, so larger hulls fly dirtier drives that are cheaper a tonne moved but must
 keep away from stations ([D-108](decision-ledger.md#d-108)).
@@ -121,7 +124,7 @@ Built (W22a): `HullFreighterMedium`, a medium freighter of 2,500 t on the hauler
 deuterium magazine and four crew; every number a first guess. No company flies one in a scenario yet:
 `Company::Provision` gives every company the scenario's starter hull, and only the fixture's overlay
 makes the freighter that. Deuterium pellets (`ItemDeuteriumPellets`) are an item, sold at no venue
-yet. What is left is [W22b](delivery-order.md#w22b), designed below.
+yet. W22b put it in play ([history](history/tasks.md#w22b)), designed below.
 
 ### W22b: the design
 
@@ -407,7 +410,7 @@ Each is one commit chunk, its suites and tidy passing, in this order.
 | W22b5 | Hull grants: `grants`, `Claim`, `Claims` | A company claims the freighter, flies it and refuels its deuterium, and a second claim is refused, through a save |
 | W22b6 | The override: `Travel` version 3, the fine, the harm and the revocation | The fixture's carrier overrides from Ore Yards to Brine Yards, fined for every sphere at each end, each fine reaching its station's account or its planet's treasuries; Ore's and Brine's regions lose health and happiness; its licences are revoked; and the snapshot shows each |
 
-**Done when** W22b6 is: the [W22b row](delivery-order.md#w22b)'s criterion.
+**Done when** W22b6 is: the [W22b row](history/tasks.md#w22b)'s criterion, met 2026-11-27.
 
 ## Modular oxygen banks
 

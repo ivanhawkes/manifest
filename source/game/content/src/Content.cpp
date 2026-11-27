@@ -496,6 +496,16 @@ void CheckDrives(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 		checker.Require(
 		    !drive.bodyExclusionRadius || Positive(*drive.bodyExclusionRadius), "bodyExclusionRadius",
 		    "must be above 0, or left out for a drive that may thrust near a populated body");
+		// Health and happiness run from 0 to 100.
+		constexpr double kMostCondition = 100.0;
+		const auto within = [](double value, double most)
+		{ return std::isfinite(value) && value >= 0.0 && value <= most; };
+		checker.Require(
+		    !drive.override ||
+		        (within(drive.override->fineCreditsPerTonne, std::numeric_limits<double>::max()) &&
+		         within(drive.override->health, kMostCondition) &&
+		         within(drive.override->happiness, kMostCondition)),
+		    "override", "needs a fine not below 0 and harms in [0, 100]");
 		if (drive.cruise)
 			for (const auto &[crew, profile] :
 			     {std::pair{"manned", drive.cruise->manned},

@@ -12,6 +12,9 @@
 #                                station's reach (2,000 m).
 #   bodyExclusionRadius          Metres above a populated body's surface within which it may not
 #                                thrust; left out, none.
+#   override                     Its emergency override: the fine in credits a tonne aboard for each
+#                                sphere a journey's ends lie in, and the health and happiness each
+#                                region on such a body loses; left out, it may not override.
 #   cruise                       Its own manned and unmanned profiles in a mode with a cruise, in
 #                                m/s² and seconds, in place of the mode's; left out, the mode's.
 drive-base:
@@ -54,6 +57,7 @@ drive-base:
       curveExponent: 0
       exclusionRadius: 1.0e8
       bodyExclusionRadius: 1.0e8
+      override: {fineCreditsPerTonne: 10, health: 20, happiness: 40}
       cruise:
         manned: {boostAcceleration: 19.6133, boostSeconds: 7200, sustainedAcceleration: 4.903325}
         unmanned: {boostAcceleration: 19.6133, boostSeconds: 7200, sustainedAcceleration: 4.903325}

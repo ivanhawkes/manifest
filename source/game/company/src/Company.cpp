@@ -1265,6 +1265,9 @@ void RegisterCommands(
 	rules->cartridgesPerTote = perTote(lifeSupport.cartridgeItemId);
 	rules->reactionMassPerTote = perTote(content.tuning.fuel.reactionMassItemId);
 	rules->buy = Trade::MakeBuyer(world, identities, content);
+	fleet.SetRevoker(
+	    [&identities, &content](SimWorld &target, const std::string &companyId, const std::string &polityId)
+	    { Revoke(target, identities, content, companyId, polityId); });
 	fleet.SetRefueller([rules](SimWorld &target, entt::entity ship, std::int64_t reserve)
 	                   { Refuelled(target, *rules, ship, reserve); });
 

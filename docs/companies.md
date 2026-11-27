@@ -339,7 +339,7 @@ hull take it, list the skill's effect in the hull's `fitableEffects`.
 - No command refits or removes a system, and a system adds no mass.
 - Only tier 1 of two systems is on sale; the long-haul trader's tiers are not offered.
 - The compact ship's purpose, price and life support are open ([ships plan](ships-plan.md)).
-- Drives past the torch and the larger hulls that fly them: [W22](delivery-order.md#w22).
+- A shipyard that builds and sells hulls ([L48](delivery-order.md#l48)); a scenario grants them so far.
 - Modular oxygen banks on other hulls: [L07](delivery-order.md#l07).
 
 ## Decisions

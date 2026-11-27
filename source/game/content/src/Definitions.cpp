@@ -306,6 +306,10 @@ void RegisterTypes()
 		RegisterType<CruiseModel>("Manifest.CruiseModel")
 		    .Field<&CruiseModel::manned>("manned", kDefined)
 		    .Field<&CruiseModel::unmanned>("unmanned", kDefined);
+		RegisterType<OverrideDefinition>("Manifest.Override")
+		    .Field<&OverrideDefinition::fineCreditsPerTonne>("fineCreditsPerTonne", kDefined)
+		    .Field<&OverrideDefinition::health>("health", kDefined)
+		    .Field<&OverrideDefinition::happiness>("happiness", kDefined);
 		RegisterType<DriveDefinition>("Manifest.Drive", Attribute::Moddable)
 		    .Field<&DriveDefinition::driveId>("driveId", kDefined)
 		    .Field<&DriveDefinition::exhaustKms>("exhaustKms", kDefined)
@@ -315,7 +319,8 @@ void RegisterTypes()
 		    .Field<&DriveDefinition::curveExponent>("curveExponent", kDefined)
 		    .Field<&DriveDefinition::exclusionRadius>("exclusionRadius", kDefined)
 		    .Field<&DriveDefinition::cruise>("cruise", kDefined)
-		    .Field<&DriveDefinition::bodyExclusionRadius>("bodyExclusionRadius", kDefined);
+		    .Field<&DriveDefinition::bodyExclusionRadius>("bodyExclusionRadius", kDefined)
+		    .Field<&DriveDefinition::override>("override", kDefined);
 		RegisterType<GameModeDefinition>("Manifest.GameMode", Attribute::Moddable)
 		    .Field<&GameModeDefinition::ages>("ages", kDefined)
 		    .Field<&GameModeDefinition::items>("items", kDefined)

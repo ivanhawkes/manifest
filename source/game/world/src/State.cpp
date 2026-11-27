@@ -196,6 +196,8 @@ std::optional<std::string> Broken(const Journey &journey)
 	for (const double paid : {journey.paid.reactionMass, journey.paid.pellets})
 		if (!std::isfinite(paid) || paid < 0.0)
 			return "a journey's fuel paid is less than nothing, or no number";
+	if (journey.fine < 0)
+		return "a journey's fine is less than nothing";
 	return std::nullopt;
 }
 
@@ -561,7 +563,9 @@ void RegisterTypes()
 		    .Field<&Journey::leg>("leg", kSaved)
 		    .Field<&Journey::failure>("failure", kSaved)
 		    .Field<&Journey::started>("started", kSaved)
-		    .Field<&Journey::paid>("paid", kSaved);
+		    .Field<&Journey::paid>("paid", kSaved)
+		    .Field<&Journey::override>("override", kSaved)
+		    .Field<&Journey::fine>("fine", kSaved);
 		RegisterType<Holding>("Manifest.World.Holding")
 		    .Field<&Holding::venueId>("venueId", kSaved)
 		    .Field<&Holding::itemId>("itemId", kSaved)

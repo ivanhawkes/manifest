@@ -104,7 +104,7 @@ How: [companies, ships and cargo](companies.md), [stations](stations.md),
 | Companies, the starter ship, cargo and upgrades | In | |
 | [Berths](glossary.md#berth), [life support](glossary.md#life-support), station charges, [arrears](glossary.md#arrears) and [seizure](glossary.md#seizure) | In | A ship lives on what it can pay for |
 | Travel by [torch](glossary.md#torch), fuel and cruise profiles | In | |
-| Drives past the torch | Planned, [W22](delivery-order.md#w22) | With the first larger hull ([ships plan](ships-plan.md)) |
+| Drives past the torch | Built, [W22a and W22b](history/tasks.md#w22b) | The torch, the hauler fusion drive and the pulse drive ([travel](travel.md)) |
 | Modular oxygen banks for larger hulls | Planned, [L07](delivery-order.md#l07) | [Ships plan](ships-plan.md) |
 | Algae oxygen recycling | Planned, [L34](delivery-order.md#l34) | [Ships plan](ships-plan.md) |
 | Station appearance: cultures, corporate colours and logos | Planned, [L15](delivery-order.md#l15) | Detailed visual design waits for the graphical client |

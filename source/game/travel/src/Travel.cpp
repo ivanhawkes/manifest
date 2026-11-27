@@ -132,6 +132,111 @@ std::optional<Space::SettledCruise> Settle(
 }
 
 
+// What an override (W22b) costs as its journey starts: the spheres the drive keeps from that either
+// end lies in now (ExclusionOf), each an end's, and the fine for each, its class's credits a tonne for
+// everything aboard, rounded up.
+struct Overridden
+{
+	std::vector<const Space::Body *> spheres;
+	std::int64_t each{0};
+	std::int64_t fine{0};
+};
+
+
+std::optional<Overridden> OverrideOf(
+    const SimWorld &world, const Rules &rules, entt::entity ship, const Content::DriveDefinition &drive,
+    std::string_view venueId)
+{
+	const entt::registry &registry = world.Registry();
+	const Space::StarSystem *pSystem = SystemOf(registry, rules.content, ship);
+	const auto *pFrame = registry.try_get<Physics::LocalFrame>(ship);
+	if (!pSystem || !pFrame || !drive.override)
+		return std::nullopt;
+	const Exclusion exclusion = ExclusionOf(rules.content, *pSystem, drive, pFrame->body, venueId);
+	const std::vector<Space::SystemPosition> bodies =
+	    Space::EvaluateSystem(*pSystem, world.Clock().Now());
+	Overridden overridden;
+	for (const glm::dvec3 &end :
+	     {registry.get<const Sim::Transform>(ship).position,
+	      registry.get<const Sim::Transform>(rules.fleet.StationOf(registry, venueId)).position})
+		for (const Space::Keepout &keepout : exclusion.keepouts)
+		{
+			const int body = pSystem->Find(keepout.body);
+			if (body >= 0 && glm::distance(end, bodies[static_cast<std::size_t>(body)].metres) < keepout.radius)
+				overridden.spheres.push_back(&pSystem->bodies[static_cast<std::size_t>(body)]);
+		}
+	constexpr double kMostFine = 0x1p62;
+	const double each =
+	    std::ceil(drive.override->fineCreditsPerTonne * TonnesAboard(registry, rules.identities, rules.content, ship));
+	const double fine = each * static_cast<double>(overridden.spheres.size());
+	if (!(fine < kMostFine))
+		return std::nullopt;
+	overridden.each = static_cast<std::int64_t>(each);
+	overridden.fine = static_cast<std::int64_t>(fine);
+	return overridden;
+}
+
+
+// An override's fine paid and its harm done (W22b): a station's sphere's fine to its venue's account,
+// a planet's evenly to the public accounts of the regions on it, by region ID, the remainder to the
+// first; each region on a planet struck losing the override's health and happiness, held at 0; and
+// each polity the AI runs whose station or region was struck revoking the company's licence.
+void Inflict(
+    SimWorld &world, const Rules &rules, const std::string &companyId,
+    const Content::OverrideDefinition &harm, const Overridden &overridden)
+{
+	entt::registry &registry = world.Registry();
+	const Content::ScenarioDefinition &scenario = rules.content.scenarios.find(rules.content.scenario)->second;
+	std::vector<std::string> polities;
+	const auto revoked = [&](const std::string &organisationId)
+	{
+		const entt::entity organisation = rules.identities.Find(Kind::Organisation, organisationId);
+		const auto *pOrganisation =
+		    organisation == entt::null ? nullptr : registry.try_get<const World::Organisation>(organisation);
+		if (pOrganisation && pOrganisation->kind == Content::OrganisationKind::Polity &&
+		    pOrganisation->principalId.empty() && std::ranges::find(polities, organisationId) == polities.end())
+			polities.push_back(organisationId);
+	};
+	std::vector<std::string> harmed;
+	for (const Space::Body *pSphere : overridden.spheres)
+	{
+		if (pSphere->kind == Space::BodyKind::Station)
+		{
+			if (const entt::entity account = rules.identities.Find(Kind::VenueAccount, pSphere->name);
+			    account != entt::null)
+				registry.get<World::Account>(account).balance += overridden.each;
+			if (const auto venue =
+			        std::ranges::find(scenario.venues, pSphere->name, &Content::VenueDefinition::venueId);
+			    venue != scenario.venues.end())
+				revoked(venue->operatorId);
+			continue;
+		}
+		std::vector<std::pair<std::string, entt::entity>> regions;
+		for (const auto [entity, region, identity] :
+		     registry.view<const World::Region, const World::Identity>().each())
+			if (region.planetId == pSphere->name)
+				regions.emplace_back(identity.id, entity);
+		std::ranges::sort(regions);
+		const auto count = static_cast<std::int64_t>(regions.size());
+		for (std::size_t at = 0; at < regions.size(); ++at)
+			registry.get<World::Account>(rules.identities.Find(Kind::PublicAccount, regions[at].first))
+			    .balance += overridden.each / count + (at == 0 ? overridden.each % count : 0);
+		if (std::ranges::find(harmed, pSphere->name) != harmed.end())
+			continue;
+		harmed.push_back(pSphere->name);
+		for (const auto &[regionId, entity] : regions)
+		{
+			World::Region &region = registry.get<World::Region>(entity);
+			region.health = std::max(0.0, region.health - harm.health);
+			region.happiness = std::max(0.0, region.happiness - harm.happiness);
+			revoked(region.governorId);
+		}
+	}
+	for (const std::string &polity : polities)
+		rules.fleet.Revoke(world, companyId, polity);
+}
+
+
 Result Started(SimWorld &world, const Rules &rules, const Actor &actor, const Travel &travel)
 {
 	entt::registry &registry = world.Registry();
@@ -164,9 +269,22 @@ Result Started(SimWorld &world, const Rules &rules, const Actor &actor, const Tr
 	const std::int64_t fee = pFees->docking;
 	const auto *pArrears = registry.try_get<World::Arrears>(ship);
 	const std::int64_t owed = pArrears ? pArrears->owed : 0;
+	// An override's fine, paid with the fee, for a drive that may override and has a profile to fly.
+	std::optional<Overridden> overridden;
+	if (travel.override)
+	{
+		const Content::DriveDefinition *pClass = Content::DriveOf(rules.content, record.hullId);
+		const auto *pProfiled = registry.try_get<Space::CruiseDrive>(ship);
+		if (!pClass || !pClass->override || !pProfiled || !pProfiled->profile)
+			return Result::InvalidQuantity;
+		overridden = OverrideOf(world, rules, ship, *pClass, travel.venueId);
+		if (!overridden)
+			return Result::InvalidQuantity;
+	}
+	const std::int64_t fine = overridden ? overridden->fine : 0;
 	const entt::entity payer = Required(rules, Kind::CompanyAccount, record.companyId);
 	if (const std::int64_t balance = registry.get<World::Account>(payer).balance;
-	    balance < fee || balance - fee < owed)
+	    balance < fee || balance - fee < owed || balance - fee - owed < fine)
 		return Result::InsufficientFunds;
 
 	// The burn and the leg's fuel, for a drive with a profile (D-107, D-108), refuelled first at the
@@ -186,7 +304,7 @@ Result Started(SimWorld &world, const Rules &rules, const Actor &actor, const Tr
 		if (travel.accelerationMilliG > MostMilliG(mode))
 			return Result::InvalidQuantity;
 		if (!record.dockedAt.empty())
-			rules.fleet.Refuel(world, ship, fee + owed);
+			rules.fleet.Refuel(world, ship, fee + owed + fine);
 		flown = Profile(mode, travel.thrustBps, travel.accelerationMilliG);
 		const Content::DriveDefinition *pClass = Content::DriveOf(rules.content, record.hullId);
 		JETTISON_VERIFY(pClass != nullptr);
@@ -203,7 +321,19 @@ Result Started(SimWorld &world, const Rules &rules, const Actor &actor, const Tr
 		                 registry.get<Sim::Transform>(ship).position,
 		                 registry.get<Sim::Transform>(rules.fleet.StationOf(registry, travel.venueId))
 		                     .position));
-		if (pSystem && pFrame)
+		if (pSystem && pFrame && overridden)
+		{
+			// Lit within its radius: no crossing, only the station's reach flown out of first.
+			drive.departureClearance = 0.0;
+			drive.arrivalClearance = 0.0;
+			drive.keepouts.clear();
+			driven = Space::DriveMetres(
+			    drive, glm::distance(
+			               registry.get<Sim::Transform>(ship).position,
+			               registry.get<Sim::Transform>(rules.fleet.StationOf(registry, travel.venueId))
+			                   .position));
+		}
+		else if (pSystem && pFrame)
 		{
 			Exclusion exclusion =
 			    ExclusionOf(rules.content, *pSystem, *pClass, pFrame->body, travel.venueId);
@@ -234,8 +364,12 @@ Result Started(SimWorld &world, const Rules &rules, const Actor &actor, const Tr
 	constexpr std::int64_t kMaxCredits = std::numeric_limits<std::int64_t>::max();
 	if (fee > kMaxCredits - destination.balance || (pLeft && owed > kMaxCredits - pLeft->balance))
 		return Result::InvalidQuantity;
-	account.balance -= fee + owed;
+	account.balance -= fee + owed + fine;
 	destination.balance += fee;
+	if (overridden)
+		Inflict(
+		    world, rules, record.companyId, *Content::DriveOf(rules.content, record.hullId)->override,
+		    *overridden);
 	if (pLeft)
 	{
 		pLeft->balance += owed;
@@ -256,7 +390,8 @@ Result Started(SimWorld &world, const Rules &rules, const Actor &actor, const Tr
 		}
 	}
 	registry.emplace_or_replace<World::Journey>(
-	    ship, travel.venueId, Leg::Departing, Failure::None, world.Clock().Step(), burned);
+	    ship, travel.venueId, Leg::Departing, Failure::None, world.Clock().Step(), burned,
+	    travel.override, fine);
 	return Result::Succeeded;
 }
 
@@ -486,7 +621,8 @@ void RegisterTypes()
 		    .Field<&Travel::shipId>("shipId", Attribute::Saved)
 		    .Field<&Travel::venueId>("venueId", Attribute::Saved)
 		    .Field<&Travel::thrustBps>("thrustBps", Attribute::Saved)
-		    .Field<&Travel::accelerationMilliG>("accelerationMilliG", Attribute::Saved);
+		    .Field<&Travel::accelerationMilliG>("accelerationMilliG", Attribute::Saved)
+		    .Field<&Travel::override>("override", Attribute::Saved);
 		return true;
 	}();
 	(void)registered;

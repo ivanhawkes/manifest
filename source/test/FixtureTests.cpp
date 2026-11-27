@@ -657,7 +657,7 @@ TEST_CASE("The trading fixture's loop, saved in flight with a bid resting and re
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves with
 	// what a save holds, the fixture's content or stream, or the engine's movement or save format.
-	CHECK(hosted.world.StateHash() == 0xbf279b82f4f7b401ULL);
+	CHECK(hosted.world.StateHash() == 0x5ab729eca9d27dcfULL);
 }
 
 
@@ -710,7 +710,7 @@ TEST_CASE("The trading fixture's loop, backed up in flight with a bid resting an
 	// Served on from the restore, through the journal, it reaches the loop's own world.
 	FromCruise(restored);
 	CheckLedger(restored);
-	CHECK(restored.world.StateHash() == 0xbf279b82f4f7b401ULL);
+	CHECK(restored.world.StateHash() == 0x5ab729eca9d27dcfULL);
 }
 
 
@@ -902,7 +902,7 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 	CHECK(replayed.world.StateHash() == hosted.world.StateHash());
 
 	// The same in every build the gate runs; it moves as the fixture's does.
-	CHECK(hosted.world.StateHash() == 0x660c7263a35d5269ULL);
+	CHECK(hosted.world.StateHash() == 0x1ef5e257ca7f12e3ULL);
 }
 
 
@@ -1770,6 +1770,112 @@ TEST_CASE("A company claims the freighter, flies it and refuels its deuterium, a
 }
 
 
+TEST_CASE("The carrier overrides from Ore's yards to Brine's, fined for each sphere, harming and revoked")
+{
+	Hosted hosted{MANIFEST_MOD_DIRECTORY, {MANIFEST_FIXTURE_OVERLAY, MANIFEST_CARRIER_OVERLAY}};
+	const std::string shipId = Carrier(hosted);
+	entt::registry &registry = hosted.world.Registry();
+	const Manifest::Content::ContentSet &content = hosted.services.fleet.Content();
+	const World::Identities &identities = hosted.services.identities;
+	const entt::entity ship = identities.Find(Kind::Ship, shipId);
+	const std::string companyId = hosted.Seen().companyId;
+	registry.patch<World::Fuel>(ship, [](World::Fuel &fuel) { fuel.pellets = 2.5e6; });
+	registry.patch<World::Account>(
+	    identities.Find(Kind::CompanyAccount, companyId), [](World::Account &account) { account.balance = 50'000'000; });
+	REQUIRE(
+	    hosted.Run(kAda, Company::kApply, Company::kVersion, Company::Apply{"OrganisationAnvilPortAuthority"}) ==
+	    Result::Succeeded);
+
+	// What every venue and region holds before, and how the regions stand.
+	const auto balance = [&](Kind kind, const std::string &id)
+	{ return registry.get<const World::Account>(identities.Find(kind, id)).balance; };
+	std::map<std::string, std::int64_t> venues;
+	std::map<std::string, std::int64_t> treasuries;
+	std::map<std::string, World::Region> regions;
+	for (const Manifest::Content::VenueDefinition &venue : content.scenarios.at("trading").venues)
+		venues[venue.venueId] = balance(Kind::VenueAccount, venue.venueId);
+	for (const auto [entity, region, identity] : registry.view<const World::Region, const World::Identity>().each())
+	{
+		treasuries[identity.id] = balance(Kind::PublicAccount, identity.id);
+		regions[identity.id] = region;
+	}
+	const std::int64_t credits = hosted.Seen().credits;
+	const auto each = static_cast<std::int64_t>(
+	    std::ceil(10.0 * Travel::TonnesAboard(registry, identities, content, ship)));
+	const std::int64_t docking = Manifest::World::Find(
+	                                 registry.get<const World::Fees>(identities.Find(Kind::Market, "VenueBrineYards")),
+	                                 Manifest::Content::FeeClass(content, "HullPulseCarrier"))
+	                                 ->docking;
+
+	// A drive with no override record may not; the carrier's lights within its radius.
+	REQUIRE(
+	    hosted.Run(
+	        kAda, Travel::kTravel, Travel::kVersion,
+	        Travel::Travel{shipId, "VenueBrineYards", 20, 500, true}) == Result::Succeeded);
+	const ShipView seen = hosted.Ship1();
+	REQUIRE(seen.journey);
+	CHECK(seen.journey->override);
+	const std::int64_t fine = seen.journey->fine;
+	REQUIRE(fine > 0);
+	CHECK(fine % each == 0);
+	const std::int64_t spheres = fine / each;
+	CHECK(spheres >= 8);
+	CHECK(spheres <= 10);
+	CHECK(credits - hosted.Seen().credits == docking + fine);
+	CHECK(registry.get<const Manifest::Space::CruiseDrive>(ship).departureClearance == 0.0);
+
+	// Each fine reached its station's account or its planet's treasuries, the yards' and each planet's
+	// once, the docking fee aside.
+	std::int64_t reached = 0;
+	for (const auto &[venueId, was] : venues)
+	{
+		const std::int64_t gained = balance(Kind::VenueAccount, venueId) - was - (venueId == "VenueBrineYards" ? docking : 0);
+		CAPTURE(venueId);
+		CHECK(gained % each == 0);
+		if (venueId == "VenueOreYards" || venueId == "VenueBrineYards")
+			CHECK(gained == each);
+		reached += gained;
+	}
+	std::map<std::string, std::int64_t> planets;
+	for (const auto &[regionId, was] : treasuries)
+	{
+		const std::int64_t gained = balance(Kind::PublicAccount, regionId) - was;
+		planets[regions[regionId].planetId] += gained;
+		reached += gained;
+	}
+	CHECK(planets["PlanetOre"] == each);
+	CHECK(planets["PlanetBrine"] == each);
+	CHECK(reached == fine);
+
+	// Every region of both planets harmed, and the Port Authority's licence, the yards', revoked.
+	for (const auto &[regionId, was] : regions)
+	{
+		CAPTURE(regionId);
+		const World::Region &now = registry.get<const World::Region>(identities.Find(Kind::Region, regionId));
+		CHECK(now.health == doctest::Approx(std::max(0.0, was.health - 20.0)).epsilon(0.01));
+		CHECK(now.happiness == doctest::Approx(std::max(0.0, was.happiness - 40.0)).epsilon(0.01));
+	}
+	CHECK(hosted.Seen().licences.empty());
+	MESSAGE(
+	    "The carrier's override, Ore's yards to Brine's: " << spheres << " spheres at " << each
+	                                                        << " credits each, " << fine << " in all");
+}
+
+
+TEST_CASE("A drive with no override record may not override")
+{
+	Hosted hosted{MANIFEST_MOD_DIRECTORY};
+	hosted.Bootstrap();
+	hosted.world.Registry().get<Manifest::Space::CruiseDrive>(hosted.Ship()).profile =
+	    Jettison::Transit::MotionProfile{19.6133f, 7200.0f, 9.80665f};
+	CHECK(
+	    hosted.Run(
+	        kAda, Travel::kTravel, Travel::kVersion,
+	        Travel::Travel{"Ship1", std::string{kBrine}, World::kFullThrustBps, 1000, true}) ==
+	    Result::InvalidQuantity);
+}
+
+
 // Prices settling over a long run (D-102): with Ada and Nia trading on their standing policies,
 // eight days leave every broker's stock of every good, so its prices, about its target, the
 // seeded stock: never below half of it, a tote spared a small target's rounding, nor past twice it.
@@ -2357,7 +2463,7 @@ TEST_CASE("The governance fixture's project, tendered, supplied, worked and unlo
 
 	// The same in every build the gate runs; it moves with what a save holds, the governance
 	// scenario's content or the stream.
-	CHECK(hosted.world.StateHash() == 0x838dcb6a3c72d0faULL);
+	CHECK(hosted.world.StateHash() == 0x17d79da92700173bULL);
 }
 
 
@@ -2713,5 +2819,5 @@ TEST_CASE(
 
 	// The same in every build the gate runs; it moves with what a save holds, the governance
 	// scenario's content or the stream.
-	CHECK(hosted.world.StateHash() == 0xd5eeb71372786258ULL);
+	CHECK(hosted.world.StateHash() == 0x53953133fb3ddbb8ULL);
 }
