@@ -12,6 +12,8 @@
 #include <format>
 #include <fstream>
 #include <iterator>
+#include <memory>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -244,6 +246,36 @@ TEST_CASE("A hosted world saves what the state inventory names, in its order, an
 	CHECK(
 	    world.ServiceNames() ==
 	    std::vector<std::string>{"Manifest.Identities", "Manifest.Requests", "physics"});
+}
+
+
+// As Jettison's shell starts it for the graphical client: its own session, the engine's assets first,
+// and the package mounted as the shell mounts a game's content.
+TEST_CASE("Manifest's game starts over the engine's assets, and its services are reached through it")
+{
+	const Content content;
+	const std::filesystem::path engine = content.Directory().parent_path() / "engine";
+	std::filesystem::create_directory(engine);
+	std::unique_ptr<Jettison::Host::Game> game = Manifest::Host::MakeGame("trading");
+	Jettison::Host::Game &held = *game;
+	CHECK_THROWS_AS((void)Manifest::Host::HostedServices(held), std::logic_error);
+	Jettison::Host::Session session{
+	    {{{"engine", engine}, {"base", content.Directory()}}, 1.0 / 60.0, 0}, std::move(game)};
+	const Manifest::Host::Services services = Manifest::Host::HostedServices(held);
+	CHECK(&services.requests == &Manifest::Host::HostedServices(session).requests);
+	CHECK(services.requests.NextSequence({Manifest::Command::ActorKind::Principal, "Ada"}) == 1);
+
+	try
+	{
+		Jettison::Host::Session alone{
+		    {{{"engine", engine}}, 1.0 / 60.0, 0}, Manifest::Host::MakeGame("trading")};
+		FAIL("started with no content");
+	}
+	catch (const StartupError &error)
+	{
+		CHECK(error.FailedPhase() == Phase::Content);
+		MANIFEST_CHECK_CONTAINS(error.what(), "no content over the engine's assets");
+	}
 }
 
 

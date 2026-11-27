@@ -31,6 +31,7 @@ UI, which ships in no game module.
 | `source/apps/distribution/` | The glibc floor check the standalone bundle is built against ([the host](host.md#the-distribution)) |
 | `source/tools/console/` | `manifest_console`, the development console's commands on Jettison's console, and its suite ([the console](console.md)) |
 | `source/tools/tui/` | `manifest_tui`, the FTXUI terminal over that console |
+| `source/apps/client/` | `manifest_client`, the graphical client on Jettison's shell ([the graphical client](client.md)) |
 | `source/test/` | Cross-module suites (data, mod, effects integration, fixtures), the test overlays and the SDK import check |
 | `source/external/` | The pinned engine and FTXUI |
 | `data/` | The authored content: items, skill tree, ships, docks, offers, star systems, scenarios, game modes and `tuning/balance.yaml`. `data/build.sh` turns it into one definition file per record in `data/definitions/` ([content](content.md)) |
@@ -89,6 +90,7 @@ flowchart BT
     manifest["manifest, manifest-token"] --> remote
     validate["manifest-validate"] --> host
     console["manifest_console, manifest_tui"] --> remote
+    client["manifest_client"] --> host
 ```
 
 | Module | Owns | Document |
@@ -246,6 +248,7 @@ Star systems, lanes, gates and cruising are the `space` module's: [space](space.
 | [Saves, the journal and backups](persistence.md) | The world directory, journal, snapshots, backups, recovery |
 | [The dedicated server and remote clients](server.md) | The protocol, sessions, tokens, the server's loop |
 | [The console and the terminal UI](console.md) | The development console and `manifest_tui` |
+| [The graphical client](client.md) | `manifest_client` on Jettison's shell |
 | [The development sandbox](sandbox.md) | The earlier model and the skill tree |
 
 Plans for open work are listed in the [index](README.md); what is in and out of the game is

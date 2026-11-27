@@ -56,6 +56,11 @@ std::vector<Jettison::Vfs::Mount> Mounts(const Options &options);
 // it acquired.
 std::unique_ptr<Jettison::Host::Session> Start(const Options &options);
 
+// Manifest's game for a session of the scenario: what Start composes, and what the graphical client
+// hands Jettison's shell, which starts it through a session of its own over the engine's assets
+// ("engine", mounted first). Its package is then the first source that is not the engine's.
+std::unique_ptr<Jettison::Host::Game> MakeGame(std::string scenario);
+
 // The services of a started session's world, which it owns: what a frontend admits requests to and
 // observes through, with the world. Throws std::bad_cast for a session Start did not return.
 struct Services
@@ -67,6 +72,10 @@ struct Services
 };
 
 Services HostedServices(Jettison::Host::Session &session);
+
+// The same of a game MakeGame made, once a session has started it, wherever the session is held.
+// Throws std::bad_cast for another game, and std::logic_error for one no session has started.
+Services HostedServices(Jettison::Host::Game &game);
 
 // What Start loads, with no world: the same sources, package rules and content set, failing as
 // Start fails. The validator's check.

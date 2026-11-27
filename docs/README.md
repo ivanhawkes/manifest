@@ -34,6 +34,7 @@ What is built, how it works and how to use it, one document a feature.
 | [Saves, the journal and backups](persistence.md) | The world's directory, the journal, snapshots, recovery, backups and restore |
 | [The dedicated server and remote clients](server.md) | `--serve`, tokens, sessions, the protocol and its bounds |
 | [The console and the terminal UI](console.md) | The development console, its commands, and the TUI as a local or remote client |
+| [The graphical client](client.md) | `manifest_client`: Manifest composed into Jettison's rendered shell, its screens and how it plays the first loop |
 | [The development sandbox](sandbox.md) | The older model (skill tree, effects, sandbox marketplace) and what the hosted game still borrows from it |
 
 ## Plans

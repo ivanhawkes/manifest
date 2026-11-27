@@ -303,6 +303,7 @@ Ubuntu 24.04 runner with `host` ([D-116](decision-ledger.md#d-116),
 | `manifest-validate` | `<options> [--manifest <file>]`: load the content with no world; `--manifest` writes the content manifest's bytes |
 | `manifest-token` | `[--tokens <file>] issue\|revoke principal\|administrator <id>`: issue a bearer token, printed once, or revoke one |
 | `manifest_tui` | `[--content <directory-or-pack>]`: the console in a terminal, which also connects to a server as a remote client |
+| `manifest_client` | `[--scenario <name>]` and the engine shell's arguments: the [graphical client](client.md), not yet in the bundle |
 
 `<options>` are [the options](#the-options). The server's defaults are the loopback address
 `127.0.0.1`, port 0 (an ephemeral port, which its log line names), a journal flush every 30 s and a

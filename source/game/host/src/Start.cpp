@@ -3,10 +3,13 @@
 #include <algorithm>
 #include <cstdint>
 #include <exception>
+#include <filesystem>
 #include <format>
+#include <memory>
 #include <optional>
 #include <span>
 #include <stdexcept>
+#include <string>
 #include <string_view>
 #include <utility>
 
@@ -38,6 +41,9 @@ constexpr std::string_view kPackageName = "Manifest";
 // The package's mount, which an overlay's requires names.
 constexpr std::string_view kPackageMount = "manifest";
 
+// The engine's own assets, which Jettison's shell mounts below a game's content (App::MountAssets).
+constexpr std::string_view kEngineMount = "engine";
+
 // The step Jettison's docking and physics are tested at (D-086). shortcut: seed 0, nothing drawing on
 // the world's generator yet; a scenario gives its seed once something does.
 constexpr double kFixedStep = 1.0 / 60.0;
@@ -66,15 +72,25 @@ Content::ContentSet LoadContent(
     const Jettison::Vfs::FileSystem &files, std::span<const Package> packages,
     Jettison::Sim::DefinitionRegistry &definitions, std::string_view scenario)
 {
+	const auto package = std::ranges::find_if(
+	    packages, [](const Package &each) { return each.mount != kEngineMount; });
+	const auto mount = std::ranges::find(
+	    files.Mounts(), package != packages.end() ? package->mount : std::string{},
+	    &Jettison::Vfs::Mount::name);
+
 	// The session reports a hook's failure without a source; this one has the source to name.
 	try
 	{
-		CheckPackage(packages.front());
+		if (package == packages.end())
+			throw std::runtime_error{"there is no content over the engine's assets"};
+		CheckPackage(*package);
 		return Content::LoadScenario(files, definitions, scenario);
 	}
 	catch (const std::exception &problem)
 	{
-		throw StartupError{Phase::Content, files.Mounts().front().source, problem.what()};
+		throw StartupError{
+		    Phase::Content, mount != files.Mounts().end() ? mount->source : std::filesystem::path{},
+		    problem.what()};
 	}
 }
 
@@ -130,6 +146,8 @@ class Game final : public Jettison::Host::Game
 
 	Services WorldServices() const
 	{
+		if (m_pRequests == nullptr)
+			throw std::logic_error{"Manifest's game has not been started by a session"};
 		return {*m_pIdentities, *m_pRequests, *m_pFleet, m_content.identity};
 	}
 
@@ -206,14 +224,25 @@ std::vector<Jettison::Vfs::Mount> Mounts(const Options &options)
 std::unique_ptr<Jettison::Host::Session> Start(const Options &options)
 {
 	return std::make_unique<Jettison::Host::Session>(
-	    Jettison::Host::Options{Mounts(options), kFixedStep, kSeed},
-	    std::make_unique<Game>(options.scenario));
+	    Jettison::Host::Options{Mounts(options), kFixedStep, kSeed}, MakeGame(options.scenario));
+}
+
+
+std::unique_ptr<Jettison::Host::Game> MakeGame(std::string scenario)
+{
+	return std::make_unique<Game>(std::move(scenario));
 }
 
 
 Services HostedServices(Jettison::Host::Session &session)
 {
-	return dynamic_cast<const Game &>(session.GetGame()).WorldServices();
+	return HostedServices(session.GetGame());
+}
+
+
+Services HostedServices(Jettison::Host::Game &game)
+{
+	return dynamic_cast<const Game &>(game).WorldServices();
 }
 
 
