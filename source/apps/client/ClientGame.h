@@ -37,6 +37,18 @@ class ClientGame final : public Jettison::App::Game
 	// again from the snapshot.
 	void UpdateUi(Jettison::App::Shell &shell) override;
 
+	// The client's section in the shell's saves (kSaveSection) and its player as a detail; a save with
+	// no section, not the client's, is refused, and what a load read is applied once it has loaded.
+	void WriteSave(Jettison::Sim::SaveGame &save, Jettison::App::Shell &shell) override;
+
+	void ReadSave(const Jettison::Sim::SaveGame &save, Jettison::App::Shell &shell) override;
+
+	void Loaded(Jettison::App::Shell &shell) override;
+
+	// The render test's game UI stage: the start screen provisions the player, then the market
+	// screen buys a tote at the ask, and the screen shows it held.
+	void DriveSmoke(Jettison::App::SmokeActions &actions, Jettison::App::Shell &shell) override;
+
 	// Escape: a screen other than the company's goes back to it.
 	bool Back(Jettison::App::Shell &shell) override;
 
@@ -86,5 +98,12 @@ class ClientGame final : public Jettison::App::Game
 	Screen m_screen;
 	std::string m_name;
 	std::string m_companyName;
+
+	// What a save being loaded holds of the client, until the world has loaded.
+	std::optional<ClientState> m_loading;
+
+	// The render test's presses still to be answered, and the frames since the last was.
+	int m_smokePresses{0};
+	int m_smokeFrames{0};
 };
 } // namespace Manifest::Client

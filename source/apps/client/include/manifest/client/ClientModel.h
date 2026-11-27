@@ -1,8 +1,10 @@
 #pragma once
 
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -123,7 +125,28 @@ struct Screen
 	bool operator==(const Screen &) const = default;
 };
 
-// Registers the screen's types with Reflect, for the client's data model; safe to call again.
+// The client's own part of a save, which the world does not hold: the player, and the next journey's
+// settings. The shell's saves carry it as the section kSaveSection, a binary archive at kSaveVersion.
+struct ClientState
+{
+	std::string principal;
+	std::int64_t thrustPercent{0};
+	std::int64_t accelerationTenths{0};
+	bool fastForward{true};
+
+	bool operator==(const ClientState &) const = default;
+};
+
+inline constexpr std::string_view kSaveSection = "Manifest.Client";
+inline constexpr std::uint32_t kSaveVersion = 1;
+
+std::vector<std::byte> WriteState(const ClientState &state);
+
+// Throws Jettison::Serialise::FormatError for bytes that are not a ClientState of this version.
+ClientState ReadState(std::span<const std::byte> bytes);
+
+// Registers the screen's types and ClientState with Reflect, for the client's data model and its
+// saves; safe to call again.
 void RegisterTypes();
 
 // The player's side of a local world (docs/client.md, "The model"), with nothing of the UI in it: what
@@ -143,6 +166,11 @@ class ClientModel
 	}
 
 	void SetPrincipal(std::string principal);
+
+	// What a save keeps of the model, and the model as a save left it.
+	ClientState State() const;
+
+	void Restore(const ClientState &state);
 
 	// The snapshot and the screen made from it again, and the last request's answer taken if it has
 	// come; true when the screen changed.

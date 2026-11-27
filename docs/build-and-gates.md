@@ -86,6 +86,7 @@ suites live in `source/test/`.
 | `space`, `content`, `world`, `command`, `travel`, `trade`, `company`, `procurement`, `policy`, `query`, `host`, `remote` | One per [hosted world](glossary.md#hosted-world) module | `source/game/<module>/tests` |
 | `effects` | Effects applied across modules | `source/test/EffectsIntegrationTests.cpp` |
 | `client_model` | The graphical client's model: the first loop played through it, Ore to Brine, with no window | `source/apps/client/tests` |
+| `client_screens`, `client_smoke` | The client's screens loaded with no problem, and the engine's render test played by the client offscreen on lavapipe. Not in `clang-notui` | `source/apps/client` |
 | `fixture` and `fixture_cruise`, `_alone`, `_prices`, `_burn`, `_traffic`, `_governance`, `_development` | Whole scenarios played through the host, from the content directory and the pack. The seven long cases are suites of their own so they run side by side; `fixture` runs every other case | `source/test/FixtureTests.cpp` |
 | `data`, `packaging`, `mod` | The generated records, the packer's refusals, and the staged mod and pack mounted through the engine's VFS | `source/test/` |
 | `sdk_import` | Configures Manifest under a parent with stand-in SDK targets, complete and partial, without fetching or building | `source/test/sdk-import` |

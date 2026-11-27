@@ -344,7 +344,8 @@ ConsoleLine Execute(ManifestConsole &session, std::string_view command)
   adds the fees), so `observe` shows neither: `fees` needs the venue's pad classes from its content,
   and `refuel` is read back only from a journey's cost.
 - A server's time cannot be paused or scaled from a client: no message carries it.
-- The graphical client is open work ([L15](delivery-order.md#l15)).
+- The graphical client plays the first loop on a local world ([the graphical client](client.md)); its
+  server play is open work ([roadmap](roadmap.md#the-graphical-client)).
 
 ## Decisions
 

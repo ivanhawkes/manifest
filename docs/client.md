@@ -1,7 +1,7 @@
 # The graphical client
 
 The graphical client, `manifest_client`, is how most players will play
-([L15a](delivery-order.md#l15a)). It is Jettison's rendered [shell](../../jettison/docs/glossary.md#shell)
+(L15a, [history](history/tasks.md)). It is Jettison's rendered [shell](../../jettison/docs/glossary.md#shell)
 with Manifest composed into it: the same `Host::Game` the server and the tests start, and the same
 commands and queries as the [terminal UI](console.md).
 
@@ -79,6 +79,28 @@ with `SimWorld::FastForward`, its quiet steps passed over, for at most the budge
 the journey's end. The client calls it once a frame, so a journey's days pass in seconds and the loop
 never waits on them.
 
+### Saves
+
+The shell's saves (F5, F9 and its saves screen) hold the world, and the client adds its section,
+`Manifest.Client`: the player and the next journey's settings (`ClientState`), a binary archive at
+version 1, with the player as the save's `manifest.player` detail. A save with no such section is
+not the client's and is refused before anything of the world is replaced. The model is made again
+from the loaded world and the section once the load is done.
+
+### The scene
+
+The package's `scene/main.yaml` holds a camera and a lamp, which the shell draws behind the screens
+until the stations and ships are drawn ([roadmap](roadmap.md#the-graphical-client)). The engine's
+render test needs the lamp: it checks that a frame's light clusters list a light.
+
+### Checks
+
+| Suite | What it checks |
+| --- | --- |
+| `client_model` | The first loop through the model: provisioned at Ore, two totes of furs bought and loaded, flown to Brine with fast-forward, unloaded and sold for more; the journey's bounds, a refusal made before sending, and the save's section restored |
+| `client_screens` | Every screen loaded over a started world with nothing RmlUi or the string table counts as a problem, the start giving way to the company's, the navigation, and the flight panel shown under way |
+| `client_smoke` | The engine's render test sequence played by the client offscreen on lavapipe (`client-smoke.sh`): its save and load carry the client's section, and its game UI stage provisions the player and buys a tote at the market's first ask through the screens |
+
 ## Using it
 
 ```bash
@@ -101,8 +123,10 @@ It is built in every preset with the engine's presentation (`MANIFEST_BUILD_CLIE
 ## Source
 
 - `source/apps/client/main.cpp`: the program; `ClientGame.h`, its screens on the shell.
-- `mods/manifest/ui/manifest/` and `mods/manifest/strings/en/manifest.yaml`: the documents and their
-  words.
+- `mods/manifest/ui/manifest/`, `mods/manifest/strings/en/manifest.yaml` and
+  `mods/manifest/scene/main.yaml`: the documents, their words and the scene.
+- `source/apps/client/tests/ScreensTests.cpp` and `client-smoke.sh`: the screens check and the smoke
+  run.
 - `source/apps/client/include/manifest/client/ClientModel.h`: the model; its suite is
   `tests/ClientModelTests.cpp`.
 - `source/game/host/src/Start.cpp`: `MakeGame` and `HostedServices`.

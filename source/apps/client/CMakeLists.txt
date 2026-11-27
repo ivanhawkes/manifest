@@ -52,3 +52,28 @@ target_compile_definitions(manifest_client PRIVATE
 	"JETTISON_ASSET_SUBDIRECTORY=\"${asset_subdirectory}\""
 	"MANIFEST_CONTENT_SUBDIRECTORY=\"${content_subdirectory}\"")
 add_dependencies(manifest_client jettison_assets manifest_validate_mod)
+
+if(MANIFEST_BUILD_TESTS AND BUILD_TESTING)
+	# The screens check: every document loaded over a started world, with no problem counted.
+	add_executable(manifest_client_screens_tests tests/ScreensTests.cpp)
+	target_link_libraries(manifest_client_screens_tests PRIVATE
+		manifest_client_game Manifest::Host Jettison::Vfs manifest_test_helpers doctest::doctest_with_main
+		manifest_warnings)
+	target_compile_definitions(manifest_client_screens_tests PRIVATE
+		MANIFEST_MOD_DIRECTORY="${MANIFEST_MOD_DIRECTORY}"
+		MANIFEST_ENGINE_ASSETS="${engine_assets}")
+	add_dependencies(manifest_client_screens_tests jettison_assets manifest_validate_pack)
+	set_target_properties(manifest_client_screens_tests PROPERTIES FOLDER "Test")
+	add_test(NAME client_screens COMMAND manifest_client_screens_tests)
+
+	# The render test's sequence played by the client, offscreen on lavapipe, its game UI stage
+	# provisioning and buying through the screens.
+	get_target_property(sdk_core Jettison::Core SOURCE_DIR)
+	cmake_path(GET sdk_core PARENT_PATH sdk_engine)
+	cmake_path(GET sdk_engine PARENT_PATH sdk_source)
+	cmake_path(GET sdk_source PARENT_PATH sdk_directory)
+	add_test(NAME client_smoke COMMAND "${BASH_PROGRAM}" "${CMAKE_CURRENT_SOURCE_DIR}/client-smoke.sh"
+		$<TARGET_FILE:manifest_client> "${sdk_directory}/scripts/lib/headless.sh"
+		"${CMAKE_CURRENT_BINARY_DIR}/smoke-user")
+	set_tests_properties(client_smoke PROPERTIES TIMEOUT 900)
+endif()

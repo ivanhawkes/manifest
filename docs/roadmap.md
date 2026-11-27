@@ -127,20 +127,25 @@ a venue's fees before it pays ([L47](delivery-order.md#l47)).
 
 ## The graphical client
 
-The graphical client ([L15a](delivery-order.md#l15a) and [L15b](delivery-order.md#l15b)) is how most players will play: it sends the same
+The [graphical client](client.md) is how most players will play: it sends the same
 commands and reads the same queries as the [terminal UI](console.md), on [the server](server.md),
 and must not block the native loop. Its text is in four languages from the start
-([L43](delivery-order.md#l43)). It holds:
+([L43](delivery-order.md#l43)).
 
-- **Composition.** Manifest's `Host::Game` handed to Jettison's rendered shell, which starts it
-  through a host session (Jettison's J30, done), beside the client's `App::Game`.
-- **Owners' settings** ([L15b](delivery-order.md#l15b); the other items are L15a's). A venue's fees and a region's taxes shown and edited
+Its first loop, L15a, is done ([history](history/tasks.md)): the composition, and the start, company,
+market, travel, flight and service screens. What is still to come:
+
+- **Server play.** The client connected to a server as the token's actor, as the TUI connects,
+  rather than playing a local world alone.
+- **Owners' settings** ([L15b](delivery-order.md#l15b)). A venue's fees and a region's taxes shown and edited
   ([D-098](decision-ledger.md#d-098), with [L29](delivery-order.md#l29)), and station policy and
   ownership views ([L04](delivery-order.md#l04), [L05](delivery-order.md#l05)).
 - **Branding.** Stations' cultural and corporate look, and their customisation ([planetary
   development plan](planetary-development-plan.md)).
-- **Travel.** A thrust slider and an acceleration in multiples of g for a journey
-  ([D-107](decision-ledger.md#d-107)), and the galaxy and flight panels.
+- **The galaxy panel.** The systems, their venues and the lanes between them, to choose a journey on.
+  The travel screen lists the venues the player has a report of.
+- **Names and words.** Goods, ships and venues by their names rather than their IDs, and the
+  screens' words in French, German and Japanese ([L43](delivery-order.md#l43)).
 - **A shipyard screen** beside the market screen: the hulls a station sells, their prices and the
   purse, on [L48](delivery-order.md#l48)'s shipyard. **A fleet screen** to list and attach to the
   company's ships.

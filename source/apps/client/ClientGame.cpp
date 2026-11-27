@@ -13,6 +13,9 @@
 #include <utility>
 
 #include <jettison/app/Game.h>
+#include <jettison/app/SmokeSequence.h>
+#include <jettison/core/Log.h>
+#include <jettison/sim/SaveGame.h>
 #include <jettison/devtools/Console.h>
 #include <jettison/reflect/Reflect.h>
 #include <jettison/ui/DataModel.h>
@@ -41,6 +44,14 @@ constexpr std::string_view kDefaultCompany = "Ada Co";
 
 // The tenths of g each press of the acceleration's buttons moves it by.
 constexpr std::int64_t kTenthStep = 1;
+
+// The detail a save's list shows of a client's save: its player.
+constexpr std::string_view kPlayerDetail = "manifest.player";
+
+constexpr Jettison::Core::Category kClient{"client"};
+
+// The frames the render test lets pass after an answer, so the screen has drawn it.
+constexpr int kSmokeSettleFrames = 2;
 
 
 std::string Text(Arguments arguments)
@@ -237,6 +248,73 @@ bool ClientGame::Press(std::string_view element)
 		return false;
 	return m_pUi->Click(Document(m_shown), element) ||
 	       (m_pUi->IsShown(Document(kFlight)) && m_pUi->Click(Document(kFlight), element));
+}
+
+
+void ClientGame::WriteSave(Jettison::Sim::SaveGame &save, Jettison::App::Shell &shell)
+{
+	if (!m_model)
+		Attach(shell.World());
+	save.AddSection(std::string{kSaveSection}, WriteState(m_model->State()));
+	save.info.details.push_back({std::string{kPlayerDetail}, m_model->Principal()});
+}
+
+
+void ClientGame::ReadSave(const Jettison::Sim::SaveGame &save, Jettison::App::Shell & /*shell*/)
+{
+	const Jettison::Sim::SaveSection *section = save.FindSection(kSaveSection);
+	if (section == nullptr)
+		throw std::runtime_error{"the save is not the Manifest client's: it has no Manifest.Client"};
+	m_loading = ReadState(section->data);
+}
+
+
+void ClientGame::Loaded(Jettison::App::Shell &shell)
+{
+	if (!m_model)
+		Attach(shell.World());
+	if (m_loading)
+		m_model->Restore(*std::exchange(m_loading, std::nullopt));
+	Present();
+	Show(m_screen.provisioned ? kCompany : kStart);
+}
+
+
+void ClientGame::DriveSmoke(Jettison::App::SmokeActions &actions, Jettison::App::Shell &shell)
+{
+	// Provisioning, then a tote bought at the market's first good's ask: each pressed as the player
+	// would, and waited for until its step has answered and a frame has shown it.
+	actions.gameUi = [this, &shell]() -> std::optional<bool>
+	{
+		if (m_pUi == nullptr)
+			return std::nullopt;
+		if (!m_model)
+			Attach(shell.World());
+		Show(kStart);
+		if (m_screen.provisioned || m_pUi->ElementText(Document(kStart), "provision").empty())
+			return false;
+		m_smokePresses = 2;
+		m_smokeFrames = 0;
+		return Press("provision");
+	};
+	actions.gameUiWaiting = [this]
+	{
+		if (!m_model || m_model->Waiting() || ++m_smokeFrames < kSmokeSettleFrames)
+			return true;
+		if (--m_smokePresses == 0)
+			return false;
+		Show(kMarket);
+		m_smokeFrames = 0;
+		return Press("buy-0");
+	};
+	actions.gameUiAnswered = [this]
+	{
+		const std::string held = m_pUi->ElementText(Document(kMarket), "held-0");
+		Jettison::Core::Log(
+		    Jettison::Core::Severity::Info, kClient, "The render test's purchase: {}, {} held", m_screen.status,
+		    held);
+		return m_model && m_model->LastResult() == Command::Result::Succeeded && held == "1";
+	};
 }
 
 

@@ -36,9 +36,9 @@ directory fails the build.
 ```mermaid
 flowchart LR
     src["data/*.yaml<br/>(authored)"] -->|"data/build.sh<br/>(manifest_data)"| defs["definitions/<br/>one record per file"]
-    defs --> mod["mods/manifest/<br/>mod.yaml, definitions,<br/>scenarios, ui, strings (manifest_mod)"]
+    defs --> mod["mods/manifest/<br/>mod.yaml, definitions,<br/>scenarios, scene, ui, strings (manifest_mod)"]
     scen["data/scenarios/*.yaml"] --> mod
-    ui["mods/manifest/ui, strings<br/>(the client's screens)"] --> mod
+    ui["mods/manifest/scene, ui, strings<br/>(the graphical client's)"] --> mod
     mod -->|"manifest-validate,<br/>each scenario"| vmod["manifest_validate_mod"]
     vmod -->|"jettison_add_pack"| pack["manifest.pack<br/>(manifest_pack)"]
     pack -->|"manifest-validate,<br/>compare manifests"| vpack["manifest_validate_pack"]
@@ -46,8 +46,8 @@ flowchart LR
 
 The diagram shows the build graph in `CMakeLists.txt`. Everything lands under `build/<preset>/`:
 the records in `data/definitions/`, the staged package in `mods/manifest/` (the
-[graphical client's](client.md#screens) screens under `ui/` and their words under `strings/` among
-it, which the content identity does not hash), the pack in
+[graphical client's](client.md#screens) scene under `scene/`, its screens under `ui/` and their words
+under `strings/` among it, which the content identity does not hash), the pack in
 `share/manifest/manifest.pack` and the validated manifests in `validated/`. The suites that read
 the content depend on these targets, so they always test what ships.
 

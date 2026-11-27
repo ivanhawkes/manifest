@@ -177,9 +177,30 @@ void RegisterTypes()
 		    .Field<&Screen::day>("day", kSaved)
 		    .Field<&Screen::clock>("clock", kSaved)
 		    .Field<&Screen::status>("status", kSaved);
+		RegisterType<ClientState>("Manifest.Client.State")
+		    .Field<&ClientState::principal>("principal", kSaved)
+		    .Field<&ClientState::thrustPercent>("thrustPercent", kSaved)
+		    .Field<&ClientState::accelerationTenths>("accelerationTenths", kSaved)
+		    .Field<&ClientState::fastForward>("fastForward", kSaved);
 		return true;
 	}();
 	(void)registered;
+}
+
+
+std::vector<std::byte> WriteState(const ClientState &state)
+{
+	RegisterTypes();
+	return Jettison::Serialise::BinaryArchive::Write(
+	    state, Jettison::Serialise::FormatVersion{kSaveVersion});
+}
+
+
+ClientState ReadState(std::span<const std::byte> bytes)
+{
+	RegisterTypes();
+	return Jettison::Serialise::BinaryArchive::Read<ClientState>(
+	    bytes, Jettison::Serialise::FormatVersion{kSaveVersion});
 }
 
 
@@ -196,6 +217,23 @@ void ClientModel::SetPrincipal(std::string principal)
 {
 	m_screen.principal = std::move(principal);
 	Refresh();
+}
+
+
+ClientState ClientModel::State() const
+{
+	return {m_screen.principal, m_screen.thrustPercent, m_screen.accelerationTenths, m_screen.fastForward};
+}
+
+
+void ClientModel::Restore(const ClientState &state)
+{
+	m_waiting.reset();
+	m_last.reset();
+	SetThrust(state.thrustPercent);
+	SetAcceleration(state.accelerationTenths);
+	m_screen.fastForward = state.fastForward;
+	SetPrincipal(state.principal);
 }
 
 

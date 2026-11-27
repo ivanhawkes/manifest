@@ -1,0 +1,21 @@
+version: 3
+# The graphical client's scene behind its screens (docs/client.md): a camera and a lamp, until the
+# stations and ships are drawn (the roadmap's graphical client). The engine's render test checks the
+# lamp's clusters.
+entities:
+  - id: camera
+    camera:
+      position: [0, 4, 10]
+      rotation: [-0.3, 0, 0]
+      fov: 60
+      near: 0.1
+      active: true
+  - id: lamp
+    transform:
+      translation: [0, 30, 10]
+    light:
+      type: point
+      color: [1, 0.95, 0.85]
+      intensity: 4000
+      range: 200
+      active: true

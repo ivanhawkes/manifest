@@ -61,7 +61,7 @@ How: [content, scenarios and validation](content.md).
 | [Scenarios](glossary.md#scenario) and [game modes](glossary.md#game-mode) | In | A world starts from authored data, not code |
 | Manifest's content as a Jettison [mod](glossary.md#mod) (`mods/manifest`) | In | Overlays layer through the engine's own mounts ([files and mods](../../jettison/docs/files-and-mods.md)) |
 | Policy scripts in Wasm | Planned, [L39](delivery-order.md#l39) | Players' and modders' trading policy as bounded inputs to native rules ([policy scripts plan](policy-scripts-plan.md)) |
-| Player-facing text in English, French, German and Japanese | Planned, with the graphical client ([L15](delivery-order.md#l15)) | Every string key in all four tables (the user's, 2026-11-22): German's long words, French's diacritics and Japanese kanji test the GUI, and the tables are ready at release for native translators. No string table exists yet; the engine's is `Ui::StringTable` ([Jettison's UI](../../jettison/docs/ui.md), open parts [J15](../../jettison/docs/roadmap.md#j15)) |
+| Player-facing text in English, French, German and Japanese | Planned, with the graphical client ([L15](delivery-order.md#l15)) | Every string key in all four tables (the user's, 2026-11-22): German's long words, French's diacritics and Japanese kanji test the GUI, and the tables are ready at release for native translators. English's table is the graphical client's ([the graphical client](client.md)); the engine's is `Ui::StringTable` ([Jettison's UI](../../jettison/docs/ui.md), open parts [J15](../../jettison/docs/roadmap.md#j15)) |
 
 ## Host, server and clients
 
@@ -82,7 +82,7 @@ How: [the host](host.md), [the server](server.md), [the console and the terminal
 | Stage 5's loose ends (TUI retry, the bundle test, debug files) | Planned, [L41](delivery-order.md#l41) | |
 | Encrypted connections, hosting outside a trusted network | In, Jettison's [J01](../../jettison/docs/history/neutral-sdk.md#j01-encryption) | Every connection sealed to the server's key, which clients pin ([D-081](decision-ledger.md#d-081)) |
 | Deployment hardening, capacity profiling, unattended soak | Planned, [L01](delivery-order.md#l01) | Before public hosting |
-| The graphical client | Planned, [L15](delivery-order.md#l15) | Shares the server interface with the TUI ([D-012](decision-ledger.md#d-012)); its screens are listed in the [roadmap](roadmap.md#the-graphical-client) |
+| The graphical client | In for the first loop ([the graphical client](client.md)); the rest planned, [L15](delivery-order.md#l15) | Shares the server interface with the TUI ([D-012](decision-ledger.md#d-012)); its screens are listed in the [roadmap](roadmap.md#the-graphical-client) |
 | The development [sandbox](glossary.md#sandbox) | In | The older skill-tree and effects model, reached only from the console ([the sandbox](sandbox.md)) |
 
 ## The hosted world

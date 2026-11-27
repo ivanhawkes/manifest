@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstddef>
 #include <filesystem>
 #include <fstream>
 #include <memory>
@@ -10,6 +11,7 @@
 #include <vector>
 
 #include <jettison/host/Session.h>
+#include <jettison/serialise/Archive.h>
 #include <jettison/sim/SimWorld.h>
 
 #include <manifest/client/ClientModel.h>
@@ -180,6 +182,19 @@ TEST_CASE("The client's model plays the first loop: furs bought at Ore, flown to
 	(void)Answer(model, world, model.Replace());
 	CHECK(view.ships.front().oxygen > 0);
 	CHECK(view.ships.front().reactionMassMost >= view.ships.front().reactionMass);
+
+	// A save's section restores the player and the journey's settings into a model of the same world.
+	model.SetThrust(40);
+	model.SetAcceleration(5);
+	model.SetFastForward(false);
+	const Manifest::Client::ClientState state = model.State();
+	CHECK(Manifest::Client::ReadState(Manifest::Client::WriteState(state)) == state);
+	ClientModel restored{world, Manifest::Host::HostedServices(*session)};
+	restored.Restore(state);
+	CHECK(restored.View() == model.View());
+	CHECK_THROWS_AS(
+	    (void)Manifest::Client::ReadState(std::vector<std::byte>{std::byte{1}}),
+	    Jettison::Serialise::FormatError);
 }
 
 

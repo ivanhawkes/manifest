@@ -17,12 +17,12 @@ open work, in order, is the [task queue](delivery-order.md).
 
 ## Next
 
-The user plays the first loop in the graphical client ([L15a](delivery-order.md#l15a)), not the
-terminal UI, which is mainly for administration (the user's, 2026-11-27). L15a stands on Jettison's
-J30, done 2026-11-27 (the shell starts a `Host::Game` through a session) and in the pin since
-2026-11-27, at Jettison's `165fada`; the owners' screens were
-split off as [L15b](delivery-order.md#l15b) on 2026-11-27, which waits on [L04](delivery-order.md#l04),
-[L05](delivery-order.md#l05) and [L29](delivery-order.md#l29). L29's open choices are settled
-([D-120](decision-ledger.md#d-120)). The queue's first row, the drives past
-the torch ([W22](delivery-order.md#w22)), waits for the first larger hull. Saves still run on the
-step's thread ([L40](delivery-order.md#l40), [D-115](decision-ledger.md#d-115)).
+The first loop plays in the graphical client, `manifest_client` (L15a, done 2026-11-27,
+[the graphical client](client.md)), on a local world. What it still lacks is in the
+[roadmap](roadmap.md#the-graphical-client): server play, the galaxy panel, the shipyard and fleet
+screens, names and the other three languages ([L43](delivery-order.md#l43)), and the looks. The
+owners' screens are [L15b](delivery-order.md#l15b), which waits on [L04](delivery-order.md#l04),
+[L05](delivery-order.md#l05) and [L29](delivery-order.md#l29); L29's open choices are settled
+([D-120](decision-ledger.md#d-120)). The pin is Jettison's `165fada`. The queue's first row, the
+drives past the torch ([W22](delivery-order.md#w22)), waits for the first larger hull. Saves still
+run on the step's thread ([L40](delivery-order.md#l40), [D-115](decision-ledger.md#d-115)).
