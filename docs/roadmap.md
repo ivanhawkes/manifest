@@ -132,8 +132,8 @@ commands and reads the same queries as the [terminal UI](console.md), on [the se
 and must not block the native loop. Its text is in four languages from the start
 ([L43](delivery-order.md#l43)). It holds:
 
-- **Composition.** Jettison's rendered shell started through a host session, so Manifest is not
-  composed twice ([J30](../../jettison/docs/roadmap.md#j30)).
+- **Composition.** Manifest's `Host::Game` handed to Jettison's rendered shell, which starts it
+  through a host session (Jettison's J30, done), beside the client's `App::Game`.
 - **Owners' settings.** A venue's fees and a region's taxes shown and edited
   ([D-098](decision-ledger.md#d-098), with [L29](delivery-order.md#l29)), and station policy and
   ownership views ([L04](delivery-order.md#l04), [L05](delivery-order.md#l05)).

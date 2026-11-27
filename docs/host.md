@@ -417,9 +417,6 @@ Every machine that runs the release preset needs a loader at `/lib64/ld-linux-x8
   `host` ([L41](delivery-order.md#l41)).
 - The floor is kept by binding symbols. If that becomes a hassle, the release is built in an Ubuntu
   24.04 container or with `zig cc` targeting 2.39 instead ([D-114](decision-ledger.md#d-114)).
-- Jettison's rendered shell does not start through a host session, so a graphical client would
-  compose Manifest twice ([J30](../../jettison/docs/roadmap.md#j30), for
-  [L15](delivery-order.md#l15)).
 
 ## Decisions
 
