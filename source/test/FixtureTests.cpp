@@ -657,7 +657,7 @@ TEST_CASE("The trading fixture's loop, saved in flight with a bid resting and re
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves with
 	// what a save holds, the fixture's content or stream, or the engine's movement or save format.
-	CHECK(hosted.world.StateHash() == 0x469e930a472f1736ULL);
+	CHECK(hosted.world.StateHash() == 0x09462c882bb965daULL);
 }
 
 
@@ -710,7 +710,7 @@ TEST_CASE("The trading fixture's loop, backed up in flight with a bid resting an
 	// Served on from the restore, through the journal, it reaches the loop's own world.
 	FromCruise(restored);
 	CheckLedger(restored);
-	CHECK(restored.world.StateHash() == 0x469e930a472f1736ULL);
+	CHECK(restored.world.StateHash() == 0x09462c882bb965daULL);
 }
 
 
@@ -902,7 +902,7 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 	CHECK(replayed.world.StateHash() == hosted.world.StateHash());
 
 	// The same in every build the gate runs; it moves as the fixture's does.
-	CHECK(hosted.world.StateHash() == 0xb65a8525fe03ecf6ULL);
+	CHECK(hosted.world.StateHash() == 0x9597c3b082f05253ULL);
 }
 
 
@@ -1139,8 +1139,12 @@ TEST_CASE(
 	CHECK(registry.get<const World::Ship>(ship).hullId == "HullFreighterMedium");
 	const Manifest::Space::CruiseDrive drive = registry.get<const Manifest::Space::CruiseDrive>(ship);
 	CHECK(drive.clearance == 998'000.0);
+	CHECK(hosted.Ship1().fuel == World::Fuel{400'000.0, 100.0});
+
+	// A magazine at 4 kg takes the totes its 96 kg of room needs, eight of 12.5 kg, as the journey
+	// refuels before it starts; the 4 kg of the last left in its opened tote stay in the hold.
+	registry.patch<World::Fuel>(ship, [](World::Fuel &fuel) { fuel.pellets = 4.0; });
 	const World::Fuel before = hosted.Ship1().fuel;
-	CHECK(before == World::Fuel{400'000.0, 100.0});
 
 	// To Vale, a station of Ore's, at the hauler's sustained 0.3 g.
 	constexpr std::string_view kVale = "VenueOreValeStation";
@@ -1173,7 +1177,13 @@ TEST_CASE(
 	            metres - 2.0 * drive.clearance)
 	            .reactionMass)
 	        .epsilon(0.001));
-	CHECK(burned.pellets > 0.0);
+	CHECK(after.pellets < 100.0);
+	CHECK(after.pellets > 90.0);
+	const World::Cargo &hold = registry.get<const World::Cargo>(ship);
+	const auto opened = std::ranges::find(hold.opened, "ItemDeuteriumPellets", &World::Opened::itemId);
+	REQUIRE(opened != hold.opened.end());
+	CHECK(opened->quantity == doctest::Approx(4.0));
+	CHECK(std::ranges::find(hold.lots, "ItemDeuteriumPellets", &World::Lot::itemId) == hold.lots.end());
 
 	for (std::uint64_t step = 0; step < kJourneySteps && hosted.Ship1().journey->leg != Leg::Cruising;
 	     ++step)
@@ -1976,7 +1986,7 @@ TEST_CASE("The governance fixture's project, tendered, supplied, worked and unlo
 
 	// The same in every build the gate runs; it moves with what a save holds, the governance
 	// scenario's content or the stream.
-	CHECK(hosted.world.StateHash() == 0x722a355e3a49eefaULL);
+	CHECK(hosted.world.StateHash() == 0x7b4fc773ab628ba3ULL);
 }
 
 
@@ -2332,5 +2342,5 @@ TEST_CASE(
 
 	// The same in every build the gate runs; it moves with what a save holds, the governance
 	// scenario's content or the stream.
-	CHECK(hosted.world.StateHash() == 0xd40f39848693a18aULL);
+	CHECK(hosted.world.StateHash() == 0xcaca5c7f5623ede1ULL);
 }

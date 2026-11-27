@@ -82,10 +82,12 @@ Jettison::Transit::MotionProfile Profile(
 // aboard (D-108): each phase's speed change, its acceleration times its seconds at each end
 // (Jettison::Transit::Thrust), burns reaction mass by the rocket equation to first order and pellets by
 // the drive's rate times the acceleration's factor, 1 up to 1 g and its g to the curve's power above;
-// each rounded up to the gram.
+// each rounded up to the gram, and the pellets, where their item is traded by the unit, up to whole
+// units of that many kilograms (Content::KilogramsPerUnit). A drive with no exhaust speed burns no
+// reaction mass.
 World::Fuel Burned(
     const Content::DriveDefinition &drive, const Jettison::Transit::MotionProfile &profile,
-    double tonnes, double metres);
+    double tonnes, double metres, double pelletKilogramsPerUnit = 1.0);
 
 // Everything the ship carries as a leg starts, in tonnes: its hull's mass, its tanks' and the fuel in
 // them, its occupants and its cargo, opened totes included, each unit at its item's density and pack

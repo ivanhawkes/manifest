@@ -2,8 +2,10 @@
 # The drive classes a hull names (D-108; docs/ships-plan.md, "Drives past the torch"):
 #
 #   exhaustKms                   Its exhaust speed in km/s, which sets the reaction mass a burn takes
-#                                by the rocket equation to first order.
-#   pelletItemId                 The pellets it burns, an item traded by the kilogram.
+#                                by the rocket equation to first order; left out, it burns none, its
+#                                pellets their own reaction mass.
+#   pelletItemId                 The pellets it burns, an item traded by the kilogram, or by the unit,
+#                                a leg's burn then rounded up to whole units.
 #   pelletMilligramsPerTonneKms  Pellets in milligrams for each tonne aboard and km/s of speed
 #                                change, times the acceleration in g to curveExponent above 1 g.
 #   exclusionRadius              Metres from a station within which it may not thrust, at least a
@@ -36,3 +38,18 @@ drive-base:
       cruise:
         manned: {boostAcceleration: 5.88399, boostSeconds: 21600, sustainedAcceleration: 2.941995}
         unmanned: {boostAcceleration: 5.88399, boostSeconds: 21600, sustainedAcceleration: 2.941995}
+
+  # The nuclear pulse drive (W22b; docs/ships-plan.md, "The pulse drive as a record"): bombs behind a
+  # pusher plate, their own reaction mass, so no exhaust speed; 0.0033 units of 100 kg a tonne-km/s,
+  # the rocket equation at 1% of light speed, no dearer above 1 g; kept 100,000 km from every station.
+  # Manned or not, 2 g for at most 2 hours of a trip, 1 speeding up and 1 slowing down, and 0.5 g
+  # between.
+  - drive:
+      driveId: DrivePulse
+      pelletItemId: ItemPulseUnits
+      pelletMilligramsPerTonneKms: 333564
+      curveExponent: 0
+      exclusionRadius: 1.0e8
+      cruise:
+        manned: {boostAcceleration: 19.6133, boostSeconds: 7200, sustainedAcceleration: 4.903325}
+        unmanned: {boostAcceleration: 19.6133, boostSeconds: 7200, sustainedAcceleration: 4.903325}

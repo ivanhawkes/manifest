@@ -535,11 +535,13 @@ void Refuelled(SimWorld &world, const Rules &rules, entt::entity ship, std::int6
 	const Content::DriveDefinition *pClass = Content::DriveOf(rules.content, record.hullId);
 	JETTISON_VERIFY(pClass != nullptr);
 	const std::string &pellets = pClass->pelletItemId;
-	const auto pelletItem =
-	    std::ranges::find(rules.content.gameMode.items, pellets, &Core::ItemNode::itemId);
-	JETTISON_VERIFY(pelletItem != rules.content.gameMode.items.end());
+	const Core::ItemNode &pelletItem = Content::PelletItem(rules.content, *pClass);
 	const double pelletsPerTote =
-	    pelletItem->unitsPerCubicMetre / static_cast<double>(Core::kTotesPerIbc);
+	    pelletItem.unitsPerCubicMetre / static_cast<double>(Core::kTotesPerIbc);
+
+	// A magazine is in kilograms, its pellets bought and carried by their item's unit.
+	const double kilogramsPerUnit = Content::KilogramsPerUnit(pelletItem);
+	const bool byTheUnit = pelletItem.unitType != Core::TradeUnit::Kilogram;
 
 	// Whole totes of reaction mass, straight from the warehouse into the tanks.
 	const double room = tanks->reactionMass - registry.get<World::Fuel>(ship).reactionMass;
@@ -569,24 +571,37 @@ void Refuelled(SimWorld &world, const Rules &rules, entt::entity ship, std::int6
 			    held.reactionMass + (static_cast<double>(bought) * rules.reactionMassPerTote));
 		}
 
-	// A tote of pellets into a hold with none and room for it, loaded as Load would.
-	const std::uint64_t free =
+	// The totes of pellets the magazine's room needs, less those aboard, as far as the hold has room
+	// for them, loaded as Load would.
+	const std::uint64_t hold =
 	    rules.identities.Hold(record, registry.try_get<World::Systems>(ship)).value_or(0);
-	if (Aboard(registry.get<World::Cargo>(ship), pellets, pelletsPerTote) <= 0.0 &&
-	    Carried(registry.get<World::Cargo>(ship)) < free &&
-	    rules.buy(world, record.companyId, record.dockedAt, pellets, 1, budget()) > 0)
-	{
-		const Actor owner{
-		    Command::ActorKind::Principal, registry.get<World::Company>(company).principalId};
-		const Move move{registry.get<World::Identity>(ship).id, record.dockedAt, pellets, 1};
-		JETTISON_VERIFY(Moved(world, rules, owner, move, true) == Result::Succeeded);
-	}
+	const std::uint64_t carried = Carried(registry.get<World::Cargo>(ship));
+	const double kilogramsPerTote = pelletsPerTote * kilogramsPerUnit;
+	const double needed =
+	    std::max(0.0, tanks->pellets - registry.get<World::Fuel>(ship).pellets -
+	                      Aboard(registry.get<World::Cargo>(ship), pellets, pelletsPerTote) *
+	                          kilogramsPerUnit);
+	const auto wanted = static_cast<std::uint64_t>(std::min(
+	    std::ceil(needed / kilogramsPerTote), static_cast<double>(hold > carried ? hold - carried : 0)));
+	if (wanted > 0)
+		if (const std::uint64_t bought =
+		        rules.buy(world, record.companyId, record.dockedAt, pellets, wanted, budget());
+		    bought > 0)
+		{
+			const Actor owner{
+			    Command::ActorKind::Principal, registry.get<World::Company>(company).principalId};
+			const Move move{registry.get<World::Identity>(ship).id, record.dockedAt, pellets, bought};
+			JETTISON_VERIFY(Moved(world, rules, owner, move, true) == Result::Succeeded);
+		}
 
 	// The magazine filled from the hold, a tote opened at a time.
 	World::Cargo &cargo = registry.get<World::Cargo>(ship);
 	World::Fuel &held = registry.get<World::Fuel>(ship);
 	const double space = tanks->pellets - held.pellets;
-	if (const double given = std::min(space, Aboard(cargo, pellets, pelletsPerTote)); given > 0.0)
+
+	// In units: whole ones of an item traded by the unit, as far as they fit.
+	const double fits = byTheUnit ? std::floor(space / kilogramsPerUnit) : space;
+	if (const double given = std::min(fits, Aboard(cargo, pellets, pelletsPerTote)); given > 0.0)
 	{
 		const auto sealed = [&]
 		{
@@ -595,7 +610,8 @@ void Refuelled(SimWorld &world, const Rules &rules, entt::entity ship, std::int6
 		};
 		const std::uint64_t before = sealed();
 		Take(world, cargo, pellets, pelletsPerTote, given, 0.0);
-		held.pellets = given == space ? tanks->pellets : held.pellets + given;
+		held.pellets =
+		    given == space ? tanks->pellets : std::min(tanks->pellets, held.pellets + given * kilogramsPerUnit);
 
 		// The sealed totes opened leave a job's lot of pellets, after any aboard beyond it.
 		if (auto *pJob = registry.try_get<World::Job>(ship); pJob != nullptr)

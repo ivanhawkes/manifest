@@ -255,6 +255,7 @@ items:
   - itemId: ItemReactionMass
   - itemId: ItemFusionPellets
   - itemId: ItemDeuteriumPellets
+  - itemId: ItemPulseUnits
   - itemId: ItemBasicMedicalSupplies
   - itemId: ItemAnesthetics
   - itemId: ItemAnalgesics
@@ -352,3 +353,4 @@ hulls:
 drives:
   - driveId: DriveTorch
   - driveId: DriveHaulerFusion
+  - driveId: DrivePulse

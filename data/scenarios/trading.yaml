@@ -43,6 +43,7 @@ items:
   - itemId: ItemCarbonScrubberCartridge
   - itemId: ItemReactionMass
   - itemId: ItemFusionPellets
+  - itemId: ItemDeuteriumPellets
 
 systems:
   - {systemId: SystemAnvil, displayName: Anvil}
@@ -217,6 +218,8 @@ venues:
         demand: 0, stock: 50}
       - {itemId: ItemReactionMass, regionId: RegionOreHighlands, production: 10000, demand: 0,
         stock: 800}
+      - {itemId: ItemDeuteriumPellets, regionId: RegionOreHighlands, production: 200, demand: 0,
+        stock: 16}
   # OreVale's station: developed.
   - venueId: VenueOreValeStation
     systemId: SystemAnvil
@@ -243,6 +246,8 @@ venues:
       - {itemId: ItemBasicMedicalSupplies, production: 0, demand: 125, stock: 10}
       - {itemId: ItemReactionMass, regionId: RegionOreVale, production: 10000, demand: 0,
         stock: 800}
+      - {itemId: ItemDeuteriumPellets, regionId: RegionOreVale, production: 200, demand: 0,
+        stock: 16}
   # OreDeeps's station: a mining colony, importing its food and water.
   - venueId: VenueOreDeepsStation
     systemId: SystemAnvil
@@ -271,6 +276,8 @@ venues:
       - {itemId: ItemBasicMedicalSupplies, production: 0, demand: 30, stock: 2}
       - {itemId: ItemReactionMass, regionId: RegionOreDeeps, production: 10000, demand: 0,
         stock: 800}
+      - {itemId: ItemDeuteriumPellets, regionId: RegionOreDeeps, production: 200, demand: 0,
+        stock: 16}
       - {itemId: ItemFusionPellets, regionId: RegionOreDeeps, production: 2, demand: 0, stock: 2}
   # OreFells's station: undeveloped, short of its staples and water.
   - venueId: VenueOreFellsStation
@@ -297,6 +304,8 @@ venues:
       - {itemId: ItemBasicMedicalSupplies, production: 0, demand: 50, stock: 4}
       - {itemId: ItemReactionMass, regionId: RegionOreFells, production: 10000, demand: 0,
         stock: 800}
+      - {itemId: ItemDeuteriumPellets, regionId: RegionOreFells, production: 200, demand: 0,
+        stock: 16}
   # OreSteppe's station: advanced and ruined, its eroded, depleted soil and polluted water short.
   - venueId: VenueOreSteppeStation
     systemId: SystemAnvil
@@ -324,6 +333,8 @@ venues:
       - {itemId: ItemBasicMedicalSupplies, production: 0, demand: 100, stock: 8}
       - {itemId: ItemReactionMass, regionId: RegionOreSteppe, production: 10000, demand: 0,
         stock: 800}
+      - {itemId: ItemDeuteriumPellets, regionId: RegionOreSteppe, production: 200, demand: 0,
+        stock: 16}
   # BrineCoast's station: developed.
   - venueId: VenueBrineHighport
     systemId: SystemAnvil
@@ -361,6 +372,8 @@ venues:
       - {itemId: ItemCarbonScrubberCartridge, production: 0, demand: 8, stock: 40}
       - {itemId: ItemReactionMass, regionId: RegionBrineCoast, production: 10000, demand: 0,
         stock: 800}
+      - {itemId: ItemDeuteriumPellets, regionId: RegionBrineCoast, production: 200, demand: 0,
+        stock: 16}
   # BrineDelta's station: developed.
   - venueId: VenueBrineDeltaStation
     systemId: SystemAnvil
@@ -388,6 +401,8 @@ venues:
       - {itemId: ItemBasicMedicalSupplies, production: 0, demand: 125, stock: 10}
       - {itemId: ItemReactionMass, regionId: RegionBrineDelta, production: 10000, demand: 0,
         stock: 800}
+      - {itemId: ItemDeuteriumPellets, regionId: RegionBrineDelta, production: 200, demand: 0,
+        stock: 16}
   # BrineReach's station: advanced and ruined, its polluted, eroded land and water short.
   - venueId: VenueBrineReachStation
     systemId: SystemAnvil
@@ -414,6 +429,8 @@ venues:
       - {itemId: ItemBasicMedicalSupplies, production: 0, demand: 100, stock: 8}
       - {itemId: ItemReactionMass, regionId: RegionBrineReach, production: 10000, demand: 0,
         stock: 800}
+      - {itemId: ItemDeuteriumPellets, regionId: RegionBrineReach, production: 200, demand: 0,
+        stock: 16}
   # BrineShoals's station: undeveloped, short of its staples and water.
   - venueId: VenueBrineShoalsStation
     systemId: SystemAnvil
@@ -440,6 +457,8 @@ venues:
       - {itemId: ItemBasicMedicalSupplies, production: 0, demand: 50, stock: 4}
       - {itemId: ItemReactionMass, regionId: RegionBrineShoals, production: 10000, demand: 0,
         stock: 800}
+      - {itemId: ItemDeuteriumPellets, regionId: RegionBrineShoals, production: 200, demand: 0,
+        stock: 16}
   # BrineSaltworks's station: a mining colony, importing its food and water.
   - venueId: VenueBrineSaltworksStation
     systemId: SystemAnvil
@@ -466,4 +485,6 @@ venues:
       - {itemId: ItemBasicMedicalSupplies, production: 0, demand: 30, stock: 2}
       - {itemId: ItemReactionMass, regionId: RegionBrineSaltworks, production: 10000, demand: 0,
         stock: 800}
+      - {itemId: ItemDeuteriumPellets, regionId: RegionBrineSaltworks, production: 200, demand: 0,
+        stock: 16}
       - {itemId: ItemFusionPellets, regionId: RegionBrineSaltworks, production: 2, demand: 0, stock: 2}

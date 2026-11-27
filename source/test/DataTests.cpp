@@ -303,7 +303,7 @@ TEST_CASE("the_hulls_carry_their_selected_values_and_leave_the_rest_unset")
 	// 40 mg of deuterium a tonne-km/s, 0.3 g sustained and 0.6 g for 6 hours, 1,000 km from a station.
 	const Manifest::Content::DriveDefinition &hauler =
 	    Load("manifest").driveClasses.at("DriveHaulerFusion");
-	CHECK(1000.0 / hauler.exhaustKms == doctest::Approx(0.111).epsilon(0.002));
+	CHECK(1000.0 / hauler.exhaustKms.value_or(0.0) == doctest::Approx(0.111).epsilon(0.002));
 	CHECK(hauler.pelletMilligramsPerTonneKms == 40.0);
 	CHECK(hauler.exclusionRadius == 1.0e6);
 	REQUIRE(hauler.cruise.has_value());

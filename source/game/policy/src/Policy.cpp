@@ -227,6 +227,65 @@ std::vector<Leg> Legs(
 }
 
 
+double UnitsPerTote(const Core::ItemNode &item)
+{
+	return item.unitsPerCubicMetre / static_cast<double>(Core::kTotesPerIbc);
+}
+
+
+// The units of the item aboard the ship, its opened tote's and its sealed ones.
+double PelletsAboard(const entt::registry &registry, entt::entity ship, const Core::ItemNode &item)
+{
+	const World::Cargo &cargo = registry.get<const World::Cargo>(ship);
+	double units = 0.0;
+	if (const auto opened = std::ranges::find(cargo.opened, item.itemId, &World::Opened::itemId);
+	    opened != cargo.opened.end())
+		units = opened->quantity;
+	if (const auto lot = std::ranges::find(cargo.lots, item.itemId, &World::Lot::itemId);
+	    lot != cargo.lots.end())
+		units += static_cast<double>(lot->totes) * UnitsPerTote(item);
+	return units;
+}
+
+
+// The totes the ship's hold has room for now.
+std::uint64_t HoldRoom(
+    const entt::registry &registry, const World::Identities &identities, entt::entity ship)
+{
+	const World::Ship &record = registry.get<const World::Ship>(ship);
+	std::uint64_t free =
+	    identities.Hold(record, registry.try_get<const World::Systems>(ship)).value_or(0);
+	const World::Cargo &cargo = registry.get<const World::Cargo>(ship);
+	for (const World::Lot &lot : cargo.lots)
+		free -= std::min(free, lot.totes);
+	return free - std::min<std::uint64_t>(free, cargo.opened.size());
+}
+
+
+// The totes of pellets the ship's next refuel loads to fill its magazine, which a policy keeps room in
+// the hold for; none for a ship that does not refuel.
+std::uint64_t RefuelTotes(
+    const entt::registry &registry, const World::Identities &identities,
+    const Content::ContentSet &content, entt::entity ship)
+{
+	const World::Ship &record = registry.get<const World::Ship>(ship);
+	const auto *pRefuel = registry.try_get<const World::Refuel>(ship);
+	const Content::DriveDefinition *pClass = Content::DriveOf(content, record.hullId);
+	const std::optional<World::Fuel> tanks =
+	    identities.FuelTanks(record, registry.try_get<const World::Systems>(ship));
+	const auto *pFuel = registry.try_get<const World::Fuel>(ship);
+	if ((pRefuel && !pRefuel->enabled) || !pClass || !tanks || !pFuel)
+		return 0;
+	const Core::ItemNode &item = Content::PelletItem(content, *pClass);
+	const double kilogramsPerUnit = Content::KilogramsPerUnit(item);
+	const double needed = tanks->pellets - pFuel->pellets -
+	                      PelletsAboard(registry, ship, item) * kilogramsPerUnit;
+	return needed > 0.0
+	           ? static_cast<std::uint64_t>(std::ceil(needed / (UnitsPerTote(item) * kilogramsPerUnit)))
+	           : 0;
+}
+
+
 // The route's legs flown at the thrust, as EstimateRoute is.
 Route Priced(
     const entt::registry &registry, const World::Identities &identities,
@@ -284,6 +343,19 @@ Route Priced(
 		           : held;
 	};
 
+	// What a refuel can put in the magazine: the pellets aboard and the totes the hold has room for, in
+	// kilograms.
+	double pelletKilogramsPerUnit = 1.0;
+	double pelletRefuel = 0.0;
+	if (burns)
+	{
+		const Core::ItemNode &pelletItem = Content::PelletItem(content, *pClass);
+		pelletKilogramsPerUnit = Content::KilogramsPerUnit(pelletItem);
+		pelletRefuel = PelletsAboard(registry, ship, pelletItem) * pelletKilogramsPerUnit +
+		               static_cast<double>(HoldRoom(registry, identities, ship)) *
+		                   UnitsPerTote(pelletItem) * pelletKilogramsPerUnit;
+	}
+
 	Route route;
 	World::Fuel left = current;
 	for (const Leg &leg : legs)
@@ -312,18 +384,21 @@ Route Priced(
 		const World::Line *pMass = sold(tuning.reactionMassItemId);
 		const World::Line *pPellets = sold(pClass->pelletItemId);
 
-		// shortcut: a venue selling pellets is taken to fill the magazine, which takes a tote in the
-		// hold; refine when a policy's estimate is seen refused for its pellets.
+		// A venue selling pellets fills the magazine as far as the pellets aboard and the totes the
+		// hold has room for go, as Company's refuel buys them.
+		// shortcut: the hold's room and the pellets aboard are the ship's as it is now, for every leg;
+		// refine when a route of several refuels is seen estimated past what its hold can take.
 		const World::Fuel start{
 		    pMass && tanks ? refuelled(left.reactionMass) : left.reactionMass,
-		    pPellets && tanks ? tanks->pellets : left.pellets};
+		    pPellets && tanks ? std::min(tanks->pellets, left.pellets + pelletRefuel) : left.pellets};
 		const World::Fuel burned = Travel::Burned(
 		    *pClass, *flown->profile,
 		    dry + (start.reactionMass + start.pellets) / kKilogramsPerTonne +
 		        (leg.laden ? lotTonnes : 0.0),
-		    Manifest::Space::DriveMetres(*flown, leg.metres));
+		    Manifest::Space::DriveMetres(*flown, leg.metres), pelletKilogramsPerUnit);
 		route.fuelled = route.fuelled &&
-		                burned.reactionMass + kFuelMarginKilograms <= start.reactionMass &&
+		                (!pClass->exhaustKms ||
+		                 burned.reactionMass + kFuelMarginKilograms <= start.reactionMass) &&
 		                burned.pellets + kFuelMarginKilograms <= start.pellets;
 		left = {
 		    std::max(0.0, start.reactionMass - burned.reactionMass),
@@ -333,7 +408,8 @@ Route Priced(
 		route.charges = Added(
 		    route.charges, Worth(
 		                       {{burned.reactionMass, price(pMass, tuning.reactionMassItemId)},
-		                        {burned.pellets, price(pPellets, pClass->pelletItemId)}}));
+		                        {burned.pellets / pelletKilogramsPerUnit,
+		                         price(pPellets, pClass->pelletItemId)}}));
 	}
 	return route;
 }
@@ -459,15 +535,24 @@ struct Context
 	}
 
 
+	// The hold's room for a cargo, less the totes the magazine's next refuel needs.
 	std::uint64_t FreeHold() const
 	{
-		const World::Ship &record = Record();
-		std::uint64_t free =
-		    rules.identities.Hold(record, Registry().try_get<const World::Systems>(ship)).value_or(0);
-		const World::Cargo &cargo = Registry().get<const World::Cargo>(ship);
-		for (const World::Lot &lot : cargo.lots)
-			free -= std::min(free, lot.totes);
-		return free - std::min<std::uint64_t>(free, cargo.opened.size());
+		const std::uint64_t free = HoldRoom(Registry(), rules.identities, ship);
+		return free - std::min(free, RefuelTotes(Registry(), rules.identities, rules.content, ship));
+	}
+
+
+	// The burn a journey asks: 1 g, or the drive's sustained acceleration below it.
+	std::uint32_t MilliG() const
+	{
+		const auto authored = rules.content.drives.find(Content::RegistryName(Record().hullId));
+		const auto *pDrive = Registry().try_get<const Manifest::Space::CruiseDrive>(ship);
+		const std::optional<Jettison::Transit::MotionProfile> mode =
+		    authored != rules.content.drives.end() && authored->second.profile
+		        ? authored->second.profile
+		        : (pDrive ? pDrive->profile : std::nullopt);
+		return mode ? std::min(Travel::kMilliGPerG, Travel::MostMilliG(*mode)) : Travel::kMilliGPerG;
 	}
 
 
@@ -528,7 +613,7 @@ struct Context
 		const std::int64_t fee =
 		    DockingFee(Registry(), rules.identities, rules.content, Record(), venueId);
 		if (Act(Travel::kTravel, Travel::kVersion,
-		        Travel::Travel{shipId, venueId, Thrust(), Travel::kMilliGPerG}) != Result::Succeeded)
+		        Travel::Travel{shipId, venueId, Thrust(), MilliG()}) != Result::Succeeded)
 			return Block(World::Blockage::Refused);
 		World::Job &job = Job();
 		if (job.totes > 0)

@@ -156,7 +156,8 @@ Result Started(SimWorld &world, const Rules &rules, const Actor &actor, const Tr
 		JETTISON_VERIFY(pClass != nullptr);
 		burned = Burned(
 		    *pClass, *flown, TonnesAboard(registry, rules.identities, rules.content, ship),
-		    Space::DriveMetres(*pDrive, metres));
+		    Space::DriveMetres(*pDrive, metres),
+		    Content::KilogramsPerUnit(Content::PelletItem(rules.content, *pClass)));
 		const auto *pFuel = registry.try_get<World::Fuel>(ship);
 		const World::Fuel tanks = pFuel ? *pFuel : World::Fuel{};
 		if (tanks.reactionMass < burned.reactionMass || tanks.pellets < burned.pellets)
@@ -412,7 +413,7 @@ Jettison::Transit::MotionProfile Profile(
 
 World::Fuel Burned(
     const Content::DriveDefinition &drive, const Jettison::Transit::MotionProfile &profile,
-    double tonnes, double metres)
+    double tonnes, double metres, double pelletKilogramsPerUnit)
 {
 	const Jettison::Transit::ThrustSeconds thrust = Jettison::Transit::Thrust(profile, metres);
 	double kms = 0.0;
@@ -432,9 +433,13 @@ World::Fuel Burned(
 	}
 	const auto grams = [](double kilograms)
 	{ return std::ceil(kilograms * kGramsPerKilogram) / kGramsPerKilogram; };
+	const double pellets =
+	    grams(tonnes * pelletKms * drive.pelletMilligramsPerTonneKms / kMilligramsPerKilogram);
 	return {
-	    grams(tonnes * kms * kKilogramsPerTonne / drive.exhaustKms),
-	    grams(tonnes * pelletKms * drive.pelletMilligramsPerTonneKms / kMilligramsPerKilogram)};
+	    drive.exhaustKms ? grams(tonnes * kms * kKilogramsPerTonne / *drive.exhaustKms) : 0.0,
+	    pelletKilogramsPerUnit > 1.0
+	        ? std::ceil(pellets / pelletKilogramsPerUnit) * pelletKilogramsPerUnit
+	        : pellets};
 }
 
 

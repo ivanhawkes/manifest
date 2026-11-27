@@ -586,6 +586,30 @@ TEST_CASE("A burn's fuel is the plan's: the starter to Brine at 1 g, all its rat
 }
 
 
+TEST_CASE("A pulse drive burns whole units of its pellets and no reaction mass")
+{
+	const Manifest::Content::DriveDefinition pulse{
+	    "DrivePulse", std::nullopt, "ItemPulseUnits", 333564.0, 0, 1.0e8, {}};
+	const auto g = static_cast<float>(kGravity);
+	constexpr double kUnitKilograms = 100.0;
+
+	// 25,000 t at 0.1 g over 120 million km.
+	const Jettison::Transit::MotionProfile tenth{0.1f * g, 0.0f, 0.1f * g, {}};
+	const World::Fuel burned = Travel::Burned(pulse, tenth, 25000.0, 1.2e11, kUnitKilograms);
+	CHECK(burned.reactionMass == 0.0);
+	CHECK(burned.pellets > 0.0);
+	CHECK(std::fmod(burned.pellets, kUnitKilograms) == 0.0);
+
+	// The same burn by the kilogram is at most a unit less, and no dearer above 1 g: curveExponent 0.
+	const World::Fuel byKilogram = Travel::Burned(pulse, tenth, 25000.0, 1.2e11);
+	CHECK(burned.pellets >= byKilogram.pellets);
+	CHECK(burned.pellets < byKilogram.pellets + kUnitKilograms);
+	const Jettison::Transit::MotionProfile twice{2.0f * g, 0.0f, 2.0f * g, {}};
+	const World::Fuel hard = Travel::Burned(pulse, twice, 25000.0, 1.2e11);
+	CHECK(hard.pellets == doctest::Approx(byKilogram.pellets * std::sqrt(20.0)).epsilon(0.002));
+}
+
+
 TEST_CASE("A journey flies the burn chosen and takes its leg's fuel from the tanks as it starts")
 {
 	Hosted hosted{MANIFEST_MOD_DIRECTORY, Cruise::Profiled};

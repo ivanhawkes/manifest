@@ -113,4 +113,12 @@ std::string FeeClass(const ContentSet &content, std::string_view hullId);
 // The drive class a hull flies (Core::ShipClassSpec::driveId), or null for a hull the set does not
 // have; content holds every hull's to a drive class.
 const DriveDefinition *DriveOf(const ContentSet &content, std::string_view hullId);
+
+// The kilograms in one of the item's traded units: 1 for an item traded by the kilogram, and else its
+// density and pack factor over its units to the cubic metre (100 for a pulse unit). A magazine and a
+// burn are in kilograms; an item is bought, carried and priced by its unit.
+double KilogramsPerUnit(const Core::ItemNode &item);
+
+// The drive's pellet item in the set, which content holds every drive's to.
+const Core::ItemNode &PelletItem(const ContentSet &content, const DriveDefinition &drive);
 } // namespace Manifest::Content

@@ -467,13 +467,19 @@ void CheckDrives(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 		const DriveDefinition &drive = *registry.Find<DriveDefinition>(name);
 		At<DriveDefinition>(checker, name, drive.driveId);
 		checker.Require(!drive.driveId.empty(), "driveId", "is required");
-		checker.Require(Positive(drive.exhaustKms), "exhaustKms", "must be above 0");
+		checker.Require(
+		    !drive.exhaustKms || Positive(*drive.exhaustKms), "exhaustKms",
+		    "must be above 0, or left out for a drive with no reaction mass");
 		const auto *pItem = registry.Find<Core::ItemNode>(RegistryName(drive.pelletItemId));
 		checker.Require(
 		    pItem != nullptr && pItem->itemId == drive.pelletItemId &&
-		        pItem->unitType == Core::TradeUnit::Kilogram,
+		        (pItem->unitType == Core::TradeUnit::Kilogram ||
+		         (pItem->unitType == Core::TradeUnit::Unit && Positive(pItem->density) &&
+		          Positive(pItem->packFactor) && Positive(pItem->unitsPerCubicMetre))),
 		    "pelletItemId",
-		    std::format("'{}' names no item traded by the kilogram", drive.pelletItemId));
+		    std::format(
+		        "'{}' names no item traded by the kilogram, or by the unit with its mass",
+		        drive.pelletItemId));
 		checker.Require(
 		    Positive(drive.pelletMilligramsPerTonneKms), "pelletMilligramsPerTonneKms",
 		    "must be above 0");
@@ -1493,5 +1499,23 @@ const DriveDefinition *DriveOf(const ContentSet &content, std::string_view hullI
 	const auto drive = content.driveClasses.find(hull->driveId);
 	JETTISON_VERIFY(drive != content.driveClasses.end());
 	return &drive->second;
+}
+
+
+double KilogramsPerUnit(const Core::ItemNode &item)
+{
+	constexpr double kKilogramsPerTonne = 1000.0;
+	return item.unitType == Core::TradeUnit::Kilogram
+	           ? 1.0
+	           : item.density * item.packFactor * kKilogramsPerTonne / item.unitsPerCubicMetre;
+}
+
+
+const Core::ItemNode &PelletItem(const ContentSet &content, const DriveDefinition &drive)
+{
+	const auto item =
+	    std::ranges::find(content.gameMode.items, drive.pelletItemId, &Core::ItemNode::itemId);
+	JETTISON_VERIFY(item != content.gameMode.items.end());
+	return *item;
 }
 } // namespace Manifest::Content

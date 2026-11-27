@@ -348,7 +348,8 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	const std::string torch = patch("manifest/definitions/drive-classes/", "drive-torch");
 	CheckRefused(
 	    torch, "version: 1\nexhaustKms: 0\n",
-	    "Manifest.Drive 'DriveTorch': exhaustKms must be above 0");
+	    "Manifest.Drive 'DriveTorch': exhaustKms must be above 0, or left out for a drive with no "
+	    "reaction mass");
 	CheckRefused(
 	    torch, "version: 1\npelletItemId: ItemCopper\n",
 	    "pelletItemId 'ItemCopper' names no item traded by the kilogram");
@@ -672,7 +673,7 @@ TEST_CASE("The fixtures are the trading and governance scenarios their plans des
 	// mixed ages (docs/content.md, "Scenarios"), with the essentials every region trades (W04), the
 	// life-support goods a ship's resupply takes (W09) and the wellness goods (W19).
 	const ScenarioDefinition &trading = content.scenarios.at("trading");
-	CHECK(trading.items.size() == 24);
+	CHECK(trading.items.size() == 25);
 	CHECK(trading.systems.size() == 1);
 	CHECK(trading.planets.size() == 2);
 	REQUIRE(trading.regions.size() == 10);
@@ -720,8 +721,9 @@ TEST_CASE("The fixtures are the trading and governance scenarios their plans des
 	};
 
 	// A torch's fuels are the ships' (D-108): every station of both scenarios makes reaction mass,
-	// 10,000 kg a day, its broker seeded with 800 totes, about nine days, and one station of each
-	// planet refines pellets, 2 kg a day; no household wants either.
+	// 10,000 kg a day, its broker seeded with 800 totes, about nine days, and deuterium for the hauler,
+	// 200 kg a day with 16 totes, two medium freighters' magazines (W22b); one station of each planet
+	// refines the torch's pellets, 2 kg a day; no household wants any of them.
 	for (const ScenarioDefinition *scenario : {&trading, &content.scenarios.at("governance")})
 		for (const VenueDefinition &venue : scenario->venues)
 		{
@@ -732,6 +734,12 @@ TEST_CASE("The fixtures are the trading and governance scenarios their plans des
 			CHECK(mass->demand == 0.0);
 			CHECK(mass->stock == 800);
 			CHECK(mass->regionId == venue.regions[0].regionId);
+			const auto deuterium =
+			    std::ranges::find(venue.market, "ItemDeuteriumPellets", &MarketEntry::itemId);
+			REQUIRE(deuterium != venue.market.end());
+			CHECK(deuterium->production == 200.0);
+			CHECK(deuterium->demand == 0.0);
+			CHECK(deuterium->stock == 16);
 			const auto pellets =
 			    std::ranges::find(venue.market, "ItemFusionPellets", &MarketEntry::itemId);
 			const bool refinery = venue.venueId == "VenueOreDeepsStation" ||
@@ -747,7 +755,8 @@ TEST_CASE("The fixtures are the trading and governance scenarios their plans des
 	for (const ItemSelection &item : trading.items)
 	{
 		CAPTURE(item.itemId);
-		if (item.itemId == "ItemReactionMass" || item.itemId == "ItemFusionPellets")
+		if (item.itemId == "ItemReactionMass" || item.itemId == "ItemFusionPellets" ||
+		    item.itemId == "ItemDeuteriumPellets")
 			continue;
 
 		// Each venue trades an essential, which each region needs.
