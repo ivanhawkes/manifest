@@ -28,11 +28,20 @@ if(NOT MANIFEST_BUILD_CLIENT)
 	return()
 endif()
 
+# The client's presentation on the shell: its screens over the model, a library so the screens check
+# loads them with no shell.
+add_library(manifest_client_game STATIC ClientGame.cpp ClientGame.h)
+target_include_directories(manifest_client_game PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(manifest_client_game
+	PUBLIC Manifest::Client Jettison::App Jettison::Ui
+	PRIVATE Jettison::Reflect manifest_warnings)
+set_target_properties(manifest_client_game PROPERTIES FOLDER "Apps")
+
 # The graphical client: Manifest's game drawn by Jettison's shell, which starts it through a session
 # of its own over the engine's assets, the staged content mounted over them.
 add_executable(manifest_client main.cpp)
 set_target_properties(manifest_client PROPERTIES FOLDER "Apps")
-target_link_libraries(manifest_client PRIVATE Manifest::Host Jettison::App manifest_warnings)
+target_link_libraries(manifest_client PRIVATE manifest_client_game Manifest::Host manifest_warnings)
 
 # The engine's staged assets, found from their target: jettison_use_shared_assets reads a variable of
 # the engine's own directory, which a project that fetches the engine does not see.

@@ -1,0 +1,107 @@
+version: 1
+# The graphical client's words (docs/client.md), in English, the base every language is read over.
+manifest:
+  totes: totes
+  nav:
+    company: Company
+    market: Market
+    travel: Travel
+    service: Service
+  clock:
+    day: Day
+  start:
+    title: Manifest
+    intro: "Name yourself and your trading company. You start with a ship docked at a highport."
+    name: Your name
+    company: Your company
+    provision: Start trading
+  company:
+    title: Company
+    credits: "Credits:"
+    ships: Ships
+    docked: Docked at
+    underWay: Under way to
+    holdings: Goods in warehouses
+    noHoldings: No goods in any warehouse.
+    reserved: reserved
+    orders: Orders
+    noOrders: No orders resting.
+    cancel: Cancel
+  market:
+    title: Market
+    notDocked: The ship is not docked, so there is no market to trade in.
+    good: Good
+    bid: Bid
+    ask: Ask
+    held: Held
+    aboard: Aboard
+    buy: Buy
+    sell: Sell
+    load: Load
+    unload: Unload
+  travel:
+    title: Travel
+    thrust: "Thrust, of the cruise:"
+    acceleration: "Acceleration:"
+    destinations: Destinations
+    go: Go
+  flight:
+    title: Under way
+    to: to
+    fastForwardOn: "Fast-forward: on"
+    fastForwardOff: "Fast-forward: off"
+  leg:
+    departing: Leaving the pad
+    clearing: Clearing the station
+    cruising: Cruising
+    arriving: Arriving
+    arrived: Arrived
+    failed: The journey failed
+  service:
+    title: Service
+    oxygen: "Oxygen:"
+    scrubbers: "Scrubbers:"
+    occupantDays: occupant-days
+    connected: Connected to the station's life support at
+    reactionMass: "Reaction mass:"
+    pellets: "Fusion pellets:"
+    refill: Refill the tanks
+    replace: Replace the scrubbers
+    refuelOn: Refuel on docking
+    refuelOff: Do not refuel
+  result:
+    waiting: Sent; waiting for the next step.
+    Succeeded: "Done."
+    NotAuthorised: "Not allowed."
+    UnsupportedCommand: "This build does not know that request."
+    MalformedPayload: "The request could not be read."
+    PayloadTooLarge: "The request is too large."
+    QueueFull: "Too many requests are waiting; try again."
+    SequenceGap: "A request went missing; try again."
+    SequenceExhausted: "No more requests can be sent."
+    RequestConflict: "That request was already sent differently."
+    RequestTooOld: "That request is too old."
+    UnknownTarget: "There is no such thing to act on."
+    InsufficientFunds: "Not enough credits."
+    AlreadyProvisioned: "You have a company already."
+    NotDocked: "The ship is not docked."
+    WrongVenue: "That is not where the ship is."
+    InsufficientStock: "Not enough goods for that."
+    CapacityExceeded: "There is no room for that."
+    InvalidQuantity: "That quantity will not do."
+    InvalidPrice: "That price will not do."
+    BookFull: "The market has no room for another order."
+    NoPadFree: "No pad is free for the ship."
+    Travelling: "The ship is under way."
+    AlreadyThere: "The ship is there already."
+    NoServiceFree: "The station has no life support connection free."
+    AlreadyFitted: "The ship has that already."
+    NotFittable: "The ship cannot take that."
+    RateTooHigh: "That rate is above the limit."
+    InsufficientFuel: "Not enough fuel for that burn."
+    Closed: "That tender is closed."
+    LimitReached: "A limit has been reached."
+    StaleRevision: "That bid has changed since."
+    Governed: "That region has a governor."
+    AlreadyFounded: "You govern a region already."
+    AlreadyQueued: "That project is queued already."

@@ -136,6 +136,11 @@ add_custom_target(manifest_mod
     # Authored as the records themselves, so staged as they are.
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${CMAKE_CURRENT_SOURCE_DIR}/data/scenarios" "${MANIFEST_MOD_DIRECTORY}/manifest/scenarios"
+    # The graphical client's screens and their words, at the paths the engine's UI reads them from.
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/mods/manifest/ui" "${MANIFEST_MOD_DIRECTORY}/ui"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/mods/manifest/strings" "${MANIFEST_MOD_DIRECTORY}/strings"
     VERBATIM)
 if(TARGET manifest_data)
     add_dependencies(manifest_mod manifest_data)

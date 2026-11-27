@@ -1,0 +1,85 @@
+/* The graphical client's screens (docs/client.md): a panel against the frame's left edge, and the
+   flight panel against its right while a journey is under way. Over the engine's ui/base.rcss. */
+
+#window {
+	position: absolute;
+	left: 20dp;
+	top: 20dp;
+	width: 780dp;
+	padding: 12dp 16dp;
+	border: 1dp #4d7ea8;
+	border-radius: 4dp;
+	background-color: #0e1824e6;
+}
+
+#flight {
+	position: absolute;
+	right: 20dp;
+	top: 20dp;
+	width: 320dp;
+	padding: 12dp 16dp;
+	border: 1dp #4d7ea8;
+	border-radius: 4dp;
+	background-color: #0e1824e6;
+}
+
+#nav {
+	margin-bottom: 8dp;
+}
+
+h2 {
+	font-size: 18dp;
+	margin-top: 10dp;
+	margin-bottom: 4dp;
+}
+
+p {
+	margin-bottom: 4dp;
+}
+
+table {
+	width: 100%;
+}
+
+td {
+	padding: 2dp 4dp;
+}
+
+.number {
+	text-align: right;
+}
+
+#status {
+	margin-top: 8dp;
+	color: #f2c46d;
+}
+
+input.text {
+	width: 220dp;
+	padding: 2dp 4dp;
+	border: 1dp #4d7ea8;
+	background-color: #10202f;
+	color: #d8e2ec;
+}
+
+input.range {
+	width: 240dp;
+	height: 16dp;
+}
+
+input.range slidertrack {
+	height: 4dp;
+	margin-top: 6dp;
+	background-color: #33414f;
+}
+
+input.range sliderbar {
+	width: 12dp;
+	height: 16dp;
+	background-color: #4d7ea8;
+}
+
+input.range sliderarrowdec, input.range sliderarrowinc {
+	width: 0dp;
+	height: 0dp;
+}

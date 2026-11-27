@@ -1,0 +1,36 @@
+<rml>
+<head>
+	<title>[[manifest.travel.title]]</title>
+	<link type="text/rcss" href="/ui/base.rcss"/>
+	<link type="text/rcss" href="manifest.rcss"/>
+</head>
+<!-- The travel screen (docs/client.md, "Screens"): the venues the player has a report of, and the
+     journey's burn (D-107): its thrust in percent of the cruise, and its acceleration in g. -->
+<body data-model="manifest">
+	<div id="window" class="panel">
+		<div id="nav">
+			<button id="nav-company" data-event-click="show('company')">[[manifest.nav.company]]</button>
+			<button id="nav-market" data-event-click="show('market')">[[manifest.nav.market]]</button>
+			<button id="nav-travel" data-event-click="show('travel')">[[manifest.nav.travel]]</button>
+			<button id="nav-service" data-event-click="show('service')">[[manifest.nav.service]]</button>
+		</div>
+		<h1>[[manifest.travel.title]]</h1>
+		<p>[[manifest.travel.thrust]] <span id="thrust">{{screen.thrustPercent}}</span>%</p>
+		<input type="range" id="thrust-slider" min="1" max="100" step="1"
+		       data-attr-value="screen.thrustPercent" data-event-change="thrust(ev.value)"/>
+		<p>[[manifest.travel.acceleration]] <span id="acceleration">{{screen.accelerationTenths / 10 | format(1)}}</span> g
+			<button id="slower" data-event-click="slower()">-</button>
+			<button id="faster" data-event-click="faster()">+</button>
+		</p>
+		<h2>[[manifest.travel.destinations]]</h2>
+		<table>
+			<tr data-for="venue, i : screen.destinations">
+				<td>{{venue}}</td>
+				<td><button data-attr-id="'travel-' + i" data-event-click="travel(venue)">[[manifest.travel.go]]</button></td>
+			</tr>
+		</table>
+		<p id="clock">[[manifest.clock.day]] {{screen.day}}, {{screen.clock}}</p>
+		<p id="status">{{screen.status}}</p>
+	</div>
+</body>
+</rml>

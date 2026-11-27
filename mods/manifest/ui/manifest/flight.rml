@@ -1,0 +1,31 @@
+<rml>
+<head>
+	<title>[[manifest.flight.title]]</title>
+	<link type="text/rcss" href="/ui/base.rcss"/>
+	<link type="text/rcss" href="manifest.rcss"/>
+</head>
+<!-- The flight panel (docs/client.md, "Screens"), beside the screens while a journey is under way: its
+     destination and leg, the fuel left, and whether the client passes over its quiet steps. -->
+<body data-model="manifest">
+	<div id="flight" class="panel">
+		<h2>[[manifest.flight.title]]</h2>
+		<div data-for="ship : screen.ships">
+			<p>{{ship.shipId}}: [[manifest.flight.to]] {{ship.destination}}</p>
+			<p data-if="ship.leg == 'Departing'">[[manifest.leg.departing]]</p>
+			<p data-if="ship.leg == 'Clearing'">[[manifest.leg.clearing]]</p>
+			<p data-if="ship.leg == 'Cruising'">[[manifest.leg.cruising]]</p>
+			<p data-if="ship.leg == 'Arriving'">[[manifest.leg.arriving]]</p>
+			<p data-if="ship.leg == 'Arrived'">[[manifest.leg.arrived]]</p>
+			<p data-if="ship.leg == 'Failed'">[[manifest.leg.failed]]</p>
+			<p>[[manifest.service.reactionMass]] {{ship.reactionMass}} / {{ship.reactionMassMost}} kg</p>
+		</div>
+		<p>[[manifest.clock.day]] {{screen.day}}, {{screen.clock}}</p>
+		<p>
+			<button id="fastforward" data-event-click="fastforward()">
+				<span data-if="screen.fastForward">[[manifest.flight.fastForwardOn]]</span>
+				<span data-if="!screen.fastForward">[[manifest.flight.fastForwardOff]]</span>
+			</button>
+		</p>
+	</div>
+</body>
+</rml>

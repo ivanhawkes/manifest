@@ -1,0 +1,60 @@
+<rml>
+<head>
+	<title>[[manifest.company.title]]</title>
+	<link type="text/rcss" href="/ui/base.rcss"/>
+	<link type="text/rcss" href="manifest.rcss"/>
+</head>
+<!-- The company screen (docs/client.md, "Screens"): its credits, its ships and what they carry, its
+     goods at each venue, and its resting orders, each withdrawn with cancel. -->
+<body data-model="manifest">
+	<div id="window" class="panel">
+		<div id="nav">
+			<button id="nav-company" data-event-click="show('company')">[[manifest.nav.company]]</button>
+			<button id="nav-market" data-event-click="show('market')">[[manifest.nav.market]]</button>
+			<button id="nav-travel" data-event-click="show('travel')">[[manifest.nav.travel]]</button>
+			<button id="nav-service" data-event-click="show('service')">[[manifest.nav.service]]</button>
+		</div>
+		<h1 id="company-name">{{screen.companyName}}</h1>
+		<p>[[manifest.company.credits]] <span id="credits">{{screen.credits}}</span></p>
+		<h2>[[manifest.company.ships]]</h2>
+		<table>
+			<tr data-for="ship, i : screen.ships">
+				<td data-attr-id="'ship-' + i">{{ship.shipId}}</td>
+				<td>{{ship.hullId}}</td>
+				<td data-if="ship.dockedAt != ''">[[manifest.company.docked]] {{ship.dockedAt}}</td>
+				<td data-if="ship.dockedAt == ''">[[manifest.company.underWay]] {{ship.destination}}</td>
+				<td class="number">{{ship.aboard}} / {{ship.hold}} [[manifest.totes]]</td>
+			</tr>
+		</table>
+		<div data-for="ship : screen.ships">
+			<p data-for="lot : ship.cargo">{{ship.shipId}}: {{lot.itemId}} {{lot.totes}} [[manifest.totes]]</p>
+		</div>
+		<h2>[[manifest.company.holdings]]</h2>
+		<p data-if="screen.holdings.size == 0">[[manifest.company.noHoldings]]</p>
+		<table data-if="screen.holdings.size > 0">
+			<tr data-for="holding : screen.holdings">
+				<td>{{holding.venueId}}</td>
+				<td>{{holding.itemId}}</td>
+				<td class="number">{{holding.available}} [[manifest.totes]]</td>
+				<td class="number" data-if="holding.reserved > 0">{{holding.reserved}} [[manifest.company.reserved]]</td>
+			</tr>
+		</table>
+		<h2>[[manifest.company.orders]]</h2>
+		<p data-if="screen.orders.size == 0">[[manifest.company.noOrders]]</p>
+		<table data-if="screen.orders.size > 0">
+			<tr data-for="order, i : screen.orders">
+				<td>{{order.orderId}}</td>
+				<td data-if="order.side == 'Buy'">[[manifest.market.buy]]</td>
+				<td data-if="order.side == 'Sell'">[[manifest.market.sell]]</td>
+				<td>{{order.itemId}}</td>
+				<td>{{order.venueId}}</td>
+				<td class="number">{{order.remaining}} / {{order.totes}}</td>
+				<td class="number">{{order.price}}</td>
+				<td><button data-attr-id="'cancel-' + i" data-event-click="cancel(order.orderId)">[[manifest.company.cancel]]</button></td>
+			</tr>
+		</table>
+		<p id="clock">[[manifest.clock.day]] {{screen.day}}, {{screen.clock}}</p>
+		<p id="status">{{screen.status}}</p>
+	</div>
+</body>
+</rml>

@@ -4,12 +4,15 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <jettison/app/RenderApplication.h>
 #include <jettison/host/Session.h>
 
 #include <manifest/host/Start.h>
+
+#include "ClientGame.h"
 
 // The graphical client (docs/client.md): Manifest's game started by Jettison's shell through a session
 // of its own, over the engine's assets, with Manifest's content mounted as the shell's.
@@ -43,7 +46,9 @@ int main(int argc, char **argv)
 		scenario = *(at + 1);
 		at = shell.erase(at, at + 2);
 	}
+	std::unique_ptr<Jettison::Host::Game> world = Manifest::Host::MakeGame(scenario);
+	Manifest::Client::ClientGame game{*world};
 	return Jettison::App::RunRenderApplication(
 	    static_cast<int>(shell.size()), shell.data(), "Manifest", JETTISON_ASSET_SUBDIRECTORY,
-	    Manifest::Host::MakeGame(scenario), nullptr, MANIFEST_CONTENT_SUBDIRECTORY);
+	    std::move(world), &game, MANIFEST_CONTENT_SUBDIRECTORY);
 }

@@ -1,0 +1,54 @@
+<rml>
+<head>
+	<title>[[manifest.market.title]]</title>
+	<link type="text/rcss" href="/ui/base.rcss"/>
+	<link type="text/rcss" href="manifest.rcss"/>
+</head>
+<!-- The market screen (docs/client.md, "Screens"): the player's report of the market where the ship is
+     docked, a tote bought at the best ask or sold at the best bid, and a good's totes loaded aboard or
+     unloaded ashore. -->
+<body data-model="manifest">
+	<div id="window" class="panel">
+		<div id="nav">
+			<button id="nav-company" data-event-click="show('company')">[[manifest.nav.company]]</button>
+			<button id="nav-market" data-event-click="show('market')">[[manifest.nav.market]]</button>
+			<button id="nav-travel" data-event-click="show('travel')">[[manifest.nav.travel]]</button>
+			<button id="nav-service" data-event-click="show('service')">[[manifest.nav.service]]</button>
+		</div>
+		<h1>[[manifest.market.title]]</h1>
+		<p data-if="screen.venueId == ''">[[manifest.market.notDocked]]</p>
+		<div data-if="screen.venueId != ''">
+			<p id="venue">{{screen.venueId}}</p>
+			<table>
+				<tr>
+					<td>[[manifest.market.good]]</td>
+					<td class="number">[[manifest.market.bid]]</td>
+					<td class="number">[[manifest.market.ask]]</td>
+					<td class="number">[[manifest.market.held]]</td>
+					<td class="number">[[manifest.market.aboard]]</td>
+					<td></td>
+				</tr>
+				<tr data-for="good, i : screen.goods">
+					<td data-attr-id="'good-' + i">{{good.itemId}}</td>
+					<td class="number" data-attr-id="'bid-' + i">{{good.bid}}</td>
+					<td class="number" data-attr-id="'ask-' + i">{{good.ask}}</td>
+					<td class="number" data-attr-id="'held-' + i">{{good.held}}</td>
+					<td class="number" data-attr-id="'aboard-' + i">{{good.aboard}}</td>
+					<td>
+						<button data-attr-id="'buy-' + i" data-class-disabled="good.askRaw == 0"
+						        data-event-click="buy(good.itemId)">[[manifest.market.buy]]</button>
+						<button data-attr-id="'sell-' + i" data-class-disabled="good.bidRaw == 0 || good.held == 0"
+						        data-event-click="sell(good.itemId)">[[manifest.market.sell]]</button>
+						<button data-attr-id="'load-' + i" data-class-disabled="good.held == 0"
+						        data-event-click="load(good.itemId)">[[manifest.market.load]]</button>
+						<button data-attr-id="'unload-' + i" data-class-disabled="good.aboard == 0"
+						        data-event-click="unload(good.itemId)">[[manifest.market.unload]]</button>
+					</td>
+				</tr>
+			</table>
+		</div>
+		<p id="clock">[[manifest.clock.day]] {{screen.day}}, {{screen.clock}}</p>
+		<p id="status">{{screen.status}}</p>
+	</div>
+</body>
+</rml>

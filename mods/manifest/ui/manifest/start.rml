@@ -1,0 +1,21 @@
+<rml>
+<head>
+	<title>[[manifest.start.title]]</title>
+	<link type="text/rcss" href="/ui/base.rcss"/>
+	<link type="text/rcss" href="manifest.rcss"/>
+</head>
+<!-- The start screen (docs/client.md, "Screens"): the player's name and their company's, and the
+     company provisioned with them, as the host provisions a new player. -->
+<body data-model="manifest">
+	<div id="window" class="panel">
+		<h1>[[manifest.start.title]]</h1>
+		<p>[[manifest.start.intro]]</p>
+		<p>[[manifest.start.name]]</p>
+		<input type="text" id="name" value="Ada" data-event-change="name(ev.value)"/>
+		<p>[[manifest.start.company]]</p>
+		<input type="text" id="company" value="Ada Co" data-event-change="company(ev.value)"/>
+		<p><button id="provision" data-event-click="provision()">[[manifest.start.provision]]</button></p>
+		<p id="status">{{screen.status}}</p>
+	</div>
+</body>
+</rml>

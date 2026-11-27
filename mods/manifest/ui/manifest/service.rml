@@ -1,0 +1,38 @@
+<rml>
+<head>
+	<title>[[manifest.service.title]]</title>
+	<link type="text/rcss" href="/ui/base.rcss"/>
+	<link type="text/rcss" href="manifest.rcss"/>
+</head>
+<!-- The service screen (docs/client.md, "Screens"): the ship's life support and fuel, its tanks refilled
+     or its scrubbers replaced where it is docked, and whether it refuels as it docks. -->
+<body data-model="manifest">
+	<div id="window" class="panel">
+		<div id="nav">
+			<button id="nav-company" data-event-click="show('company')">[[manifest.nav.company]]</button>
+			<button id="nav-market" data-event-click="show('market')">[[manifest.nav.market]]</button>
+			<button id="nav-travel" data-event-click="show('travel')">[[manifest.nav.travel]]</button>
+			<button id="nav-service" data-event-click="show('service')">[[manifest.nav.service]]</button>
+		</div>
+		<h1>[[manifest.service.title]]</h1>
+		<div data-for="ship : screen.ships">
+			<p>{{ship.shipId}}</p>
+			<p>[[manifest.service.oxygen]] <span id="oxygen">{{ship.oxygen}}</span> kg</p>
+			<p>[[manifest.service.scrubbers]] {{ship.scrubbers}} [[manifest.service.occupantDays]]</p>
+			<p data-if="ship.connectedTo != ''">[[manifest.service.connected]] {{ship.connectedTo}}</p>
+			<p>[[manifest.service.reactionMass]] {{ship.reactionMass}} / {{ship.reactionMassMost}} kg</p>
+			<p>[[manifest.service.pellets]] {{ship.pellets}} / {{ship.pelletsMost}} kg</p>
+		</div>
+		<p>
+			<button id="refill" data-event-click="refill()">[[manifest.service.refill]]</button>
+			<button id="replace" data-event-click="replace()">[[manifest.service.replace]]</button>
+		</p>
+		<p>
+			<button id="refuel-on" data-event-click="refuel(true)">[[manifest.service.refuelOn]]</button>
+			<button id="refuel-off" data-event-click="refuel(false)">[[manifest.service.refuelOff]]</button>
+		</p>
+		<p id="clock">[[manifest.clock.day]] {{screen.day}}, {{screen.clock}}</p>
+		<p id="status">{{screen.status}}</p>
+	</div>
+</body>
+</rml>

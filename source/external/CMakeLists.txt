@@ -36,7 +36,7 @@ if(MANIFEST_BUILD_TUI)
 endif()
 # The graphical client is the engine's shell with Manifest composed into it.
 if(MANIFEST_BUILD_CLIENT)
-    list(APPEND manifest_sdk_required Jettison::App jettison_assets)
+    list(APPEND manifest_sdk_required Jettison::App Jettison::Ui jettison_assets)
 endif()
 set(manifest_sdk_missing "")
 foreach(target IN LISTS manifest_sdk_required)
