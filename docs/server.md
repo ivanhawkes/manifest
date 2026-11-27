@@ -141,7 +141,8 @@ flowchart TD
     A["Poll: admit sessions and requests, up to 10 ms"] --> B{"a step due by the wall clock?"}
     B -- no --> A
     B -- yes --> C["Journal::Advance: the due steps, flushed when a flush is due"]
-    C --> D["Publish: completed replies and snapshots"]
+    C --> S["Scripts: the world's events dispatched, the world as it stands to read"]
+    S --> D["Publish: completed replies and snapshots"]
     D --> E{"SIGINT or SIGTERM?"}
     E -- no --> A
     E -- yes --> F["Journal::Stop: run what was admitted, write a snapshot"]
@@ -156,6 +157,12 @@ it admitted in one last step, answers it, and writes a snapshot, so it loses not
 what ran since the last flush, 30 s by default: a `Completed` reply is not a durable acknowledgement
 ([D-113](decision-ledger.md#d-113)). How the journal, snapshots and backups work is in [saves, the
 journal and backups](persistence.md).
+
+The mods' scripts run in the server's session as in a client playing alone ([the host](host.md)):
+after each advance the server gives them every event the world raised (`ScriptHost::Dispatch`),
+with a snapshot of the world as it then stands to read (`Sim::Capture`, `ScriptHost::ReadFrom`), and
+the journal writes their keys into each snapshot. A replay gives them nothing: they send no command, so
+the world replays without them.
 
 ### Retries across reconnects
 

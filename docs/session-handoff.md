@@ -23,6 +23,6 @@ The first loop plays in the graphical client, `manifest_client` (L15a, done 2026
 screens, names, and the looks. The
 owners' screens are [L15b](delivery-order.md#l15b), which waits on [L04](delivery-order.md#l04),
 [L05](delivery-order.md#l05) and [L29](delivery-order.md#l29); L29's open choices are settled
-([D-120](decision-ledger.md#d-120)). The pin is Jettison's `3c934b6`: its server pack, client-side mods and world content (J63), the content mounted under its identifier, and its own text in four languages with the fonts a game supplies, Manifest's Noto Sans JP fetched at build time ([languages](client.md#languages)). The queue's first row, the
+([D-120](decision-ledger.md#d-120)). The pin is Jettison's `b8134e3`: numbers, dates and times in the language's form, which the client's screens use (J15, [languages](client.md#languages)); the mods' scripts in the host session, which the server runs and saves ([J62](server.md#the-servers-loop)); and a scene held behind its fade until its models load (J13), which the client has no scene change to use yet. The queue's first row, the
 drives past the torch ([W22](delivery-order.md#w22)), waits for the first larger hull. Saves still
 run on the step's thread ([L40](delivery-order.md#l40), [D-115](decision-ledger.md#d-115)).

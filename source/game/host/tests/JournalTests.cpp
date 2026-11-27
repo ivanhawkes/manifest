@@ -904,3 +904,54 @@ TEST_CASE(
 	    doctest::Contains("are within the world at"), std::runtime_error);
 	CHECK_FALSE(std::filesystem::exists(scratch.Root() / "identity"));
 }
+
+
+#ifdef MANIFEST_HOST_KEEPER
+// The storage of a world whose scripts keep keys: the session's.
+Host::Storage Scripted(Jettison::Host::Session &session)
+{
+	Host::Storage storage;
+	storage.pScripts = &session.Scripts();
+	return storage;
+}
+
+
+// A mod's script runs in the server's session (Host::Start) and keeps a number by key, which the
+// snapshot of a clean stop holds and a start's recovery gives back to the script.
+TEST_CASE("A mod's script runs in the server's session, and what it keeps outlives a stop and a start")
+{
+	const Scratch scratch;
+	const std::filesystem::path overlay = scratch.Elsewhere("keeper");
+	std::filesystem::create_directories(overlay);
+	std::filesystem::copy(
+	    std::filesystem::path{MANIFEST_HOST_OVERLAYS} / "keeper", overlay,
+	    std::filesystem::copy_options::recursive);
+	std::filesystem::copy_file(MANIFEST_HOST_KEEPER, overlay / "keeper.wasm");
+	const auto start = [&overlay] { return Host::Start({MANIFEST_MOD_DIRECTORY, {overlay}, "trading"}); };
+	const auto recall = [](Jettison::Host::Session &session)
+	{ return session.Scripts().Call("keeper", "recall", {}); };
+	const std::vector<std::int32_t> none{-1};
+	const std::vector<std::int32_t> seven{7};
+	{
+		const std::unique_ptr<Jettison::Host::Session> pSession = start();
+		REQUIRE(pSession->Scripts().Scripts().size() == 1);
+		const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.Root());
+		Host::Journal journal{
+		    directory, Host::RunningIdentity(*pSession), {}, {}, Scripted(*pSession)};
+		journal.Recover(pSession->World());
+		CHECK(recall(*pSession) == none);
+		CHECK(pSession->Scripts().Call("keeper", "remember", seven));
+		journal.Advance(pSession->World(), 1);
+		journal.Stop(pSession->World());
+	}
+
+	const std::unique_ptr<Jettison::Host::Session> pSession = start();
+	CHECK(recall(*pSession) == none);
+	const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.Root());
+	const Host::Journal journal{
+	    directory, Host::RunningIdentity(*pSession), {}, {}, Scripted(*pSession)};
+	journal.Recover(pSession->World());
+	CHECK(recall(*pSession) == seven);
+	CHECK(pSession->World().Clock().Step() == 1);
+}
+#endif

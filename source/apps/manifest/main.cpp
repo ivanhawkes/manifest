@@ -41,6 +41,9 @@
 #include <vector>
 
 #include <jettison/core/Log.h>
+#include <jettison/script/ScriptHost.h>
+#include <jettison/sim/Events.h>
+#include <jettison/sim/Snapshot.h>
 #include <jettison/time/FixedStep.h>
 
 namespace
@@ -172,6 +175,9 @@ void RunServer(Jettison::Host::Session &session, const Serve &serve)
 	// Before a client can reach the server: the world held, and brought to its journal's last step.
 	const Manifest::Host::WorldDirectory directory =
 	    Manifest::Host::OpenWorldDirectory(ResolvePlace(serve.world, Manifest::Host::DefaultWorld));
+	Manifest::Host::Storage storage;
+	storage.backups = backups;
+	storage.pScripts = &session.Scripts();
 	const auto stepsIn = [&](std::uint32_t seconds)
 	{
 		return std::max<std::uint64_t>(
@@ -182,8 +188,13 @@ void RunServer(Jettison::Host::Session &session, const Serve &serve)
 	    Manifest::Host::RunningIdentity(session),
 	    {stepsIn(serve.flushSeconds), stepsIn(serve.snapshotSeconds)},
 	    {},
-	    {backups}};
+	    storage};
 	journal.Recover(world);
+
+	// The mods' scripts read the world as the last steps left it, as a client's shell has them do.
+	Jettison::Script::ScriptHost &scripts = session.Scripts();
+	Jettison::Sim::Snapshot shown = Jettison::Sim::Capture(world);
+	scripts.ReadFrom(shown);
 	Manifest::Remote::Server server{session, tokens, key, serve.address, serve.port};
 	std::signal(SIGINT, [](int) { g_stopping = 1; });
 	std::signal(SIGTERM, [](int) { g_stopping = 1; });
@@ -210,8 +221,15 @@ void RunServer(Jettison::Host::Session &session, const Serve &serve)
 		// start finds what the journal holds.
 		journal.Advance(world, count);
 
-		// What the engine raises is presentation's, and a dedicated server presents none of it.
-		(void)world.Events().Take();
+		// What the world raised goes to the mods' scripts, as a client's shell gives it them; a
+		// dedicated server presents nothing else of it.
+		const std::vector<Jettison::Sim::SimEvent> events = world.Events().Take();
+		if (!events.empty())
+		{
+			shown = Jettison::Sim::Capture(world);
+			for (const Jettison::Sim::SimEvent &event : events)
+				scripts.Dispatch(event);
+		}
 		server.Publish();
 	}
 

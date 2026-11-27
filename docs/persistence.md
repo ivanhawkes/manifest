@@ -77,8 +77,11 @@ the requests run.
 
 ### Snapshots and the catalogue
 
-A snapshot (`snapshots/<batch>`) is the engine's world save (`SimWorld::Save`'s bytes) as the
-batch of that sequence left the world. It bounds how much a start replays. It is taken between
+A snapshot (`snapshots/<batch>`) is the engine's save game (`Sim::SaveGame`, the world's
+`SimWorld::Save` within it) as the batch of that sequence left the world, with what the mods'
+scripts keep by key as its `Script.Store` section (`Script::kStoreSection`) when the journal's
+storage names the scripts (`Storage::pScripts`, as the server's does); a recovery gives the scripts
+the keys of the snapshot it starts from, none from the world's start. It bounds how much a start replays. It is taken between
 steps, so nothing is queued and no request is pending; what the save holds, component by component,
 is listed in [the hosted world](world.md).
 
@@ -348,6 +351,9 @@ the fourth replaces the writer, which the tests use to fail where a disk would.
 - **No migrations.** A world does not outlive its build until player testing
   ([D-109](decision-ledger.md#d-109)); from then a build names the earlier builds whose worlds a
   migration brings up.
+- **Scripts' keys are the snapshot's.** A crash loses what the mods' scripts kept since the newest
+  snapshot, up to an hour, while the world runs on to the last flush. Batches carry no keys while a
+  script cannot change the world ([D-004](decision-ledger.md#d-004)).
 - **The 4 GiB snapshot limit** is exercised only at a test's 1 KiB: no scenario makes a world that
   large.
 - **Durability** is proved at the writer's seam and with a process killed outright; no power cut has
@@ -381,7 +387,7 @@ the design came to be is in
 
 | Suite | Holds |
 | --- | --- |
-| `host` | `JournalTests.cpp`: identity refusals, flush and recovery, snapshot fallback, every write failure at the writer's seam, a clean stop, backups, restore, the size limit, backups apart from the world. `HostTests.cpp`: the directory's lock and permissions, and the saved state inventory. |
+| `host` | `JournalTests.cpp`: identity refusals, flush and recovery, snapshot fallback, every write failure at the writer's seam, a clean stop, backups, restore, the size limit, backups apart from the world, and a mod's script's key (the `keeper` overlay's Rust script) through a stop and a start. `HostTests.cpp`: the directory's lock and permissions, and the saved state inventory. |
 | `remote` | Several clients across a crash: what was kept is answered, what was lost retried in order. |
 | `fixture`, `fixture_development` | The trading loop backed up in flight and restored; the development loop through its journal across a stop and a crash, reaching the uninterrupted world's state hash. |
 | `cli_serve`, `cli_serve_no_home`, `cli_serve_missing_tokens` | The server killed, recovered, stopped and its backup restored (`serve-smoke.sh`); no XDG place to write; no token file. |

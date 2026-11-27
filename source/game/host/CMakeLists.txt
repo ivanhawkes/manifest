@@ -54,4 +54,16 @@ if(TARGET manifest_host_tests)
 		MANIFEST_HOST_OVERLAYS="${CMAKE_CURRENT_SOURCE_DIR}/tests/overlays")
 	# Also what stages the content the manifest executable's checks start from.
 	add_dependencies(manifest_host_tests manifest_validate_pack)
+
+	# The keeper overlay's script, compiled as a mod's is; the suite puts it beside the overlay. In Rust:
+	# a C script's compiler is a variable of the engine's own scope, which a fetching game does not see.
+	# An imported SDK (source/test/sdk-import) has no jettison_add_script, and its suite no such case.
+	if(COMMAND jettison_add_script)
+		set(keeper "${CMAKE_CURRENT_BINARY_DIR}/test-scripts/keeper.wasm")
+		jettison_add_script(manifest_host_test_keeper
+			OUTPUT "${keeper}"
+			SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/tests/scripts/keeper.rs")
+		add_dependencies(manifest_host_tests manifest_host_test_keeper)
+		target_compile_definitions(manifest_host_tests PRIVATE MANIFEST_HOST_KEEPER="${keeper}")
+	endif()
 endif()

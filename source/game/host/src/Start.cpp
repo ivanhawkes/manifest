@@ -223,8 +223,9 @@ std::vector<Jettison::Vfs::Mount> Mounts(const Options &options)
 
 std::unique_ptr<Jettison::Host::Session> Start(const Options &options)
 {
-	return std::make_unique<Jettison::Host::Session>(
-	    Jettison::Host::Options{Mounts(options), kFixedStep, kSeed}, MakeGame(options.scenario));
+	Jettison::Host::Options hosted{Mounts(options), kFixedStep, kSeed};
+	hosted.scripts = Jettison::Script::HostLimits{};
+	return std::make_unique<Jettison::Host::Session>(std::move(hosted), MakeGame(options.scenario));
 }
 
 

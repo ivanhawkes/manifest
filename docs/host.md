@@ -40,7 +40,8 @@ flowchart TD
     M --> T["Types: the modules' reflected types"]
     T --> C["Content: every mod.yaml checked, then the scenario's content set loaded"]
     C --> W["World: the modules register on the SimWorld"]
-    W --> I["Initial state: the scenario's state, stations, first quotes, NPC traders"]
+    W --> S["Scripts: the mods' scripts loaded beside the world"]
+    S --> I["Initial state: the scenario's state, stations, first quotes, NPC traders"]
     I --> R["Ready"]
 ```
 
@@ -50,6 +51,7 @@ flowchart TD
 | Types | `Game::RegisterTypes` | The reflected types of `travel`, `company`, `trade`, `policy` and `procurement` |
 | Content | `Game::LoadContent` | The first package must be Manifest's; then `Content::LoadScenario` loads the definitions as one content set |
 | World | `Game::RegisterWorld` | Components, services, commands and systems, in the order that is the save's order |
+| Scripts | none | The engine's: every mod's script (`defs/scripts/`) loaded into the session's `Script::ScriptHost`, as in a client playing alone |
 | Initial state | `Game::CreateInitialState` | `World::CreateInitialState`, `Travel::OpenStations`, `Trade::Quote`, `Policy::ProvisionTraders` |
 
 The engine checks every package's description: its format, its engine requirement and the packages
@@ -69,6 +71,14 @@ engine: 0.1.0
 A phase that fails throws `Jettison::Host::StartupError`, naming the phase, the source and the
 cause. No later hook runs, and the session releases what it built. A content error names the record,
 the field and the mounts it came from, so an overlay's broken patch is traced to the overlay.
+
+Every program's session runs the mods' scripts (`Host::Options::scripts`, at the script host's
+default limits; [Jettison: host scripts in a game](../../jettison/docs/scripts.md#host-scripts-in-a-game)).
+A script observes and keeps keys: no command of Manifest's is one a script may send
+([D-004](decision-ledger.md#d-004)), so a definition that grants one does not load, and the game names
+no sender (`Host::Game::ScriptSender`). The server gives them the world's events and saves their keys
+([the server's loop](server.md#the-servers-loop)); the console and the tests start them and give them
+nothing. The client's shell runs them as it runs any game's.
 
 The world steps at 1/60 s, the step Jettison's docking and physics are tested at
 ([D-086](decision-ledger.md#d-086)). Its seed is 0, since nothing draws on the world's random

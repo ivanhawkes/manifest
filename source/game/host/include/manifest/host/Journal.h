@@ -9,6 +9,7 @@
 #include <vector>
 
 #include <jettison/host/Session.h>
+#include <jettison/script/ScriptHost.h>
 #include <jettison/sim/SimWorld.h>
 
 #include <manifest/command/Request.h>
@@ -74,6 +75,11 @@ struct Storage
 	// The largest save a snapshot may be: a larger one is refused as it is written, since a start
 	// would refuse it as it is read.
 	std::uintmax_t snapshotBytes{kMaxSnapshotBytes};
+
+	// The mods' scripts, which the session owns and which outlive the journal: what they keep by key
+	// is written into each snapshot (Jettison::Script::kStoreSection) and given back to them as a
+	// world is recovered. None for a world whose scripts keep nothing.
+	Jettison::Script::ScriptHost *pScripts{nullptr};
 };
 
 // A snapshot the catalogue keeps: the batch it follows, with that batch's identity, the checksum of
@@ -102,7 +108,8 @@ struct Catalogue
 // last flush, and the requests that ran in them, are written as one immutable batch file and the
 // catalogue replaced to name it as the head. So a crash loses what ran since the last flush and nothing
 // before it, and a clean stop, which flushes, loses nothing. Every Cadence::snapshotSteps the world's
-// save is written beside them, the last two kept with every batch since the older, and what is older
+// save is written beside them (a Jettison::Sim::SaveGame, with the scripts' keys when the storage
+// names the scripts), the last two kept with every batch since the older, and what is older
 // than that removed. Every file is followed by its 64-bit FNV-1a, which is also a batch's identity in
 // the chain. Each snapshot is also a backup, when the storage names a directory for them: the world's
 // identity, the snapshot and a catalogue naming it alone, the catalogue written last, so a backup cut
@@ -137,7 +144,8 @@ class Journal
 	// Brings a world as Host::Start left it to the journal's last flushed step: the newest snapshot
 	// that loads, or the one before it, or the world's own start while every batch is still kept,
 	// then each batch after it, its requests run at the steps they first ran at. The request ledger
-	// is the snapshot's and the replay's, so a retry is answered as before the stop. Throws
+	// is the snapshot's and the replay's, so a retry is answered as before the stop; the scripts'
+	// keys, for a storage that names the scripts, are the snapshot's, none from the world's start. Throws
 	// std::runtime_error naming the file when no snapshot loads, or for a batch that is missing,
 	// damaged or not the next in the chain; the world is then part-way and is discarded.
 	void Recover(Jettison::Sim::SimWorld &world) const;

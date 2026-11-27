@@ -19,6 +19,7 @@
 #include <jettison/core/Log.h>
 #include <jettison/reflect/Reflect.h>
 #include <jettison/serialise/Archive.h>
+#include <jettison/sim/SaveGame.h>
 
 #include <manifest/content/ContentIdentity.h>
 #include <manifest/host/Locations.h>
@@ -387,6 +388,7 @@ void Journal::Recover(Jettison::Sim::SimWorld &world) const
 {
 	std::uint64_t after = 0;
 	std::uint64_t previous = 0;
+	Jettison::Script::ScriptStore store;
 	const std::vector<Kept> &snapshots = m_catalogue.snapshots;
 	for (auto kept = snapshots.rbegin(); kept != snapshots.rend(); ++kept)
 	{
@@ -397,7 +399,13 @@ void Journal::Recover(Jettison::Sim::SimWorld &world) const
 			if (snapshot.checksum != kept->snapshot)
 				throw std::runtime_error{
 				    std::format("{} is not the snapshot the catalogue names", path.string())};
-			world.Load(snapshot.bytes);
+			const Jettison::Sim::SaveGame save = Jettison::Sim::SaveGame::Read(snapshot.bytes);
+			const Jettison::Sim::SaveSection *pKeys =
+			    save.FindSection(Jettison::Script::kStoreSection);
+			Jettison::Script::ScriptStore keys =
+			    pKeys != nullptr ? Jettison::Script::ReadStore(pKeys->data) : Jettison::Script::ScriptStore{};
+			world.Load(save.world);
+			store = std::move(keys);
 			after = kept->batch;
 			previous = kept->batchId;
 			break;
@@ -447,6 +455,11 @@ void Journal::Recover(Jettison::Sim::SimWorld &world) const
 		throw std::runtime_error{std::format(
 		    "{} names step {}, where its journal ends at step {}", (m_root / kCatalogueName).string(),
 		    m_catalogue.step, world.Clock().Step())};
+
+	// shortcut: the keys are the snapshot's, so a crash loses what scripts kept since it, while the
+	// world runs on to the last flush; batches carry the keys once a script can change the world.
+	if (m_storage.pScripts != nullptr)
+		m_storage.pScripts->SetStore(std::move(store));
 }
 
 
@@ -518,7 +531,12 @@ void Journal::Snapshot(Jettison::Sim::SimWorld &world)
 	// Between steps a hosted world has nothing queued but a request not yet run, which no batch
 	// holds and a snapshot must not either.
 	JETTISON_VERIFY(world.Commands().Pending().empty());
-	std::vector<std::byte> state = world.Save();
+	Jettison::Sim::SaveGame save = Jettison::Sim::SaveGame::Of(world, m_catalogue.world);
+	if (m_storage.pScripts != nullptr)
+		save.AddSection(
+		    std::string{Jettison::Script::kStoreSection},
+		    Jettison::Script::WriteStore(m_storage.pScripts->Store()));
+	std::vector<std::byte> state = save.Write();
 	if (state.size() + kChecksumBytes > m_storage.snapshotBytes)
 		throw std::runtime_error{std::format(
 		    "the world's save is {} bytes, more than a snapshot may be ({} bytes with its checksum), "

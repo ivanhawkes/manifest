@@ -51,7 +51,9 @@ std::vector<Jettison::Vfs::Mount> Mounts(const Options &options);
 // (Manifest::Content::LoadScenario). The world it starts steps at 1/60 s (D-086) and holds the
 // scenario's state (Manifest::World::CreateInitialState), its stations (Manifest::Travel::OpenStations)
 // the brokers' first quotes (Manifest::Trade::Quote) and its NPC traders
-// (Manifest::Policy::ProvisionTraders). Throws
+// (Manifest::Policy::ProvisionTraders). The mods' scripts run beside it, as in a client playing alone
+// (Jettison::Host::Options::scripts): they observe and keep keys, and send no command, since no
+// command of Manifest's is one a script may send (D-004), so the game names no sender. Throws
 // Jettison::Host::StartupError naming the phase, the source and the cause, having released everything
 // it acquired.
 std::unique_ptr<Jettison::Host::Session> Start(const Options &options);

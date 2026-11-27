@@ -21,12 +21,12 @@ never waive a check, create goods or credits, settle a trade or write the world.
 | --- | --- |
 | Engine script host | Built: WAMR, capabilities, fuel, the watchdog, generated bindings, `ScriptHost::WithScripts` ([Jettison scripts](../../jettison/docs/scripts.md)) |
 | Engine utility AI | Built: `Ai::DecisionDefinition`, considerations, `Ai::Choose` ([Jettison AI](../../jettison/docs/ai.md#utility-ai)) |
-| A script's sender | Built for one sender per host: `ScriptHost::SendCommandsTo(world, sender)` stamps a command's top-level `Sim::Controller` fields; a sender per call is [J02](../../jettison/docs/roadmap.md#j02) |
+| A script's sender | Built: a sender per call (`ScriptHost::Sender`), a game's through `Host::Game::ScriptSender`; Manifest names none, as its scripts send nothing ([D-004](decision-ledger.md#d-004)) |
 | Manifest's trade choice | Native only: `ChooseTrade` in `source/game/policy/src/Policy.cpp` keeps the trade that makes the most an hour ([choosing a trade](policies.md#choosing-a-trade)) |
-| Manifest's script wiring | None. No Manifest target links `Jettison::Script` (`manifest_sdk_required` in `source/external/CMakeLists.txt`), the host makes no `ScriptHost`, and `mods/manifest` holds no `defs/scripts/` |
+| Manifest's script wiring | The host session: every program's session loads the mods' scripts (`Host::Options::scripts`), the server dispatches the world's events to them and its snapshots keep their keys ([the host](host.md#start-up-phase-by-phase)). No type the hosted world raises or applies is marked `Script`, no input is registered, and `mods/manifest` holds no `defs/scripts/` |
 
-Manifest does not run the engine's shell (`App::Shell`), which is where the engine makes its own
-script host. Manifest's host must make and wire one itself.
+The engine's host session makes the script host for every program, the client's shell included;
+what Manifest still gives it is the input a policy's choice asks (`ScriptHost::WithScripts`).
 
 ## The design
 
