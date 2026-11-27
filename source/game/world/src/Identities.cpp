@@ -397,6 +397,9 @@ std::function<void()> Identities::Load(
 			        "a ship of hull '{}' holds tanks or cartridges its hull does not, or more in them",
 			        ship.hullId));
 	}
+	for (const auto [entity, journey] : loaded.view<const Journey>().each())
+		if (const std::optional<std::string> problem = Broken(journey))
+			reader.Fail(*problem);
 	for (const auto [entity, ship, fuel] : loaded.view<const Ship, const Fuel>().each())
 	{
 		if (const std::optional<std::string> problem = Broken(fuel))

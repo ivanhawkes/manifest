@@ -10,6 +10,8 @@
 #                                change, times the acceleration in g to curveExponent above 1 g.
 #   exclusionRadius              Metres from a station within which it may not thrust, at least a
 #                                station's reach (2,000 m).
+#   bodyExclusionRadius          Metres above a populated body's surface within which it may not
+#                                thrust; left out, none.
 #   cruise                       Its own manned and unmanned profiles in a mode with a cruise, in
 #                                m/s² and seconds, in place of the mode's; left out, the mode's.
 drive-base:
@@ -41,7 +43,8 @@ drive-base:
 
   # The nuclear pulse drive (W22b; docs/ships-plan.md, "The pulse drive as a record"): bombs behind a
   # pusher plate, their own reaction mass, so no exhaust speed; 0.0033 units of 100 kg a tonne-km/s,
-  # the rocket equation at 1% of light speed, no dearer above 1 g; kept 100,000 km from every station.
+  # the rocket equation at 1% of light speed, no dearer above 1 g; kept 100,000 km from every station
+  # and from above every populated body's surface.
   # Manned or not, 2 g for at most 2 hours of a trip, 1 speeding up and 1 slowing down, and 0.5 g
   # between.
   - drive:
@@ -50,6 +53,7 @@ drive-base:
       pelletMilligramsPerTonneKms: 333564
       curveExponent: 0
       exclusionRadius: 1.0e8
+      bodyExclusionRadius: 1.0e8
       cruise:
         manned: {boostAcceleration: 19.6133, boostSeconds: 7200, sustainedAcceleration: 4.903325}
         unmanned: {boostAcceleration: 19.6133, boostSeconds: 7200, sustainedAcceleration: 4.903325}

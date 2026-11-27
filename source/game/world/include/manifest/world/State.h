@@ -293,6 +293,17 @@ enum class Failure
 	PadLost
 };
 
+// A ship's fuel (D-107, D-108), in kilograms, apart from its hold: the reaction mass in its tanks
+// and the fusion pellets in its drive's magazine, each at most what its hull and the systems fitted
+// to it hold (Identities::FuelTanks). Provisioning fills both once.
+struct Fuel
+{
+	double reactionMass{0.0};
+	double pellets{0.0};
+
+	bool operator==(const Fuel &) const = default;
+};
+
 // A ship's journey to a venue, from the Travel command that started it, on the ship's entity. One is
 // under way until its leg is Arrived or Failed, which a new journey replaces.
 struct Journey
@@ -303,6 +314,10 @@ struct Journey
 
 	// The clock's step the command ran at the start of.
 	std::uint64_t started{0};
+
+	// The fuel its leg burnt as the command admitted it, each at least 0, which the cruise's start
+	// settles against the course it then flies (Travel::Travel).
+	Fuel paid{};
 
 	bool operator==(const Journey &) const = default;
 
@@ -497,17 +512,6 @@ struct LifeSupport
 	std::string connectedTo;
 
 	bool operator==(const LifeSupport &) const = default;
-};
-
-// A ship's fuel (D-107, D-108), in kilograms, apart from its hold: the reaction mass in its tanks
-// and the fusion pellets in its drive's magazine, each at most what its hull and the systems fitted
-// to it hold (Identities::FuelTanks). Provisioning fills both once.
-struct Fuel
-{
-	double reactionMass{0.0};
-	double pellets{0.0};
-
-	bool operator==(const Fuel &) const = default;
 };
 
 // Whether a journey from a venue refuels the ship first (Travel::Fleet::Refuel), set by its owner's
@@ -845,6 +849,8 @@ std::optional<std::string> Broken(const Pantry &pantry);
 std::optional<std::string> Broken(const LifeSupport &lifeSupport);
 
 std::optional<std::string> Broken(const Fuel &fuel);
+
+std::optional<std::string> Broken(const Journey &journey);
 
 std::optional<std::string> Broken(const Sales &sales);
 

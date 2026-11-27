@@ -184,13 +184,14 @@ std::int64_t Upkeep(
 
 
 // A leg of a route: the venue it leaves, empty from space, its metres, the docking fee of the venue it
-// flies to, and whether a trade's lot is aboard.
+// flies to, whether a trade's lot is aboard, and the venue it flies to.
 struct Leg
 {
 	std::string fromId;
 	double metres{0.0};
 	std::int64_t fee{0};
 	bool laden{false};
+	std::string toId;
 };
 
 
@@ -218,11 +219,13 @@ std::vector<Leg> Legs(
 	if (!atSource)
 		legs.push_back(
 		    {record.dockedAt, glm::distance(here, at(sourceId)),
-		     DockingFee(registry, identities, content, record, sourceId), false});
+		     DockingFee(registry, identities, content, record, sourceId), false,
+		     std::string{sourceId}});
 	legs.push_back(
 	    {atSource ? record.dockedAt : std::string{sourceId},
 	     glm::distance(atSource ? here : at(sourceId), at(destinationId)),
-	     DockingFee(registry, identities, content, record, destinationId), true});
+	     DockingFee(registry, identities, content, record, destinationId), true,
+	     std::string{destinationId}});
 	return legs;
 }
 
@@ -358,10 +361,29 @@ Route Priced(
 		holdRoom = static_cast<double>(HoldRoom(registry, identities, ship));
 	}
 
+	// The system the ship flies in, and the frame it leaves from space in.
+	const auto *pInFrame = registry.try_get<const Jettison::Sim::InFrame>(ship);
+	const auto system = std::ranges::find_if(
+	    content.systems, [&](const Manifest::Space::StarSystem &each)
+	    { return pInFrame && Jettison::Sim::FrameId(each.name) == pInFrame->frame; });
+	const auto *pFrame = registry.try_get<const Jettison::Physics::LocalFrame>(ship);
+
 	Route route;
 	World::Fuel left = current;
 	for (const Leg &leg : legs)
 	{
+		// Each leg's crossings, its ends' as travel works them out.
+		// shortcut: the straight line at its ends' clearances, not the course travel settles as flown
+		// (Space::SettleCruise), which is too dear to settle for every trade a job weighs; refine when
+		// an estimate is seen to choose a journey travel then refuses or burns well past.
+		if (flown && pClass && system != content.systems.end())
+		{
+			const std::string &fromId = leg.fromId.empty() && pFrame ? pFrame->body : leg.fromId;
+			const Travel::Exclusion exclusion =
+			    Travel::ExclusionOf(content, *system, *pClass, fromId, leg.toId);
+			flown->departureClearance = exclusion.departureClearance;
+			flown->arrivalClearance = exclusion.arrivalClearance;
+		}
 		const double seconds = flown ? Manifest::Space::CruiseSeconds(*flown, leg.metres) : 0.0;
 		route.seconds += seconds + tuning.legAllowanceSeconds;
 		const double occupantDays = occupants * seconds / kSecondsPerDay;

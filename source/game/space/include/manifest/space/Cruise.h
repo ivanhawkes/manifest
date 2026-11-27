@@ -16,6 +16,7 @@
 #include <jettison/sim/Reason.h>
 #include <jettison/transit/Profile.h>
 #include <manifest/space/StarSystem.h>
+#include <manifest/space/Types.h>
 
 namespace Jettison::Physics
 {
@@ -29,6 +30,17 @@ class SimWorld;
 
 namespace Manifest::Space
 {
+// A sphere a drive may not thrust within (D-108's exclusion radius): that many metres about a body of
+// the ship's system, a station or a populated planet. Registered with Reflect as "Space.Keepout",
+// every field Saved and Moddable, by RegisterTypes.
+struct Keepout
+{
+	std::string body;
+	double radius{0.0};
+
+	bool operator==(const Keepout &) const = default;
+};
+
 // The cruise (docs/space.md, "Cruising": a ship crosses a system by cruising): a ship taken across its
 // system to a body, out of physics and its frame as on a lane but staying in its system, placed each
 // step along its course, and brought out at rest a few kilometres off the body, in its frame. The
@@ -49,18 +61,24 @@ struct CruiseDrive
 	float exponent{0.25f};
 	std::optional<Jettison::Transit::MotionProfile> profile;
 
-	// With a profile, the metres at each end of a course its drive may not thrust over, which the ship
-	// crosses on its thrusters from rest to rest at the crossing acceleration, in m/s² (D-108's
-	// exclusion radius, beyond a station's reach); none crosses nothing.
-	double clearance{0.0};
+	// With a profile, the metres at the start and at the end of a course its drive may not thrust over,
+	// which the ship crosses on its thrusters from rest to rest at the crossing acceleration, in m/s²
+	// (D-108's exclusion radius, beyond a station's reach); none crosses nothing. A game writes each
+	// journey's as it writes the profile it flies.
+	double departureClearance{0.0};
+	double arrivalClearance{0.0};
 	float crossingAcceleration{0.0f};
+
+	// The spheres a drive with a crossing may not thrust within, which its cruise is checked against as
+	// flown (SettleCruise); a game writes each journey's with its clearances.
+	std::vector<Keepout> keepouts{};
 
 	bool operator==(const CruiseDrive &) const = default;
 };
 
 // The seconds a cruise of that many metres takes on the drive: seconds × (metres / reference) to the
-// exponent, or the profile's time with its clearance crossed at each end, at rest at both ends. None
-// for no distance.
+// exponent, or the profile's time with its clearances crossed at their ends, at rest at both ends.
+// None for no distance.
 double CruiseSeconds(const CruiseDrive &drive, double metres);
 
 // The metres of a cruise of that many the drive itself thrusts over: all but its clearance at each end,
@@ -69,8 +87,8 @@ double DriveMetres(const CruiseDrive &drive, double metres);
 
 // Checks a drive a game defines: its seconds and reference positive and finite, and its exponent
 // above 0 and at most 1, so its time rises with the distance and no faster than it; its profile, if it
-// has one, as Transit::CheckProfile does; and its clearance finite and not below 0, with a crossing
-// acceleration above 0 where it is above 0. Throws Jettison::Serialise::FormatError naming the
+// has one, as Transit::CheckProfile does; and its clearances finite and not below 0, with a crossing
+// acceleration above 0 where either is above 0, and its keepouts' radii finite and above 0. Throws Jettison::Serialise::FormatError naming the
 // drive.
 void CheckCruiseDrive(std::string_view name, const CruiseDrive &drive);
 
@@ -104,11 +122,20 @@ struct Cruising
 	Jettison::Physics::Body body;
 
 	// Its drive's profile as it set out, which it covers its course by, or none to ease along it; and
-	// with a profile, its drive's clearance and crossing acceleration, the ends it crosses on
-	// thrusters.
+	// with a profile, its clearances as its cruise settled them (SettleCruise) and its crossing
+	// acceleration, the ends it crosses on thrusters.
 	std::optional<Jettison::Transit::MotionProfile> profile;
-	double clearance{0.0};
+	double departureClearance{0.0};
+	double arrivalClearance{0.0};
 	float crossingAcceleration{0.0f};
+
+	// With a crossing, the body its departure crossing is flown relative to: the body the station it
+	// left orbits, or the one it left. Its arrival crossing is flown relative to the body the target
+	// orbits, where the target is a station, or the target. Between them the course keeps the
+	// departure body's motion and gains the arrival body's, by the share of the drive's metres flown,
+	// so the frames join without a jump. Empty for none: a cruise with no crossing is carried with its
+	// carrier alone.
+	std::string departureBody;
 
 	bool operator==(const Cruising &) const = default;
 };
@@ -118,7 +145,8 @@ struct Cruising
 // one not in a defined system (on a lane, or in none), one already cruising, one that is not a dynamic
 // body with a CruiseDrive, or on rails (clamped to a pad), a body its system does not have, a ship
 // within a station's reach (CruiseTravel::kStationReach), so docking stays in physics, a ship already
-// within reach of where it would arrive, and a course every way is blocked across. A ship sent
+// within reach of where it would arrive, a course every way is blocked across, and one whose drive
+// still thrusts within a keepout once it is settled (SettleCruise; InsideRadius). A ship sent
 // gives up its Destination, which a cruise replaces, and with it what steering last demanded of its
 // controls, as Jettison::Ai::ClearDestination does, so it comes out still; a pilot's controls are kept.
 // Registered with Reflect, every field Saved, by RegisterTypes.
@@ -224,6 +252,13 @@ class CruiseTravel
 	// Times a profile's steps may double from the solve's before a cruise is refused (NoCourse).
 	static constexpr int kProfileDoublings = 32;
 
+	// How often a cruise with a crossing is sampled as flown (SettleCruise): each minute while its
+	// drive thrusts or it crosses on thrusters, near the bodies its spheres are about, and each hour
+	// while it coasts between; and the times it plans again before it is refused.
+	static constexpr double kThrustSampleSeconds = 60.0;
+	static constexpr double kCoastSampleSeconds = 3600.0;
+	static constexpr int kClearanceRounds = 4;
+
 	// Registers the components, the command and the "cruise" system, ordered after the lanes'
 	// (LaneTravel::Attach), which have to be attached first, and given the physics world whose shapes
 	// say how far apart arrivals come out. Throws std::logic_error as SimWorld's registrations do,
@@ -258,4 +293,49 @@ class CruiseTravel
 	// By Jettison::Sim::FrameId; looked up, and ordered regardless.
 	std::map<std::uint64_t, Space::StarSystem> m_systems;
 };
+
+// A cruise's course as it is settled (SettleCruise): from where the ship sets out to where it
+// arrives, metres from the carrier in the system's axes, with its whole steps, its carrier and its
+// departure body (Cruising), and its clearances as the check left them.
+struct SettledCruise
+{
+	std::vector<glm::dvec3> course;
+	std::uint64_t steps{0};
+	std::string carrier;
+	std::string departureBody;
+	double departureClearance{0.0};
+	double arrivalClearance{0.0};
+	double length{0.0};
+
+	// The course's metres, and those of them the drive thrusts over: all but its crossings.
+	double Metres() const;
+
+	double DriveMetres() const;
+};
+
+// A cruise settled, or the reason it is refused: NoSuchBody for a keepout of no body of the system,
+// NoCourse for no course round the bodies, and InsideRadius for a drive still thrusting within a
+// keepout once its rounds are spent.
+struct Settlement
+{
+	std::optional<SettledCruise> cruise;
+	Reason refusal{Reason::NoCourse};
+};
+
+// Settles a cruise to the target from that place, in the frame of that body (a ship's
+// Jettison::Physics::LocalFrame), at that time and step, as a Cruise does: the course and its time
+// solved round the bodies in the way (CruiseTravel), and, for a drive with a profile and a crossing,
+// checked as flown. The check samples the cruise where the bodies then are, each
+// CruiseTravel::kThrustSampleSeconds while the drive thrusts or the ship crosses and each
+// kCoastSampleSeconds while it coasts: no sample may be within a star's, a planet's or a moon's radius
+// and CruiseTravel::kCourseClearance, nor, while the drive thrusts, within a keepout, each widened by
+// how far the ship moved relative to its body since the last sample. Where the drive thrusts within a
+// keepout, the crossing at that end (the half of the drive's metres it is in) is lengthened to reach
+// past it; where the ship comes within a body, the body at its place in the course's frame then is
+// added to the obstacles; and the cruise is solved again, at most that many rounds. Deterministic: a
+// game settles the same cruise to price it that a Cruise then flies. Fewer rounds are for tests.
+Settlement SettleCruise(
+    const StarSystem &system, const CruiseDrive &drive, const glm::dvec3 &from, std::string_view frame,
+    std::string_view target, double now, double fixedStep,
+    int rounds = CruiseTravel::kClearanceRounds);
 } // namespace Manifest::Space

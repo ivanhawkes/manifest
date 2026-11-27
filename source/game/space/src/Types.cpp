@@ -39,7 +39,8 @@ void RegisterTypes()
 		    .Value<Reason::AlreadyQueued>("already_queued")
 		    .Value<Reason::LeadsNowhere>("leads_nowhere")
 		    .Value<Reason::NotCleared>("not_cleared")
-		    .Value<Reason::HullTooLarge>("hull_too_large");
+		    .Value<Reason::HullTooLarge>("hull_too_large")
+		    .Value<Reason::InsideRadius>("inside_radius");
 		constexpr Attribute kDefined = Attribute::Saved | Attribute::Moddable;
 		RegisterType<OnLane>("Space.OnLane")
 		    .Field<&OnLane::from>("from", Attribute::Saved)
@@ -101,13 +102,18 @@ void RegisterTypes()
 		    .Field<&GatePassed::gate>("gate", Attribute::Saved)
 		    .Field<&GatePassed::reason>("reason", Attribute::Saved);
 
+		RegisterType<Keepout>("Space.Keepout", Attribute::Moddable)
+		    .Field<&Keepout::body>("body", kDefined)
+		    .Field<&Keepout::radius>("radius", kDefined);
 		RegisterType<CruiseDrive>("Space.CruiseDrive", Attribute::Moddable)
 		    .Field<&CruiseDrive::seconds>("seconds", kDefined)
 		    .Field<&CruiseDrive::reference>("reference", kDefined)
 		    .Field<&CruiseDrive::exponent>("exponent", kDefined)
 		    .Field<&CruiseDrive::profile>("profile", kDefined)
-		    .Field<&CruiseDrive::clearance>("clearance", kDefined)
-		    .Field<&CruiseDrive::crossingAcceleration>("crossingAcceleration", kDefined);
+		    .Field<&CruiseDrive::departureClearance>("departureClearance", kDefined)
+		    .Field<&CruiseDrive::arrivalClearance>("arrivalClearance", kDefined)
+		    .Field<&CruiseDrive::crossingAcceleration>("crossingAcceleration", kDefined)
+		    .Field<&CruiseDrive::keepouts>("keepouts", kDefined);
 		RegisterType<Cruising>("Space.Cruising")
 		    .Field<&Cruising::target>("target", Attribute::Saved)
 		    .Field<&Cruising::frame>("frame", Attribute::Saved)
@@ -117,8 +123,10 @@ void RegisterTypes()
 		    .Field<&Cruising::arrivalStep>("arrivalStep", Attribute::Saved)
 		    .Field<&Cruising::body>("body", Attribute::Saved)
 		    .Field<&Cruising::profile>("profile", Attribute::Saved)
-		    .Field<&Cruising::clearance>("clearance", Attribute::Saved)
-		    .Field<&Cruising::crossingAcceleration>("crossingAcceleration", Attribute::Saved);
+		    .Field<&Cruising::departureClearance>("departureClearance", Attribute::Saved)
+		    .Field<&Cruising::arrivalClearance>("arrivalClearance", Attribute::Saved)
+		    .Field<&Cruising::crossingAcceleration>("crossingAcceleration", Attribute::Saved)
+		    .Field<&Cruising::departureBody>("departureBody", Attribute::Saved);
 		RegisterType<Cruise>("Space.Cruise")
 		    .Field<&Cruise::sender>("sender", Attribute::Saved)
 		    .Field<&Cruise::ship>("ship", Attribute::Saved)

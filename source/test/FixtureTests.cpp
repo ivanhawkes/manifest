@@ -657,7 +657,7 @@ TEST_CASE("The trading fixture's loop, saved in flight with a bid resting and re
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves with
 	// what a save holds, the fixture's content or stream, or the engine's movement or save format.
-	CHECK(hosted.world.StateHash() == 0x09462c882bb965daULL);
+	CHECK(hosted.world.StateHash() == 0x0688154844e14e75ULL);
 }
 
 
@@ -710,7 +710,7 @@ TEST_CASE("The trading fixture's loop, backed up in flight with a bid resting an
 	// Served on from the restore, through the journal, it reaches the loop's own world.
 	FromCruise(restored);
 	CheckLedger(restored);
-	CHECK(restored.world.StateHash() == 0x09462c882bb965daULL);
+	CHECK(restored.world.StateHash() == 0x0688154844e14e75ULL);
 }
 
 
@@ -902,7 +902,7 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 	CHECK(replayed.world.StateHash() == hosted.world.StateHash());
 
 	// The same in every build the gate runs; it moves as the fixture's does.
-	CHECK(hosted.world.StateHash() == 0x9597c3b082f05253ULL);
+	CHECK(hosted.world.StateHash() == 0xd26be0ca876d96b6ULL);
 }
 
 
@@ -1138,7 +1138,8 @@ TEST_CASE(
 	const entt::entity ship = hosted.Ship();
 	CHECK(registry.get<const World::Ship>(ship).hullId == "HullFreighterMedium");
 	const Manifest::Space::CruiseDrive drive = registry.get<const Manifest::Space::CruiseDrive>(ship);
-	CHECK(drive.clearance == 998'000.0);
+	CHECK(drive.departureClearance == 998'000.0);
+	CHECK(drive.arrivalClearance == 998'000.0);
 	CHECK(hosted.Ship1().fuel == World::Fuel{400'000.0, 100.0});
 
 	// A magazine at 4 kg takes the totes its 96 kg of room needs, eight of 12.5 kg, as the journey
@@ -1162,21 +1163,12 @@ TEST_CASE(
 	const World::Fuel after = hosted.Ship1().fuel;
 	const World::Fuel burned{before.reactionMass - after.reactionMass, before.pellets - after.pellets};
 
-	// The drive's metres alone burn: the 2,000 km crossed on thrusters burn nothing.
 	const Manifest::Content::DriveDefinition &hauler =
 	    *Manifest::Content::DriveOf(hosted.services.fleet.Content(), "HullFreighterMedium");
 	CHECK(hauler.pelletItemId == "ItemDeuteriumPellets");
 	CHECK(
-	    burned.reactionMass ==
-	    doctest::Approx(
-	        Travel::Burned(
-	            hauler, *registry.get<const Manifest::Space::CruiseDrive>(ship).profile,
-	            Travel::TonnesAboard(
-	                registry, hosted.services.identities, hosted.services.fleet.Content(), ship) +
-	                (burned.reactionMass + burned.pellets) / 1000.0,
-	            metres - 2.0 * drive.clearance)
-	            .reactionMass)
-	        .epsilon(0.001));
+	    registry.get<const World::Journey>(ship).paid.reactionMass ==
+	    doctest::Approx(burned.reactionMass));
 	CHECK(after.pellets < 100.0);
 	CHECK(after.pellets > 90.0);
 	const World::Cargo &hold = registry.get<const World::Cargo>(ship);
@@ -1190,7 +1182,27 @@ TEST_CASE(
 		hosted.Step();
 	REQUIRE(hosted.Ship1().journey->leg == Leg::Cruising);
 	const Manifest::Space::Cruising cruising = registry.get<const Manifest::Space::Cruising>(ship);
-	CHECK(cruising.clearance == 998'000.0);
+	CHECK(cruising.departureClearance >= 998'000.0);
+	CHECK(cruising.arrivalClearance >= 998'000.0);
+	CHECK(cruising.departureBody == "PlanetOre");
+
+	// The drive's metres alone burn, the course its cruise settled less its two crossings, which burn
+	// nothing; settled as it set out, what its tanks gave is what the journey paid.
+	const World::Journey &journey = registry.get<const World::Journey>(ship);
+	CHECK(
+	    before.reactionMass - hosted.Ship1().fuel.reactionMass ==
+	    doctest::Approx(journey.paid.reactionMass));
+	CHECK(
+	    journey.paid.reactionMass ==
+	    doctest::Approx(
+	        Travel::Burned(
+	            hauler, *cruising.profile,
+	            Travel::TonnesAboard(
+	                registry, hosted.services.identities, hosted.services.fleet.Content(), ship) +
+	                (journey.paid.reactionMass + journey.paid.pellets) / 1000.0,
+	            Metres(cruising) - cruising.departureClearance - cruising.arrivalClearance)
+	            .reactionMass)
+	        .epsilon(0.001));
 	const double seconds =
 	    static_cast<double>(cruising.arrivalStep - cruising.departureStep) * hosted.world.FixedStep();
 	const double crossing = 2.0 * std::sqrt(998'000.0 / 15.0);
@@ -2040,7 +2052,7 @@ TEST_CASE("The governance fixture's project, tendered, supplied, worked and unlo
 
 	// The same in every build the gate runs; it moves with what a save holds, the governance
 	// scenario's content or the stream.
-	CHECK(hosted.world.StateHash() == 0x7b4fc773ab628ba3ULL);
+	CHECK(hosted.world.StateHash() == 0xd401671b3e597a03ULL);
 }
 
 
@@ -2396,5 +2408,5 @@ TEST_CASE(
 
 	// The same in every build the gate runs; it moves with what a save holds, the governance
 	// scenario's content or the stream.
-	CHECK(hosted.world.StateHash() == 0xcaca5c7f5623ede1ULL);
+	CHECK(hosted.world.StateHash() == 0x9d9328297c55fa27ULL);
 }

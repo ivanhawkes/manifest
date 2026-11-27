@@ -105,6 +105,8 @@ The refusals, each a `Command::Result`:
 | `InvalidQuantity` | A thrust of 0 or above 10,000, an acceleration below 0.1 g or above the ship's profile's sustained acceleration, or a venue account that cannot hold what it is paid |
 | `InsufficientFunds` | The company's [account](glossary.md#account) lacks the destination's docking fee and the ship's [arrears](glossary.md#arrears) together |
 | `InsufficientFuel` | The tanks or the magazine, after refuelling, hold less than the leg burns |
+| `InsideRadius` | Its drive would still thrust within a sphere it keeps from once the course is settled |
+| `NoCourse` | The settled course comes within a body however it is planned again |
 
 As the journey starts, the company pays the destination's docking fee for the ship's
 [fee class](glossary.md#fee-class) to the destination venue's account. It pays any arrears to the
@@ -150,7 +152,22 @@ aboard and each km/s of that change, the phase burns, at the rates of the hull's
 
 Only the metres the drive itself thrusts over burn: a drive with a clearance crosses it on its
 thrusters at each end, and those metres burn nothing (`Space::DriveMetres`,
-[cruising](space.md#cruising)). Each total is rounded up to the gram. The pellets' curve makes a hard burn a decision, not a
+[cruising](space.md#cruising)). A drive that crosses is priced on the course its cruise settles as
+flown (`Space::SettleCruise`), its length less the two crossings, rather than the straight line;
+any other on the straight line to the destination's station now.
+
+**The radius about populated bodies.** As a journey starts, travel works out what its drive keeps
+from at each end (`Travel::ExclusionOf`): the end's body is the planet its station orbits. A drive
+with a `bodyExclusionRadius` (the pulse drive's 100,000 km) keeps a sphere that far above each
+end's populated planet and one of its `exclusionRadius` about each station orbiting it, and crosses
+the ball holding them all, the most of the planet's sphere and each such station's farthest orbit
+plus its radius, plus its station's own orbit: 184,000 km at each highport of the trading system.
+Any other drive keeps its `exclusionRadius` about each of those stations and crosses that radius
+less a station's reach (the hauler's 998 km). The journey saves the fuel it paid
+(`World::Journey::paid`). The cruise's start settles the course again from where the ship has
+cleared to, on the mass admission weighed, and settles the difference in whole units: more is burnt
+from what is aboard, its job's share with it, and less is returned; a ship whose fuel is short of
+more and a gram fails `CruiseRefused`. Each total is rounded up to the gram. The pellets' curve makes a hard burn a decision, not a
 default: at 2 g the pellets cost four times as much for each km/s
 ([D-108](decision-ledger.md#d-108)).
 
@@ -217,7 +234,7 @@ stateDiagram-v2
 | Leg | What `manifest.travel` does |
 | --- | --- |
 | `Departing` | Sends `Dock::ReleaseBerth`. Once the pad lets go it clears `Ship::dockedAt`; once the docks have let the ship leave, the leg is `Clearing`. A pad that will not release fails `DepartureRefused`, the ship still docked. |
-| `Clearing` | A ship within any station's reach gets a flight out from `Space::ClearOf`, through steering. Beyond reach it sends `Space::Cruise` to the venue (`CruiseRefused` if refused). A ship already near the destination asks for a pad at once. |
+| `Clearing` | A ship within any station's reach gets a flight out from `Space::ClearOf`, through steering. Beyond reach it settles a crossing drive's fuel against the course from there, then sends `Space::Cruise` to the venue (`CruiseRefused` if either is refused). A ship already near the destination asks for a pad at once. |
 | `Cruising` | Waits for the cruise to end, then sends `Dock::RequestBerth`. A ship granted a pad or a place in the queue moves to `Arriving`; one with no pad its hull fits fails `PadRefused`. |
 | `Arriving` | Waits in the queue or as the station flies it in. On `Docked` it sets `Ship::dockedAt` to the venue and the journey is `Arrived`. A pad or queue place lost first fails `PadLost`. |
 
@@ -310,10 +327,13 @@ A hull's fuel storage, in `data/ships/hulls.yaml`: `FuelCapacity` among its `bas
 
 ## Limits and open work
 
-- One torch for every hull. The hauler's fusion drive, the pulse drive and their exclusion radii
-  come with the first larger hull ([W22](delivery-order.md#w22), [ships plan](ships-plan.md)).
-- A leg's fuel is priced on the straight line to the destination's station as it starts, not on
-  the cruise's course round bodies to where the station will be.
+- No hull flies the pulse drive until the pulse carrier ([W22b](delivery-order.md#w22b),
+  [ships plan](ships-plan.md)); the travel suite flies the starter on it through an overlay.
+- A torch's leg is priced on the straight line to the destination's station as it starts, not on
+  the cruise's course round bodies to where the station will be; a policy's estimate prices every
+  drive so (a `shortcut:` in `Policy.cpp`).
+- A course passing another populated body while the drive thrusts is not checked, which needs a
+  course round bodies ([L37](delivery-order.md#l37)).
 - A journey stays in its star system; each scenario has one. Journeys between systems wait for
   stargates ([L08](delivery-order.md#l08), [space plan](space-plan.md)) and local hops for
   moongates ([L35](delivery-order.md#l35)).

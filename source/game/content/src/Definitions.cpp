@@ -310,7 +310,8 @@ void RegisterTypes()
 		        "pelletMilligramsPerTonneKms", kDefined)
 		    .Field<&DriveDefinition::curveExponent>("curveExponent", kDefined)
 		    .Field<&DriveDefinition::exclusionRadius>("exclusionRadius", kDefined)
-		    .Field<&DriveDefinition::cruise>("cruise", kDefined);
+		    .Field<&DriveDefinition::cruise>("cruise", kDefined)
+		    .Field<&DriveDefinition::bodyExclusionRadius>("bodyExclusionRadius", kDefined);
 		RegisterType<GameModeDefinition>("Manifest.GameMode", Attribute::Moddable)
 		    .Field<&GameModeDefinition::ages>("ages", kDefined)
 		    .Field<&GameModeDefinition::items>("items", kDefined)

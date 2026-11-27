@@ -65,7 +65,11 @@ enum class Result
 	Governed,
 	AlreadyFounded,
 	// A project queued in a region that has it queued, under way or done (D-110).
-	AlreadyQueued
+	AlreadyQueued,
+	// Travel whose drive would still thrust within its exclusion radius once its course is settled, or
+	// that has no course round the bodies in the way (W22b).
+	InsideRadius,
+	NoCourse
 };
 
 enum class ActorKind

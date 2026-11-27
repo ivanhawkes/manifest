@@ -361,6 +361,10 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	    torch, "version: 1\nexclusionRadius: 1999\n",
 	    "exclusionRadius must be finite and at least a station's reach, 2000 m");
 	CheckRefused(
+	    torch, "version: 1\nbodyExclusionRadius: 0\n",
+	    "bodyExclusionRadius must be above 0, or left out for a drive that may thrust near a populated "
+	    "body");
+	CheckRefused(
 	    torch,
 	    "version: 1\ncruise: {manned: {boostAcceleration: 9, boostSeconds: 60, sustainedAcceleration: "
 	    "10}, unmanned: {boostAcceleration: 9, boostSeconds: 0, sustainedAcceleration: 9}}\n",

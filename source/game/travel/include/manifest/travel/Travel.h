@@ -51,7 +51,9 @@ inline constexpr double kStandardGravity = 9.80665;
 // whose drive has a profile flies the burn (Profile), refused InvalidQuantity for a thrust not above 0
 // or past kFullThrustBps or an acceleration outside its bounds, and InsufficientFuel for a leg its
 // World::Fuel cannot fly after refuelling (Fleet::Refuel, from a venue; Burned, at the distance to the
-// venue's station now and everything aboard);
+// venue's station now and everything aboard, or for a drive that crosses its ends (ExclusionOf), the
+// drive's metres of the course settled as flown, Space::SettleCruise), and InsideRadius or NoCourse for
+// such a course refused;
 // one with none, the power law, burns nothing. As it starts it pays the fee to the venue's account and
 // the arrears to the account of the venue it leaves (D-097), and takes the leg's fuel from the tanks,
 // adding it to the ship's World::Job while the job's lot is aboard, for the job to charge to the lot.
@@ -88,6 +90,27 @@ Jettison::Transit::MotionProfile Profile(
 World::Fuel Burned(
     const Content::DriveDefinition &drive, const Jettison::Transit::MotionProfile &profile,
     double tonnes, double metres, double pelletKilogramsPerUnit = 1.0);
+
+// What a drive keeps from on a journey between two bodies of the system, a ship's frame and the
+// destination's station (D-108; docs/ships-plan.md, "The radius about populated bodies"). An end's body
+// is the one its station orbits, or the body itself; a populated body is a planet or moon a region of
+// the scenario with people names. A drive with a body exclusion radius keeps a sphere that far above
+// each end's populated body's surface and one of its exclusion radius about each station orbiting the
+// end's body, and crosses at each end the ball about the body holding them all, whatever their phase:
+// the most of the body's sphere and each such station's farthest orbit plus its radius, and the
+// station's own farthest from the body, so any course out leaves it. Any other drive with an exclusion
+// radius past a station's reach keeps that sphere about each station orbiting either end's body, and
+// crosses its radius less the reach. Any other crosses and keeps nothing.
+struct Exclusion
+{
+	double departureClearance{0.0};
+	double arrivalClearance{0.0};
+	std::vector<Space::Keepout> keepouts;
+};
+
+Exclusion ExclusionOf(
+    const Content::ContentSet &content, const Space::StarSystem &system,
+    const Content::DriveDefinition &drive, std::string_view from, std::string_view to);
 
 // Everything the ship carries as a leg starts, in tonnes: its hull's mass, its tanks' and the fuel in
 // them, its occupants and its cargo, opened totes included, each unit at its item's density and pack

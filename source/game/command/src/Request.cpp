@@ -48,7 +48,9 @@ void RegisterTypes()
 		    .Value<Result::StaleRevision>("StaleRevision")
 		    .Value<Result::Governed>("Governed")
 		    .Value<Result::AlreadyFounded>("AlreadyFounded")
-		    .Value<Result::AlreadyQueued>("AlreadyQueued");
+		    .Value<Result::AlreadyQueued>("AlreadyQueued")
+		    .Value<Result::InsideRadius>("InsideRadius")
+		    .Value<Result::NoCourse>("NoCourse");
 		RegisterEnum<ActorKind>("Manifest.Command.ActorKind")
 		    .Value<ActorKind::Principal>("Principal")
 		    .Value<ActorKind::Administrator>("Administrator");

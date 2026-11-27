@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -79,8 +80,9 @@ struct Hosted
 
 	// From the staged directory, or another source of the same content, such as its pack.
 	explicit Hosted(
-	    const std::string &content = MANIFEST_MOD_DIRECTORY, Cruise cruise = Cruise::Compressed)
-	    : session{Manifest::Host::Start({content, {}, "trading"})}
+	    const std::string &content = MANIFEST_MOD_DIRECTORY, Cruise cruise = Cruise::Compressed,
+	    std::vector<std::filesystem::path> overlays = {})
+	    : session{Manifest::Host::Start({content, std::move(overlays), "trading"})}
 	{
 		REQUIRE(
 		    Run(kHost, Company::kProvision, Company::kVersion,
@@ -562,7 +564,7 @@ TEST_CASE("A burn is its mode's profile at the most it sustains, and that accele
 TEST_CASE("A burn's fuel is the plan's: the starter to Brine at 1 g, all its rates rising above it")
 {
 	const Manifest::Content::DriveDefinition tuning{"DriveTorch", 29979.0, "ItemFusionPellets", 16.5, 2,
-	                                                2000.0,       {}};
+	                                                2000.0,       {}, {}};
 	const auto g = static_cast<float>(kGravity);
 
 	// 27 t, two totes of copper aboard, 396 million km at 1 g: 3,941 km/s.
@@ -589,7 +591,7 @@ TEST_CASE("A burn's fuel is the plan's: the starter to Brine at 1 g, all its rat
 TEST_CASE("A pulse drive burns whole units of its pellets and no reaction mass")
 {
 	const Manifest::Content::DriveDefinition pulse{
-	    "DrivePulse", std::nullopt, "ItemPulseUnits", 333564.0, 0, 1.0e8, {}};
+	    "DrivePulse", std::nullopt, "ItemPulseUnits", 333564.0, 0, 1.0e8, {}, 1.0e8};
 	const auto g = static_cast<float>(kGravity);
 	constexpr double kUnitKilograms = 100.0;
 
@@ -791,4 +793,146 @@ TEST_CASE("A journey from the pack is the one from the directory, step for step"
 	pack.RunJourney();
 	CHECK(pack.world.Clock().Step() == directory.world.Clock().Step());
 	CHECK(pack.world.StateHash() == directory.world.StateHash());
+}
+
+
+namespace
+{
+// Ada's starter on the pulse drive, on the Manifest mode's profile: its burn a tenth of the cruise at
+// 0.5 g, Ore to Brine.
+struct Pulse : Hosted
+{
+	Pulse() : Hosted{MANIFEST_MOD_DIRECTORY, Cruise::Profiled, {MANIFEST_PULSE_OVERLAY}}
+	{
+	}
+
+
+	Result Send()
+	{
+		return Burn(kBrine, 1000, 500);
+	}
+
+
+	// Stepped until the journey's leg is the one given.
+	void StepTo(Leg leg)
+	{
+		for (std::uint64_t step = 0; step < kJourneySteps && Journey().leg != leg; ++step)
+			Step();
+		REQUIRE(Journey().leg == leg);
+	}
+
+
+	World::Journey &Journey()
+	{
+		return world.Registry().get<World::Journey>(Ship());
+	}
+};
+} // namespace
+
+
+TEST_CASE("A pulse ship's journey keeps its spheres, crossing each end's ball and burning its own metres")
+{
+	Pulse hosted;
+	entt::registry &registry = hosted.world.Registry();
+	REQUIRE(hosted.Record().hullId == "HullLoneTraderStarter");
+	REQUIRE(Manifest::Content::DriveOf(hosted.fleet->Content(), "HullLoneTraderStarter")->driveId == "DrivePulse");
+	const World::Fuel full = hosted.Fuel();
+	REQUIRE(hosted.Send() == Result::Succeeded);
+
+	// Each end's ball, Ore's and Brine's, 142,000 km, its highports' orbits and 100,000 km, and the
+	// highport's 42,000 km out to it; a sphere above each planet and about each of its five stations.
+	const Space::CruiseDrive &drive = registry.get<Space::CruiseDrive>(hosted.Ship());
+	CHECK(drive.departureClearance == 1.84e8);
+	CHECK(drive.arrivalClearance == 1.84e8);
+	CHECK(drive.keepouts.size() == 12);
+	CHECK(drive.keepouts.front() == Space::Keepout{"PlanetOre", 6.371e6 + 1.0e8});
+
+	// Admission paid whole units of 100 kg, and no reaction mass.
+	const World::Fuel admitted = hosted.Journey().paid;
+	CHECK(admitted.reactionMass == 0.0);
+	CHECK(std::fmod(admitted.pellets, 100.0) == 0.0);
+	CHECK(hosted.Fuel().pellets == full.pellets - admitted.pellets);
+
+	// Followed through undocking and clearing to the cruise; there, settled again from where it
+	// cleared to, a course a little longer or shorter charged or refunded.
+	hosted.StepTo(Leg::Cruising);
+	const Space::Cruising &cruising = registry.get<Space::Cruising>(hosted.Ship());
+	CHECK(cruising.departureBody == "PlanetOre");
+	CHECK(cruising.departureClearance >= 1.84e8);
+	CHECK(cruising.arrivalClearance >= 1.84e8);
+	const World::Fuel paid = hosted.Journey().paid;
+	CHECK(hosted.Fuel().pellets == doctest::Approx(full.pellets - paid.pellets));
+	CHECK(std::fabs(paid.pellets - admitted.pellets) <= 200.0);
+
+	// Its fuel the drive's own metres of the course it flies, the crossings' none.
+	double length = 0.0;
+	for (std::size_t point = 1; point < cruising.course.size(); ++point)
+		length += glm::distance(cruising.course[point], cruising.course[point - 1]);
+	const Manifest::Content::DriveDefinition &pulse =
+	    *Manifest::Content::DriveOf(hosted.fleet->Content(), "HullLoneTraderStarter");
+	const World::Fuel expected = Travel::Burned(
+	    pulse, *cruising.profile,
+	    Travel::TonnesAboard(registry, hosted.services.identities, hosted.fleet->Content(), hosted.Ship()) +
+	        paid.pellets / 1000.0,
+	    length - cruising.departureClearance - cruising.arrivalClearance, 100.0);
+	CHECK(paid == expected);
+	MESSAGE(
+	    "Ore to Brine on the pulse drive at a tenth: "
+	    << static_cast<double>(cruising.arrivalStep - cruising.departureStep) * kStep / kDay << " days, "
+	    << length / 1.0e9 << " million km, " << paid.pellets / 100.0 << " units");
+}
+
+
+TEST_CASE("A pulse ship's cruise settles the fuel admission paid against its course, both ways")
+{
+	for (const double shift : {300.0, -300.0})
+	{
+		CAPTURE(shift);
+		Pulse hosted;
+		REQUIRE(hosted.Send() == Result::Succeeded);
+		hosted.StepTo(Leg::Clearing);
+
+		// Fixture bootstrap: admission's baseline moved by three units, as a course that settles that
+		// much shorter, refunded, or longer, charged.
+		hosted.Journey().paid.pellets += shift;
+		const World::Fuel before = hosted.Fuel();
+		const World::Fuel baseline = hosted.Journey().paid;
+		hosted.StepTo(Leg::Cruising);
+		const World::Fuel paid = hosted.Journey().paid;
+		CHECK(hosted.Fuel().pellets == doctest::Approx(before.pellets - (paid.pellets - baseline.pellets)));
+		if (shift > 0.0)
+			CHECK(hosted.Fuel().pellets > before.pellets);
+		else
+			CHECK(hosted.Fuel().pellets < before.pellets);
+	}
+}
+
+
+TEST_CASE("A pulse ship saved undocking or clearing goes on as the unsaved run does")
+{
+	for (const Leg saved : {Leg::Departing, Leg::Clearing})
+	{
+		CAPTURE(static_cast<int>(saved));
+		Pulse hosted;
+		REQUIRE(hosted.Send() == Result::Succeeded);
+		if (saved != Leg::Departing)
+			hosted.StepTo(saved);
+		Pulse loaded;
+		loaded.world.Load(hosted.world.Save());
+		hosted.StepTo(Leg::Cruising);
+		loaded.StepTo(Leg::Cruising);
+		CHECK(loaded.world.Save() == hosted.world.Save());
+	}
+}
+
+
+TEST_CASE("A save whose journey paid less than nothing is refused")
+{
+	Pulse hosted;
+	REQUIRE(hosted.Send() == Result::Succeeded);
+	hosted.Journey().paid.pellets = -1.0;
+	Pulse loaded;
+	CHECK_THROWS_WITH_AS(
+	    loaded.world.Load(hosted.world.Save()), doctest::Contains("a journey's fuel paid is less than nothing"),
+	    Jettison::Serialise::FormatError);
 }

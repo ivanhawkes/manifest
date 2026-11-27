@@ -57,6 +57,10 @@ constexpr double kGramsPerKilogram = 1000.0;
 constexpr double kMilligramsPerKilogram = 1.0e6;
 constexpr double kMetresPerKilometre = 1000.0;
 
+// The fuel a cruise's start must leave aboard past what its settled course burns beyond the
+// admission's, a gram, as a policy's estimate keeps.
+constexpr double kFuelMarginKilograms = 0.001;
+
 // What the command and the system run on.
 struct Rules
 {
@@ -94,6 +98,37 @@ entt::entity Required(const Rules &rules, Kind kind, const std::string &id)
 	const entt::entity entity = rules.identities.Find(kind, id);
 	JETTISON_VERIFY(entity != entt::null);
 	return entity;
+}
+
+
+// Whether the drive crosses at either end, so that its cruise is settled as flown.
+bool Crosses(const Space::CruiseDrive &drive)
+{
+	return drive.profile && drive.crossingAcceleration > 0.0f &&
+	       (drive.departureClearance > 0.0 || drive.arrivalClearance > 0.0);
+}
+
+
+// The cruise to the venue's station settled from where the ship is now, as the cruise's start settles
+// it (Space::SettleCruise), for a drive that crosses; none for one that does not, the result left
+// Succeeded, and none for one refused, the result its reason.
+std::optional<Space::SettledCruise> Settle(
+    const SimWorld &world, const Space::StarSystem &system, const Space::CruiseDrive &drive,
+    entt::entity ship, std::string_view venueId, Result &result)
+{
+	result = Result::Succeeded;
+	if (!Crosses(drive))
+		return std::nullopt;
+	const entt::registry &registry = world.Registry();
+	const auto *pFrame = registry.try_get<Physics::LocalFrame>(ship);
+	Space::Settlement settlement = Space::SettleCruise(
+	    system, drive, registry.get<Sim::Transform>(ship).position,
+	    pFrame ? std::string_view{pFrame->body} : std::string_view{}, venueId, world.Clock().Now(),
+	    world.FixedStep());
+	if (settlement.cruise)
+		return std::move(settlement.cruise);
+	result = settlement.refusal == Space::Reason::InsideRadius ? Result::InsideRadius : Result::NoCourse;
+	return std::nullopt;
 }
 
 
@@ -136,7 +171,9 @@ Result Started(SimWorld &world, const Rules &rules, const Actor &actor, const Tr
 	// venue it leaves, keeping back what it pays as it starts.
 	auto *pDrive = registry.try_get<Space::CruiseDrive>(ship);
 	std::optional<Jettison::Transit::MotionProfile> flown;
+	Space::CruiseDrive drive;
 	World::Fuel burned{};
+	Result result = Result::Succeeded;
 	if (pDrive && pDrive->profile)
 	{
 		const auto authored = rules.content.drives.find(Content::RegistryName(record.hullId));
@@ -149,14 +186,36 @@ Result Started(SimWorld &world, const Rules &rules, const Actor &actor, const Tr
 		if (!record.dockedAt.empty())
 			rules.fleet.Refuel(world, ship, fee + owed);
 		flown = Profile(mode, travel.thrustBps, travel.accelerationMilliG);
-		const double metres = glm::distance(
-		    registry.get<Sim::Transform>(ship).position,
-		    registry.get<Sim::Transform>(rules.fleet.StationOf(registry, travel.venueId)).position);
 		const Content::DriveDefinition *pClass = Content::DriveOf(rules.content, record.hullId);
 		JETTISON_VERIFY(pClass != nullptr);
+
+		// The journey's drive: the burn, and the crossings and spheres of its two ends. A drive that
+		// crosses is settled as flown from here, its fuel its course's own metres; any other burns
+		// over the straight line to the station.
+		drive = *pDrive;
+		drive.profile = flown;
+		const auto *pFrame = registry.try_get<Physics::LocalFrame>(ship);
+		const Space::StarSystem *pSystem = SystemOf(registry, rules.content, ship);
+		double driven = Space::DriveMetres(
+		    *pDrive, glm::distance(
+		                 registry.get<Sim::Transform>(ship).position,
+		                 registry.get<Sim::Transform>(rules.fleet.StationOf(registry, travel.venueId))
+		                     .position));
+		if (pSystem && pFrame)
+		{
+			Exclusion exclusion =
+			    ExclusionOf(rules.content, *pSystem, *pClass, pFrame->body, travel.venueId);
+			drive.departureClearance = exclusion.departureClearance;
+			drive.arrivalClearance = exclusion.arrivalClearance;
+			drive.keepouts = std::move(exclusion.keepouts);
+			if (const std::optional<Space::SettledCruise> settled =
+			        Settle(world, *pSystem, drive, ship, travel.venueId, result))
+				driven = settled->DriveMetres();
+			else if (result != Result::Succeeded)
+				return result;
+		}
 		burned = Burned(
-		    *pClass, *flown, TonnesAboard(registry, rules.identities, rules.content, ship),
-		    Space::DriveMetres(*pDrive, metres),
+		    *pClass, *flown, TonnesAboard(registry, rules.identities, rules.content, ship), driven,
 		    Content::KilogramsPerUnit(Content::PelletItem(rules.content, *pClass)));
 		const auto *pFuel = registry.try_get<World::Fuel>(ship);
 		const World::Fuel tanks = pFuel ? *pFuel : World::Fuel{};
@@ -182,7 +241,7 @@ Result Started(SimWorld &world, const Rules &rules, const Actor &actor, const Tr
 	}
 	if (flown)
 	{
-		pDrive->profile = flown;
+		*pDrive = std::move(drive);
 		if (auto *pFuel = registry.try_get<World::Fuel>(ship))
 		{
 			pFuel->reactionMass -= burned.reactionMass;
@@ -195,7 +254,7 @@ Result Started(SimWorld &world, const Rules &rules, const Actor &actor, const Tr
 		}
 	}
 	registry.emplace_or_replace<World::Journey>(
-	    ship, travel.venueId, Leg::Departing, Failure::None, world.Clock().Step());
+	    ship, travel.venueId, Leg::Departing, Failure::None, world.Clock().Step(), burned);
 	return Result::Succeeded;
 }
 
@@ -204,6 +263,51 @@ void Fail(World::Journey &journey, Failure failure)
 {
 	journey.leg = Leg::Failed;
 	journey.failure = failure;
+}
+
+
+// The cruise of a drive that crosses settled again as it starts, from where the ship has cleared to,
+// and the fuel its admission burnt settled against that course's own metres on the mass admission
+// weighed, in whole units: more burnt from the fuel aboard, its job's share with it, and less returned
+// to the tanks and magazine. False for a course refused, or fuel aboard short of more and a gram.
+bool Resettled(SimWorld &world, const Rules &rules, entt::entity ship, World::Journey &journey)
+{
+	entt::registry &registry = world.Registry();
+	const auto *pDrive = registry.try_get<Space::CruiseDrive>(ship);
+	const Space::StarSystem *pSystem = SystemOf(registry, rules.content, ship);
+	if (!pDrive || !pSystem)
+		return true;
+	Result result = Result::Succeeded;
+	const std::optional<Space::SettledCruise> settled =
+	    Settle(world, *pSystem, *pDrive, ship, journey.venueId, result);
+	if (!settled)
+		return result == Result::Succeeded;
+	const Content::DriveDefinition *pClass =
+	    Content::DriveOf(rules.content, registry.get<World::Ship>(ship).hullId);
+	JETTISON_VERIFY(pClass != nullptr);
+	const World::Fuel &paid = journey.paid;
+	const World::Fuel burned = Burned(
+	    *pClass, *pDrive->profile,
+	    TonnesAboard(registry, rules.identities, rules.content, ship) +
+	        ((paid.reactionMass + paid.pellets) / kKilogramsPerTonne),
+	    settled->DriveMetres(), Content::KilogramsPerUnit(Content::PelletItem(rules.content, *pClass)));
+	const World::Fuel more{burned.reactionMass - paid.reactionMass, burned.pellets - paid.pellets};
+	auto *pFuel = registry.try_get<World::Fuel>(ship);
+	const World::Fuel held = pFuel ? *pFuel : World::Fuel{};
+	if ((more.reactionMass > 0.0 && held.reactionMass < more.reactionMass + kFuelMarginKilograms) ||
+	    (more.pellets > 0.0 && held.pellets < more.pellets + kFuelMarginKilograms))
+		return false;
+	if (pFuel)
+		*pFuel = {
+		    std::max(0.0, held.reactionMass - more.reactionMass),
+		    std::max(0.0, held.pellets - more.pellets)};
+	if (auto *pJob = registry.try_get<World::Job>(ship); pJob && pJob->totes > 0)
+	{
+		pJob->reactionMassKilograms = std::max(0.0, pJob->reactionMassKilograms + more.reactionMass);
+		pJob->pelletKilograms = std::max(0.0, pJob->pelletKilograms + more.pellets);
+	}
+	journey.paid = burned;
+	return true;
 }
 
 
@@ -290,6 +394,8 @@ void Advance(SimWorld &world, const Rules &rules, entt::entity ship)
 						Fail(journey, Failure::CruiseRefused);
 					return;
 				}
+			if (!Resettled(world, rules, ship, journey))
+				return Fail(journey, Failure::CruiseRefused);
 			world.Apply(Space::Cruise{sender, ship, journey.venueId});
 			if (registry.all_of<Space::Cruising>(ship))
 				journey.leg = Leg::Cruising;
@@ -440,6 +546,64 @@ World::Fuel Burned(
 	    pelletKilogramsPerUnit > 1.0
 	        ? std::ceil(pellets / pelletKilogramsPerUnit) * pelletKilogramsPerUnit
 	        : pellets};
+}
+
+
+Exclusion ExclusionOf(
+    const Content::ContentSet &content, const Space::StarSystem &system,
+    const Content::DriveDefinition &drive, std::string_view from, std::string_view to)
+{
+	const double reach = Space::CruiseTravel::kStationReach;
+	if (!drive.bodyExclusionRadius && !(drive.exclusionRadius > reach))
+		return {};
+	const Content::ScenarioDefinition &scenario = content.scenarios.find(content.scenario)->second;
+	const auto populated = [&](const Space::Body &body)
+	{
+		return (body.kind == Space::BodyKind::Planet || body.kind == Space::BodyKind::Moon) &&
+		       std::ranges::any_of(
+		           scenario.regions, [&](const Content::RegionDefinition &region)
+		           { return region.planetId == body.name && region.population > 0.0; });
+	};
+	const auto farthest = [](const Space::Body &body)
+	{ return body.orbit.semiMajorAxis * (1.0 + body.orbit.eccentricity); };
+
+	Exclusion exclusion;
+	const auto keep = [&](const std::string &body, double radius)
+	{
+		if (std::ranges::find(exclusion.keepouts, body, &Space::Keepout::body) == exclusion.keepouts.end())
+			exclusion.keepouts.push_back({body, radius});
+	};
+
+	// Each end's body, the ball about it and its spheres, and the clearance out of the ball.
+	const auto end = [&](std::string_view name)
+	{
+		int at = system.Find(name);
+		if (at < 0)
+			return 0.0;
+		const Space::Body &station = system.bodies[static_cast<std::size_t>(at)];
+		const bool orbiting = station.kind == Space::BodyKind::Station && station.parentIndex >= 0;
+		if (orbiting)
+			at = station.parentIndex;
+		const Space::Body &body = system.bodies[static_cast<std::size_t>(at)];
+		double ball = 0.0;
+		if (drive.bodyExclusionRadius && populated(body))
+		{
+			ball = body.radius + *drive.bodyExclusionRadius;
+			keep(body.name, ball);
+		}
+		for (const Space::Body &other : system.bodies)
+			if (other.kind == Space::BodyKind::Station && other.parentIndex == at)
+			{
+				ball = std::max(ball, farthest(other) + drive.exclusionRadius);
+				keep(other.name, drive.exclusionRadius);
+			}
+		if (!drive.bodyExclusionRadius)
+			return drive.exclusionRadius - reach;
+		return ball + (orbiting ? farthest(station) : 0.0);
+	};
+	exclusion.departureClearance = end(from);
+	exclusion.arrivalClearance = end(to);
+	return exclusion;
 }
 
 
@@ -599,9 +763,12 @@ Fleet &Register(
 	     .phase = Jettison::Ecs::TickPhase::Simulation,
 	     // What its engine commands write, besides its own.
 	     .access =
-	         Access::Of<World::Journey, World::Ship, Dock::Docking, Space::Cruising, Ai::Destination>()
+	         Access::Of<
+	             World::Journey, World::Ship, Dock::Docking, Space::Cruising, Space::CruiseDrive,
+	             Ai::Destination, World::Cargo, World::Systems>()
 	             .Writing<
-	                 World::Journey, World::Ship, Dock::Docking, Dock::Berth, Dock::Platform,
+	                 World::Journey, World::Ship, World::Fuel, World::Job, Dock::Docking, Dock::Berth,
+	                 Dock::Platform,
 	                 Ai::Destination, Space::Cruising, Sim::Transform, Physics::Body, Physics::Velocity,
 	                 Physics::LocalFrame, Physics::OnRails>(),
 	     .after =

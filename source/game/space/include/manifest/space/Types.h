@@ -38,7 +38,9 @@ enum class Reason : std::uint8_t
 	LeadsNowhere,
 	NotCleared,
 	// The gate's jump point, and its ring's radius in metres.
-	HullTooLarge
+	HullTooLarge,
+	// The body's name: a cruise whose drive still thrusts within a keepout once it is settled.
+	InsideRadius
 };
 
 // Registers the module's types with Reflect: its reasons, lane travel's (Lanes.h), the gates'

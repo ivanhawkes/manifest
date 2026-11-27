@@ -191,6 +191,15 @@ std::optional<std::string> Broken(const Fuel &fuel)
 }
 
 
+std::optional<std::string> Broken(const Journey &journey)
+{
+	for (const double paid : {journey.paid.reactionMass, journey.paid.pellets})
+		if (!std::isfinite(paid) || paid < 0.0)
+			return "a journey's fuel paid is less than nothing, or no number";
+	return std::nullopt;
+}
+
+
 std::optional<std::string> Broken(const Sales &sales)
 {
 	for (std::size_t at = 0; at < sales.recent.size(); ++at)
@@ -542,11 +551,15 @@ void RegisterTypes()
 		    .Value<Failure::CruiseRefused>("CruiseRefused")
 		    .Value<Failure::PadRefused>("PadRefused")
 		    .Value<Failure::PadLost>("PadLost");
+		RegisterType<Fuel>("Manifest.World.Fuel")
+		    .Field<&Fuel::reactionMass>("reactionMass", kSaved)
+		    .Field<&Fuel::pellets>("pellets", kSaved);
 		RegisterType<Journey>("Manifest.World.Journey")
 		    .Field<&Journey::venueId>("venueId", kSaved)
 		    .Field<&Journey::leg>("leg", kSaved)
 		    .Field<&Journey::failure>("failure", kSaved)
-		    .Field<&Journey::started>("started", kSaved);
+		    .Field<&Journey::started>("started", kSaved)
+		    .Field<&Journey::paid>("paid", kSaved);
 		RegisterType<Holding>("Manifest.World.Holding")
 		    .Field<&Holding::venueId>("venueId", kSaved)
 		    .Field<&Holding::itemId>("itemId", kSaved)
@@ -570,9 +583,6 @@ void RegisterTypes()
 		    .Field<&LifeSupport::tanks>("tanks", kSaved)
 		    .Field<&LifeSupport::cartridges>("cartridges", kSaved)
 		    .Field<&LifeSupport::connectedTo>("connectedTo", kSaved);
-		RegisterType<Fuel>("Manifest.World.Fuel")
-		    .Field<&Fuel::reactionMass>("reactionMass", kSaved)
-		    .Field<&Fuel::pellets>("pellets", kSaved);
 		RegisterType<Refuel>("Manifest.World.Refuel").Field<&Refuel::enabled>("enabled", kSaved);
 		RegisterType<Broker>("Manifest.World.Broker").Field<&Broker::operatorId>("operatorId", kSaved);
 		RegisterEnum<Side>("Manifest.World.Side").Value<Side::Buy>("Buy").Value<Side::Sell>("Sell");

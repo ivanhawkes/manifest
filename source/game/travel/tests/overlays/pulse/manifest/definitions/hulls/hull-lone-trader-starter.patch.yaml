@@ -1,0 +1,5 @@
+version: 1
+# The starter on the pulse drive, its magazine 5,000 units, for a pulse ship's journey before a hull
+# flies one (W22b2; the pulse carrier is W22b3's).
+driveId: DrivePulse
+pelletMagazine: 500000

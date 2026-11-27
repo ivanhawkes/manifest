@@ -123,7 +123,7 @@ entity that carries them (`source/game/world/include/manifest/world/State.h`):
 | an organisation | `Organisation` | its kind and name, and the principal who directs it (empty for the AI's) | [governance](governance.md) |
 | a region | `Region`, `Knowledge`, `Facilities`, `Development` | planet, civilisation, governor, population, health, happiness; skills and recipes; facilities; a player governor's development policy | [governance](governance.md), [economy](economy.md) |
 | an account | `Account` | whole credits | this document |
-| a ship | `Ship`, `Journey`, `Cargo`, `LifeSupport`, `Fuel`, `Refuel`, `Systems`, `Arrears`, `Policy`, `Job` | hull and dock; journey leg; lots and opened totes; tanks, cartridges and connection; fuel; the refuel choice; systems bought; berth debt; standing policy and job | [companies](companies.md), [travel](travel.md), [stations](stations.md), [policies](policies.md) |
+| a ship | `Ship`, `Journey`, `Cargo`, `LifeSupport`, `Fuel`, `Refuel`, `Systems`, `Arrears`, `Policy`, `Job` | hull and dock; journey leg and the fuel it paid; lots and opened totes; tanks, cartridges and connection; fuel; the refuel choice; systems bought; berth debt; standing policy and job | [companies](companies.md), [travel](travel.md), [stations](stations.md), [policies](policies.md) |
 | a broker | `Broker`, `Stock` | the venue's operator; the broker's goods | [trading](trading.md) |
 | an employer, a household | `Stock`, `Production`, `Pantry` | goods; batches under way and the tax carry; opened totes, unmet needs and pressure | [economy](economy.md) |
 | a market | `Sales`, `Fees`, `Pricing` | recent fills and last sales; posted charges; the fee level | [trading](trading.md), [stations](stations.md) |

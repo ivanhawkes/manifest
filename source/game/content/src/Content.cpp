@@ -493,6 +493,9 @@ void CheckDrives(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 		    std::format(
 		        "must be finite and at least a station's reach, {} m",
 		        Manifest::Space::CruiseTravel::kStationReach));
+		checker.Require(
+		    !drive.bodyExclusionRadius || Positive(*drive.bodyExclusionRadius), "bodyExclusionRadius",
+		    "must be above 0, or left out for a drive that may thrust near a populated body");
 		if (drive.cruise)
 			for (const auto &[crew, profile] :
 			     {std::pair{"manned", drive.cruise->manned},
@@ -1432,7 +1435,9 @@ ContentSet Build(
 
 			// A ship leaves a station's reach on steering (Space::ClearOf); the cruise crosses the
 			// rest.
-			drive.clearance = driveClass.exclusionRadius - Manifest::Space::CruiseTravel::kStationReach;
+			drive.departureClearance =
+			    driveClass.exclusionRadius - Manifest::Space::CruiseTravel::kStationReach;
+			drive.arrivalClearance = drive.departureClearance;
 			drive.crossingAcceleration = Manifest::Space::CruiseTravel::kCrossingAcceleration;
 		}
 	}

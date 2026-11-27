@@ -1,0 +1,3 @@
+version: 1
+# Astralis selects the starter, which the overlay flies on the pulse drive.
+drives: !append [{driveId: DrivePulse}]

@@ -177,7 +177,9 @@ struct FuelTuning
 // exhaust speed, whose pellets are their own reaction mass (the pulse drive's); its pellets, an item
 // traded by the kilogram or by the unit, in milligrams for each tonne aboard and each km/s of speed
 // change, times the acceleration in g to the curve's power above 1 g; the metres from a station within
-// which it may not thrust; and its own cruise in a mode that has one, in place of the mode's.
+// which it may not thrust, and the height above a populated body's surface, where it has one (the
+// pulse drive's; docs/ships-plan.md, "The radius about populated bodies"); and its own cruise in a mode
+// that has one, in place of the mode's.
 struct DriveDefinition
 {
 	std::string driveId;
@@ -187,6 +189,7 @@ struct DriveDefinition
 	int curveExponent{0};
 	double exclusionRadius{0.0};
 	std::optional<CruiseModel> cruise;
+	std::optional<double> bodyExclusionRadius;
 };
 
 // Who an offer is bought for: a company's own ship, the one target so far.

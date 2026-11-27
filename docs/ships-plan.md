@@ -30,7 +30,9 @@ build next. What is built is documented elsewhere: hulls, cargo and upgrades in
 Built in part by W22a (2026-11-26): the drive as a record, the hauler fusion drive, its exclusion
 radius and the medium freighter; and by W22b1 (2026-11-27): fuel by the unit, the pulse drive and
 its units, the magazine refuelled by the totes it needs, the policy flying the hauler at its 0.3 g,
-and deuterium at every venue. What is left is [W22b](delivery-order.md#w22b).
+and deuterium at every venue; and by W22b2 (2026-11-27): the radius about populated bodies, the two
+clearances, crossings flown in their bodies' frames and the cruise checked as flown. What is left is
+[W22b](delivery-order.md#w22b).
 The torch suits a skiff to a corvette. Hauling thousands of tonnes on it would burn pellets no
 trade could pay for, so larger hulls fly dirtier drives that are cheaper a tonne moved but must
 keep away from stations ([D-108](decision-ledger.md#d-108)).
