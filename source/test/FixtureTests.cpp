@@ -1399,6 +1399,60 @@ TEST_CASE(
 }
 
 
+TEST_CASE("A standing policy flies the medium freighter on a trade, at its drive's sustained 0.3 g")
+{
+	Hosted hosted{MANIFEST_MOD_DIRECTORY, {MANIFEST_FIXTURE_OVERLAY, MANIFEST_FREIGHTER_OVERLAY}};
+	REQUIRE(
+	    hosted.Run(
+	        kHost, Company::kProvision, Company::kVersion,
+	        Company::Provision{"Ada", "Ada", "Ada Co"}) == Result::Succeeded);
+	entt::registry &registry = hosted.world.Registry();
+	const entt::entity ship = hosted.Ship();
+	REQUIRE(registry.get<const World::Ship>(ship).hullId == "HullFreighterMedium");
+
+	// Fixture bootstrap: every venue's fees for a destroyer pad a skiff's, as their operators may post
+	// them, since no trade of the fixture's small markets pays a freighter's 18,000 a docking.
+	for (const auto [entity, fees] : registry.view<World::Fees>().each())
+		for (World::ClassFees &each : fees.classes)
+			if (each.padClass == "destroyer")
+			{
+				each.docking = 100;
+				each.berthPerHour = 20;
+			}
+
+	// Its trade chosen, bought and flown at once: a journey at 1 g, past the hauler's 0.3 g, was
+	// refused at every retry.
+	REQUIRE(
+	    hosted.Run(
+	        kAda, Manifest::Policy::kSet, Manifest::Policy::kVersion,
+	        Manifest::Policy::Set{"Ship1", true, 0, 0}) == Result::Succeeded);
+	const World::Job &job = registry.get<const World::Job>(ship);
+	REQUIRE(job.phase == World::Phase::ToDestination);
+	REQUIRE(job.totes > 0);
+	const World::Job lot = job;
+	const std::optional<Jettison::Transit::MotionProfile> flown =
+	    registry.get<const Manifest::Space::CruiseDrive>(ship).profile;
+	REQUIRE(flown);
+	CHECK(flown->sustainedAcceleration == doctest::Approx(2.941995));
+
+	// Flown there and sold, its lot gone from the hold.
+	const std::uint64_t end = hosted.world.Clock().Step() + std::uint64_t{60} * 60 * 24 * 30;
+	while (hosted.world.Clock().Step() < end && job.totes > 0)
+	{
+		hosted.world.FastForward(end);
+		(void)hosted.world.Events().Take();
+	}
+	CHECK(hosted.Ship1().journey->leg == Leg::Arrived);
+	CHECK(hosted.Ship1().dockedAt == lot.destinationId);
+	CHECK(job.totes == 0);
+	CHECK(Aboard(hosted.Ship1(), lot.itemId) == 0);
+	MESSAGE(
+	    "The freighter's trade: " << lot.totes << " totes of " << lot.itemId << " from "
+	                              << lot.sourceId << " to " << lot.destinationId << " at "
+	                              << lot.thrustBps << " basis points, estimated at " << lot.estimate);
+}
+
+
 // Prices settling over a long run (D-102): with Ada and Nia trading on their standing policies,
 // eight days leave every broker's stock of every good, so its prices, about its target, the
 // seeded stock: never below half of it, a tote spared a small target's rounding, nor past twice it.

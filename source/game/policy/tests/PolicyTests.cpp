@@ -1248,3 +1248,96 @@ TEST_CASE("Pellets of a job's lot opened for its magazine leave the lot, which t
 	                     hosted.Job().blockage == World::Blockage::Refused;
 	CHECK_FALSE(refused);
 }
+
+
+// Ada's ship flown to Deeps, which refines pellets, its policy off and its magazine part spent on the
+// way; her company funded for tin, Deeps' and Brine's her only reports.
+void ToDeeps(Hosted &hosted)
+{
+	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
+	REQUIRE(hosted.SetPolicy(kAda, {"Ship1", false, 0, 0}) == Result::Succeeded);
+	const entt::registry &registry = hosted.world.Registry();
+	const entt::entity ship = hosted.Ship("Ship1");
+	REQUIRE(
+	    hosted.Run(
+	        kAda, Manifest::Travel::kTravel, Manifest::Travel::kVersion,
+	        Manifest::Travel::Travel{"Ship1", "VenueOreDeepsStation"}) == Result::Succeeded);
+	const auto ended = [&] { return registry.get<const World::Journey>(ship).Ended(); };
+	const std::uint64_t limit = hosted.world.Clock().Step() + std::uint64_t{60} * 86'400 * 8;
+	while (!ended() && hosted.world.Clock().Step() < limit)
+		hosted.world.FastForward(limit);
+	REQUIRE(registry.get<const World::Ship>(ship).dockedAt == "VenueOreDeepsStation");
+	hosted.Fund("Company1", 1'000'000);
+	for (const char *venueId :
+	     {"VenueOreHighport", "VenueOreValeStation", "VenueOreFellsStation", "VenueOreSteppeStation",
+	      "VenueBrineDeltaStation", "VenueBrineReachStation", "VenueBrineShoalsStation",
+	      "VenueBrineSaltworksStation"})
+		hosted.Forget("Ada", venueId);
+}
+
+
+TEST_CASE("A policy keeps the hold's room for its magazine's refuel, which tops a part-spent one up")
+{
+	Hosted hosted;
+	ToDeeps(hosted);
+	entt::registry &registry = hosted.world.Registry();
+	const entt::entity ship = hosted.Ship("Ship1");
+	const double spent = registry.get<const World::Fuel>(ship).pellets;
+	REQUIRE(spent < 12.5);
+
+	// Fixture bootstrap: the hold all but full of water of Ada's own, a tote free. That tote is kept
+	// for the pellets the magazine's refuel needs, so no trade fits.
+	registry.get<World::Cargo>(ship).lots = {{"ItemDrinkingWater", 159}};
+	REQUIRE(hosted.SetPolicy(kAda, {"Ship1", true, 0, 0}) == Result::Succeeded);
+	const World::Job &job = hosted.Job();
+	CHECK(job.phase == World::Phase::Blocked);
+	CHECK(job.blockage == World::Blockage::NoTrade);
+
+	// Two totes free, its trade, a tote of Deeps' tin to Brine, takes one.
+	registry.get<World::Cargo>(ship).lots = {{"ItemDrinkingWater", 158}};
+	registry.replace<World::Job>(ship);
+	hosted.world.Step();
+	CHECK(job.itemId == "ItemTin");
+	CHECK(job.sourceId == "VenueOreDeepsStation");
+	CHECK(job.destinationId == "VenueBrineHighport");
+	CHECK(job.phase == World::Phase::ToDestination);
+	CHECK(job.totes == 1);
+
+	// Refuelled as it left: the other tote bought and opened, the magazine topped up to the brim
+	// before the leg's burn, and what it had no room for left in the opened tote.
+	const World::Cargo &cargo = registry.get<const World::Cargo>(ship);
+	CHECK(cargo.lots == std::vector<World::Lot>{{"ItemDrinkingWater", 158}, {"ItemTin", 1}});
+	REQUIRE(cargo.opened.size() == 1);
+	CHECK(cargo.opened[0].itemId == "ItemFusionPellets");
+	CHECK(cargo.opened[0].quantity == doctest::Approx(spent));
+	CHECK(job.pelletKilograms > 0.0);
+	CHECK(registry.get<const World::Fuel>(ship).pellets + job.pelletKilograms == doctest::Approx(12.5));
+}
+
+
+TEST_CASE("Its hold full of a lot, a policy estimates a refuel at the pellets the hold can take")
+{
+	Hosted hosted;
+	ToDeeps(hosted);
+	entt::registry &registry = hosted.world.Registry();
+	const entt::entity ship = hosted.Ship("Ship1");
+	const auto fuelled = [&]
+	{
+		return EstimateRoute(
+		           registry, hosted.identities, hosted.content, ship, {}, "VenueBrineHighport", 2500,
+		           0.0)
+		    .fuelled;
+	};
+
+	// Fixture bootstrap: the magazine all but dry, and the hold as a partial sale leaves it, the lot's
+	// unsold totes loaded back to fill it.
+	registry.get<World::Fuel>(ship).pellets = 0.01;
+	hosted.Lot(160, 16'000);
+	REQUIRE(hosted.Line("Ada", "VenueOreDeepsStation", "ItemFusionPellets").asks.size() > 0);
+
+	// Deeps sells pellets, but with no room for a tote of them the leg to Brine is estimated on what
+	// the magazine holds; a tote's room, and it is estimated refuelled.
+	CHECK_FALSE(fuelled());
+	registry.get<World::Cargo>(ship).lots = {{"ItemFurs", 159}};
+	CHECK(fuelled());
+}

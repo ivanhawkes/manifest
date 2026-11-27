@@ -143,7 +143,10 @@ aboard and each km/s of that change, the phase burns, at the rates of the hull's
   0.033 kg at the torch's 29,979 km/s;
 - **pellets**, the drive's `pelletItemId`, `pelletMilligramsPerTonneKms` milligrams (the torch's
   16.5), times a factor of 1 up to 1 g and the acceleration in g to the power `curveExponent` (2)
-  above it.
+  above it. A drive with no `exhaustKms` burns no reaction mass, its pellets their own (the pulse
+  drive's). A pellet item traded by the unit, rather than the kilogram, is burnt in whole units:
+  the burn is rounded up to them, at the unit's kilograms from the item's density, pack factor and
+  units a cubic metre (`Content::KilogramsPerUnit`; 100 kg a pulse unit).
 
 Only the metres the drive itself thrusts over burn: a drive with a clearance crosses it on its
 thrusters at each end, and those metres burn nothing (`Space::DriveMetres`,
@@ -178,9 +181,11 @@ the docking fee and arrears the journey still pays:
 
 1. It buys, at the venue's asks through its [book](glossary.md#book), the whole totes of reaction
    mass the tanks have room for (112.5 kg a tote), straight into the tanks.
-2. If the hold has no pellets and has room, it buys one tote of pellets (12.5 kg) into the hold,
-   where the venue offers them.
-3. It fills the magazine from the pellets in the hold, opening a tote at a time.
+2. It buys the whole totes of pellets the magazine's room needs, less the pellets already in the
+   hold, as far as the hold has room for them, where the venue offers them: the starter's 12.5 kg
+   magazine takes one tote, and the medium freighter's 100 kg magazine of deuterium up to eight.
+3. It fills the magazine from the pellets in the hold, opening a tote at a time. A pellet item
+   traded by the unit, as pulse units are, goes in by whole units of its kilograms.
 
 Pellets stay a cargo: a ship can carry totes of them to sell, and the magazine draws on the hold
 only as it needs. What a refuel buys stays bought even when the journey is then refused for its

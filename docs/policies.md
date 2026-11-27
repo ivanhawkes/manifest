@@ -89,7 +89,8 @@ For each candidate it walks the reported price levels of both sides, best first,
 ([prices](pricing.md)). It tries the counts of totes at which the answer can change (each level's
 edge, the hold's free totes, what the account covers at a level's escrow) and keeps the count that
 makes the most, the fewest of equals. The count never exceeds what both sides hold, the free hold
-or what the company's account covers after the route's charges.
+or what the company's account covers after the route's charges. The free hold keeps back the
+totes of pellets the magazine's next refuel needs, so that the refuel has room for them.
 
 The estimate is that sale's proceeds net of the listing fee, less the buy's outlay with its fee,
 less the route's charges (`Policy::EstimateRoute`):
@@ -100,7 +101,10 @@ less the route's charges (`Policy::EstimateRoute`):
   the company's last price paid for each supply (`World::Paid`);
 - the fuel the [torch](glossary.md#torch) burns on each leg for everything aboard, the lot's
   tonnes included on the leg into the destination, at the reported ask where the ship refuels and
-  the venue sells it, else at the last price paid ([travel](travel.md)).
+  the venue sells it, else at the last price paid, a unit-traded fuel priced by its unit
+  ([travel](travel.md)). A refuel is counted only as far as it fits: the pellets aboard and the
+  totes the hold has room for, the totes bought weighing with the rest. Only the fuels a drive burns
+  hold it to a margin, so a hull with no reaction mass tanks is not taken as unfuelled.
 
 A route the tanks cannot fly with a gram to spare is not a candidate. A trade is kept only when
 its estimate is above the policy's `targetProfit`.
@@ -109,7 +113,8 @@ The winner is the trade that makes the most an hour: its estimate over the route
 leg's cruise plus `fuel.legAllowanceSeconds`). A policy with `thrustBps` 0 tries each thrust of
 `fuel.thrustSharesBps` and, where one of those cannot be flown, the most the tanks can manage, so
 a heavy lot may fly slower ([D-107](decision-ledger.md#d-107)). A policy with a thrust of its own
-flies every leg at it. Ties go to a source the ship is docked at, then to the scenario's order of
+flies every leg at it. Every journey asks 1 g, or the drive's sustained acceleration where that is
+less (the hauler's 0.3 g), flying the drive's whole profile. Ties go to a source the ship is docked at, then to the scenario's order of
 source, item, destination and thrust, so the choice is deterministic.
 
 With a lot already aboard, the job chooses only a destination: the venue whose reported bids,
@@ -310,8 +315,8 @@ free for a player, or validation refuses the scenario ([content](content.md)).
 - There is no maximum purchase price and no notification when a job blocks; a blocked job
   retries only at the turn's last step, not on a new observation.
 - A ship works one contract at a time, and a job carries one lot of one item.
-- The estimate assumes a venue selling fusion pellets fills the magazine, which takes a tote of the
-  hold (a `shortcut:` in `Policy.cpp`).
+- The estimate takes the hold's room and the pellets aboard as they are now for every leg of a
+  route, not as an earlier leg's refuel leaves them (a `shortcut:` in `Policy.cpp`).
 - The shipped scenarios start with no NPC traders.
 
 ## Decisions

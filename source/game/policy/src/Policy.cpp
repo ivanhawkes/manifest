@@ -343,17 +343,19 @@ Route Priced(
 		           : held;
 	};
 
-	// What a refuel can put in the magazine: the pellets aboard and the totes the hold has room for, in
-	// kilograms.
+	// What a refuel has for the magazine, in kilograms: the pellets aboard, and the totes the hold has
+	// room for, each of so many.
 	double pelletKilogramsPerUnit = 1.0;
-	double pelletRefuel = 0.0;
+	double pelletsAboard = 0.0;
+	double pelletKilogramsPerTote = 0.0;
+	double holdRoom = 0.0;
 	if (burns)
 	{
 		const Core::ItemNode &pelletItem = Content::PelletItem(content, *pClass);
 		pelletKilogramsPerUnit = Content::KilogramsPerUnit(pelletItem);
-		pelletRefuel = PelletsAboard(registry, ship, pelletItem) * pelletKilogramsPerUnit +
-		               static_cast<double>(HoldRoom(registry, identities, ship)) *
-		                   UnitsPerTote(pelletItem) * pelletKilogramsPerUnit;
+		pelletsAboard = PelletsAboard(registry, ship, pelletItem) * pelletKilogramsPerUnit;
+		pelletKilogramsPerTote = UnitsPerTote(pelletItem) * pelletKilogramsPerUnit;
+		holdRoom = static_cast<double>(HoldRoom(registry, identities, ship));
 	}
 
 	Route route;
@@ -384,16 +386,26 @@ Route Priced(
 		const World::Line *pMass = sold(tuning.reactionMassItemId);
 		const World::Line *pPellets = sold(pClass->pelletItemId);
 
-		// A venue selling pellets fills the magazine as far as the pellets aboard and the totes the
-		// hold has room for go, as Company's refuel buys them.
+		// A venue selling pellets fills the magazine from the pellets aboard and the totes its room
+		// needs past them, as far as the hold has room, as Company's refuel buys them; what the
+		// magazine has no room for stays in the hold, and its mass with it.
 		// shortcut: the hold's room and the pellets aboard are the ship's as it is now, for every leg;
 		// refine when a route of several refuels is seen estimated past what its hold can take.
+		double bought = 0.0;
+		if (pPellets && tanks && pelletKilogramsPerTote > 0.0)
+			bought = std::min(
+			             std::ceil(
+			                 std::max(0.0, tanks->pellets - left.pellets - pelletsAboard) /
+			                 pelletKilogramsPerTote),
+			             holdRoom) *
+			         pelletKilogramsPerTote;
 		const World::Fuel start{
 		    pMass && tanks ? refuelled(left.reactionMass) : left.reactionMass,
-		    pPellets && tanks ? std::min(tanks->pellets, left.pellets + pelletRefuel) : left.pellets};
+		    pPellets && tanks ? std::min(tanks->pellets, left.pellets + pelletsAboard + bought)
+		                      : left.pellets};
 		const World::Fuel burned = Travel::Burned(
 		    *pClass, *flown->profile,
-		    dry + (start.reactionMass + start.pellets) / kKilogramsPerTonne +
+		    dry + (start.reactionMass + left.pellets + bought) / kKilogramsPerTonne +
 		        (leg.laden ? lotTonnes : 0.0),
 		    Manifest::Space::DriveMetres(*flown, leg.metres), pelletKilogramsPerUnit);
 		route.fuelled = route.fuelled &&

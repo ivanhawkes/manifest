@@ -73,8 +73,8 @@ TEST_CASE(
 	CHECK(registry.get<Broker>(broker).operatorId == "OrganisationAnvilPortAuthority");
 	const Stock &stock = registry.get<Stock>(broker);
 
-	// Twenty goods and the ships' reaction mass (D-108).
-	CHECK(stock.holdings.size() == 21);
+	// Twenty goods, the ships' reaction mass (D-108) and the hauler's deuterium (W22b).
+	CHECK(stock.holdings.size() == 22);
 	CHECK(!Broken(stock));
 	const auto furs = std::ranges::find(stock.holdings, std::string{"ItemFurs"}, &Holding::itemId);
 	REQUIRE(furs != stock.holdings.end());
