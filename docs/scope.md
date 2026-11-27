@@ -61,7 +61,7 @@ How: [content, scenarios and validation](content.md).
 | [Scenarios](glossary.md#scenario) and [game modes](glossary.md#game-mode) | In | A world starts from authored data, not code |
 | Manifest's content as a Jettison [mod](glossary.md#mod) (`mods/manifest`) | In | Overlays layer through the engine's own mounts ([files and mods](../../jettison/docs/files-and-mods.md)) |
 | Policy scripts in Wasm | Planned, [L39](delivery-order.md#l39) | Players' and modders' trading policy as bounded inputs to native rules ([policy scripts plan](policy-scripts-plan.md)) |
-| Player-facing text in English, French, German and Japanese | Planned, with the graphical client ([L15](delivery-order.md#l15)) | Every string key in all four tables (the user's, 2026-11-22): German's long words, French's diacritics and Japanese kanji test the GUI, and the tables are ready at release for native translators. English's table is the graphical client's ([the graphical client](client.md)); the engine's is `Ui::StringTable` ([Jettison's UI](../../jettison/docs/ui.md), open parts [J15](../../jettison/docs/roadmap.md#j15)) |
+| Player-facing text in English, French, German and Japanese | In, L43 ([history](history/tasks.md)) | Every string key in all four tables (the user's, 2026-11-22), which a check holds ([languages](client.md#languages)). The tables are for stress-testing the GUI now, German's long words, French's diacritics and Japanese kanji, and for native translators later, who replace the first drafts before release. The engine's mechanism is `Ui::StringTable` ([Jettison's UI](../../jettison/docs/ui.md), open parts [J15](../../jettison/docs/roadmap.md#j15)) |
 
 ## Host, server and clients
 

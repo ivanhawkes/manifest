@@ -129,8 +129,8 @@ a venue's fees before it pays ([L47](delivery-order.md#l47)).
 
 The [graphical client](client.md) is how most players will play: it sends the same
 commands and reads the same queries as the [terminal UI](console.md), on [the server](server.md),
-and must not block the native loop. Its text is in four languages from the start
-([L43](delivery-order.md#l43)).
+and must not block the native loop. Its text is in four languages, English, French,
+German and Japanese ([languages](client.md#languages)).
 
 Its first loop, L15a, is done ([history](history/tasks.md)): the composition, and the start, company,
 market, travel, flight and service screens. What is still to come:
@@ -144,8 +144,7 @@ market, travel, flight and service screens. What is still to come:
   development plan](planetary-development-plan.md)).
 - **The galaxy panel.** The systems, their venues and the lanes between them, to choose a journey on.
   The travel screen lists the venues the player has a report of.
-- **Names and words.** Goods, ships and venues by their names rather than their IDs, and the
-  screens' words in French, German and Japanese ([L43](delivery-order.md#l43)).
+- **Names.** Goods, ships and venues by their names, in each language, rather than their IDs.
 - **A shipyard screen** beside the market screen: the hulls a station sells, their prices and the
   purse, on [L48](delivery-order.md#l48)'s shipyard. **A fleet screen** to list and attach to the
   company's ships.

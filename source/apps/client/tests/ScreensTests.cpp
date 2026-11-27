@@ -84,4 +84,24 @@ TEST_CASE("Every screen of the client loads and shows its world with no problem"
 	ui.Update(0.0);
 	CHECK(ui.IsShown(game.Document(ClientGame::kFlight)));
 	CHECK(ui.Problems() == 0);
+
+	// Every screen again in each language the client ships, its translations all taken.
+	for (const std::string_view language : {"fr", "de", "ja"})
+	{
+		CAPTURE(language);
+		ui.SetLanguage(language);
+		for (const std::string_view screen : {ClientGame::kMarket, ClientGame::kTravel,
+		         ClientGame::kService, ClientGame::kCompany})
+		{
+			CAPTURE(screen);
+			game.Show(screen);
+			ui.Update(0.0);
+			CHECK(ui.IsShown(game.Document(screen)));
+		}
+		CHECK(ui.Problems() == 0);
+	}
+	ui.SetLanguage("ja");
+	game.Present();
+	ui.Update(0.0);
+	CHECK(ui.ElementText(game.Document(ClientGame::kCompany), "status") == "完了。");
 }

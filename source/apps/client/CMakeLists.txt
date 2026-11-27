@@ -64,6 +64,18 @@ if(MANIFEST_BUILD_TESTS AND BUILD_TESTING)
 	set_target_properties(manifest_client_screens_tests PROPERTIES FOLDER "Test")
 	add_test(NAME client_screens COMMAND manifest_client_screens_tests)
 
+	# The four languages' check: every key English has in French, German and Japanese, the engine's
+	# own texts with the client's, naming the same placeholders.
+	add_executable(manifest_client_strings_tests tests/StringsTests.cpp)
+	target_link_libraries(manifest_client_strings_tests PRIVATE
+		Jettison::Ui Jettison::Vfs yaml-cpp::yaml-cpp doctest::doctest_with_main manifest_warnings)
+	target_compile_definitions(manifest_client_strings_tests PRIVATE
+		MANIFEST_MOD_DIRECTORY="${MANIFEST_MOD_DIRECTORY}"
+		MANIFEST_ENGINE_ASSETS="${engine_assets}")
+	add_dependencies(manifest_client_strings_tests jettison_assets manifest_validate_pack)
+	set_target_properties(manifest_client_strings_tests PROPERTIES FOLDER "Test")
+	add_test(NAME client_strings COMMAND manifest_client_strings_tests)
+
 	# The render test's sequence played by the client, offscreen on lavapipe, its game UI stage
 	# provisioning and buying through the screens.
 	get_target_property(sdk_core Jettison::Core SOURCE_DIR)

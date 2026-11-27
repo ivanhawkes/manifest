@@ -19,7 +19,7 @@
 			<p>{{ship.shipId}}</p>
 			<p>[[manifest.service.oxygen]] <span id="oxygen">{{ship.oxygen}}</span> kg</p>
 			<p>[[manifest.service.scrubbers]] {{ship.scrubbers}} [[manifest.service.occupantDays]]</p>
-			<p data-if="ship.connectedTo != ''">[[manifest.service.connected]] {{ship.connectedTo}}</p>
+			<p data-if="ship.connectedTo != ''">[[manifest.service.connected]]</p>
 			<p>[[manifest.service.reactionMass]] {{ship.reactionMass}} / {{ship.reactionMassMost}} kg</p>
 			<p>[[manifest.service.pellets]] {{ship.pellets}} / {{ship.pelletsMost}} kg</p>
 		</div>
@@ -31,7 +31,7 @@
 			<button id="refuel-on" data-event-click="refuel(true)">[[manifest.service.refuelOn]]</button>
 			<button id="refuel-off" data-event-click="refuel(false)">[[manifest.service.refuelOff]]</button>
 		</p>
-		<p id="clock">[[manifest.clock.day]] {{screen.day}}, {{screen.clock}}</p>
+		<p id="clock">[[manifest.clock.dayAndTime]]</p>
 		<p id="status">{{screen.status}}</p>
 	</div>
 </body>

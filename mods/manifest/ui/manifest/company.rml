@@ -21,8 +21,8 @@
 			<tr data-for="ship, i : screen.ships">
 				<td data-attr-id="'ship-' + i">{{ship.shipId}}</td>
 				<td>{{ship.hullId}}</td>
-				<td data-if="ship.dockedAt != ''">[[manifest.company.docked]] {{ship.dockedAt}}</td>
-				<td data-if="ship.dockedAt == ''">[[manifest.company.underWay]] {{ship.destination}}</td>
+				<td data-if="ship.dockedAt != ''">[[manifest.company.docked]]</td>
+				<td data-if="ship.dockedAt == ''">[[manifest.company.underWay]]</td>
 				<td class="number">{{ship.aboard}} / {{ship.hold}} [[manifest.totes]]</td>
 			</tr>
 		</table>
@@ -53,7 +53,7 @@
 				<td><button data-attr-id="'cancel-' + i" data-event-click="cancel(order.orderId)">[[manifest.company.cancel]]</button></td>
 			</tr>
 		</table>
-		<p id="clock">[[manifest.clock.day]] {{screen.day}}, {{screen.clock}}</p>
+		<p id="clock">[[manifest.clock.dayAndTime]]</p>
 		<p id="status">{{screen.status}}</p>
 	</div>
 </body>

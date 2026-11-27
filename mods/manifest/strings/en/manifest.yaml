@@ -1,5 +1,6 @@
 version: 1
 # The graphical client's words (docs/client.md), in English, the base every language is read over.
+# French, German and Japanese hold every key of it (the client_strings suite).
 manifest:
   totes: totes
   nav:
@@ -8,7 +9,7 @@ manifest:
     travel: Travel
     service: Service
   clock:
-    day: Day
+    dayAndTime: "Day {{screen.day}}, {{screen.clock}}"
   start:
     title: Manifest
     intro: "Name yourself and your trading company. You start with a ship docked at a highport."
@@ -19,8 +20,8 @@ manifest:
     title: Company
     credits: "Credits:"
     ships: Ships
-    docked: Docked at
-    underWay: Under way to
+    docked: "Docked at {{ship.dockedAt}}"
+    underWay: "Under way to {{ship.destination}}"
     holdings: Goods in warehouses
     noHoldings: No goods in any warehouse.
     reserved: reserved
@@ -47,7 +48,7 @@ manifest:
     go: Go
   flight:
     title: Under way
-    to: to
+    to: "{{ship.shipId}}: to {{ship.destination}}"
     fastForwardOn: "Fast-forward: on"
     fastForwardOff: "Fast-forward: off"
   leg:
@@ -62,7 +63,7 @@ manifest:
     oxygen: "Oxygen:"
     scrubbers: "Scrubbers:"
     occupantDays: occupant-days
-    connected: Connected to the station's life support at
+    connected: "Connected to the station's life support at {{ship.connectedTo}}"
     reactionMass: "Reaction mass:"
     pellets: "Fusion pellets:"
     refill: Refill the tanks

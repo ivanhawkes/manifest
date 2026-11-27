@@ -56,6 +56,24 @@ manifest_client --offscreen --run "@5 press provision" --run "@30 screen market"
     --run "@40 press buy-0" --screenshot market.png --after-frames 60
 ```
 
+### Languages
+
+The words are in English, French, German and Japanese, every key in all four:
+`strings/<tag>/manifest.yaml` for the screens, read over English. Jettison ships its own text, the saves screen, the number format
+and its reasons, in English and German only, so Manifest ships French and Japanese tables of it too
+(`saves.yaml`, `numbers.yaml`, `reasons.yaml`). The player's `ui.language` setting, or the console's
+`language <tag>`, chooses one ([Jettison's language](../../jettison/docs/ui.md#the-language)).
+
+Where a language orders a sentence its own way, the key holds the screen's data expression rather
+than the document, so `manifest.company.docked` is `Docked at {{ship.dockedAt}}` in English and
+`{{ship.dockedAt}}に停泊中` in Japanese. Units and symbols (kg, g, %, /) stay in the documents.
+
+The translations are first drafts. They stress the layout now, with German's long words, French's
+diacritics and Japanese kanji, and native translators replace them before release
+([scope](scope.md)). A new screen adds its keys to all four tables as it is built; `client_strings`
+fails on any it lacks. The [terminal UI](console.md) prints English outside the tables, as the
+engine's developer text does.
+
 ### The model
 
 `Manifest::Client::ClientModel` (`source/apps/client`, the `client_model` module) is the player's
@@ -98,7 +116,8 @@ render test needs the lamp: it checks that a frame's light clusters list a light
 | Suite | What it checks |
 | --- | --- |
 | `client_model` | The first loop through the model: provisioned at Ore, two totes of furs bought and loaded, flown to Brine with fast-forward, unloaded and sold for more; the journey's bounds, a refusal made before sending, and the save's section restored |
-| `client_screens` | Every screen loaded over a started world with nothing RmlUi or the string table counts as a problem, the start giving way to the company's, the navigation, and the flight panel shown under way |
+| `client_screens` | Every screen loaded over a started world with nothing RmlUi or the string table counts as a problem, the start giving way to the company's, the navigation, and the flight panel shown under way; then every screen again in French, German and Japanese, every translation taken |
+| `client_strings` | Every key English has, the engine's and the client's, in French, German and Japanese and no key beyond them; each text naming English's placeholders and data expressions, and a key with plural forms holding those its language's rule needs (Japanese only `other`). A failure names the language and the key |
 | `client_smoke` | The engine's render test sequence played by the client offscreen on lavapipe (`client-smoke.sh`): its save and load carry the client's section, and its game UI stage provisions the player and buys a tote at the market's first ask through the screens |
 
 ## Using it
@@ -116,17 +135,18 @@ It is built in every preset with the engine's presentation (`MANIFEST_BUILD_CLIE
 - The content mounts as `base`, not `manifest`, so an overlay that `requires: manifest` does not
   mount in the client.
 - It is not in the [bundle](glossary.md#bundle) yet, and plays only a local world, not a server's.
-- Goods, ships and venues are shown by their IDs, and the words are English alone so far
-  ([L43](delivery-order.md#l43)).
+- Goods, ships and venues are shown by their IDs, not their names.
+- Japanese draws as empty boxes: the engine's UI fonts have no CJK glyphs, and no check counts a
+  glyph missing ([Jettison's J15](../../jettison/docs/roadmap.md#j15)).
 - What is still to come is listed in [the graphical client](roadmap.md#the-graphical-client).
 
 ## Source
 
 - `source/apps/client/main.cpp`: the program; `ClientGame.h`, its screens on the shell.
-- `mods/manifest/ui/manifest/`, `mods/manifest/strings/en/manifest.yaml` and
-  `mods/manifest/scene/main.yaml`: the documents, their words and the scene.
-- `source/apps/client/tests/ScreensTests.cpp` and `client-smoke.sh`: the screens check and the smoke
-  run.
+- `mods/manifest/ui/manifest/` and `mods/manifest/scene/main.yaml`: the documents and the scene.
+- `source/apps/client/tests/ScreensTests.cpp`, `StringsTests.cpp` and `client-smoke.sh`: the screens
+  check, the languages' check and the smoke run.
+- `mods/manifest/strings/<tag>/`: the four languages' tables.
 - `source/apps/client/include/manifest/client/ClientModel.h`: the model; its suite is
   `tests/ClientModelTests.cpp`.
 - `source/game/host/src/Start.cpp`: `MakeGame` and `HostedServices`.

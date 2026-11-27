@@ -10,7 +10,7 @@
 	<div id="flight" class="panel">
 		<h2>[[manifest.flight.title]]</h2>
 		<div data-for="ship : screen.ships">
-			<p>{{ship.shipId}}: [[manifest.flight.to]] {{ship.destination}}</p>
+			<p>[[manifest.flight.to]]</p>
 			<p data-if="ship.leg == 'Departing'">[[manifest.leg.departing]]</p>
 			<p data-if="ship.leg == 'Clearing'">[[manifest.leg.clearing]]</p>
 			<p data-if="ship.leg == 'Cruising'">[[manifest.leg.cruising]]</p>
@@ -19,7 +19,7 @@
 			<p data-if="ship.leg == 'Failed'">[[manifest.leg.failed]]</p>
 			<p>[[manifest.service.reactionMass]] {{ship.reactionMass}} / {{ship.reactionMassMost}} kg</p>
 		</div>
-		<p>[[manifest.clock.day]] {{screen.day}}, {{screen.clock}}</p>
+		<p>[[manifest.clock.dayAndTime]]</p>
 		<p>
 			<button id="fastforward" data-event-click="fastforward()">
 				<span data-if="screen.fastForward">[[manifest.flight.fastForwardOn]]</span>

@@ -20,7 +20,7 @@ open work, in order, is the [task queue](delivery-order.md).
 The first loop plays in the graphical client, `manifest_client` (L15a, done 2026-11-27,
 [the graphical client](client.md)), on a local world. What it still lacks is in the
 [roadmap](roadmap.md#the-graphical-client): server play, the galaxy panel, the shipyard and fleet
-screens, names and the other three languages ([L43](delivery-order.md#l43)), and the looks. The
+screens, names, Japanese glyphs ([languages](client.md#languages)), and the looks. The
 owners' screens are [L15b](delivery-order.md#l15b), which waits on [L04](delivery-order.md#l04),
 [L05](delivery-order.md#l05) and [L29](delivery-order.md#l29); L29's open choices are settled
 ([D-120](decision-ledger.md#d-120)). The pin is Jettison's , with its server pack, client-side mods and world content (J63), and the content mounted as .165fada`. The queue's first row, the
