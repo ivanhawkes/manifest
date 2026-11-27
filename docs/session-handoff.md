@@ -23,6 +23,6 @@ The first loop plays in the graphical client, `manifest_client` (L15a, done 2026
 screens, names and the other three languages ([L43](delivery-order.md#l43)), and the looks. The
 owners' screens are [L15b](delivery-order.md#l15b), which waits on [L04](delivery-order.md#l04),
 [L05](delivery-order.md#l05) and [L29](delivery-order.md#l29); L29's open choices are settled
-([D-120](decision-ledger.md#d-120)). The pin is Jettison's `165fada`. The queue's first row, the
+([D-120](decision-ledger.md#d-120)). The pin is Jettison's , with its server pack, client-side mods and world content (J63), and the content mounted as .165fada`. The queue's first row, the
 drives past the torch ([W22](delivery-order.md#w22)), waits for the first larger hull. Saves still
 run on the step's thread ([L40](delivery-order.md#l40), [D-115](decision-ledger.md#d-115)).

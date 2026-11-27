@@ -43,13 +43,11 @@ add_executable(manifest_client main.cpp)
 set_target_properties(manifest_client PROPERTIES FOLDER "Apps")
 target_link_libraries(manifest_client PRIVATE manifest_client_game Manifest::Host manifest_warnings)
 
-# The engine's staged assets, found from their target: jettison_use_shared_assets reads a variable of
-# the engine's own directory, which a project that fetches the engine does not see.
+# The engine's staged assets, beside the executable as the engine stages them, and Manifest's content.
+jettison_use_shared_assets(manifest_client)
 get_property(engine_assets TARGET jettison_assets PROPERTY JETTISON_ASSET_DIRECTORY)
-file(RELATIVE_PATH asset_subdirectory "${CMAKE_CURRENT_BINARY_DIR}" "${engine_assets}")
 file(RELATIVE_PATH content_subdirectory "${CMAKE_CURRENT_BINARY_DIR}" "${MANIFEST_MOD_DIRECTORY}")
 target_compile_definitions(manifest_client PRIVATE
-	"JETTISON_ASSET_SUBDIRECTORY=\"${asset_subdirectory}\""
 	"MANIFEST_CONTENT_SUBDIRECTORY=\"${content_subdirectory}\"")
 add_dependencies(manifest_client jettison_assets manifest_validate_mod)
 

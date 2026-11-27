@@ -2,3 +2,7 @@ version: 1
 name: Manifest
 release: 0.0.1
 engine: 0.1.0
+
+# The name the content mounts under, which an overlay's requires names it by, in the shell as in a
+# server's session (Jettison's files-and-mods.md, "Packages and mod.yaml").
+identifier: manifest
