@@ -266,6 +266,18 @@ No decision is filed here: the sandbox follows the ones listed below. Detail: [s
 
 Followed here: [D-001](#d-001), [D-002](#d-002), [D-061](#d-061).
 
+## Art standards
+
+How models, textures and materials are authored. Detail: [art standards](art-standards.md).
+
+| ID | Decision | Statement | Status |
+| --- | --- | --- | --- |
+| <a id="d-118"></a>D-118 | Manifest defines the art standards | Manifest's art standards set the files, names, scale, geometry, materials and texture coordinate sets for every asset; Jettison supports the workflow and its test content follows them. | Selected, no task yet; Jettison's side is its J64 to J67 |
+| <a id="d-119"></a>D-119 | The art repository on Git LFS | The artists' work and source trees are a Git repository of their own, outside Manifest's, with binary files in Git LFS. | Selected, no task yet |
+
+Also followed here: Jettison's [texture coordinate sets by role and the material
+library](../../jettison/docs/decisions.md#rendering).
+
 ## Build and process
 
 The SDK pin, the gate, CI and how work is done. Detail: [build and gates](build-and-gates.md) and

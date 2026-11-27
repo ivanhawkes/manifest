@@ -54,6 +54,7 @@ Open work only. Each task has an ID in the queue.
 
 | Document | Purpose |
 | --- | --- |
+| [Art standards](art-standards.md) | How models, textures and materials are authored: files, names, scale, geometry, materials, texture coordinate sets |
 | [Coding standards](coding-standards.md) | Manifest's additions to Jettison's standards |
 | [Build and gates](build-and-gates.md) | Presets, suites, the gate, CI and the bundle |
 | [Agent workflow](agent-workflow.md) | How models and agents share the work |
