@@ -1170,7 +1170,8 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	// A grant's hull flies and fits a pad of its venue (W22b).
 	CheckRefused(
 	    trading,
-	    "version: 1\ngrants: !merge=grantId\n  - {grantId: GrantPulseCarrier, venueId: VenueOreHighport}\n",
+	    "version: 1\ngrants: !merge=grantId\n  - {grantId: GrantPulseCarrier, venueId: "
+	    "VenueOreHighport}\n",
 	    "'GrantPulseCarrier' hull 'HullPulseCarrier' fits no pad of venue 'VenueOreHighport'");
 	CheckRefused(
 	    trading,

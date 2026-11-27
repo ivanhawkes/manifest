@@ -407,13 +407,15 @@ std::function<void()> Identities::Load(
 					pOrganisation = &organisation;
 			if (!pOrganisation || pOrganisation->kind != Content::OrganisationKind::Polity ||
 			    std::ranges::count(licences.polities, polity) != 1)
-				reader.Fail(std::format("a company holds a licence of '{}', no polity, or twice", polity));
+				reader.Fail(
+				    std::format("a company holds a licence of '{}', no polity, or twice", polity));
 		}
 	for (const auto [entity, claims] : loaded.view<const Claims>().each())
 		for (const std::string &grant : claims.grants)
 			if ((m_grants && std::ranges::find(*m_grants, grant) == m_grants->end()) ||
 			    std::ranges::count(claims.grants, grant) != 1)
-				reader.Fail(std::format("a company claims '{}', no grant of the scenario, or twice", grant));
+				reader.Fail(
+				    std::format("a company claims '{}', no grant of the scenario, or twice", grant));
 	for (const auto [entity, journey] : loaded.view<const Journey>().each())
 		if (const std::optional<std::string> problem = Broken(journey))
 			reader.Fail(*problem);

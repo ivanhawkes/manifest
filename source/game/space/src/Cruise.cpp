@@ -140,7 +140,8 @@ std::optional<Crossing> CrossingOf(double departure, double arrival, float accel
 	if (!(departure > 0.0 || arrival > 0.0) || !(acceleration > 0.0f) || !(metres > 0.0))
 		return std::nullopt;
 	return Crossing{
-	    {acceleration, 0.0f, acceleration, {}}, std::min(std::max(departure, 0.0), metres / 2.0),
+	    {acceleration, 0.0f, acceleration, {}},
+	    std::min(std::max(departure, 0.0), metres / 2.0),
 	    std::min(std::max(arrival, 0.0), metres / 2.0)};
 }
 
@@ -265,8 +266,8 @@ struct Flight
 		                         : (covered < length / 2.0 ? 0.0 : 1.0);
 		glm::dvec3 offset{0.0};
 		if (departure >= 0 && departure != carrier && flown < 1.0)
-			offset += (1.0 - flown) *
-			          ((now[static_cast<std::size_t>(departure)].metres - origin) - departed);
+			offset +=
+			    (1.0 - flown) * ((now[static_cast<std::size_t>(departure)].metres - origin) - departed);
 		if (arrival >= 0 && arrival != carrier && flown > 0.0)
 			offset += flown * ((now[static_cast<std::size_t>(arrival)].metres - origin) - arrives);
 		return offset;
@@ -394,8 +395,8 @@ struct Kept
 
 // The solved cruise sampled as flown (SettleCruise).
 Checked Check(
-    const Planner &planner, const CruiseDrive &drive, const Solved &solved, const std::vector<Kept> &kept,
-    int departure, int arrival, double t0, double step)
+    const Planner &planner, const CruiseDrive &drive, const Solved &solved,
+    const std::vector<Kept> &kept, int departure, int arrival, double t0, double step)
 {
 	const Space::StarSystem &system = planner.system;
 	const double length = solved.course.length;
@@ -410,9 +411,9 @@ Checked Check(
 	// Each solid body's and each keepout's place relative to the ship at the last sample.
 	std::vector<std::size_t> solids;
 	for (std::size_t body = 0; body < system.bodies.size(); ++body)
-		if (const Space::BodyKind kind = system.bodies[body].kind;
-		    kind == Space::BodyKind::Star || kind == Space::BodyKind::Planet ||
-		    kind == Space::BodyKind::Moon)
+		if (const Space::BodyKind kind = system.bodies[body].kind; kind == Space::BodyKind::Star ||
+		                                                           kind == Space::BodyKind::Planet ||
+		                                                           kind == Space::BodyKind::Moon)
 			solids.push_back(body);
 	std::vector<std::optional<glm::dvec3>> lastSolid(solids.size());
 	std::vector<std::optional<glm::dvec3>> lastKept(kept.size());
@@ -424,8 +425,8 @@ Checked Check(
 	};
 
 	// The next sample comes no later than its interval, nor than half the time the ship, at the speed
-	// it last moved relative to each body, takes to close the margin it has from it, so a fast ship near
-	// a body is sampled finely and the widening stays within the margin; never sooner than a step.
+	// it last moved relative to each body, takes to close the margin it has from it, so a fast ship
+	// near a body is sampled finely and the widening stays within the margin; never sooner than a step.
 	double interval = 0.0;
 	for (double elapsed = 0.0;;)
 	{
@@ -441,8 +442,7 @@ Checked Check(
 		    origin + offset +
 		    Jettison::Transit::Along(solved.course.points, progress.covered / length).first;
 		const bool close = progress.thrusting || !progress.driving;
-		double next =
-		    close ? CruiseTravel::kThrustSampleSeconds : CruiseTravel::kCoastSampleSeconds;
+		double next = close ? CruiseTravel::kThrustSampleSeconds : CruiseTravel::kCoastSampleSeconds;
 		const auto closing = [&](double margin, double moved)
 		{
 			if (interval > 0.0 && moved > 0.0 && margin > 0.0)
@@ -543,9 +543,9 @@ Settlement SettleCruise(
 	const bool crosses = drive.profile && drive.crossingAcceleration > 0.0f &&
 	                     (drive.departureClearance > 0.0 || drive.arrivalClearance > 0.0);
 	// Each end's crossing is flown relative to the body its station orbits, as a ship leaving orbit
-	// keeps the planet's motion; but relative to the station itself where the drive keeps a sphere about
-	// the station and none about that body, so it leaves and reaches the station's own sphere as the
-	// station moves.
+	// keeps the planet's motion; but relative to the station itself where the drive keeps a sphere
+	// about the station and none about that body, so it leaves and reaches the station's own sphere as
+	// the station moves.
 	const auto kept = [&](int body)
 	{
 		return std::ranges::any_of(
@@ -567,7 +567,8 @@ Settlement SettleCruise(
 			return {std::nullopt, Reason::NoCourse};
 		if (!crosses)
 			return settled(*std::move(solved), flown, -1, -1);
-		const Checked checked = Check(planner, flown, *solved, keeps, departure, arrival, now, fixedStep);
+		const Checked checked =
+		    Check(planner, flown, *solved, keeps, departure, arrival, now, fixedStep);
 		if (!checked.inside && checked.near.empty())
 			return settled(*std::move(solved), flown, departure, arrival);
 		if (round == rounds)
@@ -616,8 +617,8 @@ void CheckCruiseDrive(std::string_view name, const CruiseDrive &drive)
 	for (const Keepout &keepout : drive.keepouts)
 		if (!std::isfinite(keepout.radius) || !(keepout.radius > 0.0))
 			throw Jettison::Serialise::FormatError{std::format(
-			    "Cruise drive '{}' has a keepout about '{}' whose radius is not finite and above 0", name,
-			    keepout.body)};
+			    "Cruise drive '{}' has a keepout about '{}' whose radius is not finite and above 0",
+			    name, keepout.body)};
 }
 
 
@@ -794,8 +795,7 @@ void CruiseTravel::Start(Jettison::Sim::SimWorld &world, const Cruise &command) 
 	    system, *drive, from, frame ? std::string_view{frame->body} : std::string_view{}, command.body,
 	    t0, world.FixedStep());
 	if (!settlement.cruise)
-		return refuse(
-		    settlement.refusal, {Jettison::Sim::ReasonArgument::Identifier(command.body)});
+		return refuse(settlement.refusal, {Jettison::Sim::ReasonArgument::Identifier(command.body)});
 	const SettledCruise &settled = *settlement.cruise;
 	const std::uint64_t steps = settled.steps;
 

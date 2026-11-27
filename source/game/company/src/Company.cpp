@@ -297,8 +297,8 @@ Result Claimed(SimWorld &world, Rules &rules, const Actor &actor, const Claim &c
 	paying.balance -= grant->price;
 	registry.get_or_emplace<World::Claims>(company).grants.push_back(claim.grantId);
 	Commissioned(
-	    world, rules, Issued(rules.identities, Kind::Ship), companyId, grant->hullId, grant->venueId, pad,
-	    Connected(registry, grant->venueId) < rules.connections.at(grant->venueId));
+	    world, rules, Issued(rules.identities, Kind::Ship), companyId, grant->hullId, grant->venueId,
+	    pad, Connected(registry, grant->venueId) < rules.connections.at(grant->venueId));
 	return Result::Succeeded;
 }
 
@@ -360,9 +360,8 @@ Result Founded(SimWorld &world, const Rules &rules, const Actor &actor, const Fo
 entt::entity PolityOf(const entt::registry &registry, const Rules &rules, const std::string &id)
 {
 	const entt::entity organisation = rules.identities.Find(Kind::Organisation, id);
-	return organisation != entt::null &&
-	               registry.get<const World::Organisation>(organisation).kind ==
-	                   Content::OrganisationKind::Polity
+	return organisation != entt::null && registry.get<const World::Organisation>(organisation).kind ==
+	                                         Content::OrganisationKind::Polity
 	           ? organisation
 	           : entt::null;
 }
@@ -400,8 +399,8 @@ Result Applied(SimWorld &world, const Rules &rules, const Actor &actor, const Ap
 	     registry.view<const World::Region, const World::Identity>().each())
 		if (region.governorId == apply.organisationId)
 			treasuries.emplace_back(
-			    identity.id, &registry.get<World::Account>(
-			                     rules.identities.Find(Kind::PublicAccount, identity.id)));
+			    identity.id,
+			    &registry.get<World::Account>(rules.identities.Find(Kind::PublicAccount, identity.id)));
 	std::ranges::sort(treasuries, {}, &std::pair<std::string, World::Account *>::first);
 	const auto count = static_cast<std::int64_t>(treasuries.size());
 	const auto shareOf = [&](std::size_t at)
@@ -708,12 +707,12 @@ void Refuelled(SimWorld &world, const Rules &rules, entt::entity ship, std::int6
 	    rules.identities.Hold(record, registry.try_get<World::Systems>(ship)).value_or(0);
 	const std::uint64_t carried = Carried(registry.get<World::Cargo>(ship));
 	const double kilogramsPerTote = pelletsPerTote * kilogramsPerUnit;
-	const double needed =
-	    std::max(0.0, tanks->pellets - registry.get<World::Fuel>(ship).pellets -
-	                      Aboard(registry.get<World::Cargo>(ship), pellets, pelletsPerTote) *
-	                          kilogramsPerUnit);
+	const double needed = std::max(
+	    0.0, tanks->pellets - registry.get<World::Fuel>(ship).pellets -
+	             Aboard(registry.get<World::Cargo>(ship), pellets, pelletsPerTote) * kilogramsPerUnit);
 	const auto wanted = static_cast<std::uint64_t>(std::min(
-	    std::ceil(needed / kilogramsPerTote), static_cast<double>(hold > carried ? hold - carried : 0)));
+	    std::ceil(needed / kilogramsPerTote),
+	    static_cast<double>(hold > carried ? hold - carried : 0)));
 	if (wanted > 0)
 		if (const std::uint64_t bought =
 		        rules.buy(world, record.companyId, record.dockedAt, pellets, wanted, budget());
@@ -741,8 +740,9 @@ void Refuelled(SimWorld &world, const Rules &rules, entt::entity ship, std::int6
 		};
 		const std::uint64_t before = sealed();
 		Take(world, cargo, pellets, pelletsPerTote, given, 0.0);
-		held.pellets =
-		    given == space ? tanks->pellets : std::min(tanks->pellets, held.pellets + given * kilogramsPerUnit);
+		held.pellets = given == space
+		                   ? tanks->pellets
+		                   : std::min(tanks->pellets, held.pellets + given * kilogramsPerUnit);
 
 		// The sealed totes opened leave a job's lot of pellets, after any aboard beyond it.
 		if (auto *pJob = registry.try_get<World::Job>(ship); pJob != nullptr)
@@ -1144,7 +1144,8 @@ void Revoke(
 		if (venue.operatorId == polityId)
 			for (const Content::ItemSelection &item : scenario.items)
 				if (Trade::Licensed(content, item.itemId))
-					Trade::CancelAt(world, identities, Kind::Company, companyId, venue.venueId, item.itemId);
+					Trade::CancelAt(
+					    world, identities, Kind::Company, companyId, venue.venueId, item.itemId);
 }
 
 
@@ -1265,9 +1266,9 @@ void RegisterCommands(
 	rules->cartridgesPerTote = perTote(lifeSupport.cartridgeItemId);
 	rules->reactionMassPerTote = perTote(content.tuning.fuel.reactionMassItemId);
 	rules->buy = Trade::MakeBuyer(world, identities, content);
-	fleet.SetRevoker(
-	    [&identities, &content](SimWorld &target, const std::string &companyId, const std::string &polityId)
-	    { Revoke(target, identities, content, companyId, polityId); });
+	fleet.SetRevoker([&identities, &content](
+	                     SimWorld &target, const std::string &companyId, const std::string &polityId)
+	                 { Revoke(target, identities, content, companyId, polityId); });
 	fleet.SetRefueller([rules](SimWorld &target, entt::entity ship, std::int64_t reserve)
 	                   { Refuelled(target, *rules, ship, reserve); });
 

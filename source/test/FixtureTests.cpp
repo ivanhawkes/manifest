@@ -1460,9 +1460,9 @@ TEST_CASE("A standing policy flies the medium freighter on a trade, at its drive
 	CHECK(job.totes == 0);
 	CHECK(Aboard(hosted.Ship1(), lot.itemId) == 0);
 	MESSAGE(
-	    "The freighter's trade: " << lot.totes << " totes of " << lot.itemId << " from "
-	                              << lot.sourceId << " to " << lot.destinationId << " at "
-	                              << lot.thrustBps << " basis points, estimated at " << lot.estimate);
+	    "The freighter's trade: " << lot.totes << " totes of " << lot.itemId << " from " << lot.sourceId
+	                              << " to " << lot.destinationId << " at " << lot.thrustBps
+	                              << " basis points, estimated at " << lot.estimate);
 }
 
 
@@ -1478,7 +1478,8 @@ TEST_CASE("A standing policy flies the pulse carrier between the yards, passing 
 	// better trade for a hull that docks there; Ada, provisioned after, reports both, and is funded for
 	// a carrier's lot.
 	REQUIRE(
-	    hosted.Run(kHost, Company::kProvision, Company::kVersion, Company::Provision{"Bo", "Bo", "Bo Co"}) ==
+	    hosted.Run(
+	        kHost, Company::kProvision, Company::kVersion, Company::Provision{"Bo", "Bo", "Bo Co"}) ==
 	    Result::Succeeded);
 	const auto fund = [&](const std::string &companyId, std::int64_t credits)
 	{
@@ -1518,8 +1519,9 @@ TEST_CASE("A standing policy flies the pulse carrier between the yards, passing 
 
 	// No pad of a highport takes it.
 	CHECK(
-	    hosted.Run(kAda, Travel::kTravel, Travel::kVersion, Travel::Travel{shipId, std::string{kOre}, 1000, 500}) ==
-	    Result::NoPadFits);
+	    hosted.Run(
+	        kAda, Travel::kTravel, Travel::kVersion,
+	        Travel::Travel{shipId, std::string{kOre}, 1000, 500}) == Result::NoPadFits);
 
 	// Its policy takes the rice to Brine's yards, at a thrust its magazine reaches.
 	const double before = hosted.Ship1().fuel.pellets;
@@ -1546,12 +1548,12 @@ TEST_CASE("A standing policy flies the pulse carrier between the yards, passing 
 	}
 	CHECK(hosted.Ship1().dockedAt == "VenueBrineYards");
 	CHECK(job.totes < lot.totes / 10);
-	const double days = static_cast<double>(hosted.world.Clock().Step() - departed) * hosted.world.FixedStep() / 86'400.0;
+	const double days = static_cast<double>(hosted.world.Clock().Step() - departed) *
+	                    hosted.world.FixedStep() / 86'400.0;
 	MESSAGE(
-	    "The pulse carrier, Ore's yards to Brine's: " << lot.totes << " totes of rice at " << lot.thrustBps
-	                                                   << " basis points, " << days << " days, "
-	                                                   << burnt / 100.0
-	                                                   << " pulse units, estimated at " << lot.estimate);
+	    "The pulse carrier, Ore's yards to Brine's: "
+	    << lot.totes << " totes of rice at " << lot.thrustBps << " basis points, " << days << " days, "
+	    << burnt / 100.0 << " pulse units, estimated at " << lot.estimate);
 }
 
 
@@ -1575,7 +1577,8 @@ std::string Carrier(Hosted &hosted)
 }
 
 
-TEST_CASE("Pulse units are sold only under their venue's polity's licence, by command and by refuelling")
+TEST_CASE(
+    "Pulse units are sold only under their venue's polity's licence, by command and by refuelling")
 {
 	Hosted hosted{MANIFEST_MOD_DIRECTORY, {MANIFEST_FIXTURE_OVERLAY, MANIFEST_CARRIER_OVERLAY}};
 	const std::string shipId = Carrier(hosted);
@@ -1629,7 +1632,8 @@ TEST_CASE("Pulse units are sold only under their venue's polity's licence, by co
 	REQUIRE(hosted.Place(kYards, kUnits, Side::Buy, 100, 1) == Result::Succeeded);
 	REQUIRE(hosted.Seen().orders.size() == 1);
 	CHECK(hosted.Seen().credits < resting);
-	Company::Revoke(hosted.world, hosted.services.identities, content, companyId, std::string{kAuthority});
+	Company::Revoke(
+	    hosted.world, hosted.services.identities, content, companyId, std::string{kAuthority});
 	CHECK(hosted.Seen().orders.empty());
 	CHECK(hosted.Seen().credits == resting);
 	CHECK(hosted.Seen().licences.empty());
@@ -1667,39 +1671,45 @@ TEST_CASE("A player's polity grants a company its licence and revokes it, throug
 	    hosted.Run(
 	        kAda, Company::kFound, Company::kVersion,
 	        Company::Found{"RegionOreHighlands", companyId, "Highlands"}) == Result::Succeeded);
-	const std::string polity =
-	    registry.get<const World::Region>(hosted.services.identities.Find(Kind::Region, "RegionOreHighlands"))
-	        .governorId;
+	const std::string polity = registry
+	                               .get<const World::Region>(hosted.services.identities.Find(
+	                                   Kind::Region, "RegionOreHighlands"))
+	                               .governorId;
 
 	// Its director grants it, free, and no one else may; an AI polity's licence is applied for.
 	const std::int64_t before = hosted.Seen().credits;
 	const Actor bea{ActorKind::Principal, "Bea"};
 	REQUIRE(
-	    hosted.Run(kHost, Company::kProvision, Company::kVersion, Company::Provision{"Bea", "Bea", "Bea Co"}) ==
-	    Result::Succeeded);
+	    hosted.Run(
+	        kHost, Company::kProvision, Company::kVersion,
+	        Company::Provision{"Bea", "Bea", "Bea Co"}) == Result::Succeeded);
 	CHECK(
-	    hosted.Run(bea, Company::kSetLicence, Company::kVersion, Company::SetLicence{polity, companyId, true}) ==
-	    Result::NotAuthorised);
+	    hosted.Run(
+	        bea, Company::kSetLicence, Company::kVersion,
+	        Company::SetLicence{polity, companyId, true}) == Result::NotAuthorised);
 	REQUIRE(
-	    hosted.Run(kAda, Company::kSetLicence, Company::kVersion, Company::SetLicence{polity, companyId, true}) ==
-	    Result::Succeeded);
+	    hosted.Run(
+	        kAda, Company::kSetLicence, Company::kVersion,
+	        Company::SetLicence{polity, companyId, true}) == Result::Succeeded);
 	CHECK(hosted.Seen().licences == std::vector<std::string>{polity});
 	CHECK(hosted.Seen().credits == before);
 	CHECK(
-	    hosted.Run(kAda, Company::kApply, Company::kVersion, Company::Apply{polity}) == Result::NotAuthorised);
+	    hosted.Run(kAda, Company::kApply, Company::kVersion, Company::Apply{polity}) ==
+	    Result::NotAuthorised);
 
 	// Saved and loaded, it holds; then revoked.
 	Hosted loaded{MANIFEST_MOD_DIRECTORY};
 	loaded.Load(hosted.world.Save());
 	CHECK(loaded.Seen().licences == std::vector<std::string>{polity});
 	REQUIRE(
-	    loaded.Run(kAda, Company::kSetLicence, Company::kVersion, Company::SetLicence{polity, companyId, false}) ==
-	    Result::Succeeded);
+	    loaded.Run(
+	        kAda, Company::kSetLicence, Company::kVersion,
+	        Company::SetLicence{polity, companyId, false}) == Result::Succeeded);
 	CHECK(loaded.Seen().licences.empty());
 
 	// A save holding a licence of no polity is refused.
-	registry.get<World::Licences>(hosted.services.identities.Find(Kind::Company, companyId)).polities = {
-	    "OrganisationNowhere"};
+	registry.get<World::Licences>(hosted.services.identities.Find(Kind::Company, companyId))
+	    .polities = {"OrganisationNowhere"};
 	Hosted refused{MANIFEST_MOD_DIRECTORY};
 	CHECK_THROWS_WITH_AS(
 	    refused.world.Load(hosted.world.Save()), doctest::Contains("no polity"),
@@ -1707,7 +1717,9 @@ TEST_CASE("A player's polity grants a company its licence and revokes it, throug
 }
 
 
-TEST_CASE("A company claims the freighter, flies it and refuels its deuterium, and claims it once, through a save")
+TEST_CASE(
+    "A company claims the freighter, flies it and refuels its deuterium, and claims it once, through a "
+    "save")
 {
 	Hosted hosted{MANIFEST_MOD_DIRECTORY};
 	hosted.Bootstrap();
@@ -1721,13 +1733,16 @@ TEST_CASE("A company claims the freighter, flies it and refuels its deuterium, a
 	};
 
 	// Short of the price, refused; funded, claimed at Ore's highport, the price paid to no one.
-	CHECK(hosted.Run(kAda, Company::kClaim, Company::kVersion, Company::Claim{"GrantFreighterMedium"}) ==
-	      Result::InsufficientFunds);
+	CHECK(
+	    hosted.Run(kAda, Company::kClaim, Company::kVersion, Company::Claim{"GrantFreighterMedium"}) ==
+	    Result::InsufficientFunds);
 	fund(hosted, companyId, 1'000'000);
-	CHECK(hosted.Run(kAda, Company::kClaim, Company::kVersion, Company::Claim{"GrantNowhere"}) ==
-	      Result::UnknownTarget);
-	REQUIRE(hosted.Run(kAda, Company::kClaim, Company::kVersion, Company::Claim{"GrantFreighterMedium"}) ==
-	        Result::Succeeded);
+	CHECK(
+	    hosted.Run(kAda, Company::kClaim, Company::kVersion, Company::Claim{"GrantNowhere"}) ==
+	    Result::UnknownTarget);
+	REQUIRE(
+	    hosted.Run(kAda, Company::kClaim, Company::kVersion, Company::Claim{"GrantFreighterMedium"}) ==
+	    Result::Succeeded);
 	const CompanyView claimed = hosted.Seen();
 	CHECK(claimed.credits == 600'000);
 	CHECK(claimed.claims == std::vector<std::string>{"GrantFreighterMedium"});
@@ -1737,15 +1752,17 @@ TEST_CASE("A company claims the freighter, flies it and refuels its deuterium, a
 	CHECK(freighter.dockedAt == kOre);
 	CHECK(freighter.fuel == World::Fuel{400'000.0, 100.0});
 	CHECK(freighter.lifeSupport.connectedTo == kOre);
-	CHECK(hosted.Run(kAda, Company::kClaim, Company::kVersion, Company::Claim{"GrantFreighterMedium"}) ==
-	      Result::AlreadyClaimed);
+	CHECK(
+	    hosted.Run(kAda, Company::kClaim, Company::kVersion, Company::Claim{"GrantFreighterMedium"}) ==
+	    Result::AlreadyClaimed);
 
 	// Saved and loaded, a second claim is still refused.
 	Hosted loaded{MANIFEST_MOD_DIRECTORY};
 	loaded.Load(hosted.world.Save());
 	CHECK(loaded.Seen().claims == std::vector<std::string>{"GrantFreighterMedium"});
-	CHECK(loaded.Run(kAda, Company::kClaim, Company::kVersion, Company::Claim{"GrantFreighterMedium"}) ==
-	      Result::AlreadyClaimed);
+	CHECK(
+	    loaded.Run(kAda, Company::kClaim, Company::kVersion, Company::Claim{"GrantFreighterMedium"}) ==
+	    Result::AlreadyClaimed);
 
 	// Its magazine part spent, it flies to Vale at its 0.3 g, refuelled by the totes of deuterium the
 	// magazine needs, which Ore's highport sells.
@@ -1758,7 +1775,9 @@ TEST_CASE("A company claims the freighter, flies it and refuels its deuterium, a
 	    Result::Succeeded);
 	const ShipView flown = loaded.Seen().ships[1];
 	CHECK(flown.fuel.pellets > 90.0);
-	CHECK(std::ranges::find(flown.opened, "ItemDeuteriumPellets", &World::Opened::itemId) != flown.opened.end());
+	CHECK(
+	    std::ranges::find(flown.opened, "ItemDeuteriumPellets", &World::Opened::itemId) !=
+	    flown.opened.end());
 
 	// A save claiming no grant of the scenario is refused.
 	registry.get<World::Claims>(hosted.services.identities.Find(Kind::Company, companyId)).grants = {
@@ -1770,7 +1789,8 @@ TEST_CASE("A company claims the freighter, flies it and refuels its deuterium, a
 }
 
 
-TEST_CASE("The carrier overrides from Ore's yards to Brine's, fined for each sphere, harming and revoked")
+TEST_CASE(
+    "The carrier overrides from Ore's yards to Brine's, fined for each sphere, harming and revoked")
 {
 	Hosted hosted{MANIFEST_MOD_DIRECTORY, {MANIFEST_FIXTURE_OVERLAY, MANIFEST_CARRIER_OVERLAY}};
 	const std::string shipId = Carrier(hosted);
@@ -1781,10 +1801,12 @@ TEST_CASE("The carrier overrides from Ore's yards to Brine's, fined for each sph
 	const std::string companyId = hosted.Seen().companyId;
 	registry.patch<World::Fuel>(ship, [](World::Fuel &fuel) { fuel.pellets = 2.5e6; });
 	registry.patch<World::Account>(
-	    identities.Find(Kind::CompanyAccount, companyId), [](World::Account &account) { account.balance = 50'000'000; });
+	    identities.Find(Kind::CompanyAccount, companyId),
+	    [](World::Account &account) { account.balance = 50'000'000; });
 	REQUIRE(
-	    hosted.Run(kAda, Company::kApply, Company::kVersion, Company::Apply{"OrganisationAnvilPortAuthority"}) ==
-	    Result::Succeeded);
+	    hosted.Run(
+	        kAda, Company::kApply, Company::kVersion,
+	        Company::Apply{"OrganisationAnvilPortAuthority"}) == Result::Succeeded);
 
 	// What every venue and region holds before, and how the regions stand.
 	const auto balance = [&](Kind kind, const std::string &id)
@@ -1794,7 +1816,8 @@ TEST_CASE("The carrier overrides from Ore's yards to Brine's, fined for each sph
 	std::map<std::string, World::Region> regions;
 	for (const Manifest::Content::VenueDefinition &venue : content.scenarios.at("trading").venues)
 		venues[venue.venueId] = balance(Kind::VenueAccount, venue.venueId);
-	for (const auto [entity, region, identity] : registry.view<const World::Region, const World::Identity>().each())
+	for (const auto [entity, region, identity] :
+	     registry.view<const World::Region, const World::Identity>().each())
 	{
 		treasuries[identity.id] = balance(Kind::PublicAccount, identity.id);
 		regions[identity.id] = region;
@@ -1802,10 +1825,11 @@ TEST_CASE("The carrier overrides from Ore's yards to Brine's, fined for each sph
 	const std::int64_t credits = hosted.Seen().credits;
 	const auto each = static_cast<std::int64_t>(
 	    std::ceil(10.0 * Travel::TonnesAboard(registry, identities, content, ship)));
-	const std::int64_t docking = Manifest::World::Find(
-	                                 registry.get<const World::Fees>(identities.Find(Kind::Market, "VenueBrineYards")),
-	                                 Manifest::Content::FeeClass(content, "HullPulseCarrier"))
-	                                 ->docking;
+	const std::int64_t docking =
+	    Manifest::World::Find(
+	        registry.get<const World::Fees>(identities.Find(Kind::Market, "VenueBrineYards")),
+	        Manifest::Content::FeeClass(content, "HullPulseCarrier"))
+	        ->docking;
 
 	// A drive with no override record may not; the carrier's lights within its radius.
 	REQUIRE(
@@ -1829,7 +1853,8 @@ TEST_CASE("The carrier overrides from Ore's yards to Brine's, fined for each sph
 	std::int64_t reached = 0;
 	for (const auto &[venueId, was] : venues)
 	{
-		const std::int64_t gained = balance(Kind::VenueAccount, venueId) - was - (venueId == "VenueBrineYards" ? docking : 0);
+		const std::int64_t gained =
+		    balance(Kind::VenueAccount, venueId) - was - (venueId == "VenueBrineYards" ? docking : 0);
 		CAPTURE(venueId);
 		CHECK(gained % each == 0);
 		if (venueId == "VenueOreYards" || venueId == "VenueBrineYards")
@@ -1851,14 +1876,15 @@ TEST_CASE("The carrier overrides from Ore's yards to Brine's, fined for each sph
 	for (const auto &[regionId, was] : regions)
 	{
 		CAPTURE(regionId);
-		const World::Region &now = registry.get<const World::Region>(identities.Find(Kind::Region, regionId));
+		const World::Region &now =
+		    registry.get<const World::Region>(identities.Find(Kind::Region, regionId));
 		CHECK(now.health == doctest::Approx(std::max(0.0, was.health - 20.0)).epsilon(0.01));
 		CHECK(now.happiness == doctest::Approx(std::max(0.0, was.happiness - 40.0)).epsilon(0.01));
 	}
 	CHECK(hosted.Seen().licences.empty());
 	MESSAGE(
 	    "The carrier's override, Ore's yards to Brine's: " << spheres << " spheres at " << each
-	                                                        << " credits each, " << fine << " in all");
+	                                                       << " credits each, " << fine << " in all");
 }
 
 

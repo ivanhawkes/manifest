@@ -127,7 +127,8 @@ std::optional<Space::SettledCruise> Settle(
 	    world.FixedStep());
 	if (settlement.cruise)
 		return std::move(settlement.cruise);
-	result = settlement.refusal == Space::Reason::InsideRadius ? Result::InsideRadius : Result::NoCourse;
+	result =
+	    settlement.refusal == Space::Reason::InsideRadius ? Result::InsideRadius : Result::NoCourse;
 	return std::nullopt;
 }
 
@@ -162,12 +163,14 @@ std::optional<Overridden> OverrideOf(
 		for (const Space::Keepout &keepout : exclusion.keepouts)
 		{
 			const int body = pSystem->Find(keepout.body);
-			if (body >= 0 && glm::distance(end, bodies[static_cast<std::size_t>(body)].metres) < keepout.radius)
+			if (body >= 0 &&
+			    glm::distance(end, bodies[static_cast<std::size_t>(body)].metres) < keepout.radius)
 				overridden.spheres.push_back(&pSystem->bodies[static_cast<std::size_t>(body)]);
 		}
 	constexpr double kMostFine = 0x1p62;
-	const double each =
-	    std::ceil(drive.override->fineCreditsPerTonne * TonnesAboard(registry, rules.identities, rules.content, ship));
+	const double each = std::ceil(
+	    drive.override->fineCreditsPerTonne *
+	    TonnesAboard(registry, rules.identities, rules.content, ship));
 	const double fine = each * static_cast<double>(overridden.spheres.size());
 	if (!(fine < kMostFine))
 		return std::nullopt;
@@ -186,15 +189,18 @@ void Inflict(
     const Content::OverrideDefinition &harm, const Overridden &overridden)
 {
 	entt::registry &registry = world.Registry();
-	const Content::ScenarioDefinition &scenario = rules.content.scenarios.find(rules.content.scenario)->second;
+	const Content::ScenarioDefinition &scenario =
+	    rules.content.scenarios.find(rules.content.scenario)->second;
 	std::vector<std::string> polities;
 	const auto revoked = [&](const std::string &organisationId)
 	{
 		const entt::entity organisation = rules.identities.Find(Kind::Organisation, organisationId);
-		const auto *pOrganisation =
-		    organisation == entt::null ? nullptr : registry.try_get<const World::Organisation>(organisation);
+		const auto *pOrganisation = organisation == entt::null
+		                                ? nullptr
+		                                : registry.try_get<const World::Organisation>(organisation);
 		if (pOrganisation && pOrganisation->kind == Content::OrganisationKind::Polity &&
-		    pOrganisation->principalId.empty() && std::ranges::find(polities, organisationId) == polities.end())
+		    pOrganisation->principalId.empty() &&
+		    std::ranges::find(polities, organisationId) == polities.end())
 			polities.push_back(organisationId);
 	};
 	std::vector<std::string> harmed;
@@ -205,8 +211,8 @@ void Inflict(
 			if (const entt::entity account = rules.identities.Find(Kind::VenueAccount, pSphere->name);
 			    account != entt::null)
 				registry.get<World::Account>(account).balance += overridden.each;
-			if (const auto venue =
-			        std::ranges::find(scenario.venues, pSphere->name, &Content::VenueDefinition::venueId);
+			if (const auto venue = std::ranges::find(
+			        scenario.venues, pSphere->name, &Content::VenueDefinition::venueId);
 			    venue != scenario.venues.end())
 				revoked(venue->operatorId);
 			continue;
@@ -708,7 +714,8 @@ Exclusion ExclusionOf(
 	Exclusion exclusion;
 	const auto keep = [&](const std::string &body, double radius)
 	{
-		if (std::ranges::find(exclusion.keepouts, body, &Space::Keepout::body) == exclusion.keepouts.end())
+		if (std::ranges::find(exclusion.keepouts, body, &Space::Keepout::body) ==
+		    exclusion.keepouts.end())
 			exclusion.keepouts.push_back({body, radius});
 	};
 
@@ -906,9 +913,8 @@ Fleet &Register(
 	             Ai::Destination, World::Cargo, World::Systems>()
 	             .Writing<
 	                 World::Journey, World::Ship, World::Fuel, World::Job, Dock::Docking, Dock::Berth,
-	                 Dock::Platform,
-	                 Ai::Destination, Space::Cruising, Sim::Transform, Physics::Body, Physics::Velocity,
-	                 Physics::LocalFrame, Physics::OnRails>(),
+	                 Dock::Platform, Ai::Destination, Space::Cruising, Sim::Transform, Physics::Body,
+	                 Physics::Velocity, Physics::LocalFrame, Physics::OnRails>(),
 	     .after =
 	         {std::string{Dock::Docks::kSystemName}, std::string{Space::CruiseTravel::kSystemName}},
 	     .run = [rules, &world](entt::registry &, double) { AdvanceAll(world, *rules); }},

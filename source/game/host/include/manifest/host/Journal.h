@@ -145,8 +145,8 @@ class Journal
 	// that loads, or the one before it, or the world's own start while every batch is still kept,
 	// then each batch after it, its requests run at the steps they first ran at. The request ledger
 	// is the snapshot's and the replay's, so a retry is answered as before the stop; the scripts'
-	// keys, for a storage that names the scripts, are the snapshot's, none from the world's start. Throws
-	// std::runtime_error naming the file when no snapshot loads, or for a batch that is missing,
+	// keys, for a storage that names the scripts, are the snapshot's, none from the world's start.
+	// Throws std::runtime_error naming the file when no snapshot loads, or for a batch that is missing,
 	// damaged or not the next in the chain; the world is then part-way and is discarded.
 	void Recover(Jettison::Sim::SimWorld &world) const;
 

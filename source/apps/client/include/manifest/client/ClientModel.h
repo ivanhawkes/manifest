@@ -99,8 +99,8 @@ struct OrderRow
 // The screens act on the company's first ship, the only one the first loop has. The destinations are
 // the venues the player has a market report of, but where the ship is docked; the travel settings are
 // the next journey's, its thrust in percent of the cruise and its acceleration in tenths of g (D-107).
-// The day is the world's, from 1, with its time of day in minutes since midnight; status is the client's words for the last
-// request's answer, which the client fills in.
+// The day is the world's, from 1, with its time of day in minutes since midnight; status is the
+// client's words for the last request's answer, which the client fills in.
 struct Screen
 {
 	std::string principal;

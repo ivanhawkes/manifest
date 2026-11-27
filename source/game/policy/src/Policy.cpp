@@ -281,8 +281,8 @@ std::uint64_t RefuelTotes(
 		return 0;
 	const Core::ItemNode &item = Content::PelletItem(content, *pClass);
 	const double kilogramsPerUnit = Content::KilogramsPerUnit(item);
-	const double needed = tanks->pellets - pFuel->pellets -
-	                      PelletsAboard(registry, ship, item) * kilogramsPerUnit;
+	const double needed =
+	    tanks->pellets - pFuel->pellets - PelletsAboard(registry, ship, item) * kilogramsPerUnit;
 	return needed > 0.0
 	           ? static_cast<std::uint64_t>(std::ceil(needed / (UnitsPerTote(item) * kilogramsPerUnit)))
 	           : 0;
@@ -402,7 +402,8 @@ Route Priced(
 		{
 			const World::Line *pLine =
 			    refuels && pReports && !leg.fromId.empty() &&
-			            Trade::MayBuy(registry, identities, content, record.companyId, leg.fromId, itemId)
+			            Trade::MayBuy(
+			                registry, identities, content, record.companyId, leg.fromId, itemId)
 			        ? LineOf(*pReports, leg.fromId, itemId)
 			        : nullptr;
 			return pLine && !pLine->asks.empty() ? pLine : nullptr;
@@ -432,20 +433,20 @@ Route Priced(
 		    dry + (start.reactionMass + left.pellets + bought) / kKilogramsPerTonne +
 		        (leg.laden ? lotTonnes : 0.0),
 		    Manifest::Space::DriveMetres(*flown, leg.metres), pelletKilogramsPerUnit);
-		route.fuelled = route.fuelled &&
-		                (!pClass->exhaustKms ||
-		                 burned.reactionMass + kFuelMarginKilograms <= start.reactionMass) &&
-		                burned.pellets + kFuelMarginKilograms <= start.pellets;
+		route.fuelled =
+		    route.fuelled &&
+		    (!pClass->exhaustKms || burned.reactionMass + kFuelMarginKilograms <= start.reactionMass) &&
+		    burned.pellets + kFuelMarginKilograms <= start.pellets;
 		left = {
 		    std::max(0.0, start.reactionMass - burned.reactionMass),
 		    std::max(0.0, start.pellets - burned.pellets)};
 		const auto price = [&](const World::Line *pLine, const std::string &itemId)
 		{ return pLine ? pLine->Ask() : LastPaid(registry, identities, record.companyId, itemId); };
 		route.charges = Added(
-		    route.charges, Worth(
-		                       {{burned.reactionMass, price(pMass, tuning.reactionMassItemId)},
-		                        {burned.pellets / pelletKilogramsPerUnit,
-		                         price(pPellets, pClass->pelletItemId)}}));
+		    route.charges,
+		    Worth(
+		        {{burned.reactionMass, price(pMass, tuning.reactionMassItemId)},
+		         {burned.pellets / pelletKilogramsPerUnit, price(pPellets, pClass->pelletItemId)}}));
 	}
 	return route;
 }
@@ -1047,7 +1048,8 @@ std::optional<Tendered> ChooseTender(const Context &context, const std::optional
 		const double tonnes = static_cast<double>(tender.totes) * item.tonnesPerTote;
 		for (const std::string &sourceId : context.rules.venues)
 		{
-			const World::Line *pAsk = context.Fits(sourceId) ? LineOf(reports, sourceId, tender.itemId) : nullptr;
+			const World::Line *pAsk =
+			    context.Fits(sourceId) ? LineOf(reports, sourceId, tender.itemId) : nullptr;
 			const std::optional<Walked> buy =
 			    pAsk ? Walk(pAsk->asks, tender.totes, item.unitsPerTote, context.rules.feeBps, true)
 			         : std::nullopt;

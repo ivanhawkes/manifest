@@ -1346,7 +1346,8 @@ void CheckScenarios(
 				    "venues",
 				    problem(
 				        std::format(
-				            "market '{}' is licensed, which only a polity's venue trades", entry.itemId)));
+				            "market '{}' is licensed, which only a polity's venue trades",
+				            entry.itemId)));
 				checker.Require(
 				    entry.stock <= Core::kMaxWarehouseTotes, "venues",
 				    problem(
@@ -1391,8 +1392,10 @@ void CheckScenarios(
 			checker.Require(
 			    Contains(pMode->hulls, grant.hullId, &HullSelection::hullId), "grants",
 			    problem(std::format("hull '{}' is not one of the mode's hulls", grant.hullId)));
-			const auto venue = std::ranges::find(scenario.venues, grant.venueId, &VenueDefinition::venueId);
-			const auto *pDock = registry.Find<Jettison::Dock::VehicleDefinition>(RegistryName(grant.hullId));
+			const auto venue =
+			    std::ranges::find(scenario.venues, grant.venueId, &VenueDefinition::venueId);
+			const auto *pDock =
+			    registry.Find<Jettison::Dock::VehicleDefinition>(RegistryName(grant.hullId));
 			const auto *pLayout = venue == scenario.venues.end()
 			                          ? nullptr
 			                          : registry.Find<Jettison::Dock::PlatformLayout>(venue->layout);
@@ -1401,9 +1404,13 @@ void CheckScenarios(
 			        std::ranges::any_of(
 			            pLayout->berths,
 			            [&](const Jettison::Dock::BerthLayout &pad)
-			            { return !pad.display && Jettison::Dock::Fits(classes, *pDock, pad.berthClass); }),
+			            {
+				            return !pad.display &&
+				                   Jettison::Dock::Fits(classes, *pDock, pad.berthClass);
+			            }),
 			    "grants",
-			    problem(std::format("hull '{}' fits no pad of venue '{}'", grant.hullId, grant.venueId)));
+			    problem(
+			        std::format("hull '{}' fits no pad of venue '{}'", grant.hullId, grant.venueId)));
 			checker.Require(grant.price >= 0, "grants", problem("price must not be below 0"));
 		}
 	}
@@ -1582,8 +1589,12 @@ bool PadFits(const ContentSet &content, std::string_view venueId, std::string_vi
 	const auto layout = content.layouts.find(pVenue->layout);
 	return layout != content.layouts.end() &&
 	       std::ranges::any_of(
-	           layout->second.berths, [&](const Jettison::Dock::BerthLayout &berth)
-	           { return !berth.display && Jettison::Dock::Fits(content.padClasses, hull->second, berth.berthClass); });
+	           layout->second.berths,
+	           [&](const Jettison::Dock::BerthLayout &berth)
+	           {
+		           return !berth.display &&
+		                  Jettison::Dock::Fits(content.padClasses, hull->second, berth.berthClass);
+	           });
 }
 
 

@@ -726,7 +726,10 @@ TEST_CASE("Cruise: on a profile, a ship covers its course as the profile does, n
 TEST_CASE("Cruise: a drive's clearance is crossed on thrusters at each end, from rest to rest")
 {
 	const Manifest::Space::CruiseDrive drive{
-	    .profile = kHard, .departureClearance = 1.0e6, .arrivalClearance = 1.0e6, .crossingAcceleration = 15.0f};
+	    .profile = kHard,
+	    .departureClearance = 1.0e6,
+	    .arrivalClearance = 1.0e6,
+	    .crossingAcceleration = 15.0f};
 	const Transit::MotionProfile thrusters{15.0f, 0.0f, 15.0f};
 	CHECK(
 	    Manifest::Space::CruiseSeconds(drive, 3.93e8) ==
@@ -743,7 +746,11 @@ TEST_CASE("Cruise: a drive's clearance is crossed on thrusters at each end, from
 	// The power law crosses nothing.
 	CHECK(
 	    Manifest::Space::DriveMetres(
-	        {.profile = {}, .departureClearance = 1.0e6, .arrivalClearance = 1.0e6, .crossingAcceleration = 15.0f}, 5.0e6) == 5.0e6);
+	        {.profile = {},
+	         .departureClearance = 1.0e6,
+	         .arrivalClearance = 1.0e6,
+	         .crossingAcceleration = 15.0f},
+	        5.0e6) == 5.0e6);
 	CHECK_NOTHROW(Manifest::Space::CheckCruiseDrive("crossing", drive));
 	for (const Manifest::Space::CruiseDrive &bad :
 	     {Manifest::Space::CruiseDrive{.profile = kHard, .departureClearance = -1.0},
@@ -760,7 +767,10 @@ TEST_CASE("Cruise: a ship crosses its drive's clearance at its thrusters' accele
 	entt::registry &registry = fixture.world.Registry();
 	const entt::entity ship = fixture.Ship("Ostra Highport", {0.0, 0.0, 3000.0});
 	const Manifest::Space::CruiseDrive drive{
-	    .profile = kHard, .departureClearance = 1.0e6, .arrivalClearance = 1.0e6, .crossingAcceleration = 15.0f};
+	    .profile = kHard,
+	    .departureClearance = 1.0e6,
+	    .arrivalClearance = 1.0e6,
+	    .crossingAcceleration = 15.0f};
 	registry.replace<Manifest::Space::CruiseDrive>(ship, drive);
 	fixture.Run(5);
 	fixture.Events<Manifest::Space::CruiseStarted>();
@@ -976,7 +986,8 @@ Manifest::Space::StarSystem Anvil()
 	    AiTests::MakeBody("Star", Star, "", 6.957e8, 1.32712440018e20),
 	    AiTests::MakeBody("Ore", Planet, "Star", 6.371e6, 3.986004418e14, {1.496e11, 0.0167}),
 	    AiTests::MakeBody("Ore Highport", Station, "Ore", 763.0, 0.0, {4.2e7}),
-	    AiTests::MakeBody("Ore Vale", Station, "Ore", 763.0, 0.0, {4.2e7, 0.0, 0.0, 0.0, 0.0, 1.25663706}),
+	    AiTests::MakeBody(
+	        "Ore Vale", Station, "Ore", 763.0, 0.0, {4.2e7, 0.0, 0.0, 0.0, 0.0, 1.25663706}),
 	    AiTests::MakeBody(
 	        "Brine", Planet, "Star", 3.3895e6, 4.282837e13,
 	        {2.279e11, 0.0934, 0.0, 0.0, 0.0, 3.14159265}),
@@ -999,8 +1010,11 @@ Manifest::Space::CruiseDrive PulseDrive(float thrustShare)
 	drive.arrivalClearance = kPulseClearance;
 	drive.crossingAcceleration = Manifest::Space::CruiseTravel::kCrossingAcceleration;
 	drive.keepouts = {
-	    {"Ore", 6.371e6 + kPulseRadius}, {"Ore Highport", kPulseRadius}, {"Ore Vale", kPulseRadius},
-	    {"Brine", 3.3895e6 + kPulseRadius}, {"Brine Highport", kPulseRadius}};
+	    {"Ore", 6.371e6 + kPulseRadius},
+	    {"Ore Highport", kPulseRadius},
+	    {"Ore Vale", kPulseRadius},
+	    {"Brine", 3.3895e6 + kPulseRadius},
+	    {"Brine Highport", kPulseRadius}};
 	return drive;
 }
 
@@ -1071,7 +1085,8 @@ bool Thrusting(const Manifest::Space::Cruising &cruising, std::uint64_t ending)
 	const double driving = Transit::Seconds(*cruising.profile, driven);
 	const double seconds = across + Transit::Seconds(thrusters, arrival) + driving;
 	const double into = static_cast<double>(ending - cruising.departureStep) /
-	                        static_cast<double>(cruising.arrivalStep - cruising.departureStep) * seconds -
+	                        static_cast<double>(cruising.arrivalStep - cruising.departureStep) *
+	                        seconds -
 	                    across;
 	const Transit::ThrustSeconds thrust = Transit::Thrust(*cruising.profile, driven);
 	const double each = thrust.boost + thrust.sustained;
@@ -1108,7 +1123,8 @@ TEST_CASE("Cruise: a pulse ship never thrusts within a sphere nor comes near a b
 		double nearestSphere = std::numeric_limits<double>::infinity();
 		double nearestBody = std::numeric_limits<double>::infinity();
 		std::uint64_t thrusting = 0;
-		for (std::uint64_t at = cruising.departureStep + minute; at < cruising.arrivalStep; at += minute)
+		for (std::uint64_t at = cruising.departureStep + minute; at < cruising.arrivalStep;
+		     at += minute)
 		{
 			while (fixture.world.Clock().Step() < at)
 				fixture.world.FastForward(at);
@@ -1117,15 +1133,15 @@ TEST_CASE("Cruise: a pulse ship never thrusts within a sphere nor comes near a b
 			for (const Manifest::Space::Body &body : fixture.system.bodies)
 				if (body.kind != Manifest::Space::BodyKind::Station)
 					nearestBody = std::min(
-					    nearestBody,
-					    glm::distance(place, fixture.Where(body.name, now)) - body.radius -
-					        Manifest::Space::CruiseTravel::kCourseClearance);
+					    nearestBody, glm::distance(place, fixture.Where(body.name, now)) - body.radius -
+					                     Manifest::Space::CruiseTravel::kCourseClearance);
 			if (!Thrusting(cruising, at))
 				continue;
 			++thrusting;
 			for (const Manifest::Space::Keepout &keepout : PulseDrive(1.0f).keepouts)
 				nearestSphere = std::min(
-				    nearestSphere, glm::distance(place, fixture.Where(keepout.body, now)) - keepout.radius);
+				    nearestSphere,
+				    glm::distance(place, fixture.Where(keepout.body, now)) - keepout.radius);
 		}
 		MESSAGE(
 		    "From day " << start << " at " << shareBps << " basis points: "
@@ -1182,22 +1198,27 @@ TEST_CASE("Cruise: a pulse ship crosses out of Ore's ball and into Brine's on th
 	const glm::dvec3 out = at(cruising.departureStep + steps(across));
 	for (const Manifest::Space::Keepout &keepout : PulseDrive(1.0f).keepouts)
 		if (keepout.body.starts_with("Ore"))
-			CHECK(glm::distance(out, fixture.Where(keepout.body, fixture.world.Clock().Now())) > keepout.radius);
+			CHECK(
+			    glm::distance(out, fixture.Where(keepout.body, fixture.world.Clock().Now())) >
+			    keepout.radius);
 
 	// Its arrival crossing in Brine's frame: the last of it a straight line to where it arrives,
 	// relative to Brine, and that place the course's end, Brine Highport's standoff.
 	const double into = Transit::Seconds(thrusters, cruising.arrivalClearance);
 	const std::uint64_t arriving = cruising.arrivalStep - steps(into);
 	const glm::dvec3 entered = at(arriving) - fixture.Where("Brine", fixture.world.Clock().Now());
-	const glm::dvec3 middle =
-	    at(cruising.arrivalStep - steps(into / 2.0)) - fixture.Where("Brine", fixture.world.Clock().Now());
-	const glm::dvec3 last = at(cruising.arrivalStep - 1) - fixture.Where("Brine", fixture.world.Clock().Now());
+	const glm::dvec3 middle = at(cruising.arrivalStep - steps(into / 2.0)) -
+	                          fixture.Where("Brine", fixture.world.Clock().Now());
+	const glm::dvec3 last =
+	    at(cruising.arrivalStep - 1) - fixture.Where("Brine", fixture.world.Clock().Now());
 	CHECK(glm::length(entered - last) == doctest::Approx(cruising.arrivalClearance).epsilon(0.01));
 	CHECK(
 	    glm::length(glm::cross(glm::normalize(middle - entered), glm::normalize(last - entered))) <
 	    1.0e-3);
 	CHECK(
-	    glm::distance(at(cruising.arrivalStep + 1), fixture.Where("Brine Highport", fixture.world.Clock().Now())) <
+	    glm::distance(
+	        at(cruising.arrivalStep + 1),
+	        fixture.Where("Brine Highport", fixture.world.Clock().Now())) <
 	    Manifest::Space::CruiseTravel::kArrivalStandoff * 2.0);
 }
 
@@ -1240,7 +1261,8 @@ TEST_CASE("Cruise: a pulse cruise saved mid-crossing and mid-coast flies on as t
 		forward(original, end);
 		forward(loaded, end);
 		CHECK(loaded.world.Save() == original.world.Save());
-		CHECK(loaded.world.Registry().get<Jettison::Physics::LocalFrame>(ship).body == "Brine Highport");
+		CHECK(
+		    loaded.world.Registry().get<Jettison::Physics::LocalFrame>(ship).body == "Brine Highport");
 	}
 }
 
@@ -1248,10 +1270,10 @@ TEST_CASE("Cruise: a pulse cruise saved mid-crossing and mid-coast flies on as t
 TEST_CASE("Cruise: a drive still thrusting within a sphere once its rounds are spent is refused")
 {
 	const Manifest::Space::StarSystem system = Anvil();
-	const glm::dvec3 from =
-	    Manifest::Space::EvaluateBody(system, static_cast<std::size_t>(system.Find("Ore Highport")), 0.0)
-	        .metres +
-	    glm::dvec3{0.0, 0.0, 3000.0};
+	const glm::dvec3 from = Manifest::Space::EvaluateBody(
+	                            system, static_cast<std::size_t>(system.Find("Ore Highport")), 0.0)
+	                            .metres +
+	                        glm::dvec3{0.0, 0.0, 3000.0};
 
 	// A sphere about the star the whole course lies in: the drive may not thrust anywhere.
 	Manifest::Space::CruiseDrive drive = PulseDrive(1.0f);
@@ -1263,8 +1285,8 @@ TEST_CASE("Cruise: a drive still thrusting within a sphere once its rounds are s
 
 	// With its rounds, each crossing lengthened past the sphere, to half the course: thrusters all the
 	// way, the drive's metres none.
-	const Manifest::Space::Settlement settled =
-	    Manifest::Space::SettleCruise(system, drive, from, "Ore Highport", "Brine Highport", 0.0, kStep);
+	const Manifest::Space::Settlement settled = Manifest::Space::SettleCruise(
+	    system, drive, from, "Ore Highport", "Brine Highport", 0.0, kStep);
 	REQUIRE(settled.cruise);
 	CHECK(settled.cruise->DriveMetres() == 0.0);
 

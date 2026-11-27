@@ -214,7 +214,8 @@ class Fleet
 		m_revoker = std::move(revoker);
 	}
 
-	void Revoke(Jettison::Sim::SimWorld &world, const std::string &companyId, const std::string &polityId) const
+	void Revoke(
+	    Jettison::Sim::SimWorld &world, const std::string &companyId, const std::string &polityId) const
 	{
 		if (m_revoker)
 			m_revoker(world, companyId, polityId);

@@ -927,7 +927,8 @@ TEST_CASE("A mod's script runs in the server's session, and what it keeps outliv
 	    std::filesystem::path{MANIFEST_HOST_OVERLAYS} / "keeper", overlay,
 	    std::filesystem::copy_options::recursive);
 	std::filesystem::copy_file(MANIFEST_HOST_KEEPER, overlay / "keeper.wasm");
-	const auto start = [&overlay] { return Host::Start({MANIFEST_MOD_DIRECTORY, {overlay}, "trading"}); };
+	const auto start = [&overlay]
+	{ return Host::Start({MANIFEST_MOD_DIRECTORY, {overlay}, "trading"}); };
 	const auto recall = [](Jettison::Host::Session &session)
 	{ return session.Scripts().Call("keeper", "recall", {}); };
 	const std::vector<std::int32_t> none{-1};
@@ -936,8 +937,7 @@ TEST_CASE("A mod's script runs in the server's session, and what it keeps outliv
 		const std::unique_ptr<Jettison::Host::Session> pSession = start();
 		REQUIRE(pSession->Scripts().Scripts().size() == 1);
 		const Host::WorldDirectory directory = Host::OpenWorldDirectory(scratch.Root());
-		Host::Journal journal{
-		    directory, Host::RunningIdentity(*pSession), {}, {}, Scripted(*pSession)};
+		Host::Journal journal{directory, Host::RunningIdentity(*pSession), {}, {}, Scripted(*pSession)};
 		journal.Recover(pSession->World());
 		CHECK(recall(*pSession) == none);
 		CHECK(pSession->Scripts().Call("keeper", "remember", seven));

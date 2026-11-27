@@ -594,9 +594,10 @@ Result Post(SimWorld &world, const Rules &rules, World::Order order, bool rests 
 
 	// A licensed item only the venue sells, and only to a company its operator licenses.
 	if (order.ownerKind == Kind::Company &&
-	    (order.side == Side::Sell
-	         ? Licensed(*rules.pContent, order.itemId)
-	         : !MayBuy(registry, rules.identities, *rules.pContent, order.ownerId, order.venueId, order.itemId)))
+	    (order.side == Side::Sell ? Licensed(*rules.pContent, order.itemId)
+	                              : !MayBuy(
+	                                    registry, rules.identities, *rules.pContent, order.ownerId,
+	                                    order.venueId, order.itemId)))
 		return Result::NotAuthorised;
 	Ledger ledger{registry, rules.identities};
 

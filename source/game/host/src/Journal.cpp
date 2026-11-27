@@ -400,10 +400,10 @@ void Journal::Recover(Jettison::Sim::SimWorld &world) const
 				throw std::runtime_error{
 				    std::format("{} is not the snapshot the catalogue names", path.string())};
 			const Jettison::Sim::SaveGame save = Jettison::Sim::SaveGame::Read(snapshot.bytes);
-			const Jettison::Sim::SaveSection *pKeys =
-			    save.FindSection(Jettison::Script::kStoreSection);
-			Jettison::Script::ScriptStore keys =
-			    pKeys != nullptr ? Jettison::Script::ReadStore(pKeys->data) : Jettison::Script::ScriptStore{};
+			const Jettison::Sim::SaveSection *pKeys = save.FindSection(Jettison::Script::kStoreSection);
+			Jettison::Script::ScriptStore keys = pKeys != nullptr
+			                                         ? Jettison::Script::ReadStore(pKeys->data)
+			                                         : Jettison::Script::ScriptStore{};
 			world.Load(save.world);
 			store = std::move(keys);
 			after = kept->batch;

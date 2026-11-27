@@ -88,8 +88,8 @@ double DriveMetres(const CruiseDrive &drive, double metres);
 // Checks a drive a game defines: its seconds and reference positive and finite, and its exponent
 // above 0 and at most 1, so its time rises with the distance and no faster than it; its profile, if it
 // has one, as Transit::CheckProfile does; and its clearances finite and not below 0, with a crossing
-// acceleration above 0 where either is above 0, and its keepouts' radii finite and above 0. Throws Jettison::Serialise::FormatError naming the
-// drive.
+// acceleration above 0 where either is above 0, and its keepouts' radii finite and above 0. Throws
+// Jettison::Serialise::FormatError naming the drive.
 void CheckCruiseDrive(std::string_view name, const CruiseDrive &drive);
 
 // A ship cruising: its Jettison::Sim::InFrame stays its system, and it has no Jettison::Physics::Body,
@@ -337,6 +337,5 @@ struct Settlement
 // game settles the same cruise to price it that a Cruise then flies. Fewer rounds are for tests.
 Settlement SettleCruise(
     const StarSystem &system, const CruiseDrive &drive, const glm::dvec3 &from, std::string_view frame,
-    std::string_view target, double now, double fixedStep,
-    int rounds = CruiseTravel::kClearanceRounds);
+    std::string_view target, double now, double fixedStep, int rounds = CruiseTravel::kClearanceRounds);
 } // namespace Manifest::Space
