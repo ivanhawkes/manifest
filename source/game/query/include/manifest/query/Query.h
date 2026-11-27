@@ -79,6 +79,9 @@ struct CompanyView
 	// Its sealed bids, by ID, which no other player sees.
 	std::vector<BidView> bids{};
 
+	// The polities licensing it to buy their venues' licensed goods, in the order granted (W22b).
+	std::vector<std::string> licences{};
+
 	bool operator==(const CompanyView &) const = default;
 };
 

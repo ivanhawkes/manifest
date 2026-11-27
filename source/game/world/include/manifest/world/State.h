@@ -304,6 +304,16 @@ struct Fuel
 	bool operator==(const Fuel &) const = default;
 };
 
+// The polities licensing a company to buy their venues' licensed goods (W22b; Company::Apply,
+// Company::SetLicence), by Organisation ID, in the order granted, each once; on its Company. None for a
+// company no polity licenses.
+struct Licences
+{
+	std::vector<std::string> polities;
+
+	bool operator==(const Licences &) const = default;
+};
+
 // A ship's journey to a venue, from the Travel command that started it, on the ship's entity. One is
 // under way until its leg is Arrived or Failed, which a new journey replaces.
 struct Journey

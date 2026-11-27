@@ -65,6 +65,31 @@ command changes nothing.
 | `Manifest.Company.SetRefuel` | `SetRefuel` | the ship's owner | [travel](travel.md) |
 | `Manifest.Company.SetFees` | `SetFees` | the venue operator's principal | [stations](stations.md) |
 | `Manifest.Company.Found` | `Found` | the company's principal | [governance](governance.md) |
+| `Manifest.Company.Apply` | `Apply` | the company's principal | [Licences](#licences) |
+| `Manifest.Company.SetLicence` | `SetLicence` | the polity's director | [Licences](#licences) |
+
+### Licences
+
+A [polity](glossary.md#polity) licenses a company to buy the licensed goods its venues sell, the pulse
+drive's units alone so far (an item's `licensed`, `data/trade-items/fuels.yaml`). Content refuses a
+market row of a licensed item at a venue whose operator is not a polity. `Trade::Post`, which every
+buy passes, a command's and a refuel's, refuses `NotAuthorised` a company's buy of one unless the
+company holds the venue operator's licence (`Trade::MayBuy`), and any company's sell of one: only the
+venue sells them. A standing policy never trades a licensed item, and estimates a venue's licensed
+fuel only where its company may buy it.
+
+- `Apply{organisationId}`, sent by a company's principal to a polity the AI runs, is granted at once
+  for `licence.feeCredits` (50,000) in `balance.yaml`, paid evenly to the public accounts of the
+  regions the polity governs, or to no one where it governs none (the Port Authority's). Refused
+  `UnknownTarget`, `NotAuthorised` (a player directs the polity), `AlreadyLicensed` and
+  `InsufficientFunds`.
+- `SetLicence{organisationId, companyId, granted}`, sent by a player's polity's director, grants or
+  revokes, free.
+- Revoking (`Company::Revoke`) cancels the company's resting orders of licensed items at the polity's
+  venues, their escrow returned. Units carried without a licence are contraband in name only: nothing
+  inspects or seizes them.
+
+The licences are the company's `World::Licences`, in the order granted, shown in its snapshot.
 
 A command on a ship is the owner's alone: the sender must be the principal its company names, or
 it is refused `NotAuthorised`. An unknown ship, item or offer is `UnknownTarget`.

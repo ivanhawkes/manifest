@@ -40,6 +40,7 @@ Identities &RegisterWorld(Jettison::Sim::SimWorld &world)
 	world.RegisterComponent<Account>();
 	world.RegisterComponent<Ship>();
 	world.RegisterComponent<Journey>();
+	world.RegisterComponent<Licences>();
 	world.RegisterComponent<Stock>();
 	world.RegisterComponent<Cargo>();
 	world.RegisterComponent<LifeSupport>();

@@ -797,6 +797,7 @@ void CheckTuning(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 		checker.Require(
 		    tuning.company.startingCredits > 0, "company.startingCredits", "must be above 0");
 		checker.Require(tuning.company.foundingPrice > 0, "company.foundingPrice", "must be above 0");
+		checker.Require(tuning.licence.feeCredits >= 0, "licence.feeCredits", "must not be below 0");
 		checker.Require(
 		    tuning.market.listingFeeBps >= 0 && tuning.market.listingFeeBps <= 10000,
 		    "market.listingFeeBps", "must be in [0, 10000]");
@@ -1323,6 +1324,17 @@ void CheckScenarios(
 				checker.Require(
 				    entry.production <= 0.0 || !entry.regionId.empty(), "venues",
 				    problem(std::format("market '{}' production names no region", entry.itemId)));
+				const auto *pGood = registry.Find<Core::ItemNode>(RegistryName(entry.itemId));
+				const auto operated = std::ranges::find(
+				    scenario.organisations, venue.operatorId, &OrganisationDefinition::organisationId);
+				checker.Require(
+				    !pGood || !pGood->licensed ||
+				        (operated != scenario.organisations.end() &&
+				         operated->kind == OrganisationKind::Polity),
+				    "venues",
+				    problem(
+				        std::format(
+				            "market '{}' is licensed, which only a polity's venue trades", entry.itemId)));
 				checker.Require(
 				    entry.stock <= Core::kMaxWarehouseTotes, "venues",
 				    problem(

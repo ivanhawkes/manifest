@@ -400,9 +400,11 @@ Route Priced(
 		// filled by whole totes; at the last price paid with what is left in them where not.
 		const auto sold = [&](const std::string &itemId) -> const World::Line *
 		{
-			const World::Line *pLine = refuels && pReports && !leg.fromId.empty()
-			                               ? LineOf(*pReports, leg.fromId, itemId)
-			                               : nullptr;
+			const World::Line *pLine =
+			    refuels && pReports && !leg.fromId.empty() &&
+			            Trade::MayBuy(registry, identities, content, record.companyId, leg.fromId, itemId)
+			        ? LineOf(*pReports, leg.fromId, itemId)
+			        : nullptr;
 			return pLine && !pLine->asks.empty() ? pLine : nullptr;
 		};
 		const World::Line *pMass = sold(tuning.reactionMassItemId);
@@ -1702,6 +1704,10 @@ void Register(
 		const auto item =
 		    std::ranges::find(content.gameMode.items, selection.itemId, &Core::ItemNode::itemId);
 		JETTISON_VERIFY(item != content.gameMode.items.end());
+
+		// A licensed item is never a policy's trade (W22b), whoever holds the licence.
+		if (item->licensed)
+			continue;
 		const auto totes = static_cast<double>(Core::kTotesPerIbc);
 		rules->items.push_back(
 		    {selection.itemId, item->unitsPerCubicMetre / totes,

@@ -116,7 +116,40 @@ struct Found
 	std::string displayName;
 };
 
+// The players' command by which their company applies to a polity the AI runs for its licence to buy
+// the licensed goods its venues sell (W22b; docs/ships-plan.md, "The licence"): granted at once, the
+// company paying licence.feeCredits evenly into the public accounts of the regions the polity governs,
+// by region ID, the remainder to the first, or to no one where it governs none. The sender's company
+// is the one its principal owns. Refused, writing nothing, for a sender with no company or no such
+// polity (UnknownTarget), a polity a player directs (NotAuthorised), a licence held already
+// (AlreadyLicensed), the fee more than the company's account holds (InsufficientFunds), and a
+// treasury with no room for its share (CapacityExceeded).
+struct Apply
+{
+	std::string organisationId;
+};
+
+// The command by which a player's polity grants or revokes a company's licence (W22b), sent by the
+// polity's director, free. Revoking cancels the company's resting orders of licensed items at the
+// polity's venues (Revoke). Refused for no such polity or company (UnknownTarget) and a sender who
+// does not direct the polity (NotAuthorised).
+struct SetLicence
+{
+	std::string organisationId;
+	std::string companyId;
+	bool granted{true};
+};
+
+// Takes the polity's licence from the company, where it holds one, and cancels its resting orders of
+// licensed items at the venues the polity operates (Trade::CancelAt), their escrow returned, so no
+// ask fills them later.
+void Revoke(
+    Jettison::Sim::SimWorld &world, World::Identities &identities, const Content::ContentSet &content,
+    const std::string &companyId, const std::string &polityId);
+
 inline constexpr std::string_view kProvision = "Manifest.Company.Provision";
+inline constexpr std::string_view kApply = "Manifest.Company.Apply";
+inline constexpr std::string_view kSetLicence = "Manifest.Company.SetLicence";
 inline constexpr std::string_view kFound = "Manifest.Company.Found";
 inline constexpr std::string_view kLoad = "Manifest.Company.Load";
 inline constexpr std::string_view kUnload = "Manifest.Company.Unload";

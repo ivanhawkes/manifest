@@ -132,6 +132,25 @@ void Register(
     Jettison::Sim::SimWorld &world, Command::Requests &requests, World::Identities &identities,
     const Content::ContentSet &content);
 
+// Whether the item is licensed (Core::ItemNode::licensed): sold only by its venue, and only to a
+// company the venue's operator licenses (W22b; docs/ships-plan.md, "The licence").
+bool Licensed(const Content::ContentSet &content, std::string_view itemId);
+
+// Whether the company may buy the item at the venue: any item but a licensed one, and that one where
+// the company holds the licence of the venue's operator (World::Licences). Place, and so a ship's
+// refuelling, refuses a company's buy of a licensed item it may not buy NotAuthorised, and any
+// company's sell of one.
+bool MayBuy(
+    const entt::registry &registry, const World::Identities &identities,
+    const Content::ContentSet &content, std::string_view companyId, std::string_view venueId,
+    std::string_view itemId);
+
+// Cancels the owner's resting orders in the venue's market for the item, in placement order, their
+// escrow and reserved totes returned: a revoked licence's buys (Company::SetLicence).
+void CancelAt(
+    Jettison::Sim::SimWorld &world, World::Identities &identities, World::Kind kind,
+    const std::string &id, const std::string &venueId, const std::string &itemId);
+
 // Buys for the company at the venue at the asks resting on its book now, best price first and then
 // oldest, as many of the totes as the budget, in whole credits, holds the reservation of a buy at the
 // limit of the dearest ask it takes (PerTote): a buy that rests nothing, its fills in the company's

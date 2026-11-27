@@ -308,6 +308,89 @@ Result Founded(SimWorld &world, const Rules &rules, const Actor &actor, const Fo
 }
 
 
+// A polity's organisation entity, or null for none of that ID or one of another kind.
+entt::entity PolityOf(const entt::registry &registry, const Rules &rules, const std::string &id)
+{
+	const entt::entity organisation = rules.identities.Find(Kind::Organisation, id);
+	return organisation != entt::null &&
+	               registry.get<const World::Organisation>(organisation).kind ==
+	                   Content::OrganisationKind::Polity
+	           ? organisation
+	           : entt::null;
+}
+
+
+Result Applied(SimWorld &world, const Rules &rules, const Actor &actor, const Apply &apply)
+{
+	entt::registry &registry = world.Registry();
+	entt::entity company = entt::null;
+	std::string companyId;
+	for (const auto [entity, owned, identity] :
+	     registry.view<const World::Company, const World::Identity>().each())
+		if (owned.principalId == actor.id)
+		{
+			company = entity;
+			companyId = identity.id;
+		}
+	const entt::entity polity = PolityOf(registry, rules, apply.organisationId);
+	if (company == entt::null || polity == entt::null)
+		return Result::UnknownTarget;
+	if (!registry.get<const World::Organisation>(polity).principalId.empty())
+		return Result::NotAuthorised;
+	const auto *pHeld = registry.try_get<const World::Licences>(company);
+	if (pHeld && std::ranges::find(pHeld->polities, apply.organisationId) != pHeld->polities.end())
+		return Result::AlreadyLicensed;
+	World::Account &paying =
+	    registry.get<World::Account>(rules.identities.Find(Kind::CompanyAccount, companyId));
+	const std::int64_t fee = rules.content.tuning.licence.feeCredits;
+	if (paying.balance < fee)
+		return Result::InsufficientFunds;
+
+	// The regions it governs, by ID, the fee shared evenly and the remainder to the first.
+	std::vector<std::pair<std::string, World::Account *>> treasuries;
+	for (const auto [entity, region, identity] :
+	     registry.view<const World::Region, const World::Identity>().each())
+		if (region.governorId == apply.organisationId)
+			treasuries.emplace_back(
+			    identity.id, &registry.get<World::Account>(
+			                     rules.identities.Find(Kind::PublicAccount, identity.id)));
+	std::ranges::sort(treasuries, {}, &std::pair<std::string, World::Account *>::first);
+	const auto count = static_cast<std::int64_t>(treasuries.size());
+	const auto shareOf = [&](std::size_t at)
+	{ return count == 0 ? 0 : fee / count + (at == 0 ? fee % count : 0); };
+	for (std::size_t at = 0; at < treasuries.size(); ++at)
+		if (treasuries[at].second->balance > kMaxCredits - shareOf(at))
+			return Result::CapacityExceeded;
+
+	paying.balance -= fee;
+	for (std::size_t at = 0; at < treasuries.size(); ++at)
+		treasuries[at].second->balance += shareOf(at);
+	registry.get_or_emplace<World::Licences>(company).polities.push_back(apply.organisationId);
+	return Result::Succeeded;
+}
+
+
+Result LicenceSet(SimWorld &world, const Rules &rules, const Actor &actor, const SetLicence &set)
+{
+	entt::registry &registry = world.Registry();
+	const entt::entity polity = PolityOf(registry, rules, set.organisationId);
+	const entt::entity company = rules.identities.Find(Kind::Company, set.companyId);
+	if (polity == entt::null || company == entt::null)
+		return Result::UnknownTarget;
+	if (registry.get<const World::Organisation>(polity).principalId != actor.id)
+		return Result::NotAuthorised;
+	if (!set.granted)
+	{
+		Revoke(world, rules.identities, rules.content, set.companyId, set.organisationId);
+		return Result::Succeeded;
+	}
+	World::Licences &held = registry.get_or_emplace<World::Licences>(company);
+	if (std::ranges::find(held.polities, set.organisationId) == held.polities.end())
+		held.polities.push_back(set.organisationId);
+	return Result::Succeeded;
+}
+
+
 auto HoldingKey(const World::Holding &holding)
 {
 	return std::tie(holding.venueId, holding.itemId);
@@ -994,6 +1077,29 @@ std::uint64_t BerthNext(const SimWorld &world, const Rules &rules)
 } // namespace
 
 
+void Revoke(
+    SimWorld &world, World::Identities &identities, const Content::ContentSet &content,
+    const std::string &companyId, const std::string &polityId)
+{
+	entt::registry &registry = world.Registry();
+	const entt::entity company = identities.Find(Kind::Company, companyId);
+	if (company == entt::null)
+		return;
+	if (auto *pHeld = registry.try_get<World::Licences>(company))
+	{
+		std::erase(pHeld->polities, polityId);
+		if (pHeld->polities.empty())
+			registry.remove<World::Licences>(company);
+	}
+	const Content::ScenarioDefinition &scenario = content.scenarios.find(content.scenario)->second;
+	for (const Content::VenueDefinition &venue : scenario.venues)
+		if (venue.operatorId == polityId)
+			for (const Content::ItemSelection &item : scenario.items)
+				if (Trade::Licensed(content, item.itemId))
+					Trade::CancelAt(world, identities, Kind::Company, companyId, venue.venueId, item.itemId);
+}
+
+
 void RegisterTypes()
 {
 	static const bool registered = []
@@ -1022,6 +1128,12 @@ void RegisterTypes()
 		RegisterType<SetFees>("Manifest.Company.SetFees")
 		    .Field<&SetFees::venueId>("venueId", kSaved)
 		    .Field<&SetFees::fees>("fees", kSaved);
+		RegisterType<Apply>("Manifest.Company.Apply")
+		    .Field<&Apply::organisationId>("organisationId", kSaved);
+		RegisterType<SetLicence>("Manifest.Company.SetLicence")
+		    .Field<&SetLicence::organisationId>("organisationId", kSaved)
+		    .Field<&SetLicence::companyId>("companyId", kSaved)
+		    .Field<&SetLicence::granted>("granted", kSaved);
 		RegisterType<SetRefuel>("Manifest.Company.SetRefuel")
 		    .Field<&SetRefuel::shipId>("shipId", kSaved)
 		    .Field<&SetRefuel::enabled>("enabled", kSaved);
@@ -1107,6 +1219,14 @@ void RegisterCommands(
 	    std::string{kProvision}, kVersion, Command::ActorKind::Administrator,
 	    [rules](SimWorld &target, const Actor & /*actor*/, const Provision &provision)
 	    { return Provisioned(target, *rules, provision); });
+	requests.Register<Apply>(
+	    std::string{kApply}, kVersion, Command::ActorKind::Principal,
+	    [rules](SimWorld &target, const Actor &actor, const Apply &apply)
+	    { return Applied(target, *rules, actor, apply); });
+	requests.Register<SetLicence>(
+	    std::string{kSetLicence}, kVersion, Command::ActorKind::Principal,
+	    [rules](SimWorld &target, const Actor &actor, const SetLicence &set)
+	    { return LicenceSet(target, *rules, actor, set); });
 	requests.Register<Found>(
 	    std::string{kFound}, kVersion, Command::ActorKind::Principal,
 	    [rules](SimWorld &target, const Actor &actor, const Found &found)

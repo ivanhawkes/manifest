@@ -397,6 +397,18 @@ std::function<void()> Identities::Load(
 			        "a ship of hull '{}' holds tanks or cartridges its hull does not, or more in them",
 			        ship.hullId));
 	}
+	for (const auto [entity, licences] : loaded.view<const Licences>().each())
+		for (const std::string &polity : licences.polities)
+		{
+			const Organisation *pOrganisation = nullptr;
+			for (const auto [held, identity, organisation] :
+			     loaded.view<const Identity, const Organisation>().each())
+				if (identity.kind == Kind::Organisation && identity.id == polity)
+					pOrganisation = &organisation;
+			if (!pOrganisation || pOrganisation->kind != Content::OrganisationKind::Polity ||
+			    std::ranges::count(licences.polities, polity) != 1)
+				reader.Fail(std::format("a company holds a licence of '{}', no polity, or twice", polity));
+		}
 	for (const auto [entity, journey] : loaded.view<const Journey>().each())
 		if (const std::optional<std::string> problem = Broken(journey))
 			reader.Fail(*problem);

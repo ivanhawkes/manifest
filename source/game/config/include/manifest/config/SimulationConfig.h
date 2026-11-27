@@ -108,6 +108,10 @@ struct ItemNode
 	// fills, counting packaging, dunnage and the voids between the pieces, so the
 	// mass in a cubic metre is density x 1000 x packFactor kilograms.
 	double packFactor{0.0};
+
+	// Sold only to a company the venue's operator, a polity, licenses, and never bought from one
+	// (W22b; docs/ships-plan.md, "The licence"): the pulse drive's units.
+	bool licensed{false};
 };
 
 using Items = std::vector<ItemNode>;

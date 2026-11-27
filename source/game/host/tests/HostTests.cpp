@@ -229,7 +229,7 @@ TEST_CASE("A hosted world saves what the state inventory names, in its order, an
 	    std::vector<std::string>{
 	        "Manifest.World.Identity", "Manifest.World.Principal", "Manifest.World.Company",
 	        "Manifest.World.Organisation", "Manifest.World.Region", "Manifest.World.Account",
-	        "Manifest.World.Ship", "Manifest.World.Journey", "Manifest.World.Stock",
+	        "Manifest.World.Ship", "Manifest.World.Journey", "Manifest.World.Licences", "Manifest.World.Stock",
 	        "Manifest.World.Cargo", "Manifest.World.LifeSupport", "Manifest.World.Fuel",
 	        "Manifest.World.Refuel", "Manifest.World.Systems", "Manifest.World.Broker",
 	        "Manifest.World.Order", "Manifest.World.Production", "Manifest.World.Pantry",

@@ -51,7 +51,8 @@ void RegisterTypes()
 		    .Value<Result::AlreadyQueued>("AlreadyQueued")
 		    .Value<Result::InsideRadius>("InsideRadius")
 		    .Value<Result::NoCourse>("NoCourse")
-		    .Value<Result::NoPadFits>("NoPadFits");
+		    .Value<Result::NoPadFits>("NoPadFits")
+		    .Value<Result::AlreadyLicensed>("AlreadyLicensed");
 		RegisterEnum<ActorKind>("Manifest.Command.ActorKind")
 		    .Value<ActorKind::Principal>("Principal")
 		    .Value<ActorKind::Administrator>("Administrator");

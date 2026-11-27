@@ -40,7 +40,8 @@ inline constexpr std::uint32_t kVersion = 2;
 // The system, by the name the step's table gives it (docs/policies.md, "Where it runs in the step"):
 // after manifest.brokers and before the movement, each ship whose policy is enabled, in entity order,
 // takes its job's next decisions from its owner's reports, through the players' own commands sent as
-// its owner (Command::Requests::Act), weighing only venues with a pad its hull fits (Content::PadFits):
+// its owner (Command::Requests::Act), weighing only venues with a pad its hull fits (Content::PadFits)
+// and never a licensed item (Trade::Licensed):
 // choosing a trade, or a destination for the lot aboard; flying to
 // the source; buying there at the live ask, the rest cancelled, and loading what it bought; flying to
 // the destination; and selling there at no less than the lot's floor, the rest cancelled and loaded
@@ -74,7 +75,8 @@ inline constexpr std::string_view kSeizureSystem = "manifest.seizure";
 // now, at the company's last prices (World::Paid); and the fuel a drive with a profile burns on each
 // leg at the thrust and 1 g (Travel::Burned), for everything aboard and, on the leg into the
 // destination, the lot's tonnes too, at the reported ask of the venue the leg leaves where the ship
-// refuels there and the venue sells it, its last price where not; each leg's life support and fuel
+// refuels there, the venue sells it and the company may buy it there (Trade::MayBuy), its last price
+// where not; each leg's life support and fuel
 // rounded up. Its seconds are each leg's cruise and fuel.legAllowanceSeconds. It is fuelled while the
 // tanks can fly every leg with a gram to spare, filled at each venue the ship refuels at that sells
 // the fuel. The ship is a World::Ship with a Sim::Transform, the thrust above 0 and at most full.

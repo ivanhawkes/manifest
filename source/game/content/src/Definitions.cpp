@@ -141,7 +141,8 @@ void RegisterTypes()
 		    .Field<&Core::ItemNode::basePrice>("basePrice", kDefined)
 		    .Field<&Core::ItemNode::unitType>("unitType", kDefined)
 		    .Field<&Core::ItemNode::density>("density", kDefined)
-		    .Field<&Core::ItemNode::packFactor>("packFactor", kDefined);
+		    .Field<&Core::ItemNode::packFactor>("packFactor", kDefined)
+		    .Field<&Core::ItemNode::licensed>("licensed", kDefined);
 		RegisterType<Core::Prerequisite>("Manifest.Prerequisite")
 		    .Field<&Core::Prerequisite::nodeId>("nodeId", kDefined)
 		    .Field<&Core::Prerequisite::requiredTier>("requiredTier", kDefined);
@@ -231,6 +232,8 @@ void RegisterTypes()
 		    .Field<&FuelTuning::reactionMassItemId>("reactionMassItemId", kDefined)
 		    .Field<&FuelTuning::thrustSharesBps>("thrustSharesBps", kDefined)
 		    .Field<&FuelTuning::legAllowanceSeconds>("legAllowanceSeconds", kDefined);
+		RegisterType<LicenceTuning>("Manifest.LicenceTuning")
+		    .Field<&LicenceTuning::feeCredits>("feeCredits", kDefined);
 		RegisterType<CompanyTuning>("Manifest.CompanyTuning")
 		    .Field<&CompanyTuning::startingCredits>("startingCredits", kDefined)
 		    .Field<&CompanyTuning::foundingPrice>("foundingPrice", kDefined);
@@ -292,6 +295,7 @@ void RegisterTypes()
 		    .Field<&TuningDefinition::lifeSupport>("lifeSupport", kDefined)
 		    .Field<&TuningDefinition::fuel>("fuel", kDefined)
 		    .Field<&TuningDefinition::company>("company", kDefined)
+		    .Field<&TuningDefinition::licence>("licence", kDefined)
 		    .Field<&TuningDefinition::market>("market", kDefined)
 		    .Field<&TuningDefinition::charges>("charges", kDefined)
 		    .Field<&TuningDefinition::brokers>("brokers", kDefined)

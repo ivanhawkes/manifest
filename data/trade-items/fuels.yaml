@@ -74,7 +74,8 @@ item-base:
 
   # The pulse drive's fuel (W22b): a pulse unit, a small bomb and its propellant, traded by the unit,
   # eight to the cubic metre, a tote each, so 100 kg a unit at its density and pack factor. Priced so
-  # the pulse drive costs about the hauler's a tonne-km/s (docs/ships-plan.md, "Its price").
+  # the pulse drive costs about the hauler's a tonne-km/s (docs/ships-plan.md, "Its price"). Licensed:
+  # sold only at a polity's venues, to a company that polity licenses.
   - item:
       itemId: ItemPulseUnits
       categoryId: CategoryFuels
@@ -86,6 +87,7 @@ item-base:
       unitType: Unit
       density: 1.6
       packFactor: 0.5
+      licensed: true
 
   - item:
       itemId: ItemCoal

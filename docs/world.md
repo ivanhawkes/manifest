@@ -119,7 +119,7 @@ entity that carries them (`source/game/world/include/manifest/world/State.h`):
 | --- | --- | --- | --- |
 | every hosted entity | `Identity` | its kind and ID | this document |
 | a principal | `Principal`, `Reports` | the display name and `npc`; the player's market reports, by venue | [trading](trading.md) |
-| a company | `Company`, `Stock`, `Paid` | its principal and name; its goods at each venue, available and reserved; the last price it paid for each item | [companies](companies.md) |
+| a company | `Company`, `Stock`, `Paid`, `Licences` | its principal and name; its goods at each venue, available and reserved; the last price it paid for each item; the polities licensing it | [companies](companies.md) |
 | an organisation | `Organisation` | its kind and name, and the principal who directs it (empty for the AI's) | [governance](governance.md) |
 | a region | `Region`, `Knowledge`, `Facilities`, `Development` | planet, civilisation, governor, population, health, happiness; skills and recipes; facilities; a player governor's development policy | [governance](governance.md), [economy](economy.md) |
 | an account | `Account` | whole credits | this document |

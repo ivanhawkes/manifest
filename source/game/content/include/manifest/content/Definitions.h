@@ -223,6 +223,13 @@ struct CompanyTuning
 	std::int64_t foundingPrice{0};
 };
 
+// A polity's licence to buy its venues' licensed goods (W22b): what an AI polity grants it for, in
+// whole credits.
+struct LicenceTuning
+{
+	std::int64_t feeCredits{0};
+};
+
 // The hosted order book (D-083, D-085).
 struct MarketTuning
 {
@@ -357,6 +364,7 @@ struct TuningDefinition
 	LifeSupportTuning lifeSupport;
 	FuelTuning fuel;
 	CompanyTuning company;
+	LicenceTuning licence;
 	MarketTuning market;
 	ChargesTuning charges;
 	BrokerTuning brokers;

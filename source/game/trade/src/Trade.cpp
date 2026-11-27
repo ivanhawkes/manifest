@@ -186,6 +186,9 @@ struct Rules
 	std::int64_t perTaxCredit{0};
 	Content::ProductionTuning production;
 	Content::ConditionTuning condition;
+
+	// The content, for who may buy a licensed item (MayBuy).
+	const Content::ContentSet *pContent{nullptr};
 };
 
 
@@ -216,6 +219,7 @@ std::shared_ptr<const Rules> MakeRules(
 		throw std::invalid_argument{"the content set has no scenario selected"};
 	const Content::ScenarioDefinition &scenario = selected->second;
 	auto rules = std::make_shared<Rules>(identities);
+	rules->pContent = &content;
 
 	std::map<std::string, const Core::ItemNode *, std::less<>> items;
 	for (const Content::ItemSelection &selection : scenario.items)
@@ -587,6 +591,13 @@ Result Post(SimWorld &world, const Rules &rules, World::Order order, bool rests 
 	order.feeBps = rules.feeBps;
 	order.escrow = 0;
 	order.expiresStep = rules.lifeSteps == 0 ? 0 : step + rules.lifeSteps;
+
+	// A licensed item only the venue sells, and only to a company its operator licenses.
+	if (order.ownerKind == Kind::Company &&
+	    (order.side == Side::Sell
+	         ? Licensed(*rules.pContent, order.itemId)
+	         : !MayBuy(registry, rules.identities, *rules.pContent, order.ownerId, order.venueId, order.itemId)))
+		return Result::NotAuthorised;
 	Ledger ledger{registry, rules.identities};
 
 	if (order.side == Side::Sell)
@@ -1948,6 +1959,46 @@ void Register(
 	    {.next = [](const SimWorld &) { return std::numeric_limits<std::uint64_t>::max(); },
 	     .skip = [rules](SimWorld &target, std::uint64_t, double)
 	     { Observe(target, *rules, target.Clock().Step()); }});
+}
+
+
+bool Licensed(const Content::ContentSet &content, std::string_view itemId)
+{
+	const auto item = std::ranges::find(content.gameMode.items, itemId, &Core::ItemNode::itemId);
+	return item != content.gameMode.items.end() && item->licensed;
+}
+
+
+bool MayBuy(
+    const entt::registry &registry, const World::Identities &identities,
+    const Content::ContentSet &content, std::string_view companyId, std::string_view venueId,
+    std::string_view itemId)
+{
+	if (!Licensed(content, itemId))
+		return true;
+	const auto selected = content.scenarios.find(content.scenario);
+	if (selected == content.scenarios.end())
+		return false;
+	const auto venue =
+	    std::ranges::find(selected->second.venues, venueId, &Content::VenueDefinition::venueId);
+	const entt::entity company = identities.Find(Kind::Company, std::string{companyId});
+	const auto *pLicences =
+	    company == entt::null ? nullptr : registry.try_get<const World::Licences>(company);
+	return venue != selected->second.venues.end() && pLicences &&
+	       std::ranges::find(pLicences->polities, venue->operatorId) != pLicences->polities.end();
+}
+
+
+void CancelAt(
+    SimWorld &world, World::Identities &identities, Kind kind, const std::string &id,
+    const std::string &venueId, const std::string &itemId)
+{
+	std::vector<std::pair<std::uint64_t, entt::entity>> resting;
+	for (const entt::entity entity : Listing(world.Registry(), venueId, itemId))
+		if (const auto &order = world.Registry().get<const World::Order>(entity);
+		    order.ownerKind == kind && order.ownerId == id)
+			resting.emplace_back(order.sequence, entity);
+	RetireAll(world.Registry(), identities, std::move(resting));
 }
 
 

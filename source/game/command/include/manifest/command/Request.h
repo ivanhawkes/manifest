@@ -71,7 +71,9 @@ enum class Result
 	InsideRadius,
 	NoCourse,
 	// Travel to a venue no pad of which the ship's hull fits (W22b).
-	NoPadFits
+	NoPadFits,
+	// A licence applied for that the company holds already (W22b).
+	AlreadyLicensed
 };
 
 enum class ActorKind

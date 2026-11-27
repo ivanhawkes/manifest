@@ -124,6 +124,11 @@ company:
   # value, some eight starters' worth, so a player trades a while before founding.
   foundingPrice: 200000
 
+# A polity's licence to buy pulse units at its venues (W22b): what an AI polity grants it for, in whole
+# credits, paid to the treasuries of the regions it governs: two cargo-hold upgrades.
+licence:
+  feeCredits: 50000
+
 market:
   # What a venue takes from each side of a fill, in basis points of its gross (D-083).
   listingFeeBps: 40

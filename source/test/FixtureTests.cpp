@@ -657,7 +657,7 @@ TEST_CASE("The trading fixture's loop, saved in flight with a bid resting and re
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves with
 	// what a save holds, the fixture's content or stream, or the engine's movement or save format.
-	CHECK(hosted.world.StateHash() == 0x28b9dd5aeee62408ULL);
+	CHECK(hosted.world.StateHash() == 0x26a658c52c88e821ULL);
 }
 
 
@@ -710,7 +710,7 @@ TEST_CASE("The trading fixture's loop, backed up in flight with a bid resting an
 	// Served on from the restore, through the journal, it reaches the loop's own world.
 	FromCruise(restored);
 	CheckLedger(restored);
-	CHECK(restored.world.StateHash() == 0x28b9dd5aeee62408ULL);
+	CHECK(restored.world.StateHash() == 0x26a658c52c88e821ULL);
 }
 
 
@@ -902,7 +902,7 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 	CHECK(replayed.world.StateHash() == hosted.world.StateHash());
 
 	// The same in every build the gate runs; it moves as the fixture's does.
-	CHECK(hosted.world.StateHash() == 0x93d55cff8e731436ULL);
+	CHECK(hosted.world.StateHash() == 0x786f7a042a5db00cULL);
 }
 
 
@@ -1555,6 +1555,158 @@ TEST_CASE("A standing policy flies the pulse carrier between the yards, passing 
 }
 
 
+// Ada provisioned in the pulse carrier at Ore's yards, her company funded for a licence and a lot, her
+// magazine spent: its ship's ID.
+std::string Carrier(Hosted &hosted)
+{
+	REQUIRE(
+	    hosted.Run(
+	        kHost, Company::kProvision, Company::kVersion,
+	        Company::Provision{"Ada", "Ada", "Ada Co"}) == Result::Succeeded);
+	entt::registry &registry = hosted.world.Registry();
+	const CompanyView ada = hosted.Seen();
+	registry.patch<World::Account>(
+	    hosted.services.identities.Find(Kind::CompanyAccount, ada.companyId),
+	    [](World::Account &account) { account.balance = 10'000'000; });
+	registry.patch<World::Fuel>(
+	    hosted.services.identities.Find(Kind::Ship, ada.ships.at(0).shipId),
+	    [](World::Fuel &fuel) { fuel.pellets = 0.0; });
+	return ada.ships.at(0).shipId;
+}
+
+
+TEST_CASE("Pulse units are sold only under their venue's polity's licence, by command and by refuelling")
+{
+	Hosted hosted{MANIFEST_MOD_DIRECTORY, {MANIFEST_FIXTURE_OVERLAY, MANIFEST_CARRIER_OVERLAY}};
+	const std::string shipId = Carrier(hosted);
+	entt::registry &registry = hosted.world.Registry();
+	const Manifest::Content::ContentSet &content = hosted.services.fleet.Content();
+	const entt::entity ship = hosted.services.identities.Find(Kind::Ship, shipId);
+	const std::string companyId = hosted.Seen().companyId;
+	constexpr std::string_view kYards = "VenueOreYards";
+	constexpr std::string_view kUnits = "ItemPulseUnits";
+	constexpr std::string_view kAuthority = "OrganisationAnvilPortAuthority";
+	const std::int64_t ask = hosted.Quote(kYards, kUnits).Ask();
+	const Travel::Travel away{shipId, "VenueBrineYards", 20, 500};
+	const auto estimated = [&]
+	{
+		return Manifest::Policy::EstimateRoute(
+		           registry, hosted.services.identities, content, ship, {}, "VenueBrineYards", 20, 0.0)
+		    .fuelled;
+	};
+
+	// Unlicensed: a buy refused, a refuel that buys none, the leg estimated unfuelled, and its policy
+	// loading nothing.
+	CHECK(hosted.Place(kYards, kUnits, Side::Buy, 10, ask) == Result::NotAuthorised);
+	CHECK(hosted.Run(kAda, Travel::kTravel, Travel::kVersion, away) == Result::InsufficientFuel);
+	CHECK(hosted.Ship1().fuel.pellets == 0.0);
+	CHECK(hosted.Ship1().cargo.empty());
+	CHECK_FALSE(estimated());
+
+	// Licensed by the Port Authority, which governs no region, so its fee is paid to no one.
+	const std::int64_t before = hosted.Seen().credits;
+	REQUIRE(
+	    hosted.Run(kAda, Company::kApply, Company::kVersion, Company::Apply{std::string{kAuthority}}) ==
+	    Result::Succeeded);
+	CHECK(hosted.Seen().credits == before - content.tuning.licence.feeCredits);
+	CHECK(hosted.Seen().licences == std::vector<std::string>{std::string{kAuthority}});
+	CHECK(
+	    hosted.Run(kAda, Company::kApply, Company::kVersion, Company::Apply{std::string{kAuthority}}) ==
+	    Result::AlreadyLicensed);
+	CHECK(
+	    hosted.Run(kAda, Company::kApply, Company::kVersion, Company::Apply{"OrganisationNowhere"}) ==
+	    Result::UnknownTarget);
+	CHECK(estimated());
+
+	// A buy fills; its units are not the company's to sell back.
+	REQUIRE(hosted.Place(kYards, kUnits, Side::Buy, 10, ask) == Result::Succeeded);
+	CHECK(Held(hosted.Seen(), kYards, kUnits).available == 10);
+	CHECK(hosted.Place(kYards, kUnits, Side::Sell, 10, ask) == Result::NotAuthorised);
+
+	// Revoked, its buy resting at the yards is cancelled, its escrow returned, and with its magazine
+	// spent the carrier is estimated unfuelled again and its policy loads nothing.
+	const std::int64_t resting = hosted.Seen().credits;
+	REQUIRE(hosted.Place(kYards, kUnits, Side::Buy, 100, 1) == Result::Succeeded);
+	REQUIRE(hosted.Seen().orders.size() == 1);
+	CHECK(hosted.Seen().credits < resting);
+	Company::Revoke(hosted.world, hosted.services.identities, content, companyId, std::string{kAuthority});
+	CHECK(hosted.Seen().orders.empty());
+	CHECK(hosted.Seen().credits == resting);
+	CHECK(hosted.Seen().licences.empty());
+	CHECK_FALSE(estimated());
+	REQUIRE(
+	    hosted.Run(
+	        kAda, Manifest::Policy::kSet, Manifest::Policy::kVersion,
+	        Manifest::Policy::Set{shipId, true, 0, 0}) == Result::Succeeded);
+	CHECK(hosted.Ship1().cargo.empty());
+	CHECK(registry.get<const World::Job>(ship).totes == 0);
+	REQUIRE(
+	    hosted.Run(
+	        kAda, Manifest::Policy::kSet, Manifest::Policy::kVersion,
+	        Manifest::Policy::Set{shipId, false, 0, 0}) == Result::Succeeded);
+
+	// Licensed again, a journey refuels its magazine by the unit and flies.
+	REQUIRE(
+	    hosted.Run(kAda, Company::kApply, Company::kVersion, Company::Apply{std::string{kAuthority}}) ==
+	    Result::Succeeded);
+	CHECK(hosted.Run(kAda, Travel::kTravel, Travel::kVersion, away) == Result::Succeeded);
+	CHECK(hosted.Ship1().fuel.pellets > 0.0);
+}
+
+
+TEST_CASE("A player's polity grants a company its licence and revokes it, through a save")
+{
+	Hosted hosted{MANIFEST_MOD_DIRECTORY};
+	hosted.Bootstrap();
+	entt::registry &registry = hosted.world.Registry();
+	const std::string companyId = hosted.Seen().companyId;
+	registry.patch<World::Account>(
+	    hosted.services.identities.Find(Kind::CompanyAccount, companyId),
+	    [](World::Account &account) { account.balance = 1'000'000; });
+	REQUIRE(
+	    hosted.Run(
+	        kAda, Company::kFound, Company::kVersion,
+	        Company::Found{"RegionOreHighlands", companyId, "Highlands"}) == Result::Succeeded);
+	const std::string polity =
+	    registry.get<const World::Region>(hosted.services.identities.Find(Kind::Region, "RegionOreHighlands"))
+	        .governorId;
+
+	// Its director grants it, free, and no one else may; an AI polity's licence is applied for.
+	const std::int64_t before = hosted.Seen().credits;
+	const Actor bea{ActorKind::Principal, "Bea"};
+	REQUIRE(
+	    hosted.Run(kHost, Company::kProvision, Company::kVersion, Company::Provision{"Bea", "Bea", "Bea Co"}) ==
+	    Result::Succeeded);
+	CHECK(
+	    hosted.Run(bea, Company::kSetLicence, Company::kVersion, Company::SetLicence{polity, companyId, true}) ==
+	    Result::NotAuthorised);
+	REQUIRE(
+	    hosted.Run(kAda, Company::kSetLicence, Company::kVersion, Company::SetLicence{polity, companyId, true}) ==
+	    Result::Succeeded);
+	CHECK(hosted.Seen().licences == std::vector<std::string>{polity});
+	CHECK(hosted.Seen().credits == before);
+	CHECK(
+	    hosted.Run(kAda, Company::kApply, Company::kVersion, Company::Apply{polity}) == Result::NotAuthorised);
+
+	// Saved and loaded, it holds; then revoked.
+	Hosted loaded{MANIFEST_MOD_DIRECTORY};
+	loaded.Load(hosted.world.Save());
+	CHECK(loaded.Seen().licences == std::vector<std::string>{polity});
+	REQUIRE(
+	    loaded.Run(kAda, Company::kSetLicence, Company::kVersion, Company::SetLicence{polity, companyId, false}) ==
+	    Result::Succeeded);
+	CHECK(loaded.Seen().licences.empty());
+
+	// A save holding a licence of no polity is refused.
+	registry.get<World::Licences>(hosted.services.identities.Find(Kind::Company, companyId)).polities = {
+	    "OrganisationNowhere"};
+	Hosted refused{MANIFEST_MOD_DIRECTORY};
+	CHECK_THROWS_WITH_AS(
+	    refused.world.Load(hosted.world.Save()), doctest::Contains("no polity"),
+	    Jettison::Serialise::FormatError);
+}
+
+
 // Prices settling over a long run (D-102): with Ada and Nia trading on their standing policies,
 // eight days leave every broker's stock of every good, so its prices, about its target, the
 // seeded stock: never below half of it, a tote spared a small target's rounding, nor past twice it.
@@ -2142,7 +2294,7 @@ TEST_CASE("The governance fixture's project, tendered, supplied, worked and unlo
 
 	// The same in every build the gate runs; it moves with what a save holds, the governance
 	// scenario's content or the stream.
-	CHECK(hosted.world.StateHash() == 0xd401671b3e597a03ULL);
+	CHECK(hosted.world.StateHash() == 0x72978768483c76f3ULL);
 }
 
 
@@ -2498,5 +2650,5 @@ TEST_CASE(
 
 	// The same in every build the gate runs; it moves with what a save holds, the governance
 	// scenario's content or the stream.
-	CHECK(hosted.world.StateHash() == 0x9d9328297c55fa27ULL);
+	CHECK(hosted.world.StateHash() == 0x5c2b6c0464d82312ULL);
 }

@@ -35,7 +35,8 @@ Snapshot Observe(
 		     registry.get<World::Stock>(entity).holdings,
 		     {},
 		     {},
-		     {}});
+		     {},
+		     Copied(registry.try_get<World::Licences>(entity)).value_or(World::Licences{}).polities});
 	}
 	std::ranges::sort(snapshot.companies, {}, &CompanyView::companyId);
 
