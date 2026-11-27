@@ -155,7 +155,8 @@ It is built in every preset with the engine's presentation (`MANIFEST_BUILD_CLIE
 
 - The content mounts as `base`, not `manifest`, so an overlay that `requires: manifest` does not
   mount in the client.
-- It is not in the [bundle](glossary.md#bundle) yet, and plays only a local world, not a server's.
+- It is not in the [bundle](glossary.md#bundle) yet, and plays only a local world, not a server's
+  ([L52](delivery-order.md#l52)).
 - Goods, ships and venues are shown by their IDs, not their names.
 - The Japanese font is one weight, Regular.
 - What is still to come is listed in [the graphical client](roadmap.md#the-graphical-client).

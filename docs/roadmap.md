@@ -137,7 +137,10 @@ Its first loop, L15a, is done ([history](history/tasks.md)): the composition, an
 market, travel, flight and service screens. What is still to come:
 
 - **Server play.** The client connected to a server as the token's actor, as the TUI connects,
-  rather than playing a local world alone.
+  rather than playing a local world alone. First as a tracer, one player trading on a dedicated server
+  ([L52](delivery-order.md#l52)); then the content checked against the server's, reconnecting and
+  resending a lost request, and choosing a server in the client
+  ([after the tracer](client-plan.md#after-the-tracer)).
 - **Owners' settings** ([L15b](delivery-order.md#l15b)). A venue's fees and a region's taxes shown and edited
   ([D-098](decision-ledger.md#d-098), with [L29](delivery-order.md#l29)), and station policy and
   ownership views ([L04](delivery-order.md#l04), [L05](delivery-order.md#l05)).
