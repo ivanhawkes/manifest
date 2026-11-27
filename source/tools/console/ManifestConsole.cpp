@@ -20,6 +20,8 @@
 #include <manifest/company/Company.h>
 #include <manifest/host/Locations.h>
 #include <manifest/host/Start.h>
+#include <manifest/policy/Policy.h>
+#include <manifest/procurement/Procurement.h>
 #include <manifest/query/Query.h>
 #include <manifest/remote/Keys.h>
 #include <manifest/trade/Trade.h>
@@ -90,6 +92,41 @@ double Days(std::uint64_t steps)
 std::string Price(std::int64_t raw)
 {
 	return sim::Decimal::FromRaw(raw).ToString();
+}
+
+
+// The most a count argument takes; the world's own rules bound it further.
+constexpr unsigned kMostCount = std::numeric_limits<unsigned>::max();
+
+// A thrust's percent of its cruise, in basis points.
+constexpr std::uint32_t kBpsPerPercent = World::kFullThrustBps / 100;
+constexpr unsigned kPercent = 100;
+
+
+// A whole number of credits, 0 or more, as the world's fees, budgets and totals are.
+std::int64_t ParseCredits(const std::string &text)
+{
+	std::int64_t value{};
+	const auto [end, error] = std::from_chars(text.data(), text.data() + text.size(), value);
+	if (error != std::errc{} || end != text.data() + text.size() || value < 0)
+		throw std::runtime_error{
+		    std::format("expected a whole number of credits, 0 or more, got '{}'", text)};
+	return value;
+}
+
+
+bool ParseSwitch(const std::string &text)
+{
+	if (text != "on" && text != "off")
+		throw std::runtime_error{std::format("expected on or off, got '{}'", text)};
+	return text == "on";
+}
+
+
+template <typename Payload> std::vector<std::byte> Encode(const Payload &payload, std::uint32_t version)
+{
+	return Jettison::Serialise::BinaryArchive::Write(
+	    payload, Jettison::Serialise::FormatVersion{version});
 }
 
 
@@ -175,6 +212,124 @@ std::string Describe(const Query::MarketView &market, std::uint64_t step)
 const Command::Actor kHost{Command::ActorKind::Administrator, "Host"};
 
 
+std::string_view OnOff(bool on)
+{
+	return on ? "on" : "off";
+}
+
+
+std::string Describe(const World::Fuel &fuel, const World::Fuel &tanks)
+{
+	return std::format(
+	    "\n    fuel: {:.3f} of {:.3f} kg of reaction mass, {:.3f} of {:.3f} kg of pellets",
+	    fuel.reactionMass, tanks.reactionMass, fuel.pellets, tanks.pellets);
+}
+
+
+std::string Describe(const World::Policy &policy)
+{
+	return std::format(
+	    "\n    policy: {}, target {} credits, loss allowance {} credits, {}, contracts {}",
+	    OnOff(policy.enabled), policy.targetProfit, policy.lossAllowance,
+	    policy.thrustBps == 0
+	        ? std::string{"thrust chosen with each trade"}
+	        : std::format("thrust {:g}%", static_cast<double>(policy.thrustBps) / kBpsPerPercent),
+	    OnOff(policy.contracts));
+}
+
+
+std::string Describe(const World::Job &job)
+{
+	std::string text = std::format("\n    job: {}", NameOf(job.phase));
+	if (!job.tenderId.empty())
+		text += std::format(" on tender {}", job.tenderId);
+	if (!job.itemId.empty())
+		text += std::format(", {} from {} to {}", job.itemId, job.sourceId, job.destinationId);
+	if (job.totes > 0)
+		text += std::format(
+		    ", {} totes aboard costing {} with {} in charges, {} of its allowance spent", job.totes,
+		    job.cost, job.charges, job.allowanceSpent);
+	text += std::format(
+	    ", estimated at {} credits, thrust {:g}%", job.estimate,
+	    static_cast<double>(job.thrustBps) / kBpsPerPercent);
+	if (job.blockage != World::Blockage::None)
+		text += std::format(", blocked by {} since step {}", NameOf(job.blockage), job.blockedSince);
+	if (job.blockage != World::Blockage::None || job.phase == World::Phase::Bidding)
+		text += std::format(", retrying at step {}", job.retry);
+	return text + std::format(
+	                  "\n      drawn with the lot: {:.3f} kg of oxygen, {:.3f} occupant-days of "
+	                  "cartridges, {:.3f} kg of reaction mass, {:.3f} kg of pellets",
+	                  job.oxygenKilograms, job.cartridgeDays, job.reactionMassKilograms,
+	                  job.pelletKilograms);
+}
+
+
+std::string Describe(const Query::BidView &view)
+{
+	const World::Bid &bid = view.bid;
+	return std::format(
+	    "\n  {}: a sealed bid of {} credits on {}, revision {}, accepted at step {} in order {}",
+	    view.bidId, bid.total, bid.tenderId, bid.revision, bid.step, bid.order);
+}
+
+
+std::string Describe(const Query::TenderView &view)
+{
+	const World::Tender &tender = view.tender;
+	std::string text = std::format(
+	    "\n  {}: {} for {}, {} totes of {} at {}, budget {} credits, {}, published at step {}, "
+	    "bids close at step {}, delivery in {} days",
+	    view.tenderId, tender.regionId,
+	    tender.projectId.empty() ? "relief of " + tender.needId : tender.projectId, tender.totes,
+	    tender.itemId, tender.venueId, tender.budget, NameOf(tender.state), tender.published,
+	    tender.bidClose, tender.deliveryDays);
+	if (tender.award != World::Award::None)
+		text += std::format(", award {}", NameOf(tender.award));
+	if (!tender.companyId.empty())
+		text += std::format(
+		    " to {} for {} credits, bond {}, {} of {} totes delivered, delivery closes at step {}",
+		    tender.companyId, tender.price, tender.bond, tender.delivered, tender.totes,
+		    tender.deliveryClose);
+	if (tender.closed != 0)
+		text += std::format(", closed at step {}", tender.closed);
+	return text;
+}
+
+
+std::string Describe(const Query::RegionView &region)
+{
+	std::string text = std::format(
+	    "\n  {} on {}: {}, population {:.0f}, health {:.1f}, happiness {:.1f}", region.regionId,
+	    region.planetId,
+	    region.governorId.empty() ? std::string{"open to founding"}
+	                              : std::format(
+	                                    "governed by {} ({}){}", region.governorName, region.governorId,
+	                                    region.playerGoverned ? ", a player's" : ""),
+	    region.population, region.health, region.happiness);
+	if (region.treasury)
+		text += std::format(", treasury {} credits", *region.treasury);
+	if (region.development)
+		text += std::format(
+		    "\n    development policy: tender {}, limit {} credits{}",
+		    OnOff(region.development->tender), region.development->limit,
+		    region.development->wait == World::DevelopmentWait::None
+		        ? std::string{}
+		        : std::format(", waiting: {}", NameOf(region.development->wait)));
+	for (const Query::ProjectView &view : region.queue)
+	{
+		const World::Project &project = view.project;
+		text += std::format(
+		    "\n    {}: {}, queued {}, worked {} steps", project.projectId, NameOf(project.phase),
+		    project.queued, project.worked);
+		for (const World::Holding &holding : view.stock)
+			text += std::format(
+			    "\n      at {}: {} {} totes available, {} reserved", holding.venueId, holding.itemId,
+			    holding.available, holding.reserved);
+	}
+	return text;
+}
+
+
 std::string Describe(const Query::Snapshot &snapshot, std::string_view as)
 {
 	std::ostringstream view;
@@ -197,6 +352,11 @@ std::string Describe(const Query::Snapshot &snapshot, std::string_view as)
 			view << "\n    hold of " << ship.hold << " totes";
 			for (const World::Fitting &fitting : ship.systems)
 				view << ", " << fitting.skillId << " tier " << fitting.tier;
+			view << Describe(ship.fuel, ship.fuelTanks);
+			if (ship.policy)
+				view << Describe(*ship.policy);
+			if (ship.job)
+				view << Describe(*ship.job);
 			for (const World::Lot &lot : ship.cargo)
 				view << "\n    " << lot.itemId << " " << lot.totes << " totes";
 			for (const World::Opened &opened : ship.opened)
@@ -219,11 +379,21 @@ std::string Describe(const Query::Snapshot &snapshot, std::string_view as)
 			view << "\n  " << orderId << ": " << (order.side == World::Side::Buy ? "buy " : "sell ")
 			     << order.itemId << " at " << order.venueId << ", " << order.remaining << " of "
 			     << order.totes << " totes left at " << Price(order.limit);
+		for (const Query::BidView &bid : company.bids)
+			view << Describe(bid);
 	}
 	if (!snapshot.markets.empty())
 		view << "\nmarkets (any other is unknown):";
 	for (const Query::MarketView &market : snapshot.markets)
 		view << Describe(market, snapshot.step);
+	if (!snapshot.tenders.empty())
+		view << "\ntenders:";
+	for (const Query::TenderView &tender : snapshot.tenders)
+		view << Describe(tender);
+	if (!snapshot.regions.empty())
+		view << "\nregions:";
+	for (const Query::RegionView &region : snapshot.regions)
+		view << Describe(region);
 	return view.str();
 }
 } // namespace
@@ -235,6 +405,8 @@ ManifestConsole::ManifestConsole(std::string contentSource, std::filesystem::pat
 	// A connected console writes these payloads with no hosted world to have registered them.
 	Trade::RegisterTypes();
 	Travel::RegisterTypes();
+	Policy::RegisterTypes();
+	Procurement::RegisterTypes();
 	RegisterCommands();
 	m_console.CaptureLog();
 }
@@ -326,6 +498,49 @@ void ManifestConsole::RegisterCommands()
 	    "their "
 	    "docked ship with their company's credits; the principal only when not connected",
 	    3, 4, [this](Arguments arguments) { return CommandFit(arguments); });
+	RegisterCommand(
+	    "policy",
+	    "policy [principal] <ship> on|off <target> <allowance> [thrust%] [on|off]: queues a player's "
+	    "standing trade policy for their ship: the credits a trade must make above its cost, the "
+	    "credits a sale may lose, the thrust of every leg (0, the default, for the job to choose) and "
+	    "whether it bids on tenders (off by default); the principal only when not connected",
+	    4, 7, [this](Arguments arguments) { return CommandPolicy(arguments); });
+	RegisterCommand(
+	    "refuel",
+	    "refuel [principal] <ship> on|off: queues whether a journey from a venue first refuels the "
+	    "player's ship; the principal only when not connected",
+	    2, 3, [this](Arguments arguments) { return CommandRefuel(arguments); });
+	RegisterCommand(
+	    "fees",
+	    "fees [principal] <venue> <occupant fee> <arrears rate bps> <class> <docking> <berth> "
+	    "[<class> <docking> <berth>]...: queues a venue operator's whole fees, every pad class of "
+	    "the venue in name order, in whole credits; the principal only when not connected",
+	    6, std::numeric_limits<std::size_t>::max(),
+	    [this](Arguments arguments) { return CommandFees(arguments); });
+	RegisterCommand(
+	    "found",
+	    "found [principal] <region> <company> <name>: queues a player's company founding a region "
+	    "no one governs; the principal only when not connected",
+	    3, 4, [this](Arguments arguments) { return CommandFound(arguments); });
+	RegisterCommand(
+	    "tender",
+	    "tender publish|cancel|bid|withdraw|deliver|abandon [principal] <operands>: queues a "
+	    "region's tender (publish <region> <project> <item> <venue> <totes> <budget> <bid days> "
+	    "<delivery days>; cancel <tender>) or a company's bid, withdrawal, delivery or abandoned "
+	    "contract (bid <tender> <company> <total> [revision]; withdraw <tender> <company>; deliver "
+	    "<tender> <ship>; abandon <tender>); the principal only when not connected",
+	    2, 10, [this](Arguments arguments) { return CommandTender(arguments); });
+	RegisterCommand(
+	    "project",
+	    "project queue|cancel [principal] <region> <project>: queues a governor's project onto a "
+	    "region's queue or out of it; the principal only when not connected",
+	    3, 4, [this](Arguments arguments) { return CommandProject(arguments); });
+	RegisterCommand(
+	    "development",
+	    "development [principal] <region> on|off <limit>: queues a region's standing development "
+	    "policy, whether the AI issuer tenders its head project's inputs within a limit of credits "
+	    "of live budgets; the principal only when not connected",
+	    3, 4, [this](Arguments arguments) { return CommandDevelopment(arguments); });
 	RegisterCommand(
 	    "book", "book <venue> [item]: the resting orders at a venue, as the host sees them", 1, 2,
 	    [this](Arguments arguments) { return CommandBook(arguments); });
@@ -759,6 +974,23 @@ ManifestConsole::Arguments ManifestConsole::Operands(
 }
 
 
+ManifestConsole::Arguments ManifestConsole::Operands(
+    Arguments arguments, std::size_t first, std::string_view head,
+    std::span<const std::string_view> names, std::size_t optional) const
+{
+	const std::size_t start = m_pRemote ? first : first + 1;
+	const std::size_t required = names.size() - optional;
+	std::string usage{head};
+	if (!m_pRemote)
+		usage += " <principal>";
+	for (std::size_t index = 0; index < names.size(); ++index)
+		usage +=
+		    index < required ? std::format(" <{}>", names[index]) : std::format(" [{}]", names[index]);
+	const std::size_t given = arguments.size() > start ? arguments.size() - start : 0;
+	return Operands(arguments, first, std::clamp(given, required, names.size()), usage);
+}
+
+
 std::string ManifestConsole::Queue(
     Arguments arguments, std::size_t first, std::string_view command, std::uint32_t version,
     std::span<const std::byte> payload)
@@ -824,7 +1056,6 @@ std::string ManifestConsole::CommandTravel(Arguments arguments)
 {
 	constexpr std::size_t kLeast = 2;
 	constexpr std::size_t kMost = 4;
-	constexpr unsigned kPercent = 100;
 
 	// A tenth of g, in the Decimal's raw millionths.
 	constexpr std::int64_t kRawTenthG = 100000;
@@ -881,6 +1112,152 @@ std::string ManifestConsole::CommandFit(Arguments arguments)
 	        ParseCount(operands, 2, 0, 1, std::numeric_limits<unsigned>::max())},
 	    Jettison::Serialise::FormatVersion{Company::kVersion});
 	return Queue(arguments, 0, Company::kUpgrade, Company::kVersion, payload);
+}
+
+
+std::string ManifestConsole::CommandPolicy(Arguments arguments)
+{
+	constexpr std::array<std::string_view, 6> kNames{"ship",      "on|off",  "target",
+	                                                 "allowance", "thrust%", "on|off"};
+	constexpr std::size_t kOptional = 2;
+	const Arguments operands = Operands(arguments, 0, "policy", kNames, kOptional);
+	World::Policy policy;
+	policy.enabled = ParseSwitch(operands[1]);
+	policy.targetProfit = ParseCredits(operands[2]);
+	policy.lossAllowance = ParseCredits(operands[3]);
+	policy.thrustBps = ParseCount(operands, 4, 0, 0, kPercent) * kBpsPerPercent;
+	policy.contracts = operands.size() > 5 && ParseSwitch(operands[5]);
+	return Queue(
+	    arguments, 0, Policy::kSet, Policy::kVersion,
+	    Encode(
+	        Policy::Set{
+	            operands[0], policy.enabled, policy.targetProfit, policy.lossAllowance,
+	            policy.thrustBps, policy.contracts},
+	        Policy::kVersion));
+}
+
+
+std::string ManifestConsole::CommandRefuel(Arguments arguments)
+{
+	constexpr std::array<std::string_view, 2> kNames{"ship", "on|off"};
+	const Arguments operands = Operands(arguments, 0, "refuel", kNames, 0);
+	return Queue(
+	    arguments, 0, Company::kSetRefuel, Company::kVersion,
+	    Encode(Company::SetRefuel{operands[0], ParseSwitch(operands[1])}, Company::kVersion));
+}
+
+
+std::string ManifestConsole::CommandFees(Arguments arguments)
+{
+	constexpr std::array<std::string_view, 3> kHead{"venue", "occupant fee", "arrears rate bps"};
+	constexpr std::array<std::string_view, 3> kClass{"class", "docking", "berth"};
+	const std::size_t given = arguments.size() - (m_pRemote ? 0 : 1);
+	const std::size_t classes = given > kHead.size() ? (given - kHead.size()) / kClass.size() : 0;
+	std::vector<std::string_view> names{kHead.begin(), kHead.end()};
+	for (std::size_t each = 0; each < std::max<std::size_t>(classes, 1); ++each)
+		names.insert(names.end(), kClass.begin(), kClass.end());
+
+	// A count that is not the head and whole classes is the usage, not a guess.
+	const Arguments operands = Operands(arguments, 0, "fees", names, 0);
+	World::Fees fees;
+	fees.berthPerOccupantHour = ParseCredits(operands[1]);
+	fees.arrearsRateBps = static_cast<int>(
+	    ParseCount(operands, 2, 0, 0, static_cast<unsigned>(std::numeric_limits<int>::max())));
+	for (std::size_t at = kHead.size(); at < operands.size(); at += kClass.size())
+		fees.classes.push_back(
+		    {operands[at], ParseCredits(operands[at + 1]), ParseCredits(operands[at + 2])});
+	return Queue(
+	    arguments, 0, Company::kSetFees, Company::kVersion,
+	    Encode(Company::SetFees{operands[0], std::move(fees)}, Company::kVersion));
+}
+
+
+std::string ManifestConsole::CommandFound(Arguments arguments)
+{
+	constexpr std::array<std::string_view, 3> kNames{"region", "company", "name"};
+	const Arguments operands = Operands(arguments, 0, "found", kNames, 0);
+	return Queue(
+	    arguments, 0, Company::kFound, Company::kVersion,
+	    Encode(Company::Found{operands[0], operands[1], operands[2]}, Company::kVersion));
+}
+
+
+std::string ManifestConsole::CommandTender(Arguments arguments)
+{
+	namespace Pro = Procurement;
+	const std::string &verb = arguments[0];
+	const auto operands =
+	    [&](std::string_view named, std::span<const std::string_view> names, std::size_t optional = 0)
+	{ return Operands(arguments, 1, std::format("tender {}", named), names, optional); };
+	const auto queue = [&](std::string_view command, const auto &payload)
+	{ return Queue(arguments, 1, command, Pro::kVersion, Encode(payload, Pro::kVersion)); };
+	if (verb == "publish")
+	{
+		constexpr std::array<std::string_view, 8> kNames{
+		    "region", "project", "item", "venue", "totes", "budget", "bid days", "delivery days"};
+		const Arguments o = operands(verb, kNames);
+		return queue(
+		    Pro::kPublish,
+		    Pro::Publish{
+		        o[0], o[1], o[2], o[3], ParseCount(o, 4, 0, 1, kMostCount), ParseCredits(o[5]),
+		        ParseCount(o, 6, 0, 1, kMostCount), ParseCount(o, 7, 0, 1, kMostCount)});
+	}
+	if (verb == "cancel" || verb == "abandon")
+	{
+		constexpr std::array<std::string_view, 1> kNames{"tender"};
+		const Arguments o = operands(verb, kNames);
+		return verb == "cancel" ? queue(Pro::kCancel, Pro::Cancel{o[0]})
+		                        : queue(Pro::kAbandon, Pro::Abandon{o[0]});
+	}
+	if (verb == "bid")
+	{
+		constexpr std::array<std::string_view, 4> kNames{"tender", "company", "total", "revision"};
+		const Arguments o = operands(verb, kNames, 1);
+		return queue(
+		    Pro::kBid, Pro::Bid{o[0], o[1], ParseCredits(o[2]), ParseCount(o, 3, 0, 0, kMostCount)});
+	}
+	if (verb == "withdraw")
+	{
+		constexpr std::array<std::string_view, 2> kNames{"tender", "company"};
+		const Arguments o = operands(verb, kNames);
+		return queue(Pro::kWithdraw, Pro::Withdraw{o[0], o[1]});
+	}
+	if (verb == "deliver")
+	{
+		constexpr std::array<std::string_view, 2> kNames{"tender", "ship"};
+		const Arguments o = operands(verb, kNames);
+		return queue(Pro::kDeliver, Pro::Deliver{o[0], o[1]});
+	}
+	throw std::runtime_error{
+	    std::format("expected publish, cancel, bid, withdraw, deliver or abandon, got '{}'", verb)};
+}
+
+
+std::string ManifestConsole::CommandProject(Arguments arguments)
+{
+	namespace Pro = Procurement;
+	if (arguments[0] != "queue" && arguments[0] != "cancel")
+		throw std::runtime_error{std::format("expected queue or cancel, got '{}'", arguments[0])};
+	constexpr std::array<std::string_view, 2> kNames{"region", "project"};
+	const Arguments o = Operands(arguments, 1, std::format("project {}", arguments[0]), kNames, 0);
+	return arguments[0] == "queue" ? Queue(
+	                                     arguments, 1, Pro::kQueue, Pro::kVersion,
+	                                     Encode(Pro::Queue{o[0], o[1]}, Pro::kVersion))
+	                               : Queue(
+	                                     arguments, 1, Pro::kCancelProject, Pro::kVersion,
+	                                     Encode(Pro::CancelProject{o[0], o[1]}, Pro::kVersion));
+}
+
+
+std::string ManifestConsole::CommandDevelopment(Arguments arguments)
+{
+	constexpr std::array<std::string_view, 3> kNames{"region", "on|off", "limit"};
+	const Arguments o = Operands(arguments, 0, "development", kNames, 0);
+	return Queue(
+	    arguments, 0, Procurement::kSetDevelopment, Procurement::kVersion,
+	    Encode(
+	        Procurement::SetDevelopment{o[0], ParseSwitch(o[1]), ParseCredits(o[2])},
+	        Procurement::kVersion));
 }
 
 

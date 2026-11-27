@@ -29,7 +29,8 @@ namespace Manifest::Tools
 // Rendering, refresh and transcripts belong to the frontend; no terminal is needed here.
 // Two kinds of command, kept apart: the sandbox's (generate, tick, upgrade and the rest) play the
 // local development simulation, which no player shares; the hosted ones (host, observe, provision,
-// cargo, trade, cancel, travel, step, stop) go through the hosted world's admission and queries, as a
+// cargo, trade, cancel, travel, service, fit, policy, refuel, fees, found, tender, project,
+// development, step, stop) go through the hosted world's admission and queries, as a
 // player's would, and book shows a venue's orders as the host sees them, a development view, where a
 // player's observe shows only their own market reports (W07). There is at most one hosted world, the
 // one host started, and nothing in the sandbox reaches it. Connected to a server (connect), observe and
@@ -149,6 +150,20 @@ class ManifestConsole
 
 	std::string CommandFit(Arguments arguments);
 
+	std::string CommandPolicy(Arguments arguments);
+
+	std::string CommandRefuel(Arguments arguments);
+
+	std::string CommandFees(Arguments arguments);
+
+	std::string CommandFound(Arguments arguments);
+
+	std::string CommandTender(Arguments arguments);
+
+	std::string CommandProject(Arguments arguments);
+
+	std::string CommandDevelopment(Arguments arguments);
+
 	std::string CommandBook(Arguments arguments);
 
 	std::string CommandStep(Arguments arguments);
@@ -176,6 +191,12 @@ class ManifestConsole
 	// when connected, as the actor is the token's. Throws the usage for any other count.
 	Arguments Operands(
 	    Arguments arguments, std::size_t first, std::size_t count, std::string_view usage) const;
+
+	// The same, for a form of named operands, the last `optional` of them optional: the usage lists
+	// them.
+	Arguments Operands(
+	    Arguments arguments, std::size_t first, std::string_view head,
+	    std::span<const std::string_view> names, std::size_t optional) const;
 
 	std::string Queue(
 	    Arguments arguments, std::size_t first, std::string_view command, std::uint32_t version,

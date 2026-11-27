@@ -441,6 +441,14 @@ TEST_CASE("Manifest console: connect plays on a server as the token's actor, and
 	    Execute(session, "status").text.find("connected: to " + endpoint + " as Ada") !=
 	    std::string::npos);
 
+	// The new commands send as the token's actor too, with no principal.
+	CHECK(Execute(session, "refuel Ada Ship1 off").kind == ConsoleLine::Kind::Error);
+	CHECK(Execute(session, "refuel Ship1 off").text == "Sent request 3 to the server.");
+	CHECK(await("queued").starts_with("Request 3 queued"));
+	CHECK(await("Request 3:", true) == "Request 3: Succeeded at step 3.");
+	CHECK(Execute(session, "policy Ship1 on 0 0 50 on").text == "Sent request 4 to the server.");
+	CHECK(Execute(session, "tender bid T Company1").kind == ConsoleLine::Kind::Error);
+
 	CHECK(Execute(session, "disconnect").text == "Disconnected from " + endpoint + ".");
 	CHECK(session.Connected() == nullptr);
 	CHECK(Execute(session, "disconnect").kind == ConsoleLine::Kind::Error);
@@ -659,6 +667,253 @@ TEST_CASE("Manifest console: a ship's hold and systems in the view, and an upgra
 	MANIFEST_CHECK_CONTAINS(
 	    Execute(session, "step").text, "Manifest.Company.Upgrade: InsufficientFunds");
 	MANIFEST_CHECK_CONTAINS(Execute(session, "observe Ada").text, "Company1 'Ada Co': 25000 credits");
+}
+
+
+namespace
+{
+// The staged content with a founding a new company can pay, its price 20,000 credits for the 25,000
+// it starts with, so that a test founds a region through the console.
+class CheapFoundingContent
+{
+  public:
+	CheapFoundingContent()
+	{
+		std::filesystem::copy(
+		    MANIFEST_MOD_DIRECTORY, m_directory.Path(), std::filesystem::copy_options::recursive);
+		const std::filesystem::path tuning =
+		    m_directory.Path() / "manifest" / "definitions" / "tuning" / "balance.yaml";
+		std::ifstream in{tuning};
+		std::string text{std::istreambuf_iterator<char>{in}, {}};
+		in.close();
+		const std::string price = "foundingPrice: 200000";
+		REQUIRE(text.find(price) != std::string::npos);
+		text.replace(text.find(price), price.size(), "foundingPrice: 20000");
+		std::ofstream{tuning} << text;
+	}
+
+
+	std::string Path() const
+	{
+		return m_directory.Path().string();
+	}
+
+  private:
+	ConfigDirectory m_directory;
+};
+
+
+// A hosted governance world with Ada's company provisioned and stepped once.
+void HostGovernance(ManifestConsole &session)
+{
+	REQUIRE(Execute(session, "host governance").kind == ConsoleLine::Kind::Output);
+	REQUIRE(Execute(session, "provision Ada \"Ada Co\"").kind == ConsoleLine::Kind::Output);
+	Execute(session, "step");
+}
+
+
+// The ID of the tender the snapshot lists whose ID starts with the key.
+std::string TenderFor(const std::string &view, std::string_view key)
+{
+	const std::size_t start = view.find(std::format("\n  {}", key));
+	REQUIRE(start != std::string::npos);
+	return view.substr(start + 3, view.find(": ", start) - start - 3);
+}
+} // namespace
+
+
+TEST_CASE("Manifest console: a ship's policy and refuelling sent, its fuel, policy and job in the view")
+{
+	ManifestConsole session{MANIFEST_MOD_DIRECTORY};
+	HostGovernance(session);
+	const std::string before = Execute(session, "observe Ada").text;
+	MANIFEST_CHECK_CONTAINS(before, "fuel: 4000.000 of 4000.000 kg of reaction mass");
+	MANIFEST_CHECK_CONTAINS(before, "kg of pellets");
+	CHECK(before.find("policy:") == std::string::npos);
+	CHECK(before.find("job:") == std::string::npos);
+	for (const std::string command :
+	     {"policy", "policy Ada Ship1 on", "policy Ada Ship1 maybe 0 0", "policy Ada Ship1 on -1 0",
+	      "policy Ada Ship1 on 0 0 101", "policy Ada Ship1 on 0 0 50 perhaps",
+	      "policy Ada Ship1 on 0 0 50 on 1", "refuel Ada Ship1", "refuel Ada Ship1 sometimes"})
+	{
+		CAPTURE(command);
+		CHECK(Execute(session, command).kind == ConsoleLine::Kind::Error);
+	}
+	MANIFEST_CHECK_CONTAINS(
+	    Execute(session, "policy Ada Ship1 on").text, "usage: policy [principal] <ship>");
+
+	MANIFEST_CHECK_CONTAINS(
+	    Execute(session, "policy Ada Ship1 on 100 50 80 on").text, "Ada's request 1");
+	MANIFEST_CHECK_CONTAINS(Execute(session, "refuel Ada Ship1 off").text, "Ada's request 2");
+	const std::string report = Execute(session, "step").text;
+	MANIFEST_CHECK_CONTAINS(report, "Manifest.Policy.Set: Succeeded");
+	MANIFEST_CHECK_CONTAINS(report, "Manifest.Company.SetRefuel: Succeeded");
+	const std::string after = Execute(session, "observe Ada").text;
+	MANIFEST_CHECK_CONTAINS(
+	    after, "policy: on, target 100 credits, loss allowance 50 credits, thrust 80%, contracts on");
+	MANIFEST_CHECK_CONTAINS(after, "job: ");
+	MANIFEST_CHECK_CONTAINS(after, "estimated at ");
+	MANIFEST_CHECK_CONTAINS(after, "drawn with the lot: ");
+
+	// Another company's ship is not theirs to set.
+	Execute(session, "provision Bea \"Bea Co\"");
+	Execute(session, "step");
+	Execute(session, "refuel Bea Ship1 on");
+	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Company.SetRefuel: NotAuthorised");
+	Execute(session, "policy Bea NoShip on 0 0");
+	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Policy.Set: UnknownTarget");
+}
+
+
+TEST_CASE("Manifest console: a governor founds a region, queues a project and tenders for it")
+{
+	const CheapFoundingContent content;
+	ManifestConsole session{content.Path()};
+	HostGovernance(session);
+	const std::string open = Execute(session, "observe Ada").text;
+	MANIFEST_CHECK_CONTAINS(open, "\n  RegionForgeNorth on PlanetForge: open to founding, population ");
+	for (const std::string command :
+	     {"found Ada RegionForgeNorth",
+	      "found Ada RegionForgeNorth Company1 a b",
+	      "project Ada RegionForgeNorth ProjectSmeltersGuild",
+	      "project dig Ada RegionForgeNorth X",
+	      "development Ada RegionForgeNorth on",
+	      "development Ada RegionForgeNorth maybe 1",
+	      "development Ada RegionForgeNorth on -1",
+	      "tender",
+	      "tender swap Ada X",
+	      "tender cancel Ada",
+	      "tender publish Ada RegionForgeNorth ProjectSmeltersGuild ItemCopper VenueForgeHighport 1",
+	      "tender publish Ada R P I V 0 100 2 3",
+	      "tender publish Ada R P I V 1 -5 2 3",
+	      "tender publish Ada R P I V 1 100 0 3",
+	      "tender bid Ada T Company1",
+	      "tender bid Ada T C 5 x",
+	      "tender bid Ada T C 5 1 2",
+	      "tender withdraw Ada T",
+	      "tender deliver Ada T",
+	      "tender abandon"})
+	{
+		CAPTURE(command);
+		CHECK(Execute(session, command).kind == ConsoleLine::Kind::Error);
+	}
+
+	// Founding pays the price from the company's credits and makes the player the region's governor.
+	Execute(session, "found Ada RegionForgeNorth Company1 \"Northern Republic\"");
+	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Company.Found: Succeeded");
+	const std::string founded = Execute(session, "observe Ada").text;
+	MANIFEST_CHECK_CONTAINS(founded, "Company1 'Ada Co': 5000 credits");
+	MANIFEST_CHECK_CONTAINS(
+	    founded, "RegionForgeNorth on PlanetForge: governed by Northern Republic (Organisation1), a "
+	             "player's");
+	MANIFEST_CHECK_CONTAINS(founded, ", treasury ");
+	Execute(session, "found Ada RegionForgeNorth Company1 Again");
+	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Company.Found: Governed");
+
+	Execute(session, "project queue Ada RegionForgeNorth ProjectSmeltersGuild");
+	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Procurement.Queue: Succeeded");
+	MANIFEST_CHECK_CONTAINS(
+	    Execute(session, "observe Ada").text,
+	    "\n    ProjectSmeltersGuild: Tendering, queued 1, worked 0 steps");
+
+	Execute(
+	    session,
+	    "tender publish Ada RegionForgeNorth ProjectSmeltersGuild ItemCopper VenueForgeHighport 1 "
+	    "6000 2 3");
+	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Procurement.Publish: Succeeded");
+	const std::string tendered = Execute(session, "observe Ada").text;
+	const std::string tender = TenderFor(tendered, "RegionForgeNorth:ProjectSmeltersGuild:ItemCopper:");
+	CHECK(tender.starts_with("RegionForgeNorth:ProjectSmeltersGuild:ItemCopper:"));
+	MANIFEST_CHECK_CONTAINS(
+	    tendered, std::format(
+	                  "{}: RegionForgeNorth for ProjectSmeltersGuild, 1 totes of ItemCopper at "
+	                  "VenueForgeHighport, budget 6000 credits, Open",
+	                  tender));
+	Execute(session, "tender cancel Ada " + tender);
+	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Procurement.Cancel: Succeeded");
+	MANIFEST_CHECK_CONTAINS(Execute(session, "observe Ada").text, tender + ": RegionForgeNorth for");
+	MANIFEST_CHECK_CONTAINS(
+	    Execute(session, "observe Ada").text,
+	    "totes of ItemCopper at VenueForgeHighport, budget 6000 credits, Cancelled");
+
+	Execute(session, "development Ada RegionForgeNorth on 150000");
+	MANIFEST_CHECK_CONTAINS(
+	    Execute(session, "step").text, "Manifest.Procurement.SetDevelopment: Succeeded");
+	MANIFEST_CHECK_CONTAINS(
+	    Execute(session, "observe Ada").text, "development policy: tender on, limit 150000 credits");
+
+	Execute(session, "project cancel Ada RegionForgeNorth ProjectSmeltersGuild");
+	MANIFEST_CHECK_CONTAINS(
+	    Execute(session, "step").text, "Manifest.Procurement.CancelProject: Succeeded");
+	MANIFEST_CHECK_CONTAINS(Execute(session, "observe Ada").text, "ProjectSmeltersGuild: Cancelled");
+}
+
+
+TEST_CASE("Manifest console: a company bids on a tender, sealed in its view, and withdraws")
+{
+	ManifestConsole session{MANIFEST_MOD_DIRECTORY};
+	HostGovernance(session);
+	const std::string tender = TenderFor(
+	    Execute(session, "observe Ada").text, "RegionForgeEast:ProjectBronzeMetallurgy:ItemCopper:");
+	CHECK(tender.starts_with("RegionForgeEast:ProjectBronzeMetallurgy:ItemCopper:"));
+
+	// A new bid is revision 0 and shows from 1; a replacement names the revision it replaces.
+	Execute(session, std::format("tender bid Ada {} Company1 50000", tender));
+	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Procurement.Bid: Succeeded");
+	const std::string bid =
+	    std::format(": a sealed bid of 50000 credits on {}, revision 1, accepted at step ", tender);
+	MANIFEST_CHECK_CONTAINS(Execute(session, "observe Ada").text, bid);
+	Execute(session, std::format("tender bid Ada {} Company1 40000 1", tender));
+	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Procurement.Bid: Succeeded");
+	MANIFEST_CHECK_CONTAINS(
+	    Execute(session, "observe Ada").text,
+	    std::format(": a sealed bid of 40000 credits on {}, revision 2,", tender));
+	Execute(session, std::format("tender bid Ada {} Company1 30000 1", tender));
+	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Procurement.Bid: StaleRevision");
+
+	// Another player does not see it, and the host sees every company's.
+	Execute(session, "provision Bea \"Bea Co\"");
+	Execute(session, "step");
+	CHECK(Execute(session, "observe Bea").text.find("sealed bid") == std::string::npos);
+	MANIFEST_CHECK_CONTAINS(Execute(session, "observe").text, "a sealed bid of 40000 credits");
+
+	// A contract is the award's: nothing here is awarded, so delivering and abandoning are closed.
+	Execute(session, std::format("tender deliver Ada {} Ship1", tender));
+	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Procurement.Deliver: Closed");
+	Execute(session, std::format("tender abandon Ada {}", tender));
+	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Procurement.Abandon: Closed");
+
+	Execute(session, std::format("tender withdraw Ada {} Company1", tender));
+	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Procurement.Withdraw: Succeeded");
+	CHECK(Execute(session, "observe Ada").text.find("sealed bid") == std::string::npos);
+}
+
+
+TEST_CASE(
+    "Manifest console: a venue's fees sent as its whole posted classes, refused to one who does not "
+    "operate it")
+{
+	ManifestConsole session{MANIFEST_MOD_DIRECTORY};
+	HostGovernance(session);
+	for (const std::string command :
+	     {"fees", "fees Ada VenueForgeHighport 2 100", "fees Ada VenueForgeHighport 2 100 shuttle 60",
+	      "fees Ada VenueForgeHighport 2 100 shuttle 60 12 titan",
+	      "fees Ada VenueForgeHighport x 100 shuttle 60 12",
+	      "fees Ada VenueForgeHighport 2 100 shuttle 60 -12",
+	      "fees Ada VenueForgeHighport 2 3000000000 shuttle 60 12"})
+	{
+		CAPTURE(command);
+		CHECK(Execute(session, command).kind == ConsoleLine::Kind::Error);
+	}
+	MANIFEST_CHECK_CONTAINS(
+	    Execute(session, "fees Ada VenueForgeHighport 2 100 shuttle 60").text,
+	    "usage: fees <principal> <venue> <occupant fee> <arrears rate bps> <class> <docking> <berth>");
+
+	// The AI runs the venue's operator, so no principal's fees are authorised.
+	MANIFEST_CHECK_CONTAINS(
+	    Execute(session, "fees Ada VenueForgeHighport 2 100 shuttle 60 12 titan 495000 99000").text,
+	    "Ada's request 1");
+	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Company.SetFees: NotAuthorised");
 }
 
 
