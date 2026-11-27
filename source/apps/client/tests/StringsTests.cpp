@@ -40,8 +40,8 @@ void Flatten(const YAML::Node &node, const std::string &prefix, Table &table)
 {
 	for (const auto &entry : node)
 	{
-		const std::string name = entry.first.as<std::string>();
-		const std::string key = prefix.empty() ? name : prefix + "." + name;
+		const auto name = entry.first.as<std::string>();
+		const std::string key = prefix.empty() ? name : std::format("{}.{}", prefix, name);
 		if (entry.second.IsMap())
 			Flatten(entry.second, key, table);
 		else
@@ -128,7 +128,7 @@ std::vector<std::string> Compare(const Table &base, std::string_view language, c
 			problems.push_back(std::format("{}: {} is missing", language, key));
 	for (const auto &[group, placeholders] : plurals)
 		for (const std::string &form : forms)
-			if (!table.contains(group + "." + form))
+			if (!table.contains(std::format("{}.{}", group, form)))
 				problems.push_back(std::format("{}: {}.{} is missing", language, group, form));
 	for (const auto &[key, text] : table)
 	{
