@@ -30,7 +30,8 @@ TEST_CASE("Manifest directory and pack expose identical content through the engi
 	REQUIRE_FALSE(screens.empty());
 	REQUIRE_FALSE(words.empty());
 	REQUIRE_FALSE(scene.empty());
-	REQUIRE_FALSE(fonts.empty());
+	// The client's Japanese font is fetched only where the client is built.
+	CHECK(fonts.empty() == !MANIFEST_HAS_CLIENT);
 	REQUIRE(
 	    files.size() == 1 + definitions.size() + scenarios.size() + scene.size() + screens.size() +
 	                        words.size() + fonts.size());

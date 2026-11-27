@@ -50,7 +50,8 @@ add_executable(manifest_mod_tests ModTests.cpp)
 target_link_libraries(manifest_mod_tests PRIVATE Jettison::Vfs yaml-cpp::yaml-cpp manifest_test_helpers doctest::doctest_with_main manifest_warnings)
 target_compile_definitions(manifest_mod_tests PRIVATE
     MANIFEST_MOD_DIRECTORY="${MANIFEST_MOD_DIRECTORY}"
-    MANIFEST_MOD_PACK="${MANIFEST_PACK}")
+    MANIFEST_MOD_PACK="${MANIFEST_PACK}"
+    MANIFEST_HAS_CLIENT=$<BOOL:${MANIFEST_BUILD_CLIENT}>)
 add_dependencies(manifest_mod_tests manifest_validate_pack)
 add_test(NAME mod COMMAND manifest_mod_tests)
 
