@@ -246,8 +246,8 @@ observe Ada
 
 The snapshot shows the ship's journey as it goes, for example
 `Ship1 HullLoneTraderStarter, undocked, Cruising to VenueBrineHighport`
-(`source/tools/console/tests/ManifestConsoleTests.cpp`). The console has no `SetRefuel` line, so
-refuelling stays on there.
+(`source/tools/console/tests/ManifestConsoleTests.cpp`). Refuelling is on until the console's
+`refuel <principal> <ship> off` turns it off.
 
 In C++, a test sends the command through the request ledger as a player would
 (`source/game/travel/tests/TravelTests.cpp`):

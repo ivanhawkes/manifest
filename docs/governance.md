@@ -275,9 +275,10 @@ or a project holding what it does not take ([what a load refuses](world.md#what-
 
 ## Using it
 
-There are no console or TUI commands for founding, queues, tenders or bids yet. The commands are
-sent through `Command::Requests` by a client or a test, and the tenders and regions read from the
-snapshot.
+The console and the TUI send each command: `found`, `project queue` and `cancel`, `development`,
+and `tender publish`, `cancel`, `bid`, `withdraw`, `deliver` and `abandon` ([the console](console.md#the-commands)),
+and `observe` prints the tenders and the regions from the snapshot. A client or a test sends them
+through `Command::Requests`.
 
 A project and its recipe, from `data/tuning/balance.yaml`:
 

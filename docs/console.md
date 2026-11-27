@@ -2,7 +2,7 @@
 
 The development console is how a developer or an administrator drives Manifest without a graphical
 client. The terminal UI is mainly for administration, but it can also play the first loop: a
-player's commands all run from it ([L44](delivery-order.md#l44) adds those it lacks), while most
+player's commands all run from it, while most
 players play in the [graphical client](roadmap.md#the-graphical-client). The console types
 commands at a [hosted world](glossary.md#hosted-world), the same world a server runs, and reads
 back what a player would see. It also drives the older [sandbox](glossary.md#sandbox) simulation,
@@ -18,7 +18,7 @@ tests drive them as text with no screen at all.
 | The console | `Manifest::Tools::ManifestConsole`, a library of commands (`manifest_console`). It registers them with the engine's [console](../../jettison/docs/glossary.md#console) and draws nothing. |
 | The terminal UI | `manifest_tui`, an [FTXUI](https://github.com/ArthurSonzogni/FTXUI) program that shows the console, its scrollback and a status pane, and keeps a transcript. |
 | Sandbox commands | `generate`, `list`, `show`, `prices`, `plan`, `tick`, `skills`, `upgrade`. They play a local development simulation that no player shares ([the sandbox](sandbox.md)). |
-| Hosted commands | `host`, `observe`, `provision`, `cargo`, `trade`, `cancel`, `travel`, `service`, `fit`, `book`, `step`, `stop`. They drive one hosted world through its [admission](glossary.md#admission) and queries, as a player's client would. |
+| Hosted commands | `host`, `observe`, `provision`, `cargo`, `trade`, `cancel`, `travel`, `service`, `fit`, `policy`, `refuel`, `fees`, `found`, `tender`, `project`, `development`, `book`, `step`, `stop`. They drive one hosted world through its [admission](glossary.md#admission) and queries, as a player's client would. |
 | Connected | After `connect`, the players' commands and `observe` go to a server instead, as the [token](glossary.md#token)'s [actor](glossary.md#actor). |
 | A run | A `step` too long to finish at once. It goes on a slice at a time, beside the console, until it ends or `stop`. |
 | The transcript | The TUI's record of every command and every line it printed, appended to a file. |
@@ -104,14 +104,24 @@ sequenceDiagram
 | `travel` | `Manifest.Travel.Travel` |
 | `service refill`, `service replace` | `Manifest.Company.Refill`, `Manifest.Company.Replace` |
 | `fit` | `Manifest.Company.Upgrade` |
+| `policy` | `Manifest.Policy.Set` |
+| `refuel` | `Manifest.Company.SetRefuel` |
+| `fees` | `Manifest.Company.SetFees` |
+| `found` | `Manifest.Company.Found` |
+| `tender publish`, `cancel`, `bid`, `withdraw`, `deliver`, `abandon` | `Manifest.Procurement.Publish`, `Cancel`, `Bid`, `Withdraw`, `Deliver`, `Abandon` |
+| `project queue`, `project cancel` | `Manifest.Procurement.Queue`, `CancelProject` |
+| `development` | `Manifest.Procurement.SetDevelopment` |
 
 The commands' rules belong to their modules: [companies](companies.md), [trading](trading.md),
-[travel](travel.md) and [stations](stations.md).
+[travel](travel.md), [stations](stations.md), [policies](policies.md) and
+[governance](governance.md).
 
 `observe [principal]` prints `Query::Observe`'s [snapshot](glossary.md#snapshot-query) for that
 principal, or for the administrator with none. It shows the company's credits and holdings, each
-ship (dock, journey, hold, systems, cargo, opened totes, life support) and resting orders, then the
-player's [market reports](glossary.md#report-market), live or stale with their age. `book <venue>
+ship (dock, journey, hold, systems, fuel, policy, job, cargo, opened totes, life support), resting
+orders and sealed bids, then the player's [market reports](glossary.md#report-market), live or stale
+with their age, every tender, and every region with its governor, condition and, to its governor and
+the host, its treasury, development policy and project queue. `book <venue>
 [item]` is the host's development view instead: every resting order at the venue, by item, asks
 then bids, best price first, with its owner ([D-095](decision-ledger.md#d-095)).
 
@@ -227,12 +237,24 @@ no display, GPU or Vulkan loader ([the host and the distribution](host.md)).
 | `travel [principal] <ship> <venue> [thrust%] [g]` | Queues a journey: the share of the cruise the engines thrust (100 by default) and the acceleration in tenths of g (1 by default) |
 | `service refill\|replace [principal] <ship>` | Queues an oxygen refill or a cartridge replacement from the hold |
 | `fit [principal] <ship> <offer> <tier>` | Queues the purchase of an offer's tier for a docked ship |
+| `policy [principal] <ship> on\|off <target> <allowance> [thrust%] [on\|off]` | Queues a ship's standing policy: the credits a trade must make above its cost, the credits a sale may lose, the thrust of every leg (0, the default, for the job to choose) and whether it bids on tenders (off by default) |
+| `refuel [principal] <ship> on\|off` | Queues whether a journey first refuels the ship |
+| `fees [principal] <venue> <occupant fee> <arrears bps> <class> <docking> <berth> ...` | Queues a venue operator's whole fees: the occupant's hourly fee, the arrears rate, then a class, its docking fee and its hourly berth fee for each of the venue's pad classes in name order, all whole credits |
+| `found [principal] <region> <company> <name>` | Queues the company's founding of a region no one governs |
+| `tender publish [principal] <region> <project> <item> <venue> <totes> <budget> <bid days> <delivery days>` | Queues a governor's tender for a project's input |
+| `tender cancel\|abandon [principal] <tender>` | Queues a governor's cancel of an open tender, or a company's abandoning of its contract |
+| `tender bid [principal] <tender> <company> <total> [revision]` | Queues a sealed bid: revision 0, the default, for a new one, the bid's current revision to replace it |
+| `tender withdraw [principal] <tender> <company>` | Queues the withdrawal of a bid |
+| `tender deliver [principal] <tender> <ship>` | Queues a delivery to the company's contract from a docked ship |
+| `project queue\|cancel [principal] <region> <project>` | Queues a project onto a governed region's queue, or out of it |
+| `development [principal] <region> on\|off <limit>` | Queues the region's standing development policy: whether the AI issuer tenders its head project's inputs, within a limit in credits of live budgets |
 | `book <venue> [item]` | The host's view of a venue's resting orders |
 | `step [count\|time]`, `stop` | Advances the hosted world; ends a run |
 | `connect <host:port> <token>`, `disconnect` | Plays on a server; leaves it |
 | `quit`, `exit` | Ends the session |
 
-The principal argument is given only when not connected.
+The principal argument is given only when not connected. A tender's ID, such as `RegionForgeEast:ProjectBronzeMetallurgy:ItemCopper:1`, is read off `observe`; each
+command's refusals are the world's, reported at the next step.
 
 ### A session on the trading scenario
 
@@ -318,11 +340,9 @@ ConsoleLine Execute(ManifestConsole &session, std::string_view command)
 
 - The TUI retries nothing: a player whose request was lost in a dropped connection sends it again
   by hand ([L41](delivery-order.md#l41)).
-- The console has no commands for standing policies (`Manifest.Policy.Set`), founding
-  (`Manifest.Company.Found`), station fees and refuelling (`SetFees`, `SetRefuel`) or tenders
-  and projects (`Manifest.Procurement.*`). Their suites drive them in C++.
-- `observe` prints only part of the snapshot: not a ship's fuel, policy or job, a company's
-  sealed bids, the tenders or the regions.
+- The snapshot holds neither a venue's fees nor a ship's refuelling switch ([L47](delivery-order.md#l47)
+  adds the fees), so `observe` shows neither: `fees` needs the venue's pad classes from its content,
+  and `refuel` is read back only from a journey's cost.
 - A server's time cannot be paused or scaled from a client: no message carries it.
 - The graphical client is open work ([L15](delivery-order.md#l15)).
 
@@ -347,7 +367,7 @@ be is in the records: [A06](history/stage-3.md#a06-the-console-apart-from-ftxui-
 | The console | `source/tools/console/ManifestConsole.h`, `ManifestConsole.cpp`; target `manifest_console` |
 | The TUI | `source/tools/tui/main.cpp`, `ManifestTui.h`, `ManifestTui.cpp`; target `manifest_tui` |
 | Default paths | `source/game/host/include/manifest/host/Locations.h` (`DefaultContent`, `DefaultTranscript`) |
-| Tests | `source/tools/console/tests/ManifestConsoleTests.cpp`: ctest `console` (16 cases) and `step-budget` |
+| Tests | `source/tools/console/tests/ManifestConsoleTests.cpp`: ctest `console` (20 cases) and `step-budget` |
 
 The console is built whenever the Jettison SDK has its developer console (`Jettison::Devtools`,
 which comes with presentation), whether or not the TUI is. The TUI is built with

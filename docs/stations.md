@@ -296,8 +296,8 @@ resupply (`source/tools/console/tests/ManifestConsoleTests.cpp`):
 Manifest.Company.Refill: CapacityExceeded
 ```
 
-The tanks are full, so Refill is refused. The console has no command for `SetFees`; a test sends
-it (`source/game/company/tests/CompanyTests.cpp`):
+The tanks are full, so Refill is refused. The console's `fees` sends it, as `fees <principal> <venue> <occupant fee> <arrears bps> <class>
+<docking> <berth> ...`; a test sends it in C++ (`source/game/company/tests/CompanyTests.cpp`):
 
 ```cpp
 World::Fees raised = defaults;

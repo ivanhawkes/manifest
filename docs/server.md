@@ -293,7 +293,8 @@ servers:
     key: 3c0f2a1e9b7d4c5a8e6f1d2b3a4c5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d
 ```
  While connected, `observe`, `provision`, `cargo`, `trade`,
-`cancel`, `travel`, `service` and `fit` go to the server, and take no principal: the actor is the
+`cancel`, `travel`, `service`, `fit`, `policy`, `refuel`, `fees`, `found`, `tender`, `project` and
+`development` go to the server, and take no principal: the actor is the
 token's. `step` and `book` are refused, since the server steps its own world and the book is the
 host's view. The terminal UI shows the connection in its side pane. These lines are from the
 `console` suite (`source/tools/console/tests/ManifestConsoleTests.cpp`):

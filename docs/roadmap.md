@@ -122,7 +122,7 @@ health and happiness, grains and medical supplies) are [the regional economy](ec
 [Standing policies](policies.md) trade unattended today. They gain scouting and fixed routes
 ([L46](delivery-order.md#l46)), and Wasm scripts that rank their trades without touching settlement
 ([L39](delivery-order.md#l39), the [policy scripts plan](policy-scripts-plan.md)). The console
-reaches every command and shows the whole snapshot ([L44](delivery-order.md#l44)), and a client sees
+reaches every command and shows the whole snapshot ([L44](history/tasks.md), done), and a client sees
 a venue's fees before it pays ([L47](delivery-order.md#l47)).
 
 ## The graphical client

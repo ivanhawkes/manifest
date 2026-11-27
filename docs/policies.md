@@ -242,6 +242,10 @@ job blocks.
 | `thrustBps` | Every leg's thrust in basis points of the cruise, at most `World::kFullThrustBps` (10000); 0 lets the job choose per trade. |
 | `contracts` | Whether the job bids on tenders and works the contracts it wins. |
 
+The console's `policy [principal] <ship> on|off <target> <allowance> [thrust%] [on|off]` sends it, the
+last `on|off` being `contracts`, and `observe` prints the policy and the job
+([the console](console.md#the-commands)).
+
 The first `Set` for a ship gives it a job, `Choosing`. A later one changes only the policy: the
 job reads it at its next decision, a lot aboard included, and allowance already spent stays spent.
 A version-1 payload (before the thrust) is refused `UnsupportedCommand`.
@@ -305,8 +309,6 @@ free for a player, or validation refuses the scenario ([content](content.md)).
   its owner has reports of. No task is booked for either.
 - There is no maximum purchase price and no notification when a job blocks; a blocked job
   retries only at the turn's last step, not on a new observation.
-- The console and the TUI have no command to set a policy; the tests and a remote client's submit
-  send `Manifest.Policy.Set` ([the console](console.md)).
 - A ship works one contract at a time, and a job carries one lot of one item.
 - The estimate assumes a venue selling fusion pellets fills the magazine, which takes a tote of the
   hold (a `shortcut:` in `Policy.cpp`).
