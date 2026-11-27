@@ -72,7 +72,7 @@ The translations are first drafts. They stress the layout now, with German's lon
 diacritics and Japanese kanji, and native translators replace them before release
 ([scope](scope.md)). A new screen adds its keys to all four tables as it is built; `client_strings`
 fails on any it lacks. The [terminal UI](console.md) prints English outside the tables, as the
-engine's developer text does.
+engine's developer text does ([D-121](decision-ledger.md#d-121)).
 
 ### The model
 

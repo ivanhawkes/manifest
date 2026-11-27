@@ -257,6 +257,7 @@ The development console and the TUI that plays on a server. Detail: [console](co
 | ID | Decision | Statement | Status |
 | --- | --- | --- | --- |
 | <a id="d-012"></a>D-012 | The TUI as a remote client | The TUI is a gameplay client of the server, with `connect` and `disconnect`. Manifest's graphical client shares the same command and query layer, and administrative permission stays apart from gameplay. | Implemented for the TUI and administrator tokens (N02; `console`, `remote`); the graphical client's model sends the same commands on a local world ([the graphical client](client.md)), its server play open ([roadmap](roadmap.md#the-graphical-client)) |
+| <a id="d-121"></a>D-121 | The terminal UI stays English | The terminal UI, mainly for administration, prints English outside the string tables; only the graphical client's text is the players' and in all four languages ([L43](history/tasks.md)). Translating it was rejected. The user's, 2026-11-27. | Implemented: `client_strings` covers the graphical client alone |
 | <a id="d-013"></a>D-013 | Manual trading a stretch goal | Manual spaceport trading through the TUI is a stretch goal; configuring and observing auto-trading from it is required. | Implemented for manual trading (the console's `trade`; `console`); auto-trading set from the TUI by `policy` ([L44](history/tasks.md), done 2026-11-27) |
 
 Also followed here: [D-095](#d-095), [D-107](#d-107), [D-114](#d-114).
