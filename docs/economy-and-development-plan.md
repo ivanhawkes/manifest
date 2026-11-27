@@ -294,13 +294,15 @@ in `balance.yaml` ([wage tax](economy.md#payroll-and-wage-tax)). This work lets 
 - The principal directing the region's governing organisation sets it by command. The rate is
   posted to those who pay it and applies from the next payroll, never to one already paid.
 - An AI governor sets its rate by rule. The graphical client shows and edits a player's
-  ([L15](delivery-order.md#l15)).
+  ([L15b](delivery-order.md#l15b)).
 
-**Open**
+**Selected** ([D-120](decision-ledger.md#d-120), the user's, 2026-11-27)
 
-- The bounds on a rate.
-- Any other tax bases than wages.
-- The AI governor's rule.
+- Wages are the only base for now; a sales or property tax would be a row of its own.
+- A rate is held between bounds in `balance.yaml`, 0 to 0.5 to start, a best guess to tune in play.
+- An AI governor steers its rate towards its budget once a day: up when its treasury falls short of
+  its commitments, down on a surplus, by a bounded step, within the bounds. The step and the
+  thresholds are tuning, chosen when it is built.
 
 ## L30 Regional debt and the merchant and banking classes
 

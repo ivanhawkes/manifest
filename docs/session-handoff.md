@@ -17,9 +17,11 @@ open work, in order, is the [task queue](delivery-order.md).
 
 ## Next
 
-The user plays the first loop in the graphical client ([L15](delivery-order.md#l15)), not the
-terminal UI, which is mainly for administration (the user's, 2026-11-27). L15 stands on Jettison's
-Jettison's J30, done 2026-11-27 (the shell starts a `Host::Game` through a session), and on [L04](delivery-order.md#l04),
-[L05](delivery-order.md#l05) and [L29](delivery-order.md#l29). The queue's first row, the drives past
+The user plays the first loop in the graphical client ([L15a](delivery-order.md#l15a)), not the
+terminal UI, which is mainly for administration (the user's, 2026-11-27). L15a stands on Jettison's
+J30, done 2026-11-27 (the shell starts a `Host::Game` through a session); the owners' screens were
+split off as [L15b](delivery-order.md#l15b) on 2026-11-27, which waits on [L04](delivery-order.md#l04),
+[L05](delivery-order.md#l05) and [L29](delivery-order.md#l29). L29's open choices are settled
+([D-120](decision-ledger.md#d-120)). The queue's first row, the drives past
 the torch ([W22](delivery-order.md#w22)), waits for the first larger hull. Saves still run on the
 step's thread ([L40](delivery-order.md#l40), [D-115](decision-ledger.md#d-115)).

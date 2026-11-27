@@ -321,7 +321,7 @@ const auto set = [&hosted](const Actor &actor, std::string venueId, const World:
   with gates, [L10](delivery-order.md#l10), and moongates, [L35](delivery-order.md#l35).
 - Auctions of seized cargo: [L24](delivery-order.md#l24).
 - Private-port bookings and owner access policy: [L04](delivery-order.md#l04).
-- Showing and editing a venue's fees in a client: [L15](delivery-order.md#l15).
+- Showing and editing a venue's fees in a client: [L15b](delivery-order.md#l15b).
 - A failed journey's docking fee is not refunded, and berth fees are not estimated.
 
 ## Decisions

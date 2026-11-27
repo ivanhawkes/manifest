@@ -127,14 +127,14 @@ a venue's fees before it pays ([L47](delivery-order.md#l47)).
 
 ## The graphical client
 
-The graphical client ([L15](delivery-order.md#l15)) is how most players will play: it sends the same
+The graphical client ([L15a](delivery-order.md#l15a) and [L15b](delivery-order.md#l15b)) is how most players will play: it sends the same
 commands and reads the same queries as the [terminal UI](console.md), on [the server](server.md),
 and must not block the native loop. Its text is in four languages from the start
 ([L43](delivery-order.md#l43)). It holds:
 
 - **Composition.** Manifest's `Host::Game` handed to Jettison's rendered shell, which starts it
   through a host session (Jettison's J30, done), beside the client's `App::Game`.
-- **Owners' settings.** A venue's fees and a region's taxes shown and edited
+- **Owners' settings** ([L15b](delivery-order.md#l15b); the other items are L15a's). A venue's fees and a region's taxes shown and edited
   ([D-098](decision-ledger.md#d-098), with [L29](delivery-order.md#l29)), and station policy and
   ownership views ([L04](delivery-order.md#l04), [L05](delivery-order.md#l05)).
 - **Branding.** Stations' cultural and corporate look, and their customisation ([planetary
