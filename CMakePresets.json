@@ -93,6 +93,11 @@
     {
       "name": "clang-asan",
       "configurePreset": "clang-asan",
+      "filter": {
+        "exclude": {
+          "name": "^fixture(_(alone|burn|carrier|cruise|development|prices|traffic))?$"
+        }
+      },
       "output": {
         "outputOnFailure": true
       }

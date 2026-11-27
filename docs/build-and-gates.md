@@ -114,7 +114,10 @@ push. CI does not run it ([CI](#ci)). Its stages, in order:
 2. `clang-debug`: configure, build, CTest.
 3. `clang-notui`: the same.
 4. `clang-release`: the same, unless `--skip-release`.
-5. `clang-asan`: the same, with `--asan`.
+5. `clang-asan`: the same, with `--asan`, less the long fixture loops. Its test preset leaves out
+   `fixture` and the `fixture_*` suites but `fixture_governance`: under the sanitisers each took 230
+   to 630 s (2026-11-27), the stage's whole length, repeating the code the shorter suites and
+   `fixture_governance` already run sanitised. The other trees run them all.
 6. clang-tidy over Manifest's own units in `clang-debug` (`scripts/tidy.py`), with `--tidy`.
 
 Tidy runs last, so a finding fails the gate without hiding the results of the stages before it
