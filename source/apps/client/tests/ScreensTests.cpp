@@ -97,8 +97,8 @@ TEST_CASE("Every screen of the client loads and shows its world with no problem"
 	{
 		CAPTURE(language);
 		ui.SetLanguage(language);
-		for (const std::string_view screen : {ClientGame::kMarket, ClientGame::kTravel,
-		         ClientGame::kService, ClientGame::kCompany})
+		for (const std::string_view screen :
+		     {ClientGame::kMarket, ClientGame::kTravel, ClientGame::kService, ClientGame::kCompany})
 		{
 			CAPTURE(screen);
 			game.Show(screen);

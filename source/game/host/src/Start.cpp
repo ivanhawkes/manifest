@@ -72,8 +72,8 @@ Content::ContentSet LoadContent(
     const Jettison::Vfs::FileSystem &files, std::span<const Package> packages,
     Jettison::Sim::DefinitionRegistry &definitions, std::string_view scenario)
 {
-	const auto package = std::ranges::find_if(
-	    packages, [](const Package &each) { return each.mount != kEngineMount; });
+	const auto package =
+	    std::ranges::find_if(packages, [](const Package &each) { return each.mount != kEngineMount; });
 	const auto mount = std::ranges::find(
 	    files.Mounts(), package != packages.end() ? package->mount : std::string{},
 	    &Jettison::Vfs::Mount::name);

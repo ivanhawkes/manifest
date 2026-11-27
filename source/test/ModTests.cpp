@@ -31,8 +31,9 @@ TEST_CASE("Manifest directory and pack expose identical content through the engi
 	REQUIRE_FALSE(words.empty());
 	REQUIRE_FALSE(scene.empty());
 	REQUIRE_FALSE(fonts.empty());
-	REQUIRE(files.size() == 1 + definitions.size() + scenarios.size() + scene.size() + screens.size() +
-	                            words.size() + fonts.size());
+	REQUIRE(
+	    files.size() == 1 + definitions.size() + scenarios.size() + scene.size() + screens.size() +
+	                        words.size() + fonts.size());
 	for (const auto &path : files)
 	{
 		CAPTURE(path);

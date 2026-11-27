@@ -6,18 +6,18 @@
 #include <cstdint>
 #include <format>
 #include <optional>
-#include <string>
-#include <variant>
 #include <span>
 #include <stdexcept>
+#include <string>
 #include <utility>
+#include <variant>
 
 #include <jettison/app/Game.h>
 #include <jettison/app/SmokeSequence.h>
 #include <jettison/core/Log.h>
-#include <jettison/sim/SaveGame.h>
 #include <jettison/devtools/Console.h>
 #include <jettison/reflect/Reflect.h>
+#include <jettison/sim/SaveGame.h>
 #include <jettison/ui/DataModel.h>
 
 #include <manifest/host/Start.h>
@@ -30,9 +30,9 @@ using Jettison::Ui::EventArgument;
 using Arguments = std::span<const EventArgument>;
 
 // The screens' documents, each loaded once.
-constexpr std::array<std::string_view, 6> kScreens{
-    ClientGame::kStart,  ClientGame::kCompany, ClientGame::kMarket,
-    ClientGame::kTravel, ClientGame::kService, ClientGame::kFlight};
+constexpr std::array<std::string_view, 6> kScreens{ClientGame::kStart,   ClientGame::kCompany,
+                                                   ClientGame::kMarket,  ClientGame::kTravel,
+                                                   ClientGame::kService, ClientGame::kFlight};
 
 // What a frame gives the journey's fast-forward, of the 16.7 ms a frame has at 60 Hz: the rest
 // draws the frame.
@@ -137,11 +137,9 @@ void ClientGame::BindEvents(Jettison::Ui::DataModel &data)
 		    if (const std::optional<std::int64_t> percent = Number(arguments))
 			    model.SetThrust(*percent);
 	    });
-	act("faster",
-	    [](ClientModel &model, Arguments)
+	act("faster", [](ClientModel &model, Arguments)
 	    { model.SetAcceleration(model.View().accelerationTenths + kTenthStep); });
-	act("slower",
-	    [](ClientModel &model, Arguments)
+	act("slower", [](ClientModel &model, Arguments)
 	    { model.SetAcceleration(model.View().accelerationTenths - kTenthStep); });
 	act("fastforward",
 	    [](ClientModel &model, Arguments) { model.SetFastForward(!model.View().fastForward); });
@@ -185,8 +183,8 @@ void ClientGame::Present()
 	if (m_model->Waiting())
 		screen.status = strings.Text("manifest.result.waiting");
 	else if (const std::optional<Command::Result> result = m_model->LastResult())
-		screen.status = strings.Text(std::format(
-		    "manifest.result.{}", Jettison::Reflect::EnumName(entt::meta_any{*result})));
+		screen.status = strings.Text(
+		    std::format("manifest.result.{}", Jettison::Reflect::EnumName(entt::meta_any{*result})));
 
 	if (screen != m_screen)
 	{
@@ -311,8 +309,8 @@ void ClientGame::DriveSmoke(Jettison::App::SmokeActions &actions, Jettison::App:
 	{
 		const std::string held = m_pUi->ElementText(Document(kMarket), "held-0");
 		Jettison::Core::Log(
-		    Jettison::Core::Severity::Info, kClient, "The render test's purchase: {}, {} held", m_screen.status,
-		    held);
+		    Jettison::Core::Severity::Info, kClient, "The render test's purchase: {}, {} held",
+		    m_screen.status, held);
 		return m_model && m_model->LastResult() == Command::Result::Succeeded && held == "1";
 	};
 }

@@ -38,7 +38,8 @@ constexpr double kMostSeconds = 60 * kDaySeconds;
 // world refuses an acceleration past what the ship's hull sustains.
 constexpr std::int64_t kFullPercent = 100;
 constexpr std::int64_t kTenthsPerG = 10;
-constexpr std::int64_t kLeastTenths = Travel::kLeastAccelerationMilliG * kTenthsPerG / Travel::kMilliGPerG;
+constexpr std::int64_t kLeastTenths =
+    Travel::kLeastAccelerationMilliG * kTenthsPerG / Travel::kMilliGPerG;
 constexpr std::int64_t kMostTenths = 30;
 
 
@@ -222,7 +223,8 @@ void ClientModel::SetPrincipal(std::string principal)
 
 ClientState ClientModel::State() const
 {
-	return {m_screen.principal, m_screen.thrustPercent, m_screen.accelerationTenths, m_screen.fastForward};
+	return {
+	    m_screen.principal, m_screen.thrustPercent, m_screen.accelerationTenths, m_screen.fastForward};
 }
 
 
@@ -342,8 +344,8 @@ Receipt ClientModel::Admit(
     std::span<const std::byte> payload)
 {
 	const std::uint64_t sequence = m_services.requests.NextSequence(actor);
-	const Receipt receipt = m_services.requests.Admit(
-	    m_world, actor, sequence, std::string{command}, version, payload);
+	const Receipt receipt =
+	    m_services.requests.Admit(m_world, actor, sequence, std::string{command}, version, payload);
 	if (receipt.status == Receipt::Status::Refused)
 		return Refuse(receipt.result);
 	m_waiting.emplace(actor, sequence);
@@ -355,8 +357,8 @@ Receipt ClientModel::Admit(
 template <typename T>
 Receipt ClientModel::Send(std::string_view command, std::uint32_t version, const T &payload)
 {
-	const std::vector<std::byte> bytes = Jettison::Serialise::BinaryArchive::Write(
-	    payload, Jettison::Serialise::FormatVersion{version});
+	const std::vector<std::byte> bytes =
+	    Jettison::Serialise::BinaryArchive::Write(payload, Jettison::Serialise::FormatVersion{version});
 	return Admit({ActorKind::Principal, m_screen.principal}, command, version, bytes);
 }
 
@@ -493,7 +495,8 @@ bool ClientModel::UnderWay() const
 	if (m_screen.companyId.empty())
 		return false;
 	const entt::registry &registry = m_world.Registry();
-	for (const auto &[entity, ship, journey] : registry.view<const World::Ship, const World::Journey>().each())
+	for (const auto &[entity, ship, journey] :
+	     registry.view<const World::Ship, const World::Journey>().each())
 		if (ship.companyId == m_screen.companyId && !journey.Ended())
 			return true;
 	return false;

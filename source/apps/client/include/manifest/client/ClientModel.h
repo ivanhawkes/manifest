@@ -230,7 +230,8 @@ class ClientModel
 
 	Command::Receipt SetRefuel(bool enabled);
 
-	// Whether the client passes over a journey's steps, and whether a ship of the player's is under way.
+	// Whether the client passes over a journey's steps, and whether a ship of the player's is under
+	// way.
 	void SetFastForward(bool enabled);
 
 	bool UnderWay() const;

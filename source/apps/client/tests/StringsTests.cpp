@@ -33,8 +33,8 @@ constexpr std::array<std::string_view, 4> kLanguages{"en", "fr", "de", "ja"};
 // repeat within the first two hundred.
 constexpr std::int64_t kPluralCounts = 200;
 
-constexpr std::array<std::string_view, 6> kPluralCategories{
-    "zero", "one", "two", "few", "many", "other"};
+constexpr std::array<std::string_view, 6> kPluralCategories{"zero", "one",  "two",
+                                                            "few",  "many", "other"};
 
 void Flatten(const YAML::Node &node, const std::string &prefix, Table &table)
 {
@@ -75,8 +75,8 @@ std::set<std::string> Placeholders(const std::string &text)
 {
 	static const std::regex kPlaceholder{R"(\{\{[^}]*\}\}|\{[0-9][^}]*\})"};
 	std::set<std::string> found;
-	for (std::sregex_iterator match{text.begin(), text.end(), kPlaceholder}; match != std::sregex_iterator{};
-	     ++match)
+	for (std::sregex_iterator match{text.begin(), text.end(), kPlaceholder};
+	     match != std::sregex_iterator{}; ++match)
 		found.insert(match->str());
 	return found;
 }
@@ -136,10 +136,13 @@ std::vector<std::string> Compare(const Table &base, std::string_view language, c
 		if (const std::optional<std::string> group = pluralOf(key))
 		{
 			if (!forms.contains(key.substr(group->size() + 1)))
-				problems.push_back(std::format("{}: {} is not a plural form of the language", language, key));
+				problems.push_back(
+				    std::format("{}: {} is not a plural form of the language", language, key));
 			else if (!std::ranges::includes(plurals[*group], named))
-				problems.push_back(std::format(
-				    "{}: {} names {}, its base's forms {}", language, key, Join(named), Join(plurals[*group])));
+				problems.push_back(
+				    std::format(
+				        "{}: {} names {}, its base's forms {}", language, key, Join(named),
+				        Join(plurals[*group])));
 			continue;
 		}
 		const auto found = base.find(key);
@@ -147,7 +150,8 @@ std::vector<std::string> Compare(const Table &base, std::string_view language, c
 			problems.push_back(std::format("{}: {} is not in the base's table", language, key));
 		else if (const std::set<std::string> expected = Placeholders(found->second); named != expected)
 			problems.push_back(
-			    std::format("{}: {} names {}, the base's {}", language, key, Join(named), Join(expected)));
+			    std::format(
+			        "{}: {} names {}, the base's {}", language, key, Join(named), Join(expected)));
 	}
 	return problems;
 }
@@ -198,7 +202,8 @@ TEST_CASE("The engine's own tables are in every language the client ships, with 
 
 TEST_CASE("The languages check names a missing key, a placeholder changed and a plural form")
 {
-	const Table base{{"market.docked", "Docked at {0}"},
+	const Table base{
+	    {"market.docked", "Docked at {0}"},
 	    {"market.title", "Market"},
 	    {"market.crates.one", "{0} crate"},
 	    {"market.crates.other", "{0} crates"},
@@ -206,31 +211,33 @@ TEST_CASE("The languages check names a missing key, a placeholder changed and a 
 	CHECK(Compare(base, "en", base).empty());
 
 	// Japanese has one plural category, so other alone.
-	const Table japanese{{"market.docked", "{0}に停泊中"},
+	const Table japanese{
+	    {"market.docked", "{0}に停泊中"},
 	    {"market.title", "市場"},
 	    {"market.crates.other", "{0}箱"},
 	    {"market.ship", "{{ship.shipId}}"}};
 	CHECK(Compare(base, "ja", japanese).empty());
 
-	const Table french{{"market.docked", "Amarré à {1}"},
-	    {"market.crates.one", "{0} caisse"},
-	    {"market.crates.other", "{0} caisses"},
-	    {"market.crates.few", "{0} caisses"},
-	    {"market.ship", "{{ship.hullId}}"},
-	    {"market.extra", "En trop"}};
-	CHECK(Compare(base, "fr", french) ==
-	      std::vector<std::string>{"fr: market.title is missing",
-	          "fr: market.crates.few is not a plural form of the language",
-	          "fr: market.docked names {1}, the base's {0}",
-	          "fr: market.extra is not in the base's table",
-	          "fr: market.ship names {{ship.hullId}}, the base's {{ship.shipId}}"});
+	const Table french{{"market.docked", "Amarré à {1}"},      {"market.crates.one", "{0} caisse"},
+	                   {"market.crates.other", "{0} caisses"}, {"market.crates.few", "{0} caisses"},
+	                   {"market.ship", "{{ship.hullId}}"},     {"market.extra", "En trop"}};
+	CHECK(
+	    Compare(base, "fr", french) ==
+	    std::vector<std::string>{
+	        "fr: market.title is missing", "fr: market.crates.few is not a plural form of the language",
+	        "fr: market.docked names {1}, the base's {0}",
+	        "fr: market.extra is not in the base's table",
+	        "fr: market.ship names {{ship.hullId}}, the base's {{ship.shipId}}"});
 
 	// A language with more categories than the base's needs each of them.
-	const Table russian{{"market.docked", "{0}"},
+	const Table russian{
+	    {"market.docked", "{0}"},
 	    {"market.title", "Рынок"},
 	    {"market.crates.one", "{0} ящик"},
 	    {"market.crates.other", "{0} ящика"},
 	    {"market.ship", "{{ship.shipId}}"}};
-	CHECK(Compare(base, "ru", russian) == std::vector<std::string>{"ru: market.crates.few is missing",
-	                                          "ru: market.crates.many is missing"});
+	CHECK(
+	    Compare(base, "ru", russian) ==
+	    std::vector<std::string>{
+	        "ru: market.crates.few is missing", "ru: market.crates.many is missing"});
 }
