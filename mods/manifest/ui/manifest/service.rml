@@ -17,11 +17,11 @@
 		<h1>[[manifest.service.title]]</h1>
 		<div data-for="ship : screen.ships">
 			<p>{{ship.shipId}}</p>
-			<p>[[manifest.service.oxygen]] <span id="oxygen">{{ship.oxygen}}</span> kg</p>
-			<p>[[manifest.service.scrubbers]] {{ship.scrubbers}} [[manifest.service.occupantDays]]</p>
+			<p>[[manifest.service.oxygen]] <span id="oxygen">{{ship.oxygen | thousands}}</span> kg</p>
+			<p>[[manifest.service.scrubbers]] {{ship.scrubbers | thousands}} [[manifest.service.occupantDays]]</p>
 			<p data-if="ship.connectedTo != ''">[[manifest.service.connected]]</p>
-			<p>[[manifest.service.reactionMass]] {{ship.reactionMass}} / {{ship.reactionMassMost}} kg</p>
-			<p>[[manifest.service.pellets]] {{ship.pellets}} / {{ship.pelletsMost}} kg</p>
+			<p>[[manifest.service.reactionMass]] {{ship.reactionMass | thousands}} / {{ship.reactionMassMost | thousands}} kg</p>
+			<p>[[manifest.service.pellets]] {{ship.pellets | thousands}} / {{ship.pelletsMost | thousands}} kg</p>
 		</div>
 		<p>
 			<button id="refill" data-event-click="refill()">[[manifest.service.refill]]</button>

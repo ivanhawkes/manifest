@@ -15,7 +15,7 @@
 			<button id="nav-service" data-event-click="show('service')">[[manifest.nav.service]]</button>
 		</div>
 		<h1 id="company-name">{{screen.companyName}}</h1>
-		<p>[[manifest.company.credits]] <span id="credits">{{screen.credits}}</span></p>
+		<p>[[manifest.company.credits]] <span id="credits">{{screen.credits | thousands}}</span></p>
 		<h2>[[manifest.company.ships]]</h2>
 		<table>
 			<tr data-for="ship, i : screen.ships">
@@ -49,7 +49,7 @@
 				<td>{{order.itemId}}</td>
 				<td>{{order.venueId}}</td>
 				<td class="number">{{order.remaining}} / {{order.totes}}</td>
-				<td class="number">{{order.price}}</td>
+				<td class="number">{{order.price | decimal(2)}}</td>
 				<td><button data-attr-id="'cancel-' + i" data-event-click="cancel(order.orderId)">[[manifest.company.cancel]]</button></td>
 			</tr>
 		</table>

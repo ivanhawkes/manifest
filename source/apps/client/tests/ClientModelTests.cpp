@@ -96,7 +96,7 @@ TEST_CASE("The client's model plays the first loop: furs bought at Ore, flown to
 	ClientModel model{world, Manifest::Host::HostedServices(*session)};
 	CHECK_FALSE(model.View().provisioned);
 	CHECK(model.View().day == 1);
-	CHECK(model.View().clock == "00:00");
+	CHECK(model.View().minutes == 0);
 
 	// The start screen's provisioning names the player, and a second is refused before it is sent.
 	CHECK(Answer(model, world, model.Provision("Ada", "Ada Co")) == Result::Succeeded);
@@ -124,7 +124,7 @@ TEST_CASE("The client's model plays the first loop: furs bought at Ore, flown to
 		REQUIRE(good != goods.end());
 		return *good;
 	};
-	CHECK_FALSE(furs().ask.empty());
+	CHECK(furs().ask > 0.0);
 	const std::int64_t ask = furs().askRaw;
 	CHECK(Answer(model, world, model.Buy("ItemFurs")) == Result::Succeeded);
 	CHECK(Answer(model, world, model.Buy("ItemFurs")) == Result::Succeeded);

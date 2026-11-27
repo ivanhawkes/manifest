@@ -8,7 +8,7 @@ manifest:
     travel: "航行"
     service: "整備"
   clock:
-    dayAndTime: "{{screen.day}}日目 {{screen.clock}}"
+    dayAndTime: "{{screen.day}}日目 {{screen.minutes | time}}"
   start:
     title: "Manifest"
     intro: "あなたと貿易会社の名前を決めてください。ハイポートに停泊した船一隻から始まります。"

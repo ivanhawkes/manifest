@@ -18,7 +18,7 @@
 		<p>[[manifest.travel.thrust]] <span id="thrust">{{screen.thrustPercent}}</span>%</p>
 		<input type="range" id="thrust-slider" min="1" max="100" step="1"
 		       data-attr-value="screen.thrustPercent" data-event-change="thrust(ev.value)"/>
-		<p>[[manifest.travel.acceleration]] <span id="acceleration">{{screen.accelerationTenths / 10 | format(1)}}</span> g
+		<p>[[manifest.travel.acceleration]] <span id="acceleration">{{screen.accelerationTenths / 10 | decimal(1)}}</span> g
 			<button id="slower" data-event-click="slower()">-</button>
 			<button id="faster" data-event-click="faster()">+</button>
 		</p>

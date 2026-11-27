@@ -68,6 +68,14 @@ Where a language orders a sentence its own way, the key holds the screen's data 
 than the document, so `manifest.company.docked` is `Docked at {{ship.dockedAt}}` in English and
 `{{ship.dockedAt}}に停泊中` in Japanese. Units and symbols (kg, g, %, /) stay in the documents.
 
+**Numbers and the time of day** are the language's, written by the documents' transforms
+([Jettison: numbers, dates and times](../../jettison/docs/ui.md#string-tables)): prices with two
+digits after the point (`{{good.ask | decimal(2)}}`, 103.97 in English, 103,97 in German), the
+acceleration with one (`decimal(1)`), credits and kilograms grouped (`thousands`), and the time of
+day from the model's minutes since midnight (`{{screen.minutes | time}}`, 3:05 PM in English, 15:05
+in German). The model holds numbers, never their text. The game keeps no calendar, so the day is a
+count from 1 and no date is written.
+
 **The Japanese font.** The engine's faces have no Japanese, so the package ships Noto Sans JP,
 Noto's own published subset (`Sans/SubsetOTF/JP/NotoSansJP-Regular.otf` of
 [notofonts/noto-cjk](https://github.com/notofonts/noto-cjk), tag `Sans2.004`), as `fonts/NotoSansJP-Regular.otf`:
@@ -120,15 +128,17 @@ from the loaded world and the section once the load is done.
 
 The package's `scene/main.yaml` holds a camera and a lamp, which the shell draws behind the screens
 until the stations and ships are drawn ([roadmap](roadmap.md#the-graphical-client)). The engine's
-render test needs the lamp: it checks that a frame's light clusters list a light.
+render test needs the lamp: it checks that a frame's light clusters list a light. The client changes
+no scene, so nothing waits on `Shell::SceneReady` yet; a jump's effect will hold on it while the new
+system's models load ([roadmap](roadmap.md#the-graphical-client)).
 
 ### Checks
 
 | Suite | What it checks |
 | --- | --- |
 | `client_model` | The first loop through the model: provisioned at Ore, two totes of furs bought and loaded, flown to Brine with fast-forward, unloaded and sold for more; the journey's bounds, a refusal made before sending, and the save's section restored |
-| `client_screens` | Every screen loaded over a started world with nothing RmlUi or the string table counts as a problem, the start giving way to the company's, the navigation, and the flight panel shown under way; then every screen again in French, German and Japanese, every translation taken |
-| `client_strings` | Every key English has, the engine's (read from its assets alone, too) and the client's, in French, German and Japanese and no key beyond them; each text naming English's placeholders and data expressions, and a key with plural forms holding those its language's rule needs (Japanese only `other`). A failure names the language and the key |
+| `client_screens` | Every screen loaded over a started world with nothing RmlUi or the string table counts as a problem, the start giving way to the company's, the navigation, and the flight panel shown under way, the acceleration, a price and the time of day in English's and German's forms; then every screen again in French, German and Japanese, every translation taken |
+| `client_strings` | Every key English has, the engine's (read from its assets alone, too) and the client's, in French, German and Japanese and no key beyond them; each text naming English's placeholders and data expressions, and a key with plural forms holding those its language's rule needs (Japanese only `other`). The engine's `numbers.*` forms are its own, each language's (a 24-hour clock names no am or pm), and the engine's ui suite checks them. A failure names the language and the key |
 | `client_smoke` | The engine's render test sequence played by the client offscreen on lavapipe (`client-smoke.sh`): its save and load carry the client's section, and its game UI stage provisions the player and buys a tote at the market's first ask through the screens |
 
 ## Using it

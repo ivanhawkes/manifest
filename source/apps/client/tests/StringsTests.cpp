@@ -36,6 +36,10 @@ constexpr std::int64_t kPluralCounts = 200;
 constexpr std::array<std::string_view, 6> kPluralCategories{"zero", "one",  "two",
                                                             "few",  "many", "other"};
 
+// The engine's forms of numbers, dates and times, which are no translation of the base's text: each
+// language writes its own (a 24-hour clock names no am or pm), and the engine's ui suite checks them.
+constexpr std::string_view kForms = "numbers.";
+
 void Flatten(const YAML::Node &node, const std::string &prefix, Table &table)
 {
 	for (const auto &entry : node)
@@ -124,7 +128,7 @@ std::vector<std::string> Compare(const Table &base, std::string_view language, c
 	std::vector<std::string> problems;
 	const auto forms = PluralForms(language);
 	for (const auto &[key, text] : base)
-		if (!pluralOf(key) && !table.contains(key))
+		if (!pluralOf(key) && !key.starts_with(kForms) && !table.contains(key))
 			problems.push_back(std::format("{}: {} is missing", language, key));
 	for (const auto &[group, placeholders] : plurals)
 		for (const std::string &form : forms)
@@ -132,6 +136,8 @@ std::vector<std::string> Compare(const Table &base, std::string_view language, c
 				problems.push_back(std::format("{}: {}.{} is missing", language, group, form));
 	for (const auto &[key, text] : table)
 	{
+		if (key.starts_with(kForms))
+			continue;
 		const std::set<std::string> named = Placeholders(text);
 		if (const std::optional<std::string> group = pluralOf(key))
 		{

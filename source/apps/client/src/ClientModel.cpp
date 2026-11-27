@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
-#include <format>
 #include <numeric>
 #include <span>
 
@@ -28,7 +27,6 @@ using Command::Result;
 const Command::Actor kHarness{ActorKind::Administrator, "Client"};
 
 constexpr double kDaySeconds = 86400.0;
-constexpr double kHourSeconds = 3600.0;
 constexpr double kMinuteSeconds = 60.0;
 
 // The longest a fast-forward asks the world for at once: a cruise between worlds takes days (D-090).
@@ -49,9 +47,9 @@ template <typename Enum> std::string NameOf(Enum value)
 }
 
 
-std::string Price(std::int64_t raw)
+double Price(std::int64_t raw)
 {
-	return raw == 0 ? std::string{} : Core::Decimal::FromRaw(raw).ToString();
+	return Core::Decimal::FromRaw(raw).ToDouble();
 }
 
 
@@ -176,7 +174,7 @@ void RegisterTypes()
 		    .Field<&Screen::accelerationTenths>("accelerationTenths", kSaved)
 		    .Field<&Screen::fastForward>("fastForward", kSaved)
 		    .Field<&Screen::day>("day", kSaved)
-		    .Field<&Screen::clock>("clock", kSaved)
+		    .Field<&Screen::minutes>("minutes", kSaved)
 		    .Field<&Screen::status>("status", kSaved);
 		RegisterType<ClientState>("Manifest.Client.State")
 		    .Field<&ClientState::principal>("principal", kSaved)
@@ -274,9 +272,7 @@ void ClientModel::MakeScreen()
 	const double seconds = static_cast<double>(m_snapshot.step) * m_world.FixedStep();
 	screen.day = static_cast<std::uint64_t>(seconds / kDaySeconds) + 1;
 	const double ofDay = std::fmod(seconds, kDaySeconds);
-	screen.clock = std::format(
-	    "{:02}:{:02}", static_cast<int>(ofDay / kHourSeconds),
-	    static_cast<int>(std::fmod(ofDay, kHourSeconds) / kMinuteSeconds));
+	screen.minutes = static_cast<std::int64_t>(ofDay / kMinuteSeconds);
 	if (!screen.provisioned)
 		return;
 

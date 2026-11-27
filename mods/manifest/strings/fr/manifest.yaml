@@ -8,7 +8,7 @@ manifest:
     travel: "Voyage"
     service: "Entretien"
   clock:
-    dayAndTime: "Jour {{screen.day}}, {{screen.clock}}"
+    dayAndTime: "Jour {{screen.day}}, {{screen.minutes | time}}"
   start:
     title: "Manifest"
     intro: "Choisissez votre nom et celui de votre société de négoce. Vous commencez avec un vaisseau amarré à un port orbital."

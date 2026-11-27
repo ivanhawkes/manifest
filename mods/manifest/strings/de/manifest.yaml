@@ -8,7 +8,7 @@ manifest:
     travel: "Reisen"
     service: "Wartung"
   clock:
-    dayAndTime: "Tag {{screen.day}}, {{screen.clock}}"
+    dayAndTime: "Tag {{screen.day}}, {{screen.minutes | time}}"
   start:
     title: "Manifest"
     intro: "Gib dir und deiner Handelsgesellschaft einen Namen. Du beginnst mit einem Schiff, das an einem Orbitalhafen angedockt ist."

@@ -19,16 +19,16 @@
 namespace Manifest::Client
 {
 // One good of the market where the ship is docked, as the market screen shows it: its best bid and
-// ask, written as prices are ("103.971304", empty for a side with none) and as the raw prices an order
-// is placed at, the totes resting at each, and the totes of it the company holds there and the ship
-// has aboard.
+// ask in credits, which the screen writes in the language's form, and as the raw prices an order is
+// placed at, 0 for a side with none; the totes resting at each, and the totes of it the company holds
+// there and the ship has aboard.
 struct GoodRow
 {
 	std::string itemId;
-	std::string bid;
+	double bid{0.0};
 	std::int64_t bidRaw{0};
 	std::uint64_t bidTotes{0};
-	std::string ask;
+	double ask{0.0};
 	std::int64_t askRaw{0};
 	std::uint64_t askTotes{0};
 	std::uint64_t held{0};
@@ -81,14 +81,14 @@ struct HoldingRow
 	bool operator==(const HoldingRow &) const = default;
 };
 
-// A resting order: its side, Manifest.World.Side's name, and its limit as prices are written.
+// A resting order: its side, Manifest.World.Side's name, and its limit in credits.
 struct OrderRow
 {
 	std::string orderId;
 	std::string venueId;
 	std::string itemId;
 	std::string side;
-	std::string price;
+	double price{0.0};
 	std::uint64_t remaining{0};
 	std::uint64_t totes{0};
 
@@ -99,7 +99,7 @@ struct OrderRow
 // The screens act on the company's first ship, the only one the first loop has. The destinations are
 // the venues the player has a market report of, but where the ship is docked; the travel settings are
 // the next journey's, its thrust in percent of the cruise and its acceleration in tenths of g (D-107).
-// The day is the world's, from 1, with its time of day; status is the client's words for the last
+// The day is the world's, from 1, with its time of day in minutes since midnight; status is the client's words for the last
 // request's answer, which the client fills in.
 struct Screen
 {
@@ -119,7 +119,7 @@ struct Screen
 	std::int64_t accelerationTenths{0};
 	bool fastForward{true};
 	std::uint64_t day{1};
-	std::string clock;
+	std::int64_t minutes{0};
 	std::string status;
 
 	bool operator==(const Screen &) const = default;

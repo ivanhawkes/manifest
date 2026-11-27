@@ -30,8 +30,8 @@
 				</tr>
 				<tr data-for="good, i : screen.goods">
 					<td data-attr-id="'good-' + i">{{good.itemId}}</td>
-					<td class="number" data-attr-id="'bid-' + i">{{good.bid}}</td>
-					<td class="number" data-attr-id="'ask-' + i">{{good.ask}}</td>
+					<td class="number" data-attr-id="'bid-' + i"><span data-if="good.bidRaw != 0">{{good.bid | decimal(2)}}</span></td>
+					<td class="number" data-attr-id="'ask-' + i"><span data-if="good.askRaw != 0">{{good.ask | decimal(2)}}</span></td>
 					<td class="number" data-attr-id="'held-' + i">{{good.held}}</td>
 					<td class="number" data-attr-id="'aboard-' + i">{{good.aboard}}</td>
 					<td>

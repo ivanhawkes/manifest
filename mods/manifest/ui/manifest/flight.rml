@@ -17,7 +17,7 @@
 			<p data-if="ship.leg == 'Arriving'">[[manifest.leg.arriving]]</p>
 			<p data-if="ship.leg == 'Arrived'">[[manifest.leg.arrived]]</p>
 			<p data-if="ship.leg == 'Failed'">[[manifest.leg.failed]]</p>
-			<p>[[manifest.service.reactionMass]] {{ship.reactionMass}} / {{ship.reactionMassMost}} kg</p>
+			<p>[[manifest.service.reactionMass]] {{ship.reactionMass | thousands}} / {{ship.reactionMassMost | thousands}} kg</p>
 		</div>
 		<p>[[manifest.clock.dayAndTime]]</p>
 		<p>

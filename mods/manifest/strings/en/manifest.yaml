@@ -9,7 +9,7 @@ manifest:
     travel: Travel
     service: Service
   clock:
-    dayAndTime: "Day {{screen.day}}, {{screen.clock}}"
+    dayAndTime: "Day {{screen.day}}, {{screen.minutes | time}}"
   start:
     title: Manifest
     intro: "Name yourself and your trading company. You start with a ship docked at a highport."

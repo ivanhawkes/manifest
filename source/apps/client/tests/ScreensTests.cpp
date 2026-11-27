@@ -81,6 +81,17 @@ TEST_CASE("Every screen of the client loads and shows its world with no problem"
 	CHECK(ui.ElementText(game.Document(ClientGame::kMarket), "venue") == "VenueOreHighport");
 	CHECK_FALSE(ui.ElementText(game.Document(ClientGame::kMarket), "ask-0").empty());
 
+	// Prices, numbers and the time of day in the language's form.
+	CHECK(ui.ElementText(game.Document(ClientGame::kTravel), "acceleration") == "1.0");
+	CHECK(ui.ElementText(game.Document(ClientGame::kMarket), "clock") == "Day 1, 12:00 AM");
+	ui.SetLanguage("de");
+	ui.Update(0.0);
+	CHECK(ui.ElementText(game.Document(ClientGame::kTravel), "acceleration") == "1,0");
+	CHECK(ui.ElementText(game.Document(ClientGame::kMarket), "clock") == "Tag 1, 00:00");
+	CHECK(ui.ElementText(game.Document(ClientGame::kMarket), "ask-0").find(',') != std::string::npos);
+	ui.SetLanguage("en");
+	ui.Update(0.0);
+
 	// A journey begun shows the flight panel beside the screen.
 	game.Show(ClientGame::kTravel);
 	ui.Update(0.0);
