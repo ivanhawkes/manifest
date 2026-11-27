@@ -137,7 +137,7 @@ struct Crossing
 
 std::optional<Crossing> CrossingOf(double departure, double arrival, float acceleration, double metres)
 {
-	if (!(departure > 0.0 || arrival > 0.0) || !(acceleration > 0.0f) || !(metres > 0.0))
+	if ((!(departure > 0.0) && !(arrival > 0.0)) || !(acceleration > 0.0f) || !(metres > 0.0))
 		return std::nullopt;
 	return Crossing{
 	    {acceleration, 0.0f, acceleration, {}},

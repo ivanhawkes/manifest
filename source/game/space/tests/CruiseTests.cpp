@@ -1238,7 +1238,7 @@ TEST_CASE("Cruise: a pulse cruise saved mid-crossing and mid-coast flies on as t
 		while (fixture.world.Clock().Step() < step)
 			fixture.world.FastForward(step);
 	};
-	const std::uint64_t crossing = cruising.departureStep + 3600 * 60;
+	const std::uint64_t crossing = cruising.departureStep + std::uint64_t{3600} * 60;
 	const std::uint64_t coasting = (cruising.departureStep + cruising.arrivalStep) / 2;
 	const std::uint64_t end = cruising.arrivalStep + 60;
 	for (const std::uint64_t saved : {crossing, coasting})
