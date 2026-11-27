@@ -171,6 +171,14 @@ struct Hosted
 	}
 
 
+	// The player forgets the yards, whose stores bid for what a station's trades are about (W22b).
+	void ForgetYards(const std::string &principalId)
+	{
+		Forget(principalId, "VenueOreYards");
+		Forget(principalId, "VenueBrineYards");
+	}
+
+
 	// The company's resting orders.
 	std::size_t Resting(const std::string &companyId)
 	{
@@ -211,6 +219,7 @@ struct Hosted
 		job.totes = totes;
 		job.cost = cost;
 		Forget("Ada", "VenueBrineHighport");
+		ForgetYards("Ada");
 	}
 
 
@@ -396,6 +405,7 @@ TEST_CASE(
 {
 	Hosted hosted;
 	REQUIRE(hosted.Provision("Ada") == Result::Succeeded);
+	hosted.ForgetYards("Ada");
 	const std::int64_t before = hosted.Balance("Company1");
 	REQUIRE(hosted.SetPolicy(kAda, {"Ship1", true, 0, 0}) == Result::Succeeded);
 
@@ -1042,7 +1052,7 @@ TEST_CASE("A scenario's NPC traders start provisioned, the world's own, their jo
 		    registry.get<World::Reports>(principal).reports, World::Source::Starting,
 		    &World::Report::source);
 	};
-	CHECK(starting(ada) == 9);
+	CHECK(starting(ada) == 11);
 	CHECK(starting(ada) == starting(nia));
 
 	// By the first economic turn's end, its reports show the trade that makes the most an hour, from

@@ -44,7 +44,8 @@ inline constexpr double kStandardGravity = 9.80665;
 // reach, the cruise and the pad asked for at the destination, one leg a step, to the ship docked and
 // its Ship::dockedAt the venue. It writes no engine state. Refused, writing nothing, for a ship or a
 // venue the world does not have (UnknownTarget), a ship of another company (NotAuthorised), one whose
-// journey is under way (Travelling), one docked at the venue already (AlreadyThere), and a company
+// journey is under way (Travelling), one docked at the venue already (AlreadyThere), a venue no pad of
+// which, display ones aside, the hull fits (NoPadFits, Content::PadFits), and a company
 // whose account lacks the venue's docking fee for the ship's fee class (World::Fees, Content::FeeClass)
 // and the ship's World::Arrears together
 // (InsufficientFunds), or a venue whose account cannot hold what it is paid (InvalidQuantity). A ship

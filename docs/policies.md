@@ -109,6 +109,9 @@ less the route's charges (`Policy::EstimateRoute`):
 A route the tanks cannot fly with a gram to spare is not a candidate. A trade is kept only when
 its estimate is above the policy's `targetProfit`.
 
+Only venues with a pad the ship's hull fits are weighed, as source, destination or a tender's venue
+(`Content::PadFits`), so a pulse carrier is never sent to a highport.
+
 The winner is the trade that makes the most an hour: its estimate over the route's seconds (each
 leg's cruise plus `fuel.legAllowanceSeconds`). A policy with `thrustBps` 0 tries each thrust of
 `fuel.thrustSharesBps` and, where one of those cannot be flown, the most the tanks can manage, so

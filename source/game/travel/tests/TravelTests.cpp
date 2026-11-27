@@ -839,12 +839,12 @@ TEST_CASE("A pulse ship's journey keeps its spheres, crossing each end's ball an
 	const World::Fuel full = hosted.Fuel();
 	REQUIRE(hosted.Send() == Result::Succeeded);
 
-	// Each end's ball, Ore's and Brine's, 142,000 km, its highports' orbits and 100,000 km, and the
-	// highport's 42,000 km out to it; a sphere above each planet and about each of its five stations.
+	// Each end's ball, Ore's and Brine's, 180,000 km, its yards' orbit and 100,000 km, and the
+	// highport's 42,000 km out to it; a sphere above each planet and about each of its six stations.
 	const Space::CruiseDrive &drive = registry.get<Space::CruiseDrive>(hosted.Ship());
-	CHECK(drive.departureClearance == 1.84e8);
-	CHECK(drive.arrivalClearance == 1.84e8);
-	CHECK(drive.keepouts.size() == 12);
+	CHECK(drive.departureClearance == 2.22e8);
+	CHECK(drive.arrivalClearance == 2.22e8);
+	CHECK(drive.keepouts.size() == 14);
 	CHECK(drive.keepouts.front() == Space::Keepout{"PlanetOre", 6.371e6 + 1.0e8});
 
 	// Admission paid whole units of 100 kg, and no reaction mass.
@@ -858,8 +858,8 @@ TEST_CASE("A pulse ship's journey keeps its spheres, crossing each end's ball an
 	hosted.StepTo(Leg::Cruising);
 	const Space::Cruising &cruising = registry.get<Space::Cruising>(hosted.Ship());
 	CHECK(cruising.departureBody == "PlanetOre");
-	CHECK(cruising.departureClearance >= 1.84e8);
-	CHECK(cruising.arrivalClearance >= 1.84e8);
+	CHECK(cruising.departureClearance >= 2.22e8);
+	CHECK(cruising.arrivalClearance >= 2.22e8);
 	const World::Fuel paid = hosted.Journey().paid;
 	CHECK(hosted.Fuel().pellets == doctest::Approx(full.pellets - paid.pellets));
 	CHECK(std::fabs(paid.pellets - admitted.pellets) <= 200.0);

@@ -126,7 +126,8 @@ void RegisterTypes()
 		    .Field<&Cruising::departureClearance>("departureClearance", Attribute::Saved)
 		    .Field<&Cruising::arrivalClearance>("arrivalClearance", Attribute::Saved)
 		    .Field<&Cruising::crossingAcceleration>("crossingAcceleration", Attribute::Saved)
-		    .Field<&Cruising::departureBody>("departureBody", Attribute::Saved);
+		    .Field<&Cruising::departureBody>("departureBody", Attribute::Saved)
+		    .Field<&Cruising::arrivalBody>("arrivalBody", Attribute::Saved);
 		RegisterType<Cruise>("Space.Cruise")
 		    .Field<&Cruise::sender>("sender", Attribute::Saved)
 		    .Field<&Cruise::ship>("ship", Attribute::Saved)

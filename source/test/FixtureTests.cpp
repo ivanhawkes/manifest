@@ -657,7 +657,7 @@ TEST_CASE("The trading fixture's loop, saved in flight with a bid resting and re
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves with
 	// what a save holds, the fixture's content or stream, or the engine's movement or save format.
-	CHECK(hosted.world.StateHash() == 0x0688154844e14e75ULL);
+	CHECK(hosted.world.StateHash() == 0x28b9dd5aeee62408ULL);
 }
 
 
@@ -710,7 +710,7 @@ TEST_CASE("The trading fixture's loop, backed up in flight with a bid resting an
 	// Served on from the restore, through the journal, it reaches the loop's own world.
 	FromCruise(restored);
 	CheckLedger(restored);
-	CHECK(restored.world.StateHash() == 0x0688154844e14e75ULL);
+	CHECK(restored.world.StateHash() == 0x28b9dd5aeee62408ULL);
 }
 
 
@@ -902,7 +902,7 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 	CHECK(replayed.world.StateHash() == hosted.world.StateHash());
 
 	// The same in every build the gate runs; it moves as the fixture's does.
-	CHECK(hosted.world.StateHash() == 0xd26be0ca876d96b6ULL);
+	CHECK(hosted.world.StateHash() == 0x93d55cff8e731436ULL);
 }
 
 
@@ -1184,7 +1184,8 @@ TEST_CASE(
 	const Manifest::Space::Cruising cruising = registry.get<const Manifest::Space::Cruising>(ship);
 	CHECK(cruising.departureClearance >= 998'000.0);
 	CHECK(cruising.arrivalClearance >= 998'000.0);
-	CHECK(cruising.departureBody == "PlanetOre");
+	CHECK(cruising.departureBody == "VenueOreHighport");
+	CHECK(cruising.arrivalBody == std::string{kVale});
 
 	// The drive's metres alone burn, the course its cruise settled less its two crossings, which burn
 	// nothing; settled as it set out, what its tanks gave is what the journey paid.
@@ -1462,6 +1463,95 @@ TEST_CASE("A standing policy flies the medium freighter on a trade, at its drive
 	    "The freighter's trade: " << lot.totes << " totes of " << lot.itemId << " from "
 	                              << lot.sourceId << " to " << lot.destinationId << " at "
 	                              << lot.thrustBps << " basis points, estimated at " << lot.estimate);
+}
+
+
+TEST_CASE("A standing policy flies the pulse carrier between the yards, passing over the highports")
+{
+	Hosted hosted{MANIFEST_MOD_DIRECTORY, {MANIFEST_FIXTURE_OVERLAY, MANIFEST_CARRIER_OVERLAY}};
+	entt::registry &registry = hosted.world.Registry();
+	const Manifest::Content::ContentSet &content = hosted.services.fleet.Content();
+	const Actor bo{ActorKind::Principal, "Bo"};
+
+	// Fixture bootstrap: Bo, funded for it, bids at Brine's yards for a carrier's hold of rice, which
+	// Ore's yards have in store, and at Brine's highport for copper, glutted at Ore's highport, a far
+	// better trade for a hull that docks there; Ada, provisioned after, reports both, and is funded for
+	// a carrier's lot.
+	REQUIRE(
+	    hosted.Run(kHost, Company::kProvision, Company::kVersion, Company::Provision{"Bo", "Bo", "Bo Co"}) ==
+	    Result::Succeeded);
+	const auto fund = [&](const std::string &companyId, std::int64_t credits)
+	{
+		registry.patch<World::Account>(
+		    hosted.services.identities.Find(Kind::CompanyAccount, companyId),
+		    [&](World::Account &account) { account.balance = credits; });
+	};
+	fund("Company1", 1'000'000'000);
+	Glut(hosted, content, kOre, kGood, 20'000);
+	REQUIRE(
+	    hosted.Run(
+	        bo, Trade::kPlace, Trade::kVersion,
+	        Trade::Place{"VenueBrineYards", "ItemRice", Side::Buy, 2'000, 3'000'000'000}) ==
+	    Result::Succeeded);
+	REQUIRE(
+	    hosted.Run(
+	        bo, Trade::kPlace, Trade::kVersion,
+	        Trade::Place{std::string{kBrine}, std::string{kGood}, Side::Buy, 2'000, 50'000'000'000}) ==
+	    Result::Succeeded);
+	// Bo's bids rest until filled, past the cruise a carrier takes to reach them.
+	for (const auto [entity, order] : registry.view<World::Order>().each())
+		if (order.ownerKind == Kind::Company && order.ownerId == "Company1")
+			order.expiresStep = std::numeric_limits<std::uint64_t>::max();
+	REQUIRE(
+	    hosted.Run(
+	        kHost, Company::kProvision, Company::kVersion,
+	        Company::Provision{"Ada", "Ada", "Ada Co"}) == Result::Succeeded);
+	const CompanyView ada = hosted.Seen();
+	fund(ada.companyId, 50'000'000);
+	REQUIRE(ada.ships.size() == 1);
+	const std::string shipId = ada.ships[0].shipId;
+	const entt::entity ship = hosted.services.identities.Find(Kind::Ship, shipId);
+	REQUIRE(registry.get<const World::Ship>(ship).hullId == "HullPulseCarrier");
+	CHECK(hosted.Ship1().dockedAt == "VenueOreYards");
+	CHECK(hosted.Ship1().fuel == World::Fuel{0.0, 2.5e6});
+	CHECK(hosted.Quote(kBrine, kGood).Bid() == 50'000'000'000);
+
+	// No pad of a highport takes it.
+	CHECK(
+	    hosted.Run(kAda, Travel::kTravel, Travel::kVersion, Travel::Travel{shipId, std::string{kOre}, 1000, 500}) ==
+	    Result::NoPadFits);
+
+	// Its policy takes the rice to Brine's yards, at a thrust its magazine reaches.
+	const double before = hosted.Ship1().fuel.pellets;
+	REQUIRE(
+	    hosted.Run(
+	        kAda, Manifest::Policy::kSet, Manifest::Policy::kVersion,
+	        Manifest::Policy::Set{shipId, true, 0, 0}) == Result::Succeeded);
+	const World::Job &job = registry.get<const World::Job>(ship);
+	CHECK(job.itemId == "ItemRice");
+	CHECK(job.sourceId == "VenueOreYards");
+	CHECK(job.destinationId == "VenueBrineYards");
+	REQUIRE(job.phase == World::Phase::ToDestination);
+	REQUIRE(job.totes > 0);
+	const World::Job lot = job;
+	const std::uint64_t departed = hosted.world.Clock().Step();
+
+	// Flown there and sold to Bo's bid, its fuel and time shown.
+	const double burnt = before - hosted.Ship1().fuel.pellets;
+	const std::uint64_t end = departed + std::uint64_t{60} * 86'400 * 120;
+	while (hosted.world.Clock().Step() < end && job.totes == lot.totes)
+	{
+		hosted.world.FastForward(end);
+		(void)hosted.world.Events().Take();
+	}
+	CHECK(hosted.Ship1().dockedAt == "VenueBrineYards");
+	CHECK(job.totes < lot.totes / 10);
+	const double days = static_cast<double>(hosted.world.Clock().Step() - departed) * hosted.world.FixedStep() / 86'400.0;
+	MESSAGE(
+	    "The pulse carrier, Ore's yards to Brine's: " << lot.totes << " totes of rice at " << lot.thrustBps
+	                                                   << " basis points, " << days << " days, "
+	                                                   << burnt / 100.0
+	                                                   << " pulse units, estimated at " << lot.estimate);
 }
 
 

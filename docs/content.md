@@ -356,8 +356,9 @@ Two scenarios ship, each a test fixture whose numbers are initial test values, n
 (each file's header says what it holds):
 
 - `trading`: system Anvil, planets Ore and Brine, ten regions, five on each, each served by its
-  own station; 24 goods. A new player starts at Ore's highport, `VenueOreHighport`, whose region
-  is ungoverned.
+  own station, and each planet's yards, a dry dock serving its port region, which makes the ships'
+  fuels and keeps stores of the rest (W22b); 26 goods. A new player starts at Ore's highport,
+  `VenueOreHighport`, whose region is ungoverned.
 - `governance`: system Crucible, four regions on Forge served by one public highport, and
   Cassiter's region selling tin and industrial goods from a corporation's dock; Forge East works
   the Bronze project. 19 goods.

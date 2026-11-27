@@ -675,13 +675,14 @@ TEST_CASE("The fixtures are the trading and governance scenarios their plans des
 
 	// One system, two planets, ten regions each served by a station of its own, nine governed, of
 	// mixed ages (docs/content.md, "Scenarios"), with the essentials every region trades (W04), the
-	// life-support goods a ship's resupply takes (W09) and the wellness goods (W19).
+	// life-support goods a ship's resupply takes (W09) and the wellness goods (W19); and each planet's
+	// yards, a dry dock serving its port region (W22b).
 	const ScenarioDefinition &trading = content.scenarios.at("trading");
-	CHECK(trading.items.size() == 25);
+	CHECK(trading.items.size() == 26);
 	CHECK(trading.systems.size() == 1);
 	CHECK(trading.planets.size() == 2);
 	REQUIRE(trading.regions.size() == 10);
-	CHECK(trading.venues.size() == 10);
+	CHECK(trading.venues.size() == 12);
 	CHECK(
 	    std::ranges::count_if(
 	        trading.regions,
@@ -728,15 +729,16 @@ TEST_CASE("The fixtures are the trading and governance scenarios their plans des
 	// 10,000 kg a day, its broker seeded with 800 totes, about nine days, and deuterium for the hauler,
 	// 200 kg a day with 16 totes, two medium freighters' magazines (W22b); one station of each planet
 	// refines the torch's pellets, 2 kg a day; no household wants any of them.
+	const auto yards = [](const VenueDefinition &venue) { return venue.layout == "drydock"; };
 	for (const ScenarioDefinition *scenario : {&trading, &content.scenarios.at("governance")})
 		for (const VenueDefinition &venue : scenario->venues)
 		{
 			CAPTURE(venue.venueId);
 			const auto mass = std::ranges::find(venue.market, "ItemReactionMass", &MarketEntry::itemId);
 			REQUIRE(mass != venue.market.end());
-			CHECK(mass->production == 10000.0);
+			CHECK(mass->production == (yards(venue) ? 100000.0 : 10000.0));
 			CHECK(mass->demand == 0.0);
-			CHECK(mass->stock == 800);
+			CHECK(mass->stock == (yards(venue) ? 8000 : 800));
 			CHECK(mass->regionId == venue.regions[0].regionId);
 			const auto deuterium =
 			    std::ranges::find(venue.market, "ItemDeuteriumPellets", &MarketEntry::itemId);
@@ -760,7 +762,7 @@ TEST_CASE("The fixtures are the trading and governance scenarios their plans des
 	{
 		CAPTURE(item.itemId);
 		if (item.itemId == "ItemReactionMass" || item.itemId == "ItemFusionPellets" ||
-		    item.itemId == "ItemDeuteriumPellets")
+		    item.itemId == "ItemDeuteriumPellets" || item.itemId == "ItemPulseUnits")
 			continue;
 
 		// Each venue trades an essential, which each region needs.
@@ -788,6 +790,35 @@ TEST_CASE("The fixtures are the trading and governance scenarios their plans des
 				CHECK_FALSE(
 				    (entry.itemId == item.itemId && entry.production > 0.0 && entry.demand > 0.0));
 	}
+
+	// The yards (W22b): the Port Authority's dry docks, serving each planet's port region with the
+	// ships' fuels, pulse units among them, and its bulk goods; the pulse carrier docks there alone,
+	// on their battleship pads, and the medium freighter at every venue.
+	for (const VenueDefinition &venue : trading.venues)
+	{
+		CAPTURE(venue.venueId);
+		CHECK(Manifest::Content::PadFits(content, venue.venueId, "HullPulseCarrier") == yards(venue));
+		CHECK(Manifest::Content::PadFits(content, venue.venueId, "HullFreighterMedium"));
+		if (!yards(venue))
+			continue;
+		CHECK(venue.operatorId == "OrganisationAnvilPortAuthority");
+		CHECK(venue.lifeSupportCapacity == 12);
+		const auto units = std::ranges::find(venue.market, "ItemPulseUnits", &MarketEntry::itemId);
+		REQUIRE(units != venue.market.end());
+		CHECK(units->production == 10000.0);
+		CHECK(units->stock == 30000);
+		const Jettison::Dock::PlatformLayout &layout = content.layouts.at(venue.layout);
+		for (const Jettison::Dock::BerthLayout &berth : layout.berths)
+		{
+			CHECK(berth.features == std::vector<std::string>{"dry-dock"});
+			CHECK(
+			    Jettison::Dock::Fits(
+			        content.padClasses, content.dockHulls.at("hull-pulse-carrier"), berth.berthClass) ==
+			    (berth.berthClass == "battleship"));
+		}
+		CHECK(std::ranges::count_if(layout.berths, &Jettison::Dock::BerthLayout::display) == 2);
+	}
+	CHECK(std::ranges::count_if(trading.venues, yards) == 2);
 
 	// Several independent regions on one planet: two ungoverned and two AI neighbours, served by one
 	// station, and the Bronze project's region.

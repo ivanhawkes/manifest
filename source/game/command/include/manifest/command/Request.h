@@ -69,7 +69,9 @@ enum class Result
 	// Travel whose drive would still thrust within its exclusion radius once its course is settled, or
 	// that has no course round the bodies in the way (W22b).
 	InsideRadius,
-	NoCourse
+	NoCourse,
+	// Travel to a venue no pad of which the ship's hull fits (W22b).
+	NoPadFits
 };
 
 enum class ActorKind

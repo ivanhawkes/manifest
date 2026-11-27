@@ -1,0 +1,9 @@
+# The pulse carrier's hull, 280 x 76 x 56 m, within a cruiser pad's largest vehicle (300 x 80 x 60),
+# so it docks only at a dry dock. A hull of Jettison's docks (Dock.VehicleDefinition): metres, its nose
+# along -Z.
+version: 3
+displayName: Pulse bulk carrier
+length: 280
+beam: 76
+height: 56
+berth: cruiser

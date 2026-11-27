@@ -103,6 +103,26 @@ hull-base:
       mass: 2500000
       driveId: DriveHaulerFusion
 
+  # The first hull on the pulse drive (W22b; docs/ships-plan.md, "The pulse carrier"), a design of the
+  # hauler as the medium freighter is of the freighter: 12,000 t as built, most of it the pusher plate
+  # and its shock absorbers; a 160,000-tote hold, 20,000 cubic metres; no reaction mass tanks, its
+  # pulse units their own; a magazine of 25,000 units outside the hold; twelve crew, six 200 kg oxygen
+  # tanks and 30 cartridges, 100 and 75 days for them. Docks only at a dry dock, on a cruiser pad or
+  # larger. Every number is a first guess for later balance.
+  - hull:
+      hullId: HullPulseCarrier
+      className: Pulse bulk carrier
+      description: A bulk carrier of tens of thousands of tonnes, driven by bombs behind a pusher plate
+      baseStats:
+        CargoVolume: 160000
+      fitableEffects: [CargoHolds]
+      occupants: 12
+      oxygenTanks: [200, 200, 200, 200, 200, 200]
+      scrubberCartridges: 30
+      pelletMagazine: 2500000
+      mass: 12000000
+      driveId: DrivePulse
+
   # The compact single-occupant ship (D-044): 32 totes of cargo and a truck-cab cabin. Its
   # life support and its fittings against the 32-tote limit are open.
   - hull:

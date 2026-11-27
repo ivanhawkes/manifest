@@ -742,8 +742,8 @@ TEST_CASE("A new player sees their own station live, and the rest of their syste
 	const World::Report brine = ReportOf(hosted, "Cai", kBrine);
 	CHECK(brine == spawn);
 
-	// Its own and its system's nine other stations.
-	CHECK(ReportsOf(hosted, "Cai").reports.size() == 10);
+	// Its own and its system's eleven other stations, the yards among them.
+	CHECK(ReportsOf(hosted, "Cai").reports.size() == 12);
 	CHECK(LineOf(brine, "ItemSalt").Ask() > 0);
 	CHECK(LineOf(brine, "ItemSalt").sold == 0);
 	CHECK(LineOf(brine, "ItemSalt").lastPrice == 0);

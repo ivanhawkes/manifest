@@ -1,0 +1,43 @@
+# A dry dock (W22b; docs/ships-plan.md, "The dry dock"), shaped like an oil rig hung in space: a
+# 300 x 80 x 300 m central deck of quarters for its 500 crew and technicians and storage hangars; two
+# piers along +-X, each with a battleship pad, which takes a cruiser, a battlecruiser or a battleship;
+# and two along +-Z with the smaller pads in a row, a destroyer's down to two shuttles', the two on
+# +Z display berths showing the shuttles on hand. Every berth offers the dry dock's work. A station
+# layout of Jettison's docks (Dock.PlatformLayout), in the station's axes, metres.
+#
+# The X piers are 640 m long, 20 m deep and 200 m wide; the Z piers 560 m long and 100 m wide; each
+# pier's top 10 m above the station's middle, its pads along its middle, noses pointing out, 10 m
+# apart.
+version: 2
+displayName: Dry dock
+reservationSeconds: 600
+decks:
+  - {centre: [0, 0, 0], size: [300, 80, 300]}
+piers:
+  - {centre: [470, 0, 0], size: [640, 20, 200]}
+  - {centre: [-470, 0, 0], size: [640, 20, 200]}
+  - {centre: [0, 0, 430], size: [100, 20, 560]}
+  - {centre: [0, 0, -430], size: [100, 20, 560]}
+berths:
+  - {class: battleship, position: [430, 10, 0], heading: [1, 0, 0], features: [dry-dock]}
+  - {class: battleship, position: [-430, 10, 0], heading: [-1, 0, 0], features: [dry-dock]}
+  - {class: destroyer, position: [0, 10, 250], heading: [0, 0, 1], features: [dry-dock]}
+  - {class: frigate, position: [0, 10, 395], heading: [0, 0, 1], features: [dry-dock]}
+  - {class: corvette, position: [0, 10, 470], heading: [0, 0, 1], features: [dry-dock]}
+  - {class: corvette, position: [0, 10, 520], heading: [0, 0, 1], features: [dry-dock]}
+  - {class: cutter, position: [0, 10, 561], heading: [0, 0, 1], features: [dry-dock]}
+  - {class: cutter, position: [0, 10, 593], heading: [0, 0, 1], features: [dry-dock]}
+  - {class: skiff, position: [0, 10, 619], heading: [0, 0, 1], features: [dry-dock]}
+  - {class: skiff, position: [0, 10, 639], heading: [0, 0, 1], features: [dry-dock]}
+  - {class: shuttle, position: [0, 10, 658], heading: [0, 0, 1], display: true, vehicle: hull-shuttle, features: [dry-dock]}
+  - {class: shuttle, position: [0, 10, 676], heading: [0, 0, 1], display: true, vehicle: hull-shuttle, features: [dry-dock]}
+  - {class: destroyer, position: [0, 10, -250], heading: [0, 0, -1], features: [dry-dock]}
+  - {class: frigate, position: [0, 10, -395], heading: [0, 0, -1], features: [dry-dock]}
+  - {class: corvette, position: [0, 10, -470], heading: [0, 0, -1], features: [dry-dock]}
+  - {class: corvette, position: [0, 10, -520], heading: [0, 0, -1], features: [dry-dock]}
+  - {class: cutter, position: [0, 10, -561], heading: [0, 0, -1], features: [dry-dock]}
+  - {class: cutter, position: [0, 10, -593], heading: [0, 0, -1], features: [dry-dock]}
+  - {class: skiff, position: [0, 10, -619], heading: [0, 0, -1], features: [dry-dock]}
+  - {class: skiff, position: [0, 10, -639], heading: [0, 0, -1], features: [dry-dock]}
+  - {class: shuttle, position: [0, 10, -658], heading: [0, 0, -1], features: [dry-dock]}
+  - {class: shuttle, position: [0, 10, -676], heading: [0, 0, -1], features: [dry-dock]}

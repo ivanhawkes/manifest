@@ -107,6 +107,7 @@ The refusals, each a `Command::Result`:
 | `InsufficientFuel` | The tanks or the magazine, after refuelling, hold less than the leg burns |
 | `InsideRadius` | Its drive would still thrust within a sphere it keeps from once the course is settled |
 | `NoCourse` | The settled course comes within a body however it is planned again |
+| `NoPadFits` | No pad of the venue's station, display ones aside, takes the ship's hull (`Content::PadFits`), checked before any refuel |
 
 As the journey starts, the company pays the destination's docking fee for the ship's
 [fee class](glossary.md#fee-class) to the destination venue's account. It pays any arrears to the

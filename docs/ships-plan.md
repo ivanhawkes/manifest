@@ -31,8 +31,9 @@ Built in part by W22a (2026-11-26): the drive as a record, the hauler fusion dri
 radius and the medium freighter; and by W22b1 (2026-11-27): fuel by the unit, the pulse drive and
 its units, the magazine refuelled by the totes it needs, the policy flying the hauler at its 0.3 g,
 and deuterium at every venue; and by W22b2 (2026-11-27): the radius about populated bodies, the two
-clearances, crossings flown in their bodies' frames and the cruise checked as flown. What is left is
-[W22b](delivery-order.md#w22b).
+clearances, crossings flown in their bodies' frames and the cruise checked as flown; and by W22b3
+(2026-11-27): the dry dock, the two yards and the pulse carrier, which a policy keeps to venues with
+a pad it fits. What is left is [W22b](delivery-order.md#w22b).
 The torch suits a skiff to a corvette. Hauling thousands of tonnes on it would burn pellets no
 trade could pay for, so larger hulls fly dirtier drives that are cheaper a tonne moved but must
 keep away from stations ([D-108](decision-ledger.md#d-108)).

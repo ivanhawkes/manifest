@@ -119,6 +119,12 @@ const DriveDefinition *DriveOf(const ContentSet &content, std::string_view hullI
 // burn are in kilograms; an item is bought, carried and priced by its unit.
 double KilogramsPerUnit(const Core::ItemNode &item);
 
+// Whether a pad of the venue's station layout, display ones aside, takes the hull's dock hull
+// (Jettison::Dock::Fits): what a journey to the venue and a policy's choice of it are held to. The
+// venue is the selected scenario's, or with none selected any scenario's; false for a venue of none or
+// a hull with no dock hull.
+bool PadFits(const ContentSet &content, std::string_view venueId, std::string_view hullId);
+
 // The drive's pellet item in the set, which content holds every drive's to.
 const Core::ItemNode &PelletItem(const ContentSet &content, const DriveDefinition &drive);
 } // namespace Manifest::Content

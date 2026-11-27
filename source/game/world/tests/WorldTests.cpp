@@ -64,8 +64,9 @@ TEST_CASE(
 	CHECK(registry.view<const Organisation>().size() == 10);
 	CHECK(registry.view<const Region>().size() == 10);
 
-	// Three a region (public, households', employer's), and a venue's broker's and its own, ten each.
-	CHECK(registry.view<const Account>().size() == 50);
+	// Three a region (public, households', employer's), and a venue's broker's and its own, twelve
+	// each: a station of each region and each planet's yards (W22b).
+	CHECK(registry.view<const Account>().size() == 54);
 
 	// Ore's broker holds the venue's stock, 21 totes of furs, with the authored treasury.
 	const entt::entity broker = hosted.identities.Find(Kind::Broker, "VenueOreHighport");

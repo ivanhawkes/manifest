@@ -44,6 +44,7 @@ items:
   - itemId: ItemReactionMass
   - itemId: ItemFusionPellets
   - itemId: ItemDeuteriumPellets
+  - itemId: ItemPulseUnits
 
 systems:
   - {systemId: SystemAnvil, displayName: Anvil}
@@ -220,6 +221,39 @@ venues:
         stock: 800}
       - {itemId: ItemDeuteriumPellets, regionId: RegionOreHighlands, production: 200, demand: 0,
         stock: 16}
+  # Ore's dry dock (W22b), the yards: the Port Authority's, so it may sell pulse units, serving Ore's
+  # port region as the highport does. It makes the ships' fuels, its region's employer's, and keeps
+  # stores of the rest, which its region neither makes nor wants here, so that the region's economy
+  # and its staple balance (D-105) stay the highport's: life support for a carrier's crew, every
+  # essential, and for a carrier's hold its region's bulk goods, ten times the highport's stock.
+  - venueId: VenueOreYards
+    systemId: SystemAnvil
+    planetId: PlanetOre
+    operatorId: OrganisationAnvilPortAuthority
+    public: true
+    operational: true
+    layout: drydock
+    lifeSupportCapacity: 12
+    regions: [{regionId: RegionOreHighlands}]
+    market:
+      - {itemId: ItemCopper, production: 0, demand: 0, stock: 180}
+      - {itemId: ItemSalt, production: 0, demand: 0, stock: 46}
+      - {itemId: ItemSoap, production: 0, demand: 0, stock: 7}
+      - {itemId: ItemRice, production: 0, demand: 0, stock: 5520}
+      - {itemId: ItemWheat, production: 0, demand: 0, stock: 96}
+      - {itemId: ItemOats, production: 0, demand: 0, stock: 96}
+      - {itemId: ItemBarley, production: 0, demand: 0, stock: 96}
+      - {itemId: ItemBeans, production: 0, demand: 0, stock: 96}
+      - {itemId: ItemLentils, production: 0, demand: 0, stock: 5190}
+      - {itemId: ItemChickpeas, production: 0, demand: 0, stock: 96}
+      - {itemId: ItemPeas, production: 0, demand: 0, stock: 96}
+      - {itemId: ItemDrinkingWater, production: 0, demand: 0, stock: 20000}
+      - {itemId: ItemBasicMedicalSupplies, production: 0, demand: 0, stock: 10}
+      - {itemId: ItemOxygen, production: 0, demand: 0, stock: 160}
+      - {itemId: ItemCarbonScrubberCartridge, production: 0, demand: 0, stock: 100}
+      - {itemId: ItemReactionMass, regionId: RegionOreHighlands, production: 100000, demand: 0, stock: 8000}
+      - {itemId: ItemDeuteriumPellets, regionId: RegionOreHighlands, production: 200, demand: 0, stock: 16}
+      - {itemId: ItemPulseUnits, regionId: RegionOreHighlands, production: 10000, demand: 0, stock: 30000}
   # OreVale's station: developed.
   - venueId: VenueOreValeStation
     systemId: SystemAnvil
@@ -374,6 +408,35 @@ venues:
         stock: 800}
       - {itemId: ItemDeuteriumPellets, regionId: RegionBrineCoast, production: 200, demand: 0,
         stock: 16}
+  # Brine's dry dock (W22b), the yards: as Ore's, with Brine Coast's bulk goods.
+  - venueId: VenueBrineYards
+    systemId: SystemAnvil
+    planetId: PlanetBrine
+    operatorId: OrganisationAnvilPortAuthority
+    public: true
+    operational: true
+    layout: drydock
+    lifeSupportCapacity: 12
+    regions: [{regionId: RegionBrineCoast}]
+    market:
+      - {itemId: ItemSalt, production: 0, demand: 0, stock: 46}
+      - {itemId: ItemGlassware, production: 0, demand: 0, stock: 500}
+      - {itemId: ItemSoap, production: 0, demand: 0, stock: 490}
+      - {itemId: ItemRice, production: 0, demand: 0, stock: 96}
+      - {itemId: ItemWheat, production: 0, demand: 0, stock: 6300}
+      - {itemId: ItemOats, production: 0, demand: 0, stock: 96}
+      - {itemId: ItemBarley, production: 0, demand: 0, stock: 96}
+      - {itemId: ItemBeans, production: 0, demand: 0, stock: 96}
+      - {itemId: ItemLentils, production: 0, demand: 0, stock: 96}
+      - {itemId: ItemChickpeas, production: 0, demand: 0, stock: 96}
+      - {itemId: ItemPeas, production: 0, demand: 0, stock: 96}
+      - {itemId: ItemDrinkingWater, production: 0, demand: 0, stock: 2000}
+      - {itemId: ItemBasicMedicalSupplies, production: 0, demand: 0, stock: 10}
+      - {itemId: ItemOxygen, production: 0, demand: 0, stock: 160}
+      - {itemId: ItemCarbonScrubberCartridge, production: 0, demand: 0, stock: 100}
+      - {itemId: ItemReactionMass, regionId: RegionBrineCoast, production: 100000, demand: 0, stock: 8000}
+      - {itemId: ItemDeuteriumPellets, regionId: RegionBrineCoast, production: 200, demand: 0, stock: 16}
+      - {itemId: ItemPulseUnits, regionId: RegionBrineCoast, production: 10000, demand: 0, stock: 30000}
   # BrineDelta's station: developed.
   - venueId: VenueBrineDeltaStation
     systemId: SystemAnvil

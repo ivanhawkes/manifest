@@ -1516,6 +1516,24 @@ double KilogramsPerUnit(const Core::ItemNode &item)
 }
 
 
+bool PadFits(const ContentSet &content, std::string_view venueId, std::string_view hullId)
+{
+	const VenueDefinition *pVenue = nullptr;
+	for (const auto &[name, scenario] : content.scenarios)
+		if (const auto venue = std::ranges::find(scenario.venues, venueId, &VenueDefinition::venueId);
+		    venue != scenario.venues.end() && (!pVenue || name == content.scenario))
+			pVenue = &*venue;
+	const auto hull = content.dockHulls.find(RegistryName(hullId));
+	if (!pVenue || hull == content.dockHulls.end())
+		return false;
+	const auto layout = content.layouts.find(pVenue->layout);
+	return layout != content.layouts.end() &&
+	       std::ranges::any_of(
+	           layout->second.berths, [&](const Jettison::Dock::BerthLayout &berth)
+	           { return !berth.display && Jettison::Dock::Fits(content.padClasses, hull->second, berth.berthClass); });
+}
+
+
 const Core::ItemNode &PelletItem(const ContentSet &content, const DriveDefinition &drive)
 {
 	const auto item =

@@ -262,9 +262,11 @@ what lies between (`CruiseSeconds`, `DriveMetres`). The crossings are part of th
 physics, so the fast-forward passes over them: steering would hold a ship to its thrusters' 150 m/s,
 nearly two hours for 1,000 km, every step of it run. A clearance of 0, the torch's, crosses nothing.
 
-A cruise with a crossing is flown in its ends' frames. Its departure crossing is flown relative to
-the body the station it left orbits (`Cruising::departureBody`), as a ship leaving orbit keeps the
-planet's motion, and its arrival crossing relative to the body the target orbits. Between them the
+A cruise with a crossing is flown in its ends' frames (`Cruising::departureBody`, `arrivalBody`).
+Each end's crossing is flown relative to the planet the end's station orbits, as a ship leaving orbit
+keeps the planet's motion; but where the drive keeps a sphere about the station and none about the
+planet, as the hauler does, relative to the station itself, so the ship leaves and reaches the
+station's own sphere as the station moves. Between them the
 course, plotted relative to the carrier, keeps the departure body's motion since setting out by the
 share of the drive's metres still to fly, and gains the arrival body's still to come by the share
 flown, so the frames join without a jump. That blend moves a ship off its plotted course by tens of

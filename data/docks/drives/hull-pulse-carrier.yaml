@@ -1,0 +1,7 @@
+# How long the pulse carrier's cruises across a system take on the power law (Space.CruiseDrive), in a
+# mode with no cruise: the hauler's 75 s for 100,000 km, rising as the distance's fourth root.
+# Provisional until long hauls are tuned.
+version: 1
+seconds: 75
+reference: 1.0e8
+exponent: 0.25

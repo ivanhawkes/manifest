@@ -2,7 +2,7 @@
 # Sun-like star, Ore an Earth-like planet and Brine a Mars-like one on their orbits, and five
 # stations 42,000 km out from each, a fifth of an orbit apart: its highport and one for each of its
 # other regions. A body is named by its scenario ID, a station by its venue's, and the venue names
-# its station layout. Ore is at +X and Brine at -X at simulation time 0. Metres, seconds and
+# its station layout; each planet also has a dry dock, its yards, 80,000 km out. Ore is at +X and Brine at -X at simulation time 0. Metres, seconds and
 # radians; a period left out is from the parent's gravitational parameter. Every number is an
 # initial test value, not a balance result: a cruise between the planets takes a few minutes until
 # long hauls are tuned.
@@ -45,6 +45,13 @@ bodies:
     parent: PlanetOre
     radius: 763
     orbit: {semiMajorAxis: 4.2e7, meanAnomalyAtEpoch: 5.02654825}
+  # Ore's dry dock (W22b), twice the highports' orbit out so its traffic keeps apart from theirs, a
+  # tenth of an orbit ahead of the highport.
+  - name: VenueOreYards
+    kind: Station
+    parent: PlanetOre
+    radius: 850
+    orbit: {semiMajorAxis: 8.0e7, meanAnomalyAtEpoch: 0.62831853}
   - name: PlanetBrine
     kind: Planet
     parent: StarAnvil
@@ -77,3 +84,8 @@ bodies:
     parent: PlanetBrine
     radius: 763
     orbit: {semiMajorAxis: 4.2e7, meanAnomalyAtEpoch: 5.02654825}
+  - name: VenueBrineYards
+    kind: Station
+    parent: PlanetBrine
+    radius: 850
+    orbit: {semiMajorAxis: 8.0e7, meanAnomalyAtEpoch: 0.62831853}

@@ -152,6 +152,8 @@ Result Started(SimWorld &world, const Rules &rules, const Actor &actor, const Tr
 	if (travel.thrustBps == 0 || travel.thrustBps > kFullThrustBps ||
 	    travel.accelerationMilliG < kLeastAccelerationMilliG)
 		return Result::InvalidQuantity;
+	if (!Content::PadFits(rules.content, travel.venueId, record.hullId))
+		return Result::NoPadFits;
 
 	// The destination's docking fee for the ship's fee class and the ship's arrears where it is, paid
 	// as it starts (D-097, D-100).

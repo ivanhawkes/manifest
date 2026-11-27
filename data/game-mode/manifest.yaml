@@ -329,6 +329,7 @@ hulls:
   - hullId: HullCompactSingle
   - hullId: HullTraderLongHaul
   - hullId: HullFreighterMedium
+  - hullId: HullPulseCarrier
   - hullId: HullShuttle
   - hullId: HullSkiff
   - hullId: HullCutter

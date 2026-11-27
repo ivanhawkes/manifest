@@ -590,6 +590,13 @@ struct Context
 	}
 
 
+	// Whether a pad of the venue takes the ship's hull (Content::PadFits).
+	bool Fits(const std::string &venueId) const
+	{
+		return Content::PadFits(rules.content, venueId, Record().hullId);
+	}
+
+
 	const Rules::Item &Item(const std::string &itemId) const
 	{
 		const auto item = std::ranges::find(rules.items, itemId, &Rules::Item::itemId);
@@ -860,11 +867,14 @@ std::optional<Deal> ChooseTrade(const Context &context)
 	const std::vector<std::uint32_t> listed =
 	    fixed != 0 ? std::vector{fixed} : context.rules.content.tuning.fuel.thrustSharesBps;
 
-	// Each route's legs, by source and destination.
+	// Each route's legs, by source and destination, between venues with a pad the hull fits.
+	std::vector<bool> fits(venues.size());
+	for (std::size_t venue = 0; venue < venues.size(); ++venue)
+		fits[venue] = context.Fits(venues[venue]);
 	std::vector<std::vector<Leg>> routes(venues.size() * venues.size());
 	for (std::size_t source = 0; source < venues.size(); ++source)
 		for (std::size_t destination = 0; destination < venues.size(); ++destination)
-			if (source != destination)
+			if (source != destination && fits[source] && fits[destination])
 				routes[(source * venues.size()) + destination] =
 				    context.Legs(venues[source], venues[destination]);
 
@@ -874,12 +884,12 @@ std::optional<Deal> ChooseTrade(const Context &context)
 		for (const Rules::Item &item : context.rules.items)
 		{
 			const World::Line *pAsk = LineOf(reports, venues[source], item.itemId);
-			if (!pAsk || pAsk->asks.empty())
+			if (!pAsk || pAsk->asks.empty() || !fits[source])
 				continue;
 			for (std::size_t destination = 0; destination < venues.size(); ++destination)
 			{
 				const World::Line *pBid = LineOf(reports, venues[destination], item.itemId);
-				if (destination == source || !pBid || pBid->bids.empty())
+				if (destination == source || !pBid || pBid->bids.empty() || !fits[destination])
 					continue;
 				const std::vector<Leg> &legs = routes[(source * venues.size()) + destination];
 				const auto priced = [&](std::uint32_t thrustBps, std::uint64_t totes)
@@ -938,7 +948,7 @@ std::optional<std::string> ChooseDestination(const Context &context)
 	for (const std::string &venueId : context.rules.venues)
 	{
 		const World::Line *pBid = LineOf(context.Reports(), venueId, job.itemId);
-		if (!pBid || pBid->bids.empty())
+		if (!pBid || pBid->bids.empty() || !context.Fits(venueId))
 			continue;
 		const Route route = context.Priced(context.Legs({}, venueId), context.Thrust(), 0.0);
 		if (!route.fuelled)
@@ -1025,6 +1035,7 @@ std::optional<Tendered> ChooseTender(const Context &context, const std::optional
 	     registry.view<const World::Identity, const World::Tender>().each())
 	{
 		if (tender.state != World::TenderState::Open || now >= tender.bidClose || tender.totes > free ||
+		    !context.Fits(tender.venueId) ||
 		    std::ranges::find(context.rules.items, tender.itemId, &Rules::Item::itemId) ==
 		        context.rules.items.end() ||
 		    context.rules.identities.Find(Kind::Bid, World::BidId(identity.id, companyId)) !=
@@ -1034,7 +1045,7 @@ std::optional<Tendered> ChooseTender(const Context &context, const std::optional
 		const double tonnes = static_cast<double>(tender.totes) * item.tonnesPerTote;
 		for (const std::string &sourceId : context.rules.venues)
 		{
-			const World::Line *pAsk = LineOf(reports, sourceId, tender.itemId);
+			const World::Line *pAsk = context.Fits(sourceId) ? LineOf(reports, sourceId, tender.itemId) : nullptr;
 			const std::optional<Walked> buy =
 			    pAsk ? Walk(pAsk->asks, tender.totes, item.unitsPerTote, context.rules.feeBps, true)
 			         : std::nullopt;

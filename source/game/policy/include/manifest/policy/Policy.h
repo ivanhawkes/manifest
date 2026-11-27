@@ -40,7 +40,8 @@ inline constexpr std::uint32_t kVersion = 2;
 // The system, by the name the step's table gives it (docs/policies.md, "Where it runs in the step"):
 // after manifest.brokers and before the movement, each ship whose policy is enabled, in entity order,
 // takes its job's next decisions from its owner's reports, through the players' own commands sent as
-// its owner (Command::Requests::Act): choosing a trade, or a destination for the lot aboard; flying to
+// its owner (Command::Requests::Act), weighing only venues with a pad its hull fits (Content::PadFits):
+// choosing a trade, or a destination for the lot aboard; flying to
 // the source; buying there at the live ask, the rest cancelled, and loading what it bought; flying to
 // the destination; and selling there at no less than the lot's floor, the rest cancelled and loaded
 // back. A policy with no thrust of its own chooses the trade and thrust that make the most an hour, its

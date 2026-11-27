@@ -302,7 +302,7 @@ Jettison::Sim::Transform Underway(
 		return {origin + at, Facing(leg)};
 	const Flight flight = Flight::Of(
 	    system, *crossing, length, carrier, system.Find(cruising.departureBody),
-	    Anchor(system, system.Find(cruising.target)),
+	    system.Find(cruising.arrivalBody),
 	    endsAt - (static_cast<double>(ending - cruising.departureStep) * fixedStep),
 	    endsAt + (static_cast<double>(cruising.arrivalStep - ending) * fixedStep));
 	return {origin + at + flight.Offset(bodies, covered), Facing(leg)};
@@ -508,13 +508,13 @@ Settlement SettleCruise(
 	const int targetIndex = system.Find(target);
 	if (targetIndex < 0)
 		return {std::nullopt, Reason::NoSuchBody};
-	std::vector<Kept> kept;
+	std::vector<Kept> keeps;
 	for (const Keepout &keepout : drive.keepouts)
 	{
 		const int body = system.Find(keepout.body);
 		if (body < 0)
 			return {std::nullopt, Reason::NoSuchBody};
-		kept.push_back({static_cast<std::size_t>(body), keepout.radius});
+		keeps.push_back({static_cast<std::size_t>(body), keepout.radius});
 	}
 
 	// The carrier: the nearest body both the frame left and the target orbit.
@@ -530,22 +530,34 @@ Settlement SettleCruise(
 	const glm::dvec3 start = from - planner.CarrierAt(now);
 	const std::vector<Space::SystemPosition> bodies = Space::EvaluateSystem(system, now);
 	const double seconds = CruiseSeconds(drive, glm::distance(from, bodies[goal].metres));
-	const auto settled = [&](Solved solved, const CruiseDrive &flown, std::string departureBody)
+	const auto name = [&](int body)
+	{ return body < 0 ? std::string{} : system.bodies[static_cast<std::size_t>(body)].name; };
+	const auto settled = [&](Solved solved, const CruiseDrive &flown, int departure, int arrival)
 	{
-		return Settlement{
-		    SettledCruise{
-		        std::move(solved.course.points), solved.steps,
-		        planner.carrier < 0 ? std::string{}
-		                            : system.bodies[static_cast<std::size_t>(planner.carrier)].name,
-		        std::move(departureBody), flown.departureClearance, flown.arrivalClearance,
-		        solved.course.length}};
+		return Settlement{SettledCruise{
+		    std::move(solved.course.points), solved.steps, name(planner.carrier), name(departure),
+		    name(arrival), flown.departureClearance, flown.arrivalClearance, solved.course.length}};
 	};
 
 	CruiseDrive flown = drive;
 	const bool crosses = drive.profile && drive.crossingAcceleration > 0.0f &&
 	                     (drive.departureClearance > 0.0 || drive.arrivalClearance > 0.0);
-	const int departure = Anchor(system, frameIndex);
-	const int arrival = Anchor(system, targetIndex);
+	// Each end's crossing is flown relative to the body its station orbits, as a ship leaving orbit
+	// keeps the planet's motion; but relative to the station itself where the drive keeps a sphere about
+	// the station and none about that body, so it leaves and reaches the station's own sphere as the
+	// station moves.
+	const auto kept = [&](int body)
+	{
+		return std::ranges::any_of(
+		    keeps, [&](const Kept &each) { return static_cast<int>(each.body) == body; });
+	};
+	const auto anchor = [&](int body)
+	{
+		const int orbited = Anchor(system, body);
+		return kept(body) && !kept(orbited) ? body : orbited;
+	};
+	const int departure = anchor(frameIndex);
+	const int arrival = anchor(targetIndex);
 	for (int round = 0;; ++round)
 	{
 		std::optional<Solved> solved = Solve(
@@ -554,12 +566,10 @@ Settlement SettleCruise(
 		if (!solved)
 			return {std::nullopt, Reason::NoCourse};
 		if (!crosses)
-			return settled(*std::move(solved), flown, {});
-		const Checked checked = Check(planner, flown, *solved, kept, departure, arrival, now, fixedStep);
+			return settled(*std::move(solved), flown, -1, -1);
+		const Checked checked = Check(planner, flown, *solved, keeps, departure, arrival, now, fixedStep);
 		if (!checked.inside && checked.near.empty())
-			return settled(
-			    *std::move(solved), flown,
-			    departure < 0 ? std::string{} : system.bodies[static_cast<std::size_t>(departure)].name);
+			return settled(*std::move(solved), flown, departure, arrival);
 		if (round == rounds)
 			return {std::nullopt, checked.inside ? Reason::InsideRadius : Reason::NoCourse};
 		flown.departureClearance = std::max(flown.departureClearance, checked.departure);
@@ -806,6 +816,7 @@ void CruiseTravel::Start(Jettison::Sim::SimWorld &world, const Cruise &command) 
 	cruising.arrivalClearance = settled.arrivalClearance;
 	cruising.crossingAcceleration = drive->crossingAcceleration;
 	cruising.departureBody = settled.departureBody;
+	cruising.arrivalBody = settled.arrivalBody;
 
 	world.Events().Emit(
 	    CruiseStarted{
@@ -858,8 +869,9 @@ void CruiseTravel::Place(Jettison::Sim::SimWorld &world) const
 		const auto found = m_systems.find(system);
 		const int carrier = found == m_systems.end() ? -1 : found->second.Find(cruising.carrier);
 		const int target = found == m_systems.end() ? -1 : found->second.Find(cruising.target);
-		const bool departed = cruising.departureBody.empty() ||
-		                      (found != m_systems.end() && found->second.Find(cruising.departureBody) >= 0);
+		const auto known = [&](const std::string &body)
+		{ return body.empty() || (found != m_systems.end() && found->second.Find(body) >= 0); };
+		const bool departed = known(cruising.departureBody) && known(cruising.arrivalBody);
 		if (target < 0 || (carrier < 0 && !cruising.carrier.empty()) || !departed)
 			throw std::invalid_argument{std::format(
 			    "Ai: entity {:#x} cruises to '{}' by '{}' from '{}' in a system {}",

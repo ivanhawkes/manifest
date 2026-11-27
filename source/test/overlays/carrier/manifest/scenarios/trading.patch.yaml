@@ -1,0 +1,4 @@
+version: 1
+# A player started in the pulse carrier at Ore's yards, before a scenario's grants give one (W22b).
+starterHull: HullPulseCarrier
+starterVenue: VenueOreYards

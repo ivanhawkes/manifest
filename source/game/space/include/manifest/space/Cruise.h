@@ -129,13 +129,13 @@ struct Cruising
 	double arrivalClearance{0.0};
 	float crossingAcceleration{0.0f};
 
-	// With a crossing, the body its departure crossing is flown relative to: the body the station it
-	// left orbits, or the one it left. Its arrival crossing is flown relative to the body the target
-	// orbits, where the target is a station, or the target. Between them the course keeps the
-	// departure body's motion and gains the arrival body's, by the share of the drive's metres flown,
-	// so the frames join without a jump. Empty for none: a cruise with no crossing is carried with its
-	// carrier alone.
+	// With a crossing, the bodies its crossings are flown relative to: at each end the body the end's
+	// station orbits, or the station itself where its drive keeps a sphere about the station and none
+	// about that body (SettleCruise). Between them the course keeps the departure body's motion and
+	// gains the arrival body's, by the share of the drive's metres flown, so the frames join without a
+	// jump. Empty for none: a cruise with no crossing is carried with its carrier alone.
 	std::string departureBody;
+	std::string arrivalBody;
 
 	bool operator==(const Cruising &) const = default;
 };
@@ -296,13 +296,14 @@ class CruiseTravel
 
 // A cruise's course as it is settled (SettleCruise): from where the ship sets out to where it
 // arrives, metres from the carrier in the system's axes, with its whole steps, its carrier and its
-// departure body (Cruising), and its clearances as the check left them.
+// departure and arrival bodies (Cruising), and its clearances as the check left them.
 struct SettledCruise
 {
 	std::vector<glm::dvec3> course;
 	std::uint64_t steps{0};
 	std::string carrier;
 	std::string departureBody;
+	std::string arrivalBody;
 	double departureClearance{0.0};
 	double arrivalClearance{0.0};
 	double length{0.0};

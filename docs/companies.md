@@ -204,7 +204,7 @@ chosen is left out, not guessed.
 | `occupants` | The people aboard on a long journey; life support and berth fees scale with them. |
 | `oxygenTanks` | Each installed [oxygen tank](glossary.md#oxygen-tank)'s capacity in kilograms, outside the hold. |
 | `scrubberCartridges` | The [cartridges](glossary.md#cartridge) its scrubber holds. |
-| `pelletMagazine` | The [fusion pellets](glossary.md#fusion-pellets) its torch's magazine holds, in kilograms, outside the hold. |
+| `pelletMagazine` | The pellets its drive's magazine holds, in kilograms, outside the hold: [fusion pellets](glossary.md#fusion-pellets) for the torch, deuterium for the hauler, pulse units for the pulse drive. |
 | `mass` | Kilograms, felt only in collisions. Required of a scenario's starter hull. |
 
 | Hull | Hold | Notes |
@@ -213,6 +213,7 @@ chosen is left out, not guessed.
 | `HullCompactSingle` | 32 totes | One occupant in a truck-cab cabin ([D-044](decision-ledger.md#d-044)); its life support, fittings and purpose are open. |
 | `HullTraderLongHaul` | 7,200 totes | The hull the full ship skill tree is balanced against; no scenario starts a player in it or sells its tiers. |
 | `HullFreighterMedium` | 4,000 totes | A 2,500 t freighter on the hauler fusion drive, four crew; no command buys one yet ([W22b](delivery-order.md#w22b)). |
+| `HullPulseCarrier` | 160,000 totes | A 12,000 t bulk carrier on the pulse drive, twelve crew, a 25,000-unit magazine and no reaction mass tanks; on a cruiser pad, so it docks only at a dry dock ([ships plan](ships-plan.md#the-pulse-carrier)). |
 | `HullShuttle` to `HullTitan` | 21 to 1.7 million totes | One military type for each [pad class](glossary.md#pad-class); a name, a description, a drive and a first-guess hold alone. |
 | `HullSloop`, `HullBrig`, `HullGalleon`, `HullFreighter`, `HullHauler`, `HullBarge`, `HullCarrier`, `HullSupercarrier`, `HullArk` | 270 to 20 million totes | Civilian and merchant types, each on the smallest military class it fits, as sparsely authored. |
 
