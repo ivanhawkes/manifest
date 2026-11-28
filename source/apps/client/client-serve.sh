@@ -5,7 +5,8 @@
 # helper finds: no display, no window on any desktop. Driven by --run lines, the client founds the
 # player's company and names its ship, reads the ship's name, buys a tote on the market screen and
 # reads it held there. The server is stopped with SIGINT and started again on its world, and a second
-# run of the client reads the ship's name and the tote still held.
+# run of the client, given no server, connects to it from the server picker, its token saved in the
+# player's list beside the pinned key, and reads the ship's name and the tote still held.
 # It reads what the screens hold (the client's read), not pixels.
 # Usage: client-serve.sh <manifest_client> <manifest> <manifest-token> <content directory>
 #   <jettison>/scripts/lib/headless.sh
@@ -33,7 +34,8 @@ fail() {
   exit 1
 }
 
-# Starts the server on the world and pins its key, at the port it took, in the player's server list.
+# Starts the server on the world and pins its key, at the port it took, in the player's server list,
+# with the player's token for it saved there as the server picker saves it, the file theirs alone.
 serve() {
   "$manifest" --content "$content" --scenario trading --serve --world "$work/world" \
     --tokens "$work/tokens.yaml" --key "$work/server-key" --port 0 --backups "$work/backups" \
@@ -46,8 +48,9 @@ serve() {
   port="$(sed -nE 's/.*serving on 127\.0\.0\.1:([0-9]+) .*/\1/p' "$work/server.log")"
   [[ -n "$port" ]] || fail 'the server did not start'
   mkdir -p "$work/config/manifest"
-  printf 'version: 1\nservers:\n  - endpoint: 127.0.0.1:%s\n    key: %s\n' "$port" "$public" \
-    > "$work/config/manifest/servers.yaml"
+  (umask 077 && printf '%s\n' 'version: 1' 'servers:' "  - endpoint: 127.0.0.1:$port" \
+    "    key: $public" '    name: Local' "    token: $(cat "$work/token")" \
+    > "$work/config/manifest/servers.yaml")
 }
 
 stop() {
@@ -56,13 +59,13 @@ stop() {
   server=
 }
 
-# The client connected as the token's player, its --run lines given; its log is $work/<name>.log.
+# The client, its arguments and --run lines given; its log is $work/<name>.log.
 play() {
   local name="$1"
   shift
   env -u DISPLAY -u WAYLAND_DISPLAY XDG_CONFIG_HOME="$work/config" "$client" --offscreen \
-    --gpu llvmpipe --no-sound --user-dir "$work/user" --connect "127.0.0.1:$port" --token-file "$work/token" \
-    "$@" > "$work/$name.log" 2>&1 || fail "the client's $name run exited $?"
+    --gpu llvmpipe --no-sound --user-dir "$work/user" "$@" > "$work/$name.log" 2>&1 \
+    || fail "the client's $name run exited $?"
 }
 
 public="$("$token_cli" --key "$work/server-key" key)"
@@ -71,7 +74,8 @@ public="$("$token_cli" --key "$work/server-key" key)"
 serve
 # A snapshot comes at most once a second, and the first after the founding has been seen to take
 # four, so each read waits well past the answer.
-play first --run '@2s found "Ada Freight" "Long Shot"' --run '@12s read company-name' \
+play first --connect "127.0.0.1:$port" --token-file "$work/token" \
+  --run '@2s found "Ada Freight" "Long Shot"' --run '@12s read company-name' \
   --run '@12s read ship-0' --run '@12s screen market' \
   --run '@12s press buy-0' --run '@18s read held-0' --run '@18s screen company' \
   --run "@18s screenshot $work/company.png" --run '@19s quit'
@@ -82,7 +86,10 @@ grep -q 'market held-0: 1$' "$work/first.log" || fail 'the tote bought is not he
 stop
 
 serve
-play second --run '@8s read ship-0' --run '@8s screen market' --run '@8s read held-0' --run '@9s quit'
+play second --run '@2s read server-0' --run '@2s press connect-0' --run '@10s read ship-0' \
+  --run '@10s screen market' --run '@10s read held-0' --run '@11s quit'
+grep -q 'servers server-0: Local$' "$work/second.log" || fail 'the picker does not list the saved server'
 grep -q 'market held-0: 1$' "$work/second.log" || fail 'the tote is not held after the restart'
 grep -q 'company ship-0: Long Shot$' "$work/second.log" || fail 'the ship lost its name in the restart'
+if grep -qF "$(cat "$work/token")" "$work"/*.log; then fail 'a log holds the token'; fi
 stop

@@ -9,10 +9,13 @@ manifest_add_module(client_model
 		remote
 	HEADERS
 		include/manifest/client/ClientModel.h
+		include/manifest/client/ServerPicker.h
 	SOURCES
 		src/ClientModel.cpp
+		src/ServerPicker.cpp
 	TESTS
 		tests/ClientModelTests.cpp
+		tests/ServerPickerTests.cpp
 	PUBLIC_LIBRARIES
 		Jettison::Sim
 	PRIVATE_LIBRARIES

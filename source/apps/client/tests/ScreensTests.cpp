@@ -8,16 +8,20 @@
 #include <string_view>
 
 #include <jettison/host/Session.h>
+#include <jettison/net/Key.h>
+#include <jettison/net/Token.h>
 #include <jettison/sim/SimWorld.h>
 #include <jettison/ui/UiSystem.h>
 #include <jettison/vfs/FileSystem.h>
 
+#include <manifest/client/ServerPicker.h>
 #include <manifest/company/Company.h>
 #include <manifest/host/Start.h>
 
 #include "ClientGame.h"
 
 using Manifest::Client::ClientGame;
+using Manifest::Client::ServerPicker;
 
 namespace
 {
@@ -29,6 +33,21 @@ constexpr int kHeight = 1080;
 // fonts, its Japanese face one.
 constexpr std::size_t kFirstGameMount = 1;
 constexpr std::size_t kGameFonts = 1;
+
+
+// The UI over the engine's assets and the package, in English, as the shell makes it.
+std::unique_ptr<Jettison::Ui::UiSystem> MakeUi(Jettison::Vfs::FileSystem &files)
+{
+	files.AddMount({"engine", MANIFEST_ENGINE_ASSETS});
+	files.AddMount({"base", MANIFEST_MOD_DIRECTORY});
+	auto pUi = std::make_unique<Jettison::Ui::UiSystem>(files, kWidth, kHeight);
+	for (const std::string_view font : {"fonts/Roboto-Medium.ttf", "fonts/Hack-Regular.ttf"})
+		pUi->LoadFont(font);
+	pUi->LoadFont("fonts/DroidSans.ttf", true);
+	CHECK(pUi->LoadFallbackFonts("fonts", kFirstGameMount) == kGameFonts);
+	pUi->SetLanguage("en");
+	return pUi;
+}
 } // namespace
 
 
@@ -39,14 +58,8 @@ TEST_CASE("Every screen of the client loads and shows its world with no problem"
 	const std::unique_ptr<Jettison::Host::Session> session =
 	    Manifest::Host::Start({MANIFEST_MOD_DIRECTORY, {}, "trading"});
 	Jettison::Vfs::FileSystem files;
-	files.AddMount({"engine", MANIFEST_ENGINE_ASSETS});
-	files.AddMount({"base", MANIFEST_MOD_DIRECTORY});
-	Jettison::Ui::UiSystem ui{files, kWidth, kHeight};
-	for (const std::string_view font : {"fonts/Roboto-Medium.ttf", "fonts/Hack-Regular.ttf"})
-		ui.LoadFont(font);
-	ui.LoadFont("fonts/DroidSans.ttf", true);
-	CHECK(ui.LoadFallbackFonts("fonts", kFirstGameMount) == kGameFonts);
-	ui.SetLanguage("en");
+	const std::unique_ptr<Jettison::Ui::UiSystem> pUi = MakeUi(files);
+	Jettison::Ui::UiSystem &ui = *pUi;
 
 	ClientGame game{session->GetGame()};
 	game.OpenScreens(ui);
@@ -139,4 +152,53 @@ TEST_CASE("Every screen of the client loads and shows its world with no problem"
 	game.Present();
 	ui.Update(0.0);
 	CHECK(ui.ElementText(game.Document(ClientGame::kCompany), "status") == "完了。");
+}
+
+
+// The server picker: shown first when the client is given one, listing the servers saved, a refusal
+// shown in the player's words, and the world here played from it; in every language.
+TEST_CASE("The server picker lists the servers saved, says why it refuses, and gives way to the game")
+{
+	const std::unique_ptr<Jettison::Host::Session> session =
+	    Manifest::Host::Start({MANIFEST_MOD_DIRECTORY, {}, "trading"});
+	Jettison::Vfs::FileSystem files;
+	const std::unique_ptr<Jettison::Ui::UiSystem> pUi = MakeUi(files);
+	Jettison::Ui::UiSystem &ui = *pUi;
+	const Manifest::Test::TempFile own{
+	    "version: 1\nservers:\n  - endpoint: 127.0.0.1:47720\n    key: " +
+	    Jettison::Net::GenerateServerKey().publicKey +
+	    "\n    name: Home\n    token: " + Jettison::Net::GenerateToken() + "\n"};
+	const Manifest::Test::TempFile shipped{"version: 1\nservers: []\n"};
+
+	ClientGame game{session->GetGame(), ServerPicker{own.Path(), shipped.Path()}};
+	game.OpenScreens(ui);
+	game.Attach(session->World());
+	ui.Update(0.0);
+	const Jettison::Ui::DocumentHandle servers = game.Document(ClientGame::kServers);
+	CHECK(game.Shown() == ClientGame::kServers);
+	CHECK(ui.ElementText(servers, "server-0") == "Home");
+	CHECK(ui.ElementText(servers, "endpoint-0") == "127.0.0.1:47720");
+
+	// Saving with nothing typed is refused in the player's words.
+	REQUIRE(game.Press("add-server"));
+	ui.Update(0.0);
+	CHECK(ui.ElementText(servers, "status") == "Give the server a name.");
+	CHECK(ui.Problems() == 0);
+
+	for (const std::string_view language : {"fr", "de", "ja"})
+	{
+		CAPTURE(language);
+		ui.SetLanguage(language);
+		ui.Update(0.0);
+		CHECK(ui.Problems() == 0);
+	}
+	ui.SetLanguage("en");
+
+	// Played here, the start screen follows, and the picker stays there while nothing is connected.
+	REQUIRE(game.Press("play-here"));
+	ui.Update(0.0);
+	CHECK(game.Shown() == ClientGame::kStart);
+	CHECK_FALSE(ui.IsShown(servers));
+	game.Show(ClientGame::kServers);
+	CHECK(game.Shown() == ClientGame::kServers);
 }

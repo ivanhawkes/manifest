@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -11,6 +12,7 @@
 #include <jettison/ui/UiSystem.h>
 
 #include <manifest/client/ClientModel.h>
+#include <manifest/client/ServerPicker.h>
 
 namespace Manifest::Client
 {
@@ -29,9 +31,12 @@ class ClientGame final : public Jettison::App::Game
 	static constexpr std::string_view kTravel = "travel";
 	static constexpr std::string_view kService = "service";
 	static constexpr std::string_view kFlight = "flight";
+	static constexpr std::string_view kServers = "servers";
 
-	// The world is Manifest's (Host::MakeGame), which the shell's session holds and starts.
-	explicit ClientGame(Jettison::Host::Game &world);
+	// The world is Manifest's (Host::MakeGame), which the shell's session holds and starts. With the
+	// server picker the client starts on it (kServers), where the player plays that world or connects
+	// to a server they saved, the world then left unplayed (D-127).
+	explicit ClientGame(Jettison::Host::Game &world, std::optional<ServerPicker> picker = std::nullopt);
 
 	// Over a server's connection, which outlives the game, and how to make another to the same
 	// server when it is lost.
@@ -78,7 +83,8 @@ class ClientGame final : public Jettison::App::Game
 
 	void Present();
 
-	// The screen shown, the start screen until the player is provisioned.
+	// The screen shown, the start screen until the player is provisioned; the server picker only while
+	// no server is connected.
 	void Show(std::string_view screen);
 
 	const std::string &Shown() const
@@ -96,10 +102,34 @@ class ClientGame final : public Jettison::App::Game
   private:
 	void BindEvents(Jettison::Ui::DataModel &data);
 
-	// One of them.
+	// The server picker's actions, each refusal shown in its status line, and a connection it made
+	// taken once welcomed or dropped once refused, the world here played again.
+	void AddServer();
+
+	void RemoveServer(std::string_view endpoint);
+
+	void Pick(const std::string &endpoint);
+
+	void TakePicked(Jettison::Sim::SimWorld &world);
+
+	// The picker's list made again from its servers, and its status line.
+	void ListServers(std::string_view status);
+
+	// One of them, or both while a server picked is connecting.
 	Jettison::Host::Game *m_pWorld{nullptr};
 	Remote::Client *m_pRemote{nullptr};
 	ClientModel::Dial m_dial;
+
+	// The server picker, what it shows, what its form's fields hold, a connection it made, and whether
+	// that is still waiting for its welcome.
+	std::optional<ServerPicker> m_picker;
+	ServerScreen m_servers;
+	std::string m_serverName;
+	std::string m_serverEndpoint;
+	std::string m_serverKey;
+	std::string m_serverToken;
+	std::unique_ptr<Remote::Client> m_pPicked;
+	bool m_connecting{false};
 
 	// The shell's world content, which each connection holds to check the server's against.
 	std::optional<Jettison::Host::WorldContent> m_content;

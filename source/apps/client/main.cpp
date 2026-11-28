@@ -1,8 +1,6 @@
 #include <algorithm>
 #include <array>
-#include <charconv>
 #include <chrono>
-#include <cstdint>
 #include <cstdlib>
 #include <exception>
 #include <filesystem>
@@ -15,24 +13,24 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <system_error>
 #include <utility>
 #include <vector>
 
 #include <jettison/app/RenderApplication.h>
 #include <jettison/host/Session.h>
 
+#include <manifest/client/ServerPicker.h>
 #include <manifest/host/Locations.h>
 #include <manifest/host/Start.h>
 #include <manifest/remote/Client.h>
-#include <manifest/remote/Keys.h>
 
 #include "ClientGame.h"
 
 // The graphical client (docs/client.md): Manifest's game started by Jettison's shell through a session
 // of its own, over the engine's assets, with Manifest's content mounted as the shell's; or, with
-// --connect, a dedicated server's world played over a sealed connection, the shell holding none of the
-// game's.
+// --connect or picked from the servers the player saved, a dedicated server's world played over a
+// sealed connection: with --connect the shell holds none of the game's, and with a pick it holds the
+// local world, left unplayed.
 
 namespace
 {
@@ -50,9 +48,6 @@ struct Option
 constexpr std::size_t kScenario = 0;
 constexpr std::size_t kConnect = 1;
 constexpr std::size_t kTokenFile = 2;
-
-// The ports a host:port may name.
-constexpr std::uint16_t kLeastPort = 1;
 
 // How long the client waits, as it ends, for its leaving to reach the server.
 constexpr std::chrono::milliseconds kFarewell{100};
@@ -76,25 +71,27 @@ std::string ReadToken(const std::string &path)
 
 
 // The server at host:port, its key pinned from the server list (Host::DefaultServers) as the console
-// pins it. Throws std::runtime_error for an endpoint that is not one or that the list does not name.
+// pins it. Throws Client::Refused for an endpoint that is not one or that the list does not name.
 std::unique_ptr<Manifest::Remote::Client> Connect(const std::string &endpoint, const std::string &token)
 {
-	const std::size_t colon = endpoint.rfind(':');
-	const char *pEnd = endpoint.data() + endpoint.size();
-	std::uint16_t port = 0;
-	const auto parsed = colon == std::string::npos
-	                        ? std::from_chars_result{endpoint.data(), std::errc::invalid_argument}
-	                        : std::from_chars(endpoint.data() + colon + 1, pEnd, port);
-	if (colon == 0 || parsed.ec != std::errc{} || parsed.ptr != pEnd || port < kLeastPort)
-		throw std::runtime_error{std::format("expected host:port, got '{}'", endpoint)};
-	const std::filesystem::path servers = Manifest::Host::DefaultServers();
-	std::optional<std::string> key =
-	    Manifest::Remote::PinnedKey(Manifest::Remote::ReadServers(servers), endpoint);
-	if (!key)
-		throw std::runtime_error{
-		    std::format("the server list {} pins no key for {}", servers.string(), endpoint)};
-	return std::make_unique<Manifest::Remote::Client>(
-	    endpoint.substr(0, colon), port, std::move(*key), token);
+	return Manifest::Client::Dial(Manifest::Host::DefaultServers(), endpoint, token);
+}
+
+
+// The client's leaving told to the server it is connected to, if any.
+void Leave(Manifest::Remote::Client *pRemote, const char *program)
+{
+	if (pRemote == nullptr || pRemote->Closed())
+		return;
+	pRemote->Disconnect();
+	try
+	{
+		(void)pRemote->Poll(kFarewell);
+	}
+	catch (const std::exception &error)
+	{
+		std::cerr << std::format("{}: the server's last message: {}\n", program, error.what());
+	}
 }
 } // namespace
 
@@ -141,10 +138,24 @@ int main(int argc, char **argv)
 	};
 	if (!connect)
 	{
+		// With no server and no scenario given, the player picks one or plays here (D-127).
+		std::optional<Manifest::Client::ServerPicker> picker;
+		try
+		{
+			if (!options[kScenario].value)
+				picker.emplace(Manifest::Host::PlayerServers(), Manifest::Host::ShippedServers());
+		}
+		catch (const std::exception &error)
+		{
+			std::cerr << std::format("{}: {}\n", argv[0], error.what());
+			return EXIT_FAILURE;
+		}
 		std::unique_ptr<Jettison::Host::Game> world =
 		    Manifest::Host::MakeGame(options[kScenario].value.value_or(std::string{kDefaultScenario}));
-		Manifest::Client::ClientGame game{*world};
-		return run(std::move(world), game);
+		Manifest::Client::ClientGame game{*world, std::move(picker)};
+		const int status = run(std::move(world), game);
+		Leave(game.Model() != nullptr ? game.Model()->Connection() : nullptr, argv[0]);
+		return status;
 	}
 
 	std::string token;
@@ -164,18 +175,6 @@ int main(int argc, char **argv)
 	// A lost connection is dialled again with the same token, its key pinned from the list again.
 	Manifest::Client::ClientGame game{*pRemote, [&] { return Connect(*connect, token); }};
 	const int status = run(nullptr, game);
-	Manifest::Remote::Client &remote = game.Model() != nullptr ? *game.Model()->Connection() : *pRemote;
-	if (!remote.Closed())
-	{
-		remote.Disconnect();
-		try
-		{
-			(void)remote.Poll(kFarewell);
-		}
-		catch (const std::exception &error)
-		{
-			std::cerr << std::format("{}: the server's last message: {}\n", argv[0], error.what());
-		}
-	}
+	Leave(game.Model() != nullptr ? game.Model()->Connection() : pRemote.get(), argv[0]);
 	return status;
 }

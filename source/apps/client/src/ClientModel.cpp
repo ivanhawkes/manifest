@@ -12,6 +12,7 @@
 #include <jettison/reflect/Reflect.h>
 #include <jettison/serialise/Archive.h>
 
+#include <manifest/client/ServerPicker.h>
 #include <manifest/company/Company.h>
 #include <manifest/trade/Trade.h>
 #include <manifest/travel/Travel.h>
@@ -188,6 +189,12 @@ void RegisterTypes()
 		    .Field<&Screen::minutes>("minutes", kSaved)
 		    .Field<&Screen::status>("status", kSaved)
 		    .Field<&Screen::connected>("connected", kSaved);
+		RegisterType<SavedServer>("Manifest.Client.SavedServer")
+		    .Field<&SavedServer::name>("name", kSaved)
+		    .Field<&SavedServer::endpoint>("endpoint", kSaved);
+		RegisterType<ServerScreen>("Manifest.Client.ServerScreen")
+		    .Field<&ServerScreen::servers>("servers", kSaved)
+		    .Field<&ServerScreen::status>("status", kSaved);
 		RegisterType<ClientState>("Manifest.Client.State")
 		    .Field<&ClientState::principal>("principal", kSaved)
 		    .Field<&ClientState::thrustPercent>("thrustPercent", kSaved)

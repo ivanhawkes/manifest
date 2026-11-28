@@ -125,3 +125,29 @@ manifest:
     # The server's world content is not this client's: Jettison::Host::ContentDifference's words.
     content: "{0}"
   reconnecting: "The connection was lost: reconnecting. Your requests are kept and sent once it is back."
+  servers:
+    title: Servers
+    intro: "Play on a server you have saved, save one with what its operator gave you, or play here alone."
+    saved: Saved servers
+    none: No server is saved yet.
+    connect: Connect
+    remove: Remove
+    add: Save a server
+    name: Its name
+    endpoint: "Its host and port, such as example.org:47720"
+    key: "Its key, unless your server list pins one already"
+    token: Your token for it
+    save: Save
+    here: Play here alone
+    added: Saved.
+    removed: Removed.
+    connecting: "Connecting to {0}."
+    refused:
+      noName: "Give the server a name."
+      badEndpoint: "That is not a host and port, such as example.org:47720."
+      noToken: "Give your token for the server."
+      unpinned: "Your server list pins no key for that server: give its key."
+      badKey: "Your server list pins a key for that server that is not a key."
+      unknownHost: "No host of that name could be found."
+      unreadable: "Your server list cannot be read."
+      unwritable: "Your server list cannot be written."

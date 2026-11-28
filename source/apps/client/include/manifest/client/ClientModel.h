@@ -152,8 +152,8 @@ std::vector<std::byte> WriteState(const ClientState &state);
 // Throws Jettison::Serialise::FormatError for bytes that are not a ClientState of this version.
 ClientState ReadState(std::span<const std::byte> bytes);
 
-// Registers the screen's types and ClientState with Reflect, for the client's data model and its
-// saves; safe to call again.
+// Registers the screen's types, the server picker's (ServerScreen) and ClientState with Reflect, for
+// the client's data model and its saves; safe to call again.
 void RegisterTypes();
 
 // The player's side of a world (docs/client.md, "The model"), with nothing of the UI in it: what the

@@ -1,0 +1,48 @@
+<rml>
+<head>
+	<title>[[manifest.servers.title]]</title>
+	<link type="text/rcss" href="/ui/base.rcss"/>
+	<link type="text/rcss" href="manifest.rcss"/>
+	<!-- The token's field, styled as manifest.rcss styles a text field. -->
+	<style>
+		input.password {
+			width: 220dp;
+			padding: 2dp 4dp;
+			border: 1dp #4d7ea8;
+			background-color: #10202f;
+			color: #d8e2ec;
+		}
+	</style>
+</head>
+<!-- The server picker (docs/client.md, "Choosing a server"): the servers the player saved, each
+     connected to or removed, a server saved with the player's token for it, or the game played here.
+     The token is typed into a password field and never shown again. -->
+<body data-model="manifest">
+	<div id="window" class="panel">
+		<h1>[[manifest.servers.title]]</h1>
+		<p>[[manifest.servers.intro]]</p>
+		<h2>[[manifest.servers.saved]]</h2>
+		<p data-if="picker.servers.size == 0">[[manifest.servers.none]]</p>
+		<table data-if="picker.servers.size > 0">
+			<tr data-for="server, i : picker.servers">
+				<td data-attr-id="'server-' + i">{{server.name}}</td>
+				<td data-attr-id="'endpoint-' + i">{{server.endpoint}}</td>
+				<td><button data-attr-id="'connect-' + i" data-event-click="connectServer(server.endpoint)">[[manifest.servers.connect]]</button></td>
+				<td><button data-attr-id="'remove-' + i" data-event-click="removeServer(server.endpoint)">[[manifest.servers.remove]]</button></td>
+			</tr>
+		</table>
+		<h2>[[manifest.servers.add]]</h2>
+		<p>[[manifest.servers.name]]</p>
+		<input type="text" id="server-name" data-event-change="serverName(ev.value)"/>
+		<p>[[manifest.servers.endpoint]]</p>
+		<input type="text" id="server-endpoint" data-event-change="serverEndpoint(ev.value)"/>
+		<p>[[manifest.servers.key]]</p>
+		<input type="text" id="server-key" data-event-change="serverKey(ev.value)"/>
+		<p>[[manifest.servers.token]]</p>
+		<input type="password" id="server-token" data-event-change="serverToken(ev.value)"/>
+		<p><button id="add-server" data-event-click="addServer()">[[manifest.servers.save]]</button></p>
+		<p><button id="play-here" data-event-click="show('start')">[[manifest.servers.here]]</button></p>
+		<p id="status">{{picker.status}}</p>
+	</div>
+</body>
+</rml>

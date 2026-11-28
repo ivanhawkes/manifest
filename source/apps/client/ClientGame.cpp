@@ -33,9 +33,9 @@ using Jettison::Ui::EventArgument;
 using Arguments = std::span<const EventArgument>;
 
 // The screens' documents, each loaded once.
-constexpr std::array<std::string_view, 6> kScreens{ClientGame::kStart,   ClientGame::kCompany,
-                                                   ClientGame::kMarket,  ClientGame::kTravel,
-                                                   ClientGame::kService, ClientGame::kFlight};
+constexpr std::array<std::string_view, 7> kScreens{
+    ClientGame::kStart,   ClientGame::kCompany, ClientGame::kMarket, ClientGame::kTravel,
+    ClientGame::kService, ClientGame::kFlight,  ClientGame::kServers};
 
 // What a frame gives the journey's fast-forward, of the 16.7 ms a frame has at 60 Hz: the rest
 // draws the frame.
@@ -84,6 +84,24 @@ std::string_view ClosedKey(Jettison::Net::Reason reason)
 }
 
 
+// The picker's words for why it would not save or connect.
+std::string_view RefusalKey(PickRefusal refusal)
+{
+	switch (refusal)
+	{
+		case PickRefusal::NoName: return "manifest.servers.refused.noName";
+		case PickRefusal::BadEndpoint: return "manifest.servers.refused.badEndpoint";
+		case PickRefusal::NoToken: return "manifest.servers.refused.noToken";
+		case PickRefusal::Unpinned: return "manifest.servers.refused.unpinned";
+		case PickRefusal::BadKey: return "manifest.servers.refused.badKey";
+		case PickRefusal::UnknownHost: return "manifest.servers.refused.unknownHost";
+		case PickRefusal::Unreadable: return "manifest.servers.refused.unreadable";
+		case PickRefusal::Unwritable: return "manifest.servers.refused.unwritable";
+	}
+	return "manifest.servers.refused.unreadable";
+}
+
+
 std::string Text(Arguments arguments)
 {
 	return arguments.empty() ? std::string{} : Jettison::Ui::AsText(arguments.front());
@@ -113,8 +131,9 @@ std::optional<std::int64_t> Number(Arguments arguments)
 } // namespace
 
 
-ClientGame::ClientGame(Jettison::Host::Game &world)
-    : m_pWorld{&world}, m_name{kDefaultName}, m_companyName{kDefaultCompany}, m_shipName{kDefaultShip}
+ClientGame::ClientGame(Jettison::Host::Game &world, std::optional<ServerPicker> picker)
+    : m_pWorld{&world}, m_picker{std::move(picker)}, m_name{kDefaultName},
+      m_companyName{kDefaultCompany}, m_shipName{kDefaultShip}
 {
 }
 
@@ -129,11 +148,10 @@ ClientGame::ClientGame(Remote::Client &remote, ClientModel::Dial dial)
 void ClientGame::OpenUi(Jettison::Ui::UiSystem &ui, Jettison::App::Shell &shell)
 {
 	// Before the connection is first polled, which the model does once the UI is open.
-	if (m_pRemote != nullptr)
-	{
+	if (m_pRemote != nullptr || m_picker)
 		m_content = Jettison::Host::DescribeWorldContent(shell.Assets());
+	if (m_pRemote != nullptr)
 		m_pRemote->Hold(*m_content);
-	}
 	OpenScreens(ui);
 }
 
@@ -144,10 +162,12 @@ void ClientGame::OpenScreens(Jettison::Ui::UiSystem &ui)
 	m_pUi = &ui;
 	m_pData = &ui.CreateDataModel("manifest");
 	m_pData->Bind("screen", &m_screen);
+	m_pData->Bind("picker", &m_servers);
 	BindEvents(*m_pData);
 	for (const std::string_view screen : kScreens)
 		m_documents.emplace(screen, ui.LoadDocument(std::format("ui/manifest/{}.rml", screen)));
-	Show(kStart);
+	ListServers({});
+	Show(m_picker ? kServers : kStart);
 }
 
 
@@ -191,6 +211,121 @@ void ClientGame::BindEvents(Jettison::Ui::DataModel &data)
 	act("refill", [](ClientModel &model, Arguments) { model.Refill(); });
 	act("replace", [](ClientModel &model, Arguments) { model.Replace(); });
 	act("refuel", [](ClientModel &model, Arguments arguments) { model.SetRefuel(Flag(arguments)); });
+
+	// The picker's fields, the token's never shown in full (a password input) nor logged.
+	data.BindEvent("serverName", [this](Arguments arguments) { m_serverName = Text(arguments); });
+	data.BindEvent(
+	    "serverEndpoint", [this](Arguments arguments) { m_serverEndpoint = Text(arguments); });
+	data.BindEvent("serverKey", [this](Arguments arguments) { m_serverKey = Text(arguments); });
+	data.BindEvent("serverToken", [this](Arguments arguments) { m_serverToken = Text(arguments); });
+	data.BindEvent("addServer", [this](Arguments) { AddServer(); });
+	data.BindEvent("removeServer", [this](Arguments arguments) { RemoveServer(Text(arguments)); });
+	data.BindEvent("connectServer", [this](Arguments arguments) { Pick(Text(arguments)); });
+}
+
+
+void ClientGame::AddServer()
+{
+	if (!m_picker || m_pUi == nullptr)
+		return;
+	try
+	{
+		m_picker->Add(m_serverName, m_serverEndpoint, m_serverKey, m_serverToken);
+		ListServers(m_pUi->Strings().Text("manifest.servers.added"));
+	}
+	catch (const Refused &error)
+	{
+		Jettison::Core::Log(Jettison::Core::Severity::Warning, kClient, "{}", error.what());
+		ListServers(m_pUi->Strings().Text(RefusalKey(error.Reason())));
+	}
+}
+
+
+void ClientGame::RemoveServer(std::string_view endpoint)
+{
+	if (!m_picker || m_pUi == nullptr)
+		return;
+	try
+	{
+		m_picker->Remove(endpoint);
+		ListServers(m_pUi->Strings().Text("manifest.servers.removed"));
+	}
+	catch (const Refused &error)
+	{
+		Jettison::Core::Log(Jettison::Core::Severity::Warning, kClient, "{}", error.what());
+		ListServers(m_pUi->Strings().Text(RefusalKey(error.Reason())));
+	}
+}
+
+
+void ClientGame::Pick(const std::string &endpoint)
+{
+	if (!m_picker || m_pUi == nullptr || m_pRemote != nullptr)
+		return;
+	try
+	{
+		m_pPicked = m_picker->Connect(endpoint);
+	}
+	catch (const Refused &error)
+	{
+		Jettison::Core::Log(Jettison::Core::Severity::Warning, kClient, "{}", error.what());
+		ListServers(m_pUi->Strings().Text(RefusalKey(error.Reason())));
+		return;
+	}
+
+	// The model over the connection is made at the next frame, as the first is; a lost one is dialled
+	// again with the token the list holds by then.
+	if (m_content)
+		m_pPicked->Hold(*m_content);
+	m_pRemote = m_pPicked.get();
+	m_dial = [this, endpoint] { return m_picker->Connect(endpoint); };
+	m_model.reset();
+	m_connecting = true;
+	ListServers(m_pUi->Strings().Format("manifest.servers.connecting", endpoint));
+}
+
+
+void ClientGame::TakePicked(Jettison::Sim::SimWorld &world)
+{
+	if (!m_connecting || !m_model)
+		return;
+	if (m_model->Connection()->Welcomed())
+	{
+		m_connecting = false;
+		ListServers({});
+		Show(kStart);
+		return;
+	}
+	const std::optional<Jettison::Net::Reason> closed = m_model->Closed();
+	if (!closed)
+		return;
+
+	// Refused before its welcome: the picker says why, and the world here is the player's again.
+	const Jettison::Ui::StringTable &strings = m_pUi->Strings();
+	const std::optional<std::string> refused = m_model->Refused();
+	ListServers(
+	    refused ? strings.Format("manifest.closed.content", *refused)
+	            : strings.Text(ClosedKey(*closed)));
+	m_connecting = false;
+	m_model.reset();
+	m_pRemote = nullptr;
+	m_dial = {};
+	m_pPicked.reset();
+	Attach(world);
+}
+
+
+void ClientGame::ListServers(std::string_view status)
+{
+	ServerScreen servers;
+	if (m_picker)
+		servers.servers = m_picker->Servers();
+	servers.status = status;
+	if (servers != m_servers && m_pData != nullptr)
+	{
+		m_servers = std::move(servers);
+		m_pData->Changed("picker");
+	}
 }
 
 
@@ -222,6 +357,7 @@ void ClientGame::UpdateUi(Jettison::App::Shell &shell)
 	if (m_model->FastForward(kFrameBudget) > 0)
 		shell.Resync();
 	m_model->Refresh();
+	TakePicked(shell.World());
 	Present();
 }
 
@@ -279,7 +415,12 @@ void ClientGame::Show(std::string_view screen)
 {
 	if (m_pUi == nullptr || !m_documents.contains(screen) || screen == kFlight)
 		return;
-	if (screen != kStart && !m_screen.provisioned)
+	if (screen == kServers)
+	{
+		if (!m_picker || (m_pRemote != nullptr && !m_connecting))
+			return;
+	}
+	else if (screen != kStart && !m_screen.provisioned)
 		screen = kStart;
 	for (const auto &[name, document] : m_documents)
 		if (name != kFlight && name != screen)
@@ -292,11 +433,11 @@ void ClientGame::Show(std::string_view screen)
 void ClientGame::AddCommands(Jettison::DevTools::Console &console, Jettison::App::Shell & /*shell*/)
 {
 	console.RegisterCommand(
-	    "screen", "screen <start|company|market|travel|service>: show a screen of the client's",
+	    "screen", "screen <servers|start|company|market|travel|service>: show a screen of the client's",
 	    [this](Jettison::DevTools::Console &, std::span<const std::string> arguments)
 	    {
 		    if (arguments.size() != 1 || !m_documents.contains(arguments.front()))
-			    throw std::runtime_error{"usage: screen <start|company|market|travel|service>"};
+			    throw std::runtime_error{"usage: screen <servers|start|company|market|travel|service>"};
 		    Show(arguments.front());
 	    });
 	console.RegisterCommand(
@@ -420,7 +561,7 @@ void ClientGame::DriveSmoke(Jettison::App::SmokeActions &actions, Jettison::App:
 
 bool ClientGame::Back(Jettison::App::Shell & /*shell*/)
 {
-	if (m_shown == kStart || m_shown == kCompany)
+	if (m_shown == kStart || m_shown == kCompany || m_shown == kServers)
 		return false;
 	Show(kCompany);
 	return true;
