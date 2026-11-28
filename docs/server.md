@@ -241,8 +241,11 @@ not hold the pinned key is closed as `KeyMismatch` before the token is sent, and
 pinning another server's key. The list is the player's `$XDG_CONFIG_HOME/manifest/servers.yaml`
 when it is there, else the one the build ships beside its content
 (`share/manifest/servers.yaml`, from `source/apps/manifest/servers.yaml`), which is how a test build
-carries its server's key (`Host::DefaultServers`). A secret lost or leaked is a new key, and every
-client given its public half.
+carries its server's key (`Host::DefaultServers`). The graphical client's server picker keeps, in the
+player's list, the name they gave each server they save and their token for it beside its pin,
+writing the list whole and its owner's alone, 0600 ([D-127](decision-ledger.md#d-127),
+[choosing a server](client.md#choosing-a-server)); the console reads the list as before. A secret
+lost or leaked is a new key, and every client given its public half.
 
 ## Using it
 
@@ -362,9 +365,10 @@ The console's commands themselves are in [the console and the terminal UI](conso
 ### Play from the graphical client
 
 `manifest_client --connect <host:port> --token-file <file>` plays on a server as the token's actor,
-pinning the key from the same server list, with no local world: the player founds their company
-from the start screen or the console's `found`, and the screens are made from the server's
-snapshots ([server play](client.md#server-play)).
+pinning the key from the same server list, with no local world; a server the player saved and picks
+on the client's [server picker](client.md#choosing-a-server) is played the same way. The player
+founds their company from the start screen or the console's `found`, and the screens are made from
+the server's snapshots ([server play](client.md#server-play)).
 
 ### Write a client in C++
 

@@ -139,8 +139,8 @@ market, travel, flight and service screens. What is still to come:
 
 - **Server play.** Its tracer is done, one player trading on a dedicated server
   ([server play](client.md#server-play), L52 in [history](history/tasks.md)), and the content
-  checked against the server's (L53), and reconnecting, a lost request resent. Still to come:
-  choosing a server in the client ([after the tracer](client-plan.md#after-the-tracer)).
+  checked against the server's (L53), reconnecting, a lost request resent, and the server picker,
+  choosing a server the player saved ([choosing a server](client.md#choosing-a-server)).
 - **Owners' settings** ([L15b](delivery-order.md#l15b)). A venue's fees and a region's taxes shown and edited
   ([D-098](decision-ledger.md#d-098); the tax command is [L29](history/tasks.md)'s), and station policy and
   ownership views ([L04](delivery-order.md#l04), [L05](delivery-order.md#l05)).

@@ -20,7 +20,8 @@ the user's mods and the user's directory. The Manifest package is therefore the 
 not the engine's, and the content phase checks it as it checks the server's first source.
 
 `--scenario <name>` is the client's own and is taken off the command line before the shell reads
-the rest; with none it plays `trading`. Every other argument is the shell's
+the rest. With neither it nor `--connect`, the client opens on the [server picker](#choosing-a-server),
+where the player plays `trading` here or connects to a server they saved. Every other argument is the shell's
 ([the app shell](../../jettison/docs/app-shell.md)): `--content` names other content, and
 `--offscreen`, `--screenshot` and `--user-dir` work as they do for the engine's programs.
 
@@ -42,8 +43,9 @@ an event, which calls the model.
 | `travel` | The destinations, with *Go*; the thrust slider, in percent of the cruise, and the acceleration in g, in tenths ([D-107](decision-ledger.md#d-107)) |
 | `flight` | A panel beside the screen while a journey is under way: the ship's name, its destination and leg, the reaction mass left, the day, and fast-forward on or off |
 | `service` | The life support's oxygen and scrubbers and the fuel; refill the tanks or replace the scrubbers where it is docked, and refuel on docking or not |
+| `servers` | The [server picker](#choosing-a-server): the servers the player saved, by name and endpoint, each with *Connect* and *Remove*; a server saved by its name, host:port, key and the player's token; *Play here alone*. Shown first when the command line names no server and no scenario |
 
-Every screen but the start shows the day and the last request's answer, in the player's words. The
+Every screen but the start and the server picker shows the day and the last request's answer, in the player's words. The
 navigation buttons change screen, and Escape goes back to the company's. A frame gives the journey's
 fast-forward 4 ms (`ClientModel::FastForward`), then takes the shell's snapshots again
 (`Shell::Resync`).
@@ -55,7 +57,7 @@ logs what an element of the screen shown holds (`market held-0: 1`), as console 
 screen does (double quotes keep spaces), locally or on a server:
 
 ```bash
-manifest_client --offscreen --run "@5 press provision" --run "@30 screen market" \
+manifest_client --scenario trading --offscreen --run "@5 press provision" --run "@30 screen market" \
     --run "@40 press buy-0" --screenshot market.png --after-frames 60
 ```
 
@@ -189,6 +191,41 @@ manifest-token --tokens tokens.yaml issue principal Ada > ada.token    # the ser
 manifest_client --connect 127.0.0.1:47720 --token-file ada.token --run '@2s found "Ada Freight" "Long Shot"'
 ```
 
+### Choosing a server
+
+Started with no `--connect` and no `--scenario`, the client opens on the server picker (`servers`).
+Its model is `Manifest::Client::ServerPicker` (`client_model`), with nothing of the UI in it. It lists
+the servers of the player's [server list](server.md#connections-are-sealed),
+`$XDG_CONFIG_HOME/manifest/servers.yaml` (`Host::PlayerServers`), that hold a name and a token beside
+their pinned key ([D-127](decision-ledger.md#d-127)): the console's format with two fields added, so a
+list without them reads as it did.
+
+- *Save* adds a server, or replaces what the list holds of its endpoint: its name, its `host:port`,
+  its public key as its operator gave it, and the player's token. With no key, the list must pin one
+  for the endpoint already, as the build's may (`share/manifest/servers.yaml`,
+  `Host::ShippedServers`); the first save copies the build's list into the player's, so its pins
+  stay. The list is written whole and durably (`Remote::WriteServers`), its owner's alone (0600) from
+  the moment it is made, in a directory made private (0700) if it is new.
+- *Remove* takes the server's name and token out of the list and keeps its pinned key.
+- *Connect* dials the server as `--connect` does (`Client::Dial`), its key pinned from the list as
+  the console pins it, with the token the list holds. The picker stays until the server's welcome; the
+  start screen follows, or the company's once the player has one, and server play goes on as above, a
+  lost connection dialled again with the token the list holds then. A connection closed before its
+  welcome, for its credential, key, content or anything else, is dropped, and the picker says why in
+  the closing's words (`manifest.closed.<reason>`).
+- *Play here alone* plays the `trading` world the shell started.
+
+What the picker refuses before anything is sent its status line says in the player's words
+(`manifest.servers.refused.<reason>`): no name, an endpoint that is not `host:port`, no token, no key
+pinned and none given, a pinned key that is not one, a host that does not resolve, and a list that
+cannot be read or written. The log has the details, the list's path among them, and never a token. The
+token is typed into a password field, never shown after, and kept in no save, crash report or log:
+only the list holds it.
+
+A shell's world is fixed as it starts, so a server picked leaves the local world the shell started
+going on unplayed, and the saves refuse while connected, as with `--connect`. Once a server is
+connected, the picker is not shown again in that run.
+
 ### The scene
 
 The package's `scene/main.yaml` holds a camera and a lamp, which the shell draws behind the screens
@@ -201,16 +238,16 @@ system's models load ([roadmap](roadmap.md#the-graphical-client)).
 
 | Suite | What it checks |
 | --- | --- |
-| `client_model` | The first loop through the model: provisioned at Ore, a nameless ship refused and then the ship named, two totes of furs bought and loaded, flown to Brine with fast-forward, unloaded and sold for more; the journey's bounds, a refusal made before sending, and the save's section restored. Then over an in-process server: nothing sent before the welcome, the company founded as the token's principal with a Japanese ship's name seen in the snapshot, a tote bought and seen held, and the server's stop shown as `Shutdown`; a server whose world content is not the client's (the compressed copy's) refused, naming the package, with nothing sent; and over a server restarted on its port, a refused request dropped and not sent again, a buy whose completion was lost sent again and run once (held once, paid once, the ledger at the next request), one made while reconnecting sent once back, and a server that no longer takes the token not dialled again (`BadCredential`) |
-| `client_screens` | Every screen loaded over a started world with nothing RmlUi or the string table counts as a problem, the start giving way to the company's, which shows the ship by its name, the navigation, and the flight panel shown under way with the ship's name, the acceleration, a price and the time of day in English's and German's forms; then every screen again in French, German and Japanese, every translation taken |
+| `client_model` | The first loop through the model: provisioned at Ore, a nameless ship refused and then the ship named, two totes of furs bought and loaded, flown to Brine with fast-forward, unloaded and sold for more; the journey's bounds, a refusal made before sending, and the save's section restored. Then over an in-process server: nothing sent before the welcome, the company founded as the token's principal with a Japanese ship's name seen in the snapshot, a tote bought and seen held, and the server's stop shown as `Shutdown`; a server whose world content is not the client's (the compressed copy's) refused, naming the package, with nothing sent; and over a server restarted on its port, a refused request dropped and not sent again, a buy whose completion was lost sent again and run once (held once, paid once, the ledger at the next request), one made while reconnecting sent once back, and a server that no longer takes the token not dialled again (`BadCredential`). The server picker: a server saved with its token, the player's list made theirs alone (0600, in 0700 directories) with the build's pins kept, renamed, removed with its pin kept, and each refusal made before anything is written; connected to an in-process server as the token's player, a token the server does not take closed `BadCredential`, and an endpoint not saved, a host that does not resolve and a key that is not one refused; no token in the log |
+| `client_screens` | Every screen loaded over a started world with nothing RmlUi or the string table counts as a problem, the start giving way to the company's, which shows the ship by its name, the navigation, and the flight panel shown under way with the ship's name, the acceleration, a price and the time of day in English's and German's forms; then every screen again in French, German and Japanese, every translation taken. The server picker shown first, listing a saved server by its name and endpoint, a save with nothing typed refused in English, every language's words taken, and *Play here alone* giving way to the start screen |
 | `client_strings` | Every key English has, the engine's (read from its assets alone, too) and the client's, in French, German and Japanese and no key beyond them; each text naming English's placeholders and data expressions, and a key with plural forms holding those its language's rule needs (Japanese only `other`). The engine's `numbers.*` forms are its own, each language's (a 24-hour clock names no am or pm), and the engine's ui suite checks them. A failure names the language and the key |
 | `client_smoke` | The engine's render test sequence played by the client offscreen on lavapipe (`client-smoke.sh`): its save and load carry the client's section, and its game UI stage provisions the player and buys a tote at the market's first ask through the screens |
-| `client_serve` | Server play end to end (`client-serve.sh`): `manifest --serve` on a new trading world and an ephemeral port, the client offscreen on lavapipe founding "Ada Freight" and its ship "Long Shot" with `found`, reading the ship's name on the company screen, buying a tote with `press buy-0` and reading it held; the server stopped with SIGINT and started again, a second run reads the ship's name and the tote still held |
+| `client_serve` | Server play end to end (`client-serve.sh`): `manifest --serve` on a new trading world and an ephemeral port, the client offscreen on lavapipe founding "Ada Freight" and its ship "Long Shot" with `found`, reading the ship's name on the company screen, buying a tote with `press buy-0` and reading it held; the server stopped with SIGINT and started again, a second run, given no server, lists the server saved in the player's list with their token, connects to it from the server picker, and reads the ship's name and the tote still held; no log holds the token |
 
 ## Using it
 
 ```bash
-build/clang-debug/source/apps/client/manifest_client               # the trading scenario
+build/clang-debug/source/apps/client/manifest_client               # the server picker
 build/clang-debug/source/apps/client/manifest_client --scenario governance
 build/clang-debug/source/apps/client/manifest_client --connect 127.0.0.1:47720 --token-file ada.token
 ```
@@ -223,7 +260,8 @@ It is built in every preset with the engine's presentation (`MANIFEST_BUILD_CLIE
 - The content mounts as `base`, not `manifest`, so an overlay that `requires: manifest` does not
   mount in the client.
 - It is not in the [bundle](glossary.md#bundle) yet.
-- On a server it has no screen to choose a server ([after the tracer](client-plan.md#after-the-tracer)).
+- Connected from the server picker, the local world the shell started goes on unplayed, and the picker
+  is not shown again in that run.
 - Goods and venues are shown by their IDs, not their names.
 - The Japanese font is one weight, Regular.
 - What is still to come is listed in [the graphical client](roadmap.md#the-graphical-client).
@@ -238,4 +276,6 @@ It is built in every preset with the engine's presentation (`MANIFEST_BUILD_CLIE
 - `mods/manifest/strings/<tag>/`: the four languages' tables.
 - `source/apps/client/include/manifest/client/ClientModel.h`: the model; its suite is
   `tests/ClientModelTests.cpp`.
+- `source/apps/client/include/manifest/client/ServerPicker.h` and `mods/manifest/ui/manifest/servers.rml`:
+  the server picker; its tests are `tests/ServerPickerTests.cpp`, in `client_model`.
 - `source/game/host/src/Start.cpp`: `MakeGame` and `HostedServices`.

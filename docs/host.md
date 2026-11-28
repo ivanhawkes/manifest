@@ -118,7 +118,7 @@ default, and the option still overrides it.
 | Backups | `$XDG_DATA_HOME/manifest/backups`, written by default | `--backups` |
 | The token file | `$XDG_CONFIG_HOME/manifest/tokens` | `--tokens` |
 | The server's secret key, 0600 | `$XDG_CONFIG_HOME/manifest/server-key` | `--key` |
-| A client's server list | `$XDG_CONFIG_HOME/manifest/servers.yaml` when it is there, else `<bin>/../share/manifest/servers.yaml` | none |
+| A client's server list | `$XDG_CONFIG_HOME/manifest/servers.yaml` when it is there, else `<bin>/../share/manifest/servers.yaml`; the player's written 0600 by the graphical client's server picker, since it holds their tokens | none |
 | The TUI's transcript | `$XDG_STATE_HOME/manifest/tui-session.log` | none |
 | The server's crash reports | `$XDG_STATE_HOME/manifest/crashes` | none |
 | The server's log | stderr, for the service manager to keep | none |
@@ -333,7 +333,7 @@ Ubuntu 24.04 runner with `host`, then in the two containers, a step each
 | `manifest-validate` | `<options> [--manifest <file>]`: load the content with no world; `--manifest` writes the content manifest's bytes |
 | `manifest-token` | `[--tokens <file>] issue\|revoke principal\|administrator <id>`: issue a bearer token, printed once, or revoke one |
 | `manifest_tui` | `[--content <directory-or-pack>]`: the console in a terminal, which also connects to a server as a remote client |
-| `manifest_client` | `[--scenario <name>]` and the engine shell's arguments: the [graphical client](client.md), not yet in the bundle |
+| `manifest_client` | `[--scenario <name>]` or `--connect <host:port> --token-file <file>`, and the engine shell's arguments: the [graphical client](client.md), opening on its server picker given neither; not yet in the bundle |
 
 `<options>` are [the options](#the-options). The server's defaults are the loopback address
 `127.0.0.1`, port 0 (an ephemeral port, which its log line names), a journal flush every 30 s and a
