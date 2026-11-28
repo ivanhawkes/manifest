@@ -64,8 +64,7 @@ is hosted for the public, the service is hardened, profiled and soaked unattende
 ([L01](delivery-order.md#l01)); its connections are already sealed to the server's key (Jettison's
 [J01](../../jettison/docs/history/neutral-sdk.md#j01-encryption), [D-081](decision-ledger.md#d-081)). Saves move off the thread
 that steps the world, so a growing world's writes stall neither a step nor a frame
-([L40](delivery-order.md#l40)). Stage 5 left the terminal UI's retry, the bundle's container tests
-and stripped release binaries ([L41](delivery-order.md#l41)). The built contracts are [the
+([L40](delivery-order.md#l40)). The built contracts are [the
 server](server.md), [persistence](persistence.md) and [the host](host.md).
 
 ## Space

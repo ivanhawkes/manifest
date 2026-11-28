@@ -79,7 +79,7 @@ How: [the host](host.md), [the server](server.md), [the console and the terminal
 | Saves, the [journal](glossary.md#journal) and backups | In | A restart resumes the world where it stopped |
 | The world catching up for time the server was down | Deferred | Downtime pauses the world ([D-011](decision-ledger.md#d-011)) |
 | Saves off the step's thread | Planned, [L40](delivery-order.md#l40) | A large snapshot should not stall the step ([D-115](decision-ledger.md#d-115)) |
-| Stage 5's loose ends (TUI retry, the bundle test, debug files) | Planned, [L41](delivery-order.md#l41) | |
+| Stage 5's loose ends (TUI retry, the bundle test, debug files) | In, [L41](history/tasks.md#l41) | The TUI resends a lost request ([D-125](decision-ledger.md#d-125)); CI runs the bundle in containers |
 | Encrypted connections, hosting outside a trusted network | In, Jettison's [J01](../../jettison/docs/history/neutral-sdk.md#j01-encryption) | Every connection sealed to the server's key, which clients pin ([D-081](decision-ledger.md#d-081)) |
 | Deployment hardening, capacity profiling, unattended soak | Planned, [L01](delivery-order.md#l01) | Before public hosting |
 | The graphical client | In for the first loop ([the graphical client](client.md)); the rest planned, [L15](delivery-order.md#l15) | Shares the server interface with the TUI ([D-012](decision-ledger.md#d-012)); its screens are listed in the [roadmap](roadmap.md#the-graphical-client) |

@@ -11,8 +11,8 @@ Server play's tracer is done (L52, [server play](client.md#server-play)). What f
 own row when taken up, in this order unless the user reorders them:
 
 - **Reconnecting.** A dropped connection made again, and the request whose completion never came
-  sent again under its sequence (`Remote::Client::Retry`), as [L41](delivery-order.md#l41) asks of
-  the TUI.
+  sent again under its sequence (`Remote::Client::Retry`), as the TUI does
+  ([L41](history/tasks.md#l41), [D-125](decision-ledger.md#d-125)).
 - **Choosing a server in the client.** A screen of the server list, the endpoint and the token, the
   token kept private in the user's directory.
 - **The bundle.** The client shipped beside the TUI.
