@@ -18,12 +18,11 @@ open work, in order, is the [task queue](delivery-order.md).
 ## Next
 
 The first loop plays in the graphical client, `manifest_client` (L15a, done 2026-11-27,
-[the graphical client](client.md)), on a local world. What it still lacks is in the
-[roadmap](roadmap.md#the-graphical-client): server play, the galaxy panel, the shipyard and fleet
+[the graphical client](client.md)), on a local world or, since L52 (2026-11-28), on a dedicated
+server. What it still lacks is in the [roadmap](roadmap.md#the-graphical-client): the galaxy panel, the shipyard and fleet
 screens, names, and the looks. The
-owners' screens are [L15b](delivery-order.md#l15b), which waits on [L04](delivery-order.md#l04),
-[L05](delivery-order.md#l05) and [L29](delivery-order.md#l29); L29's open choices are settled
-([D-120](decision-ledger.md#d-120)). The pin is Jettison's `b8134e3`: numbers, dates and times in the language's form, which the client's screens use (J15, [languages](client.md#languages)); the mods' scripts in the host session, which the server runs and saves ([J62](server.md#the-servers-loop)); and a scene held behind its fade until its models load (J13), which the client has no scene change to use yet. The drives past the torch
+owners' screens are [L15b](delivery-order.md#l15b), which waits on [L04](delivery-order.md#l04) and
+[L05](delivery-order.md#l05); the regions' tax rates it edits are in (L29, 2026-11-28). The pin is Jettison's `b8134e3`: numbers, dates and times in the language's form, which the client's screens use (J15, [languages](client.md#languages)); the mods' scripts in the host session, which the server runs and saves ([J62](server.md#the-servers-loop)); and a scene held behind its fade until its models load (J13), which the client has no scene change to use yet. The drives past the torch
 are done ([W22b](history/tasks.md#w22b), 2026-11-27): the pulse carrier, its dry docks, licence and
 override, and the freighter granted. Saves still
 run on the step's thread ([L40](delivery-order.md#l40), [D-115](decision-ledger.md#d-115)).
