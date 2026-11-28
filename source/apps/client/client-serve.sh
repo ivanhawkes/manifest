@@ -58,7 +58,7 @@ play() {
   local name="$1"
   shift
   env -u DISPLAY -u WAYLAND_DISPLAY XDG_CONFIG_HOME="$work/config" "$client" --offscreen \
-    --gpu llvmpipe --user-dir "$work/user" --connect "127.0.0.1:$port" --token-file "$work/token" \
+    --gpu llvmpipe --no-sound --user-dir "$work/user" --connect "127.0.0.1:$port" --token-file "$work/token" \
     "$@" > "$work/$name.log" 2>&1 || fail "the client's $name run exited $?"
 }
 
