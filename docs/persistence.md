@@ -359,8 +359,8 @@ the fourth replaces the writer, which the tests use to fail where a disk would.
 - **Durability** is proved at the writer's seam and with a process killed outright; no power cut has
   been tested, and no backup is read back from the disk as it is written.
 - **No refusing write.** A world's first file is checked for, then written; a write that refuses to
-  replace a file is [J32](../../jettison/docs/roadmap.md#j32), and fault injection under the system
-  calls [J33](../../jettison/docs/roadmap.md#j33).
+  replace a file is [J32](../../jettison/docs/persistence.md#a-write-that-refuses-to-replace), and fault injection under the system
+  calls [J33](../../jettison/docs/history.md#j33).
 - **A request heard complete, then lost** to a crash before its journal is written, is not sent
   again by the TUI, and those after it are refused as `SequenceGap`
   ([console](console.md#limits-and-open-work)).

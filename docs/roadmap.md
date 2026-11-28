@@ -164,9 +164,9 @@ market, travel, flight and service screens. What is still to come:
   ([J27](../../jettison/docs/roadmap.md#j27)), so a hull drawn from a model can glow too.
 - **A jump's cutscene** that the jump waits on, its arrival binding the gate
   ([J22](../../jettison/docs/roadmap.md#j22)); and a jump holding its effect while the new system's
-  models stream in ([J13](../../jettison/docs/roadmap.md#j13)).
+  models stream in ([J13](../../jettison/docs/history.md#j13)).
 - **Thruster ports** placed by a hull's definition, on a hull drawn from a model as well as a proxy
   ([J24](../../jettison/docs/roadmap.md#j24)).
 - **A station's collision** kept to its layout's decks and piers when it is drawn from a model; a
   station of no layout needs the model's own collision mesh
-  ([J12](../../jettison/docs/roadmap.md#j12)), and until then its model is reported and left out.
+  ([J12](../../jettison/docs/history.md#j12)), and until then its model is reported and left out.

@@ -208,7 +208,7 @@ The scenario already has both kinds of venue, but the private one admits every s
 the queue first come, first served
 ([Jettison docks](../../jettison/docs/docks.md#asking-for-a-berth-and-giving-it-up)). There is no
 seam for a game to admit or refuse a vehicle, or to rank the queue: that is Jettison's
-[J35](../../jettison/docs/roadmap.md#j35), a game-agnostic interface that supplies the core
+[J35](../../jettison/docs/history/neutral-sdk.md#j35-dock-control), a game-agnostic interface that supplies the core
 functions and leaves every rule of admission, refusal and rank to the game. L04 needs it, proved
 by a consumer that is not Manifest, before Manifest's policy goes on it. Every ordinary arrival, player or NPC, must pass it; `Docks::Park`
 stays the trusted path for the world's initial state.
@@ -416,7 +416,7 @@ Open:
 
 | Need | Task | Jettison today |
 | --- | --- | --- |
-| Admission and refusal of a vehicle by game policy, and ranking of a platform's queue | [L04](#l04-private-port-bookings-and-owner-policy) | Not provided: Jettison's [J35](../../jettison/docs/roadmap.md#j35) |
+| Admission and refusal of a vehicle by game policy, and ranking of a platform's queue | [L04](#l04-private-port-bookings-and-owner-policy) | Not provided: Jettison's [J35](../../jettison/docs/history/neutral-sdk.md#j35-dock-control) |
 
 Everything else here is Manifest's: tenders, bribery, offers, concessions and colonies use the
 engine's commands, saved world and journal as they are.

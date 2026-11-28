@@ -117,7 +117,7 @@ letters and digits joined by single hyphens. The cook refuses a file that breaks
   (`jawOpen`, `eyeBlinkLeft`), as the [characters plan](../../jettison/docs/characters.md) has
   them.
 - **Nodes with a role** carry it as a prefix **(engine)**: `collision-<name>` for a collision
-  mesh ([J12](../../jettison/docs/roadmap.md#j12)), never drawn; `socket-<name>` for an empty that
+  mesh ([J12](../../jettison/docs/history.md#j12)), never drawn; `socket-<name>` for an empty that
   marks where something attaches. Lights and cameras are placed in scene files, not exported.
 
 ## Scale, axes and origins
@@ -279,6 +279,6 @@ support](../../jettison/docs/roadmap.md#a-separate-track-the-art-standards-suppo
 - [J65](../../jettison/docs/roadmap.md#j65): the material library, bound by a glTF material's name.
 - [J66](../../jettison/docs/roadmap.md#j66): the cook reads the map words (colour space, `orm`,
   `mask`, 16-bit sources), refuses material extensions, and reads `collision-` and `socket-`
-  nodes, the collision mesh with [J12](../../jettison/docs/roadmap.md#j12).
+  nodes, the collision mesh with [J12](../../jettison/docs/history.md#j12).
 - [J67](../../jettison/docs/roadmap.md#j67): Jettison's test content laid out by this standard, and
   its content-file rule pointing here.

@@ -119,10 +119,10 @@ never runs a policy script.
 - **Player actions from scripts.** Only specific `send:<Command>` grants: post an order, cancel
   one's own order. Each is a command marked `Reflect::Attribute::Script` and validated natively,
   as a player's is. These need a sender per call under networked play
-  ([J02](../../jettison/docs/roadmap.md#j02)). A handler is not a transaction: a send before a
+  ([J02](../../jettison/docs/history/neutral-sdk.md#j02-script-sender)). A handler is not a transaction: a send before a
   trap is not undone, so each command must keep the world's invariants on its own.
 - **Scripts that look around.** A handler reading the world beyond its event needs snapshot reads
-  ([J04](../../jettison/docs/roadmap.md#j04)). `manifest.trade.score` does not: an input reads
+  ([J04](../../jettison/docs/history/neutral-sdk.md#j04-scripts)). `manifest.trade.score` does not: an input reads
   only its option's facts.
 - **Other rankings.** The same pattern fits other native choices (a destination for the lot
   aboard, a tender to bid on) once each offers bounded facts.
@@ -150,9 +150,9 @@ never runs a policy script.
 
 ## Engine gaps
 
-- [J02](../../jettison/docs/roadmap.md#j02): a script's sender per call, and a sender nested in a
+- [J02](../../jettison/docs/history/neutral-sdk.md#j02-script-sender): a script's sender per call, and a sender nested in a
   command's fields. Needed only once scripts send commands.
-- [J04](../../jettison/docs/roadmap.md#j04): snapshot reads for handlers, a script's own reasons
+- [J04](../../jettison/docs/history/neutral-sdk.md#j04-scripts): snapshot reads for handlers, a script's own reasons
   (`reason.script.<script>.<name>`), the fuel a call used in the console, and reloading a changed
   module. None blocks `manifest.trade.score`; the last two make a modder's work quicker.
 
