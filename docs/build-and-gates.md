@@ -254,7 +254,8 @@ What the bundle holds and where it writes is in [the host](host.md).
 
 `stage-bundle.sh` refuses a checkout with changes, since a bundle names its commit. It strips the
 bundle's programs and keeps their debug files beside it, by build ID, in `debug-<bundle>.tar.gz`,
-for crash reports ([the host](host.md#staging-and-testing-the-bundle)).
+for crash reports. The debug files hold line tables alone (`-gline-tables-only` in `clang-release`,
+which leaves the machine code unchanged), so a symbolised frame names its function, file and line ([the host](host.md#staging-and-testing-the-bundle)).
 `test-bundle.sh` unpacks the tarball into a read-only directory and runs `bundle-smoke.sh` on it
 under `env -i`, on this machine and in the containers named (Docker).
 

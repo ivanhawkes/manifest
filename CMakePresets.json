@@ -31,6 +31,8 @@
       "binaryDir": "${sourceDir}/build/clang-release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_FLAGS": "-gline-tables-only",
+        "CMAKE_CXX_FLAGS": "-gline-tables-only",
         "MANIFEST_DISTRIBUTION": "ON"
       }
     },
