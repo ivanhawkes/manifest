@@ -20,6 +20,7 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <numbers>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -148,6 +149,36 @@ const Manifest::Space::Body &BodyOf(std::string_view name)
 {
 	static const Manifest::Space::StarSystem halcyon = AiTests::Halcyon();
 	return halcyon.bodies[static_cast<std::size_t>(halcyon.Find(name))];
+}
+
+
+// The most a cruise's drift (Transit::Drift) accelerates it, which its drive's thrust does not include:
+// six times the larger of the velocities it carries over the cruise's time.
+double DriftAcceleration(const Manifest::Space::Cruising &cruising)
+{
+	const double seconds = static_cast<double>(cruising.arrivalStep - cruising.departureStep) * kStep;
+	return 6.0 *
+	       std::max(glm::length(cruising.departureVelocity), glm::length(cruising.arrivalVelocity)) /
+	       seconds;
+}
+
+
+// Where a cruise's drift has it off its course that many steps after setting out.
+glm::dvec3 DriftOf(const Manifest::Space::Cruising &cruising, std::uint64_t ending)
+{
+	return Transit::Drift(
+	    cruising.departureVelocity, cruising.arrivalVelocity,
+	    static_cast<double>(cruising.arrivalStep - cruising.departureStep) * kStep,
+	    static_cast<double>(ending - cruising.departureStep) * kStep);
+}
+
+
+// A cruise to a body, for SettleCruise.
+Manifest::Space::CruiseTarget ToBody(std::string body)
+{
+	Manifest::Space::CruiseTarget target;
+	target.body = std::move(body);
+	return target;
 }
 
 
@@ -372,12 +403,35 @@ TEST_CASE("Cruise: a course goes round the planet between a ship and its target"
 	CHECK(cruising->course.size() > 2);
 	const std::size_t cruisingPoints = cruising->course.size();
 
-	// Ostra carries the course, so its clearance holds at every step.
+	// Bent round Ostra (L37): no two legs meet at more than a few degrees, though the course turns
+	// well past them all told.
+	const auto angle = [](const glm::dvec3 &a, const glm::dvec3 &b)
+	{ return std::acos(std::clamp(glm::dot(glm::normalize(a), glm::normalize(b)), -1.0, 1.0)); };
+	double sharpest = 0.0;
+	std::vector<glm::dvec3> legs;
+	for (std::size_t point = 1; point < cruising->course.size(); ++point)
+		if (const glm::dvec3 leg = cruising->course[point] - cruising->course[point - 1];
+		    glm::length(leg) > 0.0)
+			legs.push_back(leg);
+	for (std::size_t leg = 1; leg < legs.size(); ++leg)
+		sharpest = std::max(sharpest, angle(legs[leg - 1], legs[leg]));
+	const double turned = angle(legs.front(), legs.back());
+	MESSAGE(
+	    "Round Ostra: turns " << glm::degrees(turned) << "°, no turn sharper than "
+	                          << glm::degrees(sharpest) << "°");
+	CHECK(turned > glm::radians(20.0));
+	CHECK(sharpest < glm::radians(10.0));
+
+	// Ostra carries the course, so its clearance holds at every step; and the ship's nose turns a few
+	// degrees at a time, not all at once at a waypoint.
 	double nearest = std::numeric_limits<double>::infinity();
+	double swing = 0.0;
 	const std::uint64_t arrival = cruising->arrivalStep;
-	while (fixture.world.Clock().Step() < arrival)
+	while (fixture.world.Clock().Step() + 1 < arrival)
 	{
+		const glm::dvec3 nose = Nose(registry.get<Jettison::Sim::Transform>(ship));
 		fixture.Run(1);
+		swing = std::max(swing, angle(nose, Nose(registry.get<Jettison::Sim::Transform>(ship))));
 		nearest = std::min(
 		    nearest, glm::distance(
 		                 registry.get<Jettison::Sim::Transform>(ship).position,
@@ -387,6 +441,8 @@ TEST_CASE("Cruise: a course goes round the planet between a ship and its target"
 	    "Round Ostra to Pell: " << cruisingPoints << " points, "
 	                            << (nearest - BodyOf("Ostra").radius) / 1000.0 << " km up at nearest");
 	CHECK(nearest > BodyOf("Ostra").radius + Manifest::Space::CruiseTravel::kCourseClearance - 1.0);
+	CHECK(swing < glm::radians(10.0));
+	fixture.Run(1);
 	CHECK(registry.get<Jettison::Physics::LocalFrame>(ship).body == "Pell");
 }
 
@@ -712,10 +768,14 @@ TEST_CASE("Cruise: on a profile, a ship covers its course as the profile does, n
 	    "Highport to Pell on a profile: " << started[0].metres / 1000.0 << " km in "
 	                                      << started[0].seconds << " s, hardest " << hardest
 	                                      << " m/s², a quarter in " << quarter << " m/s²");
-	CHECK(hardest <= double{kHard.boostAcceleration} * 1.001);
+	// Its drift off the course, which carries the rest of Highport's velocity and Pell's (L37),
+	// accelerates it a little more than its thrust; a step short of the end it is moving as Pell does.
+	CHECK(hardest <= (double{kHard.boostAcceleration} * 1.001) + DriftAcceleration(cruising));
 	CHECK(hardest > double{kHard.boostAcceleration} * 0.99);
 	CHECK(quarter == doctest::Approx(double{kHard.sustainedAcceleration}).epsilon(0.01));
-	CHECK(glm::distance(places.back(), cruising.course.back()) < 10.0);
+	CHECK(
+	    glm::distance(places.back(), cruising.course.back()) <
+	    10.0 + (glm::length(cruising.arrivalVelocity) * kStep));
 
 	fixture.Run(1);
 	CHECK(registry.get<Jettison::Physics::LocalFrame>(ship).body == "Pell");
@@ -782,16 +842,18 @@ TEST_CASE("Cruise: a ship crosses its drive's clearance at its thrusters' accele
 	const Manifest::Space::Cruising cruising = registry.get<Manifest::Space::Cruising>(ship);
 	CHECK(cruising.departureClearance == 1.0e6);
 	CHECK(cruising.arrivalClearance == 1.0e6);
-	CHECK(cruising.departureBody == "Ostra");
 	const double least = Manifest::Space::CruiseSeconds(drive, started[0].metres);
 	CHECK(started[0].seconds >= least);
 	CHECK(started[0].seconds < least + (4.0 * kStep));
 	CHECK(started[0].seconds > Manifest::Space::CruiseSeconds({.profile = kHard}, started[0].metres));
 
+	// In the course's own frame: relative to Ostra, less the drift that carries Highport's velocity
+	// out and Pell's in (L37).
 	const auto relative = [&]
 	{
 		return registry.get<Jettison::Sim::Transform>(ship).position -
-		       Fixture::Where("Ostra", fixture.world.Clock().Now());
+		       Fixture::Where("Ostra", fixture.world.Clock().Now()) -
+		       DriftOf(cruising, fixture.world.Clock().Step());
 	};
 	std::vector<glm::dvec3> places{cruising.course.front(), relative()};
 	std::vector<double> accelerations;
@@ -814,7 +876,6 @@ TEST_CASE("Cruise: a ship crosses its drive's clearance at its thrusters' accele
 	MESSAGE(
 	    "Highport to Pell crossing 1,000 km at each end: " << started[0].metres / 1000.0 << " km in "
 	                                                       << started[0].seconds << " s");
-	// Its arrival crossing is flown in Pell's frame, which moves some 17 m a step against Ostra's.
 	CHECK(glm::distance(places.back(), cruising.course.back()) < 30.0);
 }
 
@@ -874,12 +935,17 @@ TEST_CASE("Cruise: on a profile with a share, a ship thrusts out, coasts, and th
 	    "Highport to Pell, thrusting a quarter of the time: "
 	    << started[0].metres / 1000.0 << " km in " << started[0].seconds << " s, hardest " << hardest
 	    << " m/s², coasting at " << midSpeed << " m/s with " << coasting << " m/s²");
-	CHECK(hardest <= double{kCoasting.boostAcceleration} * 1.001);
-	CHECK(coasting < 1.0);
+	CHECK(hardest <= (double{kCoasting.boostAcceleration} * 1.001) + DriftAcceleration(cruising));
+	CHECK(coasting < 1.0 + DriftAcceleration(cruising));
 
-	// The speed it reached, slowed to the whole steps it was given.
-	CHECK(midSpeed == doctest::Approx(top * least / started[0].seconds).epsilon(1.0e-4));
-	CHECK(glm::distance(places.back(), cruising.course.back()) < 10.0);
+	// The speed it reached, slowed to the whole steps it was given, within the velocities it left and
+	// arrives with, which its ends' speeds and its drift add.
+	CHECK(
+	    std::abs(midSpeed - (top * least / started[0].seconds)) <
+	    glm::length(cruising.departureVelocity) + glm::length(cruising.arrivalVelocity));
+	CHECK(
+	    glm::distance(places.back(), cruising.course.back()) <
+	    10.0 + (glm::length(cruising.arrivalVelocity) * kStep));
 
 	fixture.Run(1);
 	CHECK(registry.get<Jettison::Physics::LocalFrame>(ship).body == "Pell");
@@ -972,6 +1038,235 @@ TEST_CASE(
 }
 
 
+TEST_CASE(
+    "Cruise: to a ship, its course's end follows the ship, and it arrives off it moving as it does")
+{
+	Fixture fixture;
+	entt::registry &registry = fixture.world.Registry();
+	const entt::entity chaser = fixture.Ship("Ostra Highport", {0.0, 0.0, 3000.0});
+	registry.replace<Manifest::Space::CruiseDrive>(
+	    chaser, Manifest::Space::CruiseDrive{.profile = kHard});
+
+	// A ship in Pell's frame well clear of it, moving off at 200 m/s as it falls.
+	const entt::entity quarry = fixture.Ship("Pell", {0.0, 4.0e6, 0.0});
+	registry.replace<Jettison::Physics::Velocity>(
+	    quarry, Jettison::Physics::Velocity{{200.0f, 0.0f, 0.0f}, {}});
+	fixture.Run(5);
+	const glm::dvec3 setOut = registry.get<Jettison::Sim::Transform>(quarry).position -
+	                          Fixture::Where("Pell", fixture.world.Clock().Now());
+
+	// Itself, and a ship in no system, are no target.
+	CHECK(
+	    fixture.Refusal({{}, chaser, "", chaser}) ==
+	    Jettison::Sim::MakeReason(Manifest::Space::Reason::NoSuchTarget, {}));
+	const entt::entity nowhere = registry.create();
+	registry.emplace<Jettison::Sim::Transform>(nowhere);
+	CHECK(
+	    fixture.Refusal({{}, chaser, "", nowhere}) ==
+	    Jettison::Sim::MakeReason(Manifest::Space::Reason::NoSuchTarget, {}));
+
+	fixture.world.Commands().Push(Manifest::Space::Cruise{{}, chaser, "", quarry});
+	fixture.Run(1);
+	const Manifest::Space::Cruising *cruising = registry.try_get<Manifest::Space::Cruising>(chaser);
+	REQUIRE(cruising);
+	CHECK(cruising->targetShip == quarry);
+	CHECK(cruising->target.empty());
+	CHECK(cruising->frame == "Pell");
+	CHECK(cruising->carrier == "Ostra");
+	const std::uint64_t arrival = cruising->arrivalStep;
+
+	// Each step its course's end is a standoff off where the ship then is, so it closes on that.
+	while (fixture.world.Clock().Step() + 1 < arrival)
+		fixture.Run(1);
+	fixture.Run(1);
+	REQUIRE_FALSE(registry.all_of<Manifest::Space::Cruising>(chaser));
+	const glm::dvec3 there = registry.get<Jettison::Sim::Transform>(quarry).position;
+	const glm::dvec3 arrived = registry.get<Jettison::Sim::Transform>(chaser).position;
+	const glm::dvec3 moved = there - Fixture::Where("Pell", fixture.world.Clock().Now()) - setOut;
+	MESSAGE(
+	    "To a ship that moved " << glm::length(moved) / 1000.0 << " km: arrived "
+	                            << glm::distance(arrived, there) << " m off it");
+	CHECK(glm::length(moved) > 50000.0);
+	CHECK(
+	    glm::distance(arrived, there) ==
+	    doctest::Approx(Manifest::Space::CruiseTravel::kShipStandoff).epsilon(0.02));
+	CHECK(
+	    glm::dot(
+	        Nose(registry.get<Jettison::Sim::Transform>(chaser)), glm::normalize(there - arrived)) >
+	    0.9999);
+
+	// In its frame, moving as it does.
+	CHECK(registry.get<Jettison::Physics::LocalFrame>(chaser).body == "Pell");
+	CHECK(
+	    registry.get<Jettison::Physics::Velocity>(chaser).linear ==
+	    registry.get<Jettison::Physics::Velocity>(quarry).linear);
+	CHECK(registry.all_of<Manifest::Space::CameOut>(chaser));
+}
+
+
+TEST_CASE(
+    "Cruise: broken off part-way, a ship comes out where it is, moving as it was, in its carrier's "
+    "frame")
+{
+	Fixture fixture;
+	entt::registry &registry = fixture.world.Registry();
+	const entt::entity ship = fixture.Ship("Ostra Highport", {0.0, 0.0, 3000.0});
+	registry.replace<Manifest::Space::CruiseDrive>(
+	    ship, Manifest::Space::CruiseDrive{.profile = kHard});
+	fixture.Run(5);
+	fixture.world.Commands().Push(Manifest::Space::Cruise{{}, ship, "Pell"});
+	fixture.Run(1);
+	REQUIRE(registry.all_of<Manifest::Space::Cruising>(ship));
+
+	// A second in, while its speed is still within physics' limit.
+	const auto relative = [&]
+	{
+		return registry.get<Jettison::Sim::Transform>(ship).position -
+		       Fixture::Where("Ostra", fixture.world.Clock().Now());
+	};
+	fixture.Run(59);
+	const glm::dvec3 last = relative();
+	fixture.Run(1);
+	const glm::dvec3 place = relative();
+	const glm::dvec3 velocity = (place - last) / kStep;
+	fixture.Events<Manifest::Space::CruiseBrokenOff>();
+	fixture.world.Commands().Push(Manifest::Space::BreakOffCruise{{}, ship});
+	fixture.Run(1);
+	const std::vector<Manifest::Space::CruiseBrokenOff> broken =
+	    fixture.Events<Manifest::Space::CruiseBrokenOff>();
+	REQUIRE(broken.size() == 1);
+	CHECK(broken[0].ship == ship);
+	CHECK(broken[0].body == "Pell");
+	CHECK_FALSE(registry.all_of<Manifest::Space::Cruising>(ship));
+	CHECK_FALSE(registry.all_of<Manifest::Space::CameOut>(ship));
+	CHECK(registry.get<Jettison::Physics::LocalFrame>(ship).body == "Ostra");
+
+	// Physics took it up where it was and moves it on as the cruise had it, a step on.
+	MESSAGE("Broken off at " << glm::length(velocity) << " m/s");
+	CHECK(glm::length(velocity) > 10000.0);
+	const glm::dvec3 kept{registry.get<Jettison::Physics::Velocity>(ship).linear};
+	CHECK(glm::length(kept - velocity) < glm::length(velocity) * 1.0e-4);
+	CHECK(fixture.physics.BodyCount(kHalcyon) == 1);
+	CHECK(glm::distance(relative(), place + (velocity * kStep)) < 2.0);
+
+	// Not cruising, refused; nor is a cruise to a ship that leaves the world kept up: it is broken off.
+	fixture.world.Commands().Push(Manifest::Space::BreakOffCruise{{}, ship});
+	fixture.Events<Manifest::Space::CruiseRefused>();
+	fixture.Run(1);
+	const std::vector<Manifest::Space::CruiseRefused> refused =
+	    fixture.Events<Manifest::Space::CruiseRefused>();
+	REQUIRE(refused.size() == 1);
+	CHECK(refused[0].reason == Jettison::Sim::MakeReason(Manifest::Space::Reason::NotCruising, {}));
+
+	const entt::entity chaser = fixture.Ship("Ostra Highport", {0.0, 0.0, -3000.0});
+	const entt::entity quarry = fixture.Ship("Pell", {0.0, 4.0e6, 0.0});
+	fixture.Run(1);
+	fixture.world.Commands().Push(Manifest::Space::Cruise{{}, chaser, "", quarry});
+	fixture.Run(30);
+	REQUIRE(registry.all_of<Manifest::Space::Cruising>(chaser));
+	registry.destroy(quarry);
+	fixture.Run(1);
+	CHECK_FALSE(registry.all_of<Manifest::Space::Cruising>(chaser));
+	CHECK(registry.all_of<Jettison::Physics::Body>(chaser));
+	CHECK(fixture.Events<Manifest::Space::CruiseBrokenOff>().size() == 1);
+}
+
+
+TEST_CASE("Cruise: a ship that came out at rest is made to move off when another arrives in its place")
+{
+	Fixture fixture;
+	entt::registry &registry = fixture.world.Registry();
+
+	// Two from one place, three steps apart; the first held at rest where it comes out.
+	const glm::dvec3 offset{0.0, 0.0, 3000.0};
+	const entt::entity first = fixture.Ship("Ostra Highport", offset);
+	registry.emplace<Jettison::Physics::Handling>(first);
+	fixture.Run(5);
+	fixture.world.Commands().Push(Manifest::Space::Cruise{{}, first, "Pell"});
+	fixture.Run(3);
+	const entt::entity second = fixture.Ship("Ostra Highport", offset);
+	fixture.world.Commands().Push(Manifest::Space::Cruise{{}, second, "Pell"});
+	fixture.Run(1);
+	REQUIRE(registry.all_of<Manifest::Space::Cruising>(second));
+	const std::uint64_t secondArrives = registry.get<Manifest::Space::Cruising>(second).arrivalStep;
+	while (registry.all_of<Manifest::Space::Cruising>(first))
+		fixture.Run(1);
+	REQUIRE(registry.all_of<Manifest::Space::CameOut>(first));
+	CHECK(registry.get<Manifest::Space::CameOut>(first).frame == "Pell");
+	CHECK_FALSE(registry.all_of<Jettison::Ai::Destination>(first));
+
+	// The second comes out beside it, clear of it, and it is sent further off.
+	fixture.Run(secondArrives - fixture.world.Clock().Step());
+	REQUIRE_FALSE(registry.all_of<Manifest::Space::Cruising>(second));
+	const glm::dvec3 firstAt = registry.get<Jettison::Sim::Transform>(first).position;
+	const glm::dvec3 secondAt = registry.get<Jettison::Sim::Transform>(second).position;
+	const double hull = fixture.physics.ShapeRadius("hull");
+	MESSAGE("The second came out " << glm::distance(firstAt, secondAt) << " m from the first");
+	CHECK(glm::distance(firstAt, secondAt) >= 2.0 * hull);
+	REQUIRE(registry.all_of<Jettison::Ai::Destination>(first));
+	CHECK_FALSE(registry.all_of<Manifest::Space::CameOut>(first));
+	CHECK(registry.all_of<Manifest::Space::CameOut>(second));
+	const glm::dvec3 off = fixture.physics.FrameOrigin(kHalcyon, "Pell", fixture.world.Clock().Now()) +
+	                       registry.get<Jettison::Ai::Destination>(first).offset;
+	CHECK(
+	    glm::distance(off, secondAt) ==
+	    doctest::Approx(
+	        glm::distance(firstAt, secondAt) + Manifest::Space::CruiseTravel::kMoveOffDistance)
+	        .epsilon(0.05));
+}
+
+
+TEST_CASE(
+    "Cruise: on a profile, a ship leaves moving as its station does and arrives moving as its target "
+    "does")
+{
+	Fixture fixture;
+	entt::registry &registry = fixture.world.Registry();
+	const entt::entity ship = fixture.Ship("Ostra Highport", {0.0, 0.0, 3000.0});
+	registry.replace<Manifest::Space::CruiseDrive>(
+	    ship, Manifest::Space::CruiseDrive{.profile = kHard});
+	fixture.Run(5);
+	const double t0 = fixture.world.Clock().Now();
+	fixture.world.Commands().Push(Manifest::Space::Cruise{{}, ship, "Pell"});
+	fixture.Run(1);
+	REQUIRE(registry.all_of<Manifest::Space::Cruising>(ship));
+	const Manifest::Space::Cruising cruising = registry.get<Manifest::Space::Cruising>(ship);
+
+	// Highport's and Pell's velocities about Ostra, the carrier.
+	const auto velocity = [](std::string_view body, double time)
+	{
+		return (Fixture::Where(body, time + 0.5) - Fixture::Where(body, time - 0.5)) -
+		       (Fixture::Where("Ostra", time + 0.5) - Fixture::Where("Ostra", time - 0.5));
+	};
+	const double arrives =
+	    t0 + (static_cast<double>(cruising.arrivalStep - cruising.departureStep) * kStep);
+	CHECK(glm::distance(cruising.departureVelocity, velocity("Ostra Highport", t0)) < 0.1);
+	CHECK(glm::distance(cruising.arrivalVelocity, velocity("Pell", arrives)) < 0.1);
+	MESSAGE(
+	    "Leaves at " << glm::length(cruising.departureVelocity) << " m/s and arrives at "
+	                 << glm::length(cruising.arrivalVelocity) << " m/s about Ostra");
+
+	// Over its first step and its last it moves as those, give or take what a step's boost adds.
+	const auto relative = [&]
+	{
+		return registry.get<Jettison::Sim::Transform>(ship).position -
+		       Fixture::Where("Ostra", fixture.world.Clock().Now());
+	};
+	const double boost = double{kHard.boostAcceleration} * kStep;
+	const glm::dvec3 first = (relative() - cruising.course.front()) / kStep;
+	CHECK(glm::distance(first, cruising.departureVelocity) < boost);
+	// The last step is into the place it comes out at, at rest in Pell's frame, so moving about Ostra
+	// as Pell does: no jump.
+	fixture.Run(cruising.arrivalStep - fixture.world.Clock().Step() - 1);
+	const glm::dvec3 penultimate = relative();
+	fixture.Run(1);
+	const glm::dvec3 last = (relative() - penultimate) / kStep;
+	CHECK(glm::distance(last, cruising.arrivalVelocity) < boost);
+	CHECK(registry.get<Jettison::Physics::LocalFrame>(ship).body == "Pell");
+	CHECK(registry.get<Jettison::Physics::Velocity>(ship) == Jettison::Physics::Velocity{});
+}
+
+
 namespace
 {
 // Two planets as the trading fixture's system has them (data/systems/system-anvil.yaml), each with a
@@ -1026,12 +1321,12 @@ struct AnvilFixture
 	Jettison::Physics::PhysicsWorld &physics;
 	Manifest::Space::LaneTravel &lanes;
 	Manifest::Space::CruiseTravel &cruises;
-	const Manifest::Space::StarSystem system = Anvil();
+	const Manifest::Space::StarSystem system;
 
 
-	AnvilFixture()
+	explicit AnvilFixture(Manifest::Space::StarSystem bodies = Anvil())
 	    : physics{Fixture::Setup(world)}, lanes{Manifest::Space::LaneTravel::Attach(world, physics)},
-	      cruises{Manifest::Space::CruiseTravel::Attach(world, physics)}
+	      cruises{Manifest::Space::CruiseTravel::Attach(world, physics)}, system{std::move(bodies)}
 	{
 		Jettison::Physics::ShapeDefinition hull;
 		hull.halfExtents = {3.2f, 0.9f, 4.9f};
@@ -1114,7 +1409,6 @@ TEST_CASE("Cruise: a pulse ship never thrusts within a sphere nor comes near a b
 		const entt::registry &registry = fixture.world.Registry();
 		REQUIRE(registry.all_of<Manifest::Space::Cruising>(ship));
 		const Manifest::Space::Cruising cruising = registry.get<Manifest::Space::Cruising>(ship);
-		CHECK(cruising.departureBody == "Ore");
 		CHECK(cruising.departureClearance >= kPulseClearance);
 		CHECK(cruising.arrivalClearance >= kPulseClearance);
 
@@ -1157,8 +1451,84 @@ TEST_CASE("Cruise: a pulse ship never thrusts within a sphere nor comes near a b
 	}
 }
 
+TEST_CASE(
+    "Cruise: a planet in the way is passed where it is as the ship passes it, not by the time alone")
+{
+	// The pulse cruise from Ore Highport to Brine Highport, flown with nothing between: where it is a
+	// quarter of its time in.
+	const auto sendOut = [](AnvilFixture &fixture)
+	{
+		const entt::entity ship = fixture.Ship(PulseDrive(0.25f));
+		for (int step = 0; step < 5; ++step)
+			fixture.world.Step();
+		fixture.world.Commands().Push(Manifest::Space::Cruise{{}, ship, "Brine Highport"});
+		fixture.world.Step();
+		REQUIRE(fixture.world.Registry().all_of<Manifest::Space::Cruising>(ship));
+		return ship;
+	};
+	const auto forward = [](AnvilFixture &fixture, std::uint64_t step)
+	{
+		while (fixture.world.Clock().Step() < step)
+			fixture.world.FastForward(step);
+	};
+	AnvilFixture plain;
+	const entt::entity ship = sendOut(plain);
+	const Manifest::Space::Cruising flown = plain.world.Registry().get<Manifest::Space::Cruising>(ship);
+	const std::uint64_t quarter = flown.departureStep + ((flown.arrivalStep - flown.departureStep) / 4);
+	forward(plain, quarter);
+	const glm::dvec3 passed = plain.world.Registry().get<Jettison::Sim::Transform>(ship).position;
+	const double then = plain.world.Clock().Now();
 
-TEST_CASE("Cruise: a pulse ship crosses out of Ore's ball and into Brine's on thrusters, in each frame")
+	// Cinder, a planet Saturn's size on a circular orbit of the star, there just then, moving across
+	// the course at some 28 km/s: by the cruise's half-way it is millions of kilometres on, where a
+	// placing by time alone would have put it.
+	const Manifest::Space::StarSystem anvil = Anvil();
+	const double radius = 5.8e7;
+	// The system's plane is x-z, a prograde orbit turning from +x towards -z (Orbit.h).
+	const double orbit = glm::length(glm::dvec3{passed.x, 0.0, passed.z});
+	const double period = Manifest::Space::PeriodFor(orbit, anvil.bodies[0].gravitationalParameter);
+	const double phase =
+	    std::atan2(-passed.z, passed.x) - (2.0 * std::numbers::pi * std::fmod(then / period, 1.0));
+	Manifest::Space::StarSystem crossed = anvil;
+	crossed.bodies.push_back(
+	    AiTests::MakeBody(
+	        "Cinder", Manifest::Space::BodyKind::Planet, "Star", radius, 0.0,
+	        {orbit, 0.0, 0.0, 0.0, 0.0, phase}));
+	Manifest::Space::Resolve(crossed);
+	REQUIRE(glm::distance(crossed.bodies.back().orbit.period, period) < 1.0);
+
+	// Flown with it there, the course goes round where it is as the ship passes, and clears it at
+	// every minute about then and every hour besides, for little on the straight course: it is widened
+	// by its motion between two samples, not half its motion over the cruise.
+	AnvilFixture fixture{crossed};
+	const entt::entity again = sendOut(fixture);
+	const Manifest::Space::Cruising cruising =
+	    fixture.world.Registry().get<Manifest::Space::Cruising>(again);
+	CHECK(cruising.course.size() > flown.course.size());
+	const std::uint64_t minute = std::uint64_t{60} * 60;
+	const std::uint64_t hour = minute * 60;
+	double nearest = std::numeric_limits<double>::infinity();
+	for (std::uint64_t at = cruising.departureStep + minute; at < cruising.arrivalStep;
+	     at += (at + (6 * hour) > quarter && at < quarter + (6 * hour)) ? minute : hour)
+	{
+		forward(fixture, at);
+		nearest = std::min(
+		    nearest, glm::distance(
+		                 fixture.world.Registry().get<Jettison::Sim::Transform>(again).position,
+		                 fixture.Where("Cinder", fixture.world.Clock().Now())) -
+		                 radius);
+	}
+	const double longer = Transit::Length(cruising.course) / Transit::Length(flown.course);
+	MESSAGE(
+	    "Round Cinder: " << nearest / 1000.0 << " km off it at nearest, the course "
+	                     << (longer - 1.0) * 100.0 << " % longer");
+	CHECK(nearest > 0.0);
+	CHECK(longer < 1.02);
+}
+
+
+TEST_CASE(
+    "Cruise: a pulse ship crosses out of Ore's ball and into Brine's on thrusters, along its course")
 {
 	AnvilFixture fixture;
 	const entt::entity ship = fixture.Ship(PulseDrive(0.1f));
@@ -1169,7 +1539,7 @@ TEST_CASE("Cruise: a pulse ship crosses out of Ore's ball and into Brine's on th
 	const entt::registry &registry = fixture.world.Registry();
 	REQUIRE(registry.all_of<Manifest::Space::Cruising>(ship));
 	const Manifest::Space::Cruising cruising = registry.get<Manifest::Space::Cruising>(ship);
-	const double t0 = fixture.world.Clock().Now() - kStep;
+	CHECK(cruising.carrier == "Star");
 	const Transit::MotionProfile thrusters{15.0f, 0.0f, 15.0f};
 	const auto at = [&](std::uint64_t step)
 	{
@@ -1178,20 +1548,27 @@ TEST_CASE("Cruise: a pulse ship crosses out of Ore's ball and into Brine's on th
 		return registry.get<Jettison::Sim::Transform>(ship).position;
 	};
 
-	// Its departure crossing, 184,000 km at 15 m/s² from rest to rest, about 1.9 hours: a straight
-	// line from where it set out, as Ore moves, so it keeps the planet's motion and none of the star's
-	// pull on it.
+	// In the course's own frame: relative to the star, less the drift that carries the velocity it
+	// left Ore Highport with and the one it arrives at Brine Highport with (L37), so it keeps the
+	// station's motion as it leaves and gains the other's as it arrives, and none of the star's pull.
+	const auto inCourse = [&](std::uint64_t step)
+	{
+		const glm::dvec3 place = at(step);
+		return place - fixture.Where("Star", fixture.world.Clock().Now()) - DriftOf(cruising, step);
+	};
+
+	// Its departure crossing, 184,000 km at 15 m/s² from rest to rest, about 1.9 hours, along the
+	// course as it bends round Ore.
+	const double length = Transit::Length(cruising.course);
 	const double across = Transit::Seconds(thrusters, cruising.departureClearance);
-	const glm::dvec3 start = at(cruising.departureStep + 1) - fixture.Where("Ore", t0 + kStep);
 	const auto steps = [](double seconds) { return static_cast<std::uint64_t>(seconds / kStep); };
 	for (const double share : {0.25, 0.5, 0.75})
 	{
 		const std::uint64_t when = cruising.departureStep + steps(share * across);
-		const glm::dvec3 relative = at(when) - fixture.Where("Ore", fixture.world.Clock().Now());
+		const double covered = Transit::Covered(thrusters, cruising.departureClearance, share * across);
 		CHECK(
-		    glm::length(relative - start) ==
-		    doctest::Approx(Transit::Covered(thrusters, cruising.departureClearance, share * across))
-		        .epsilon(0.01));
+		    glm::distance(inCourse(when), Transit::Along(cruising.course, covered / length).first) <
+		    covered * 0.01);
 	}
 
 	// Out of every sphere about Ore as the crossing ends, where the drive takes over.
@@ -1202,15 +1579,13 @@ TEST_CASE("Cruise: a pulse ship crosses out of Ore's ball and into Brine's on th
 			    glm::distance(out, fixture.Where(keepout.body, fixture.world.Clock().Now())) >
 			    keepout.radius);
 
-	// Its arrival crossing in Brine's frame: the last of it a straight line to where it arrives,
-	// relative to Brine, and that place the course's end, Brine Highport's standoff.
+	// Its arrival crossing: a straight line along the course's last leg to where it arrives, Brine
+	// Highport's standoff.
 	const double into = Transit::Seconds(thrusters, cruising.arrivalClearance);
 	const std::uint64_t arriving = cruising.arrivalStep - steps(into);
-	const glm::dvec3 entered = at(arriving) - fixture.Where("Brine", fixture.world.Clock().Now());
-	const glm::dvec3 middle = at(cruising.arrivalStep - steps(into / 2.0)) -
-	                          fixture.Where("Brine", fixture.world.Clock().Now());
-	const glm::dvec3 last =
-	    at(cruising.arrivalStep - 1) - fixture.Where("Brine", fixture.world.Clock().Now());
+	const glm::dvec3 entered = inCourse(arriving);
+	const glm::dvec3 middle = inCourse(cruising.arrivalStep - steps(into / 2.0));
+	const glm::dvec3 last = inCourse(cruising.arrivalStep - 1);
 	CHECK(glm::length(entered - last) == doctest::Approx(cruising.arrivalClearance).epsilon(0.01));
 	CHECK(
 	    glm::length(glm::cross(glm::normalize(middle - entered), glm::normalize(last - entered))) <
@@ -1279,20 +1654,21 @@ TEST_CASE("Cruise: a drive still thrusting within a sphere once its rounds are s
 	Manifest::Space::CruiseDrive drive = PulseDrive(1.0f);
 	drive.keepouts.push_back({"Star", 1.0e12});
 	const Manifest::Space::Settlement refused = Manifest::Space::SettleCruise(
-	    system, drive, from, "Ore Highport", "Brine Highport", 0.0, kStep, 0);
+	    system, drive, from, "Ore Highport", glm::dvec3{0.0}, ToBody("Brine Highport"), 0.0, kStep, 0);
 	CHECK_FALSE(refused.cruise);
 	CHECK(refused.refusal == Manifest::Space::Reason::InsideRadius);
 
 	// With its rounds, each crossing lengthened past the sphere, to half the course: thrusters all the
 	// way, the drive's metres none.
 	const Manifest::Space::Settlement settled = Manifest::Space::SettleCruise(
-	    system, drive, from, "Ore Highport", "Brine Highport", 0.0, kStep);
+	    system, drive, from, "Ore Highport", glm::dvec3{0.0}, ToBody("Brine Highport"), 0.0, kStep);
 	REQUIRE(settled.cruise);
 	CHECK(settled.cruise->DriveMetres() == 0.0);
 
 	// A sphere about no body of the system.
 	drive.keepouts.push_back({"Nowhere", 1.0});
 	CHECK(
-	    Manifest::Space::SettleCruise(system, drive, from, "Ore Highport", "Brine Highport", 0.0, kStep)
+	    Manifest::Space::SettleCruise(
+	        system, drive, from, "Ore Highport", glm::dvec3{0.0}, ToBody("Brine Highport"), 0.0, kStep)
 	        .refusal == Manifest::Space::Reason::NoSuchBody);
 }

@@ -17,6 +17,7 @@
 #include <jettison/serialise/Archive.h>
 #include <jettison/sim/SimWorld.h>
 #include <jettison/sim/Snapshot.h>
+#include <jettison/transit/Path.h>
 #include <jettison/transit/Profile.h>
 #include <manifest/space/Cruise.h>
 
@@ -481,14 +482,32 @@ TEST_CASE("On the Manifest mode's manned profile, Ore to Brine is days, at 2 g a
 	for (std::size_t point = 1; point < cruising.course.size(); ++point)
 		metres += glm::distance(cruising.course[point], cruising.course[point - 1]);
 	const double seconds = static_cast<double>(cruising.arrivalStep - cruising.departureStep) * kStep;
-	const double least = Space::CruiseSeconds(drive, metres);
-	MESSAGE("Ore to Brine: " << metres / 1.0e9 << " million km in " << seconds / kDay << " days");
+
+	// It leaves moving along its course as Ore Highport does about the star, and arrives moving as
+	// Brine Highport does (L37): the profile meets those speeds at its ends, so takes less time than
+	// from rest to rest.
+	const std::size_t end = cruising.course.size() - 1;
+	const Jettison::Transit::EndSpeeds ends{
+	    Jettison::Transit::SplitAlong(
+	        cruising.departureVelocity, glm::normalize(cruising.course[1] - cruising.course[0]))
+	        .along,
+	    Jettison::Transit::SplitAlong(
+	        cruising.arrivalVelocity, glm::normalize(cruising.course[end] - cruising.course[end - 1]))
+	        .along};
+	REQUIRE_FALSE(Jettison::Transit::CheckEnds(*drive.profile, metres, ends));
+	const double least = Jettison::Transit::Seconds(*drive.profile, metres, ends);
+	MESSAGE(
+	    "Ore to Brine: " << metres / 1.0e9 << " million km in " << seconds / kDay
+	                     << " days, leaving at " << ends.start << " m/s along it and arriving at "
+	                     << ends.end << " m/s");
+	CHECK(ends.start > 0.0);
+	CHECK(least < Space::CruiseSeconds(drive, metres));
 	CHECK(seconds >= least);
 	CHECK(seconds < least + (4.0 * kStep));
 	CHECK(seconds > 4.0 * kDay);
 	CHECK(seconds < 5.0 * kDay);
 
-	// Its first ten seconds out at 2 g, the star it is carried by still.
+	// Its first ten seconds out at 2 g, the star it is carried by still, moving off as it set out.
 	const auto place = [&] { return registry.get<Jettison::Sim::Transform>(hosted.Ship()).position; };
 	REQUIRE(cruising.carrier == "StarAnvil");
 	for (int step = 0; step < 600; ++step)
@@ -498,22 +517,29 @@ TEST_CASE("On the Manifest mode's manned profile, Ore to Brine is days, at 2 g a
 	const glm::dvec3 now = place();
 	hosted.Step();
 	const glm::dvec3 after = place();
-	CHECK(glm::distance(now, after) / kStep == doctest::Approx(2.0 * kGravity * 10.0).epsilon(0.01));
+	CHECK(
+	    glm::length(((after - now) / kStep) - cruising.departureVelocity) ==
+	    doctest::Approx(2.0 * kGravity * 10.0).epsilon(0.05));
 	CHECK(
 	    glm::length(after - (2.0 * now) + before) / (kStep * kStep) ==
 	    doctest::Approx(2.0 * kGravity).epsilon(0.01));
 
-	// And along its course, as the engine places it, 2 g until two hours out and 1 g after.
+	// And along its course, as the engine places it, 2 g until its boost is spent and 1 g after: less
+	// than two hours out, since it leaves already moving, and the boost is spent at the slow ends.
 	const auto acceleration = [&](double at)
 	{
 		const auto covered = [&](double time)
-		{ return Jettison::Transit::Covered(*drive.profile, metres, time * least / seconds); };
+		{ return Jettison::Transit::Covered(*drive.profile, metres, time * least / seconds, ends); };
 		return (covered(at + 1.0) - (2.0 * covered(at)) + covered(at - 1.0));
 	};
-	CHECK(acceleration(7190.0) == doctest::Approx(2.0 * kGravity).epsilon(1.0e-3));
-	CHECK(acceleration(7210.0) == doctest::Approx(kGravity).epsilon(1.0e-3));
+	const Jettison::Transit::EndThrust thrust = Jettison::Transit::Thrust(*drive.profile, metres, ends);
+	CHECK(thrust.start.boost < 7200.0);
+	CHECK(acceleration(thrust.start.boost - 10.0) == doctest::Approx(2.0 * kGravity).epsilon(1.0e-3));
+	CHECK(acceleration(thrust.start.boost + 10.0) == doctest::Approx(kGravity).epsilon(1.0e-3));
 	CHECK(acceleration(seconds / 3.0) == doctest::Approx(kGravity).epsilon(1.0e-3));
-	CHECK(acceleration(seconds - 3600.0) == doctest::Approx(-2.0 * kGravity).epsilon(1.0e-3));
+	CHECK(
+	    acceleration(seconds - (thrust.end.boost / 2.0)) ==
+	    doctest::Approx(-2.0 * kGravity).epsilon(1.0e-3));
 }
 
 
@@ -860,7 +886,7 @@ TEST_CASE(
 	// cleared to, a course a little longer or shorter charged or refunded.
 	hosted.StepTo(Leg::Cruising);
 	const Space::Cruising &cruising = registry.get<Space::Cruising>(hosted.Ship());
-	CHECK(cruising.departureBody == "PlanetOre");
+	CHECK(glm::length(cruising.departureVelocity) > 2.0e4);
 	CHECK(cruising.departureClearance >= 2.22e8);
 	CHECK(cruising.arrivalClearance >= 2.22e8);
 	const World::Fuel paid = hosted.Journey().paid;

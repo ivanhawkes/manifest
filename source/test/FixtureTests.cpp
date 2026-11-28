@@ -657,7 +657,7 @@ TEST_CASE("The trading fixture's loop, saved in flight with a bid resting and re
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves with
 	// what a save holds, the fixture's content or stream, or the engine's movement or save format.
-	CHECK(hosted.world.StateHash() == 0xdb9b558e8981d4b3ULL);
+	CHECK(hosted.world.StateHash() == 0xa2b94b7547934681ULL);
 }
 
 
@@ -710,7 +710,7 @@ TEST_CASE("The trading fixture's loop, backed up in flight with a bid resting an
 	// Served on from the restore, through the journal, it reaches the loop's own world.
 	FromCruise(restored);
 	CheckLedger(restored);
-	CHECK(restored.world.StateHash() == 0xdb9b558e8981d4b3ULL);
+	CHECK(restored.world.StateHash() == 0xa2b94b7547934681ULL);
 }
 
 
@@ -902,7 +902,7 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 	CHECK(replayed.world.StateHash() == hosted.world.StateHash());
 
 	// The same in every build the gate runs; it moves as the fixture's does.
-	CHECK(hosted.world.StateHash() == 0xcffd2f495cb69ea8ULL);
+	CHECK(hosted.world.StateHash() == 0x337e77475750381bULL);
 }
 
 
@@ -1184,8 +1184,10 @@ TEST_CASE(
 	const Manifest::Space::Cruising cruising = registry.get<const Manifest::Space::Cruising>(ship);
 	CHECK(cruising.departureClearance >= 998'000.0);
 	CHECK(cruising.arrivalClearance >= 998'000.0);
-	CHECK(cruising.departureBody == "VenueOreHighport");
-	CHECK(cruising.arrivalBody == std::string{kVale});
+
+	// Leaving and arriving with the two stations' orbital velocities about Ore (L37).
+	CHECK(glm::length(cruising.departureVelocity) == doctest::Approx(3080.7).epsilon(0.02));
+	CHECK(glm::length(cruising.arrivalVelocity) == doctest::Approx(3080.7).epsilon(0.02));
 
 	// The drive's metres alone burn, the course its cruise settled less its two crossings, which burn
 	// nothing; settled as it set out, what its tanks gave is what the journey paid.
@@ -2491,7 +2493,7 @@ TEST_CASE("The governance fixture's project, tendered, supplied, worked and unlo
 
 	// The same in every build the gate runs; it moves with what a save holds, the governance
 	// scenario's content or the stream.
-	CHECK(hosted.world.StateHash() == 0xec3eb500b0a38db8ULL);
+	CHECK(hosted.world.StateHash() == 0xfecdf589c4812fbdULL);
 }
 
 
@@ -2847,5 +2849,5 @@ TEST_CASE(
 
 	// The same in every build the gate runs; it moves with what a save holds, the governance
 	// scenario's content or the stream.
-	CHECK(hosted.world.StateHash() == 0x0a45d4eaef129e07ULL);
+	CHECK(hosted.world.StateHash() == 0xc7fda7056ddc84edULL);
 }

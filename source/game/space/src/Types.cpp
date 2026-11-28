@@ -40,7 +40,9 @@ void RegisterTypes()
 		    .Value<Reason::LeadsNowhere>("leads_nowhere")
 		    .Value<Reason::NotCleared>("not_cleared")
 		    .Value<Reason::HullTooLarge>("hull_too_large")
-		    .Value<Reason::InsideRadius>("inside_radius");
+		    .Value<Reason::InsideRadius>("inside_radius")
+		    .Value<Reason::NoSuchTarget>("no_such_target")
+		    .Value<Reason::NotCruising>("not_cruising");
 		constexpr Attribute kDefined = Attribute::Saved | Attribute::Moddable;
 		RegisterType<OnLane>("Space.OnLane")
 		    .Field<&OnLane::from>("from", Attribute::Saved)
@@ -117,6 +119,7 @@ void RegisterTypes()
 		RegisterType<Cruising>("Space.Cruising")
 		    .Field<&Cruising::target>("target", Attribute::Saved)
 		    .Field<&Cruising::frame>("frame", Attribute::Saved)
+		    .Field<&Cruising::targetShip>("targetShip", Attribute::Saved)
 		    .Field<&Cruising::carrier>("carrier", Attribute::Saved)
 		    .Field<&Cruising::course>("course", Attribute::Saved)
 		    .Field<&Cruising::departureStep>("departureStep", Attribute::Saved)
@@ -126,12 +129,19 @@ void RegisterTypes()
 		    .Field<&Cruising::departureClearance>("departureClearance", Attribute::Saved)
 		    .Field<&Cruising::arrivalClearance>("arrivalClearance", Attribute::Saved)
 		    .Field<&Cruising::crossingAcceleration>("crossingAcceleration", Attribute::Saved)
-		    .Field<&Cruising::departureBody>("departureBody", Attribute::Saved)
-		    .Field<&Cruising::arrivalBody>("arrivalBody", Attribute::Saved);
+		    .Field<&Cruising::departureVelocity>("departureVelocity", Attribute::Saved)
+		    .Field<&Cruising::arrivalVelocity>("arrivalVelocity", Attribute::Saved);
+		RegisterType<CameOut>("Space.CameOut")
+		    .Field<&CameOut::frame>("frame", Attribute::Saved)
+		    .Field<&CameOut::offset>("offset", Attribute::Saved);
 		RegisterType<Cruise>("Space.Cruise")
 		    .Field<&Cruise::sender>("sender", Attribute::Saved)
 		    .Field<&Cruise::ship>("ship", Attribute::Saved)
-		    .Field<&Cruise::body>("body", Attribute::Saved);
+		    .Field<&Cruise::body>("body", Attribute::Saved)
+		    .Field<&Cruise::targetShip>("targetShip", Attribute::Saved);
+		RegisterType<BreakOffCruise>("Space.BreakOffCruise")
+		    .Field<&BreakOffCruise::sender>("sender", Attribute::Saved)
+		    .Field<&BreakOffCruise::ship>("ship", Attribute::Saved);
 		RegisterType<CruiseStarted>("Space.CruiseStarted", Attribute::Script)
 		    .Field<&CruiseStarted::ship>("ship", Attribute::Saved)
 		    .Field<&CruiseStarted::body>("body", Attribute::Saved)
@@ -141,6 +151,9 @@ void RegisterTypes()
 		RegisterType<CruiseEnded>("Space.CruiseEnded", Attribute::Script)
 		    .Field<&CruiseEnded::ship>("ship", Attribute::Saved)
 		    .Field<&CruiseEnded::body>("body", Attribute::Saved);
+		RegisterType<CruiseBrokenOff>("Space.CruiseBrokenOff", Attribute::Script)
+		    .Field<&CruiseBrokenOff::ship>("ship", Attribute::Saved)
+		    .Field<&CruiseBrokenOff::body>("body", Attribute::Saved);
 		RegisterType<CruiseRefused>("Space.CruiseRefused", Attribute::Script)
 		    .Field<&CruiseRefused::ship>("ship", Attribute::Saved)
 		    .Field<&CruiseRefused::body>("body", Attribute::Saved)

@@ -74,8 +74,8 @@ system by cruising. First they come into the game ([L08](delivery-order.md#l08))
 are opened by funded stargate expeditions, timed by distance over the server's running time: their
 rules ([L09](delivery-order.md#l09)), a first fixed gate pair ([L10](delivery-order.md#l10)), rival
 connections ([L11](delivery-order.md#l11)) and a generated frontier ([L12](delivery-order.md#l12)).
-Moongates join the places round one planet ([L35](delivery-order.md#l35)). Cruising and gates are
-refined ([L37](delivery-order.md#l37), [L38](delivery-order.md#l38)), and station traffic lanes are
+Moongates join the places round one planet ([L35](delivery-order.md#l35)). Gates are
+refined ([L38](delivery-order.md#l38)), and station traffic lanes are
 parked until traffic needs them ([L36](delivery-order.md#l36)). The design is the [space
 plan](space-plan.md); what is built is [space](space.md).
 

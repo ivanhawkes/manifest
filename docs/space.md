@@ -207,18 +207,19 @@ second or 3.6 km/s, is seen.
 
 ### Cruising
 
-A cruise takes a ship to a body of its own system (`Cruise.h`), as one of Jettison's
-[passages](../../jettison/docs/transit.md#passages). The command `Space::Cruise`, with its sender,
-names the ship and the body. An accepted cruise raises `Space::CruiseStarted`, with its seconds and
-metres. The ship leaves physics and its local frame; its body is kept in its `Space::Cruising`; it
-gives up its steering destination, so it comes out still. Each step the `cruise` system, after the
-lanes', places it along its course.
+A cruise takes a ship to a body of its own system, or to another ship in it (`Cruise.h`), as one of
+Jettison's [passages](../../jettison/docs/transit.md#passages). The command `Space::Cruise`, with its
+sender, names the ship and the body, or a `targetShip`. An accepted cruise raises
+`Space::CruiseStarted`, with its seconds and metres. The ship leaves physics and its local frame; its
+body is kept in its `Space::Cruising`; it gives up its steering destination, so it comes out still.
+Each step the `cruise` system, after the lanes', places it along its course.
 
 The refusals, each a `Space::CruiseRefused` with a reason, are: a sender that does not command the
 ship; a ship on a lane, in no system or in an undefined one; one already cruising; one that is not a
 dynamic body with a `Space::CruiseDrive`, or is on rails (clamped to a pad); a body the system does
-not have; a ship within a station's reach; a ship already within reach of where it would arrive;
-and a course blocked every way.
+not have; a target ship that is the ship itself or not placed in its system (`NoSuchTarget`); a ship
+within a station's reach; a ship already within reach of where it would arrive; and a course blocked
+every way.
 
 A cruise does not engage within `CruiseTravel::kStationReach` (2 km) of a station's radius, so
 docking stays in physics. `Space::ClearOf` plans the flight out first: to 300 m beyond the reach on
@@ -228,21 +229,59 @@ flies a ship out this way before it cruises.
 Where a cruise arrives (`CruiseTravel::ArrivalDistance`) is 1.25 times the target's radius plus
 4 km from its centre, so a ship is a few kilometres off a station or a gate and clear of a planet's
 air. It is also no nearer a body with gravity than where the body pulls at 1 m/s², which a ship's
-flight assist can hold against. It arrives at rest, facing the target, in the target's frame, or the
+flight assist can hold against. It comes out at rest, facing the target, in the target's frame, or the
 station's for a jump point that keeps station by one, as a lane's arrival does. Its arrival place is
-kept clear of other bodies in the same way as a lane's, and a `Space::CruiseEnded` is raised.
+kept clear of other bodies in the same way as a lane's, it is marked `Space::CameOut`, and a
+`Space::CruiseEnded` is raised.
 
-How a course is solved, as the command is applied:
+How a course is solved, as the command is applied (`Space::SettleCruise`):
 
 - **The target's place.** The bodies are on rails, so where the target will be on arrival is solved,
   not chased. The time and the target's place are each found from the other, in eight rounds
   (`kSolveIterations`).
-- **The course.** A few straight legs round the stars, planets and moons in the way, 2 km clear of
-  each (`kCourseClearance`, Jettison's `Ai::Waypoints`). It is plotted relative to its carrier,
-  the nearest body both ends orbit (the planet between two of its stations, the star between two
-  planets), and moves with it. A body in the way is placed where it will be as the ship passes it.
-- **The time.** The ship's drive gives it, in whole steps, at least one. Along the course a ship
-  eases out and in, or covers it as its profile does, and faces along its leg.
+- **The course.** A few legs round the stars, planets and moons in the way, 2 km clear of each
+  (`kCourseClearance`, Jettison's `Ai::Waypoints`). It is plotted relative to its carrier, the nearest
+  body both ends orbit (the planet between two of its stations, the star between two planets), and
+  moves with it. Each turn at a waypoint is bent round on a curve of 16 points (`kBendPoints`) from
+  half-way along the leg into it to half-way along the leg out, cut nearer the waypoint where it would
+  come within a body's clearance, so a ship's nose turns a few degrees at a time, not all at once in a
+  step.
+- **The bodies in the way** are placed where they are as the ship passes nearest each, found by
+  sampling the cruise as it would be flown 64 times (`kPassSamples`), closer together towards the
+  ends, and widened by how far each moves to the samples beside. A body the ship sets out or arrives
+  beside, and passes nearest there, is where it is then and not widened.
+- **The time.** The ship's drive gives it, in whole steps, at least one; on a profile, the fewest in
+  which it covers the course, so no step accelerates past its boost.
+
+**The velocities at its ends.** A ship leaves moving as it was, relative to its carrier: its frame's
+velocity and its own (`Cruising::departureVelocity`); and arrives moving as the frame it comes out in
+does (`arrivalVelocity`), so it comes out at rest in that frame without a jump. On a profile, each
+velocity's speed along the course at its end is the profile's to meet (Jettison's
+[end speeds](../../jettison/docs/transit.md#end-speeds)), and the rest is carried off the course by a
+drift (`Transit::Drift`) that is none at either end. A drive that crosses (below) leaves and arrives at
+rest on its thrusters relative to the course, so its drift carries each velocity whole; any other
+drifts the whole of each where its profile cannot meet the speeds (`Transit::CheckEnds`). A drive with
+no profile eases out and in, at rest relative to its carrier at each end. The drift's acceleration, at
+most six times the larger velocity over the cruise's time, is not in the drive's thrust, and a
+journey's fuel is still priced from rest to rest ([travel](travel.md)).
+
+**To a ship.** A cruise to a ship is plotted to where the ship would be if it held its velocity in its
+frame, `CruiseTravel::kShipStandoff` (1 km) off it. Each step its course's end is aimed again at where
+the ship then is, so it closes on the ship however it moves; such a cruise is never passed over by
+the fast-forward. It comes out in the ship's frame, moving as the ship does in it. A target ship that
+leaves the world or the system breaks the cruise off.
+
+**Broken off.** `Space::BreakOffCruise` ends a cruise part-way, as a privateer's would be: the ship
+comes out where it is, its body back, in its carrier's local frame, moving as its cruise had it over
+the last step, which physics then holds to its speed limit (`PhysicsSettings::maxLinearVelocity`, 100
+km/s by default). A `Space::CruiseBrokenOff` is raised; a ship not cruising is refused
+`NotCruising`.
+
+**Moving off.** A ship that came out of a cruise at rest (`Space::CameOut`) and is still within 50 m
+of where it came out (`kStillThere`), steered nowhere and clamped to nothing, is made to move off when
+another arrives in its place: the arrival comes out clear of it, and it is given a steering
+destination `kMoveOffDistance` (250 m) further from the arrival. A ship given a destination, docked or
+flown away is left to its way.
 
 A cruise drive (`Space::CruiseDrive`) is on every ship that cruises. With no profile, a cruise of
 `reference` metres takes `seconds`, rising as the distance to the `exponent` (a fourth root in
@@ -261,29 +300,22 @@ The ship crosses each on its thrusters, from rest to rest at `CruiseTravel::kCro
 what lies between (`CruiseSeconds`, `DriveMetres`). The crossings are part of the cruise, out of
 physics, so the fast-forward passes over them: steering would hold a ship to its thrusters' 150 m/s,
 nearly two hours for 1,000 km, every step of it run. A clearance of 0, the torch's, crosses nothing.
+The drift keeps a crossing ship moving with the station it left, and with the one it reaches, as a
+ship leaving orbit keeps its station's motion.
 
-A cruise with a crossing is flown in its ends' frames (`Cruising::departureBody`, `arrivalBody`).
-Each end's crossing is flown relative to the planet the end's station orbits, as a ship leaving orbit
-keeps the planet's motion; but where the drive keeps a sphere about the station and none about the
-planet, as the hauler does, relative to the station itself, so the ship leaves and reaches the
-station's own sphere as the station moves. Between them the
-course, plotted relative to the carrier, keeps the departure body's motion since setting out by the
-share of the drive's metres still to fly, and gains the arrival body's still to come by the share
-flown, so the frames join without a jump. That blend moves a ship off its plotted course by tens of
-millions of kilometres between planets, so the course is checked as flown (`SettleCruise`): sampled
-each minute while the drive thrusts or the ship crosses and each hour while it coasts, and sooner
-where a fast ship nears a body, it may come within no star, planet or moon's radius and
-`kCourseClearance`, nor, while the drive thrusts, within any of the drive's `keepouts`, the
-spheres travel writes about each end's stations and populated planet. A sample too near lengthens
-that end's crossing past the sphere, or adds the body to the obstacles, and the cruise is solved
-again, at most `kClearanceRounds` (4) times before it is refused `InsideRadius` or `NoCourse`.
-Travel settles the same cruise to price a journey; the cruise's start settles it again from where the
-ship has cleared to and flies that.
+A cruise with a crossing is checked as flown (`SettleCruise`): sampled each minute while the drive
+thrusts or the ship crosses and each hour while it coasts, and sooner where a fast ship nears a
+sphere, it may not thrust within any of the drive's `keepouts`, the spheres travel writes about each
+end's stations and populated planet. A sample too near lengthens that end's crossing past the sphere,
+and the cruise is solved again, at most `kClearanceRounds` (4) times before it is refused
+`InsideRadius`. Travel settles the same cruise to price a journey; the cruise's start settles it again
+from where the ship has cleared to and flies that.
 
 Cruising works with [fast-forward](glossary.md#fast-forward): between departure and the step before
-arrival, a cruise has nothing to decide, so its steps are [quiet](glossary.md#quiet-step) and the
-ship is placed where the last skipped step would have put it. Lanes and gates also report their next
-busy step: a lane its next arrival, a gate its next lapse, or every step while a ship is at a gate.
+arrival, a cruise to a body has nothing to decide, so its steps are [quiet](glossary.md#quiet-step)
+and the ship is placed where the last skipped step would have put it. Lanes and gates also report
+their next busy step: a lane its next arrival, a gate its next lapse, or every step while a ship is at
+a gate.
 
 ### What the hosted game uses today
 
@@ -451,12 +483,13 @@ const auto out = Manifest::Space::PlotRoute(galaxy, {0, ""}, {2, ""});
 - Moongates, gates between the places round one planet: [L35](delivery-order.md#l35).
 - Station traffic lanes, for cruises sharing one line between a planet's stations (parked):
   [L36](delivery-order.md#l36).
-- A cruise to a ship, one broken off part-way, a curved course, and moving off a ship that comes
-  out where another then flies: [L37](delivery-order.md#l37).
 - A ship waiting at a gate is not placed; no command gives up a clearance; no licence or standing
   check: [L38](delivery-order.md#l38).
-- An arrival keeps clear of bounding spheres, not shapes, and always comes out at rest
+- An arrival keeps clear of bounding spheres, not shapes
   ([Jettison's transit limits](../../jettison/docs/transit.md#limits-and-open-work)).
+- A cruise's drift and its ends' speeds are not priced: a journey's fuel is its profile's from rest
+  to rest, more than it burns leaving or arriving moving along its course, and the drift's
+  acceleration is no thrust at all. A ship broken off past physics' speed limit is held to it.
 - The presentation (a jump's transition, a galaxy panel, a flight panel) is the graphical client's
   ([L15](delivery-order.md#l15), [roadmap](roadmap.md#the-graphical-client)).
 
@@ -467,8 +500,9 @@ All of it is in [space: open plans](space-plan.md).
 The settled choices are in
 [decisions](decision-ledger.md#space-star-systems-lanes-gates-and-cruising).
 The key ones: a scenario's systems and drives as records ([D-088](decision-ledger.md#d-088)), the
-cruise limited by acceleration in the Manifest mode ([D-090](decision-ledger.md#d-090)), and, open,
-stargates ([D-017](decision-ledger.md#d-017)) and moongates ([D-091](decision-ledger.md#d-091)).
+cruise limited by acceleration in the Manifest mode ([D-090](decision-ledger.md#d-090)), its
+refinements ([D-125](decision-ledger.md#d-125)), and, open, stargates
+([D-017](decision-ledger.md#d-017)) and moongates ([D-091](decision-ledger.md#d-091)).
 
 ## Source
 
@@ -479,6 +513,6 @@ stargates ([D-017](decision-ledger.md#d-017)) and moongates ([D-091](decision-le
   `StarSystemFrame.h` (systems and their frames), `Galaxy.h` and `Routes.h` (the galaxy),
   `Lanes.h`, `Gates.h` and `Cruise.h` (travel), `Types.h` (`Space::Reason`, keyed
   `reason.space.<name>`, and `RegisterTypes`, which registers the reflected `Space.*` names).
-- Tests: the `space` suite (`source/game/space/tests/`, 87 cases over nine files, on the fixture
+- Tests: the `space` suite (`source/game/space/tests/`, 98 cases over nine files, on the fixture
   systems), and the hosted fixtures `fixture_cruise`, `fixture_burn` and `fixture_traffic`
   (`source/test/FixtureTests.cpp`).

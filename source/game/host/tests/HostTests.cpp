@@ -245,7 +245,7 @@ TEST_CASE("A hosted world saves what the state inventory names, in its order, an
 	        "Sim.Transform", "Sim.InFrame", "Sim.ControlledBy", "Physics.Body", "Physics.Velocity",
 	        "Physics.OnRails", "Physics.LocalFrame", "Physics.Handling", "Physics.FlightControls",
 	        "Ai.Steered", "Ai.Destination", "Dock.Vehicle", "Dock.Platform", "Dock.Berth",
-	        "Dock.Docking", "Space.OnLane", "Space.CruiseDrive", "Space.Cruising"});
+	        "Dock.Docking", "Space.OnLane", "Space.CruiseDrive", "Space.Cruising", "Space.CameOut"});
 	CHECK(
 	    world.ServiceNames() ==
 	    std::vector<std::string>{"Manifest.Identities", "Manifest.Requests", "physics"});

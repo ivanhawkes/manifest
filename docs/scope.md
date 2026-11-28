@@ -168,7 +168,7 @@ How: [space](space.md), [travel and fuel](travel.md). Open plans: [space plans](
 | Stargates opening new systems | Planned, [L08](delivery-order.md#l08) to [L12](delivery-order.md#l12) | A funded, unmanned delivery over server time ([D-017](decision-ledger.md#d-017)) |
 | Settlement and terraforming in the frontier | Planned, [L13](delivery-order.md#l13) | |
 | Moongates | Planned, [L35](delivery-order.md#l35) | Gates round one planet or moon ([D-091](decision-ledger.md#d-091)) |
-| Cruising refinements; gate refinements | Planned, [L37](delivery-order.md#l37), [L38](delivery-order.md#l38) | |
+| Gate refinements | Planned, [L38](delivery-order.md#l38) | |
 | Station traffic lanes | Deferred, [L36](delivery-order.md#l36) | Parked |
 
 ## Decisions

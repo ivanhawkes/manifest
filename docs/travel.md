@@ -354,13 +354,12 @@ A hull's fuel storage, in `data/ships/hulls.yaml`: `FuelCapacity` among its `bas
 - A torch's leg is priced on the straight line to the destination's station as it starts, not on
   the cruise's course round bodies to where the station will be; a policy's estimate prices every
   drive so (a `shortcut:` in `Policy.cpp`).
-- A course passing another populated body while the drive thrusts is not checked, which needs a
-  course round bodies ([L37](delivery-order.md#l37)).
+- A course passing another populated body while the drive thrusts is not checked: the spheres are
+  about each end's bodies alone.
 - A journey stays in its star system; each scenario has one. Journeys between systems wait for
   stargates ([L08](delivery-order.md#l08), [space plan](space-plan.md)) and local hops for
   moongates ([L35](delivery-order.md#l35)).
-- Cruising itself is refined in [L37](delivery-order.md#l37); station traffic lanes are parked as
-  [L36](delivery-order.md#l36).
+- Station traffic lanes are parked as [L36](delivery-order.md#l36).
 - The console and the TUI have no refuelling switch, and the TUI has no travel panel: it sends the
   console's line. The graphical client's thrust slider and acceleration control are part of
   [L15](delivery-order.md#l15) ([roadmap](roadmap.md#the-graphical-client)).

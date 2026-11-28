@@ -306,31 +306,23 @@ the drive's `bodyExclusionRadius` above its surface; a station's, `exclusionRadi
 - **Crossed in the body's frame.** A crossing is flown relative to its end's body, as a ship
   leaving orbit keeps the planet's motion: `Space::CruiseTravel` places a crossing ship from the
   body where it is that step.
-- **Carried between.** The driven course keeps the departure body's motion and gains the arrival
-  body's: `Underway` places the ship at the course's point plus, by the share of the course still to
-  fly, the departure body's motion since its crossing ended, and, by the share flown, the arrival
-  body's motion still to come before the arrival crossing begins. At each end that is the crossing's
-  own place, so the frames join without a jump, and near each end the ship moves with that end's
-  body, which cannot catch it.
-- **Checked as flown, not assumed.** The waypoints clear the solid bodies on the course as
-  plotted, in the carrier's frame, but the blend moves it, by tens of millions of kilometres
-  mid-course, and at a low thrust share the pull towards the arrival body can bring a slow ship
-  back inside a sphere while it still thrusts. So the course the ship flies is the one checked: as
-  a journey starts, `travel` samples the blended cruise each minute while the drive thrusts and
-  each hour while it coasts, where the bodies then are. Each sample is tested against every solid
-  star, planet and moon, at its radius plus `kCourseClearance`, and, while the drive thrusts,
-  against every sphere about each end's body; each is widened by the ship's travel relative to
-  that body over the sample's interval. Where the drive thrusts inside a sphere, `travel`
-  lengthens that end's crossing by the shortfall; where the ship would come within a solid body,
-  it adds to the plotted obstacles a sphere at the body's place in the course's frame at that time
-  (its place less the blend's offset then), so widened. It plans again, at most
-  `kClearanceRounds` (4) times, then refuses `InsideRadius` (a new result) for a sphere or
-  `NoCourse` for a body. One function does it, which `Policy::EstimateRoute` calls too, so an
-  estimate uses the clearances and course the check settles; a carrier's 34-day journey is some
-  820 coasting samples and the thrusting minutes, against a system's few dozen bodies. Today's
-  crossings are relative to the course's carrier, the star between planets, which leaves a
-  planet's ship behind as it orbits on (about 250,000 km in the 2.3 hours); the hauler's 1,000 km
-  crossing and its course move to these frames too, and the W22a fixtures' pins move with it.
+- **Carried between.** W22b carried the course between the two frames with a motion blend, the
+  departure body's motion by the share still to fly and the arrival body's by the share flown. L37
+  retired it: the ship leaves with its station's velocity and arrives with the other's, carried off the
+  course by a drift (Jettison's `Transit::Drift`), so near each end it moves with that end's body
+  ([space: cruising](space.md#cruising)).
+- **Checked as flown, not assumed.** At a low thrust share the pull towards the arrival body can
+  bring a slow ship back inside a sphere while it still thrusts, so the course the ship flies is the one
+  checked: as a journey starts, `travel` samples the cruise each minute while the drive thrusts and
+  each hour while it coasts, where the bodies then are, against every sphere about each end's body,
+  each widened by the ship's travel relative to that body over the sample's interval. Where the drive
+  thrusts inside a sphere, `travel` lengthens that end's crossing by the shortfall and plans again, at
+  most `kClearanceRounds` (4) times, then refuses `InsideRadius` (a new result). One function does
+  it, which `Policy::EstimateRoute` calls too, so an estimate uses the clearances and course the check
+  settles; a carrier's 34-day journey is some 820 coasting samples and the thrusting minutes. W22b
+  also tested each sample against every solid body and, where the blend had moved the ship within one,
+  re-plotted round it; L37 retired that with the blend, since the course is plotted round each body
+  where the ship passes it as flown ([space: cruising](space.md#cruising)).
 - **Where it is settled.** `travel` runs the check as it admits the journey, docked, from the
   station's place at that step, to refuse early and to burn fuel for the settled course's driven
   metres (its length less the two crossings) rather than the straight line's. The course flown is
@@ -347,15 +339,14 @@ the drive's `bodyExclusionRadius` above its surface; a station's, `exclusionRadi
 - **Two clearances.** `Space::CruiseDrive` and `Space::Cruising` split `clearance` into
   `departureClearance` and `arrivalClearance`, which `travel` writes as it writes the flown
   profile. The hauler's stay its 1,000 km. `Policy::EstimateRoute` takes both.
-- **The departure body saved.** `Space::Cruising` gains `departureBody`, the body the departure
-  crossing is flown relative to, since its `carrier` is the star between planets and `LocalFrame` is
-  gone once the ship sets out. A load refuses a cruise whose departure body or target is not a body
-  of its system.
-- **Not checked:** a course passing another populated body while the drive thrusts, which needs a
-  course round bodies ([L37](delivery-order.md#l37)).
-- **Later, in Jettison.** The blend stands in for a ship that leaves with its body's velocity and
-  arrives with the target's: a motion profile with a velocity at each end, a Jettison provision,
-  would fly that directly and retire the blend and its re-plotting ([L37](delivery-order.md#l37)).
+- **The departure body saved.** W22b saved `departureBody` and `arrivalBody` in `Space::Cruising`
+  for the blend; L37 replaced them with the velocities the cruise's ends carry (`departureVelocity`,
+  `arrivalVelocity`), and a load refuses a cruise whose target or carrier is not a body of its system.
+- **Not checked:** a course passing another populated body while the drive thrusts: travel writes
+  spheres about each end's bodies alone. No task holds it yet.
+- **Done in L37.** Jettison's motion profile with a speed at each end (`Transit::EndSpeeds`) and its
+  drift fly a ship that leaves with its body's velocity and arrives with the target's directly; the
+  blend and its re-plotting are retired.
 
 #### The emergency override
 

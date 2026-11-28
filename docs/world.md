@@ -132,8 +132,9 @@ entity that carries them (`source/game/world/include/manifest/world/State.h`):
 
 Goods are counted in whole [totes](glossary.md#tote) and money in whole credits; a price is a
 [decimal price](glossary.md#decimal-price) saved as its raw microcredits, never as a `double`.
-`Travel::Register` attaches 18 engine components after these, a ship's place in space (transforms,
-bodies, docking, lanes and cruise; see [travel](travel.md)). The world's three services, in the
+`Travel::Register` attaches 19 engine components after these, a ship's place in space (transforms,
+bodies, docking, lanes and cruise, and the mark of a ship that came out of a cruise at rest; see
+[travel](travel.md) and [space](space.md#cruising)). The world's three services, in the
 order they are added, are `Manifest.Identities` (the ID counters), `Manifest.Requests` (the
 request ledger) and Jettison's `physics`. The host suite pins both lists
 (`source/game/host/tests/HostTests.cpp`).

@@ -121,10 +121,12 @@ std::optional<Space::SettledCruise> Settle(
 		return std::nullopt;
 	const entt::registry &registry = world.Registry();
 	const auto *pFrame = registry.try_get<Physics::LocalFrame>(ship);
+	const auto *pVelocity = registry.try_get<Physics::Velocity>(ship);
 	Space::Settlement settlement = Space::SettleCruise(
 	    system, drive, registry.get<Sim::Transform>(ship).position,
-	    pFrame ? std::string_view{pFrame->body} : std::string_view{}, venueId, world.Clock().Now(),
-	    world.FixedStep());
+	    pFrame ? std::string_view{pFrame->body} : std::string_view{},
+	    pVelocity ? glm::dvec3{pVelocity->linear} : glm::dvec3{0.0},
+	    Space::CruiseTarget{std::string{venueId}, glm::dvec3{0.0}, std::string{}, glm::dvec3{0.0}}, world.Clock().Now(), world.FixedStep());
 	if (settlement.cruise)
 		return std::move(settlement.cruise);
 	result =

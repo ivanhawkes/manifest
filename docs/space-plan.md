@@ -2,7 +2,7 @@
 
 This document holds the open work on Manifest's space setting: the stargates that open new star
 systems, the moongates that join the places round one planet, and the refinements waiting on the
-traffic lanes, cruising and gates. What is built is in
+traffic lanes and gates. What is built is in
 [space: star systems, lanes, gates and cruising](space.md); read that first. The journeys a
 company's ship makes on top of it are [travel](travel.md)'s.
 
@@ -18,7 +18,6 @@ A rule marked *selected* is the user's decision; everything else is a proposal o
 | [L12](delivery-order.md#l12) | Generated frontier systems published during live play |
 | [L35](delivery-order.md#l35) | Moongates |
 | [L36](delivery-order.md#l36) | Station traffic lanes (parked) |
-| [L37](delivery-order.md#l37) | Cruising refinements |
 | [L38](delivery-order.md#l38) | Gate refinements |
 
 ## Several systems in the hosted world (L08)
@@ -391,22 +390,6 @@ Departures leave above the orbit's plane and arrivals come in below it. The lane
 way in's corridor after. They are Manifest's `space`, on Jettison's
 [slots](../../jettison/docs/transit.md#slots-and-gated-portals) and
 [portals](../../jettison/docs/transit.md#portals).
-
-## Cruising refinements (L37)
-
-<a id="l37"></a>
-
-What a cruise does not do yet ([cruising](space.md#cruising) is what it does):
-
-- **A cruise to a ship**, rather than to a body.
-- **A cruise broken off part-way**, as a privateer's would be. The cruise knows where the ship is
-  every step, so this is possible.
-- **A curved course** that bends round a body, rather than turning at waypoints, which the ship does
-  within a step.
-- **A body in the way placed better.** It is placed where it will be as the ship passes, by time
-  alone; a planet neither end orbits is placed half-way and widened by half its own motion.
-- **Moving off.** A cruise's arrivals are spread clear of each other, but a ship that came out at
-  rest is not moved if another then arrives in its place.
 
 ## Gate refinements (L38)
 
