@@ -6,6 +6,7 @@ manifest_add_module(client_model
 		types
 		query
 		host
+		remote
 	HEADERS
 		include/manifest/client/ClientModel.h
 	SOURCES
@@ -15,6 +16,7 @@ manifest_add_module(client_model
 	PUBLIC_LIBRARIES
 		Jettison::Sim
 	PRIVATE_LIBRARIES
+		Jettison::Core
 		Jettison::Reflect
 		Jettison::Serialise
 )
@@ -86,4 +88,12 @@ if(MANIFEST_BUILD_TESTS AND BUILD_TESTING)
 		$<TARGET_FILE:manifest_client> "${sdk_directory}/scripts/lib/headless.sh"
 		"${CMAKE_CURRENT_BINARY_DIR}/smoke-user")
 	set_tests_properties(client_smoke PROPERTIES TIMEOUT 900)
+
+	# Server play end to end: a dedicated server on a new world, the client offscreen on lavapipe
+	# founding the player's company and buying a tote through the screens, and the tote still held
+	# after the server's restart.
+	add_test(NAME client_serve COMMAND "${BASH_PROGRAM}" "${CMAKE_CURRENT_SOURCE_DIR}/client-serve.sh"
+		$<TARGET_FILE:manifest_client> $<TARGET_FILE:manifest> $<TARGET_FILE:manifest-token>
+		"${MANIFEST_MOD_DIRECTORY}" "${sdk_directory}/scripts/lib/headless.sh")
+	set_tests_properties(client_serve PROPERTIES TIMEOUT 900)
 endif()

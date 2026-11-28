@@ -50,8 +50,34 @@ constexpr std::string_view kPlayerDetail = "manifest.player";
 
 constexpr Jettison::Core::Category kClient{"client"};
 
+// Why a save is refused while connected.
+constexpr const char *kServersWorld =
+    "the world is the server's, which saves it: nothing is saved or loaded while connected";
+
 // The frames the render test lets pass after an answer, so the screen has drawn it.
 constexpr int kSmokeSettleFrames = 2;
+
+
+// The status line's words for why the connection ended.
+std::string_view ClosedKey(Jettison::Net::Reason reason)
+{
+	using Jettison::Net::Reason;
+	switch (reason)
+	{
+		case Reason::Closed: return "manifest.closed.closed";
+		case Reason::UnknownProtocol: return "manifest.closed.unknownProtocol";
+		case Reason::VersionMismatch: return "manifest.closed.versionMismatch";
+		case Reason::BadCredential: return "manifest.closed.badCredential";
+		case Reason::ServerFull: return "manifest.closed.serverFull";
+		case Reason::HandshakeTimeout: return "manifest.closed.handshakeTimeout";
+		case Reason::BadMessage: return "manifest.closed.badMessage";
+		case Reason::InboundOverflow: return "manifest.closed.inboundOverflow";
+		case Reason::Revoked: return "manifest.closed.revoked";
+		case Reason::Shutdown: return "manifest.closed.shutdown";
+		case Reason::KeyMismatch: return "manifest.closed.keyMismatch";
+	}
+	return "manifest.closed.closed";
+}
 
 
 std::string Text(Arguments arguments)
@@ -84,7 +110,13 @@ std::optional<std::int64_t> Number(Arguments arguments)
 
 
 ClientGame::ClientGame(Jettison::Host::Game &world)
-    : m_world{world}, m_name{kDefaultName}, m_companyName{kDefaultCompany}
+    : m_pWorld{&world}, m_name{kDefaultName}, m_companyName{kDefaultCompany}
+{
+}
+
+
+ClientGame::ClientGame(Remote::Client &remote)
+    : m_pRemote{&remote}, m_name{kDefaultName}, m_companyName{kDefaultCompany}
 {
 }
 
@@ -151,7 +183,10 @@ void ClientGame::BindEvents(Jettison::Ui::DataModel &data)
 
 void ClientGame::Attach(Jettison::Sim::SimWorld &world)
 {
-	m_model.emplace(world, Host::HostedServices(m_world));
+	if (m_pRemote != nullptr)
+		m_model.emplace(*m_pRemote);
+	else
+		m_model.emplace(world, Host::HostedServices(*m_pWorld));
 	Present();
 }
 
@@ -180,7 +215,9 @@ void ClientGame::Present()
 		screen.companyName = m_companyName;
 	}
 	const Jettison::Ui::StringTable &strings = m_pUi->Strings();
-	if (m_model->Waiting())
+	if (const std::optional<Jettison::Net::Reason> closed = m_model->Closed())
+		screen.status = strings.Text(ClosedKey(*closed));
+	else if (m_model->Waiting())
 		screen.status = strings.Text("manifest.result.waiting");
 	else if (const std::optional<Command::Result> result = m_model->LastResult())
 		screen.status = strings.Text(
@@ -237,6 +274,31 @@ void ClientGame::AddCommands(Jettison::DevTools::Console &console, Jettison::App
 		    if (arguments.size() != 1 || !Press(arguments.front()))
 			    throw std::runtime_error{"usage: press <element of the screen shown>"};
 	    });
+	console.RegisterCommand(
+	    "read", "read <element>: log what an element of the screen shown holds",
+	    [this](Jettison::DevTools::Console &, std::span<const std::string> arguments)
+	    {
+		    if (arguments.size() != 1 || m_pUi == nullptr)
+			    throw std::runtime_error{"usage: read <element of the screen shown>"};
+		    Jettison::Core::Log(
+		        Jettison::Core::Severity::Info, kClient, "{} {}: {}", m_shown, arguments.front(),
+		        m_pUi->ElementText(Document(m_shown), arguments.front()));
+	    });
+	console.RegisterCommand(
+	    "found", "found <company name>: name your company and start trading, as the start screen does",
+	    [this](Jettison::DevTools::Console &, std::span<const std::string> arguments)
+	    {
+		    if (arguments.size() != 1)
+			    throw std::runtime_error{"usage: found <company name>, in double quotes for spaces"};
+		    if (!m_model)
+			    throw std::runtime_error{"found: the game has not started yet"};
+		    m_companyName = arguments.front();
+		    const Command::Receipt receipt = m_model->Provision(m_name, m_companyName);
+		    if (receipt.status == Command::Receipt::Status::Refused)
+			    throw std::runtime_error{std::format(
+			        "found: refused, {}", Jettison::Reflect::EnumName(entt::meta_any{receipt.result}))};
+		    Present();
+	    });
 }
 
 
@@ -251,6 +313,8 @@ bool ClientGame::Press(std::string_view element)
 
 void ClientGame::WriteSave(Jettison::Sim::SaveGame &save, Jettison::App::Shell &shell)
 {
+	if (m_pRemote != nullptr)
+		throw std::runtime_error{kServersWorld};
 	if (!m_model)
 		Attach(shell.World());
 	save.AddSection(std::string{kSaveSection}, WriteState(m_model->State()));
@@ -260,6 +324,8 @@ void ClientGame::WriteSave(Jettison::Sim::SaveGame &save, Jettison::App::Shell &
 
 void ClientGame::ReadSave(const Jettison::Sim::SaveGame &save, Jettison::App::Shell & /*shell*/)
 {
+	if (m_pRemote != nullptr)
+		throw std::runtime_error{kServersWorld};
 	const Jettison::Sim::SaveSection *section = save.FindSection(kSaveSection);
 	if (section == nullptr)
 		throw std::runtime_error{"the save is not the Manifest client's: it has no Manifest.Client"};

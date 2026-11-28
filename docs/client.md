@@ -48,8 +48,11 @@ navigation buttons change screen, and Escape goes back to the company's. A frame
 fast-forward 4 ms (`ClientModel::FastForward`), then takes the shell's snapshots again
 (`Shell::Resync`).
 
-For a capture or a scripted run, which has no mouse, `screen <name>` shows a screen and
-`press <element>` clicks an element of the screen shown or the flight panel, as console lines:
+For a capture or a scripted run, which has no mouse, `screen <name>` shows a screen,
+`press <element>` clicks an element of the screen shown or the flight panel, and `read <element>`
+logs what an element of the screen shown holds (`market held-0: 1`), as console lines. `found
+<company name>` names the player's company and starts them as the start screen does (double quotes
+keep spaces), locally or on a server:
 
 ```bash
 manifest_client --offscreen --run "@5 press provision" --run "@30 screen market" \
@@ -96,7 +99,9 @@ engine's developer text does ([D-121](decision-ledger.md#d-121)).
 ### The model
 
 `Manifest::Client::ClientModel` (`source/apps/client`, the `client_model` module) is the player's
-side of a local world with nothing of the UI in it, so its suite plays the first loop with no window.
+side of a local world or a server's, with nothing of the UI in it, so its suite plays the first loop
+with no window. One class serves both; below is the local world, and [server play](#server-play)
+the server's.
 It holds the player's principal and makes a `Screen` from `Query::Observe` as that player's actor:
 the company and its credits, its ships, holdings and resting orders, the market where the ship is
 docked, and the venues the player has a report of, as destinations. Its actions are the console's
@@ -124,6 +129,42 @@ version 1, with the player as the save's `manifest.player` detail. A save with n
 not the client's and is refused before anything of the world is replaced. The model is made again
 from the loaded world and the section once the load is done.
 
+### Server play
+
+`--connect <host:port>` and `--token-file <file>` play on a [dedicated server](server.md) as the
+token's actor. They are the client's own, taken off the command line as `--scenario` is, which is
+then the server's and refused beside them. The token is read from the file, never an argument, so
+it is in no process list. The key is pinned from the [server list](server.md#connections-are-sealed)
+(`Host::DefaultServers`) as the console's `connect` pins it, and an endpoint the list does not name
+is refused before anything is sent. Connected, the client hands the shell no `Host::Game`: the
+shell runs its own world, physics alone, the content still mounted, and the server steps the game's.
+
+The model is made over the `Remote::Client`. `Refresh` polls it, takes the newest snapshot and the
+reply answering the request it waits on; each action is the same payload, given to `Submit` rather
+than `Requests::Admit`, as the welcome's actor; `FastForward` takes nothing. The payload types are
+registered by the model, since no world of the game's registers them. An action before the welcome
+or after the closing is refused `NotAuthorised` before it is sent.
+
+The player starts as they do locally, from the start screen or the console's `found`: a principal's
+token sends `provision` for itself alone ([D-122](decision-ledger.md#d-122)), the player's name
+being the token's. While connected:
+
+- the saves refuse, saying the world is the server's: `WriteSave` and `ReadSave` throw, so nothing
+  is saved or loaded;
+- the flight panel hides its fast-forward toggle (`Screen::connected`);
+- a closed connection shows why in the status line, in the player's words
+  (`manifest.closed.<reason>`, one key for each of Jettison's `Net::Reason`s).
+
+A snapshot comes at most once a second (`kSnapshotInterval`), so the status line may say a request
+is done before the screen shows it; the screen catches up at the next snapshot. On lavapipe the
+first after the founding was seen to take about four seconds. Nothing is retried, and a dropped
+connection is not made again ([after the tracer](client-plan.md#after-the-tracer)).
+
+```bash
+manifest-token --tokens tokens.yaml issue principal Ada > ada.token    # the server's operator
+manifest_client --connect 127.0.0.1:47720 --token-file ada.token --run '@2s found "Ada Freight"'
+```
+
 ### The scene
 
 The package's `scene/main.yaml` holds a camera and a lamp, which the shell draws behind the screens
@@ -136,16 +177,18 @@ system's models load ([roadmap](roadmap.md#the-graphical-client)).
 
 | Suite | What it checks |
 | --- | --- |
-| `client_model` | The first loop through the model: provisioned at Ore, two totes of furs bought and loaded, flown to Brine with fast-forward, unloaded and sold for more; the journey's bounds, a refusal made before sending, and the save's section restored |
+| `client_model` | The first loop through the model: provisioned at Ore, two totes of furs bought and loaded, flown to Brine with fast-forward, unloaded and sold for more; the journey's bounds, a refusal made before sending, and the save's section restored. Then over an in-process server: nothing sent before the welcome, the company founded as the token's principal, a tote bought and seen held, and the server's stop shown as `Shutdown` |
 | `client_screens` | Every screen loaded over a started world with nothing RmlUi or the string table counts as a problem, the start giving way to the company's, the navigation, and the flight panel shown under way, the acceleration, a price and the time of day in English's and German's forms; then every screen again in French, German and Japanese, every translation taken |
 | `client_strings` | Every key English has, the engine's (read from its assets alone, too) and the client's, in French, German and Japanese and no key beyond them; each text naming English's placeholders and data expressions, and a key with plural forms holding those its language's rule needs (Japanese only `other`). The engine's `numbers.*` forms are its own, each language's (a 24-hour clock names no am or pm), and the engine's ui suite checks them. A failure names the language and the key |
 | `client_smoke` | The engine's render test sequence played by the client offscreen on lavapipe (`client-smoke.sh`): its save and load carry the client's section, and its game UI stage provisions the player and buys a tote at the market's first ask through the screens |
+| `client_serve` | Server play end to end (`client-serve.sh`): `manifest --serve` on a new trading world and an ephemeral port, the client offscreen on lavapipe founding "Ada Freight" with `found`, buying a tote with `press buy-0` and reading it held; the server stopped with SIGINT and started again, a second run reads the tote still held |
 
 ## Using it
 
 ```bash
 build/clang-debug/source/apps/client/manifest_client               # the trading scenario
 build/clang-debug/source/apps/client/manifest_client --scenario governance
+build/clang-debug/source/apps/client/manifest_client --connect 127.0.0.1:47720 --token-file ada.token
 ```
 
 It is built in every preset with the engine's presentation (`MANIFEST_BUILD_CLIENT`, off in
@@ -155,18 +198,20 @@ It is built in every preset with the engine's presentation (`MANIFEST_BUILD_CLIE
 
 - The content mounts as `base`, not `manifest`, so an overlay that `requires: manifest` does not
   mount in the client.
-- It is not in the [bundle](glossary.md#bundle) yet, and plays only a local world, not a server's
-  ([L52](delivery-order.md#l52)).
+- It is not in the [bundle](glossary.md#bundle) yet.
+- On a server it neither reconnects nor resends a lost request, checks no content against the
+  server's and has no screen to choose a server ([after the tracer](client-plan.md#after-the-tracer)).
 - Goods, ships and venues are shown by their IDs, not their names.
 - The Japanese font is one weight, Regular.
 - What is still to come is listed in [the graphical client](roadmap.md#the-graphical-client).
 
 ## Source
 
-- `source/apps/client/main.cpp`: the program; `ClientGame.h`, its screens on the shell.
+- `source/apps/client/main.cpp`: the program, `--connect` and `--token-file` among its options;
+  `ClientGame.h`, its screens on the shell.
 - `mods/manifest/ui/manifest/` and `mods/manifest/scene/main.yaml`: the documents and the scene.
-- `source/apps/client/tests/ScreensTests.cpp`, `StringsTests.cpp` and `client-smoke.sh`: the screens
-  check, the languages' check and the smoke run.
+- `source/apps/client/tests/ScreensTests.cpp`, `StringsTests.cpp`, `client-smoke.sh` and
+  `client-serve.sh`: the screens check, the languages' check, the smoke run and server play.
 - `mods/manifest/strings/<tag>/`: the four languages' tables.
 - `source/apps/client/include/manifest/client/ClientModel.h`: the model; its suite is
   `tests/ClientModelTests.cpp`.

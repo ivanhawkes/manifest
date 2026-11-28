@@ -3,9 +3,12 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <exception>
 #include <numeric>
 #include <span>
+#include <vector>
 
+#include <jettison/core/Log.h>
 #include <jettison/reflect/Reflect.h>
 #include <jettison/serialise/Archive.h>
 
@@ -25,6 +28,8 @@ using Command::Result;
 
 // Who provisions a player: the trusted local harness, as the console's host does.
 const Command::Actor kHarness{ActorKind::Administrator, "Client"};
+
+constexpr Jettison::Core::Category kClient{"client"};
 
 constexpr double kDaySeconds = 86400.0;
 constexpr double kMinuteSeconds = 60.0;
@@ -175,7 +180,8 @@ void RegisterTypes()
 		    .Field<&Screen::fastForward>("fastForward", kSaved)
 		    .Field<&Screen::day>("day", kSaved)
 		    .Field<&Screen::minutes>("minutes", kSaved)
-		    .Field<&Screen::status>("status", kSaved);
+		    .Field<&Screen::status>("status", kSaved)
+		    .Field<&Screen::connected>("connected", kSaved);
 		RegisterType<ClientState>("Manifest.Client.State")
 		    .Field<&ClientState::principal>("principal", kSaved)
 		    .Field<&ClientState::thrustPercent>("thrustPercent", kSaved)
@@ -204,11 +210,32 @@ ClientState ReadState(std::span<const std::byte> bytes)
 
 
 ClientModel::ClientModel(Jettison::Sim::SimWorld &world, const Host::Services &services)
-    : m_world{world}, m_services{services}
+    : m_pWorld{&world}, m_services{services}
 {
 	m_screen.thrustPercent = kFullPercent;
 	m_screen.accelerationTenths = kTenthsPerG;
 	MakeScreen();
+}
+
+
+ClientModel::ClientModel(Remote::Client &remote) : m_pRemote{&remote}
+{
+	// The payloads it sends, which no world of the game's has registered in a connected client.
+	Company::RegisterTypes();
+	Trade::RegisterTypes();
+	Travel::RegisterTypes();
+	m_screen.thrustPercent = kFullPercent;
+	m_screen.accelerationTenths = kTenthsPerG;
+	m_screen.connected = true;
+	MakeScreen();
+}
+
+
+std::optional<Jettison::Net::Reason> ClientModel::Closed() const
+{
+	if (m_unreadable)
+		return Jettison::Net::Reason::BadMessage;
+	return m_pRemote != nullptr ? m_pRemote->Closed() : std::nullopt;
 }
 
 
@@ -239,16 +266,27 @@ void ClientModel::Restore(const ClientState &state)
 
 bool ClientModel::Refresh()
 {
-	if (m_waiting)
-		if (const auto outcome = m_services.requests.Outcome(m_waiting->first, m_waiting->second))
-		{
-			m_last = outcome->result;
-			m_waiting.reset();
-		}
-	m_snapshot = m_screen.principal.empty()
-	                 ? Query::Snapshot{m_world.Clock().Step(), {}}
-	                 : Query::Observe(
-	                       m_world, m_services.identities, {ActorKind::Principal, m_screen.principal});
+	if (m_pRemote != nullptr)
+	{
+		Receive();
+		if (const std::optional<Remote::Welcome> &welcome = m_pRemote->Welcomed())
+			m_screen.principal = welcome->actorId;
+		if (m_pRemote->Latest())
+			m_snapshot = *m_pRemote->Latest();
+	}
+	else
+	{
+		if (m_waiting)
+			if (const auto outcome = m_services->requests.Outcome(m_waiting->first, m_waiting->second))
+			{
+				m_last = outcome->result;
+				m_waiting.reset();
+			}
+		m_snapshot = m_screen.principal.empty() ? Query::Snapshot{m_pWorld->Clock().Step(), {}}
+		                                        : Query::Observe(
+		                                              *m_pWorld, m_services->identities,
+		                                              {ActorKind::Principal, m_screen.principal});
+	}
 	const Screen before = m_screen;
 	MakeScreen();
 	return m_screen != before;
@@ -269,7 +307,8 @@ void ClientModel::MakeScreen()
 	screen.goods.clear();
 	screen.destinations.clear();
 
-	const double seconds = static_cast<double>(m_snapshot.step) * m_world.FixedStep();
+	const double step = m_pWorld != nullptr ? m_pWorld->FixedStep() : Host::kFixedStep;
+	const double seconds = static_cast<double>(m_snapshot.step) * step;
 	screen.day = static_cast<std::uint64_t>(seconds / kDaySeconds) + 1;
 	const double ofDay = std::fmod(seconds, kDaySeconds);
 	screen.minutes = static_cast<std::int64_t>(ofDay / kMinuteSeconds);
@@ -335,13 +374,52 @@ Receipt ClientModel::Refuse(Result result)
 }
 
 
+void ClientModel::Receive()
+{
+	if (m_unreadable)
+		return;
+	std::vector<Remote::Reply> replies;
+	try
+	{
+		replies = m_pRemote->Poll();
+	}
+	catch (const std::exception &error)
+	{
+		// A server that answers in another shape than its version's, as the console treats one.
+		Jettison::Core::Log(
+		    Jettison::Core::Severity::Error, kClient, "The server sent what the client cannot read: {}",
+		    error.what());
+		m_unreadable = true;
+		m_pRemote->Disconnect();
+		return;
+	}
+	for (const Remote::Reply &reply : replies)
+		if (m_waiting && reply.sequence == m_waiting->second &&
+		    reply.receipt.status != Receipt::Status::Queued)
+		{
+			m_last = reply.receipt.result;
+			m_waiting.reset();
+		}
+}
+
+
 Receipt ClientModel::Admit(
     const Command::Actor &actor, std::string_view command, std::uint32_t version,
     std::span<const std::byte> payload)
 {
-	const std::uint64_t sequence = m_services.requests.NextSequence(actor);
+	if (m_pRemote != nullptr)
+	{
+		const std::optional<std::uint64_t> sent =
+		    Closed() ? std::nullopt : m_pRemote->Submit(command, version, payload);
+		if (!sent)
+			return Refuse(Result::NotAuthorised);
+		m_waiting.emplace(actor, *sent);
+		m_last.reset();
+		return {Receipt::Status::Queued, Result::Succeeded, 0};
+	}
+	const std::uint64_t sequence = m_services->requests.NextSequence(actor);
 	const Receipt receipt =
-	    m_services.requests.Admit(m_world, actor, sequence, std::string{command}, version, payload);
+	    m_services->requests.Admit(*m_pWorld, actor, sequence, std::string{command}, version, payload);
 	if (receipt.status == Receipt::Status::Refused)
 		return Refuse(receipt.result);
 	m_waiting.emplace(actor, sequence);
@@ -363,10 +441,14 @@ Receipt ClientModel::Provision(std::string principal, std::string companyName)
 {
 	if (m_screen.provisioned)
 		return Refuse(Result::AlreadyProvisioned);
+	if (m_pRemote != nullptr)
+		principal = m_screen.principal;
 	const std::vector<std::byte> bytes = Jettison::Serialise::BinaryArchive::Write(
 	    Company::Provision{principal, principal, companyName},
 	    Jettison::Serialise::FormatVersion{Company::kVersion});
-	const Receipt receipt = Admit(kHarness, Company::kProvision, Company::kVersion, bytes);
+	const Receipt receipt = Admit(
+	    m_pRemote != nullptr ? Command::Actor{ActorKind::Principal, principal} : kHarness,
+	    Company::kProvision, Company::kVersion, bytes);
 	if (receipt.status != Receipt::Status::Refused)
 	{
 		m_screen.principal = std::move(principal);
@@ -488,9 +570,11 @@ void ClientModel::SetFastForward(bool enabled)
 
 bool ClientModel::UnderWay() const
 {
+	if (m_pRemote != nullptr)
+		return std::ranges::any_of(m_screen.ships, &ShipRow::underWay);
 	if (m_screen.companyId.empty())
 		return false;
-	const entt::registry &registry = m_world.Registry();
+	const entt::registry &registry = m_pWorld->Registry();
 	for (const auto &[entity, ship, journey] :
 	     registry.view<const World::Ship, const World::Journey>().each())
 		if (ship.companyId == m_screen.companyId && !journey.Ended())
@@ -501,13 +585,13 @@ bool ClientModel::UnderWay() const
 
 std::uint64_t ClientModel::FastForward(std::chrono::nanoseconds budget)
 {
-	if (!m_screen.fastForward)
+	if (!m_screen.fastForward || m_pWorld == nullptr)
 		return 0;
 	const auto until = std::chrono::steady_clock::now() + budget;
-	const auto most = static_cast<std::uint64_t>(kMostSeconds / m_world.FixedStep());
+	const auto most = static_cast<std::uint64_t>(kMostSeconds / m_pWorld->FixedStep());
 	std::uint64_t taken = 0;
 	while (UnderWay() && std::chrono::steady_clock::now() < until)
-		taken += m_world.FastForward(m_world.Clock().Step() + most);
+		taken += m_pWorld->FastForward(m_pWorld->Clock().Step() + most);
 	return taken;
 }
 } // namespace Manifest::Client

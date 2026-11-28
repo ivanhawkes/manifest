@@ -33,6 +33,10 @@ struct Options
 inline constexpr std::string_view kOptionsUsage =
     "[--content <directory-or-pack>] [--overlay <directory-or-pack>]... --scenario <name>";
 
+// The step every world Start makes steps at, in seconds: the one Jettison's docking and physics are
+// tested at (D-086), and what a client reads a server's snapshot's step by.
+inline constexpr double kFixedStep = 1.0 / 60.0;
+
 // Reads the options from a command line, leaving every other argument in `rest`, in order, the
 // content DefaultContent() when --content is not given. None when --scenario is missing, --content
 // or --scenario is given twice, or an option has no value. Throws as DefaultContent does.

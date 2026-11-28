@@ -5,7 +5,8 @@
 	<link type="text/rcss" href="manifest.rcss"/>
 </head>
 <!-- The flight panel (docs/client.md, "Screens"), beside the screens while a journey is under way: its
-     destination and leg, the fuel left, and whether the client passes over its quiet steps. -->
+     destination and leg, the fuel left, and whether the client passes over its quiet steps, a server's
+     world stepping itself. -->
 <body data-model="manifest">
 	<div id="flight" class="panel">
 		<h2>[[manifest.flight.title]]</h2>
@@ -20,7 +21,7 @@
 			<p>[[manifest.service.reactionMass]] {{ship.reactionMass | thousands}} / {{ship.reactionMassMost | thousands}} kg</p>
 		</div>
 		<p>[[manifest.clock.dayAndTime]]</p>
-		<p>
+		<p data-if="!screen.connected">
 			<button id="fastforward" data-event-click="fastforward()">
 				<span data-if="screen.fastForward">[[manifest.flight.fastForwardOn]]</span>
 				<span data-if="!screen.fastForward">[[manifest.flight.fastForwardOff]]</span>

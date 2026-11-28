@@ -6,16 +6,22 @@
 #include <filesystem>
 #include <fstream>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
 
 #include <jettison/host/Session.h>
+#include <jettison/net/Key.h>
+#include <jettison/net/Token.h>
 #include <jettison/serialise/Archive.h>
 #include <jettison/sim/SimWorld.h>
 
 #include <manifest/client/ClientModel.h>
 #include <manifest/host/Start.h>
+#include <manifest/remote/Keys.h>
+#include <manifest/remote/Server.h>
+#include <manifest/remote/Tokens.h>
 
 using Manifest::Client::ClientModel;
 using Manifest::Command::Receipt;
@@ -213,5 +219,78 @@ TEST_CASE("The client's model refuses an action with nothing to act on before it
 	model.SetPrincipal("Nobody");
 	CHECK_FALSE(model.View().provisioned);
 	CHECK(model.Cancel("Order1").status == Receipt::Status::Refused);
+	CHECK(model.LastResult() == Result::NotAuthorised);
+}
+
+
+TEST_CASE("The client's model plays on a server: the player founds their company and buys a tote")
+{
+	const std::string token = Jettison::Net::GenerateToken();
+	const Manifest::Test::TempFile tokens{"", ".tokens.yaml"};
+	Manifest::Remote::WriteTokens(
+	    tokens.Path(),
+	    {{{Jettison::Net::DigestToken(token), Manifest::Command::ActorKind::Principal, "Ada"}}});
+	const std::unique_ptr<Jettison::Host::Session> session =
+	    Manifest::Host::Start({MANIFEST_MOD_DIRECTORY, {}, "trading"});
+	const Jettison::Net::ServerKey key = Jettison::Net::GenerateServerKey();
+	const Manifest::Test::TempFile keyFile{"", ".key"};
+	Manifest::Remote::WriteServerKey(keyFile.Path(), key.secretKey);
+	std::optional<Manifest::Remote::Server> server;
+	server.emplace(*session, tokens.Path(), keyFile.Path(), "127.0.0.1", 0);
+	Manifest::Remote::Client remote{"127.0.0.1", server->Port(), key.publicKey, token};
+	ClientModel model{remote};
+	CHECK(model.View().connected);
+
+	// Before the welcome nothing is sent.
+	CHECK(model.Provision("Ada", "Ada Freight").status == Receipt::Status::Refused);
+	CHECK(model.LastResult() == Result::NotAuthorised);
+
+	// Both ends polled and the server's world stepped, as its loop does, until it holds.
+	const auto until = [&](auto done)
+	{
+		const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{10};
+		while (!done() && std::chrono::steady_clock::now() < deadline)
+		{
+			server->Poll(std::chrono::milliseconds{1});
+			session->World().Step();
+			server->Publish();
+			model.Refresh();
+		}
+		return done();
+	};
+	REQUIRE(until([&] { return model.Principal() == "Ada"; }));
+
+	// The principal is the token's, whatever the start screen names.
+	CHECK(model.Provision("Someone", "Ada Freight").status == Receipt::Status::Queued);
+	REQUIRE(until([&] { return !model.Waiting(); }));
+	CHECK(model.LastResult() == Result::Succeeded);
+	REQUIRE(until([&] { return model.View().provisioned; }));
+	CHECK(model.View().companyName == "Ada Freight");
+	CHECK(model.View().venueId == "VenueOreHighport");
+	CHECK(model.Provision("Ada", "Again").status == Receipt::Status::Refused);
+	CHECK(model.LastResult() == Result::AlreadyProvisioned);
+
+	// A tote bought at the ask is held once a snapshot holds it; the server steps its own world.
+	const auto furs = [&model]
+	{
+		const auto &goods = model.View().goods;
+		const auto good = std::ranges::find(goods, "ItemFurs", &Manifest::Client::GoodRow::itemId);
+		return good == goods.end() ? Manifest::Client::GoodRow{} : *good;
+	};
+	CHECK(furs().askRaw > 0);
+	CHECK(model.Buy("ItemFurs").status == Receipt::Status::Queued);
+	REQUIRE(until([&] { return !model.Waiting(); }));
+	CHECK(model.LastResult() == Result::Succeeded);
+	CHECK(until([&] { return furs().held == 1; }));
+	CHECK(model.FastForward(std::chrono::seconds{1}) == 0);
+	CHECK_FALSE(model.Closed());
+
+	// The server gone, the closing says why and nothing more is sent.
+	server.reset();
+	const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{5};
+	while (!model.Closed() && std::chrono::steady_clock::now() < deadline)
+		model.Refresh();
+	CHECK(model.Closed() == Jettison::Net::Reason::Shutdown);
+	CHECK(model.Buy("ItemFurs").status == Receipt::Status::Refused);
 	CHECK(model.LastResult() == Result::NotAuthorised);
 }

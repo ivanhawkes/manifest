@@ -15,6 +15,7 @@
 #include <manifest/command/Requests.h>
 #include <manifest/host/Start.h>
 #include <manifest/query/Query.h>
+#include <manifest/remote/Client.h>
 
 namespace Manifest::Client
 {
@@ -100,7 +101,8 @@ struct OrderRow
 // the venues the player has a market report of, but where the ship is docked; the travel settings are
 // the next journey's, its thrust in percent of the cruise and its acceleration in tenths of g (D-107).
 // The day is the world's, from 1, with its time of day in minutes since midnight; status is the
-// client's words for the last request's answer, which the client fills in.
+// client's words for the last request's answer, which the client fills in. Connected, the world is a
+// server's, which steps it itself.
 struct Screen
 {
 	std::string principal;
@@ -121,6 +123,7 @@ struct Screen
 	std::uint64_t day{1};
 	std::int64_t minutes{0};
 	std::string status;
+	bool connected{false};
 
 	bool operator==(const Screen &) const = default;
 };
@@ -149,15 +152,26 @@ ClientState ReadState(std::span<const std::byte> bytes);
 // saves; safe to call again.
 void RegisterTypes();
 
-// The player's side of a local world (docs/client.md, "The model"), with nothing of the UI in it: what
-// the screens show, made from Query::Observe as the player's actor, and their actions sent as the
-// console sends them, each through Command::Requests::Admit with the player's next sequence. Called
-// between steps, on the thread that steps the world.
+// The player's side of a world (docs/client.md, "The model"), with nothing of the UI in it: what the
+// screens show, made from the player's snapshot, and their actions sent as the console sends them.
+// Over a local world the snapshot is Query::Observe as the player's actor and each action goes through
+// Command::Requests::Admit with the player's next sequence, called between steps on the thread that
+// steps the world. Over a server's connection (Remote::Client) the snapshot is the newest the server
+// sent and each action is submitted to it, as the welcome's actor: a receipt Queued then means sent,
+// its order still to come, and an action before the welcome or after the closing is refused
+// NotAuthorised before it is sent.
 class ClientModel
 {
   public:
 	// The world's services are those of the world given, and both outlive the model.
 	ClientModel(Jettison::Sim::SimWorld &world, const Host::Services &services);
+
+	// Over a connection, which outlives the model and which it polls.
+	explicit ClientModel(Remote::Client &remote);
+
+	// Why the connection ended, once it has, a server's message the client cannot read included
+	// (BadMessage); none over a local world.
+	std::optional<Jettison::Net::Reason> Closed() const;
 
 	// The player, once Provision has named them or a save has.
 	const std::string &Principal() const
@@ -199,7 +213,8 @@ class ClientModel
 	}
 
 	// The player's company provisioned, as the host does for a new player: the principal named and
-	// given the company. Refused for a principal the model has already.
+	// given the company. Refused for a principal the model has already. Over a connection the
+	// principal is the welcome's, whatever is given (D-122).
 	Command::Receipt Provision(std::string principal, std::string companyName);
 
 	// An order for a tote of the good at the venue where the ship is docked, at its best ask or bid;
@@ -231,7 +246,7 @@ class ClientModel
 	Command::Receipt SetRefuel(bool enabled);
 
 	// Whether the client passes over a journey's steps, and whether a ship of the player's is under
-	// way.
+	// way: of a server's world, as its newest snapshot shows it.
 	void SetFastForward(bool enabled);
 
 	bool UnderWay() const;
@@ -239,7 +254,7 @@ class ClientModel
 	// The world stepped on while a journey is under way, its quiet steps passed over
 	// (Jettison::Sim::SimWorld::FastForward), for at most the budget and to no further than the step
 	// the journey ends at: the steps taken. A frame calls it once; nothing is taken with fast-forward
-	// off or no journey under way.
+	// off, no journey under way or over a connection, whose server steps its own world.
 	std::uint64_t FastForward(std::chrono::nanoseconds budget);
 
   private:
@@ -249,6 +264,9 @@ class ClientModel
 	// A refusal made here, before anything is sent, answered as the world's are.
 	Command::Receipt Refuse(Command::Result result);
 
+	// The replies the connection has, the answer waited on taken from them.
+	void Receive();
+
 	Command::Receipt Admit(
 	    const Command::Actor &actor, std::string_view command, std::uint32_t version,
 	    std::span<const std::byte> payload);
@@ -257,8 +275,13 @@ class ClientModel
 
 	void MakeScreen();
 
-	Jettison::Sim::SimWorld &m_world;
-	Host::Services m_services;
+	// One of the world and its services, or the connection.
+	Jettison::Sim::SimWorld *m_pWorld{nullptr};
+	std::optional<Host::Services> m_services;
+	Remote::Client *m_pRemote{nullptr};
+
+	// The server sent what the client cannot read, so nothing more of it is.
+	bool m_unreadable{false};
 	Query::Snapshot m_snapshot;
 	Screen m_screen;
 

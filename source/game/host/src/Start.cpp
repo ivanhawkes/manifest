@@ -44,9 +44,8 @@ constexpr std::string_view kPackageMount = "manifest";
 // The engine's own assets, which Jettison's shell mounts below a game's content (App::MountAssets).
 constexpr std::string_view kEngineMount = "engine";
 
-// The step Jettison's docking and physics are tested at (D-086). shortcut: seed 0, nothing drawing on
-// the world's generator yet; a scenario gives its seed once something does.
-constexpr double kFixedStep = 1.0 / 60.0;
+// shortcut: seed 0, nothing drawing on the world's generator yet; a scenario gives its seed once
+// something does.
 constexpr std::uint64_t kSeed = 0;
 
 

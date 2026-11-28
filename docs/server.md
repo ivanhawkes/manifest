@@ -25,7 +25,8 @@ Jettison's: see [networking](../../jettison/docs/networking.md).
 
 The identity, what a player may do and admin rights stay three separate things. The token says who
 is connecting; the command's own rules decide what that actor may do; only an administrator's token
-grants what only an administrator may send, such as provisioning a company.
+grants what only an administrator may send, such as provisioning another player's company. A
+player's token provisions its own, once ([D-122](decision-ledger.md#d-122)).
 
 ## How it works
 
@@ -332,6 +333,13 @@ Disconnected from 127.0.0.1:47720.
 
 The console's commands themselves are in [the console and the terminal UI](console.md).
 
+### Play from the graphical client
+
+`manifest_client --connect <host:port> --token-file <file>` plays on a server as the token's actor,
+pinning the key from the same server list, with no local world: the player founds their company
+from the start screen or the console's `found`, and the screens are made from the server's
+snapshots ([server play](client.md#server-play)).
+
 ### Write a client in C++
 
 A frontend makes a `Remote::Client` with the server's public key, polls until it is welcomed, then
@@ -408,4 +416,5 @@ clients](history/stage-4.md#n03-several-clients-reconnects-and-bounds--2026-11-2
   (`source/apps/manifest/serve-smoke.sh`: served with no client, killed, recovered, stopped,
   restored, and its key made, refused a replacement unasked, and refused missing or holding no key);
   `cli_serve_missing_tokens`, `cli_serve_no_home`, `token_no_home`, `token_revoke_none`,
-  `token_no_arguments`; the `console` suite's connect case.
+  `token_no_arguments`; the `console` suite's connect case; the graphical client's `client_model`
+  server case and `client_serve` (`source/apps/client/client-serve.sh`).

@@ -15,7 +15,8 @@ namespace Manifest::Client
 {
 // The graphical client's presentation composed into Jettison's shell (docs/client.md): its screens,
 // RmlUi documents under ui/manifest/ over the model's Screen, the data model "manifest", and the
-// world fast-forwarded a budget a frame while a journey is under way.
+// world fast-forwarded a budget a frame while a journey is under way; or, connected, a server's world
+// shown and played, the shell holding no world of the game's.
 class ClientGame final : public Jettison::App::Game
 {
   public:
@@ -31,6 +32,9 @@ class ClientGame final : public Jettison::App::Game
 	// The world is Manifest's (Host::MakeGame), which the shell's session holds and starts.
 	explicit ClientGame(Jettison::Host::Game &world);
 
+	// Over a server's connection, which outlives the game.
+	explicit ClientGame(Remote::Client &remote);
+
 	void OpenUi(Jettison::Ui::UiSystem &ui, Jettison::App::Shell &shell) override;
 
 	// The model made once the world has started, the journey fast-forwarded, and the screens made
@@ -39,6 +43,7 @@ class ClientGame final : public Jettison::App::Game
 
 	// The client's section in the shell's saves (kSaveSection) and its player as a detail; a save with
 	// no section, not the client's, is refused, and what a load read is applied once it has loaded.
+	// Connected, both are refused: the world is the server's, which saves it.
 	void WriteSave(Jettison::Sim::SaveGame &save, Jettison::App::Shell &shell) override;
 
 	void ReadSave(const Jettison::Sim::SaveGame &save, Jettison::App::Shell &shell) override;
@@ -53,7 +58,9 @@ class ClientGame final : public Jettison::App::Game
 	bool Back(Jettison::App::Shell &shell) override;
 
 	// screen <name> shows a screen and press <element> clicks one of the screen shown or the flight
-	// panel, as the mouse would: for --run lines and captures, which have no mouse.
+	// panel, as the mouse would, and read <element> logs what one holds: for --run lines and captures,
+	// which have no mouse. found <company name> names the player's company and starts them, as the
+	// start screen does.
 	void AddCommands(Jettison::DevTools::Console &console, Jettison::App::Shell &shell) override;
 
 	// A click on the element of the screen shown, or of the flight panel; false for neither.
@@ -63,7 +70,8 @@ class ClientGame final : public Jettison::App::Game
 	// in, with no shell.
 	void OpenScreens(Jettison::Ui::UiSystem &ui);
 
-	// The model, over the world once a session has started it; and the screens made from it.
+	// The model, over the world once a session has started it, or over the connection; and the
+	// screens made from it.
 	void Attach(Jettison::Sim::SimWorld &world);
 
 	void Present();
@@ -86,7 +94,9 @@ class ClientGame final : public Jettison::App::Game
   private:
 	void BindEvents(Jettison::Ui::DataModel &data);
 
-	Jettison::Host::Game &m_world;
+	// One of them.
+	Jettison::Host::Game *m_pWorld{nullptr};
+	Remote::Client *m_pRemote{nullptr};
 	std::optional<ClientModel> m_model;
 	Jettison::Ui::UiSystem *m_pUi{nullptr};
 	Jettison::Ui::DataModel *m_pData{nullptr};

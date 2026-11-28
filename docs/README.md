@@ -50,7 +50,7 @@ Open work only. Each task has an ID in the queue.
 | [Space: open plans](space-plan.md) | Several systems, stargates, moongates, traffic lanes, cruising and gate refinements |
 | [Ships and life support: open plans](ships-plan.md) | Drives past the torch, oxygen banks, algae recycling, the compact ship |
 | [Policy scripts: open plan](policy-scripts-plan.md) | The Wasm trade-scoring script |
-| [The graphical client: open plans](client-plan.md) | Server play, the tracer |
+| [The graphical client: open plans](client-plan.md) | Server play after the tracer |
 
 ## Working on Manifest
 
