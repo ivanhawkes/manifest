@@ -195,10 +195,11 @@ ran as `Completed` with the original result, order and step, and never runs it t
 journal lost in a crash is free again: the welcome names the sequence after the last one the journal
 kept, and the client sends what it lost again, in order. Sending a later one first is `SequenceGap`.
 The `remote` suite proves this across a crash with two players on three sessions
-([R08](history/stage-5-recovery-plan.md#reconnect-and-recovery-r08-2026-11-24)). The console and the
-terminal UI dial again after a lost connection and send what they had not heard complete
-([the console](console.md#connected-to-a-server), [D-125](decision-ledger.md#d-125)); the `console`
-suite proves a buy resent so runs once.
+([R08](history/stage-5-recovery-plan.md#reconnect-and-recovery-r08-2026-11-24)). The console, the
+terminal UI and the graphical client dial again after a lost connection and send what they had not
+heard complete ([the console](console.md#connected-to-a-server), [server
+play](client.md#server-play), [D-125](decision-ledger.md#d-125), [D-126](decision-ledger.md#d-126));
+the `console` and `client_model` suites prove a buy resent so runs once.
 
 ### Bounds
 

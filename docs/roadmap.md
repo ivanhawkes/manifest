@@ -139,7 +139,7 @@ market, travel, flight and service screens. What is still to come:
 
 - **Server play.** Its tracer is done, one player trading on a dedicated server
   ([server play](client.md#server-play), L52 in [history](history/tasks.md)), and the content
-  checked against the server's (L53). Still to come: reconnecting and resending a lost request, and
+  checked against the server's (L53), and reconnecting, a lost request resent. Still to come:
   choosing a server in the client ([after the tracer](client-plan.md#after-the-tracer)).
 - **Owners' settings** ([L15b](delivery-order.md#l15b)). A venue's fees and a region's taxes shown and edited
   ([D-098](decision-ledger.md#d-098); the tax command is [L29](history/tasks.md)'s), and station policy and
