@@ -424,9 +424,12 @@ const Civilisation *Simulation::FindCivilisation(const std::string &idOrName) co
 
 bool Simulation::IsValidBasePrice(std::string_view text)
 {
-	// Room for the hosted multipliers, which reach about 27 times the base price (docs/pricing.md,
-	// "Limits and open work"; L51 asks what drives them and whether 30 stays).
-	constexpr std::int64_t kMaxPriceMultiplier = 30;
+	// The most the hosted multipliers reach (L51, docs/pricing.md, "Limits and open work"): the whole
+	// market's scarcity, kMaxPriceFactor's 5; a venue that only wants the good, 1.3 by Trade's
+	// kLocalBias; the broker's curve with its stock near 0, its kCurveCeiling of 4; and an ask's half
+	// spread, under 2 for the brokers.spreadBps below 20,000 content accepts. 5 x 1.3 x 4 x 2 is 52;
+	// the shipped spread of 1,000 basis points gives 27.3. The sandbox's 5 x 1.9 is inside it.
+	constexpr std::int64_t kMaxPriceMultiplier = 52;
 	const auto price = Decimal::TryParse(text);
 	return price && *price >= 0 && *price <= Decimal::Max() / kMaxPriceMultiplier;
 }

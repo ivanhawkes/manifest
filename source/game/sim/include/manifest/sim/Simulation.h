@@ -122,7 +122,7 @@ class Simulation
 	const Civilisation *FindCivilisation(const std::string &idOrName) const;
 
 	// Whether the text is a base price Generate accepts: exact nonnegative microcredits, with
-	// room for the maximum market/local multiplier. Content loading holds every item to it.
+	// room for the most the hosted multipliers reach. Content loading holds every item to it.
 	static bool IsValidBasePrice(std::string_view text);
 
 	// Exact microcredit price; zero when the field is invalid or negative.

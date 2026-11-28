@@ -11,9 +11,10 @@ is in [history](history.md). Why Manifest exists, and what is in and out of it, 
 What needs the user's answer or action and is not a task in the queue. Each line goes when it is
 settled.
 
-- **Review the numbers.** The price bound of 30 times the base, against hosted prices that reach
-  about 27 times ([L51](delivery-order.md#l51)); and the drive numbers of
-  [D-108](decision-ledger.md#d-108), proposed by an agent.
+- **Review the numbers.** The price bound, 52 times the base since [L51](history/tasks.md) so the
+  widest spread content accepts fits, where the shipped spread reaches 27.3
+  ([prices](pricing.md#base-prices)); and the drive numbers of [D-108](decision-ledger.md#d-108),
+  proposed by an agent.
 - **The packed totes' fallout.** `d7843df` priced every tote by its packed weight and was
   committed without the fixture suites (`ctest -R fixture`), and with the trade, company and
   procurement suites' new expectations unreviewed. Run the fixtures and settle what moved. The
@@ -112,8 +113,9 @@ insurance ([L23](delivery-order.md#l23)) and escrow between players
 Regions gain governor-set tax rates ([L29](delivery-order.md#l29)), debt and lenders
 ([L30](delivery-order.md#l30)), a power grid and an AI economy ([L31](delivery-order.md#l31)),
 and staple balances by kind of world ([L33](delivery-order.md#l33)); gold and gems move in cases
-([L32](delivery-order.md#l32)). Why the hosted prices reach about 27 times their base, and
-whether the bound of 30 stays, is [L51](delivery-order.md#l51). The design is the
+([L32](delivery-order.md#l32)). The hosted prices reach 27.3 times their base at most, the
+scarcity cap, a venue's want, the curve's ceiling and the spread multiplied
+([prices](pricing.md#base-prices)). The design is the
 [economy plan](economy-and-development-plan.md). The built rules (households and their needs,
 health and happiness, grains and medical supplies) are [the regional economy](economy.md), with
 [trading](trading.md) and [prices](pricing.md).

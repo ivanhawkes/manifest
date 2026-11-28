@@ -18,6 +18,7 @@
 #include <jettison/vfs/FileSystem.h>
 
 #include <manifest/company/Company.h>
+#include <manifest/sim/Simulation.h>
 #include <manifest/trade/Economy.h>
 #include <manifest/trade/Trade.h>
 #include <manifest/travel/Travel.h>
@@ -90,21 +91,21 @@ struct Business
 // with 25,000 credits.
 struct Hosted
 {
-	explicit Hosted(bool quoted = false)
+	explicit Hosted(bool quoted = false, const Manifest::Content::ContentSet &content = Trading())
 	    : identities{(
 	          Manifest::Company::RegisterTypes(), RegisterTypes(), World::RegisterWorld(world))},
 	      requests{Manifest::Command::RegisterRequests(world, identities)}
 	{
 		Manifest::Travel::Fleet &fleet =
-		    Manifest::Travel::Register(world, requests, identities, Trading());
-		Manifest::Company::RegisterCommands(world, requests, identities, fleet, Trading());
-		Register(world, requests, identities, Trading());
-		World::CreateInitialState(world, identities, Trading());
+		    Manifest::Travel::Register(world, requests, identities, content);
+		Manifest::Company::RegisterCommands(world, requests, identities, fleet, content);
+		Register(world, requests, identities, content);
+		World::CreateInitialState(world, identities, content);
 		Manifest::Travel::OpenStations(world, fleet);
 		AddCompany("Ada", "CompanyA");
 		AddCompany("Bea", "CompanyB");
 		if (quoted)
-			Quote(world, identities, Trading());
+			Quote(world, identities, content);
 	}
 
 
@@ -556,6 +557,58 @@ TEST_CASE("Each broker posts a ladder about its stock and requotes each turn, it
 	REQUIRE(hosted.Place(kAda, Side::Sell, 6, 1) == Result::Succeeded);
 	CHECK(hosted.Held(Kind::Company, "CompanyA").available == 0);
 	CHECK(hosted.Balance(Kind::CompanyAccount, "CompanyA") == 24'192);
+}
+
+
+TEST_CASE("The dearest ask is under 52 times its good's base price, and 27.3 at the shipped spread")
+{
+	// Furs at the dearest base price content accepts, Decimal::Max() / 52, wanted at Ore alone and made
+	// nowhere: the market's scarcity cap, 5, and Ore's want, 1.3, make Ore's native price 6.5 times the
+	// base. Its broker holds 1 tote of a target of 10,000, so its one ask is on the curve at half a
+	// tote, 4 x 10,000 / (10,000 + 1.5) times the native price, then half the spread over it.
+	const auto dearest = [](int spreadBps)
+	{
+		Manifest::Content::ContentSet content = Trading();
+		const auto furs =
+		    std::ranges::find(content.gameMode.items, kFurs, &Manifest::Core::ItemNode::itemId);
+		REQUIRE(furs != content.gameMode.items.end());
+		furs->basePrice = "177372539170.28415";
+		CHECK(Manifest::Core::Simulation::IsValidBasePrice(furs->basePrice));
+		CHECK_FALSE(Manifest::Core::Simulation::IsValidBasePrice("177372539170.284151"));
+		for (Manifest::Content::VenueDefinition &venue : content.scenarios.at(content.scenario).venues)
+			for (Manifest::Content::MarketEntry &entry : venue.market)
+				if (entry.itemId == kFurs)
+				{
+					entry.production = 0.0;
+					entry.demand = venue.venueId == kOre ? 1.0 : 0.0;
+					entry.stock = venue.venueId == kOre ? 10'000 : entry.stock;
+				}
+		content.tuning.brokers.spreadBps = spreadBps;
+		Hosted hosted{false, content};
+		for (World::Holding &holding :
+		     hosted.world.Registry()
+		         .get<World::Stock>(hosted.identities.Find(Kind::Broker, std::string{kOre}))
+		         .holdings)
+			if (holding.venueId == kOre && holding.itemId == kFurs)
+				holding.available = 1;
+		Quote(hosted.world, hosted.identities, content);
+		std::vector<World::Order> asks;
+		for (const auto &[id, order] : hosted.Now().orders)
+			if (order.venueId == kOre && order.itemId == kFurs && order.side == Side::Sell)
+				asks.push_back(order);
+		REQUIRE(asks.size() == 1);
+		CHECK(asks[0].totes == 1);
+		return asks[0].limit;
+	};
+
+	// The widest spread content accepts, 19,999 basis points: 5 x 1.3 x 3.9994 x 1.99995, 51.991 times
+	// the base, within 0.02% of the largest price a Decimal holds and not capped to it.
+	const std::int64_t widest = dearest(19'999);
+	CHECK(widest == 9'221'758'188'825'532'145);
+	CHECK(widest < std::numeric_limits<std::int64_t>::max());
+
+	// The shipped spread, 1,000: 5 x 1.3 x 3.9994 x 1.05, 27.296 times the base.
+	CHECK(dearest(1'000) == 4'841'544'087'735'597'766);
 }
 
 
