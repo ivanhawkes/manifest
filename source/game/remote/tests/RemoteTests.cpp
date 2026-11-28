@@ -271,7 +271,8 @@ TEST_CASE("a token file keeps digests and resolves only the tokens it was issued
 }
 
 
-TEST_CASE("a server list pins each endpoint's key as written, the build's pins none, a player's is theirs")
+TEST_CASE(
+    "a server list pins each endpoint's key as written, the build's pins none, a player's is theirs")
 {
 	const std::string key = Jettison::Net::GenerateServerKey().publicKey;
 	const Manifest::Test::TempFile file{

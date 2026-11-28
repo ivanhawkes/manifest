@@ -126,7 +126,8 @@ std::optional<Space::SettledCruise> Settle(
 	    system, drive, registry.get<Sim::Transform>(ship).position,
 	    pFrame ? std::string_view{pFrame->body} : std::string_view{},
 	    pVelocity ? glm::dvec3{pVelocity->linear} : glm::dvec3{0.0},
-	    Space::CruiseTarget{std::string{venueId}, glm::dvec3{0.0}, std::string{}, glm::dvec3{0.0}}, world.Clock().Now(), world.FixedStep());
+	    Space::CruiseTarget{std::string{venueId}, glm::dvec3{0.0}, std::string{}, glm::dvec3{0.0}},
+	    world.Clock().Now(), world.FixedStep());
 	if (settlement.cruise)
 		return std::move(settlement.cruise);
 	result =
