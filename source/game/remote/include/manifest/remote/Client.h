@@ -87,4 +87,10 @@ class Client
 	std::optional<std::string> m_refused;
 	std::optional<Query::Snapshot> m_latest;
 };
+
+// Whether a connection that closed so is dialled again with the same token, after a welcome: the
+// server gone quiet or restarting. A credential, key, protocol, content or message it refused stays
+// refused, and a full server is left for the player to try again, so no refusal is dialled in a loop
+// (D-125).
+bool Redials(Jettison::Net::Reason reason);
 } // namespace Manifest::Remote

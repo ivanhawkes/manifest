@@ -57,16 +57,6 @@ unsigned ParseCount(
 }
 
 
-// Whether a connection that closed so is dialled again: the server gone quiet or restarting. A
-// credential, key, protocol, content or message it refused stays refused, and a full server is left
-// for the player to try again, so no refusal is dialled in a loop.
-bool Redials(Jettison::Net::Reason reason)
-{
-	using Jettison::Net::Reason;
-	return reason == Reason::Closed || reason == Reason::HandshakeTimeout || reason == Reason::Shutdown;
-}
-
-
 std::string PadRight(const std::string &text, std::size_t width)
 {
 	return text.size() >= width ? text : text + std::string(width - text.size(), ' ');
@@ -1631,7 +1621,7 @@ std::vector<std::string> ManifestConsole::Poll()
 	const std::optional<std::string> &refused = m_pRemote->Refused();
 	const Jettison::Net::Reason reason = *m_pRemote->Closed();
 	const std::string why = refused ? *refused : std::string{Jettison::Net::ReasonName(reason)};
-	if (!refused && m_nextSequence && Redials(reason))
+	if (!refused && m_nextSequence && Remote::Redials(reason))
 	{
 		if (m_pRemote->Welcomed())
 			lines.push_back(

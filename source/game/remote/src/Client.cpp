@@ -121,4 +121,11 @@ void Client::Disconnect()
 {
 	m_net.Disconnect();
 }
+
+
+bool Redials(Jettison::Net::Reason reason)
+{
+	using Jettison::Net::Reason;
+	return reason == Reason::Closed || reason == Reason::HandshakeTimeout || reason == Reason::Shutdown;
+}
 } // namespace Manifest::Remote
