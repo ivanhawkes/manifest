@@ -1,7 +1,8 @@
 add_executable(manifest main.cpp)
 set_target_properties(manifest PROPERTIES FOLDER "Apps")
 target_link_libraries(manifest PRIVATE
-    Manifest::Host Manifest::Remote Jettison::Core Jettison::Sim Jettison::Time manifest_warnings)
+    Manifest::Host Manifest::Remote Jettison::Core Jettison::Platform Jettison::Sim Jettison::Time
+    manifest_warnings)
 manifest_distributed(manifest)
 
 # The server's CLI for its token file: issues and revokes bearer tokens, keeping their digests.

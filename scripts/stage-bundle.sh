@@ -2,8 +2,9 @@
 # Stages the distribution (docs/host.md, "The distribution") from a clean checkout, so that its game
 # tree names a commit: the release build, linked to run outside its toolchain (cmake/Distribution.cmake)
 # and checked so (check-distribution.sh), laid out with its content, its BUILD and the licence of every
-# source tree compiled into it, and packed as manifest-<version>-<game tree>-linux-x86_64.tar.gz in the
-# output directory, which it names.
+# source tree compiled into it, its executables stripped, and packed as
+# manifest-<version>-<game tree>-linux-x86_64.tar.gz in the output directory, which it names; beside it,
+# debug-<the same>.tar.gz keeps their debug files, by build ID, for crash reports.
 # stage-bundle.sh [<output directory>], build/bundle by default.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -32,9 +33,24 @@ tree="${game#*+}"
 
 name="manifest-$version-${tree:0:12}-linux-x86_64"
 stage="$out/$name"
-rm -rf "$stage" "$out/$name.tar.gz"
+debug="$out/debug-$name"
+rm -rf "$stage" "$out/$name.tar.gz" "$debug" "$debug.tar.gz"
 mkdir -p "$stage/bin" "$stage/share/manifest" "$stage/share/doc/manifest"
 install -m 0755 "${binaries[@]/#/$build/}" "$stage/bin/"
+
+# Each executable's debug information kept apart, where scripts/symbolise-crash.sh and gdb look for it
+# by the build ID a crash report lists (Jettison's docs/runtime.md, "Crash reports"), and stripped.
+# Named debug-<bundle>, so that manifest-*.tar.gz still names the bundle alone.
+for binary in "$stage/bin/"*; do
+  id="$(readelf -n "$binary" | sed -nE 's/^ *Build ID: ([0-9a-f]+)$/\1/p')"
+  [[ -n "$id" ]] || { echo "stage-bundle: $binary has no build ID" >&2; exit 1; }
+  kept="$debug/.build-id/${id:0:2}/${id:2}.debug"
+  mkdir -p "$(dirname "$kept")"
+  objcopy --only-keep-debug "$binary" "$kept"
+  chmod 0644 "$kept"
+  objcopy --strip-all "$binary"
+done
+
 install -m 0644 "$build/share/manifest/manifest.pack" "$build/share/manifest/servers.yaml" \
   "$stage/share/manifest/"
 
@@ -84,6 +100,8 @@ if [[ -f "$font_licence" ]]; then
 fi
 
 # The same bytes from the same commit: no owners, times or order of the machine's.
-tar --sort=name --owner=0 --group=0 --numeric-owner --mtime="@$(git log -1 --format=%ct)" \
-  -C "$out" -cf - "$name" | gzip -n > "$out/$name.tar.gz"
-echo "$out/$name.tar.gz"
+for archive in "debug-$name" "$name"; do
+  tar --sort=name --owner=0 --group=0 --numeric-owner --mtime="@$(git log -1 --format=%ct)" \
+    -C "$out" -cf - "$archive" | gzip -n > "$out/$archive.tar.gz"
+  echo "$out/$archive.tar.gz"
+done

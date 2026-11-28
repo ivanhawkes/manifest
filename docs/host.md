@@ -120,6 +120,7 @@ default, and the option still overrides it.
 | The server's secret key, 0600 | `$XDG_CONFIG_HOME/manifest/server-key` | `--key` |
 | A client's server list | `$XDG_CONFIG_HOME/manifest/servers.yaml` when it is there, else `<bin>/../share/manifest/servers.yaml` | none |
 | The TUI's transcript | `$XDG_STATE_HOME/manifest/tui-session.log` | none |
+| The server's crash reports | `$XDG_STATE_HOME/manifest/crashes` | none |
 | The server's log | stderr, for the service manager to keep | none |
 
 `DefaultContent` finds the executable from `/proc/self/exe` (`Jettison::Platform::ExecutablePath`).
@@ -216,12 +217,14 @@ flowchart LR
         backups["~/.local/share/manifest/backups"]
         tokens["~/.config/manifest/tokens and server-key"]
         log["~/.local/state/manifest/tui-session.log"]
+        crashes["~/.local/state/manifest/crashes"]
     end
     bin -- "reads, found from /proc/self/exe" --> pack
     bin -- "manifest --serve" --> world
     bin -- "manifest --serve" --> backups
     bin -- "manifest-token" --> tokens
     bin -- "manifest_tui" --> log
+    bin -- "manifest --serve, on a crash" --> crashes
 ```
 
 #### What a machine needs
@@ -274,9 +277,10 @@ flowchart TD
     A["Refuse a checkout with any change"] --> B["Build clang-release: the four and the pack"]
     B --> C["check-distribution.sh on the four"]
     C --> D["Read the game and SDK revisions from Revision.cpp"]
-    D --> E["Lay out bin/ and share/manifest/; write BUILD with manifest-validate's fingerprints"]
-    E --> F["Copy the licence of every source tree compiled in"]
-    F --> G["tar, sorted, no owners, the commit's time; gzip -n"]
+    D --> E["Lay out bin/; keep each program's debug file by build ID, and strip it"]
+    E --> E2["Lay out share/manifest/; write BUILD with manifest-validate's fingerprints"]
+    E2 --> F["Copy the licence of every source tree compiled in"]
+    F --> G["tar each, sorted, no owners, the commit's time; gzip -n"]
 ```
 
 A clean checkout is required so that the game tree in the bundle's name is a commit's. The licences
@@ -287,6 +291,21 @@ The pack's Noto Sans JP font is no source tree: its licence (SIL OFL 1.1), fetch
 `notosansjp/LICENSE`. `libstdc++` and `libgcc` are under the GCC Runtime Library Exception, which sets no condition on a
 program compiled with them, so their licence is not shipped. The tarball is the same bytes from the
 same commit.
+
+The bundle's programs are stripped (`objcopy --strip-all`), and their debug information is kept
+apart in a second tarball beside it, `debug-<bundle>.tar.gz`, never shipped with it. Each program
+carries a SHA-1 build ID in every preset (`manifest_distributed`), and its debug file is
+`debug-<bundle>/.build-id/<first two digits>/<the rest>.debug`, the layout Jettison's
+`scripts/symbolise-crash.sh` and gdb find it in by that ID, so no debug link is written. A crash of
+`manifest --serve` writes a report (Jettison's
+[crash reports](../../jettison/docs/runtime.md#crash-reports)) listing each module's build ID; an
+operator's machine with no `addr2line` writes only modules and offsets, which the build's
+debug files name later:
+
+```sh
+tar -xzf debug-manifest-<version>-<tree>-linux-x86_64.tar.gz
+../jettison/scripts/symbolise-crash.sh crash-<time>-<pid>.txt debug-manifest-<version>-<tree>-linux-x86_64
+```
 
 `scripts/bundle-smoke.sh <prefix>` runs a bundle, or a build tree, as an operator would: from an
 empty directory, in a new `HOME`, every place left to its default. It starts and validates on the
@@ -422,9 +441,6 @@ Every machine that runs the release preset needs a loader at `/lib64/ld-linux-x8
 - The world's seed is always 0. A scenario will give its seed once something draws on the world's
   generator (`kSeed`, `host/src/Start.cpp`).
 - Only the content and the overlays named are mounted. The host reads no player's mod list.
-- The released programs keep their debug information, about 30 MB each. Stripping them, with the
-  debug files kept for crash reports, waits on Jettison's
-  [crash handling](../../jettison/docs/roadmap.md#j11) ([L41](delivery-order.md#l41)).
 - `scripts/test-bundle.sh` needs Docker for its containers, so those runs are by hand; CI runs only
   `host` ([L41](delivery-order.md#l41)).
 - The floor is kept by binding symbols. If that becomes a hassle, the release is built in an Ubuntu

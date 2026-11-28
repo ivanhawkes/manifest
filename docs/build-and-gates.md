@@ -252,7 +252,9 @@ What the bundle holds and where it writes is in [the host](host.md).
 ./scripts/test-bundle.sh build/bundle/manifest-*.tar.gz host       # here only, as CI does
 ```
 
-`stage-bundle.sh` refuses a checkout with changes, since a bundle names its commit.
+`stage-bundle.sh` refuses a checkout with changes, since a bundle names its commit. It strips the
+bundle's programs and keeps their debug files beside it, by build ID, in `debug-<bundle>.tar.gz`,
+for crash reports ([the host](host.md#staging-and-testing-the-bundle)).
 `test-bundle.sh` unpacks the tarball into a read-only directory and runs `bundle-smoke.sh` on it
 under `env -i`, on this machine and in the containers named (Docker).
 

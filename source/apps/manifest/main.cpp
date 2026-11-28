@@ -16,8 +16,9 @@
 // directory, which must be empty, and recovers it to check it, for --serve to serve. The backup is
 // only read.
 // The world, its backups, the token file and the key default to Manifest::Host::DefaultWorld's and
-// the others', each directory made private when it is first written to. A failed start-up exits 1, a
-// bad command line 2.
+// the others', each directory made private when it is first written to. A server's crash writes a
+// report (Jettison::Platform::InstallCrashHandler) to $XDG_STATE_HOME/manifest/crashes. A failed
+// start-up exits 1, a bad command line 2.
 #include <manifest/host/Journal.h>
 #include <manifest/host/Locations.h>
 #include <manifest/host/Start.h>
@@ -41,6 +42,8 @@
 #include <vector>
 
 #include <jettison/core/Log.h>
+#include <jettison/platform/Crash.h>
+#include <jettison/platform/Paths.h>
 #include <jettison/script/ScriptHost.h>
 #include <jettison/sim/Events.h>
 #include <jettison/sim/Snapshot.h>
@@ -171,6 +174,15 @@ void RunServer(Jettison::Host::Session &session, const Serve &serve)
 	const std::filesystem::path backups = ResolvePlace(serve.backups, Manifest::Host::DefaultBackups);
 	const std::filesystem::path tokens = ResolvePlace(serve.tokens, Manifest::Host::DefaultTokens);
 	const std::filesystem::path key = ResolvePlace(serve.key, Manifest::Host::DefaultServerKey);
+
+	// Before the world is touched, so a crash in its recovery is reported too. A release's reports are
+	// named against its kept debug files (scripts/symbolise-crash.sh, scripts/stage-bundle.sh).
+	const std::filesystem::path crashes =
+	    Jettison::Platform::ResolvePath(Jettison::Platform::Directory::State, "manifest") / "crashes";
+	Manifest::Host::MakePrivateDirectories(crashes);
+	const Manifest::Host::Identity identity = Manifest::Host::RunningIdentity(session);
+	Jettison::Platform::InstallCrashHandler(
+	    {crashes, std::format("Manifest {}, engine {}", identity.game, identity.sdk), {}, true});
 
 	// Before a client can reach the server: the world held, and brought to its journal's last step.
 	const Manifest::Host::WorldDirectory directory =

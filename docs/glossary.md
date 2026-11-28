@@ -105,8 +105,8 @@ and [prices](pricing.md).
 
 The distribution: a tarball, `manifest-<version>-<game tree>-linux-x86_64.tar.gz`, staged from a
 clean checkout by `scripts/stage-bundle.sh`. It holds the release executables (`manifest`,
-`manifest-token`, `manifest-validate`, `manifest_tui`), the content pack under `share/manifest` and
-the licences, and runs on x86-64 Linux above the [glibc floor](#glibc-floor). See [the
+`manifest-token`, `manifest-validate`, `manifest_tui`), stripped, the content pack under
+`share/manifest` and the licences, and runs on x86-64 Linux above the [glibc floor](#glibc-floor). See [the
 host](host.md).
 
 ### Burn

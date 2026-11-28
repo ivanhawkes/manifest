@@ -3,7 +3,9 @@
 # tree finds its content as a bundle does. With MANIFEST_DISTRIBUTION each is linked to run on x86-64
 # Linux with glibc 2.39 or newer and nothing else: libstdc++ and libgcc linked in, the system's loader,
 # no RUNPATH, and the symbols glibc gave newer versions after 2.39 bound to the older
-# (source/apps/distribution). scripts/check-distribution.sh checks the result.
+# (source/apps/distribution). scripts/check-distribution.sh checks the result. In every preset each
+# carries a SHA-1 build ID, as the engine's binaries do, by which a crash report names it and a stripped
+# release's kept debug files are found (scripts/stage-bundle.sh).
 option(MANIFEST_DISTRIBUTION "Link the distributed executables to run outside the build's toolchain" OFF)
 set(MANIFEST_LOADER /lib64/ld-linux-x86-64.so.2)
 if(MANIFEST_DISTRIBUTION)
@@ -12,6 +14,7 @@ endif()
 
 function(manifest_distributed target)
     set_target_properties(${target} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
+    target_link_options(${target} PRIVATE LINKER:--build-id=sha1)
     if(NOT MANIFEST_DISTRIBUTION)
         return()
     endif()
