@@ -75,7 +75,7 @@ class ManifestConsole
 	// The hosted world's completed steps; none before host.
 	std::optional<std::uint64_t> HostedStep() const;
 
-	// The server connect reached, while connected or connecting.
+	// The server connect reached, while connected, connecting or reconnecting after a lost connection.
 	const Remote::Client *Connected() const
 	{
 		return m_pRemote.get();
@@ -103,6 +103,29 @@ class ManifestConsole
 		std::vector<entt::entity> underWay;
 		entt::entity ended{entt::null};
 	};
+
+	// The server connect named, kept to dial it again after a lost connection.
+	struct Link
+	{
+		std::string endpoint;
+		std::string address;
+		std::uint16_t port{};
+		std::string key;
+		std::string token;
+	};
+
+	// A request sent to the server, or kept to send while reconnecting, and not yet heard complete
+	// or refused. Sent again under its sequence once reconnected, which the server's ledger answers
+	// as the request it first named, so it never runs twice.
+	struct Unsettled
+	{
+		std::uint64_t sequence{};
+		std::string command;
+		std::uint32_t version{};
+		std::vector<std::byte> payload;
+		bool sent{false};
+	};
+
 	using Handler = std::function<std::string(Arguments)>;
 
 	void RegisterCommands();
@@ -183,6 +206,18 @@ class ManifestConsole
 
 	std::string CommandDisconnect();
 
+	// A new connection to the link's server, its world content to check the server's against the
+	// console's own. Throws std::runtime_error when the address does not resolve.
+	std::unique_ptr<Remote::Client> Dial(const Link &link) const;
+
+	// The lines a welcome prints, and the requests not heard complete sent again under their own
+	// sequences, after a reconnect.
+	void TakeWelcome(std::vector<std::string> &lines);
+
+	// Drops the requests not heard complete with the link they were sent on: nothing, or the sentence
+	// naming them, for a closing line to end with.
+	std::string Abandon();
+
 	std::string Admit(
 	    const Command::Actor &actor, std::string_view command, std::uint32_t version,
 	    std::span<const std::byte> payload);
@@ -223,7 +258,13 @@ class ManifestConsole
 
 	std::filesystem::path m_servers;
 	std::unique_ptr<Remote::Client> m_pRemote;
-	std::string m_remoteEndpoint;
+	Link m_link;
+
+	// Oldest first.
+	std::vector<Unsettled> m_unsettled;
+
+	// The sequence the console sends next on the link, from its first welcome.
+	std::optional<std::uint64_t> m_nextSequence;
 
 	Jettison::DevTools::Console m_console;
 };

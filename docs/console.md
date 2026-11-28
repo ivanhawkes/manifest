@@ -177,6 +177,21 @@ new one replaces it. While connected:
 - `observe` takes no argument and prints the latest snapshot the server sent.
 - `step` and `book` are refused: the server steps its own world, and the book is the host's view.
 
+The console keeps each request it sent until it hears it complete or refused, and numbers them
+itself from the welcome's sequence. A connection lost after its welcome, closed, timed out or the
+server shutting down, is dialled again at once with the same token, and again each time a dial
+times out, until it is back or `disconnect` ends it (`Lost the connection to ...: shutdown;
+reconnecting.`). A request made meanwhile is kept, not sent (`Kept request 4: it is sent once
+reconnected.`). Once welcomed again, every kept request goes to the server under its own sequence,
+oldest first (`Sent request 2 to the server again.`). The server's [request
+ledger](glossary.md#request-ledger) answers a sequence it admitted as the request it named, with
+its first result when it has run, so a resent request never runs twice; one the server never kept
+is admitted then, in order ([D-125](decision-ledger.md#d-125), [retries across
+reconnects](server.md#retries-across-reconnects)). A refused request is not sent again. A credential,
+key, content or protocol the server refuses, a full server or a message it closes on is not dialled
+again: the connection ends, and its line names the requests not heard complete
+(`Requests not heard complete: 3, 4.`), as `disconnect` and a `connect` that replaces it do.
+
 `disconnect` leaves the server; the world goes on without the player. The local hosted world, if
 any, is untouched by all of this.
 
@@ -345,8 +360,11 @@ ConsoleLine Execute(ManifestConsole &session, std::string_view command)
 
 ## Limits and open work
 
-- The TUI retries nothing: a player whose request was lost in a dropped connection sends it again
-  by hand ([L41](delivery-order.md#l41)).
+- A request the server heard complete is dropped, so one a crash of the server then loses
+  ([D-113](decision-ledger.md#d-113)) is not sent again, and those after it are refused as
+  `SequenceGap`: the player reads `observe` and sends what is missing.
+- Requests made before a connection's first welcome are refused, since the console has no sequence
+  for them yet; kept requests are not bounded, and the server's `QueueFull` refuses past 32 queued.
 - The snapshot does not hold a ship's refuelling switch, so `observe` does not show it: `refuel` is
   read back only from a journey's cost.
 - A server's time cannot be paused or scaled from a client: no message carries it.
@@ -361,7 +379,8 @@ The console's decisions are in the
 `disconnect`), [D-013](decision-ledger.md#d-013) (manual trading through the TUI a stretch goal),
 [D-095](decision-ledger.md#d-095) (`book` stays the host's view),
 [D-107](decision-ledger.md#d-107) (the TUI's burn controls may be plainer than the graphical
-client's) and [D-114](decision-ledger.md#d-114) (the TUI in the bundle). How the console came to
+client's), [D-114](decision-ledger.md#d-114) (the TUI in the bundle) and
+[D-125](decision-ledger.md#d-125) (requests resent on the ledger's sequences). How the console came to
 be is in the records: [A06](history/stage-3.md#a06-the-console-apart-from-ftxui--2026-11-19),
 [N02](history/stage-4.md#n02-the-dedicated-server-and-remote-tui--2026-11-20),
 [W15](history/stage-4.md#w15-the-vertical-slice-through-the-console--2026-11-20) and
@@ -374,7 +393,7 @@ be is in the records: [A06](history/stage-3.md#a06-the-console-apart-from-ftxui-
 | The console | `source/tools/console/ManifestConsole.h`, `ManifestConsole.cpp`; target `manifest_console` |
 | The TUI | `source/tools/tui/main.cpp`, `ManifestTui.h`, `ManifestTui.cpp`; target `manifest_tui` |
 | Default paths | `source/game/host/include/manifest/host/Locations.h` (`DefaultContent`, `DefaultTranscript`) |
-| Tests | `source/tools/console/tests/ManifestConsoleTests.cpp`: ctest `console` (20 cases) and `step-budget` |
+| Tests | `source/tools/console/tests/ManifestConsoleTests.cpp`: ctest `console` (21 cases) and `step-budget` |
 
 The console is built whenever the Jettison SDK has its developer console (`Jettison::Devtools`,
 which comes with presentation), whether or not the TUI is. The TUI is built with

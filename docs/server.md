@@ -195,7 +195,10 @@ ran as `Completed` with the original result, order and step, and never runs it t
 journal lost in a crash is free again: the welcome names the sequence after the last one the journal
 kept, and the client sends what it lost again, in order. Sending a later one first is `SequenceGap`.
 The `remote` suite proves this across a crash with two players on three sessions
-([R08](history/stage-5-recovery-plan.md#reconnect-and-recovery-r08-2026-11-24)).
+([R08](history/stage-5-recovery-plan.md#reconnect-and-recovery-r08-2026-11-24)). The console and the
+terminal UI dial again after a lost connection and send what they had not heard complete
+([the console](console.md#connected-to-a-server), [D-125](decision-ledger.md#d-125)); the `console`
+suite proves a buy resent so runs once.
 
 ### Bounds
 
@@ -397,8 +400,6 @@ CHECK(
   entry for an endpoint does not connect; there is no trust on first use.
 - Deployment hardening, capacity profiling and an unattended soak before public hosting
   ([L01](delivery-order.md#l01)).
-- The terminal UI retries nothing: a player whose request was lost in a crash sends it again by hand
-  ([L41](delivery-order.md#l41)).
 - A request pending when its session closes is reported to a later session only when it is retried.
 - A session closing while its actor reconnects in the same poll counts against the cap until the
   server hears it go, so the reconnect may meet `ServerFull` and try again.

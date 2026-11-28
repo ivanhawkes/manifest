@@ -4,11 +4,15 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <iterator>
 #include <limits>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -18,6 +22,7 @@
 #include <jettison/net/Token.h>
 
 #include <manifest/host/Start.h>
+#include <manifest/query/Query.h>
 #include <manifest/remote/Keys.h>
 #include <manifest/remote/Server.h>
 #include <manifest/remote/Tokens.h>
@@ -486,12 +491,117 @@ TEST_CASE("Manifest console: connect plays on a server as the token's actor, and
 	CHECK(Execute(session, "policy Ship1 on 0 0 50 on").text == "Sent request 4 to the server.");
 	CHECK(Execute(session, "tender bid T Company1").kind == ConsoleLine::Kind::Error);
 
-	CHECK(Execute(session, "disconnect").text == "Disconnected from " + endpoint + ".");
+	// The last request was not heard complete: it is named as it is dropped.
+	CHECK(
+	    Execute(session, "disconnect").text ==
+	    "Disconnected from " + endpoint + ". Requests not heard complete: 4.");
 	CHECK(session.Connected() == nullptr);
 	CHECK(Execute(session, "disconnect").kind == ConsoleLine::Kind::Error);
 
 	// Back to the local harness: observe needs a hosted world again.
 	CHECK(Execute(session, "observe").kind == ConsoleLine::Kind::Error);
+}
+
+
+TEST_CASE(
+    "Manifest console: a request not heard complete is sent again once reconnected, and runs once")
+{
+	const std::string adaToken = Jettison::Net::GenerateToken();
+	const Manifest::Test::TempFile tokens{"", ".tokens.yaml"};
+	using Manifest::Command::ActorKind;
+	Manifest::Remote::WriteTokens(
+	    tokens.Path(), {{{Jettison::Net::DigestToken(adaToken), ActorKind::Principal, "Ada"}}});
+	const auto pHosted = Manifest::Host::Start({MANIFEST_MOD_DIRECTORY, {}, "trading"});
+	const Jettison::Net::ServerKey key = Jettison::Net::GenerateServerKey();
+	const Manifest::Test::TempFile keyFile{"", ".key"};
+	Manifest::Remote::WriteServerKey(keyFile.Path(), key.secretKey);
+	std::optional<Manifest::Remote::Server> server;
+	server.emplace(*pHosted, tokens.Path(), keyFile.Path(), "127.0.0.1", 0);
+	const std::uint16_t port = server->Port();
+	const std::string endpoint = std::format("127.0.0.1:{}", port);
+	const Manifest::Test::TempFile servers{
+	    std::format("version: 1\nservers:\n  - endpoint: {}\n    key: {}\n", endpoint, key.publicKey)};
+
+	// Both ends polled until the console prints the line, every line it printed kept and read in order.
+	ManifestConsole session{MANIFEST_MOD_DIRECTORY, servers.Path()};
+	std::vector<std::string> printed;
+	std::size_t read = 0;
+	const auto await = [&](std::string_view expected, bool step = false)
+	{
+		if (step)
+		{
+			pHosted->World().Step();
+			server->Publish();
+		}
+		const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{10};
+		do
+		{
+			for (; read < printed.size(); ++read)
+				if (printed[read].find(expected) != std::string::npos)
+					return printed[read++];
+			if (server)
+				server->Poll(std::chrono::milliseconds{1});
+			std::ranges::move(session.Poll(), std::back_inserter(printed));
+		} while (std::chrono::steady_clock::now() < deadline);
+		return std::string{"nothing like: "} + std::string{expected};
+	};
+
+	// A request the server refuses is dropped: Ada has no company yet.
+	Execute(session, "connect " + endpoint + " " + adaToken);
+	CHECK(await("Connected") == "Connected to " + endpoint + " as Ada; your next request is 1.");
+	CHECK(
+	    Execute(session, "cargo load Ship1 VenueOreHighport ItemCopper 1").text ==
+	    "Sent request 1 to the server.");
+	CHECK(await("refused") == "Request 1 refused: NotAuthorised.");
+	Execute(session, "provision Ada \"Ada Freight\"");
+	CHECK(await("queued").starts_with("Request 1 queued in order 1"));
+	CHECK(await("Request 1:", true) == "Request 1: Succeeded at step 0.");
+
+	// A buy that has run and one still queued, neither heard complete when the server goes.
+	CHECK(
+	    Execute(session, "trade buy VenueOreHighport ItemFurs 1 0.5").text ==
+	    "Sent request 2 to the server.");
+	CHECK(await("queued").starts_with("Request 2 queued in order 2"));
+	pHosted->World().Step();
+	const Manifest::Host::Services services = Manifest::Host::HostedServices(*pHosted);
+	const auto company = [&]
+	{
+		return Manifest::Query::Observe(
+		           pHosted->World(), services.identities, {ActorKind::Principal, "Ada"})
+		    .companies.at(0);
+	};
+	const Manifest::Query::CompanyView bought = company();
+	REQUIRE(bought.orders.size() == 1);
+	Execute(session, "refuel Ship1 off");
+	CHECK(await("queued").starts_with("Request 3 queued in order 3"));
+	server.reset();
+	CHECK(await("Lost") == "Lost the connection to " + endpoint + ": shutdown; reconnecting.");
+	CHECK(session.Connected() != nullptr);
+	MANIFEST_CHECK_CONTAINS(Execute(session, "status").text, "connected: reconnecting to " + endpoint);
+
+	// One made while the connection is lost is kept, and sent once it is back.
+	CHECK(Execute(session, "refuel Ship1 on").text == "Kept request 4: it is sent once reconnected.");
+	server.emplace(*pHosted, tokens.Path(), keyFile.Path(), "127.0.0.1", port);
+	const std::size_t before = printed.size();
+	CHECK(await("Connected") == "Connected to " + endpoint + " as Ada; your next request is 5.");
+	CHECK(await("Request 2:") == "Request 2: Succeeded at step 1.");
+	CHECK(await("Request 4 queued").starts_with("Request 4 queued in order 4"));
+	CHECK(await("Request 4:", true) == "Request 4: Succeeded at step 2.");
+	const std::vector<std::string> after{
+	    printed.begin() + static_cast<std::ptrdiff_t>(before), printed.end()};
+	CHECK(std::ranges::count(after, "Sent request 2 to the server again.") == 1);
+	CHECK(std::ranges::count(after, "Sent request 3 to the server again.") == 1);
+	CHECK(std::ranges::count(after, "Sent request 4 to the server.") == 1);
+	CHECK(std::ranges::count(after, "Request 3: Succeeded at step 2.") == 1);
+	CHECK(
+	    std::ranges::none_of(
+	        after, [](const std::string &line) { return line.find("refused") != std::string::npos; }));
+
+	// The buy ran once: one order resting, its credits held once, and the ledger at the next request.
+	CHECK(company().orders.size() == 1);
+	CHECK(company().credits == bought.credits);
+	CHECK(services.requests.NextSequence({ActorKind::Principal, "Ada"}) == 5);
+	CHECK(Execute(session, "disconnect").text == "Disconnected from " + endpoint + ".");
 }
 
 
@@ -619,9 +729,9 @@ TEST_CASE("Manifest console: the vertical slice, furs bought at Ore, flown to Br
 	    Execute(session, "observe Ada").text,
 	    "Ship1 'Ada Co 1' HullLoneTraderStarter, docked at VenueBrineHighport\n");
 
-	// Unloaded and sold a tote at a time at the bid her report of Brine, live now, shows, the broker's
-	// ladder two totes a level there, both at its first, 1,949 credits each less 8 in fees; Ore's is
-	// stale.
+	// Unloaded and sold a tote at a time at the bid her report of Brine, live now, shows, the
+	// broker's ladder two totes a level there, both at its first, 1,949 credits each less 8 in
+	// fees; Ore's is stale.
 	Execute(session, "cargo unload Ada Ship1 VenueBrineHighport ItemFurs 2");
 	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Company.Unload: Succeeded");
 	const std::string arrived = Execute(session, "observe Ada").text;
@@ -825,7 +935,8 @@ TEST_CASE("Manifest console: a governor founds a region, queues a project and te
 	      "tender",
 	      "tender swap Ada X",
 	      "tender cancel Ada",
-	      "tender publish Ada RegionForgeNorth ProjectSmeltersGuild ItemCopper VenueForgeHighport 1",
+	      "tender publish Ada RegionForgeNorth ProjectSmeltersGuild ItemCopper VenueForgeHighport "
+	      "1",
 	      "tender publish Ada R P I V 0 100 2 3",
 	      "tender publish Ada R P I V 1 -5 2 3",
 	      "tender publish Ada R P I V 1 100 0 3",
@@ -840,7 +951,8 @@ TEST_CASE("Manifest console: a governor founds a region, queues a project and te
 		CHECK(Execute(session, command).kind == ConsoleLine::Kind::Error);
 	}
 
-	// Founding pays the price from the company's credits and makes the player the region's governor.
+	// Founding pays the price from the company's credits and makes the player the region's
+	// governor.
 	Execute(session, "found Ada RegionForgeNorth Company1 \"Northern Republic\"");
 	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Company.Found: Succeeded");
 	const std::string founded = Execute(session, "observe Ada").text;
@@ -940,7 +1052,8 @@ TEST_CASE("Manifest console: a company bids on a tender, sealed in its view, and
 
 
 TEST_CASE(
-    "Manifest console: a venue's fees sent as its whole posted classes, refused to one who does not "
+    "Manifest console: a venue's fees sent as its whole posted classes, refused to one who does "
+    "not "
     "operate it")
 {
 	ManifestConsole session{MANIFEST_MOD_DIRECTORY};
@@ -957,7 +1070,8 @@ TEST_CASE(
 	}
 	MANIFEST_CHECK_CONTAINS(
 	    Execute(session, "fees Ada VenueForgeHighport 2 100 shuttle 60").text,
-	    "usage: fees <principal> <venue> <occupant fee> <arrears rate bps> <class> <docking> <berth>");
+	    "usage: fees <principal> <venue> <occupant fee> <arrears rate bps> <class> <docking> "
+	    "<berth>");
 
 	// The AI runs the venue's operator, so no principal's fees are authorised.
 	MANIFEST_CHECK_CONTAINS(
@@ -976,14 +1090,15 @@ constexpr bool kOptimised = false;
 #endif
 // Ore to Brine on the manned profile through the console's long step, its quiet steps passed over
 // (Jettison::Sim::Quiet), in seconds: the best of three in Lythir's release build, measured again
-// 2026-11-23 at W12's slice 3 (3.48 to 3.52 s over five runs). L27's 2.37 s had grown to 3.46 s with
-// the economy built since, leaving under 3% before the limit. Stepped, it took 4 min 50 s.
+// 2026-11-23 at W12's slice 3 (3.48 to 3.52 s over five runs). L27's 2.37 s had grown to 3.46 s
+// with the economy built since, leaving under 3% before the limit. Stepped, it took 4 min 50 s.
 constexpr double kJourneySeconds = 3.50;
 } // namespace
 
 
-// A journey dearer than half as much again as it was fails. Timed only in an optimised build without
-// sanitisers, alone (its ctest runs serially), and not on CI, whose machines are not Lythir.
+// A journey dearer than half as much again as it was fails. Timed only in an optimised build
+// without sanitisers, alone (its ctest runs serially), and not on CI, whose machines are not
+// Lythir.
 TEST_CASE("Manifest console: Ore to Brine within its time budget" * doctest::skip())
 {
 	if (!kOptimised || std::getenv("CI") != nullptr)

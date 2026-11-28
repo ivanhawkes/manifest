@@ -57,6 +57,16 @@ unsigned ParseCount(
 }
 
 
+// Whether a connection that closed so is dialled again: the server gone quiet or restarting. A
+// credential, key, protocol, content or message it refused stays refused, and a full server is left
+// for the player to try again, so no refusal is dialled in a loop.
+bool Redials(Jettison::Net::Reason reason)
+{
+	using Jettison::Net::Reason;
+	return reason == Reason::Closed || reason == Reason::HandshakeTimeout || reason == Reason::Shutdown;
+}
+
+
 std::string PadRight(const std::string &text, std::size_t width)
 {
 	return text.size() >= width ? text : text + std::string(width - text.size(), ' ');
@@ -629,8 +639,9 @@ std::string ManifestConsole::CommandStatus()
 	       << "\nconnected: "
 	       << (!m_pRemote ? std::string{"no: run connect"}
 	           : m_pRemote->Welcomed()
-	               ? std::format("to {} as {}", m_remoteEndpoint, m_pRemote->Welcomed()->actorId)
-	               : std::format("connecting to {}", m_remoteEndpoint));
+	               ? std::format("to {} as {}", m_link.endpoint, m_pRemote->Welcomed()->actorId)
+	               : std::format(
+	                     "{} to {}", m_nextSequence ? "reconnecting" : "connecting", m_link.endpoint));
 
 	return status.str();
 }
@@ -976,10 +987,17 @@ std::string ManifestConsole::Admit(
 std::string ManifestConsole::Send(
     std::string_view command, std::uint32_t version, std::span<const std::byte> payload)
 {
-	const std::optional<std::uint64_t> sequence = m_pRemote->Submit(command, version, payload);
-	if (!sequence)
+	if (!m_nextSequence)
 		throw std::runtime_error{"Not connected yet: wait for the welcome."};
-	return std::format("Sent request {} to the server.", *sequence);
+
+	// Kept until heard complete or refused. One that cannot be sent now, the connection lost, is sent
+	// once reconnected.
+	const std::uint64_t sequence = (*m_nextSequence)++;
+	Unsettled &request = m_unsettled.emplace_back(
+	    Unsettled{sequence, std::string{command}, version, {payload.begin(), payload.end()}});
+	request.sent = m_pRemote->Retry(sequence, command, version, payload);
+	return request.sent ? std::format("Sent request {} to the server.", sequence)
+	                    : std::format("Kept request {}: it is sent once reconnected.", sequence);
 }
 
 
@@ -1462,21 +1480,70 @@ std::string ManifestConsole::CommandConnect(const std::string &endpoint, const s
 		throw std::runtime_error{
 		    std::format("The server list {} pins no key for {}.", servers.string(), endpoint)};
 
+	// A failed connect keeps the connection there was; a replaced one is closed, and what it had not
+	// heard complete is dropped with it.
+	Link link{endpoint, endpoint.substr(0, colon), number, std::move(*key), token};
+	auto pRemote = Dial(link);
+	if (m_pRemote)
+		m_pRemote->Disconnect();
+	const std::string dropped = Abandon();
+	m_pRemote = std::move(pRemote);
+	m_link = std::move(link);
+	return std::format("Connecting to {}.{}", endpoint, dropped);
+}
+
+
+std::unique_ptr<Remote::Client> ManifestConsole::Dial(const Link &link) const
+{
 	// What the server's world content is checked against: the console's own, its content source mounted
 	// as the server mounts its package.
 	Jettison::Vfs::FileSystem files;
 	for (const Jettison::Vfs::Mount &mount : Host::Mounts({m_contentSource, {}, {}}))
 		files.AddMount(mount);
-
-	// A failed connect keeps the connection there was; a replaced one is closed.
-	auto pRemote =
-	    std::make_unique<Remote::Client>(endpoint.substr(0, colon), number, std::move(*key), token);
+	auto pRemote = std::make_unique<Remote::Client>(link.address, link.port, link.key, link.token);
 	pRemote->Hold(Jettison::Host::DescribeWorldContent(files));
-	if (m_pRemote)
-		m_pRemote->Disconnect();
-	m_pRemote = std::move(pRemote);
-	m_remoteEndpoint = endpoint;
-	return std::format("Connecting to {}.", endpoint);
+	return pRemote;
+}
+
+
+void ManifestConsole::TakeWelcome(std::vector<std::string> &lines)
+{
+	// After a reconnect, what was kept goes on from its own sequences, and a welcome naming a later
+	// one, another session of the actor's having sent, goes on from that.
+	const Remote::Welcome &welcome = *m_pRemote->Welcomed();
+	m_nextSequence = std::max(
+	    welcome.nextSequence,
+	    m_unsettled.empty() ? welcome.nextSequence : m_unsettled.back().sequence + 1);
+
+	// Nothing of a session comes before its welcome.
+	lines.insert(
+	    lines.begin(), std::format(
+	                       "Connected to {} as {}; your next request is {}.", m_link.endpoint,
+	                       welcome.actorId, *m_nextSequence));
+
+	// The ledger answers a sequence it admitted as that request: completed, with its first result, or
+	// still queued. One the server never kept is admitted now, in order.
+	for (Unsettled &request : m_unsettled)
+		if (m_pRemote->Retry(request.sequence, request.command, request.version, request.payload))
+		{
+			lines.push_back(
+			    std::format(
+			        "Sent request {} to the server{}.", request.sequence,
+			        request.sent ? " again" : ""));
+			request.sent = true;
+		}
+}
+
+
+std::string ManifestConsole::Abandon()
+{
+	std::string dropped;
+	for (const Unsettled &request : m_unsettled)
+		dropped += std::format(
+		    "{}{}", dropped.empty() ? " Requests not heard complete: " : ", ", request.sequence);
+	m_unsettled.clear();
+	m_nextSequence.reset();
+	return dropped.empty() ? dropped : dropped + ".";
 }
 
 
@@ -1487,7 +1554,7 @@ std::string ManifestConsole::CommandDisconnect()
 	m_pRemote->Disconnect();
 	(void)m_pRemote->Poll(std::chrono::milliseconds{100});
 	m_pRemote.reset();
-	return std::format("Disconnected from {}.", m_remoteEndpoint);
+	return std::format("Disconnected from {}.{}", m_link.endpoint, Abandon());
 }
 
 
@@ -1519,7 +1586,8 @@ std::vector<std::string> ManifestConsole::Poll()
 	catch (const std::exception &error)
 	{
 		// A server that answers in another shape than its version's: nothing more of it is read.
-		lines.push_back(std::format("Disconnected from {}: {}.", m_remoteEndpoint, error.what()));
+		lines.push_back(
+		    std::format("Disconnected from {}: {}.{}", m_link.endpoint, error.what(), Abandon()));
 		m_pRemote.reset();
 		return lines;
 	}
@@ -1543,25 +1611,46 @@ std::vector<std::string> ManifestConsole::Poll()
 			case Command::Receipt::Status::Refused:
 				lines.push_back(
 				    std::format("Request {} refused: {}.", reply.sequence, ResultName(receipt.result)));
+
+				// A refusal consumes no sequence, nor any sent after it, and is not sent again.
+				m_nextSequence = reply.nextSequence;
 				break;
 		}
+		if (receipt.status != Command::Receipt::Status::Queued)
+			std::erase_if(
+			    m_unsettled,
+			    [&](const Unsettled &request) { return request.sequence == reply.sequence; });
 	}
-
-	// Nothing of a session comes before its welcome.
 	if (!welcomed && m_pRemote->Welcomed())
-		lines.insert(
-		    lines.begin(), std::format(
-		                       "Connected to {} as {}; your next request is {}.", m_remoteEndpoint,
-		                       m_pRemote->Welcomed()->actorId, m_pRemote->Welcomed()->nextSequence));
-	if (m_pRemote->Closed())
+		TakeWelcome(lines);
+	if (!m_pRemote->Closed())
+		return lines;
+
+	// A connection lost after a welcome on this link is dialled again, and what it had not heard
+	// complete is sent again once welcomed; a dial that fails says nothing more.
+	const std::optional<std::string> &refused = m_pRemote->Refused();
+	const Jettison::Net::Reason reason = *m_pRemote->Closed();
+	const std::string why = refused ? *refused : std::string{Jettison::Net::ReasonName(reason)};
+	if (!refused && m_nextSequence && Redials(reason))
 	{
-		const std::optional<std::string> &refused = m_pRemote->Refused();
-		lines.push_back(
-		    std::format(
-		        "Disconnected from {}: {}.", m_remoteEndpoint,
-		        refused ? *refused : std::string{Jettison::Net::ReasonName(*m_pRemote->Closed())}));
-		m_pRemote.reset();
+		if (m_pRemote->Welcomed())
+			lines.push_back(
+			    std::format("Lost the connection to {}: {}; reconnecting.", m_link.endpoint, why));
+		try
+		{
+			m_pRemote = Dial(m_link);
+			return lines;
+		}
+		catch (const std::runtime_error &error)
+		{
+			lines.push_back(
+			    std::format("Disconnected from {}: {}.{}", m_link.endpoint, error.what(), Abandon()));
+			m_pRemote.reset();
+			return lines;
+		}
 	}
+	lines.push_back(std::format("Disconnected from {}: {}.{}", m_link.endpoint, why, Abandon()));
+	m_pRemote.reset();
 	return lines;
 }
 } // namespace Manifest::Tools
