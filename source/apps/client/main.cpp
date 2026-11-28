@@ -147,10 +147,12 @@ int main(int argc, char **argv)
 		return run(std::move(world), game);
 	}
 
+	std::string token;
 	std::unique_ptr<Manifest::Remote::Client> pRemote;
 	try
 	{
-		pRemote = Connect(*connect, ReadToken(*options[kTokenFile].value));
+		token = ReadToken(*options[kTokenFile].value);
+		pRemote = Connect(*connect, token);
 	}
 	catch (const std::exception &error)
 	{
@@ -159,14 +161,16 @@ int main(int argc, char **argv)
 	}
 
 	// Connected, the shell holds no world of the game's: the server steps its own.
-	Manifest::Client::ClientGame game{*pRemote};
+	// A lost connection is dialled again with the same token, its key pinned from the list again.
+	Manifest::Client::ClientGame game{*pRemote, [&] { return Connect(*connect, token); }};
 	const int status = run(nullptr, game);
-	if (!pRemote->Closed())
+	Manifest::Remote::Client &remote = game.Model() != nullptr ? *game.Model()->Connection() : *pRemote;
+	if (!remote.Closed())
 	{
-		pRemote->Disconnect();
+		remote.Disconnect();
 		try
 		{
-			(void)pRemote->Poll(kFarewell);
+			(void)remote.Poll(kFarewell);
 		}
 		catch (const std::exception &error)
 		{

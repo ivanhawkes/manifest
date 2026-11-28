@@ -123,3 +123,4 @@ manifest:
     keyMismatch: "Der Server besitzt nicht den Schlüssel, den deine Serverliste für ihn festlegt."
     # The server's world content is not this client's: Jettison::Host::ContentDifference's words.
     content: "{0}"
+  reconnecting: "Die Verbindung ist abgebrochen: sie wird wiederhergestellt. Deine Anfragen bleiben erhalten und werden gesendet, sobald sie zurück ist."

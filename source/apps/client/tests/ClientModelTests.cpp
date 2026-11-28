@@ -341,3 +341,118 @@ TEST_CASE("The client's model is refused a server whose world content is not the
 	CHECK(model.Provision("Ada", "Ada Freight", "Kestrel").status == Receipt::Status::Refused);
 	CHECK(model.LastResult() == Result::NotAuthorised);
 }
+
+TEST_CASE("The client's model reconnects to a server restarted on its port and resends what it kept")
+{
+	using Manifest::Command::ActorKind;
+	const std::string token = Jettison::Net::GenerateToken();
+	const Manifest::Test::TempFile tokens{"", ".tokens.yaml"};
+	Manifest::Remote::WriteTokens(
+	    tokens.Path(), {{{Jettison::Net::DigestToken(token), ActorKind::Principal, "Ada"}}});
+	const std::unique_ptr<Jettison::Host::Session> session =
+	    Manifest::Host::Start({MANIFEST_MOD_DIRECTORY, {}, "trading"});
+	const Jettison::Net::ServerKey key = Jettison::Net::GenerateServerKey();
+	const Manifest::Test::TempFile keyFile{"", ".key"};
+	Manifest::Remote::WriteServerKey(keyFile.Path(), key.secretKey);
+	std::optional<Manifest::Remote::Server> server;
+	server.emplace(*session, tokens.Path(), keyFile.Path(), "127.0.0.1", 0);
+	const std::uint16_t port = server->Port();
+	const Jettison::Host::WorldContent content = Jettison::Host::DescribeWorldContent(session->Files());
+	const auto dial = [&]
+	{
+		auto pRemote =
+		    std::make_unique<Manifest::Remote::Client>("127.0.0.1", port, key.publicKey, token);
+		pRemote->Hold(content);
+		return pRemote;
+	};
+	const std::unique_ptr<Manifest::Remote::Client> pFirst = dial();
+	ClientModel model{*pFirst, dial};
+
+	// Both ends polled, and the server's world stepped as its loop does unless the step is held back,
+	// until it holds.
+	const auto until = [&](auto done, bool step = true)
+	{
+		const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{15};
+		while (!done() && std::chrono::steady_clock::now() < deadline)
+		{
+			if (server)
+			{
+				server->Poll(std::chrono::milliseconds{1});
+				if (step)
+				{
+					session->World().Step();
+					server->Publish();
+				}
+			}
+			model.Refresh();
+		}
+		return done();
+	};
+	REQUIRE(until([&] { return model.Principal() == "Ada"; }));
+
+	// A request the server refuses is dropped, not kept: Ada has no company yet. Its sequence is the
+	// founding's.
+	CHECK(model.Cancel("Order1").status == Receipt::Status::Queued);
+	CHECK(model.Kept() == std::vector<std::uint64_t>{1});
+	REQUIRE(until([&] { return !model.Waiting(); }));
+	CHECK(model.LastResult() == Result::NotAuthorised);
+	CHECK(model.Kept().empty());
+	CHECK(model.Provision("Ada", "Ada Freight", "Kestrel").status == Receipt::Status::Queued);
+	REQUIRE(until([&] { return model.View().provisioned && !model.Waiting(); }));
+	CHECK(model.LastResult() == Result::Succeeded);
+
+	// A tote bought at the ask, admitted and run by a step whose completion the client never hears.
+	const Manifest::Host::Services services = Manifest::Host::HostedServices(*session);
+	const Manifest::Command::Actor ada{ActorKind::Principal, "Ada"};
+	REQUIRE(services.requests.NextSequence(ada) == 2);
+	CHECK(model.Buy("ItemFurs").status == Receipt::Status::Queued);
+	CHECK(model.Kept() == std::vector<std::uint64_t>{2});
+	REQUIRE(until([&] { return services.requests.NextSequence(ada) == 3; }, false));
+	session->World().Step();
+	const auto company = [&]
+	{ return Manifest::Query::Observe(session->World(), services.identities, ada).companies.at(0); };
+	const auto held = [](const Manifest::Query::CompanyView &view)
+	{
+		std::uint64_t totes = 0;
+		for (const Manifest::World::Holding &holding : view.holdings)
+			if (holding.itemId == "ItemFurs")
+				totes += holding.available + holding.reserved;
+		return totes;
+	};
+	const Manifest::Query::CompanyView bought = company();
+	const std::uint64_t heldThen = held(bought);
+	CHECK(heldThen + bought.orders.size() == 1);
+	server.reset();
+	REQUIRE(until([&] { return model.Reconnecting(); }));
+	CHECK(model.Waiting());
+	CHECK_FALSE(model.LastResult());
+
+	// One made while the connection is lost is kept, and sent once it is back.
+	CHECK(model.SetRefuel(true).status == Receipt::Status::Queued);
+	CHECK(model.Kept() == std::vector<std::uint64_t>{2, 3});
+	server.emplace(*session, tokens.Path(), keyFile.Path(), "127.0.0.1", port);
+	REQUIRE(until([&] { return !model.Reconnecting() && model.Kept().empty(); }));
+	CHECK(model.Connection() != pFirst.get());
+	CHECK(model.LastResult() == Result::Succeeded);
+	CHECK_FALSE(model.Closed());
+
+	// The buy ran once: what it bought held once, its credits paid once, and the ledger at the request
+	// after the refuelling, the refused one never sent again.
+	CHECK(held(company()) == heldThen);
+	CHECK(company().orders.size() == bought.orders.size());
+	CHECK(company().credits == bought.credits);
+	CHECK(services.requests.NextSequence(ada) == 4);
+
+	// A server that no longer takes the token is not dialled again: the closing says why, and nothing
+	// more is sent.
+	server.reset();
+	const Manifest::Test::TempFile others{"", ".tokens.yaml"};
+	Manifest::Remote::WriteTokens(
+	    others.Path(),
+	    {{{Jettison::Net::DigestToken(Jettison::Net::GenerateToken()), ActorKind::Principal, "Bo"}}});
+	server.emplace(*session, others.Path(), keyFile.Path(), "127.0.0.1", port);
+	REQUIRE(until([&] { return model.Closed() == Jettison::Net::Reason::BadCredential; }));
+	CHECK_FALSE(model.Reconnecting());
+	CHECK(model.Buy("ItemFurs").status == Receipt::Status::Refused);
+	CHECK(model.LastResult() == Result::NotAuthorised);
+}

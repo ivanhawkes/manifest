@@ -45,6 +45,10 @@ constexpr std::int64_t kLeastTenths =
     Travel::kLeastAccelerationMilliG * kTenthsPerG / Travel::kMilliGPerG;
 constexpr std::int64_t kMostTenths = 30;
 
+// The least time between dials after a lost connection: a dial to a server not yet back is answered
+// or times out on its own, and this keeps one that closes at once from being dialled in a loop.
+constexpr std::chrono::seconds kRedialInterval{1};
+
 
 template <typename Enum> std::string NameOf(Enum value)
 {
@@ -220,7 +224,8 @@ ClientModel::ClientModel(Jettison::Sim::SimWorld &world, const Host::Services &s
 }
 
 
-ClientModel::ClientModel(Remote::Client &remote) : m_pRemote{&remote}
+ClientModel::ClientModel(Remote::Client &remote, Dial dial)
+    : m_pRemote{&remote}, m_dial{std::move(dial)}
 {
 	// The payloads it sends, which no world of the game's has registered in a connected client.
 	Company::RegisterTypes();
@@ -230,6 +235,15 @@ ClientModel::ClientModel(Remote::Client &remote) : m_pRemote{&remote}
 	m_screen.accelerationTenths = kTenthsPerG;
 	m_screen.connected = true;
 	MakeScreen();
+}
+
+
+std::vector<std::uint64_t> ClientModel::Kept() const
+{
+	std::vector<std::uint64_t> sequences;
+	for (const Unsettled &request : m_unsettled)
+		sequences.push_back(request.sequence);
+	return sequences;
 }
 
 
@@ -398,16 +412,72 @@ void ClientModel::Receive()
 		    Jettison::Core::Severity::Error, kClient, "The server sent what the client cannot read: {}",
 		    error.what());
 		m_unreadable = true;
+		m_reconnecting = false;
 		m_pRemote->Disconnect();
 		return;
 	}
 	for (const Remote::Reply &reply : replies)
-		if (m_waiting && reply.sequence == m_waiting->second &&
-		    reply.receipt.status != Receipt::Status::Queued)
+	{
+		if (reply.receipt.status == Receipt::Status::Queued)
+			continue;
+
+		// A refusal consumes no sequence, nor any sent after it, and is not sent again.
+		if (reply.receipt.status == Receipt::Status::Refused)
+			m_nextSequence = reply.nextSequence;
+		std::erase_if(
+		    m_unsettled, [&](const Unsettled &request) { return request.sequence == reply.sequence; });
+		if (m_waiting && reply.sequence == m_waiting->second)
 		{
 			m_last = reply.receipt.result;
 			m_waiting.reset();
 		}
+	}
+	if (!m_welcomed && m_pRemote->Welcomed())
+		TakeWelcome();
+	if (const std::optional<Jettison::Net::Reason> closed = m_pRemote->Closed())
+		Redial(*closed);
+}
+
+
+void ClientModel::TakeWelcome()
+{
+	m_welcomed = true;
+	m_reconnecting = false;
+
+	// What was kept goes on from its own sequences, and a welcome naming a later one, another session
+	// of the actor's having sent, goes on from that. The ledger answers a sequence it admitted as that
+	// request, completed or still queued, and admits one it never kept now, in order.
+	const std::uint64_t next = m_pRemote->Welcomed()->nextSequence;
+	m_nextSequence = std::max(next, m_unsettled.empty() ? next : m_unsettled.back().sequence + 1);
+	for (const Unsettled &request : m_unsettled)
+		(void)m_pRemote->Retry(request.sequence, request.command, request.version, request.payload);
+}
+
+
+void ClientModel::Redial(Jettison::Net::Reason reason)
+{
+	// Only a connection lost after a welcome on this server is made again: a refusal, of the
+	// connection or of its content, stops and the closing says why.
+	m_reconnecting = m_dial && m_nextSequence && !m_pRemote->Refused() && Remote::Redials(reason);
+	const auto now = std::chrono::steady_clock::now();
+	if (!m_reconnecting || now < m_redialAt)
+		return;
+	m_redialAt = now + kRedialInterval;
+	try
+	{
+		std::unique_ptr<Remote::Client> pRemote = m_dial();
+		m_pRemote = pRemote.get();
+		m_pRedialled = std::move(pRemote);
+		m_welcomed = false;
+	}
+	catch (const std::exception &error)
+	{
+		Jettison::Core::Log(
+		    Jettison::Core::Severity::Error, kClient, "The server cannot be dialled again: {}",
+		    error.what());
+		m_dial = nullptr;
+		m_reconnecting = false;
+	}
 }
 
 
@@ -417,11 +487,16 @@ Receipt ClientModel::Admit(
 {
 	if (m_pRemote != nullptr)
 	{
-		const std::optional<std::uint64_t> sent =
-		    Closed() ? std::nullopt : m_pRemote->Submit(command, version, payload);
-		if (!sent)
+		if (!m_nextSequence || (Closed() && !m_reconnecting))
 			return Refuse(Result::NotAuthorised);
-		m_waiting.emplace(actor, *sent);
+
+		// Kept until heard complete or refused; one that cannot be sent now, the connection lost, is
+		// sent once reconnected.
+		const std::uint64_t sequence = (*m_nextSequence)++;
+		m_unsettled.push_back(
+		    {sequence, std::string{command}, version, {payload.begin(), payload.end()}});
+		(void)m_pRemote->Retry(sequence, command, version, payload);
+		m_waiting.emplace(actor, sequence);
 		m_last.reset();
 		return {Receipt::Status::Queued, Result::Succeeded, 0};
 	}

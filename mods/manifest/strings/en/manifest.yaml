@@ -124,3 +124,4 @@ manifest:
     keyMismatch: "The server does not hold the key your server list pins for it."
     # The server's world content is not this client's: Jettison::Host::ContentDifference's words.
     content: "{0}"
+  reconnecting: "The connection was lost: reconnecting. Your requests are kept and sent once it is back."

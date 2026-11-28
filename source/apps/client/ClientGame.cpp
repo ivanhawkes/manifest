@@ -5,6 +5,7 @@
 #include <chrono>
 #include <cstdint>
 #include <format>
+#include <memory>
 #include <optional>
 #include <span>
 #include <stdexcept>
@@ -118,8 +119,9 @@ ClientGame::ClientGame(Jettison::Host::Game &world)
 }
 
 
-ClientGame::ClientGame(Remote::Client &remote)
-    : m_pRemote{&remote}, m_name{kDefaultName}, m_companyName{kDefaultCompany}, m_shipName{kDefaultShip}
+ClientGame::ClientGame(Remote::Client &remote, ClientModel::Dial dial)
+    : m_pRemote{&remote}, m_dial{std::move(dial)}, m_name{kDefaultName}, m_companyName{kDefaultCompany},
+      m_shipName{kDefaultShip}
 {
 }
 
@@ -128,7 +130,10 @@ void ClientGame::OpenUi(Jettison::Ui::UiSystem &ui, Jettison::App::Shell &shell)
 {
 	// Before the connection is first polled, which the model does once the UI is open.
 	if (m_pRemote != nullptr)
-		m_pRemote->Hold(Jettison::Host::DescribeWorldContent(shell.Assets()));
+	{
+		m_content = Jettison::Host::DescribeWorldContent(shell.Assets());
+		m_pRemote->Hold(*m_content);
+	}
 	OpenScreens(ui);
 }
 
@@ -192,7 +197,16 @@ void ClientGame::BindEvents(Jettison::Ui::DataModel &data)
 void ClientGame::Attach(Jettison::Sim::SimWorld &world)
 {
 	if (m_pRemote != nullptr)
-		m_model.emplace(*m_pRemote);
+		m_model.emplace(
+		    *m_pRemote,
+		    [this]
+		    {
+			    // Held before the model first polls it, as the first connection is.
+			    std::unique_ptr<Remote::Client> pRemote = m_dial();
+			    if (m_content)
+				    pRemote->Hold(*m_content);
+			    return pRemote;
+		    });
 	else
 		m_model.emplace(world, Host::HostedServices(*m_pWorld));
 	Present();
@@ -225,6 +239,8 @@ void ClientGame::Present()
 	const Jettison::Ui::StringTable &strings = m_pUi->Strings();
 	if (const std::optional<std::string> refused = m_model->Refused())
 		screen.status = strings.Format("manifest.closed.content", *refused);
+	else if (m_model->Reconnecting())
+		screen.status = strings.Text("manifest.reconnecting");
 	else if (const std::optional<Jettison::Net::Reason> closed = m_model->Closed())
 		screen.status = strings.Text(ClosedKey(*closed));
 	else if (m_model->Waiting())

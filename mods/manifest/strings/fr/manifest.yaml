@@ -123,3 +123,4 @@ manifest:
     keyMismatch: "Le serveur ne détient pas la clé que votre liste de serveurs lui attribue."
     # The server's world content is not this client's: Jettison::Host::ContentDifference's words.
     content: "{0}"
+  reconnecting: "La connexion a été perdue : reconnexion en cours. Vos demandes sont gardées et envoyées à son retour."

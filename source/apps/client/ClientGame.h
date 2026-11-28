@@ -7,6 +7,7 @@
 
 #include <jettison/app/Game.h>
 #include <jettison/host/Session.h>
+#include <jettison/host/WorldContent.h>
 #include <jettison/ui/UiSystem.h>
 
 #include <manifest/client/ClientModel.h>
@@ -32,8 +33,9 @@ class ClientGame final : public Jettison::App::Game
 	// The world is Manifest's (Host::MakeGame), which the shell's session holds and starts.
 	explicit ClientGame(Jettison::Host::Game &world);
 
-	// Over a server's connection, which outlives the game.
-	explicit ClientGame(Remote::Client &remote);
+	// Over a server's connection, which outlives the game, and how to make another to the same
+	// server when it is lost.
+	ClientGame(Remote::Client &remote, ClientModel::Dial dial);
 
 	void OpenUi(Jettison::Ui::UiSystem &ui, Jettison::App::Shell &shell) override;
 
@@ -97,6 +99,10 @@ class ClientGame final : public Jettison::App::Game
 	// One of them.
 	Jettison::Host::Game *m_pWorld{nullptr};
 	Remote::Client *m_pRemote{nullptr};
+	ClientModel::Dial m_dial;
+
+	// The shell's world content, which each connection holds to check the server's against.
+	std::optional<Jettison::Host::WorldContent> m_content;
 	std::optional<ClientModel> m_model;
 	Jettison::Ui::UiSystem *m_pUi{nullptr};
 	Jettison::Ui::DataModel *m_pData{nullptr};

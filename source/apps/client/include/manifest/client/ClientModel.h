@@ -3,6 +3,8 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <memory>
 #include <optional>
 #include <span>
 #include <string>
@@ -161,15 +163,40 @@ void RegisterTypes();
 // steps the world. Over a server's connection (Remote::Client) the snapshot is the newest the server
 // sent and each action is submitted to it, as the welcome's actor: a receipt Queued then means sent,
 // its order still to come, and an action before the welcome or after the closing is refused
-// NotAuthorised before it is sent.
+// NotAuthorised before it is sent. Each is kept until it is heard complete or refused; a connection
+// lost after a welcome (Remote::Redials) is dialled again, and once welcomed the model sends what it
+// kept, oldest first, under the sequences it first sent them with, which the server's ledger answers
+// as the requests they named, so none runs twice (D-125). An action while reconnecting is kept so.
 class ClientModel
 {
   public:
+	// A new connection to the same server with the same token, its world content held. Throws when it
+	// cannot be made, and the model then stops reconnecting.
+	using Dial = std::function<std::unique_ptr<Remote::Client>()>;
+
 	// The world's services are those of the world given, and both outlive the model.
 	ClientModel(Jettison::Sim::SimWorld &world, const Host::Services &services);
 
-	// Over a connection, which outlives the model and which it polls.
-	explicit ClientModel(Remote::Client &remote);
+	// Over a connection, which outlives the model and which it polls; with no dial, a lost connection
+	// is not made again.
+	explicit ClientModel(Remote::Client &remote, Dial dial = {});
+
+	// The connection played over: the one given, or the last dialled after it was lost; none over a
+	// local world.
+	Remote::Client *Connection() const
+	{
+		return m_pRemote;
+	}
+
+	// Whether a lost connection is being made again, until its welcome.
+	bool Reconnecting() const
+	{
+		return m_reconnecting;
+	}
+
+	// The sequences of the requests sent or kept to send and not yet heard complete or refused,
+	// oldest first.
+	std::vector<std::uint64_t> Kept() const;
 
 	// Why the connection ended, once it has, a server's message the client cannot read included
 	// (BadMessage); none over a local world.
@@ -270,8 +297,25 @@ class ClientModel
 	// A refusal made here, before anything is sent, answered as the world's are.
 	Command::Receipt Refuse(Command::Result result);
 
-	// The replies the connection has, the answer waited on taken from them.
+	// A request sent or kept to send, not yet heard complete or refused.
+	struct Unsettled
+	{
+		std::uint64_t sequence{};
+		std::string command;
+		std::uint32_t version{};
+		std::vector<std::byte> payload;
+	};
+
+	// The replies the connection has, the answer waited on taken from them; a new welcome taken, and
+	// a lost connection dialled again.
 	void Receive();
+
+	// What was kept sent again on a new connection, under its own sequences.
+	void TakeWelcome();
+
+	// A new connection made for one closed for the reason, at most once each kRedialInterval, unless
+	// the closing was a refusal.
+	void Redial(Jettison::Net::Reason reason);
 
 	Command::Receipt Admit(
 	    const Command::Actor &actor, std::string_view command, std::uint32_t version,
@@ -281,10 +325,22 @@ class ClientModel
 
 	void MakeScreen();
 
-	// One of the world and its services, or the connection.
+	// One of the world and its services, or the connection: the one given, or the last dialled,
+	// which the model owns.
 	Jettison::Sim::SimWorld *m_pWorld{nullptr};
 	std::optional<Host::Services> m_services;
 	Remote::Client *m_pRemote{nullptr};
+	std::unique_ptr<Remote::Client> m_pRedialled;
+	Dial m_dial;
+
+	// Oldest first; the sequence the next request takes, from the first welcome; whether this
+	// connection's welcome is taken; and whether a lost one is being made again, dialled again no
+	// sooner than m_redialAt.
+	std::vector<Unsettled> m_unsettled;
+	std::optional<std::uint64_t> m_nextSequence;
+	bool m_welcomed{false};
+	bool m_reconnecting{false};
+	std::chrono::steady_clock::time_point m_redialAt{};
 
 	// The server sent what the client cannot read, so nothing more of it is.
 	bool m_unreadable{false};

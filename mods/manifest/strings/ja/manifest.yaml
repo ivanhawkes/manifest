@@ -123,3 +123,4 @@ manifest:
     keyMismatch: "サーバーは、サーバー一覧がそのサーバーに指定した鍵を持っていません。"
     # The server's world content is not this client's: Jettison::Host::ContentDifference's words.
     content: "{0}"
+  reconnecting: "接続が切れました。再接続しています。要求は保持され、接続が戻りしだい送信されます。"
