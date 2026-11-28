@@ -22,7 +22,7 @@ The first loop plays in the graphical client, `manifest_client` (L15a, done 2026
 server. What it still lacks is in the [roadmap](roadmap.md#the-graphical-client): the galaxy panel, the shipyard and fleet
 screens, names, and the looks. The
 owners' screens are [L15b](delivery-order.md#l15b), which waits on [L04](delivery-order.md#l04) and
-[L05](delivery-order.md#l05); the regions' tax rates it edits are in (L29, 2026-11-28). The pin is Jettison's `b8134e3`: numbers, dates and times in the language's form, which the client's screens use (J15, [languages](client.md#languages)); the mods' scripts in the host session, which the server runs and saves ([J62](server.md#the-servers-loop)); and a scene held behind its fade until its models load (J13), which the client has no scene change to use yet. The drives past the torch
+[L05](delivery-order.md#l05); the regions' tax rates it edits are in (L29, 2026-11-28). The pin is Jettison's `66a9ce5`: physics shapes offset in their bodies, compound shapes and collision layers (J07), the durable writes' fault injection (J33), the UI reloaded as its files change and its images decoded off the main thread (J14), and the shell's sound libraries on the runtime path. The drives past the torch
 are done ([W22b](history/tasks.md#w22b), 2026-11-27): the pulse carrier, its dry docks, licence and
 override, and the freighter granted. Saves still
 run on the step's thread ([L40](delivery-order.md#l40), [D-115](decision-ledger.md#d-115)).
