@@ -210,15 +210,18 @@ list) before writing it down: tool output here has invented both
 
 CI is not the gate ([D-116](decision-ledger.md#d-116)): the full gate ran past the runner's hour on
 its two workers. `.github/workflows/ci.yml` shows instead that a clean checkout builds the
-distribution and that the bundle runs on a plain Ubuntu. On an Ubuntu 24.04 runner, within 45
-minutes, it:
+distribution and that the bundle runs on a plain Ubuntu and Debian. On an Ubuntu 24.04 runner, within
+45 minutes, it:
 
 1. checks the shell's parity (`test-env-parity.sh`, then `check-env-parity.sh`), before Nix;
 2. installs Nix and devenv 2.4.0;
 3. in the shell, stages the bundle (`scripts/stage-bundle.sh`: the release build, its
    `check-distribution.sh`, the tarball);
 4. outside the shell, runs it on the runner's own system (`scripts/test-bundle.sh <tarball> host`);
-5. uploads `build/ci.log`.
+5. runs it in an `ubuntu:24.04` container, then in a `debian:13` one, through the runner's Docker
+   (`test-bundle.sh <tarball> ubuntu:24.04`, `debian:13`): a step each, so a failure names the
+   distribution, and each runs once the bundle is staged, whatever the steps before it did;
+6. uploads `build/ci.log`.
 
 It runs on each push to `feature-base`, each pull request targeting it, and by hand
 (`gh workflow run ci --ref <branch>`). A push to `main` or another branch runs nothing.

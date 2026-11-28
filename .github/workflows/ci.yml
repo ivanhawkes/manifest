@@ -1,6 +1,7 @@
 name: ci
 # Every commit has passed ci.sh locally; CI shows only that a clean checkout builds the distribution,
-# stages its bundle and runs it on Ubuntu (D-116, the user's).
+# stages its bundle and runs it on Ubuntu, and in Ubuntu 24.04 and Debian 13 containers (D-116, the
+# user's).
 on:
   # Promoting a verified feature-base SHA to main needs no second gate (D-053, scripts/promote.sh).
   push:
@@ -37,12 +38,23 @@ jobs:
         run: nix profile add github:cachix/devenv/v2.4.0
       # The log under build/, which is ignored: the bundle is staged from a clean checkout.
       - name: Build and stage the bundle (clang-release)
+        id: stage
         shell: bash -euo pipefail {0}
         run: mkdir -p build && devenv shell -- ./scripts/stage-bundle.sh 2>&1 | tee build/ci.log
       # Outside the development shell, as an operator runs it.
       - name: Smoke test the bundle on the runner's Ubuntu
         shell: bash -euo pipefail {0}
         run: ./scripts/test-bundle.sh build/bundle/manifest-*.tar.gz host 2>&1 | tee -a build/ci.log
+      # In the oldest systems the distribution supports, with nothing of the build's: a step each, so a
+      # failure names the distribution, and each runs whatever the one before it did.
+      - name: Smoke test the bundle in Ubuntu 24.04 (Docker)
+        if: ${{ !cancelled() && steps.stage.outcome == 'success' }}
+        shell: bash -euo pipefail {0}
+        run: ./scripts/test-bundle.sh build/bundle/manifest-*.tar.gz ubuntu:24.04 2>&1 | tee -a build/ci.log
+      - name: Smoke test the bundle in Debian 13 (Docker)
+        if: ${{ !cancelled() && steps.stage.outcome == 'success' }}
+        shell: bash -euo pipefail {0}
+        run: ./scripts/test-bundle.sh build/bundle/manifest-*.tar.gz debian:13 2>&1 | tee -a build/ci.log
       - name: Upload log
         if: always()
         uses: actions/upload-artifact@v7

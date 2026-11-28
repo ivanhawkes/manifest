@@ -318,8 +318,8 @@ directory. It is the ctest `bundle_smoke` in every preset.
 staged tarball where it is to run. It unpacks it into a read-only directory outside both checkouts
 and runs it under `env -i` with only `HOME` and `PATH`: on this machine (`host`), and in
 `ubuntu:24.04` and `debian:13` containers with no network. CI stages the bundle and runs it on its
-Ubuntu 24.04 runner with `host` ([D-116](decision-ledger.md#d-116),
-[build and gates](build-and-gates.md)).
+Ubuntu 24.04 runner with `host`, then in the two containers, a step each
+([D-116](decision-ledger.md#d-116), [build and gates](build-and-gates.md#ci)).
 
 ## Using it
 
@@ -441,8 +441,6 @@ Every machine that runs the release preset needs a loader at `/lib64/ld-linux-x8
 - The world's seed is always 0. A scenario will give its seed once something draws on the world's
   generator (`kSeed`, `host/src/Start.cpp`).
 - Only the content and the overlays named are mounted. The host reads no player's mod list.
-- `scripts/test-bundle.sh` needs Docker for its containers, so those runs are by hand; CI runs only
-  `host` ([L41](delivery-order.md#l41)).
 - The floor is kept by binding symbols. If that becomes a hassle, the release is built in an Ubuntu
   24.04 container or with `zig cc` targeting 2.39 instead ([D-114](decision-ledger.md#d-114)).
 
