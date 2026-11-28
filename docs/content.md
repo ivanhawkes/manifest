@@ -444,8 +444,10 @@ The Manifest package mounts as `manifest`. Each overlay mounts over it, in the o
 `mod:<identifier>`, its directory's name or its pack's without `.pack`: the name Jettison's shell
 mounts a player's mod under (`App::MountAssets`), so a server's mod and its client's copy are one
 package to the [content check](server.md) ([D-124](decision-ledger.md#d-124)). A later overlay's
-`requires` names earlier mounts so (`requires: [mod:copper]`), or the package (`manifest`). An
-identifier already mounted fails start-up in the mount phase.
+`requires` names an earlier overlay by its identifier (`requires: [copper]`, met by `mod:copper`), or
+the package by its mount (`manifest`); Jettison refuses a mod named by its mount (`mod:copper`) as the
+`mod.yaml` is read, naming the identifier form. An identifier already mounted fails start-up in the
+mount phase.
 
 ```yaml
 # source/game/host/tests/overlays/copper/mod.yaml

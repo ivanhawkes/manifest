@@ -1,5 +1,7 @@
 /* The graphical client's screens (docs/client.md): a panel against the frame's left edge, and the
-   flight panel against its right while a journey is under way. Over the engine's ui/base.rcss. */
+   flight panel against its right while a journey is under way. Over the engine's ui/base.rcss, whose
+   palette (the dev tools', Mocha) gives the panels, the text roles and the buttons their colours: this
+   file gives the metrics, and the colours of the inputs the base has no rule for, by the same roles. */
 
 #window {
 	position: absolute;
@@ -7,9 +9,8 @@
 	top: 20dp;
 	width: 780dp;
 	padding: 12dp 16dp;
-	border: 1dp #4d7ea8;
+	border-width: 1dp;
 	border-radius: 4dp;
-	background-color: #0e1824e6;
 }
 
 #flight {
@@ -18,9 +19,8 @@
 	top: 20dp;
 	width: 320dp;
 	padding: 12dp 16dp;
-	border: 1dp #4d7ea8;
+	border-width: 1dp;
 	border-radius: 4dp;
-	background-color: #0e1824e6;
 }
 
 #nav {
@@ -51,15 +51,13 @@ td {
 
 #status {
 	margin-top: 8dp;
-	color: #f2c46d;
 }
 
 input.text {
 	width: 220dp;
 	padding: 2dp 4dp;
-	border: 1dp #4d7ea8;
-	background-color: #10202f;
-	color: #d8e2ec;
+	border: 1dp #313244;       /* Border */
+	background-color: #181825; /* Surface, mantle */
 }
 
 input.range {
@@ -70,13 +68,13 @@ input.range {
 input.range slidertrack {
 	height: 4dp;
 	margin-top: 6dp;
-	background-color: #33414f;
+	background-color: #45475a; /* Subtle, surface1 */
 }
 
 input.range sliderbar {
 	width: 12dp;
 	height: 16dp;
-	background-color: #4d7ea8;
+	background-color: #89b4fa; /* Primary, blue */
 }
 
 input.range sliderarrowdec, input.range sliderarrowinc {

@@ -17,7 +17,7 @@
 		<p>[[manifest.start.ship]]</p>
 		<input type="text" id="ship" value="Kestrel" data-event-change="ship(ev.value)"/>
 		<p><button id="provision" data-event-click="provision()">[[manifest.start.provision]]</button></p>
-		<p id="status">{{screen.status}}</p>
+		<p id="status" class="warning">{{screen.status}}</p>
 	</div>
 </body>
 </rml>

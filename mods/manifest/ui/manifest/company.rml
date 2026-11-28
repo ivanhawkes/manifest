@@ -54,7 +54,7 @@
 			</tr>
 		</table>
 		<p id="clock">[[manifest.clock.dayAndTime]]</p>
-		<p id="status">{{screen.status}}</p>
+		<p id="status" class="warning">{{screen.status}}</p>
 	</div>
 </body>
 </rml>

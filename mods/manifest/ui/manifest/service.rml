@@ -32,7 +32,7 @@
 			<button id="refuel-off" data-event-click="refuel(false)">[[manifest.service.refuelOff]]</button>
 		</p>
 		<p id="clock">[[manifest.clock.dayAndTime]]</p>
-		<p id="status">{{screen.status}}</p>
+		<p id="status" class="warning">{{screen.status}}</p>
 	</div>
 </body>
 </rml>

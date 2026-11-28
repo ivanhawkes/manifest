@@ -568,16 +568,21 @@ TEST_CASE("Overlays mount over the package in order, each as the shell mounts a 
 	    Manifest::Host::Validate(OptionsFor(MANIFEST_MOD_DIRECTORY, {bare.Directory()})).scenario ==
 	    "trading");
 
-	// An overlay's requires names the mounts before it.
+	// An overlay's requires names an overlay before it by its identifier, not its mount name.
 	const Content needy;
-	needy.Put("mod.yaml", "version: 1\nname: Needy\nrequires: [mod:copper]\n");
+	needy.Put("mod.yaml", "version: 1\nname: Needy\nrequires: [copper]\n");
 	CheckFails(
 	    OptionsFor(MANIFEST_MOD_DIRECTORY, {needy.Directory(), overlays / "copper"}), Phase::Content,
-	    needy.Directory(), "requires the package 'mod:copper'");
+	    needy.Directory(), "requires the package 'copper'");
 	CHECK(
 	    Manifest::Host::Validate(
 	        OptionsFor(MANIFEST_MOD_DIRECTORY, {overlays / "copper", needy.Directory()}))
 	        .scenario == "trading");
+	const Content mounted;
+	mounted.Put("mod.yaml", "version: 1\nname: Mounted\nrequires: [mod:copper]\n");
+	CheckFails(
+	    OptionsFor(MANIFEST_MOD_DIRECTORY, {overlays / "copper", mounted.Directory()}), Phase::Content,
+	    mounted.Directory(), "a mod is required by its identifier, 'copper'");
 }
 
 

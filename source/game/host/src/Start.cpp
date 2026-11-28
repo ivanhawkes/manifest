@@ -44,10 +44,6 @@ constexpr std::string_view kPackageMount = "manifest";
 // The engine's own assets, which Jettison's shell mounts below a game's content (App::MountAssets).
 constexpr std::string_view kEngineMount = "engine";
 
-// An overlay's mount is "mod:<identifier>", as Jettison's shell mounts a player's mod
-// (App::MountAssets), so the same world mod on a server and its client compares equal
-// (Host::ContentDifference).
-constexpr std::string_view kModPrefix = "mod:";
 constexpr std::string_view kPackExtension = ".pack";
 
 // shortcut: seed 0, nothing drawing on the world's generator yet; a scenario gives its seed once
@@ -204,10 +200,12 @@ std::vector<Jettison::Vfs::Mount> Mounts(const Options &options)
 	std::vector<Jettison::Vfs::Mount> mounts{{std::string{kPackageMount}, options.content}};
 	for (const std::filesystem::path &overlay : options.overlays)
 	{
-		// The shell's identifier: the directory's name, or the pack's without its extension.
+		// The shell's identifier: the directory's name, or the pack's without its extension, mounted as
+		// Jettison's shell mounts a player's mod (App::MountAssets), so the same world mod on a server
+		// and its client compares equal (Host::ContentDifference).
 		const std::filesystem::path named = overlay.has_filename() ? overlay : overlay.parent_path();
 		const std::string name =
-		    std::string{kModPrefix} +
+		    std::string{Jettison::Host::kModMountPrefix} +
 		    (named.extension() == kPackExtension ? named.stem().string() : named.filename().string());
 		if (std::ranges::find(mounts, name, &Jettison::Vfs::Mount::name) != mounts.end())
 			throw StartupError{Phase::Mount, overlay, std::format("'{}' is already mounted", name)};
