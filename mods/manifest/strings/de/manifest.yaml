@@ -107,7 +107,7 @@ manifest:
     AlreadyFounded: "Du regierst bereits eine Region."
     AlreadyQueued: "Dieses Projekt steht bereits in der Warteschlange."
     NameEmpty: "Ein Name darf nicht leer sein."
-    NameTooLong: "Ein Name darf höchstens 32 Zeichen lang sein."
+    NameTooLong: "Ein Name darf höchstens {0} Zeichen lang sein."
     NameNotPrintable: "Ein Name darf keine Steuerzeichen enthalten."
   closed:
     closed: "Der Server hat die Verbindung geschlossen oder antwortet nicht mehr."

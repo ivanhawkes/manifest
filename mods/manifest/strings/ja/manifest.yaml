@@ -107,7 +107,7 @@ manifest:
     AlreadyFounded: "すでに地域を統治しています。"
     AlreadyQueued: "そのプロジェクトはすでに予定に入っています。"
     NameEmpty: "名前を空にすることはできません。"
-    NameTooLong: "名前は32文字以内にしてください。"
+    NameTooLong: "名前は{0}文字以内にしてください。"
     NameNotPrintable: "名前に制御文字は使えません。"
   closed:
     closed: "サーバーが接続を閉じたか、応答しなくなりました。"

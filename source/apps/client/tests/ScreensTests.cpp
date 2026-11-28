@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cstddef>
+#include <format>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -11,6 +12,7 @@
 #include <jettison/ui/UiSystem.h>
 #include <jettison/vfs/FileSystem.h>
 
+#include <manifest/company/Company.h>
 #include <manifest/host/Start.h>
 
 #include "ClientGame.h"
@@ -53,6 +55,19 @@ TEST_CASE("Every screen of the client loads and shows its world with no problem"
 	CHECK(game.Shown() == ClientGame::kStart);
 	CHECK(ui.IsShown(game.Document(ClientGame::kStart)));
 	CHECK(ui.ElementText(game.Document(ClientGame::kStart), "provision") == "Start trading");
+
+	// A name past the rule's bound is refused in the rule's words, the bound the rule's own.
+	game.Model()->Provision(
+	    "Ada", "Ada Co", std::string(Manifest::Company::kMaxNameCodePoints + 1, 'x'));
+	session->World().Step();
+	game.Model()->Refresh();
+	game.Present();
+	ui.Update(0.0);
+	CHECK(game.Shown() == ClientGame::kStart);
+	CHECK(
+	    ui.ElementText(game.Document(ClientGame::kStart), "status") ==
+	    std::format(
+	        "A name can be at most {} characters long.", Manifest::Company::kMaxNameCodePoints));
 
 	// Before a company, every screen but the start's gives way to it.
 	game.Show(ClientGame::kMarket);

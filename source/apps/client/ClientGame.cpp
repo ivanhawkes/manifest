@@ -21,6 +21,7 @@
 #include <jettison/sim/SaveGame.h>
 #include <jettison/ui/DataModel.h>
 
+#include <manifest/company/Company.h>
 #include <manifest/host/Start.h>
 
 namespace Manifest::Client
@@ -229,8 +230,14 @@ void ClientGame::Present()
 	else if (m_model->Waiting())
 		screen.status = strings.Text("manifest.result.waiting");
 	else if (const std::optional<Command::Result> result = m_model->LastResult())
-		screen.status = strings.Text(
-		    std::format("manifest.result.{}", Jettison::Reflect::EnumName(entt::meta_any{*result})));
+	{
+		const std::string key =
+		    std::format("manifest.result.{}", Jettison::Reflect::EnumName(entt::meta_any{*result}));
+		// The bound a name is refused at is the rule's, not the table's.
+		screen.status = *result == Command::Result::NameTooLong
+		                    ? strings.Format(key, Company::kMaxNameCodePoints)
+		                    : strings.Text(key);
+	}
 
 	if (screen != m_screen)
 	{
