@@ -165,7 +165,8 @@ and a server that does not hold the pinned key ends in `Disconnected from ...: k
 failed connect keeps the connection there was; a new one replaces it. While connected:
 
 - The players' commands drop the principal argument, since the actor is the token's.
-  `provision` needs an administrator's token.
+  `provision` keeps its principal: a player's token provisions only its own, once
+  ([D-122](decision-ledger.md#d-122)), an administrator's anyone.
 - Each is sent to the server (`Sent request 1 to the server.`). `Poll` prints the server's
   replies: the welcome, each request's receipt and outcome, and why the connection closed.
 - `observe` takes no argument and prints the latest snapshot the server sent.

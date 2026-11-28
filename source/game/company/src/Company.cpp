@@ -1274,8 +1274,14 @@ void RegisterCommands(
 
 	requests.Register<Provision>(
 	    std::string{kProvision}, kVersion, Command::ActorKind::Administrator,
-	    [rules](SimWorld &target, const Actor & /*actor*/, const Provision &provision)
-	    { return Provisioned(target, *rules, provision); });
+	    [rules](SimWorld &target, const Actor &actor, const Provision &provision)
+	    {
+		    // A player founds their own company alone (D-122): the principal is the sender's.
+		    if (actor.kind == Command::ActorKind::Principal && provision.principalId != actor.id)
+			    return Result::NotAuthorised;
+		    return Provisioned(target, *rules, provision);
+	    },
+	    Command::Newcomers::Admitted);
 	requests.Register<Claim>(
 	    std::string{kClaim}, kVersion, Command::ActorKind::Principal,
 	    [rules](SimWorld &target, const Actor &actor, const Claim &claim)

@@ -203,13 +203,14 @@ console resolves the actor from its command line and the [server](server.md) fro
 [token](glossary.md#token). Admission checks, in this order:
 
 1. The actor: an ID of 1 to 256 bytes (`kMaxActorIdBytes`) and, for a principal, one the world
-   has. Otherwise `NotAuthorised`.
+   has, unless the command admits newcomers (`Newcomers::Admitted`: `Provision` alone, a player's
+   own start, [D-122](decision-ledger.md#d-122)). Otherwise `NotAuthorised`.
 2. A sequence the actor has already used is answered from the ledger, before any handler is asked.
    Below the retained range it is `RequestTooOld`. Otherwise an identical request (same command,
    version and bytes) gets its original receipt, `Queued` with its order or `Completed` with its
    result and step, and a different one is `RequestConflict`.
 3. The command: registered at exactly this version (`UnsupportedCommand`), sendable by this
-   actor's kind (`NotAuthorised`), a payload of at most 4,096 bytes (`PayloadTooLarge`) that
+   actor's kind, or by any principal where it admits newcomers (`NotAuthorised`), a payload of at most 4,096 bytes (`PayloadTooLarge`) that
    decodes as the command's type (`MalformedPayload`).
 4. The sequence: exactly the actor's next (`SequenceGap`), with room left to count
    (`SequenceExhausted`).
@@ -411,7 +412,7 @@ CHECK(adas.companies[0].companyId == "Company1");
 
 | Command | Version | Sent by | Explained in |
 | --- | --- | --- | --- |
-| `Manifest.Company.Provision` | 1 | `Administrator` | [companies](companies.md) |
+| `Manifest.Company.Provision` | 1 | `Administrator`, or a principal for itself | [companies](companies.md) |
 | `Manifest.Company.Load`, `Unload`, `Refill`, `Replace`, `Upgrade`, `SetRefuel` | 1 | principal | [companies](companies.md), [stations](stations.md) |
 | `Manifest.Company.SetFees` | 1 | principal | [stations](stations.md) |
 | `Manifest.Company.Found` | 1 | principal | [governance](governance.md) |

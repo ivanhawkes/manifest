@@ -12,7 +12,8 @@
 
 namespace Manifest::Company
 {
-// The administrative command that provisions a player (D-089): their Principal, with their starting
+// The command that provisions a player (D-089), the host's for anyone and a principal's for itself
+// alone (D-122), refused NotAuthorised for another's: their Principal, with their starting
 // market reports (Trade::Seed), a company with the configured starting credits, and one ship of the
 // scenario's starter hull, parked on a pad of its starter venue (Travel::Fleet::Park) with an empty
 // hold, every oxygen tank full and every cartridge fresh, once, its reaction mass tanks and pellet

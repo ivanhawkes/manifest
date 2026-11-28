@@ -42,6 +42,14 @@ struct Receipt
 	std::uint64_t step{0};
 };
 
+// Whether a command admits, beside its sender's kind, every principal, one the world does not have
+// yet included: a player's own start (D-122), whose handler holds it to the sender's own principal.
+enum class Newcomers
+{
+	Refused,
+	Admitted
+};
+
 // The one admission path into the world and the ledger of every actor's requests
 // (docs/world.md, "Admission" and "Retries and the ledger"). Admission checks the actor, the command
 // and the sequence, assigns the next global order and queues the request on the world, so it runs at
@@ -57,17 +65,19 @@ class Requests final : public Jettison::Sim::WorldService
 	}
 
 	// How a command runs: its payload read as T at its version, then applied. Only an actor of the
-	// sender's kind may send it. A handler returning anything but Succeeded has written nothing a
-	// rejection must preserve. Throws std::logic_error for a name registered twice.
+	// sender's kind may send it, and a principal too where it admits newcomers. A handler returning
+	// anything but Succeeded has written nothing a rejection must preserve. Throws std::logic_error for
+	// a name registered twice.
 	template <typename T>
 	void Register(
 	    std::string name, std::uint32_t version, ActorKind sender,
-	    std::function<Result(Jettison::Sim::SimWorld &, const Actor &, const T &)> apply)
+	    std::function<Result(Jettison::Sim::SimWorld &, const Actor &, const T &)> apply,
+	    Newcomers newcomers = Newcomers::Refused)
 	{
 		const Jettison::Serialise::FormatVersion format{version};
 		AddHandler(
 		    std::move(name),
-		    {version, sender,
+		    {version, sender, newcomers,
 		     [format](std::span<const std::byte> payload)
 		     {
 			     try
@@ -99,8 +109,8 @@ class Requests final : public Jettison::Sim::WorldService
 	// an agent of the world's own, a standing policy's job (D-097): no admission, sequence, ledger or
 	// queue, and nothing recorded, since the state that sent it sends it again in a replay, as
 	// Jettison's SimWorld::Apply does. Running() is 0 while it runs. UnsupportedCommand for a command
-	// not registered at the version, NotAuthorised for an actor not of its sender's kind or a principal
-	// the world does not have, MalformedPayload for a payload it cannot read.
+	// not registered at the version, NotAuthorised for an actor admission would refuse as
+	// one, MalformedPayload for a payload it cannot read.
 	Result Act(
 	    Jettison::Sim::SimWorld &world, const Actor &actor, const std::string &command,
 	    std::uint32_t version, std::span<const std::byte> payload);
@@ -156,6 +166,7 @@ class Requests final : public Jettison::Sim::WorldService
 	{
 		std::uint32_t version{1};
 		ActorKind sender{ActorKind::Principal};
+		Newcomers newcomers{Newcomers::Refused};
 		std::function<bool(std::span<const std::byte>)> decodes;
 		std::function<Result(Jettison::Sim::SimWorld &, const Actor &, std::span<const std::byte>)>
 		    apply;
@@ -164,6 +175,15 @@ class Requests final : public Jettison::Sim::WorldService
 	using Key = std::pair<ActorKind, std::string>;
 
 	void AddHandler(std::string name, Handler handler);
+
+	// Whether admission takes the actor at all: an administrator, a principal the world has, or any
+	// principal for a command that admits newcomers. Null, a command not registered, checks the actor
+	// alone, since the ledger still answers a retry of one.
+	bool Known(const Handler *pHandler, const Actor &actor) const;
+
+	// Whether the actor's kind may send the command: its sender's, or a principal where it admits
+	// newcomers.
+	static bool Sends(const Handler &handler, const Actor &actor);
 
 	const World::Identities &m_identities;
 	std::map<std::string, Handler> m_handlers;

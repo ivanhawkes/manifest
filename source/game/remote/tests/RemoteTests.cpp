@@ -343,12 +343,12 @@ TEST_CASE("a remote player is welcomed as its token's actor and sees only its ow
 	CHECK(player.Welcomed()->actorId == "Ada");
 	CHECK(player.Welcomed()->nextSequence == 1);
 
-	// Provisioning is the administrator's: the player's request is refused at admission.
+	// A command at a version the server does not have is refused at admission.
 	const std::uint64_t refused =
-	    player.Submit(Company::kProvision, Company::kVersion, Provision("Cai")).value();
+	    player.Submit(Company::kProvision, Company::kVersion + 1, Provision("Cai")).value();
 	CHECK(
 	    served.Await(player, refused, Receipt::Status::Refused).value().result ==
-	    Result::NotAuthorised);
+	    Result::UnsupportedCommand);
 
 	// The refusal consumed no sequence, so the player's next request is sent under it again.
 	const std::vector<std::byte> move = Jettison::Serialise::BinaryArchive::Write(
@@ -364,6 +364,15 @@ TEST_CASE("a remote player is welcomed as its token's actor and sees only its ow
 	CHECK(player.Latest()->companies[0].displayName == "Ada Freight");
 	REQUIRE(served.Pump(admin, [&] { return admin.Latest().has_value(); }));
 	CHECK(admin.Latest()->companies.size() == 2);
+
+	// A player provisions no one but themselves (D-122): admitted, and refused as it runs.
+	const std::uint64_t other =
+	    player.Submit(Company::kProvision, Company::kVersion, Provision("Cai")).value();
+	CHECK(served.Await(player, other, Receipt::Status::Queued).has_value());
+	served.Step();
+	CHECK(
+	    served.Await(player, other, Receipt::Status::Completed).value().result ==
+	    Result::NotAuthorised);
 }
 
 

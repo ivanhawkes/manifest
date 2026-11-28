@@ -74,7 +74,7 @@ How: [the host](host.md), [the server](server.md), [the console and the terminal
 | A Nix closure as a supported runtime | Out | The bundle is the product; NixOS runs it through nix-ld ([D-114](decision-ledger.md#d-114)) |
 | A dedicated server with no renderer or terminal | In | `manifest --serve` steps the world with zero clients ([D-011](decision-ledger.md#d-011)) |
 | The TUI as a remote client | In | `connect` and `disconnect` play on a server as a token's actor ([D-012](decision-ledger.md#d-012)) |
-| Administrators apart from players | In | An administrator's token provisions companies; a player's cannot |
+| Administrators apart from players | In | An administrator's token provisions anyone's company; a player's only its own, once ([D-122](decision-ledger.md#d-122)) |
 | Manual trading from the TUI | In | Typed commands (`trade buy`, `cargo load`), locally or on a server; the stretch goal of [D-013](decision-ledger.md#d-013) |
 | Saves, the [journal](glossary.md#journal) and backups | In | A restart resumes the world where it stopped |
 | The world catching up for time the server was down | Deferred | Downtime pauses the world ([D-011](decision-ledger.md#d-011)) |

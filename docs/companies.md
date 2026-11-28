@@ -58,7 +58,7 @@ command changes nothing.
 
 | Command | Payload | Sent by | Covered in |
 | --- | --- | --- | --- |
-| `Manifest.Company.Provision` | `Provision` | the Administrator | [Provisioning](#provisioning-a-player) |
+| `Manifest.Company.Provision` | `Provision` | the Administrator, or a player for themselves | [Provisioning](#provisioning-a-player) |
 | `Manifest.Company.Load`, `Unload` | `Move` | the ship's owner | [Loading and unloading](#loading-and-unloading) |
 | `Manifest.Company.Upgrade` | `Upgrade` | the ship's owner | [Upgrades](#upgrades) |
 | `Manifest.Company.Refill`, `Replace` | `Service` | the ship's owner | [stations](stations.md) |
@@ -112,8 +112,12 @@ it is refused `NotAuthorised`. An unknown ship, item or offer is `UnknownTarget`
 
 A player starts with a company, credits and one ship parked at the scenario's starter venue,
 trading at once; no region or [polity](glossary.md#polity) is made for them
-([D-089](decision-ledger.md#d-089)). `Provision` is the host's command, sent as the Administrator,
-and names the new principal's ID, display name and company name. It makes, in one step:
+([D-089](decision-ledger.md#d-089)). `Provision` names the new principal's ID, display name and
+company name. The host sends it as the Administrator, for anyone. A player sends it for themselves
+alone, as a server's player does from the graphical client ([D-122](decision-ledger.md#d-122)): it is
+the one command admission takes from a principal the world does not have yet
+(`Command::Newcomers::Admitted`), and it is rejected `NotAuthorised` when it names another
+principal, so the principal is always the sender's, never the payload's. It makes, in one step:
 
 - the principal, with its starting market [reports](glossary.md#report-market) (`Trade::Seed`;
   see [trading](trading.md));

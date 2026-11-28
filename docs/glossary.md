@@ -608,7 +608,8 @@ operational workshop, and then unlocks a [recipe](#recipe) or teaches a skill in
 
 ### Provisioning
 
-The Administrator's command that brings a player into the world (`Manifest.Company.Provision`):
+The command that brings a player into the world (`Manifest.Company.Provision`), the Administrator's
+for anyone and a player's for themselves ([D-122](decision-ledger.md#d-122)):
 their principal and starting reports, a company with `company.startingCredits`, and the starter hull
 parked at the [starter venue](#starter-venue), fuelled and connected to its life support. See
 [companies, ships and cargo](companies.md).

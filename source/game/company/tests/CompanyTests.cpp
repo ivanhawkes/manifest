@@ -292,6 +292,30 @@ TEST_CASE("Provisioning gives a player a company, its credits and a ship docked 
 }
 
 
+TEST_CASE("A player founds their own company once, and no one else's (D-122)")
+{
+	Hosted hosted;
+
+	// Admitted from a principal the world does not have yet, for that principal alone.
+	CHECK(
+	    hosted.Run(kBea, kProvision, Provision{"Ada", "Ada", "Ada Freight"}) == Result::NotAuthorised);
+	CHECK(hosted.identities.Find(Kind::Principal, "Ada") == entt::null);
+	CHECK(hosted.identities.Find(Kind::Principal, "Bea") == entt::null);
+	CHECK(hosted.Run(kAda, kProvision, Provision{"Ada", "Ada", "Ada Freight"}) == Result::Succeeded);
+	CHECK(hosted.Seen(kAda).displayName == "Ada Freight");
+	CHECK(hosted.Run(kAda, kProvision, Provision{"Ada", "Ada", "Again"}) == Result::AlreadyProvisioned);
+	CHECK(hosted.Run(kAda, kProvision, Provision{"Bea", "Bea", "Bea's"}) == Result::NotAuthorised);
+	CHECK(hosted.Observe(kHost).companies.size() == 1);
+
+	// Its other commands still need a principal the world has; the host still provisions anyone.
+	CHECK(
+	    hosted.Admit(kBea, kLoad, Move{"Ship1", "VenueOreHighport", "ItemFurs", 1}).result ==
+	    Result::NotAuthorised);
+	CHECK(hosted.Provision("Bea") == Result::Succeeded);
+	CHECK(hosted.Observe(kHost).companies.size() == 2);
+}
+
+
 TEST_CASE("A ship on station life support uses none of its own, and off it draws its own in order")
 {
 	Hosted hosted;

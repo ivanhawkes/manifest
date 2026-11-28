@@ -119,9 +119,9 @@ Receipt Requests::Admit(
     Jettison::Sim::SimWorld &world, const Actor &actor, std::uint64_t sequence,
     const std::string &command, std::uint32_t version, std::span<const std::byte> payload)
 {
+	const auto handler = m_handlers.find(command);
 	if (actor.id.empty() || actor.id.size() > kMaxActorIdBytes ||
-	    (actor.kind == ActorKind::Principal &&
-	     m_identities.Find(World::Kind::Principal, actor.id) == entt::null))
+	    !Known(handler == m_handlers.end() ? nullptr : &handler->second, actor))
 		return Refused(Result::NotAuthorised);
 
 	// A sequence already admitted answers from the ledger before the handlers are asked, so a retry
@@ -145,10 +145,9 @@ Receipt Requests::Admit(
 		           : Refused(Result::RequestConflict);
 	}
 
-	const auto handler = m_handlers.find(command);
 	if (handler == m_handlers.end() || handler->second.version != version)
 		return Refused(Result::UnsupportedCommand);
-	if (handler->second.sender != actor.kind)
+	if (!Sends(handler->second, actor))
 		return Refused(Result::NotAuthorised);
 	if (payload.size() > kMaxPayloadBytes)
 		return Refused(Result::PayloadTooLarge);
@@ -181,9 +180,7 @@ Result Requests::Act(
 	const auto handler = m_handlers.find(command);
 	if (handler == m_handlers.end() || handler->second.version != version)
 		return Result::UnsupportedCommand;
-	if (handler->second.sender != actor.kind || actor.id.empty() ||
-	    (actor.kind == ActorKind::Principal &&
-	     m_identities.Find(World::Kind::Principal, actor.id) == entt::null))
+	if (actor.id.empty() || !Known(&handler->second, actor) || !Sends(handler->second, actor))
 		return Result::NotAuthorised;
 	if (!handler->second.decodes(payload))
 		return Result::MalformedPayload;
@@ -194,6 +191,22 @@ Result Requests::Act(
 	m_running = running;
 	m_runningOrder = order;
 	return result;
+}
+
+
+bool Requests::Known(const Handler *pHandler, const Actor &actor) const
+{
+	if (actor.kind != ActorKind::Principal)
+		return true;
+	return (pHandler != nullptr && pHandler->newcomers == Newcomers::Admitted) ||
+	       m_identities.Find(World::Kind::Principal, actor.id) != entt::null;
+}
+
+
+bool Requests::Sends(const Handler &handler, const Actor &actor)
+{
+	return handler.sender == actor.kind ||
+	       (handler.newcomers == Newcomers::Admitted && actor.kind == ActorKind::Principal);
 }
 
 
