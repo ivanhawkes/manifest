@@ -203,10 +203,30 @@ TEST_CASE("A player's markets are their own reports, live only as observed at th
 	     0,
 	     {{"ItemFurs", {{5, 1}}, {{7, 2}, {8, 3}}, 0, 0, 0}}}};
 
+	const World::Fees &brine = hosted.world.Registry().get<World::Fees>(
+	    hosted.identities.Find(Kind::Market, "VenueBrineHighport"));
+	const World::Fees &ore = hosted.world.Registry().get<World::Fees>(
+	    hosted.identities.Find(Kind::Market, "VenueOreHighport"));
 	const Snapshot seen = hosted.Observe(kAda);
 	REQUIRE(seen.markets.size() == 2);
 	CHECK_FALSE(seen.markets[0].live);
-	CHECK(seen.markets[1] == MarketView{adas.reports[1], true});
+	CHECK(seen.markets[0].fees == brine);
+	CHECK(seen.markets[1] == MarketView{adas.reports[1], true, ore});
+
+	// Once Bea directs Brine's operator, the fees she posts show in Ada's next snapshot, her report
+	// stale or not, and not in the one Ada holds.
+	hosted.world.Registry()
+	    .get<World::Organisation>(
+	        hosted.identities.Find(Kind::Organisation, "OrganisationAnvilPortAuthority"))
+	    .principalId = "Bea";
+	World::Fees raised = brine;
+	raised.classes.front().docking += 1000;
+	raised.berthPerOccupantHour = 9;
+	REQUIRE(
+	    hosted.Run(kBea, Company::kSetFees, Company::SetFees{"VenueBrineHighport", raised}) ==
+	    Result::Succeeded);
+	CHECK(seen.markets[0].fees != raised);
+	CHECK(hosted.Observe(kAda).markets[0].fees == raised);
 
 	// Bea's are her own starting reports alone; the host, with no fleet, has none.
 	const Snapshot beas = hosted.Observe(kBea);

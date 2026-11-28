@@ -136,6 +136,10 @@ struct MarketView
 	World::Report report;
 	bool live{false};
 
+	// The venue's fees as posted at the snapshot's step, however old the report: a venue posts them
+	// to every ship that may come, so a player sees what a journey there would pay before it starts.
+	World::Fees fees{};
+
 	bool operator==(const MarketView &) const = default;
 };
 

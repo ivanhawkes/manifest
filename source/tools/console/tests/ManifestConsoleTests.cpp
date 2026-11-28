@@ -541,6 +541,10 @@ TEST_CASE("Manifest console: the vertical slice, furs bought at Ore, flown to Br
 	const std::string spawned = Execute(session, "observe Ada").text;
 	MANIFEST_CHECK_CONTAINS(spawned, "markets (any other is unknown):");
 	MANIFEST_CHECK_CONTAINS(spawned, "\n  VenueOreHighport: live");
+	MANIFEST_CHECK_CONTAINS(spawned, "\n    fees: battlecruiser 77000 to dock and 15400 an hour,");
+	MANIFEST_CHECK_CONTAINS(
+	    spawned, ", titan 495000 to dock and 99000 an hour, 2 an hour for each connected occupant, "
+	             "arrears at 1000 bps a year\n    ItemCopper: ");
 	MANIFEST_CHECK_CONTAINS(
 	    spawned, "VenueBrineHighport: stale starting report, observed 0.0 simulation minutes ago");
 	CHECK(Execute(session, "observe").text.find("markets") == std::string::npos);

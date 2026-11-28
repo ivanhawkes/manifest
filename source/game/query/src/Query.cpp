@@ -94,8 +94,13 @@ Snapshot Observe(
 	if (const auto *pReports =
 	        principal == entt::null ? nullptr : registry.try_get<World::Reports>(principal))
 		for (const World::Report &report : pReports->reports)
+		{
+			const entt::entity market = identities.Find(World::Kind::Market, report.venueId);
+			JETTISON_VERIFY(market != entt::null);
 			snapshot.markets.push_back(
-			    {report, report.source == World::Source::Docked && report.observed == snapshot.step});
+			    {report, report.source == World::Source::Docked && report.observed == snapshot.step,
+			     registry.get<World::Fees>(market)});
+		}
 	for (const auto &[entity, identity, tender] :
 	     registry.view<const World::Identity, const World::Tender>().each())
 		snapshot.tenders.push_back({identity.id, tender});

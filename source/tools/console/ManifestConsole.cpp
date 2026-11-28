@@ -185,6 +185,20 @@ std::string BookSide(std::string_view side, const std::vector<World::Level> &lev
 }
 
 
+// A venue's posted fees: each pad class's docking and hourly berth fee, the hourly fee for each
+// occupant connected to its life support, and the yearly rate its arrears accrue at.
+std::string Describe(const World::Fees &fees)
+{
+	std::string text = "\n    fees:";
+	for (const World::ClassFees &fee : fees.classes)
+		text +=
+		    std::format(" {} {} to dock and {} an hour,", fee.padClass, fee.docking, fee.berthPerHour);
+	return text + std::format(
+	                  " {} an hour for each connected occupant, arrears at {} bps a year",
+	                  fees.berthPerOccupantHour, fees.arrearsRateBps);
+}
+
+
 std::string Describe(const Query::MarketView &market, std::uint64_t step)
 {
 	const World::Report &report = market.report;
@@ -196,6 +210,7 @@ std::string Describe(const Query::MarketView &market, std::uint64_t step)
 	                      report.source == World::Source::Starting ? " starting report" : "",
 	                      Minutes(step - report.observed)),
 	    Minutes(report.observed - report.since));
+	text += Describe(market.fees);
 	for (const World::Line &line : report.lines)
 		text += std::format(
 		    "\n    {}: {}, {}, {} totes sold, {}", line.itemId, BookSide("bid", line.bids),

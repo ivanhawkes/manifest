@@ -221,7 +221,11 @@ over its size with opened totes counted, and fees of other pad classes, out of o
 above the usury limit.
 
 A player's snapshot (`Query::ShipView`) carries each of their ships' `lifeSupport` and
-`opened` totes. A venue's fees are not in the snapshot yet.
+`opened` totes. Each venue they know, the venues they hold a [market report](glossary.md#report-market)
+of, carries its `Fees` beside the report (`Query::MarketView::fees`). A venue where a ship of
+theirs is docked is among them, since observation reports it at the end of the step the ship docks.
+The fees are as posted at the snapshot's step, however old the report, so a change shows from the next
+snapshot and a client sees what a journey there would pay before it starts.
 
 ### Content
 
@@ -360,4 +364,4 @@ How these were built is recorded in
 Suites: `company` (connections, draw, Refill and Replace, fees, pricing, arrears, saves),
 `travel` (a journey letting go and connecting, the docking fee, the step's order), `policy`
 (transit life support charged to a lot, seizure), `content` (malformed tuning), `query` and
-`console` (the view and the commands), and `fixture_alone` (an NPC and a player trading alone).
+`console` (the view, its fees, and the commands), and `fixture_alone` (an NPC and a player trading alone).

@@ -227,7 +227,8 @@ first; nothing seeds it again.
 
 **What the player sees.** A player's [snapshot](glossary.md#snapshot-query) carries their reports
 as `markets` (`Query::MarketView`). Each is `live` when it came from a docked ship and was observed
-at the snapshot's own step; otherwise its age is the steps since `observed`. The Administrator's
+at the snapshot's own step; otherwise its age is the steps since `observed`. Each also carries the
+venue's fees as posted now ([stations](stations.md#saves-and-the-snapshot)). The Administrator's
 snapshot carries none, having no fleet. The same boundary binds the standing policies and NPC
 traders: they plan from their owner's reports and nothing else ([Standing policies](policies.md)).
 

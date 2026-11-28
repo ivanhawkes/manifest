@@ -120,7 +120,7 @@ The commands' rules belong to their modules: [companies](companies.md), [trading
 principal, or for the administrator with none. It shows the company's credits and holdings, each
 ship (dock, journey, hold, systems, fuel, policy, job, cargo, opened totes, life support), resting
 orders and sealed bids, then the player's [market reports](glossary.md#report-market), live or stale
-with their age, every tender, and every region with its governor, condition and, to its governor and
+with their age and each with its venue's posted fees, every tender, and every region with its governor, condition and, to its governor and
 the host, its treasury, development policy and project queue. `book <venue>
 [item]` is the host's development view instead: every resting order at the venue, by item, asks
 then bids, best price first, with its owner ([D-095](decision-ledger.md#d-095)).
@@ -340,9 +340,8 @@ ConsoleLine Execute(ManifestConsole &session, std::string_view command)
 
 - The TUI retries nothing: a player whose request was lost in a dropped connection sends it again
   by hand ([L41](delivery-order.md#l41)).
-- The snapshot holds neither a venue's fees nor a ship's refuelling switch ([L47](delivery-order.md#l47)
-  adds the fees), so `observe` shows neither: `fees` needs the venue's pad classes from its content,
-  and `refuel` is read back only from a journey's cost.
+- The snapshot does not hold a ship's refuelling switch, so `observe` does not show it: `refuel` is
+  read back only from a journey's cost.
 - A server's time cannot be paused or scaled from a client: no message carries it.
 - The graphical client plays the first loop on a local world ([the graphical client](client.md)); its
   server play is open work ([roadmap](roadmap.md#the-graphical-client)).

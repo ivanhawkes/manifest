@@ -191,7 +191,9 @@ Every resource a client can make the server spend is bounded, here or in Jettiso
 The longest message is a snapshot. The limit is three times the trading scenario's 63,567-byte view
 at step 0 (measured 2026-11-23), which Jettison's 64 KiB default dropped ten orders later. It stays
 under the 256 KiB at which an unreliable message still crosses whole. A view longer than the limit
-is logged and not sent.
+is logged and not sent. With each known venue's fees in it ([stations](stations.md#saves-and-the-snapshot)), a new
+player's view in that scenario, twelve markets at step 2, is 89,618 bytes, 7,431 of them the fees
+(measured 2026-11-28): under half the limit.
 
 ### Connections are sealed
 

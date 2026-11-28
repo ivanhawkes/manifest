@@ -124,7 +124,7 @@ health and happiness, grains and medical supplies) are [the regional economy](ec
 ([L46](delivery-order.md#l46)), and Wasm scripts that rank their trades without touching settlement
 ([L39](delivery-order.md#l39), the [policy scripts plan](policy-scripts-plan.md)). The console
 reaches every command and shows the whole snapshot ([L44](history/tasks.md), done), and a client sees
-a venue's fees before it pays ([L47](delivery-order.md#l47)).
+a venue's fees before it pays ([L47](history/tasks.md), done).
 
 ## The graphical client
 
