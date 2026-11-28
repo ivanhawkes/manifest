@@ -239,6 +239,12 @@ std::optional<Jettison::Net::Reason> ClientModel::Closed() const
 }
 
 
+std::optional<std::string> ClientModel::Refused() const
+{
+	return m_pRemote != nullptr ? m_pRemote->Refused() : std::nullopt;
+}
+
+
 void ClientModel::SetPrincipal(std::string principal)
 {
 	m_screen.principal = std::move(principal);

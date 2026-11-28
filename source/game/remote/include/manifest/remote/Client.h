@@ -9,6 +9,7 @@
 #include <string_view>
 #include <vector>
 
+#include <jettison/host/WorldContent.h>
 #include <jettison/net/Client.h>
 
 #include <manifest/query/Query.h>
@@ -18,8 +19,10 @@ namespace Manifest::Remote
 {
 // The client end of Server, for a frontend: connects with a token as it is made, to the server holding
 // the key it pins (PinnedKey), and is welcomed as the token's actor, or closed with the reason:
-// KeyMismatch for a server that does not hold it. It submits intentions and keeps the newest
-// snapshot; it never steps or holds a world. To reconnect, make another.
+// KeyMismatch for a server that does not hold it. A welcome whose world content differs from the
+// content the client holds (Hold) is not taken: the client disconnects, refused with the difference
+// (Jettison::Host::ContentDifference). It submits intentions and keeps the newest snapshot; it never
+// steps or holds a world. To reconnect, make another.
 class Client
 {
   public:
@@ -31,7 +34,12 @@ class Client
 	// replaces Latest, and one older than it is dropped by the transport.
 	std::vector<Reply> Poll(std::chrono::milliseconds wait = std::chrono::milliseconds{0});
 
-	// Set once the server's welcome arrives: who this is and what it sends next.
+	// The world content this client runs on, given before the welcome arrives: a welcome before it is
+	// refused, as one of content the client cannot check.
+	void Hold(Jettison::Host::WorldContent content);
+
+	// Set once the server's welcome arrives and its content is the client's: who this is and what it
+	// sends next.
 	const std::optional<Welcome> &Welcomed() const
 	{
 		return m_welcome;
@@ -41,6 +49,13 @@ class Client
 	const std::optional<Jettison::Net::Reason> &Closed() const
 	{
 		return m_closed;
+	}
+
+	// Why the welcome was not taken, its world content not the client's: the connection is then
+	// closing, and Closed follows.
+	const std::optional<std::string> &Refused() const
+	{
+		return m_refused;
 	}
 
 	const std::optional<Query::Snapshot> &Latest() const
@@ -66,8 +81,10 @@ class Client
 
   private:
 	Jettison::Net::Client m_net;
+	std::optional<Jettison::Host::WorldContent> m_held;
 	std::optional<Welcome> m_welcome;
 	std::optional<Jettison::Net::Reason> m_closed;
+	std::optional<std::string> m_refused;
 	std::optional<Query::Snapshot> m_latest;
 };
 } // namespace Manifest::Remote

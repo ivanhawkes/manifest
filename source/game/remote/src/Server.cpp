@@ -13,6 +13,7 @@
 #include <utility>
 
 #include <jettison/core/Log.h>
+#include <jettison/host/WorldContent.h>
 #include <jettison/net/Key.h>
 #include <jettison/serialise/Archive.h>
 
@@ -78,6 +79,15 @@ bool IsNpc(Jettison::Host::Session &session, const Credential &credential)
 }
 
 
+std::vector<std::uint8_t> WorldContentOf(const Jettison::Host::Session &session)
+{
+	const std::vector<std::byte> bytes =
+	    Jettison::Host::EncodeWorldContent(Jettison::Host::DescribeWorldContent(session.Files()));
+	const auto *pFirst = reinterpret_cast<const std::uint8_t *>(bytes.data());
+	return {pFirst, pFirst + bytes.size()};
+}
+
+
 std::filesystem::file_time_type WrittenAt(const std::filesystem::path &path)
 {
 	std::error_code error;
@@ -99,8 +109,8 @@ void Send(Jettison::Net::Server &net, Jettison::Net::SessionId id, const T &mess
 Server::Server(
     Jettison::Host::Session &session, std::filesystem::path tokens, const std::filesystem::path &key,
     std::string address, std::uint16_t port)
-    : m_hosted{session}, m_tokensPath{std::move(tokens)}, m_tokensWritten{WrittenAt(m_tokensPath)},
-      m_tokens{ReadTokens(m_tokensPath)},
+    : m_hosted{session}, m_content{WorldContentOf(session)}, m_tokensPath{std::move(tokens)},
+      m_tokensWritten{WrittenAt(m_tokensPath)}, m_tokens{ReadTokens(m_tokensPath)},
       m_net{
           Config(std::move(address), port, ReadServerKey(key), m_publicKey),
           [this](Jettison::Net::SessionId id, std::span<const std::byte> credential)
@@ -170,7 +180,9 @@ void Server::Poll(std::chrono::milliseconds wait)
 		}
 		Jettison::Core::Log(Jettison::Core::Severity::Info, kServer, "{} joined", actor.id);
 		const Command::Requests &requests = Host::HostedServices(m_hosted).requests;
-		Send(m_net, event.session, Welcome{actor.kind, actor.id, requests.NextSequence(actor)});
+		Send(
+		    m_net, event.session,
+		    Welcome{actor.kind, actor.id, requests.NextSequence(actor), m_content});
 	}
 
 	// A verified session whose admission has not yet been polled has no queue, so takes nothing.

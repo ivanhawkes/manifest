@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 
+#include <jettison/host/WorldContent.h>
 #include <jettison/net/Client.h>
 #include <jettison/net/Key.h>
 #include <jettison/net/Token.h>
@@ -68,7 +69,8 @@ Jettison::Net::Client RawClient(std::uint16_t port, const std::string &key, cons
 struct Served
 {
 	explicit Served(const std::string &scenario = "governance")
-	    : pSession{Manifest::Host::Start({MANIFEST_MOD_DIRECTORY, {}, scenario})}
+	    : pSession{Manifest::Host::Start({MANIFEST_MOD_DIRECTORY, {}, scenario})},
+	      content{Jettison::Host::DescribeWorldContent(pSession->Files())}
 	{
 		Write();
 		WriteServerKey(keyFile.Path(), key.secretKey);
@@ -92,9 +94,11 @@ struct Served
 	}
 
 
-	// Both ends polled until done holds, for at most two seconds; the client's replies kept.
+	// Both ends polled until done holds, for at most two seconds, the client holding the server's own
+	// world content; the client's replies kept.
 	bool Pump(Client &client, const std::function<bool()> &done)
 	{
+		client.Hold(content);
 		const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{2};
 		while (!done())
 		{
@@ -193,6 +197,7 @@ struct Served
 	Jettison::Net::ServerKey key = Jettison::Net::GenerateServerKey();
 	Manifest::Test::TempFile keyFile{"", ".key"};
 	std::unique_ptr<Jettison::Host::Session> pSession;
+	Jettison::Host::WorldContent content;
 	std::optional<Manifest::Host::WorldDirectory> directory;
 	std::unique_ptr<Manifest::Host::Journal> pJournal;
 	std::unique_ptr<Server> pServer;
@@ -373,6 +378,54 @@ TEST_CASE("a remote player is welcomed as its token's actor and sees only its ow
 	CHECK(
 	    served.Await(player, other, Receipt::Status::Completed).value().result ==
 	    Result::NotAuthorised);
+}
+
+
+TEST_CASE("a client is welcomed on its server's world content alone, and refused naming the package")
+{
+	Served served;
+	REQUIRE(served.content.packages.size() == 1);
+	CHECK(served.content.packages.front().mount == "manifest");
+	Client player = served.Connect(served.ada);
+	REQUIRE(served.Welcome(player));
+	CHECK_FALSE(player.Refused());
+	CHECK(
+	    Jettison::Host::DecodeWorldContent(std::as_bytes(std::span{player.Welcomed()->content})) ==
+	    served.content);
+
+	// Polled by hand, as Pump would hold the server's content.
+	const auto refusal = [&](const std::optional<Jettison::Host::WorldContent> &held)
+	{
+		Client client = served.Connect(served.bea);
+		if (held)
+			client.Hold(*held);
+		const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{2};
+		while (!client.Closed() && std::chrono::steady_clock::now() < deadline)
+		{
+			served.pServer->Poll(std::chrono::milliseconds{1});
+			(void)client.Poll();
+		}
+		CHECK_FALSE(client.Welcomed());
+		CHECK(client.Closed() == Reason::Closed);
+		return client.Refused().value_or("welcomed");
+	};
+	Jettison::Host::WorldContent other = served.content;
+	++other.packages.front().digest;
+	CHECK(
+	    refusal(other) ==
+	    "This client's 'manifest' 0.0.1 is not the server's: its world content differs");
+	other = served.content;
+	other.packages.push_back({"mod:copper", "0.0.1", 1});
+	CHECK(
+	    refusal(other) == "This client holds 'mod:copper' 0.0.1, which changes the world and which the "
+	                      "server does not run on");
+	CHECK(
+	    refusal(std::nullopt) ==
+	    "This client was given no world content of its own to check the server's against");
+
+	// The server serves on.
+	Client again = served.Connect(served.admin);
+	CHECK(served.Welcome(again));
 }
 
 

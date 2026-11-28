@@ -173,6 +173,10 @@ class ClientModel
 	// (BadMessage); none over a local world.
 	std::optional<Jettison::Net::Reason> Closed() const;
 
+	// Why the server's welcome was refused, its world content not the client's; none over a local
+	// world.
+	std::optional<std::string> Refused() const;
+
 	// The player, once Provision has named them or a save has.
 	const std::string &Principal() const
 	{

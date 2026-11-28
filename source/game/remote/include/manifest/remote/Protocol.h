@@ -13,8 +13,9 @@
 namespace Manifest::Remote
 {
 // Manifest's protocol on Jettison::Net (docs/server.md, "The messages"). Each body is the binary
-// archive's, at the protocol's version, so a message's shape changing is a new version. A snapshot's
-// body is a Query::Snapshot, the session's own view.
+// archive's, at the protocol's version, so a message's shape changing is a new version, unless it
+// changes in place as formats do until player testing (D-109): the welcome's world content came so, at
+// 5 (L53). A snapshot's body is a Query::Snapshot, the session's own view.
 inline constexpr std::string_view kProtocol = "manifest";
 
 // 2: a snapshot holds its ships' journeys and its company's orders (W15).
@@ -31,7 +32,8 @@ inline constexpr std::size_t kMaxMessageBytes = std::size_t{192} * 1024;
 
 enum class Kind : Jettison::Net::MessageKind
 {
-	// Server to client, once admitted: who the token named and the sequence to send next.
+	// Server to client, once admitted: who the token named, the sequence to send next and the world
+	// content the server runs on, which the client checks against its own.
 	Welcome = 1,
 	// Client to server: a request, its actor the session's.
 	Submit,
@@ -44,6 +46,9 @@ struct Welcome
 	Command::ActorKind actorKind{Command::ActorKind::Principal};
 	std::string actorId;
 	std::uint64_t nextSequence{1};
+
+	// Jettison::Host::EncodeWorldContent's bytes, of the server's session.
+	std::vector<std::uint8_t> content;
 };
 
 struct Submit

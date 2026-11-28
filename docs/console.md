@@ -162,8 +162,12 @@ While a run is under way, `step`, `host` and `connect` are refused.
 `connect <host:port> <token>` plays on a dedicated server ([the server](server.md)) as the
 token's actor, pinning the server's key from the
 [server list](server.md#connections-are-sealed); an endpoint the list does not name is refused,
-and a server that does not hold the pinned key ends in `Disconnected from ...: key mismatch.`. A
-failed connect keeps the connection there was; a new one replaces it. While connected:
+and a server that does not hold the pinned key ends in `Disconnected from ...: key mismatch.`. It
+checks the server's world content against its content source's, mounted as the server mounts its
+package ([the content check](server.md#the-content-check)): a server of other content ends in
+`Disconnected from ...: <difference>.`, naming the package, such as `This client's 'manifest' 0.0.1
+is not the server's: its world content differs`. A failed connect keeps the connection there was; a
+new one replaces it. While connected:
 
 - The players' commands drop the principal argument, since the actor is the token's.
   `provision` keeps its principal: a player's token provisions only its own, once

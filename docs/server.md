@@ -39,7 +39,7 @@ protocol version.
 
 | Kind | Direction | Body | Sent |
 | --- | --- | --- | --- |
-| `Welcome` | server to client | the actor's kind and ID, and the sequence to send next | once, on admission |
+| `Welcome` | server to client | the actor's kind and ID, the sequence to send next, and the server's world content (`Host::EncodeWorldContent`'s bytes) | once, on admission |
 | `Submit` | client to server | a [request](glossary.md#request): its sequence, command name, command version and payload | for each request |
 | `Reply` | server to client | the sequence, the ledger's [receipt](glossary.md#receipt), and the actor's next sequence | at admission, then again once the request has run |
 
@@ -63,7 +63,8 @@ sequenceDiagram
     participant W as World
     C->>S: hello: "manifest", version 5, token
     S->>S: Verify: token digest to actor
-    S-->>C: Welcome: actor, next sequence
+    S-->>C: Welcome: actor, next sequence, world content
+    C->>C: ContentDifference(held, served): none
     C->>S: Submit: sequence, command, payload
     S->>R: Admit(actor, sequence, ...)
     R-->>S: receipt: Queued, order
@@ -117,6 +118,27 @@ no market (see [the hosted world](world.md)).
 
 Jettison adds its own: `InboundOverflow` for a session with too many messages waiting, `Closed` for
 a peer gone silent, and the handshake's refusals.
+
+### The content check
+
+A client must run on the world its server plays by, so a server's welcome carries its world content
+and the client checks it against its own before it takes the welcome (Jettison's
+[server's world content](../../jettison/docs/files-and-mods.md#the-servers-world-content)). The
+server describes its session's file system once, as it is made (`Host::DescribeWorldContent`):
+each mount holding world content under `defs/` or `scripts/`, by its mount name, its release and
+a digest of its world files, Manifest's package first ([D-124](decision-ledger.md#d-124)). A
+package of presentation alone, the engine's assets or a client's cosmetic mod, is not listed, so it
+need not match; a server's overlay mounts as `mod:<identifier>`, as the shell mounts a player's
+mod, so the same mod on both ends is the same package.
+
+The client is given its own content before the welcome can arrive (`Remote::Client::Hold`): the
+graphical client its shell's file system's, the console its content source's, mounted as the server
+mounts its package. A welcome whose content differs is not taken: the client disconnects, never
+welcomed, and `Refused` holds `Host::ContentDifference`'s words, which name the first package that
+differs, such as `This client's 'manifest' 0.0.1 is not the server's: its world content differs`.
+A client given nothing to check against is refused so too. The welcome's new field changed its
+shape in place, with no new protocol version, as every format does until player testing
+([D-109](decision-ledger.md#d-109)).
 
 ### Tokens and revocation
 
@@ -342,14 +364,15 @@ snapshots ([server play](client.md#server-play)).
 
 ### Write a client in C++
 
-A frontend makes a `Remote::Client` with the server's public key, polls until it is welcomed, then
-submits payloads. This is from `source/game/remote/tests/RemoteTests.cpp`, where `Await` polls both
+A frontend makes a `Remote::Client` with the server's public key, gives it its own world content,
+polls until it is welcomed, then submits payloads. This is from `source/game/remote/tests/RemoteTests.cpp`, where `Await` polls both
 ends until the reply arrives:
 
 ```cpp
 Client player{"127.0.0.1", port, serverKey, adaToken};
+player.Hold(Jettison::Host::DescribeWorldContent(files));
 // Poll until player.Welcomed() is set, or player.Closed() gives the reason it was refused:
-// KeyMismatch for a server that does not hold the key.
+// KeyMismatch for a server that does not hold the key, and player.Refused() the content's difference.
 const std::vector<std::byte> move = Jettison::Serialise::BinaryArchive::Write(
     Company::Move{"Ship1", "VenueForgeHighport", "ItemCopper", 1},
     Jettison::Serialise::FormatVersion{Company::kVersion});
@@ -404,8 +427,8 @@ clients](history/stage-4.md#n03-several-clients-reconnects-and-bounds--2026-11-2
     `Welcome`, `Submit`, `Reply`, `RegisterTypes`.
   - `include/manifest/remote/Server.h`: `Server` (`Poll`, `Publish`, `Stop`, `Stopping`,
     `PublicKey`).
-  - `include/manifest/remote/Client.h`: `Client` (`Poll`, `Submit`, `Retry`, `Disconnect`,
-    `Welcomed`, `Closed`, `Latest`).
+  - `include/manifest/remote/Client.h`: `Client` (`Hold`, `Poll`, `Submit`, `Retry`, `Disconnect`,
+    `Welcomed`, `Closed`, `Refused`, `Latest`).
   - `include/manifest/remote/Tokens.h`: `Credential`, `TokenFile`, `ReadTokens`, `WriteTokens`,
     `Resolve`.
   - `include/manifest/remote/Keys.h`: `ReadServerKey`, `WriteServerKey`, `PinnedServer`,

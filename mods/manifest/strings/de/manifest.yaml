@@ -117,3 +117,5 @@ manifest:
     revoked: "Dein Token wurde widerrufen."
     shutdown: "Der Server wurde angehalten."
     keyMismatch: "Der Server besitzt nicht den Schlüssel, den deine Serverliste für ihn festlegt."
+    # The server's world content is not this client's: Jettison::Host::ContentDifference's words.
+    content: "{0}"

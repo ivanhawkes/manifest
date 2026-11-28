@@ -21,7 +21,9 @@ namespace Manifest::Remote
 // so it may be hosted on an open network. Single-threaded, as Jettison::Net is: the caller polls
 // between steps and steps the world itself, which steps the same with no session. An actor may hold
 // three sessions at once, each sent its own replies and the actor's snapshot; a fourth is closed as
-// ServerFull. Destroying it tells every client Shutdown.
+// ServerFull. Each welcome carries the session's world content (Jettison::Host::DescribeWorldContent),
+// read once as the server is made, for the client to check against its own. Destroying it tells every
+// client Shutdown.
 class Server
 {
   public:
@@ -74,6 +76,9 @@ class Server
 	void ReloadTokens();
 
 	Jettison::Host::Session &m_hosted;
+
+	// Its world content's bytes, as each welcome sends them.
+	std::vector<std::uint8_t> m_content;
 	std::filesystem::path m_tokensPath;
 	std::filesystem::file_time_type m_tokensWritten;
 	TokenFile m_tokens;

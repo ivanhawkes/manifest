@@ -400,6 +400,28 @@ TEST_CASE("Manifest console: connect plays on a server as the token's actor, and
 	Execute(session, "connect " + impostor + " " + adminToken);
 	CHECK(await("Disconnected") == "Disconnected from " + impostor + ": key mismatch.");
 
+	// A console whose content is not the server's world is refused, the package named.
+	const ConfigDirectory modded;
+	std::filesystem::copy(
+	    MANIFEST_MOD_DIRECTORY, modded.Path(), std::filesystem::copy_options::recursive);
+	std::ofstream{modded.Path() / "defs" / "items" / "item-copper.patch.yaml"}
+	    << "version: 1\nbasePrice: \"12.25\"\n";
+	ManifestConsole elsewhere{modded.Path().string(), servers.Path()};
+	Execute(elsewhere, "connect " + endpoint + " " + adaToken);
+	std::string refused = "nothing";
+	for (const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{2};
+	     refused == "nothing" && std::chrono::steady_clock::now() < deadline;)
+	{
+		server.Poll(std::chrono::milliseconds{1});
+		for (const std::string &line : elsewhere.Poll())
+			refused = line;
+	}
+	CHECK(
+	    refused ==
+	    "Disconnected from " + endpoint +
+	        ": This client's 'manifest' 0.0.1 is not the server's: its world content differs.");
+	CHECK(elsewhere.Connected() == nullptr);
+
 	Execute(session, "connect " + endpoint + " " + adminToken);
 	CHECK(await("Connected") == "Connected to " + endpoint + " as Operator; your next request is 1.");
 

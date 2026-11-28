@@ -98,8 +98,9 @@ The package's world is under `defs/`: each record type in `defs/<kind>/`, its di
 and the scenarios in `defs/scenarios/` ([D-124](decision-ledger.md#d-124)). That is where Jettison
 looks for a package's world content (`Host::kWorldDirectories`,
 [the server's world content](../../jettison/docs/files-and-mods.md#the-servers-world-content)), so
-the server's pack keeps it and a `side: client` check treats the package as world. The rest of the
-package is presentation.
+the server's pack keeps it, a `side: client` check treats the package as world, and a client checks
+it against its server's ([the content check](server.md#the-content-check)). The rest of the package
+is presentation.
 
 | Source | Record type | Directory under `defs/` | Count |
 | --- | --- | --- | --- |

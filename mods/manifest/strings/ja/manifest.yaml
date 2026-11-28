@@ -117,3 +117,5 @@ manifest:
     revoked: "トークンが取り消されました。"
     shutdown: "サーバーが停止しました。"
     keyMismatch: "サーバーは、サーバー一覧がそのサーバーに指定した鍵を持っていません。"
+    # The server's world content is not this client's: Jettison::Host::ContentDifference's words.
+    content: "{0}"

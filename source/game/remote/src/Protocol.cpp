@@ -90,7 +90,8 @@ void RegisterTypes()
 		RegisterType<Welcome>("Manifest.Remote.Welcome")
 		    .Field<&Welcome::actorKind>("actorKind", kSaved)
 		    .Field<&Welcome::actorId>("actorId", kSaved)
-		    .Field<&Welcome::nextSequence>("nextSequence", kSaved);
+		    .Field<&Welcome::nextSequence>("nextSequence", kSaved)
+		    .Field<&Welcome::content>("content", kSaved);
 		RegisterType<Submit>("Manifest.Remote.Submit")
 		    .Field<&Submit::sequence>("sequence", kSaved)
 		    .Field<&Submit::command>("command", kSaved)

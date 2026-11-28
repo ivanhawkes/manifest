@@ -12,10 +12,12 @@
 #include <vector>
 
 #include <jettison/host/Session.h>
+#include <jettison/host/WorldContent.h>
 #include <jettison/net/Key.h>
 #include <jettison/net/Token.h>
 #include <jettison/serialise/Archive.h>
 #include <jettison/sim/SimWorld.h>
+#include <jettison/vfs/FileSystem.h>
 
 #include <manifest/client/ClientModel.h>
 #include <manifest/host/Start.h>
@@ -237,6 +239,7 @@ TEST_CASE("The client's model plays on a server: the player founds their company
 	std::optional<Manifest::Remote::Server> server;
 	server.emplace(*session, tokens.Path(), keyFile.Path(), "127.0.0.1", 0);
 	Manifest::Remote::Client remote{"127.0.0.1", server->Port(), key.publicKey, token};
+	remote.Hold(Jettison::Host::DescribeWorldContent(session->Files()));
 	ClientModel model{remote};
 	CHECK(model.View().connected);
 
@@ -291,5 +294,43 @@ TEST_CASE("The client's model plays on a server: the player founds their company
 		model.Refresh();
 	CHECK(model.Closed() == Jettison::Net::Reason::Shutdown);
 	CHECK(model.Buy("ItemFurs").status == Receipt::Status::Refused);
+	CHECK(model.LastResult() == Result::NotAuthorised);
+}
+
+
+TEST_CASE("The client's model is refused a server whose world content is not the client's")
+{
+	const std::string token = Jettison::Net::GenerateToken();
+	const Manifest::Test::TempFile tokens{"", ".tokens.yaml"};
+	Manifest::Remote::WriteTokens(
+	    tokens.Path(),
+	    {{{Jettison::Net::DigestToken(token), Manifest::Command::ActorKind::Principal, "Ada"}}});
+	const std::unique_ptr<Jettison::Host::Session> session =
+	    Manifest::Host::Start({MANIFEST_MOD_DIRECTORY, {}, "trading"});
+	const Jettison::Net::ServerKey key = Jettison::Net::GenerateServerKey();
+	const Manifest::Test::TempFile keyFile{"", ".key"};
+	Manifest::Remote::WriteServerKey(keyFile.Path(), key.secretKey);
+	Manifest::Remote::Server server{*session, tokens.Path(), keyFile.Path(), "127.0.0.1", 0};
+
+	// The client's content is the compressed copy, its game mode's cruise taken out.
+	const CompressedContent content;
+	Jettison::Vfs::FileSystem files;
+	for (const Jettison::Vfs::Mount &mount : Manifest::Host::Mounts({content.Path(), {}, "trading"}))
+		files.AddMount(mount);
+	Manifest::Remote::Client remote{"127.0.0.1", server.Port(), key.publicKey, token};
+	remote.Hold(Jettison::Host::DescribeWorldContent(files));
+	ClientModel model{remote};
+	const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{5};
+	while (!model.Closed() && std::chrono::steady_clock::now() < deadline)
+	{
+		server.Poll(std::chrono::milliseconds{1});
+		model.Refresh();
+	}
+	CHECK(
+	    model.Refused() ==
+	    "This client's 'manifest' 0.0.1 is not the server's: its world content differs");
+	CHECK(model.Closed() == Jettison::Net::Reason::Closed);
+	CHECK(model.Principal().empty());
+	CHECK(model.Provision("Ada", "Ada Freight").status == Receipt::Status::Refused);
 	CHECK(model.LastResult() == Result::NotAuthorised);
 }

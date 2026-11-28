@@ -13,9 +13,11 @@
 #include <tuple>
 #include <utility>
 
+#include <jettison/host/WorldContent.h>
 #include <jettison/net/Protocol.h>
 #include <jettison/reflect/Reflect.h>
 #include <jettison/serialise/Archive.h>
+#include <jettison/vfs/FileSystem.h>
 
 #include <manifest/company/Company.h>
 #include <manifest/host/Locations.h>
@@ -1451,9 +1453,16 @@ std::string ManifestConsole::CommandConnect(const std::string &endpoint, const s
 		throw std::runtime_error{
 		    std::format("The server list {} pins no key for {}.", servers.string(), endpoint)};
 
+	// What the server's world content is checked against: the console's own, its content source mounted
+	// as the server mounts its package.
+	Jettison::Vfs::FileSystem files;
+	for (const Jettison::Vfs::Mount &mount : Host::Mounts({m_contentSource, {}, {}}))
+		files.AddMount(mount);
+
 	// A failed connect keeps the connection there was; a replaced one is closed.
 	auto pRemote =
 	    std::make_unique<Remote::Client>(endpoint.substr(0, colon), number, std::move(*key), token);
+	pRemote->Hold(Jettison::Host::DescribeWorldContent(files));
 	if (m_pRemote)
 		m_pRemote->Disconnect();
 	m_pRemote = std::move(pRemote);
@@ -1537,10 +1546,11 @@ std::vector<std::string> ManifestConsole::Poll()
 		                       m_pRemote->Welcomed()->actorId, m_pRemote->Welcomed()->nextSequence));
 	if (m_pRemote->Closed())
 	{
+		const std::optional<std::string> &refused = m_pRemote->Refused();
 		lines.push_back(
 		    std::format(
 		        "Disconnected from {}: {}.", m_remoteEndpoint,
-		        Jettison::Net::ReasonName(*m_pRemote->Closed())));
+		        refused ? *refused : std::string{Jettison::Net::ReasonName(*m_pRemote->Closed())}));
 		m_pRemote.reset();
 	}
 	return lines;

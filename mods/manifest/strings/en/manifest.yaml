@@ -118,3 +118,5 @@ manifest:
     revoked: "Your token was revoked."
     shutdown: "The server stopped."
     keyMismatch: "The server does not hold the key your server list pins for it."
+    # The server's world content is not this client's: Jettison::Host::ContentDifference's words.
+    content: "{0}"

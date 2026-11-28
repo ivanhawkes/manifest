@@ -16,6 +16,7 @@
 #include <jettison/app/SmokeSequence.h>
 #include <jettison/core/Log.h>
 #include <jettison/devtools/Console.h>
+#include <jettison/host/WorldContent.h>
 #include <jettison/reflect/Reflect.h>
 #include <jettison/sim/SaveGame.h>
 #include <jettison/ui/DataModel.h>
@@ -121,8 +122,11 @@ ClientGame::ClientGame(Remote::Client &remote)
 }
 
 
-void ClientGame::OpenUi(Jettison::Ui::UiSystem &ui, Jettison::App::Shell & /*shell*/)
+void ClientGame::OpenUi(Jettison::Ui::UiSystem &ui, Jettison::App::Shell &shell)
 {
+	// Before the connection is first polled, which the model does once the UI is open.
+	if (m_pRemote != nullptr)
+		m_pRemote->Hold(Jettison::Host::DescribeWorldContent(shell.Assets()));
 	OpenScreens(ui);
 }
 
@@ -215,7 +219,9 @@ void ClientGame::Present()
 		screen.companyName = m_companyName;
 	}
 	const Jettison::Ui::StringTable &strings = m_pUi->Strings();
-	if (const std::optional<Jettison::Net::Reason> closed = m_model->Closed())
+	if (const std::optional<std::string> refused = m_model->Refused())
+		screen.status = strings.Format("manifest.closed.content", *refused);
+	else if (const std::optional<Jettison::Net::Reason> closed = m_model->Closed())
 		screen.status = strings.Text(ClosedKey(*closed));
 	else if (m_model->Waiting())
 		screen.status = strings.Text("manifest.result.waiting");

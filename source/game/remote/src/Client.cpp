@@ -1,5 +1,9 @@
 #include <manifest/remote/Client.h>
 
+#include <span>
+#include <string>
+#include <utility>
+
 #include <jettison/serialise/Archive.h>
 
 namespace Manifest::Remote
@@ -9,6 +13,9 @@ namespace
 using Jettison::Serialise::BinaryArchive;
 
 constexpr Jettison::Serialise::FormatVersion kFormat{kVersion};
+
+constexpr const char *kNothingHeld =
+    "This client was given no world content of its own to check the server's against";
 
 
 Jettison::Net::ClientConfig Config(
@@ -34,12 +41,22 @@ Client::Client(std::string address, std::uint16_t port, std::string serverKey, s
 }
 
 
+void Client::Hold(Jettison::Host::WorldContent content)
+{
+	m_held = std::move(content);
+}
+
+
 std::vector<Reply> Client::Poll(std::chrono::milliseconds wait)
 {
 	using Event = Jettison::Net::ClientEvent;
 	std::vector<Reply> replies;
 	for (Event &event : m_net.Poll(wait))
 	{
+		// Refused, the connection closing: nothing more of the server's is taken.
+		if (m_refused && event.type != Event::Type::Closed)
+			continue;
+
 		// The server is trusted as far as its own encoding: a body that does not decode throws.
 		switch (event.type)
 		{
@@ -50,7 +67,17 @@ std::vector<Reply> Client::Poll(std::chrono::milliseconds wait)
 				break;
 			case Event::Type::Message:
 				if (event.message.kind == static_cast<Jettison::Net::MessageKind>(Kind::Welcome))
-					m_welcome = BinaryArchive::Read<Welcome>(event.message.body, kFormat);
+				{
+					Welcome welcome = BinaryArchive::Read<Welcome>(event.message.body, kFormat);
+					m_refused = m_held ? Jettison::Host::ContentDifference(
+					                         *m_held, Jettison::Host::DecodeWorldContent(
+					                                      std::as_bytes(std::span{welcome.content})))
+					                   : std::optional<std::string>{kNothingHeld};
+					if (m_refused)
+						m_net.Disconnect();
+					else
+						m_welcome = std::move(welcome);
+				}
 				else if (event.message.kind == static_cast<Jettison::Net::MessageKind>(Kind::Reply))
 				{
 					replies.push_back(BinaryArchive::Read<Reply>(event.message.body, kFormat));

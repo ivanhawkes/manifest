@@ -117,3 +117,5 @@ manifest:
     revoked: "Votre jeton a été révoqué."
     shutdown: "Le serveur s’est arrêté."
     keyMismatch: "Le serveur ne détient pas la clé que votre liste de serveurs lui attribue."
+    # The server's world content is not this client's: Jettison::Host::ContentDifference's words.
+    content: "{0}"

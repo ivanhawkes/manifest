@@ -145,6 +145,12 @@ than `Requests::Admit`, as the welcome's actor; `FastForward` takes nothing. The
 registered by the model, since no world of the game's registers them. An action before the welcome
 or after the closing is refused `NotAuthorised` before it is sent.
 
+As its UI opens, before the connection is first polled, the client gives it the world content of its
+shell's file system (`Host::DescribeWorldContent(shell.Assets())`): the package and the player's
+mods that hold world content. A server whose world content differs is refused
+([the content check](server.md#the-content-check)), and a player's cosmetic mod, holding none, does
+not count.
+
 The player starts as they do locally, from the start screen or the console's `found`: a principal's
 token sends `provision` for itself alone ([D-122](decision-ledger.md#d-122)), the player's name
 being the token's. While connected:
@@ -153,7 +159,9 @@ being the token's. While connected:
   is saved or loaded;
 - the flight panel hides its fast-forward toggle (`Screen::connected`);
 - a closed connection shows why in the status line, in the player's words
-  (`manifest.closed.<reason>`, one key for each of Jettison's `Net::Reason`s).
+  (`manifest.closed.<reason>`, one key for each of Jettison's `Net::Reason`s); a server refused for
+  its content shows `manifest.closed.content`, `{0}` in every language, the package
+  `Host::ContentDifference` names in Jettison's English words.
 
 A snapshot comes at most once a second (`kSnapshotInterval`), so the status line may say a request
 is done before the screen shows it; the screen catches up at the next snapshot. On lavapipe the
@@ -177,7 +185,7 @@ system's models load ([roadmap](roadmap.md#the-graphical-client)).
 
 | Suite | What it checks |
 | --- | --- |
-| `client_model` | The first loop through the model: provisioned at Ore, two totes of furs bought and loaded, flown to Brine with fast-forward, unloaded and sold for more; the journey's bounds, a refusal made before sending, and the save's section restored. Then over an in-process server: nothing sent before the welcome, the company founded as the token's principal, a tote bought and seen held, and the server's stop shown as `Shutdown` |
+| `client_model` | The first loop through the model: provisioned at Ore, two totes of furs bought and loaded, flown to Brine with fast-forward, unloaded and sold for more; the journey's bounds, a refusal made before sending, and the save's section restored. Then over an in-process server: nothing sent before the welcome, the company founded as the token's principal, a tote bought and seen held, and the server's stop shown as `Shutdown`; and a server whose world content is not the client's (the compressed copy's) refused, naming the package, with nothing sent |
 | `client_screens` | Every screen loaded over a started world with nothing RmlUi or the string table counts as a problem, the start giving way to the company's, the navigation, and the flight panel shown under way, the acceleration, a price and the time of day in English's and German's forms; then every screen again in French, German and Japanese, every translation taken |
 | `client_strings` | Every key English has, the engine's (read from its assets alone, too) and the client's, in French, German and Japanese and no key beyond them; each text naming English's placeholders and data expressions, and a key with plural forms holding those its language's rule needs (Japanese only `other`). The engine's `numbers.*` forms are its own, each language's (a 24-hour clock names no am or pm), and the engine's ui suite checks them. A failure names the language and the key |
 | `client_smoke` | The engine's render test sequence played by the client offscreen on lavapipe (`client-smoke.sh`): its save and load carry the client's section, and its game UI stage provisions the player and buys a tote at the market's first ask through the screens |
