@@ -72,7 +72,7 @@ std::unique_ptr<Remote::Client> Dial(
     const std::filesystem::path &servers, const std::string &endpoint, std::string_view token);
 
 // The servers the player has saved (docs/client.md, "Choosing a server"): those of their own server
-// list that hold a name and a token beside their pinned key (D-127), and a connection to one. The list
+// list that hold a name and a token beside their pinned key (D-128), and a connection to one. The list
 // is written whole each time, its owner's alone (Remote::WriteServers), in a directory made private if
 // it makes one.
 class ServerPicker

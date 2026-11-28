@@ -197,7 +197,7 @@ Started with no `--connect` and no `--scenario`, the client opens on the server 
 Its model is `Manifest::Client::ServerPicker` (`client_model`), with nothing of the UI in it. It lists
 the servers of the player's [server list](server.md#connections-are-sealed),
 `$XDG_CONFIG_HOME/manifest/servers.yaml` (`Host::PlayerServers`), that hold a name and a token beside
-their pinned key ([D-127](decision-ledger.md#d-127)): the console's format with two fields added, so a
+their pinned key ([D-128](decision-ledger.md#d-128)): the console's format with two fields added, so a
 list without them reads as it did.
 
 - *Save* adds a server, or replaces what the list holds of its endpoint: its name, its `host:port`,

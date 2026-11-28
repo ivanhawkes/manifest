@@ -18,7 +18,7 @@ void WriteServerKey(const std::filesystem::path &path, std::string_view secretKe
 
 // A server a client connects to, and the public half of its key, which the client pins. In a player's
 // own list, the graphical client keeps the name the player gave it and their token for it beside it
-// (D-127); a list a build ships, or one written by hand, has neither.
+// (D-128); a list a build ships, or one written by hand, has neither.
 struct PinnedServer
 {
 	// host:port, as the console's connect takes it.

@@ -138,7 +138,7 @@ int main(int argc, char **argv)
 	};
 	if (!connect)
 	{
-		// With no server and no scenario given, the player picks one or plays here (D-127).
+		// With no server and no scenario given, the player picks one or plays here (D-128).
 		std::optional<Manifest::Client::ServerPicker> picker;
 		try
 		{

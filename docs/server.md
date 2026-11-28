@@ -243,7 +243,7 @@ when it is there, else the one the build ships beside its content
 (`share/manifest/servers.yaml`, from `source/apps/manifest/servers.yaml`), which is how a test build
 carries its server's key (`Host::DefaultServers`). The graphical client's server picker keeps, in the
 player's list, the name they gave each server they save and their token for it beside its pin,
-writing the list whole and its owner's alone, 0600 ([D-127](decision-ledger.md#d-127),
+writing the list whole and its owner's alone, 0600 ([D-128](decision-ledger.md#d-128),
 [choosing a server](client.md#choosing-a-server)); the console reads the list as before. A secret
 lost or leaked is a new key, and every client given its public half.
 

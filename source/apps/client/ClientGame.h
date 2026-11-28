@@ -35,7 +35,7 @@ class ClientGame final : public Jettison::App::Game
 
 	// The world is Manifest's (Host::MakeGame), which the shell's session holds and starts. With the
 	// server picker the client starts on it (kServers), where the player plays that world or connects
-	// to a server they saved, the world then left unplayed (D-127).
+	// to a server they saved, the world then left unplayed (D-128).
 	explicit ClientGame(Jettison::Host::Game &world, std::optional<ServerPicker> picker = std::nullopt);
 
 	// Over a server's connection, which outlives the game, and how to make another to the same
