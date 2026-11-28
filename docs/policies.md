@@ -297,7 +297,7 @@ CHECK(ship.job->charges == 100);
 ### Authoring an NPC trader
 
 A scenario lists its traders at its root. The shipped scenarios author none; the test overlay
-`source/test/overlays/one-trader/manifest/scenarios/trading.patch.yaml` adds one to the trading
+`source/test/overlays/one-trader/defs/scenarios/trading.patch.yaml` adds one to the trading
 scenario, for the zero-client fixture run:
 
 ```yaml

@@ -424,7 +424,7 @@ struct SystemSelection
 };
 
 // A star system: a Jettison frame, Sim::FrameId(systemId), its bodies in the Space.StarSystem of that
-// name (definitions/systems).
+// name (defs/systems).
 struct SystemDefinition
 {
 	std::string systemId;

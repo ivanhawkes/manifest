@@ -19,8 +19,8 @@ TEST_CASE("Manifest directory and pack expose identical content through the engi
 
 	// mod.yaml, one record per definition and scenario, and the graphical client's scene, screens,
 	// words and fonts.
-	const auto definitions = directory.Enumerate("manifest/definitions");
-	const auto scenarios = directory.Enumerate("manifest/scenarios");
+	const auto definitions = directory.Enumerate("defs");
+	const auto scenarios = directory.Enumerate("defs/scenarios");
 	const auto scene = directory.Enumerate("scene");
 	const auto screens = directory.Enumerate("ui");
 	const auto words = directory.Enumerate("strings");
@@ -33,8 +33,8 @@ TEST_CASE("Manifest directory and pack expose identical content through the engi
 	// The client's Japanese font is fetched only where the client is built.
 	CHECK(fonts.empty() == !MANIFEST_HAS_CLIENT);
 	REQUIRE(
-	    files.size() == 1 + definitions.size() + scenarios.size() + scene.size() + screens.size() +
-	                        words.size() + fonts.size());
+	    files.size() ==
+	    1 + definitions.size() + scene.size() + screens.size() + words.size() + fonts.size());
 	for (const auto &path : files)
 	{
 		CAPTURE(path);
@@ -48,5 +48,5 @@ TEST_CASE("Manifest directory and pack expose identical content through the engi
 	CHECK(mod["version"].as<int>() == 1);
 	CHECK(mod["name"].as<std::string>() == "Manifest");
 	CHECK(mod["engine"].as<std::string>() == std::string(Jettison::Core::EngineVersion()));
-	CHECK(pack.Exists("manifest/definitions/game-modes/manifest.yaml"));
+	CHECK(pack.Exists("defs/game-modes/manifest.yaml"));
 }

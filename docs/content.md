@@ -36,7 +36,7 @@ directory fails the build.
 ```mermaid
 flowchart LR
     src["data/*.yaml<br/>(authored)"] -->|"data/build.sh<br/>(manifest_data)"| defs["definitions/<br/>one record per file"]
-    defs --> mod["mods/manifest/<br/>mod.yaml, definitions,<br/>scenarios, scene, ui, strings (manifest_mod)"]
+    defs --> mod["mods/manifest/<br/>mod.yaml, defs/ (definitions,<br/>scenarios), scene, ui, strings (manifest_mod)"]
     scen["data/scenarios/*.yaml"] --> mod
     ui["mods/manifest/scene, ui, strings<br/>(the graphical client's)"] --> mod
     mod -->|"manifest-validate,<br/>each scenario"| vmod["manifest_validate_mod"]
@@ -94,23 +94,30 @@ It builds into a temporary directory and replaces the output whole, so a failed 
 previous records and a deleted source leaves no record behind. The scenarios are not processed:
 `manifest_mod` stages `data/scenarios/` as it is.
 
-| Source | Record type | Directory under `manifest/` | Count |
+The package's world is under `defs/`: each record type in `defs/<kind>/`, its directory in the table,
+and the scenarios in `defs/scenarios/` ([D-124](decision-ledger.md#d-124)). That is where Jettison
+looks for a package's world content (`Host::kWorldDirectories`,
+[the server's world content](../../jettison/docs/files-and-mods.md#the-servers-world-content)), so
+the server's pack keeps it and a `side: client` check treats the package as world. The rest of the
+package is presentation.
+
+| Source | Record type | Directory under `defs/` | Count |
 | --- | --- | --- | --- |
-| `base/ages.yaml` | `Manifest.Age` | `definitions/ages` | 14 |
-| `trade-items/categories.yaml` | `Manifest.Category` | `definitions/categories` | 43 |
-| `trade-items/*.yaml` (`item-base`) | `Manifest.Item` | `definitions/items` | 161 |
-| `skill-tree/*.yaml` (`skill-base`) | `Manifest.Skill` | `definitions/skills` | 85 |
-| `ships/hulls.yaml` (`hull-base`) | `Manifest.Hull` | `definitions/hulls` | 4 |
-| `ships/drives.yaml` (`drive-base`) | `Manifest.Drive` | `definitions/drive-classes` | 2 |
-| `offers/*.yaml` | `Manifest.Offer` | `definitions/offers` | 2 |
-| `docks/pads/*.yaml` | `Dock.BerthClassDefinition` | `definitions/pads` | 5 |
-| `docks/hulls/*.yaml` | `Dock.VehicleDefinition` | `definitions/dock-hulls` | 4 |
-| `docks/stations/*.yaml` | `Dock.PlatformLayout` | `definitions/stations` | 1 |
-| `docks/drives/*.yaml` | `Space.CruiseDrive` | `definitions/drives` | 4 |
-| `systems/*.yaml` | `Space.StarSystem` | `definitions/systems` | 2 |
-| `universe/solar-system-names.yaml` | `Manifest.NamePool` | `definitions/name-pools` | 2 |
-| `game-mode/*.yaml` | `Manifest.GameMode` | `definitions/game-modes` | 2 |
-| `tuning/balance.yaml` | `Manifest.Tuning` | `definitions/tuning` | 1 |
+| `base/ages.yaml` | `Manifest.Age` | `ages` | 14 |
+| `trade-items/categories.yaml` | `Manifest.Category` | `categories` | 43 |
+| `trade-items/*.yaml` (`item-base`) | `Manifest.Item` | `items` | 161 |
+| `skill-tree/*.yaml` (`skill-base`) | `Manifest.Skill` | `skills` | 85 |
+| `ships/hulls.yaml` (`hull-base`) | `Manifest.Hull` | `hulls` | 4 |
+| `ships/drives.yaml` (`drive-base`) | `Manifest.Drive` | `drive-classes` | 2 |
+| `offers/*.yaml` | `Manifest.Offer` | `offers` | 2 |
+| `docks/pads/*.yaml` | `Dock.BerthClassDefinition` | `pads` | 5 |
+| `docks/hulls/*.yaml` | `Dock.VehicleDefinition` | `dock-hulls` | 4 |
+| `docks/stations/*.yaml` | `Dock.PlatformLayout` | `stations` | 1 |
+| `docks/drives/*.yaml` | `Space.CruiseDrive` | `drives` | 4 |
+| `systems/*.yaml` | `Space.StarSystem` | `systems` | 2 |
+| `universe/solar-system-names.yaml` | `Manifest.NamePool` | `name-pools` | 2 |
+| `game-mode/*.yaml` | `Manifest.GameMode` | `game-modes` | 2 |
+| `tuning/balance.yaml` | `Manifest.Tuning` | `tuning` | 1 |
 | `scenarios/*.yaml` (staged as is) | `Manifest.Scenario` | `scenarios` | 2 |
 
 The table is `Content::DefinitionTypes()` in order, which is also the order the
@@ -412,7 +419,7 @@ Two kinds of failure stop a load, each naming where to look:
   and the layers the registry read for it: the topmost whole file's mount, then each patch above.
 
 ```text
-manifest/definitions/ages/age-stone.yaml: Manifest.Age 'AgeStone': displayName is required (from manifest, BlankAge (patch))
+defs/ages/age-stone.yaml: Manifest.Age 'AgeStone': displayName is required (from manifest, BlankAge (patch))
 ```
 
 The overload of `LoadContent` over a span of mounts builds its own file system and registry and
@@ -451,7 +458,7 @@ record. The merge rules (`!append`, `!merge=<field>`, null removing a field) are
 never reproduces them.
 
 ```yaml
-# source/game/host/tests/overlays/copper/manifest/definitions/items/item-copper.patch.yaml
+# source/game/host/tests/overlays/copper/defs/items/item-copper.patch.yaml
 version: 1
 basePrice: "10.5"
 ```
@@ -505,9 +512,9 @@ it validates the pack beside the executable.
 to a mode's list.
 
 ```cpp
-overlay.Write("manifest/definitions/items/item-copper.patch.yaml", "version: 1\nbasePrice: \"12.25\"\n");
+overlay.Write("defs/items/item-copper.patch.yaml", "version: 1\nbasePrice: \"12.25\"\n");
 overlay.Write(
-    "manifest/definitions/game-modes/astralis.patch.yaml",
+    "defs/game-modes/astralis.patch.yaml",
     "version: 1\nitems: !append [{itemId: ItemSilver}]\n");
 ```
 
@@ -515,7 +522,7 @@ overlay.Write(
 patches the trading scenario:
 
 ```yaml
-# manifest/scenarios/trading.patch.yaml
+# defs/scenarios/trading.patch.yaml
 version: 1
 traders:
   - {principalId: Nia, displayName: Nia, companyName: Nia Co}

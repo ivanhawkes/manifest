@@ -128,14 +128,14 @@ add_subdirectory(source)
 # both directory and pack form; the C++ systems remain a host-side library for now.
 add_custom_target(manifest_mod
     COMMAND ${CMAKE_COMMAND} -E rm -rf "${MANIFEST_MOD_DIRECTORY}"
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${MANIFEST_MOD_DIRECTORY}/manifest"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${MANIFEST_MOD_DIRECTORY}"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${CMAKE_CURRENT_SOURCE_DIR}/mods/manifest/mod.yaml" "${MANIFEST_MOD_DIRECTORY}/mod.yaml"
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${MANIFEST_DEFINITIONS_OUTPUT_DIR}" "${MANIFEST_MOD_DIRECTORY}/manifest/definitions"
+        "${MANIFEST_DEFINITIONS_OUTPUT_DIR}" "${MANIFEST_MOD_DIRECTORY}/defs"
     # Authored as the records themselves, so staged as they are.
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_CURRENT_SOURCE_DIR}/data/scenarios" "${MANIFEST_MOD_DIRECTORY}/manifest/scenarios"
+        "${CMAKE_CURRENT_SOURCE_DIR}/data/scenarios" "${MANIFEST_MOD_DIRECTORY}/defs/scenarios"
     # The graphical client's scene, screens and their words, at the paths the engine's shell reads.
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${CMAKE_CURRENT_SOURCE_DIR}/mods/manifest/scene" "${MANIFEST_MOD_DIRECTORY}/scene"

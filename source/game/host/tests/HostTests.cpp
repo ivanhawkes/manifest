@@ -20,7 +20,9 @@
 #include <unistd.h>
 #include <vector>
 
+#include <jettison/host/Package.h>
 #include <jettison/host/Session.h>
+#include <jettison/host/WorldContent.h>
 #include <jettison/sim/SimWorld.h>
 #include <jettison/vfs/FileSystem.h>
 
@@ -307,7 +309,7 @@ TEST_CASE("A damaged required file in the pack fails start-up as it is read")
 {
 	const Content content;
 	std::vector<char> pack = content.PackBytes();
-	const Stored stored = FindStored(pack, "manifest/definitions/game-modes/manifest.yaml");
+	const Stored stored = FindStored(pack, "defs/game-modes/manifest.yaml");
 
 	// A stored file has no checksum; a compressed one has its frame's.
 	REQUIRE(stored.method == 1);
@@ -360,23 +362,22 @@ TEST_CASE("Content that is missing, cannot be read or breaks a rule fails")
 {
 	{
 		const Content content;
-		content.Remove("manifest/definitions/game-modes/manifest.yaml");
+		content.Remove("defs/game-modes/manifest.yaml");
 
 		// The scenarios name it first.
 		CheckFails(content.Directory(), Phase::Content, "gameMode 'manifest' names no game mode");
 	}
 	{
 		const Content content;
-		content.Put("manifest/definitions/ages/age-stone.patch.yaml", "version: 1\ndisplayName: ''\n");
+		content.Put("defs/ages/age-stone.patch.yaml", "version: 1\ndisplayName: ''\n");
 		CheckFails(
 		    content.Directory(), Phase::Content,
-		    "manifest/definitions/ages/age-stone.yaml: Manifest.Age 'AgeStone': displayName is "
+		    "defs/ages/age-stone.yaml: Manifest.Age 'AgeStone': displayName is "
 		    "required (from manifest, manifest (patch))");
 	}
 
 	const Content content;
-	const std::filesystem::path file =
-	    content.Directory() / "manifest/definitions/game-modes/manifest.yaml";
+	const std::filesystem::path file = content.Directory() / "defs/game-modes/manifest.yaml";
 	std::filesystem::permissions(file, std::filesystem::perms::none);
 
 	// Root reads it anyway, as a CI container may run the suite.
@@ -487,6 +488,33 @@ TEST_CASE("The validator loads what the host loads, the scenario selected in its
 
 	governance.scenario = "elsewhere";
 	CheckFails(governance, Phase::Content, MANIFEST_MOD_DIRECTORY, "there is no scenario 'elsewhere'");
+}
+
+
+// Manifest's world is under the engine's world directories: what a client's content check covers, and
+// what a dedicated server's pack keeps, its presentation left out.
+TEST_CASE("Manifest's package is world content, which the server's pack keeps alone")
+{
+	const auto session = Manifest::Host::Start(OptionsFor(MANIFEST_MOD_DIRECTORY));
+	const Jettison::Host::WorldContent world = Jettison::Host::DescribeWorldContent(session->Files());
+	REQUIRE(world.packages.size() == 1);
+	CHECK(world.packages.front().mount == "manifest");
+	CHECK(world.packages.front().release == "0.0.1");
+
+	const Content content;
+	const std::filesystem::path server = content.Directory().parent_path() / "server.pack";
+	(void)Jettison::Host::WriteServerPack(MANIFEST_MOD_DIRECTORY, server);
+	Jettison::Vfs::FileSystem packed;
+	packed.AddMount({"manifest", server});
+	Jettison::Vfs::FileSystem staged;
+	staged.AddMount({"manifest", MANIFEST_MOD_DIRECTORY});
+	CHECK(packed.Enumerate("defs") == staged.Enumerate("defs"));
+	CHECK(packed.Enumerate("defs/scenarios") == staged.Enumerate("defs/scenarios"));
+	CHECK(packed.Exists("mod.yaml"));
+	CHECK(packed.Enumerate("ui").empty());
+	CHECK(packed.Enumerate("scene").empty());
+	CHECK(Jettison::Host::DescribeWorldContent(packed) == world);
+	CHECK(Manifest::Host::Start(OptionsFor(server))->Running());
 }
 
 

@@ -39,8 +39,7 @@ class CompressedContent
 		std::filesystem::remove_all(m_directory);
 		std::filesystem::copy(
 		    MANIFEST_MOD_DIRECTORY, m_directory, std::filesystem::copy_options::recursive);
-		const std::filesystem::path mode =
-		    m_directory / "manifest" / "definitions" / "game-modes" / "manifest.yaml";
+		const std::filesystem::path mode = m_directory / "defs" / "game-modes" / "manifest.yaml";
 		std::ifstream in{mode};
 		std::string kept;
 		bool cruise = false;

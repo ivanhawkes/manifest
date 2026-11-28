@@ -261,18 +261,18 @@ TEST_CASE(
 
 TEST_CASE("Each rule the content breaks is refused, naming the record, the field and its layers")
 {
-	const std::string_view ages = "manifest/definitions/ages/";
-	const std::string_view items = "manifest/definitions/items/";
-	const std::string_view skills = "manifest/definitions/skills/";
+	const std::string_view ages = "defs/ages/";
+	const std::string_view items = "defs/items/";
+	const std::string_view skills = "defs/skills/";
 	const auto patch = [](std::string_view directory, std::string_view name)
 	{ return std::format("{}{}.patch.yaml", directory, name); };
 
 	CheckRefused(
 	    patch(ages, "age-stone"), "version: 1\ndisplayName: ''\n",
-	    "manifest/definitions/ages/age-stone.yaml: Manifest.Age 'AgeStone': displayName is required "
+	    "defs/ages/age-stone.yaml: Manifest.Age 'AgeStone': displayName is required "
 	    "(from base, overlay (patch))");
 	CheckRefused(
-	    patch("manifest/definitions/categories/", "category-metals"), "version: 1\ndisplayName: ''\n",
+	    patch("defs/categories/", "category-metals"), "version: 1\ndisplayName: ''\n",
 	    "Manifest.Category 'CategoryMetals': displayName is required");
 
 	const std::string copper = patch(items, "item-copper");
@@ -294,7 +294,7 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 		    copper, std::format("version: 1\nbasePrice: \"{}\"\n", price),
 		    std::format("basePrice '{}' is not a nonnegative price", price));
 
-	const std::string starter = patch("manifest/definitions/hulls/", "hull-lone-trader-starter");
+	const std::string starter = patch("defs/hulls/", "hull-lone-trader-starter");
 	CheckRefused(
 	    starter, "version: 1\nclassName: ''\n",
 	    "Manifest.Hull 'HullLoneTraderStarter': className is required");
@@ -313,31 +313,30 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	    "fitableEffects 'Teleport' names no effect");
 	CheckRefused(starter, "version: 1\noccupants: -1\n", "occupants must not be negative");
 	CheckRefused(
-	    "manifest/definitions/game-modes/manifest.patch.yaml",
+	    "defs/game-modes/manifest.patch.yaml",
 	    "version: 1\ncruise: {manned: {boostAcceleration: 9, boostSeconds: 60, sustainedAcceleration: "
 	    "10}}\n",
 	    "Cruise drive 'manifest manned' has a profile");
 
 	// Jettison's ship and station records, checked as the engine checks them (D-062).
 	CheckRefused(
-	    "manifest/definitions/dock-hulls/hull-lone-trader-starter.patch.yaml",
-	    "version: 3\nlength: 12\n",
+	    "defs/dock-hulls/hull-lone-trader-starter.patch.yaml", "version: 3\nlength: 12\n",
 	    "Dock.VehicleDefinition 'hull-lone-trader-starter': dock Vehicle 'hull-lone-trader-starter' is "
 	    "12 "
 	    "x "
 	    "6.4 x 1.8 m, larger than its berth's largest vehicle, 9.8 x 6.4 x 1.8 m");
 	CheckRefused(
-	    "manifest/definitions/pads/skiff.patch.yaml", "version: 2\nberthSize: [4, 10]\n",
+	    "defs/pads/skiff.patch.yaml", "version: 2\nberthSize: [4, 10]\n",
 	    "Dock.BerthClassDefinition 'skiff': dock Berth class 'skiff' has a largest vehicle");
 	CheckRefused(
-	    "manifest/definitions/stations/highport.patch.yaml", "version: 2\npiers: []\n",
+	    "defs/stations/highport.patch.yaml", "version: 2\npiers: []\n",
 	    "Dock.PlatformLayout 'highport': dock Platform layout 'highport'");
 	CheckRefused(
-	    "manifest/definitions/dock-hulls/hull-nowhere.yaml",
+	    "defs/dock-hulls/hull-nowhere.yaml",
 	    "version: 3\ndisplayName: Nowhere\nlength: 5\nbeam: 3\nheight: 1\nberth: skiff\n",
 	    "Dock.VehicleDefinition 'hull-nowhere': dock is the dock hull of no Manifest.Hull of its name");
 	CheckRefused(
-	    "manifest/definitions/hulls/hull-extra.yaml",
+	    "defs/hulls/hull-extra.yaml",
 	    "version: 1\nhullId: HullExtra\nclassName: Extra\nbaseStats: {CargoVolume: 1}\ndriveId: "
 	    "DriveTorch\n",
 	    "Manifest.Hull 'HullExtra': dock has no Dock.VehicleDefinition 'hull-extra'");
@@ -345,7 +344,7 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	    starter, "version: 1\ndriveId: DriveNowhere\n", "driveId 'DriveNowhere' names no drive");
 
 	// A drive class (D-108).
-	const std::string torch = patch("manifest/definitions/drive-classes/", "drive-torch");
+	const std::string torch = patch("defs/drive-classes/", "drive-torch");
 	CheckRefused(
 	    torch, "version: 1\nexhaustKms: 0\n",
 	    "Manifest.Drive 'DriveTorch': exhaustKms must be above 0, or left out for a drive with no "
@@ -388,7 +387,7 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	    "starterHull 'HullLoneTraderStarter' has no mass to fly with");
 
 	// A company's offer (D-096).
-	const std::string offer = "manifest/definitions/offers/offer-cargo-holds.patch.yaml";
+	const std::string offer = "defs/offers/offer-cargo-holds.patch.yaml";
 	CheckRefused(
 	    offer, "version: 1\ncost: 0\n",
 	    "Manifest.Offer 'OfferCargoHolds': cost must be at least 1 credit");
@@ -399,11 +398,11 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	    offer, "version: 1\nskillId: SkillYardDrydock\n",
 	    "skillId 'SkillYardDrydock' is no ship system");
 	CheckRefused(
-	    "manifest/definitions/offers/offer-bare.yaml",
+	    "defs/offers/offer-bare.yaml",
 	    "version: 1\nofferId: OfferBare\nskillId: SkillShipCargoHolds\ncost: 1\nmaxTier: 1\n",
 	    "Manifest.Offer 'OfferBare': target is required");
 
-	const std::string balance = "manifest/definitions/tuning/balance.patch.yaml";
+	const std::string balance = "defs/tuning/balance.patch.yaml";
 	CheckRefused(
 	    balance, "version: 1\neconomy: {intervalSeconds: 0}\n",
 	    "Manifest.Tuning 'balance': economy.intervalSeconds must be above 0");
@@ -606,30 +605,28 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 
 	// Two skills no mode selects are still one graph.
 	CheckRefused(
-	    {{"manifest/definitions/skills/skill-review-a.yaml",
+	    {{"defs/skills/skill-review-a.yaml",
 	      "version: 1\nskillId: SkillReviewA\nrequires: [{nodeId: SkillReviewB}]\n"},
-	     {"manifest/definitions/skills/skill-review-b.yaml",
+	     {"defs/skills/skill-review-b.yaml",
 	      "version: 1\nskillId: SkillReviewB\nrequires: [{nodeId: SkillReviewA}]\n"}},
-	    "manifest/definitions/skills/skill-review-a.yaml: Manifest.Skill 'SkillReviewA': requires "
+	    "defs/skills/skill-review-a.yaml: Manifest.Skill 'SkillReviewA': requires "
 	    "prerequisite cycle");
 	CheckRefused(
 	    mining, "version: 1\nrequires: [{nodeId: SkillMining}]\n",
-	    "manifest/definitions/skills/skill-mining.yaml: Manifest.Skill 'SkillMining': requires skill "
+	    "defs/skills/skill-mining.yaml: Manifest.Skill 'SkillMining': requires skill "
 	    "'SkillMining' requires itself (from base, overlay (patch))");
 
 	// The whole graph holds, but the mode leaves a prerequisite out.
 	CheckRefused(
-	    patch("manifest/definitions/game-modes/", "astralis"),
-	    "version: 1\nskills: [{skillId: AgeCopper}]\n",
-	    "manifest/definitions/game-modes/astralis.yaml: Manifest.GameMode 'astralis': skills ");
+	    patch("defs/game-modes/", "astralis"), "version: 1\nskills: [{skillId: AgeCopper}]\n",
+	    "defs/game-modes/astralis.yaml: Manifest.GameMode 'astralis': skills ");
 
-	const std::string latin = patch("manifest/definitions/name-pools/", "latin");
+	const std::string latin = patch("defs/name-pools/", "latin");
 	CheckRefused(latin, "version: 1\nnames: []\n", "Manifest.NamePool 'latin': names holds none");
 	CheckRefused(latin, "version: 1\nnames: [Aaron, '']\n", "names holds an empty name");
 
 	// A file named ".yaml" has no record name: the engine refuses it before any record is read.
-	for (const std::string_view path :
-	     {"manifest/definitions/name-pools/.yaml", "manifest/definitions/game-modes/.yaml"})
+	for (const std::string_view path : {"defs/name-pools/.yaml", "defs/game-modes/.yaml"})
 	{
 		CAPTURE(path);
 		const Overlay overlay;
@@ -639,10 +636,10 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 		    std::invalid_argument);
 	}
 	CheckRefused(
-	    "manifest/definitions/name-pools/coptic.yaml", "version: 1\npool: Coptic\nnames: [Abba]\n",
+	    "defs/name-pools/coptic.yaml", "version: 1\npool: Coptic\nnames: [Abba]\n",
 	    "Manifest.NamePool 'Coptic': pool must be the record's name");
 
-	const std::string astralis = patch("manifest/definitions/game-modes/", "astralis");
+	const std::string astralis = patch("defs/game-modes/", "astralis");
 	CheckRefused(
 	    astralis, "version: 1\nitems: !append [{itemId: ItemNowhere}]\n",
 	    "Manifest.GameMode 'astralis': items 'ItemNowhere' names nothing");
@@ -666,8 +663,7 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 
 	const Overlay none;
 	CHECK_THROWS_WITH_AS(
-	    (void)LoadWith(none, "hard"), "manifest/definitions/game-modes: there is no game mode 'hard'",
-	    ContentError);
+	    (void)LoadWith(none, "hard"), "defs/game-modes: there is no game mode 'hard'", ContentError);
 }
 
 
@@ -890,8 +886,7 @@ TEST_CASE("The Manifest mode cruises by acceleration, by occupants, and Astralis
 
 	// A hull with no one aboard, 12 g throughout.
 	const Overlay crewless;
-	crewless.Write(
-	    "manifest/definitions/hulls/hull-lone-trader-starter.patch.yaml", "version: 1\noccupants: 0\n");
+	crewless.Write("defs/hulls/hull-lone-trader-starter.patch.yaml", "version: 1\noccupants: 0\n");
 	const Jettison::Transit::MotionProfile unmanned =
 	    profile(LoadWith(crewless), "hull-lone-trader-starter");
 	CHECK(unmanned.boostAcceleration == doctest::Approx(12.0 * g));
@@ -939,11 +934,11 @@ TEST_CASE("Each hull docks at the highport on the pads its class and size fit (D
 
 TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the entry")
 {
-	const std::string governance = "manifest/scenarios/governance.patch.yaml";
-	const std::string trading = "manifest/scenarios/trading.patch.yaml";
+	const std::string governance = "defs/scenarios/governance.patch.yaml";
+	const std::string trading = "defs/scenarios/trading.patch.yaml";
 	CheckRefused(
 	    governance, "version: 1\ngameMode: hard\n",
-	    "manifest/scenarios/governance.yaml: Manifest.Scenario 'governance': gameMode 'hard' names no "
+	    "defs/scenarios/governance.yaml: Manifest.Scenario 'governance': gameMode 'hard' names no "
 	    "game mode");
 	CheckRefused(
 	    trading, "version: 1\ngameMode: astralis\n",
@@ -952,8 +947,7 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	    trading, "version: 1\nitems: !append [{itemId: ItemCopper}]\n",
 	    "items selects 'ItemCopper' twice");
 	CheckRefused(
-	    "manifest/definitions/game-modes/manifest.patch.yaml",
-	    "version: 1\nhulls: [{hullId: HullTraderLongHaul}]\n",
+	    "defs/game-modes/manifest.patch.yaml", "version: 1\nhulls: [{hullId: HullTraderLongHaul}]\n",
 	    "starterHull 'HullLoneTraderStarter' is not one of mode 'manifest''s hulls");
 	CheckRefused(
 	    trading, "version: 1\nsystems: !append [{systemId: SystemAnvil}]\n",
@@ -987,19 +981,19 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	    "SystemAnvil}]}\n",
 	    "systems 'SystemAnvil' connects to 'SystemAnvil', which is no other system of the scenario");
 	CheckRefused(
-	    "manifest/definitions/systems/system-anvil.patch.yaml",
+	    "defs/systems/system-anvil.patch.yaml",
 	    "version: 1\nbodies: !merge=name\n  - {name: VenueBrineHighport, parent: PlanetNowhere}\n",
 	    "VenueBrineHighport");
 	CheckRefused(
-	    "manifest/definitions/systems/system-anvil.patch.yaml",
+	    "defs/systems/system-anvil.patch.yaml",
 	    "version: 1\nbodies: !merge=name\n  - {name: VenueBrineHighport, parent: PlanetOre}\n",
 	    "'VenueBrineHighport' station does not orbit its planet 'PlanetBrine'");
 	CheckRefused(
-	    "manifest/definitions/systems/system-anvil.patch.yaml",
+	    "defs/systems/system-anvil.patch.yaml",
 	    "version: 1\nbodies: !merge=name\n  - {name: VenueBrineHighport, layout: highport}\n",
 	    "'VenueBrineHighport' station names a layout of its own; the venue names it");
 	CheckRefused(
-	    "manifest/definitions/drives/hull-compact-single.patch.yaml", "version: 1\nexponent: 2\n",
+	    "defs/drives/hull-compact-single.patch.yaml", "version: 1\nexponent: 2\n",
 	    "hull-compact-single");
 	CheckRefused(
 	    trading,
@@ -1102,7 +1096,7 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	    "starterVenue 'VenueNowhere' names none of the scenario's venues");
 
 
-	const std::string farSystem = "manifest/definitions/systems/system-far.yaml";
+	const std::string farSystem = "defs/systems/system-far.yaml";
 
 	// A second system of the trading scenario's, a planet and a station in it.
 	const std::string far =
@@ -1154,7 +1148,7 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 	// A port serves the regions of its own planet, not another in its system.
 	CheckRefused(
 	    {{trading, venue("planetId: PlanetOre")},
-	     {"manifest/definitions/systems/system-anvil.patch.yaml",
+	     {"defs/systems/system-anvil.patch.yaml",
 	      "version: 1\nbodies: !merge=name\n  - {name: VenueBrineHighport, parent: PlanetOre}\n"}},
 	    "'VenueBrineHighport' region 'RegionBrineCoast' is not on its planet");
 	CheckRefused(
@@ -1201,14 +1195,14 @@ TEST_CASE("Each rule a scenario breaks is refused, naming the scenario and the e
 
 	// A layout whose only pad is of a class the starter does not fit, by size though not by rank.
 	CheckRefused(
-	    {{"manifest/definitions/pads/tender.yaml",
+	    {{"defs/pads/tender.yaml",
 	      "version: 2\nrank: 0\nlargestVehicle: [5, 3, 1]\nberthSize: [4, 6]\n"},
-	     {"manifest/definitions/stations/tender-dock.yaml",
+	     {"defs/stations/tender-dock.yaml",
 	      "version: 2\ndisplayName: Tender dock\ndecks: [{centre: [0, 0, 0], size: [40, 10, 40]}]\n"
 	      "berths: [{class: tender, position: [0, 5, 0]}]\n"},
 	     {trading, "version: 1\nvenues: !merge=venueId\n  - {venueId: VenueOreHighport, layout: "
 	               "tender-dock}\n"},
-	     {"manifest/definitions/tuning/balance.patch.yaml",
+	     {"defs/tuning/balance.patch.yaml",
 	      "version: 1\ncharges: {padClasses: !append [{padClass: tender}]}\n"}},
 	    kNotStarter);
 
@@ -1231,11 +1225,11 @@ TEST_CASE(
     "A refusal names only the layers the registry read: the topmost whole file and patches above it")
 {
 	const Overlay patched;
-	patched.Write("manifest/definitions/ages/age-stone.patch.yaml", "version: 1\ndisplayName: Flint\n");
+	patched.Write("defs/ages/age-stone.patch.yaml", "version: 1\ndisplayName: Flint\n");
 	const Overlay replaced;
-	replaced.Write("manifest/definitions/ages/age-stone.yaml", "version: 1\nageId: AgeStone\n");
+	replaced.Write("defs/ages/age-stone.yaml", "version: 1\nageId: AgeStone\n");
 	const Overlay repatched;
-	repatched.Write("manifest/definitions/ages/age-stone.patch.yaml", "version: 1\ndescription: Old\n");
+	repatched.Write("defs/ages/age-stone.patch.yaml", "version: 1\ndescription: Old\n");
 	const std::array<Jettison::Vfs::Mount, 4> sources{
 	    {{"base", kModDirectory},
 	     {"patched", patched.Root()},
@@ -1243,7 +1237,7 @@ TEST_CASE(
 	     {"repatched", repatched.Root()}}};
 	CHECK_THROWS_WITH_AS(
 	    (void)LoadContent(sources, "manifest"),
-	    "manifest/definitions/ages/age-stone.yaml: Manifest.Age 'AgeStone': displayName is required "
+	    "defs/ages/age-stone.yaml: Manifest.Age 'AgeStone': displayName is required "
 	    "(from replaced, repatched (patch))",
 	    ContentError);
 }
@@ -1253,7 +1247,7 @@ TEST_CASE("A hull's stats are a map, patched by stat, and every stat has its nam
 {
 	Overlay overlay;
 	overlay.Write(
-	    "manifest/definitions/hulls/hull-trader-long-haul.patch.yaml",
+	    "defs/hulls/hull-trader-long-haul.patch.yaml",
 	    "version: 1\nbaseStats: {CargoVolume: 1000, GunRear: ~}\n");
 	const ContentSet content = LoadWith(overlay);
 	const auto trader = std::ranges::find(
@@ -1281,25 +1275,19 @@ TEST_CASE("A record that does not read is refused by the registry: a version, a 
 		overlay.Write(std::string{path}, text);
 		CHECK_THROWS_AS((void)LoadWith(overlay), FormatError);
 	};
-	refused(
-	    "manifest/definitions/ages/age-stone.yaml",
-	    "version: 2\nageId: AgeStone\ndisplayName: Stone\n");
-	refused("manifest/definitions/ages/age-stone.patch.yaml", "version: 1\ncolour: grey\n");
-	refused("manifest/definitions/ages/age-golden.patch.yaml", "version: 1\ndisplayName: Golden\n");
+	refused("defs/ages/age-stone.yaml", "version: 2\nageId: AgeStone\ndisplayName: Stone\n");
+	refused("defs/ages/age-stone.patch.yaml", "version: 1\ncolour: grey\n");
+	refused("defs/ages/age-golden.patch.yaml", "version: 1\ndisplayName: Golden\n");
 }
 
 
 TEST_CASE("A later layer's whole file replaces a record, and a patch merges into it")
 {
 	const Overlay overlay;
+	overlay.Write("defs/ages/age-stone.yaml", "version: 1\nageId: AgeStone\ndisplayName: Flint\n");
+	overlay.Write("defs/items/item-copper.patch.yaml", "version: 1\nbasePrice: \"12.25\"\n");
 	overlay.Write(
-	    "manifest/definitions/ages/age-stone.yaml",
-	    "version: 1\nageId: AgeStone\ndisplayName: Flint\n");
-	overlay.Write(
-	    "manifest/definitions/items/item-copper.patch.yaml", "version: 1\nbasePrice: \"12.25\"\n");
-	overlay.Write(
-	    "manifest/definitions/game-modes/astralis.patch.yaml",
-	    "version: 1\nitems: !append [{itemId: ItemSilver}]\n");
+	    "defs/game-modes/astralis.patch.yaml", "version: 1\nitems: !append [{itemId: ItemSilver}]\n");
 	const ContentSet manifest = LoadWith(overlay);
 	CHECK(manifest.ages.front().displayName == "Flint");
 	CHECK(manifest.ages.front().description.empty());
@@ -1373,8 +1361,7 @@ TEST_CASE("A record under a name its ID does not give is refused")
 {
 	const Overlay overlay;
 	overlay.Write(
-	    "manifest/definitions/ages/age-golden.yaml",
-	    "version: 1\nageId: AgeStone\ndisplayName: Golden Age\n");
+	    "defs/ages/age-golden.yaml", "version: 1\nageId: AgeStone\ndisplayName: Golden Age\n");
 	CHECK_THROWS_AS(Loaded(kModDirectory, overlay.Root()), FormatError);
 }
 
@@ -1383,8 +1370,7 @@ TEST_CASE("A patch's null gives the field its default, and a whole file's null i
 {
 	{
 		const Overlay overlay;
-		overlay.Write(
-		    "manifest/definitions/skills/skill-mining.patch.yaml", "version: 1\ndescription: ~\n");
+		overlay.Write("defs/skills/skill-mining.patch.yaml", "version: 1\ndescription: ~\n");
 		const Loaded loaded{kModDirectory, overlay.Root()};
 		const auto &mining = Get<Manifest::Core::SkillNode>(loaded, "SkillMining");
 		CHECK(mining.description.empty());
@@ -1393,8 +1379,7 @@ TEST_CASE("A patch's null gives the field its default, and a whole file's null i
 	{
 		const Overlay overlay;
 		overlay.Write(
-		    "manifest/definitions/skills/skill-mining.yaml",
-		    "version: 1\nskillId: SkillMining\ntargetEffectID: ~\n");
+		    "defs/skills/skill-mining.yaml", "version: 1\nskillId: SkillMining\ntargetEffectID: ~\n");
 		CHECK_THROWS_AS(Loaded(kModDirectory, overlay.Root()), FormatError);
 	}
 }
@@ -1403,8 +1388,7 @@ TEST_CASE("A patch's null gives the field its default, and a whole file's null i
 TEST_CASE("A field a record leaves out keeps the schema's default")
 {
 	const Overlay overlay;
-	overlay.Write(
-	    "manifest/definitions/skills/skill-mining.yaml", "version: 1\nskillId: SkillMining\n");
+	overlay.Write("defs/skills/skill-mining.yaml", "version: 1\nskillId: SkillMining\n");
 	const Loaded loaded{kModDirectory, overlay.Root()};
 	const auto &mining = Get<Manifest::Core::SkillNode>(loaded, "SkillMining");
 	CHECK(mining.nodeType == Manifest::Core::NodeType::Skill);
@@ -1437,24 +1421,23 @@ TEST_CASE("A changed price, a reordered selection or an unselected definition ch
 		return BuildContentIdentity(Loaded{kModDirectory, overlay.Root()}.registry, {});
 	};
 
-	const ContentIdentity price = identity(
-	    "manifest/definitions/items/item-copper.patch.yaml", "version: 1\nbasePrice: \"10.5\"\n");
+	const ContentIdentity price =
+	    identity("defs/items/item-copper.patch.yaml", "version: 1\nbasePrice: \"10.5\"\n");
 	CHECK(price.manifest != base.manifest);
 	CHECK(price.fingerprint != base.fingerprint);
 
 	const ContentIdentity order = identity(
-	    "manifest/definitions/game-modes/astralis.patch.yaml",
+	    "defs/game-modes/astralis.patch.yaml",
 	    "version: 1\nitems: [{itemId: ItemSilver}, {itemId: ItemGold}]\n");
 	CHECK(order.manifest != base.manifest);
 	CHECK(
 	    order.manifest != identity(
-	                          "manifest/definitions/game-modes/astralis.patch.yaml",
+	                          "defs/game-modes/astralis.patch.yaml",
 	                          "version: 1\nitems: [{itemId: ItemGold}, {itemId: ItemSilver}]\n")
 	                          .manifest);
 
-	const ContentIdentity added = identity(
-	    "manifest/definitions/ages/age-golden.yaml",
-	    "version: 1\nageId: AgeGolden\ndisplayName: Golden\n");
+	const ContentIdentity added =
+	    identity("defs/ages/age-golden.yaml", "version: 1\nageId: AgeGolden\ndisplayName: Golden\n");
 	CHECK(added.manifest != base.manifest);
 
 	// What a refusal names: the first definition held otherwise, or by one alone, or the scenario.

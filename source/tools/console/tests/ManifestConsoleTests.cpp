@@ -193,7 +193,7 @@ TEST_CASE(
 	ConfigDirectory broken;
 	std::filesystem::copy(
 	    MANIFEST_MOD_DIRECTORY, broken.Path(), std::filesystem::copy_options::recursive);
-	std::ofstream{broken.Path() / "manifest/definitions/game-modes/manifest.yaml", std::ios::trunc}
+	std::ofstream{broken.Path() / "defs/game-modes/manifest.yaml", std::ios::trunc}
 	    << "version: 1\nitems: [{itemId: ItemNowhere}]\n";
 	const ConsoleLine failed = Execute(session, std::format("load \"{}\"", broken.Path().string()));
 	CHECK(failed.kind == ConsoleLine::Kind::Error);
@@ -469,8 +469,7 @@ class CompressedContent
 	{
 		std::filesystem::copy(
 		    MANIFEST_MOD_DIRECTORY, m_directory.Path(), std::filesystem::copy_options::recursive);
-		const std::filesystem::path mode =
-		    m_directory.Path() / "manifest" / "definitions" / "game-modes" / "manifest.yaml";
+		const std::filesystem::path mode = m_directory.Path() / "defs" / "game-modes" / "manifest.yaml";
 		std::ifstream in{mode};
 		std::string kept;
 		bool cruise = false;
@@ -685,8 +684,7 @@ class CheapFoundingContent
 	{
 		std::filesystem::copy(
 		    MANIFEST_MOD_DIRECTORY, m_directory.Path(), std::filesystem::copy_options::recursive);
-		const std::filesystem::path tuning =
-		    m_directory.Path() / "manifest" / "definitions" / "tuning" / "balance.yaml";
+		const std::filesystem::path tuning = m_directory.Path() / "defs" / "tuning" / "balance.yaml";
 		std::ifstream in{tuning};
 		std::string text{std::istreambuf_iterator<char>{in}, {}};
 		in.close();
