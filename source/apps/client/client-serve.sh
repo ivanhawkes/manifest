@@ -18,6 +18,8 @@ source "$5"
 headless_use_lavapipe
 
 work="$(mktemp -d)"
+# A crash report goes under the run's own state directory, never the real home's.
+export XDG_STATE_HOME="$work/state"
 server=
 trap 'if [[ -n "$server" ]]; then kill -KILL "$server" 2>/dev/null || true; fi; rm -rf "$work"' EXIT
 

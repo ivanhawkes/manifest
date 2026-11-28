@@ -67,7 +67,9 @@ if(MANIFEST_BUILD_TESTS AND BUILD_TESTING)
     add_test(NAME cli_serve_missing_tokens COMMAND ${run} ${directory} --serve
         --world "${elsewhere}/world" --tokens "${elsewhere}/none.yaml" --key "${elsewhere}/none.key"
         WORKING_DIRECTORY "${elsewhere}")
-    set_tests_properties(cli_serve_missing_tokens PROPERTIES FIXTURES_REQUIRED fresh_world)
+    # Its crash reports' directory, made as the server starts, under the test's own state directory.
+    set_tests_properties(cli_serve_missing_tokens PROPERTIES FIXTURES_REQUIRED fresh_world
+        ENVIRONMENT "XDG_STATE_HOME=${elsewhere}/state")
     add_test(NAME cli_serve COMMAND "${BASH_PROGRAM}" "${CMAKE_CURRENT_SOURCE_DIR}/serve-smoke.sh"
         $<TARGET_FILE:manifest> $<TARGET_FILE:manifest-token> "${MANIFEST_MOD_DIRECTORY}"
         WORKING_DIRECTORY "${elsewhere}")
