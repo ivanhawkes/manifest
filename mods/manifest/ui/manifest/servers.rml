@@ -3,16 +3,6 @@
 	<title>[[manifest.servers.title]]</title>
 	<link type="text/rcss" href="/ui/base.rcss"/>
 	<link type="text/rcss" href="manifest.rcss"/>
-	<!-- The token's field, styled as manifest.rcss styles a text field. -->
-	<style>
-		input.password {
-			width: 220dp;
-			padding: 2dp 4dp;
-			border: 1dp #4d7ea8;
-			background-color: #10202f;
-			color: #d8e2ec;
-		}
-	</style>
 </head>
 <!-- The server picker (docs/client.md, "Choosing a server"): the servers the player saved, each
      connected to or removed, a server saved with the player's token for it, or the game played here.
