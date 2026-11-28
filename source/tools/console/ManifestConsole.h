@@ -30,7 +30,7 @@ namespace Manifest::Tools
 // Two kinds of command, kept apart: the sandbox's (generate, tick, upgrade and the rest) play the
 // local development simulation, which no player shares; the hosted ones (host, observe, provision,
 // cargo, trade, cancel, travel, service, fit, policy, refuel, fees, found, tender, project,
-// development, step, stop) go through the hosted world's admission and queries, as a
+// development, tax, step, stop) go through the hosted world's admission and queries, as a
 // player's would, and book shows a venue's orders as the host sees them, a development view, where a
 // player's observe shows only their own market reports (W07). There is at most one hosted world, the
 // one host started, and nothing in the sandbox reaches it. Connected to a server (connect), observe and
@@ -163,6 +163,8 @@ class ManifestConsole
 	std::string CommandProject(Arguments arguments);
 
 	std::string CommandDevelopment(Arguments arguments);
+
+	std::string CommandTax(Arguments arguments);
 
 	std::string CommandBook(Arguments arguments);
 

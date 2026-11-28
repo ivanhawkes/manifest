@@ -49,8 +49,9 @@ A region has three states, by its governor:
 | An organisation directed by a player | That player, by command. With a development policy set, the AI issuer also tenders for it, within the policy's limit. |
 
 The rights follow from this. A command that acts for a region (publishing and cancelling tenders,
-queueing and cancelling projects, setting the policy) is the principal's who directs its governor,
-and no one's for an AI-run region. Bidding, delivering and abandoning are a company's, sent by its
+queueing and cancelling projects, setting the policy, setting its
+[wage tax](economy.md#a-regions-wage-tax)) is the principal's who directs its governor, and no
+one's for an AI-run region, whose wage tax the AI steers. Bidding, delivering and abandoning are a company's, sent by its
 principal. The governor's own player bids through their company like anyone else, and the region's
 treasury and the company's account stay separate even when one player controls both.
 
@@ -259,7 +260,8 @@ the rest and leaves the bytes stepping would.
 
 The query's `Snapshot` (`Query::Observe`) carries `regions`, one `Query::RegionView` per region
 by ID, and `tenders`, every tender open or kept closed, by ID. Every player sees a region's planet,
-its governor's ID and name, whether a player directs it, and its population, health and happiness;
+its governor's ID and name, whether a player directs it, its population, health and happiness, and
+its wage-tax rate;
 a region with no governor is open to founding. The principal directing its governor, and the
 Administrator, also see its treasury, its queue (each project's phase, work and stock, in queue
 order, done and cancelled ones included) and its development policy with its reason. A company sees
@@ -275,7 +277,7 @@ or a project holding what it does not take ([what a load refuses](world.md#what-
 
 ## Using it
 
-The console and the TUI send each command: `found`, `project queue` and `cancel`, `development`,
+The console and the TUI send each command: `found`, `project queue` and `cancel`, `development`, `tax`,
 and `tender publish`, `cancel`, `bid`, `withdraw`, `deliver` and `abandon` ([the console](console.md#the-commands)),
 and `observe` prints the tenders and the regions from the snapshot. A client or a test sends them
 through `Command::Requests`.
@@ -356,8 +358,7 @@ CHECK(bid(kAda, "CompanyA", 9'000, 0) == Result::Succeeded);     // the governor
   [L06](delivery-order.md#l06) (all in the [planetary plan](planetary-development-plan.md)).
 - Generating regions as players join ([D-076](decision-ledger.md#d-076)) and abandoned regions are
   unresolved server policy ([roadmap](roadmap.md)).
-- Governor tax rates and regional debt: [L29](delivery-order.md#l29),
-  [L30](delivery-order.md#l30) ([economy plans](economy-and-development-plan.md)).
+- Regional debt: [L30](delivery-order.md#l30) ([economy plans](economy-and-development-plan.md)).
 
 ## Decisions
 

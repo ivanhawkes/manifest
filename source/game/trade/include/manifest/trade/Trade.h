@@ -48,6 +48,18 @@ struct Cancel
 	std::string orderId;
 };
 
+// The command by which the principal directing a region's governing organisation (World::Region's
+// governorId, Organisation::principalId) posts its wage-tax rate, in basis points of the wages paid
+// (D-098, D-120), withheld from its employer's next payment of wages, none already paid changed. It
+// checks before it writes: the region (UnknownTarget), a sender who directs its governor, which no
+// one does for an ungoverned or AI-run one (NotAuthorised), and a rate at least the tuning's
+// economy.wageTax.minBps (InvalidQuantity) and at most its maxBps (RateTooHigh).
+struct SetWageTax
+{
+	std::string regionId;
+	int rateBps{0};
+};
+
 // Raised (SimWorld::Events) as whole totes leave the world: a household's opened into its pantry, a
 // project's inputs as its work starts, a hold's opened totes used up for its ship's life support or
 // magazine, and reaction mass bought straight into a ship's tanks. Presentation's, and a ledger's that
@@ -60,6 +72,7 @@ struct Consumed
 
 inline constexpr std::string_view kPlace = "Manifest.Trade.Place";
 inline constexpr std::string_view kCancel = "Manifest.Trade.Cancel";
+inline constexpr std::string_view kSetWageTax = "Manifest.Trade.SetWageTax";
 inline constexpr std::uint32_t kVersion = 1;
 
 // One matching pass settles at most this many fills, and one side of a venue's book for one item
@@ -127,7 +140,7 @@ void Seed(
 // after it the observation (kObserve). Every fill is recorded in its venue's Sales. The identities and
 // the content must outlive the world. Throws std::invalid_argument for a content set with no scenario
 // selected, or an order life, economic interval or sales window that is not a whole number of the
-// world's steps.
+// world's steps, or a day that is not.
 void Register(
     Jettison::Sim::SimWorld &world, Command::Requests &requests, World::Identities &identities,
     const Content::ContentSet &content);

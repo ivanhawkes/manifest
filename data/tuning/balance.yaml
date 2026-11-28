@@ -6,8 +6,19 @@
 economy:
   # Simulation seconds between regular payroll, household purchases and the condition update.
   intervalSeconds: 60
-  # The share of wages actually paid that is withheld for the regional treasury.
-  wageTaxRate: 0.1
+  # The share of the wages actually paid that is withheld for a region's treasury, in basis points
+  # (D-098, D-120): every region's to start, and the bounds its governor sets it within. An AI
+  # governor steers its own as each day ends, up a step while its treasury holds less than its
+  # commitments, reservePerPerson credits for each of its people, down a step while it holds more
+  # than surplusBps of them (L29's best guesses, 2026-11-28: the trading scenario's poorest regions,
+  # 10 credits a head, raise theirs, its richest, over 100, lower theirs, and the rest hold).
+  wageTax:
+    initialBps: 1000
+    minBps: 0
+    maxBps: 5000
+    stepBps: 100
+    reservePerPerson: 20
+    surplusBps: 50000
 
 # The household's essential needs, each by the people it feeds: a rate per 1,000 people per
 # simulation day, in its unit, met by any of its items 1:1 in that unit. Weights combine the

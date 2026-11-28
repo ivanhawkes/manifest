@@ -110,7 +110,7 @@ insurance ([L23](delivery-order.md#l23)) and escrow between players
 ([L25](delivery-order.md#l25)) stand beside them, with options and futures as a stretch goal
 ([L17](delivery-order.md#l17)).
 
-Regions gain governor-set tax rates ([L29](delivery-order.md#l29)), debt and lenders
+Regions' governors set their wage tax ([L29](history/tasks.md), done); regions gain debt and lenders
 ([L30](delivery-order.md#l30)), a power grid and an AI economy ([L31](delivery-order.md#l31)),
 and staple balances by kind of world ([L33](delivery-order.md#l33)); gold and gems move in cases
 ([L32](delivery-order.md#l32)). The hosted prices reach 27.3 times their base at most, the
@@ -143,7 +143,7 @@ market, travel, flight and service screens. What is still to come:
   content checked against the server's, reconnecting and resending a lost request, and choosing a
   server in the client ([after the tracer](client-plan.md#after-the-tracer)).
 - **Owners' settings** ([L15b](delivery-order.md#l15b)). A venue's fees and a region's taxes shown and edited
-  ([D-098](decision-ledger.md#d-098), with [L29](delivery-order.md#l29)), and station policy and
+  ([D-098](decision-ledger.md#d-098); the tax command is [L29](history/tasks.md)'s), and station policy and
   ownership views ([L04](delivery-order.md#l04), [L05](delivery-order.md#l05)).
 - **Branding.** Stations' cultural and corporate look, and their customisation ([planetary
   development plan](planetary-development-plan.md)).

@@ -194,9 +194,16 @@ void RegisterTypes()
 		RegisterType<ItemTotes>("Manifest.ItemTotes")
 		    .Field<&ItemTotes::itemId>("itemId", kDefined)
 		    .Field<&ItemTotes::totes>("totes", kDefined);
+		RegisterType<WageTaxTuning>("Manifest.WageTaxTuning")
+		    .Field<&WageTaxTuning::initialBps>("initialBps", kDefined)
+		    .Field<&WageTaxTuning::minBps>("minBps", kDefined)
+		    .Field<&WageTaxTuning::maxBps>("maxBps", kDefined)
+		    .Field<&WageTaxTuning::stepBps>("stepBps", kDefined)
+		    .Field<&WageTaxTuning::reservePerPerson>("reservePerPerson", kDefined)
+		    .Field<&WageTaxTuning::surplusBps>("surplusBps", kDefined);
 		RegisterType<EconomyTuning>("Manifest.EconomyTuning")
 		    .Field<&EconomyTuning::intervalSeconds>("intervalSeconds", kDefined)
-		    .Field<&EconomyTuning::wageTaxRate>("wageTaxRate", kDefined);
+		    .Field<&EconomyTuning::wageTax>("wageTax", kDefined);
 		RegisterType<NeedDefinition>("Manifest.Need")
 		    .Field<&NeedDefinition::needId>("needId", kDefined)
 		    .Field<&NeedDefinition::weight>("weight", kDefined)

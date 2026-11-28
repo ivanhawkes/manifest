@@ -9,6 +9,7 @@ What is built is documented elsewhere, and this plan only links to it:
 | Built | Where |
 | --- | --- |
 | Households, needs, production batches, payroll, wage tax, health and happiness | [The regional economy](economy.md) |
+| Each region's wage-tax rate, set by its governor's player or steered by the AI (L29) | [The regional economy: a region's wage tax](economy.md#a-regions-wage-tax) |
 | Orders, brokers, matching, expiry and market observations | [Orders, brokers and market observations](trading.md) |
 | Decimal prices, the native price, the broker's curve and its ladder | [Prices](pricing.md) |
 | Regions, governors, public projects, tenders and the Bronze project | [Regions, governors and public projects](governance.md) |
@@ -279,30 +280,6 @@ expiry. Queue: [L17](delivery-order.md#l17).
 - Default and liquidation; who writes contracts (players, brokers, NPCs) and whether the venue
   clears them.
 - How saves, replay and market observations treat open contracts.
-
-## L29 Tax rates set by a region's governor
-
-<a id="wage-tax-withholding-and-public-revenue-selected"></a>
-
-Today every region withholds the same share of wages for its treasury, `economy.wageTaxRate` (0.1)
-in `balance.yaml` ([wage tax](economy.md#payroll-and-wage-tax)). This work lets each region's
-[governor](glossary.md#governor) set its own. Queue: [L29](delivery-order.md#l29).
-
-**Selected** ([D-098](decision-ledger.md#d-098))
-
-- Each region's wage-tax rate is saved on the region, in place of the one tuning value.
-- The principal directing the region's governing organisation sets it by command. The rate is
-  posted to those who pay it and applies from the next payroll, never to one already paid.
-- An AI governor sets its rate by rule. The graphical client shows and edits a player's
-  ([L15b](delivery-order.md#l15b)).
-
-**Selected** ([D-120](decision-ledger.md#d-120), the user's, 2026-11-27)
-
-- Wages are the only base for now; a sales or property tax would be a row of its own.
-- A rate is held between bounds in `balance.yaml`, 0 to 0.5 to start, a best guess to tune in play.
-- An AI governor steers its rate towards its budget once a day: up when its treasury falls short of
-  its commitments, down on a surplus, by a bounded step, within the bounds. The step and the
-  thresholds are tuning, chosen when it is built.
 
 ## L30 Regional debt and the merchant and banking classes
 

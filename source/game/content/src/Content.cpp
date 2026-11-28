@@ -643,9 +643,6 @@ constexpr double kMaxIntervalSeconds = 365.0 * 24.0 * 3'600.0;
 // The most a starting balance holds: half the credits' range, so no payment into it overflows.
 constexpr std::int64_t kMaxFunds = std::int64_t{1} << 62;
 
-// The most whole credits of gross a withheld credit is for, within the credits' range.
-constexpr double kMaxPerTaxCredit = 0x1p62;
-
 
 // Each quantity names an item, and is above 0 and within a warehouse.
 void CheckTotes(
@@ -679,18 +676,18 @@ void CheckTuning(Checker &checker, const Jettison::Sim::DefinitionRegistry &regi
 		    Positive(tuning.economy.intervalSeconds) &&
 		        tuning.economy.intervalSeconds <= kMaxIntervalSeconds,
 		    "economy.intervalSeconds", "must be above 0 and at most a year");
+		const WageTaxTuning &wageTax = tuning.economy.wageTax;
 		checker.Require(
-		    Fraction(tuning.economy.wageTaxRate) && tuning.economy.wageTaxRate < 1.0,
-		    "economy.wageTaxRate", "must be in [0, 1)");
-
-		// A credit is withheld for each whole 1 / rate of gross paid, carried between payments.
+		    wageTax.minBps >= 0 && wageTax.minBps <= wageTax.initialBps &&
+		        wageTax.initialBps <= wageTax.maxBps && wageTax.maxBps <= 10'000,
+		    "economy.wageTax", "needs 0 <= minBps <= initialBps <= maxBps <= 10000");
 		checker.Require(
-		    tuning.economy.wageTaxRate <= 0.0 ||
-		        (1.0 / tuning.economy.wageTaxRate <= kMaxPerTaxCredit &&
-		         std::abs(
-		             1.0 / tuning.economy.wageTaxRate - std::round(1.0 / tuning.economy.wageTaxRate)) <
-		             1e-9),
-		    "economy.wageTaxRate", "must be 0 or one credit in a whole number of credits");
+		    wageTax.stepBps >= 0 && wageTax.stepBps <= 10'000 &&
+		        NotNegative(wageTax.reservePerPerson) && wageTax.surplusBps >= 10'000 &&
+		        wageTax.surplusBps <= 1'000'000,
+		    "economy.wageTax",
+		    "needs stepBps in [0, 10000], reservePerPerson at least 0 and surplusBps in [10000, "
+		    "1000000]");
 
 		checker.Require(!tuning.needs.empty(), "needs", "holds none");
 		std::set<std::string, std::less<>> needs;

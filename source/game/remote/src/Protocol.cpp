@@ -77,6 +77,7 @@ void RegisterTypes()
 		    .Field<&Query::RegionView::population>("population", kSaved)
 		    .Field<&Query::RegionView::health>("health", kSaved)
 		    .Field<&Query::RegionView::happiness>("happiness", kSaved)
+		    .Field<&Query::RegionView::wageTaxBps>("wageTaxBps", kSaved)
 		    .Field<&Query::RegionView::treasury>("treasury", kSaved)
 		    .Field<&Query::RegionView::queue>("queue", kSaved)
 		    .Field<&Query::RegionView::development>("development", kSaved);

@@ -4,6 +4,8 @@
 #include <cmath>
 #include <limits>
 
+#include <manifest/world/State.h>
+
 namespace Manifest::Trade
 {
 namespace
@@ -57,16 +59,13 @@ Condition Updated(
 }
 
 
-Withholding Withhold(std::int64_t gross, std::int64_t carry, std::int64_t perCredit)
+Withholding Withhold(std::int64_t gross, std::int64_t carry, int rateBps)
 {
-	if (perCredit <= 0)
-		return {gross, 0, 0};
-
-	// The carry is below perCredit, so the withheld credits cannot pass gross; the sum may pass the
-	// credits' range, so in 128 bits.
-	const __int128 total = static_cast<__int128>(carry) + gross;
-	const auto withheld = static_cast<std::int64_t>(total / perCredit);
-	return {gross - withheld, withheld, static_cast<std::int64_t>(total % perCredit)};
+	// The carry is below a credit and the rate at most a whole, so the withheld credits cannot pass
+	// gross; the product passes the credits' range, so in 128 bits.
+	const __int128 total = static_cast<__int128>(gross) * rateBps + carry;
+	const auto withheld = static_cast<std::int64_t>(total / World::kWholeBps);
+	return {gross - withheld, withheld, static_cast<std::int64_t>(total % World::kWholeBps)};
 }
 
 

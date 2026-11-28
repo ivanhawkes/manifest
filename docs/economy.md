@@ -108,11 +108,34 @@ On the turn's last step each batch pays the wages its progress has earned, less 
 already (`Trade::Earned`): its whole bill times progress over duration, rounded down to whole
 credits. Its completion pays the rest. Paid wages never exceed the bill reserved.
 
-Each payment is split by `Trade::Withhold`: one credit to the region's treasury for each whole
-`1 / economy.wageTaxRate` credits of gross (10 at the shipped rate of 0.1), the rest to its
-households. The remainder is carried in `Production::taxCarry`, shared by the employer's batches,
-so ten payments of one credit withhold exactly what one payment of ten does. For this reason,
-content validation holds the rate to one credit in a whole number of credits.
+Each payment is split by `Trade::Withhold` at the region's own rate, `Region::wageTaxBps` in basis
+points of the wages: the whole credits of the gross times the rate go to the region's treasury, the
+rest to its households. The part of a credit left is carried in `Production::taxCarry`, in
+ten-thousandths of a credit, shared by the employer's batches and kept when the rate changes, so ten
+payments of one credit withhold exactly what one payment of ten does, at any rate.
+
+### A region's wage tax
+
+Every region starts at `economy.wageTax.initialBps` (1,000, 10%), and its rate is saved on the
+region ([D-098](decision-ledger.md#d-098), [D-120](decision-ledger.md#d-120)). Who sets it follows
+its [governor](governance.md#who-governs-a-region):
+
+- **A player's.** `Manifest.Trade.SetWageTax` (`Trade::SetWageTax{regionId, rateBps}`), sent by
+  the principal directing the region's governor, posts a rate from `minBps` (0) to `maxBps`
+  (5,000, half). It applies from the employer's next payment: a turn already paid is never
+  revisited. Refused `UnknownTarget` for no such region, `NotAuthorised` for a sender who does not
+  direct its governor (no one does for an ungoverned or AI-run region), `InvalidQuantity` below
+  `minBps` and `RateTooHigh` above `maxBps`.
+- **The AI's.** As each simulation day's last step ends, after that step's payroll, the economy
+  steers each AI-run region's rate towards its budget: up `stepBps` (100, a point) while its
+  treasury holds less than its commitments, `reservePerPerson` (20) credits for each of its
+  people, and down a step while it holds more than `surplusBps` (50,000, five times) of them,
+  within the bounds. In the trading scenario the poorest regions, 10 credits a head, raise theirs,
+  the richest, over 100, lower theirs, and the rest hold.
+- **No one's.** A region no one governs keeps the rate it has.
+
+Every player sees every region's rate in their snapshot (`Query::RegionView::wageTaxBps`), as
+posted, and the console's `tax` command sends the player's.
 
 ### The employer's sales
 
@@ -164,21 +187,22 @@ tender for a day's shortfall, which the AI issuer publishes ([governance](govern
 Between turns the economy only adds the same work to each batch every step, so it declares those
 steps [quiet](glossary.md#quiet-step) to the engine; see
 [Jettison: quiet steps and fast-forward](../../jettison/docs/simulation.md#quiet-steps-and-fast-forward).
-Its `next` names the first step it must run: the turn's last, or sooner a batch finishing, a batch
-that can start, or a finished batch with room. Its `skip` adds the passed steps' work with
+Its `next` names the first step it must run: the turn's or the day's last, or sooner a batch
+finishing, a batch that can start, or a finished batch with room. Its `skip` adds the passed steps' work with
 `Trade::Added`, which gives to the bit what adding it a step at a time gives. So a
 [fast-forwarded](glossary.md#fast-forward) world saves the same bytes as a stepped one.
 
 ### State and saves
 
-The economy's state is saved world state: `Region` (population, health, happiness), the employer's
+The economy's state is saved world state: `Region` (population, health, happiness, wage-tax rate), the employer's
 `Production` and `Stock`, the household's `Pantry` and `Stock`, and the three accounts. All are
 made from the scenario's regions as the world is created (`source/game/world/src/World.cpp`). A
 world is refused for a batch past its duration or paid past its wages, batches out of order, a tax
-carry of a whole withheld credit or more, or a pantry value out of range (`World::Broken`;
+carry of a whole withheld credit or more, a wage-tax rate outside 0 to 10,000 basis points, or a
+pantry value out of range (`World::Broken`;
 [saves](persistence.md)).
 
-Players see every region's population, health and happiness in their snapshot
+Players see every region's population, health, happiness and wage-tax rate in their snapshot
 (`Query::RegionView`), and the treasury only of a region they govern. The pantry and its shortages
 are not in the snapshot.
 
@@ -192,7 +216,13 @@ The needs, the optional-goods buckets, the condition and the production rules ar
 ```yaml
 economy:
   intervalSeconds: 60
-  wageTaxRate: 0.1
+  wageTax:
+    initialBps: 1000
+    minBps: 0
+    maxBps: 5000
+    stepBps: 100
+    reservePerPerson: 20
+    surplusBps: 50000
 
 needs:
   - needId: NeedStapleFood
@@ -234,8 +264,10 @@ needs 12.5 t of staples a day, about 8.7 kg each 60 s turn, met by any mix of th
 
 Content validation (`source/game/content/src/Content.cpp`) refuses: no needs, or one twice; a
 weight or rate not above 0; a need's item that names nothing, appears twice or is not traded in the
-need's unit; a category in two buckets; a `demandShare` outside (0, 1]; and a `wageShare` or
-`wageTaxRate` outside [0, 1).
+need's unit; a category in two buckets; a `demandShare` outside (0, 1]; a `wageShare` outside
+[0, 1); and a `wageTax` whose bounds are not 0 <= `minBps` <= `initialBps` <= `maxBps` <= 10,000,
+a `stepBps` outside [0, 10,000], a `reservePerPerson` below 0 or a `surplusBps` outside [10,000,
+1,000,000].
 
 ### A region in a scenario
 
@@ -279,7 +311,7 @@ CHECK(WorkRate(0.0, 0.0, 0.5) == doctest::Approx(0.25));
 const NeedMet surplus[]{{1.0, 8.68, 100.0}, {1.0, 52.08, 52.08}, {1.0, 0.087, 0.0}};
 CHECK(Severity(surplus) == doctest::Approx(1.0 / 3.0));
 
-const Withholding hundred = Withhold(100, 0, 10);
+const Withholding hundred = Withhold(100, 0, 1000);
 CHECK(hundred.households == 90);
 CHECK(hundred.treasury == 10);
 
@@ -287,7 +319,7 @@ CHECK(Earned(100, 243.0, 600.0) == 40);
 ```
 
 The same file's hosted cases follow one batch of medical supplies at Brine Coast: 469 credits
-reserved, 46 paid at the first turn (4 withheld, 6 carried), all 469 paid by 600 s (46 withheld),
+reserved, 46 paid at the first turn (4 withheld, 0.6 carried), all 469 paid by 600 s (46 withheld),
 and its tote sold to the broker that turn.
 
 ## Limits and open work
@@ -307,8 +339,10 @@ and its tote sold to the broker that turn.
 - Households' goods stay at their venue; carrying goods to and from the surface is the physical
   chain's ([the economy's open plans](economy-and-development-plan.md)).
 - Players can see a region's condition but not its shortages.
-- Tax rates set by a region's governor: [L29](delivery-order.md#l29). Regional debt when funds run
-  out: [L30](delivery-order.md#l30). The power grid: [L31](delivery-order.md#l31). Regions by kind
+- Wages are the only base taxed; a sales or property tax would be a row of its own
+  ([D-120](decision-ledger.md#d-120)). An AI governor's commitments are a reserve a head, not the
+  projects and reliefs it plans.
+- Regional debt when funds run out: [L30](delivery-order.md#l30). The power grid: [L31](delivery-order.md#l31). Regions by kind
   of world: [L33](delivery-order.md#l33).
 
 ## Decisions
@@ -328,8 +362,8 @@ and the households' buying ([D-092](decision-ledger.md#d-092)); drinking water a
 | What | Where |
 | --- | --- |
 | The rules: `WorkRate`, `Severity`, `Updated`, `Withhold`, `Earned`, `Added` | `source/game/trade/include/manifest/trade/Economy.h`, `source/game/trade/src/Economy.cpp` |
-| The system: production, payroll, sales, households, fast-forward; `Reliefs` | `source/game/trade/src/Trade.cpp` ("The regional economy"), `Trade.h` |
+| The system: production, payroll, sales, households, the AI governors' wage tax, fast-forward; `SetWageTax`; `Reliefs` | `source/game/trade/src/Trade.cpp` ("The regional economy"), `Trade.h` |
 | State: `Region`, `Batch`, `Production`, `Unmet`, `Pantry` | `source/game/world/include/manifest/world/State.h` |
 | Tuning records: `EconomyTuning`, `NeedDefinition`, `DemandBucket`, `ConditionTuning`, `ProductionTuning`, `RegionDefinition` | `source/game/content/include/manifest/content/Definitions.h` |
 | Data | `data/tuning/balance.yaml`, `data/scenarios/trading.yaml`, `data/scenarios/governance.yaml` |
-| Tests | the `trade` suite (`EconomyTests.cpp`, 16 cases); the `content` suite (the refusals); `fixture` (the goods ledger, saves and replays) and `fixture_prices` (`source/test/FixtureTests.cpp`) |
+| Tests | the `trade` suite (`EconomyTests.cpp`, 18 cases); the `content` suite (the refusals); `fixture` (the goods ledger, saves and replays) and `fixture_prices` (`source/test/FixtureTests.cpp`) |

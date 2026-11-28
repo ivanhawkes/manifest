@@ -136,18 +136,16 @@ class Identities final : public Jettison::Sim::WorldService
 	}
 
 	// What one tote of each traded item holds in its unit, by item ID, which Load holds each opened
-	// tote in a hold or a pantry to, and the gross a withheld credit is for, 0 for no tax, which each
-	// production's tax carry is below (0 with no tax). Unset, a load checks only that an opened tote
-	// holds more than nothing and a carry is not below 0.
-	void SetTotes(std::map<std::string, double, std::less<>> unitsPerTote, std::int64_t perTaxCredit)
+	// tote in a hold or a pantry to. Unset, a load checks only that an opened tote holds more than
+	// nothing.
+	void SetTotes(std::map<std::string, double, std::less<>> unitsPerTote)
 	{
 		m_unitsPerTote = std::move(unitsPerTote);
-		m_perTaxCredit = perTaxCredit;
 	}
 
 	void Save(Jettison::Serialise::BinaryWriter &writer) const override;
 
-	// Fails the save for two entities of one kind and ID, an empty ID, a Stock, Cargo, Order,
+	// Fails the save for two entities of one kind and ID, an empty ID, a Stock, Cargo, Order, Region,
 	// Production, Pantry, Sales, Reports, Fees, Arrears, Policy or Job that breaks its rules (Broken),
 	// arrears on anything but a docked ship, a market report
 	// of a venue the world does not hold, a holding's reserved totes that are not its owner's sell
@@ -165,7 +163,7 @@ class Identities final : public Jettison::Sim::WorldService
 	// BondAccount of no tender; and a Bid that breaks its rules, of no company, or on no open tender or
 	// past its budget, or not by its ID; once SetCharges has run, a market with no Fees or Fees of
 	// other pad classes or past the highest arrears rate, and once SetTotes has, an opened tote holding
-	// more than a tote of its item, or a tax carry not below the gross a withheld credit is for.
+	// more than a tote of its item.
 	std::function<void()> Load(
 	    Jettison::Serialise::BinaryReader &reader, const entt::registry &loaded,
 	    std::span<const entt::meta_any> queued) override;
@@ -185,6 +183,5 @@ class Identities final : public Jettison::Sim::WorldService
 	std::optional<std::vector<std::string>> m_grants;
 	int m_maxArrearsRateBps{0};
 	std::optional<std::map<std::string, double, std::less<>>> m_unitsPerTote;
-	std::int64_t m_perTaxCredit{0};
 };
 } // namespace Manifest::World

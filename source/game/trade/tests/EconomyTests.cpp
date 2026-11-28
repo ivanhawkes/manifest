@@ -1,6 +1,7 @@
 #include "TestHelpers.h"
 
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -138,6 +139,40 @@ struct Hosted
 	}
 
 
+	// The request admitted, as the actor's next, and run in the next step.
+	template <typename T>
+	Manifest::Command::Result Run(
+	    const Manifest::Command::Actor &actor, std::string_view command, std::uint32_t version,
+	    const T &payload)
+	{
+		const std::uint64_t sequence = requests.NextSequence(actor);
+		const std::vector<std::byte> bytes = Jettison::Serialise::BinaryArchive::Write(
+		    payload, Jettison::Serialise::FormatVersion{version});
+		REQUIRE(
+		    requests.Admit(world, actor, sequence, std::string{command}, version, bytes).status ==
+		    Manifest::Command::Receipt::Status::Queued);
+		world.Step();
+		const auto completed = requests.Outcome(actor, sequence);
+		REQUIRE(completed);
+		return completed->result;
+	}
+
+
+	World::Region &RegionOf(std::string_view id)
+	{
+		const entt::entity entity = identities.Find(Kind::Region, std::string{id});
+		REQUIRE(entity != entt::null);
+		return world.Registry().get<World::Region>(entity);
+	}
+
+
+	World::Organisation &GovernorOf(std::string_view region)
+	{
+		return world.Registry().get<World::Organisation>(
+		    identities.Find(Kind::Organisation, RegionOf(region).governorId));
+	}
+
+
 	double Opened(std::string_view region, std::string_view item) const
 	{
 		for (const World::Opened &opened : Get<World::Pantry>(Kind::Household, region).opened)
@@ -213,9 +248,9 @@ TEST_CASE("An hour short of everything takes 100/100 to 94/88, and an hour of ev
 }
 
 
-TEST_CASE("Withholding is a credit in ten of the gross paid, carried between payments")
+TEST_CASE("Withholding is the rate's share of the gross paid, its parts of a credit carried")
 {
-	const Withholding hundred = Withhold(100, 0, 10);
+	const Withholding hundred = Withhold(100, 0, 1000);
 	CHECK(hundred.households == 90);
 	CHECK(hundred.treasury == 10);
 	CHECK(hundred.carry == 0);
@@ -226,7 +261,7 @@ TEST_CASE("Withholding is a credit in ten of the gross paid, carried between pay
 	std::int64_t treasury = 0;
 	for (int payment = 0; payment < 10; ++payment)
 	{
-		const Withholding paid = Withhold(1, carry, 10);
+		const Withholding paid = Withhold(1, carry, 1000);
 		CHECK(paid.households + paid.treasury == 1);
 		households += paid.households;
 		treasury += paid.treasury;
@@ -236,6 +271,23 @@ TEST_CASE("Withholding is a credit in ten of the gross paid, carried between pay
 	CHECK(treasury == 1);
 	CHECK(carry == 0);
 	CHECK(Withhold(7, 0, 0).households == 7);
+
+	// A rate that is no whole fraction: 12.5% of 10 is a credit and a quarter, the quarter carried.
+	const Withholding ten = Withhold(10, 0, 1250);
+	CHECK(ten.treasury == 1);
+	CHECK(ten.carry == 2500);
+	CHECK(Withhold(10, ten.carry, 1250).treasury == 1);
+	CHECK(Withhold(10, 7500, 1250).treasury == 2);
+
+	// A carry made at one rate is a part of a credit at another.
+	CHECK(Withhold(1, 6000, 5000).treasury == 1);
+	CHECK(Withhold(1, 6000, 5000).carry == 1000);
+
+	// The whole of the most a ledger holds, the carry with it, and never more than the gross.
+	const Withholding most = Withhold(std::numeric_limits<std::int64_t>::max(), 9999, 10'000);
+	CHECK(most.treasury == std::numeric_limits<std::int64_t>::max());
+	CHECK(most.households == 0);
+	CHECK(most.carry == 9999);
 }
 
 
@@ -298,20 +350,20 @@ TEST_CASE("A batch reserves its wages, pays them as it works, and sells its good
 	CHECK(hosted.Get<World::Production>(Kind::Employer, kOreHighlands).batches.empty());
 	CHECK(hosted.Balance(Kind::EmployerAccount, kOreHighlands) == 1'000'000);
 
-	// The turn's last step pays what 60 s of 600 have earned, 16 credits: 1 withheld, 6 carried.
+	// The turn's last step pays what 60 s of 600 have earned, 16 credits: 1 withheld, 0.6 carried.
 	hosted.StepTo(60);
 	CHECK(production.batches[0].paid == 16);
-	CHECK(production.taxCarry == 6);
+	CHECK(production.taxCarry == 6000);
 	CHECK(hosted.Balance(Kind::HouseholdAccount, kBrineCoast) == households + 15);
 	CHECK(hosted.Balance(Kind::PublicAccount, kBrineCoast) == treasury + 1);
 
-	// At 600 s the tote is made and the rest is paid: 164 gross in all, 16 of it withheld and 4
+	// At 600 s the tote is made and the rest is paid: 164 gross in all, 16 of it withheld and 0.4
 	// carried, however the payments split. The tote is sold to the broker at its bid that turn.
 	hosted.StepTo(599);
 	REQUIRE(production.batches.size() == 1);
 	hosted.world.Step();
 	CHECK(production.batches.empty());
-	CHECK(production.taxCarry == 4);
+	CHECK(production.taxCarry == 4000);
 	CHECK(hosted.Balance(Kind::HouseholdAccount, kBrineCoast) == households + 148);
 	CHECK(hosted.Balance(Kind::PublicAccount, kBrineCoast) == treasury + 16);
 	CHECK(hosted.Totes(Kind::Employer, kBrineCoast, kBrine, kMedical) == 0);
@@ -356,7 +408,7 @@ TEST_CASE("At half the work rate a batch takes twice as long, for the same goods
 	CHECK(production.batches[0].progress == doctest::Approx(599.5));
 	hosted.world.Step();
 	CHECK(production.batches.empty());
-	CHECK(production.taxCarry == 4);
+	CHECK(production.taxCarry == 4000);
 	CHECK(hosted.Balance(Kind::HouseholdAccount, kBrineCoast) == households + 148);
 }
 
@@ -545,4 +597,109 @@ TEST_CASE("A save part-way through a batch and a turn carries on as the world it
 	CHECK_THROWS_WITH_AS(
 	    loaded.world.Load(hosted.world.Save()), doctest::Contains("paid more than its wages"),
 	    Jettison::Serialise::FormatError);
+}
+
+
+TEST_CASE("A governor's wage tax set by command is withheld from the next payroll, and only theirs")
+{
+	using Manifest::Command::Actor;
+	using Manifest::Command::ActorKind;
+	using Manifest::Command::Result;
+	Hosted hosted{OneBatch()};
+	const Actor host{ActorKind::Administrator, "host"};
+	const Actor ada{ActorKind::Principal, "Ada"};
+	const Actor bea{ActorKind::Principal, "Bea"};
+	for (const Actor &player : {ada, bea})
+		REQUIRE(
+		    hosted.Run(
+		        host, Manifest::Company::kProvision, Manifest::Company::kVersion,
+		        Manifest::Company::Provision{player.id, player.id, "Co"}) == Result::Succeeded);
+
+	// Ada directs Brine Coast's council; Ore Highlands has no governor and Ore Vale's is the AI's.
+	hosted.GovernorOf(kBrineCoast).principalId = ada.id;
+	const auto set = [&](const Actor &actor, std::string_view region, int rateBps)
+	{ return hosted.Run(actor, kSetWageTax, kVersion, SetWageTax{std::string{region}, rateBps}); };
+	CHECK(set(ada, "RegionNowhere", 2000) == Result::UnknownTarget);
+	CHECK(set(bea, kBrineCoast, 2000) == Result::NotAuthorised);
+	CHECK(set(ada, kOreHighlands, 2000) == Result::NotAuthorised);
+	CHECK(set(ada, "RegionOreVale", 2000) == Result::NotAuthorised);
+	CHECK(set(ada, kBrineCoast, -1) == Result::InvalidQuantity);
+	CHECK(set(ada, kBrineCoast, 5001) == Result::RateTooHigh);
+	CHECK(hosted.RegionOf(kBrineCoast).wageTaxBps == 1000);
+
+	// The first turn pays 16 credits at the rate the world started with, 1.6 withheld.
+	const std::int64_t treasury = hosted.Balance(Kind::PublicAccount, kBrineCoast);
+	const std::int64_t households = hosted.Balance(Kind::HouseholdAccount, kBrineCoast);
+	hosted.StepTo(60);
+	const auto &production = hosted.Get<World::Production>(Kind::Employer, kBrineCoast);
+	CHECK(production.taxCarry == 6000);
+	CHECK(hosted.Balance(Kind::PublicAccount, kBrineCoast) == treasury + 1);
+
+	// Set after it, half: the paid turn stands, and the next pays 16 more, 8.6 withheld.
+	CHECK(set(ada, kBrineCoast, 5000) == Result::Succeeded);
+	CHECK(hosted.RegionOf(kBrineCoast).wageTaxBps == 5000);
+	CHECK(hosted.Balance(Kind::PublicAccount, kBrineCoast) == treasury + 1);
+	hosted.StepTo(120);
+	CHECK(production.taxCarry == 6000);
+	CHECK(hosted.Balance(Kind::PublicAccount, kBrineCoast) == treasury + 9);
+	CHECK(hosted.Balance(Kind::HouseholdAccount, kBrineCoast) == households + 23);
+
+	// Saved and loaded at its rate; a rate that is no share of the wages is refused.
+	Hosted loaded{OneBatch()};
+	loaded.world.Load(hosted.world.Save());
+	CHECK(loaded.RegionOf(kBrineCoast).wageTaxBps == 5000);
+	CHECK(loaded.world.StateHash() == hosted.world.StateHash());
+	hosted.RegionOf(kBrineCoast).wageTaxBps = 10'001;
+	CHECK_THROWS_WITH_AS(
+	    loaded.world.Load(hosted.world.Save()), doctest::Contains("not a share of its wages"),
+	    Jettison::Serialise::FormatError);
+}
+
+
+TEST_CASE("An AI governor steers its wage tax each day towards its budget, within its bounds")
+{
+	// Brine Coast's 25,000 people commit 500,000 credits and its treasury holds less; Ore Vale's holds
+	// more than five times its 500,000, Brine Delta's between the two, and Ore Highlands has no
+	// governor.
+	ContentSet content = Trading();
+	for (Content::RegionDefinition &region : ScenarioOf(content).regions)
+		if (region.regionId == kBrineCoast || region.regionId == kOreHighlands)
+			region.publicFunds = 100'000;
+		else if (region.regionId == "RegionOreVale")
+			region.publicFunds = 10'000'000;
+	Hosted stepped{content};
+	Hosted forwarded{content};
+	constexpr std::uint64_t kDay = 86'400;
+	const auto rate = [](Hosted &hosted, std::string_view region)
+	{ return hosted.RegionOf(region).wageTaxBps; };
+
+	// Moved as the day's last step ends, a step of 1%, not before.
+	stepped.StepTo(kDay - 1);
+	CHECK(rate(stepped, kBrineCoast) == 1000);
+	stepped.world.Step();
+	CHECK(rate(stepped, kBrineCoast) == 1100);
+	CHECK(rate(stepped, "RegionOreVale") == 900);
+	CHECK(rate(stepped, "RegionBrineDelta") == 1000);
+	CHECK(rate(stepped, kOreHighlands) == 1000);
+
+	// Passed over to the day's end alike, to the byte.
+	while (forwarded.world.Clock().Step() < kDay)
+		forwarded.world.FastForward(kDay);
+	CHECK(forwarded.world.Save() == stepped.world.Save());
+
+	// Held within 0 and 50%.
+	forwarded.RegionOf(kBrineCoast).wageTaxBps = 4950;
+	forwarded.RegionOf("RegionOreVale").wageTaxBps = 50;
+	while (forwarded.world.Clock().Step() < 2 * kDay)
+		forwarded.world.FastForward(2 * kDay);
+	CHECK(rate(forwarded, kBrineCoast) == 5000);
+	CHECK(rate(forwarded, "RegionOreVale") == 0);
+
+	// A region a player governs is theirs to set.
+	forwarded.GovernorOf(kBrineCoast).principalId = "Ada";
+	forwarded.RegionOf(kBrineCoast).wageTaxBps = 3000;
+	while (forwarded.world.Clock().Step() < 3 * kDay)
+		forwarded.world.FastForward(3 * kDay);
+	CHECK(rate(forwarded, kBrineCoast) == 3000);
+	CHECK(rate(forwarded, "RegionOreVale") == 0);
 }

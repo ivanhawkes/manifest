@@ -253,6 +253,10 @@ TEST_CASE("Every player sees each region and its governor, and its governor its 
 	// Fixture bootstrap: Ada's region's policy, as SetDevelopment would set it.
 	registry.emplace<World::Development>(
 	    hosted.identities.Find(Kind::Region, "RegionForgeNorth"), true, 50'000);
+
+	// And its wage tax, as Trade::SetWageTax would set it.
+	registry.get<World::Region>(hosted.identities.Find(Kind::Region, "RegionForgeNorth")).wageTaxBps =
+	    1500;
 	const auto region = [](const Snapshot &snapshot, std::string_view regionId)
 	{
 		const auto found = std::ranges::find(snapshot.regions, regionId, &RegionView::regionId);
@@ -274,6 +278,7 @@ TEST_CASE("Every player sees each region and its governor, and its governor its 
 	CHECK(north.playerGoverned);
 	CHECK(north.population == 25'000.0);
 	CHECK(north.health == 100.0);
+	CHECK(north.wageTaxBps == 1500);
 	CHECK(north.treasury == 1'200'000);
 	CHECK(north.queue.empty());
 	CHECK(north.development == World::Development{true, 50'000});
@@ -282,6 +287,7 @@ TEST_CASE("Every player sees each region and its governor, and its governor its 
 	RegionView seen = region(beas, "RegionForgeNorth");
 	CHECK(seen.governorName == "North");
 	CHECK(seen.playerGoverned);
+	CHECK(seen.wageTaxBps == 1500);
 	CHECK_FALSE(seen.treasury.has_value());
 	CHECK_FALSE(seen.development.has_value());
 
@@ -290,6 +296,7 @@ TEST_CASE("Every player sees each region and its governor, and its governor its 
 	const RegionView east = region(adas, "RegionForgeEast");
 	CHECK(east.governorName == "Forge East Council");
 	CHECK_FALSE(east.playerGoverned);
+	CHECK(east.wageTaxBps == 1000);
 	CHECK_FALSE(east.treasury.has_value());
 	CHECK(east.queue.empty());
 	const RegionView hostsEast = region(hosts, "RegionForgeEast");

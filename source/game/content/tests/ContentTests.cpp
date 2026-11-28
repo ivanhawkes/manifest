@@ -408,13 +408,14 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	    balance, "version: 1\neconomy: {intervalSeconds: 0}\n",
 	    "Manifest.Tuning 'balance': economy.intervalSeconds must be above 0");
 	CheckRefused(
-	    balance, "version: 1\neconomy: {wageTaxRate: 1}\n", "economy.wageTaxRate must be in [0, 1)");
+	    balance, "version: 1\neconomy: {wageTax: {maxBps: 10001}}\n",
+	    "economy.wageTax needs 0 <= minBps <= initialBps <= maxBps <= 10000");
 	CheckRefused(
 	    balance, "version: 1\neconomy: {intervalSeconds: 31536001}\n",
 	    "economy.intervalSeconds must be above 0 and at most a year");
 	CheckRefused(
-	    balance, "version: 1\neconomy: {wageTaxRate: 1e-300}\n",
-	    "economy.wageTaxRate must be 0 or one credit in a whole number of credits");
+	    balance, "version: 1\neconomy: {wageTax: {initialBps: 6000}}\n",
+	    "economy.wageTax needs 0 <= minBps <= initialBps <= maxBps <= 10000");
 	CheckRefused(
 	    balance, "version: 1\ncompany: {startingCredits: 0}\n",
 	    "company.startingCredits must be above 0");
@@ -519,8 +520,11 @@ TEST_CASE("Each rule the content breaks is refused, naming the record, the field
 	    balance, "version: 1\ncondition: {workRateFloor: 2}\n",
 	    "condition.workRateFloor must be in [0, 1]");
 	CheckRefused(
-	    balance, "version: 1\neconomy: {wageTaxRate: 0.3}\n",
-	    "economy.wageTaxRate must be 0 or one credit in a whole number of credits");
+	    balance, "version: 1\neconomy: {wageTax: {surplusBps: 9999}}\n",
+	    "needs stepBps in [0, 10000], reservePerPerson at least 0 and surplusBps in [10000, 1000000]");
+	CheckRefused(
+	    balance, "version: 1\neconomy: {wageTax: {reservePerPerson: -1}}\n",
+	    "needs stepBps in [0, 10000], reservePerPerson at least 0 and surplusBps in [10000, 1000000]");
 	CheckRefused(
 	    balance, "version: 1\nproduction: {batchSeconds: 0}\n",
 	    "production.batchSeconds must be above 0");

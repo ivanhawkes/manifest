@@ -784,6 +784,9 @@ TEST_CASE("Manifest console: a governor founds a region, queues a project and te
 	      "development Ada RegionForgeNorth on",
 	      "development Ada RegionForgeNorth maybe 1",
 	      "development Ada RegionForgeNorth on -1",
+	      "tax Ada RegionForgeNorth",
+	      "tax Ada RegionForgeNorth 12.5",
+	      "tax Ada RegionForgeNorth -1",
 	      "tender",
 	      "tender swap Ada X",
 	      "tender cancel Ada",
@@ -839,6 +842,14 @@ TEST_CASE("Manifest console: a governor founds a region, queues a project and te
 	MANIFEST_CHECK_CONTAINS(
 	    Execute(session, "observe Ada").text,
 	    "totes of ItemCopper at VenueForgeHighport, budget 6000 credits, Cancelled");
+
+	// Her region's wage tax, posted with its condition; above the tuning's half it is refused.
+	MANIFEST_CHECK_CONTAINS(founded, ", wage tax 1000 bps, treasury ");
+	Execute(session, "tax Ada RegionForgeNorth 1500");
+	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Trade.SetWageTax: Succeeded");
+	MANIFEST_CHECK_CONTAINS(Execute(session, "observe Ada").text, ", wage tax 1500 bps");
+	Execute(session, "tax Ada RegionForgeNorth 5001");
+	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Trade.SetWageTax: RateTooHigh");
 
 	Execute(session, "development Ada RegionForgeNorth on 150000");
 	MANIFEST_CHECK_CONTAINS(

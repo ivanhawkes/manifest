@@ -102,12 +102,27 @@ struct ItemTotes
 	std::uint64_t totes{0};
 };
 
+// A region's wage tax (D-098, D-120), in basis points of the wages paid: every region's rate as the
+// world starts, the bounds its governor sets it within, minBps to initialBps to maxBps, at most
+// 10,000, and how an AI governor steers its own as each day ends: up by stepBps while its treasury
+// holds less than its commitments, reservePerPerson credits for each of its people, and down by it
+// while the treasury holds more than surplusBps of them, at least 10,000.
+struct WageTaxTuning
+{
+	int initialBps{0};
+	int minBps{0};
+	int maxBps{0};
+	int stepBps{0};
+	double reservePerPerson{0.0};
+	int surplusBps{0};
+};
+
 // The balance inputs (data/tuning/balance.yaml), named by its file, held to their ranges
 // (docs/content.md, "Tuning").
 struct EconomyTuning
 {
 	double intervalSeconds{0.0};
-	double wageTaxRate{0.0};
+	WageTaxTuning wageTax;
 };
 
 struct NeedDefinition

@@ -116,6 +116,7 @@ Snapshot Observe(
 		view.population = region.population;
 		view.health = region.health;
 		view.happiness = region.happiness;
+		view.wageTaxBps = region.wageTaxBps;
 		std::string_view director;
 		if (!region.governorId.empty())
 		{

@@ -160,7 +160,7 @@ the step changes it first.
 | 1 | `manifest.expiry` | `trade` | before `spatial` | each step an order lapses | expired orders, their refunds |
 | 2 | `manifest.tenders` | `procurement` | after expiry, before economy | the world's first step, a bid or delivery close, a tender's end, each turn's last step | tenders, their accounts and bids, the AI issuers' tenders |
 | 3 | `manifest.projects` | `procurement` | after tenders, before economy | each step a project works | a project's inputs and work, its region's recipes |
-| 4 | `manifest.economy` | `trade` | after expiry, before `spatial` | production each step; the turn on its last step | production, payroll, households, condition |
+| 4 | `manifest.economy` | `trade` | after expiry, before `spatial` | production each step; the turn on its last step; the AI governors' wage tax on each day's last step | production, payroll, households, condition, an AI-run region's wage-tax rate |
 | 5 | `manifest.brokers` | `trade` | after expiry and economy, before `spatial` | each turn's last step | each broker's orders and fills |
 | 6 | `manifest.policy` | `policy` | after brokers, before `spatial` | each step a job acts | each ship's job, through its owner's commands |
 | 7 | `spatial`, `steering`, `flight`, `physics` | Jettison | Jettison's own | each step | transforms, velocities |

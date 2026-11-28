@@ -93,7 +93,7 @@ void CreateInitialState(
 		const entt::entity created = CreateOrRefuse(world, identities, Kind::Region, region.regionId);
 		registry.emplace<Region>(
 		    created, region.planetId, region.civilisationId, region.governorId, region.population,
-		    region.health, region.happiness);
+		    region.health, region.happiness, content.tuning.economy.wageTax.initialBps);
 		Knowledge &knowledge = registry.emplace<Knowledge>(created);
 		for (const Content::SkillSelection &skill : region.skills)
 			knowledge.skills.push_back(skill.skillId);

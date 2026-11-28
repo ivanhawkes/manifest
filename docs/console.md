@@ -111,6 +111,7 @@ sequenceDiagram
 | `tender publish`, `cancel`, `bid`, `withdraw`, `deliver`, `abandon` | `Manifest.Procurement.Publish`, `Cancel`, `Bid`, `Withdraw`, `Deliver`, `Abandon` |
 | `project queue`, `project cancel` | `Manifest.Procurement.Queue`, `CancelProject` |
 | `development` | `Manifest.Procurement.SetDevelopment` |
+| `tax` | `Manifest.Trade.SetWageTax` |
 
 The commands' rules belong to their modules: [companies](companies.md), [trading](trading.md),
 [travel](travel.md), [stations](stations.md), [policies](policies.md) and
@@ -120,7 +121,7 @@ The commands' rules belong to their modules: [companies](companies.md), [trading
 principal, or for the administrator with none. It shows the company's credits and holdings, each
 ship (dock, journey, hold, systems, fuel, policy, job, cargo, opened totes, life support), resting
 orders and sealed bids, then the player's [market reports](glossary.md#report-market), live or stale
-with their age and each with its venue's posted fees, every tender, and every region with its governor, condition and, to its governor and
+with their age and each with its venue's posted fees, every tender, and every region with its governor, condition, wage-tax rate and, to its governor and
 the host, its treasury, development policy and project queue. `book <venue>
 [item]` is the host's development view instead: every resting order at the venue, by item, asks
 then bids, best price first, with its owner ([D-095](decision-ledger.md#d-095)).
@@ -249,6 +250,7 @@ no display, GPU or Vulkan loader ([the host and the distribution](host.md)).
 | `tender deliver [principal] <tender> <ship>` | Queues a delivery to the company's contract from a docked ship |
 | `project queue\|cancel [principal] <region> <project>` | Queues a project onto a governed region's queue, or out of it |
 | `development [principal] <region> on\|off <limit>` | Queues the region's standing development policy: whether the AI issuer tenders its head project's inputs, within a limit in credits of live budgets |
+| `tax [principal] <region> <rate bps>` | Queues a governor's wage-tax rate for the region, in basis points of the wages paid, withheld from the next payroll |
 | `book <venue> [item]` | The host's view of a venue's resting orders |
 | `step [count\|time]`, `stop` | Advances the hosted world; ends a run |
 | `connect <host:port> <token>`, `disconnect` | Plays on a server; leaves it |

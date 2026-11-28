@@ -331,8 +331,11 @@ TEST_CASE("the_balance_tuning_reproduces_the_plans_worked_examples")
 	const double intervalsPerDay = 86400.0 / tuning.economy.intervalSeconds;
 	CHECK(intervalsPerDay == 1440.0);
 
-	// A 100-credit wage payment: 90 to households, 10 to the treasury.
-	CHECK(100.0 * tuning.economy.wageTaxRate == doctest::Approx(10.0));
+	// A 100-credit wage payment: 90 to households, 10 to the treasury, as every region starts, within
+	// a governor's bounds of none to half.
+	CHECK(100 * tuning.economy.wageTax.initialBps / 10'000 == 10);
+	CHECK(tuning.economy.wageTax.minBps == 0);
+	CHECK(tuning.economy.wageTax.maxBps == 5000);
 
 	REQUIRE(tuning.needs.size() == 5);
 	const auto need = [&](const std::string &needId) -> const Manifest::Content::NeedDefinition &

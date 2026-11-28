@@ -108,8 +108,9 @@ struct ProjectView
 };
 
 // A region as every player sees it (D-110): its governor, none for one open to founding, whether a
-// player directs it, and its condition. Its treasury, queue and development policy are its governor's:
-// shown to the principal directing it and the Administrator, and otherwise empty.
+// player directs it, its condition and its wage-tax rate as posted (D-098). Its treasury, queue and
+// development policy are its governor's: shown to the principal directing it and the Administrator, and
+// otherwise empty.
 struct RegionView
 {
 	std::string regionId;
@@ -120,6 +121,7 @@ struct RegionView
 	double population{0.0};
 	double health{0.0};
 	double happiness{0.0};
+	int wageTaxBps{0};
 	std::optional<std::int64_t> treasury{};
 
 	// Its projects in its queue's order, done and cancelled ones among them.

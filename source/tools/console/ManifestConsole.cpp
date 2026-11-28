@@ -314,13 +314,13 @@ std::string Describe(const Query::TenderView &view)
 std::string Describe(const Query::RegionView &region)
 {
 	std::string text = std::format(
-	    "\n  {} on {}: {}, population {:.0f}, health {:.1f}, happiness {:.1f}", region.regionId,
-	    region.planetId,
+	    "\n  {} on {}: {}, population {:.0f}, health {:.1f}, happiness {:.1f}, wage tax {} bps",
+	    region.regionId, region.planetId,
 	    region.governorId.empty() ? std::string{"open to founding"}
 	                              : std::format(
 	                                    "governed by {} ({}){}", region.governorName, region.governorId,
 	                                    region.playerGoverned ? ", a player's" : ""),
-	    region.population, region.health, region.happiness);
+	    region.population, region.health, region.happiness, region.wageTaxBps);
 	if (region.treasury)
 		text += std::format(", treasury {} credits", *region.treasury);
 	if (region.development)
@@ -556,6 +556,12 @@ void ManifestConsole::RegisterCommands()
 	    "policy, whether the AI issuer tenders its head project's inputs within a limit of credits "
 	    "of live budgets; the principal only when not connected",
 	    3, 4, [this](Arguments arguments) { return CommandDevelopment(arguments); });
+	RegisterCommand(
+	    "tax",
+	    "tax [principal] <region> <rate bps>: queues a governor's wage-tax rate for its region, in "
+	    "basis points of the wages paid, withheld from the next payroll; the principal only when not "
+	    "connected",
+	    2, 3, [this](Arguments arguments) { return CommandTax(arguments); });
 	RegisterCommand(
 	    "book", "book <venue> [item]: the resting orders at a venue, as the host sees them", 1, 2,
 	    [this](Arguments arguments) { return CommandBook(arguments); });
@@ -1273,6 +1279,20 @@ std::string ManifestConsole::CommandDevelopment(Arguments arguments)
 	    Encode(
 	        Procurement::SetDevelopment{o[0], ParseSwitch(o[1]), ParseCredits(o[2])},
 	        Procurement::kVersion));
+}
+
+
+std::string ManifestConsole::CommandTax(Arguments arguments)
+{
+	constexpr std::array<std::string_view, 2> kNames{"region", "rate bps"};
+	const Arguments o = Operands(arguments, 0, "tax", kNames, 0);
+	return Queue(
+	    arguments, 0, Trade::kSetWageTax, Trade::kVersion,
+	    Encode(
+	        Trade::SetWageTax{
+	            o[0], static_cast<int>(ParseCount(
+	                      o, 1, 0, 0, static_cast<unsigned>(std::numeric_limits<int>::max())))},
+	        Trade::kVersion));
 }
 
 

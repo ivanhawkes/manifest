@@ -113,10 +113,20 @@ std::optional<std::string> Broken(const Order &order)
 }
 
 
+std::optional<std::string> Broken(const Region &region)
+{
+	if (region.wageTaxBps < 0 || region.wageTaxBps > kWholeBps)
+		return "a region's wage-tax rate is not a share of its wages";
+	return std::nullopt;
+}
+
+
 std::optional<std::string> Broken(const Production &production)
 {
 	if (production.taxCarry < 0)
 		return "a production's tax carry is below 0";
+	if (production.taxCarry >= kWholeBps)
+		return "a production's tax carry is a withheld credit or more";
 	for (std::size_t at = 0; at < production.batches.size(); ++at)
 	{
 		const Batch &batch = production.batches[at];
@@ -534,7 +544,8 @@ void RegisterTypes()
 		    .Field<&Region::governorId>("governorId", kSaved)
 		    .Field<&Region::population>("population", kSaved)
 		    .Field<&Region::health>("health", kSaved)
-		    .Field<&Region::happiness>("happiness", kSaved);
+		    .Field<&Region::happiness>("happiness", kSaved)
+		    .Field<&Region::wageTaxBps>("wageTaxBps", kSaved);
 		RegisterType<Account>("Manifest.World.Account").Field<&Account::balance>("balance", kSaved);
 		RegisterType<Ship>("Manifest.World.Ship")
 		    .Field<&Ship::companyId>("companyId", kSaved)

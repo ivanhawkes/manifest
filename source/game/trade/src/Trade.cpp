@@ -181,9 +181,8 @@ struct Rules
 	// Each scenario item's base price, raw microcredits per its unit.
 	std::map<std::string, std::int64_t, std::less<>> basePrices;
 	double intervalSeconds{0.0};
-
-	// The gross paid for each credit withheld; 0 withholds none.
-	std::int64_t perTaxCredit{0};
+	std::uint64_t daySteps{0};
+	Content::WageTaxTuning wageTax;
 	Content::ProductionTuning production;
 	Content::ConditionTuning condition;
 
@@ -204,6 +203,8 @@ std::optional<std::uint64_t> WholeSteps(double seconds, double step)
 	return static_cast<std::uint64_t>(whole);
 }
 
+
+constexpr double kSecondsPerDay = 86'400.0;
 
 // How far a venue's own making and needing move its price from the market's, either way (W19's
 // balance, 2026-11-21): a venue that only makes a good prices it at 0.7 of the market, one that only
@@ -288,11 +289,10 @@ std::shared_ptr<const Rules> MakeRules(
 				rule.items.push_back(item.itemId);
 	}
 	rules->intervalSeconds = content.tuning.economy.intervalSeconds;
-	if (content.tuning.economy.wageTaxRate > 0.0)
-		rules->perTaxCredit = std::llround(1.0 / content.tuning.economy.wageTaxRate);
+	rules->wageTax = content.tuning.economy.wageTax;
 	rules->production = content.tuning.production;
 	rules->condition = content.tuning.condition;
-	identities.SetTotes(rules->unitsPerTote, rules->perTaxCredit);
+	identities.SetTotes(rules->unitsPerTote);
 
 	// The whole market's scarcity (Simulation::MarketPrice), then each venue's own making and needing,
 	// up to kLocalBias of it either way: a venue that only makes a good prices it lowest, one that only
@@ -340,8 +340,13 @@ std::shared_ptr<const Rules> MakeRules(
 		throw std::invalid_argument{std::format(
 		    "economy.intervalSeconds, {}, is not a whole number of {} s steps",
 		    content.tuning.economy.intervalSeconds, world.FixedStep())};
+	const std::optional<std::uint64_t> day = WholeSteps(kSecondsPerDay, world.FixedStep());
+	if (!day || *day == 0)
+		throw std::invalid_argument{
+		    std::format("a day is not a whole number of {} s steps", world.FixedStep())};
 	rules->lifeSteps = *life;
 	rules->turnSteps = *turn;
+	rules->daySteps = *day;
 	rules->windowSteps = SalesWindowSteps(world, content);
 	rules->feeBps = content.tuning.market.listingFeeBps;
 	rules->spreadBps = content.tuning.brokers.spreadBps;
@@ -1147,15 +1152,15 @@ std::uint64_t Available(
 
 
 // A gross payment of the region's employer's wages: the households' share to their account and the
-// withheld credits to the treasury, the carry moved on. The employer's account paid it as the batch
-// was reserved.
+// credits withheld at the region's rate to the treasury, the carry moved on. The employer's account
+// paid it as the batch was reserved.
 void Pay(
-    Ledger &ledger, const Rules &rules, const std::string &regionId, World::Production &production,
+    Ledger &ledger, const std::string &regionId, int rateBps, World::Production &production,
     std::int64_t gross)
 {
 	if (gross <= 0)
 		return;
-	const Withholding withheld = Withhold(gross, production.taxCarry, rules.perTaxCredit);
+	const Withholding withheld = Withhold(gross, production.taxCarry, rateBps);
 	production.taxCarry = withheld.carry;
 	if (!ledger.Credit(Kind::HouseholdAccount, regionId, withheld.households) ||
 	    !ledger.Credit(Kind::PublicAccount, regionId, withheld.treasury))
@@ -1217,6 +1222,7 @@ void Produce(SimWorld &world, const Rules &rules)
 		const World::Region &region =
 		    registry.get<const World::Region>(Require(rules, Kind::Region, economy.regionId));
 		const double rate = WorkRate(region.health, region.happiness, rules.condition.workRateFloor);
+		const int taxBps = region.wageTaxBps;
 		const entt::entity employer = Require(rules, Kind::Employer, economy.regionId);
 		World::Production production = registry.get<const World::Production>(employer);
 		Ledger ledger{registry, rules.identities};
@@ -1256,7 +1262,7 @@ void Produce(SimWorld &world, const Rules &rules)
 				if (holding.available + holding.reserved > Core::kMaxWarehouseTotes - batch->totes)
 					break;
 				holding.available += batch->totes;
-				Pay(ledger, rules, economy.regionId, production, batch->wages - batch->paid);
+				Pay(ledger, economy.regionId, taxBps, production, batch->wages - batch->paid);
 				production.batches.erase(batch);
 				if (work <= 0.0)
 					break;
@@ -1278,13 +1284,16 @@ void Payroll(SimWorld &world, const Rules &rules)
 		World::Production production = registry.get<const World::Production>(employer);
 		if (production.batches.empty())
 			continue;
+		const int taxBps =
+		    registry.get<const World::Region>(Require(rules, Kind::Region, economy.regionId))
+		        .wageTaxBps;
 		Ledger ledger{registry, rules.identities};
 		for (World::Batch &batch : production.batches)
 		{
 			const std::int64_t earned = Earned(batch.wages, batch.progress, batch.duration);
 			if (earned > batch.paid)
 			{
-				Pay(ledger, rules, economy.regionId, production, earned - batch.paid);
+				Pay(ledger, economy.regionId, taxBps, production, earned - batch.paid);
 				batch.paid = earned;
 			}
 		}
@@ -1541,16 +1550,74 @@ void Households(SimWorld &world, const Rules &rules)
 }
 
 
+// SetWageTax, from the principal directing the region's governor, checked before it writes.
+Result WageTaxSet(SimWorld &world, const Rules &rules, const Actor &actor, const SetWageTax &set)
+{
+	entt::registry &registry = world.Registry();
+	const entt::entity entity = rules.identities.Find(Kind::Region, set.regionId);
+	if (entity == entt::null)
+		return Result::UnknownTarget;
+	World::Region &region = registry.get<World::Region>(entity);
+	const entt::entity governor = rules.identities.Find(Kind::Organisation, region.governorId);
+	if (governor == entt::null)
+		return Result::NotAuthorised;
+	const std::string &director = registry.get<const World::Organisation>(governor).principalId;
+	if (director.empty() || director != actor.id)
+		return Result::NotAuthorised;
+	if (set.rateBps < rules.wageTax.minBps)
+		return Result::InvalidQuantity;
+	if (set.rateBps > rules.wageTax.maxBps)
+		return Result::RateTooHigh;
+	region.wageTaxBps = set.rateBps;
+	return Result::Succeeded;
+}
+
+
+// Each AI governor's wage-tax rate steered towards its budget as the day's last step ends (D-120),
+// the regions in the scenario's order: up a step while its treasury holds less than its commitments,
+// down one while it holds more than the surplus share of them, within the bounds.
+void Steer(SimWorld &world, const Rules &rules)
+{
+	entt::registry &registry = world.Registry();
+	const Content::WageTaxTuning &rule = rules.wageTax;
+	for (const Economy &economy : rules.economies)
+	{
+		World::Region &region =
+		    registry.get<World::Region>(Require(rules, Kind::Region, economy.regionId));
+		const entt::entity governor = rules.identities.Find(Kind::Organisation, region.governorId);
+		if (governor == entt::null ||
+		    !registry.get<const World::Organisation>(governor).principalId.empty())
+			continue;
+		const auto treasury = static_cast<double>(
+		    registry.get<const World::Account>(Require(rules, Kind::PublicAccount, economy.regionId))
+		        .balance);
+		const double commitments = region.population * rule.reservePerPerson;
+		if (treasury < commitments)
+			region.wageTaxBps += rule.stepBps;
+		else if (
+		    treasury * static_cast<double>(World::kWholeBps) >
+		    commitments * static_cast<double>(rule.surplusBps))
+			region.wageTaxBps -= rule.stepBps;
+		region.wageTaxBps = std::clamp(region.wageTaxBps, rule.minBps, rule.maxBps);
+	}
+}
+
+
 // The step's economy: production, then on the turn's last step the payroll, the employers' sales,
-// the households' interval and the condition, in that order.
+// the households' interval and the condition, in that order, and on the day's last the AI
+// governors' wage tax after them.
 void Step(SimWorld &world, const Rules &rules)
 {
 	Produce(world, rules);
-	if ((world.Clock().Step() + 1) % rules.turnSteps != 0)
-		return;
-	Payroll(world, rules);
-	Sell(world, rules);
-	Households(world, rules);
+	const std::uint64_t ending = world.Clock().Step() + 1;
+	if (ending % rules.turnSteps == 0)
+	{
+		Payroll(world, rules);
+		Sell(world, rules);
+		Households(world, rules);
+	}
+	if (ending % rules.daySteps == 0)
+		Steer(world, rules);
 }
 
 
@@ -1592,7 +1659,7 @@ std::uint64_t EconomyNext(const SimWorld &world, const Rules &rules)
 	JETTISON_PROFILE_ZONE("Manifest.Trade.EconomyNext");
 	const entt::registry &registry = world.Registry();
 	const std::uint64_t now = world.Clock().Step();
-	std::uint64_t next = TurnEnd(now, rules.turnSteps);
+	std::uint64_t next = std::min(TurnEnd(now, rules.turnSteps), TurnEnd(now, rules.daySteps));
 	bool due = false;
 	EachUnderWay(
 	    world, rules,
@@ -1861,6 +1928,9 @@ void RegisterTypes()
 		    .Field<&Place::totes>("totes", kSaved)
 		    .Field<&Place::limit>("limit", kSaved);
 		RegisterType<Cancel>("Manifest.Trade.Cancel").Field<&Cancel::orderId>("orderId", kSaved);
+		RegisterType<SetWageTax>("Manifest.Trade.SetWageTax")
+		    .Field<&SetWageTax::regionId>("regionId", kSaved)
+		    .Field<&SetWageTax::rateBps>("rateBps", kSaved);
 		return true;
 	}();
 	(void)registered;
@@ -1891,6 +1961,10 @@ void Register(
 	    std::string{kCancel}, kVersion, Command::ActorKind::Principal,
 	    [rules](SimWorld &on, const Actor &actor, const Cancel &cancel)
 	    { return Cancelled(on, *rules, actor, cancel); });
+	requests.Register<SetWageTax>(
+	    std::string{kSetWageTax}, kVersion, Command::ActorKind::Principal,
+	    [rules](SimWorld &on, const Actor &actor, const SetWageTax &set)
+	    { return WageTaxSet(on, *rules, actor, set); });
 
 	using Jettison::Ecs::Access;
 	const Access writes = Access::Of<World::Order>()
@@ -1921,7 +1995,7 @@ void Register(
 	    {.name = std::string{kEconomy},
 	     .phase = Jettison::Ecs::TickPhase::Simulation,
 	     .access =
-	         Access::Of<World::Order>()
+	         Access::Of<World::Order, World::Organisation>()
 	             .Writing<
 	                 World::Order, World::Account, World::Stock, World::Identity, World::Production,
 	                 World::Pantry, World::Region, World::Sales, World::Paid>(),

@@ -813,14 +813,16 @@ and the regions it serves. See [orders, brokers and market observations](trading
 
 ### Wage tax
 
-The share of wages withheld for the region's public account, `economy.wageTaxRate` (10%), by
-[withholding](#withholding). See [the regional economy](economy.md).
+The share of wages withheld for the region's public account, by
+[withholding](#withholding): each region's own rate in basis points (`Region::wageTaxBps`, 10% to
+start), set by its [governor](#governor)'s player or steered by the AI within the tuning's bounds
+(`economy.wageTax`). See [the regional economy](economy.md).
 
 ### Withholding
 
-How the [wage tax](#wage-tax) is taken (`Trade::Withhold`): a credit for each whole 1/rate credits
-of gross paid, the remainder carried to the employer's next payment, so many small payments withhold
-what one large one does. See [the regional economy](economy.md).
+How the [wage tax](#wage-tax) is taken (`Trade::Withhold`): the whole credits of the gross paid
+times the region's rate, the part of a credit left carried to the employer's next payment, so many
+small payments withhold what one large one does. See [the regional economy](economy.md).
 
 ### Work rate
 

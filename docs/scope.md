@@ -135,7 +135,7 @@ How: [the regional economy](economy.md).
 | --- | --- | --- |
 | [Households](glossary.md#household), needs, [condition](glossary.md#condition), production, [payroll](glossary.md#payroll) and [wage tax](glossary.md#wage-tax) | In | A region's people buy what they need and work what they can |
 | The physical chain: extraction, warehouses and transport jobs | Planned | [Economy plans](economy-and-development-plan.md); extraction comes with [L06](delivery-order.md#l06) |
-| Tax rates set by a region's governor | Planned, [L29](delivery-order.md#l29) | |
+| Tax rates set by a region's governor | In | A player governor sets the wage tax, an AI one steers it to its budget ([a region's wage tax](economy.md#a-regions-wage-tax)) |
 | Regional debt, merchant and banking classes | Planned, [L30](delivery-order.md#l30) | |
 | The power grid, compute and the AI economy | Planned, [L31](delivery-order.md#l31) | |
 | Regions by kind of world; a richer, less developed outer map | Planned, [L33](delivery-order.md#l33) | Inner worlds start advanced with depleted reserves, outer ones rich and raw: a resource gold rush ([D-018](decision-ledger.md#d-018)) |

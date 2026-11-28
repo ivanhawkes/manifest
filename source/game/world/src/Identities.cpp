@@ -163,14 +163,12 @@ std::function<void()> Identities::Load(
 	for (const auto [entity, systems] : loaded.view<const Systems>().each())
 		if (const std::optional<std::string> problem = Broken(systems))
 			reader.Fail(*problem);
+	for (const auto [entity, region] : loaded.view<const Region>().each())
+		if (const std::optional<std::string> problem = Broken(region))
+			reader.Fail(*problem);
 	for (const auto [entity, production] : loaded.view<const Production>().each())
-	{
 		if (const std::optional<std::string> problem = Broken(production))
 			reader.Fail(*problem);
-		if (m_unitsPerTote &&
-		    (m_perTaxCredit > 0 ? production.taxCarry >= m_perTaxCredit : production.taxCarry != 0))
-			reader.Fail("a production's tax carry is a withheld credit or more");
-	}
 	for (const auto [entity, pantry] : loaded.view<const Pantry>().each())
 	{
 		if (const std::optional<std::string> problem = Broken(pantry))

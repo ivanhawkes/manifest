@@ -121,7 +121,7 @@ entity that carries them (`source/game/world/include/manifest/world/State.h`):
 | a principal | `Principal`, `Reports` | the display name and `npc`; the player's market reports, by venue | [trading](trading.md) |
 | a company | `Company`, `Stock`, `Paid`, `Licences`, `Claims` | its principal and name; its goods at each venue, available and reserved; the last price it paid for each item; the polities licensing it; the grants it has claimed | [companies](companies.md) |
 | an organisation | `Organisation` | its kind and name, and the principal who directs it (empty for the AI's) | [governance](governance.md) |
-| a region | `Region`, `Knowledge`, `Facilities`, `Development` | planet, civilisation, governor, population, health, happiness; skills and recipes; facilities; a player governor's development policy | [governance](governance.md), [economy](economy.md) |
+| a region | `Region`, `Knowledge`, `Facilities`, `Development` | planet, civilisation, governor, population, health, happiness, wage-tax rate; skills and recipes; facilities; a player governor's development policy | [governance](governance.md), [economy](economy.md) |
 | an account | `Account` | whole credits | this document |
 | a ship | `Ship`, `Journey`, `Cargo`, `LifeSupport`, `Fuel`, `Refuel`, `Systems`, `Arrears`, `Policy`, `Job` | hull and dock; journey leg, the fuel it paid and an override's fine; lots and opened totes; tanks, cartridges and connection; fuel; the refuel choice; systems bought; berth debt; standing policy and job | [companies](companies.md), [travel](travel.md), [stations](stations.md), [policies](policies.md) |
 | a broker | `Broker`, `Stock` | the venue's operator; the broker's goods | [trading](trading.md) |
@@ -189,7 +189,7 @@ registration:
 | `SetFuelTanks` | `company` | each ship's fuel fits its tanks |
 | `SetLifeSupport` | `company` | each tank and cartridge holds no more than its hull's |
 | `SetCharges` | `company` | every market has `Fees` for every pad class, within the usury limit |
-| `SetTotes` | `trade` | an opened tote holds no more than one tote of its item; the tax carry is below one credit's gross |
+| `SetTotes` | `trade` | an opened tote holds no more than one tote of its item |
 | `SetProjects` | `procurement` | each project is one the content defines, worked within its steps, holding only what it needs |
 
 Without a setter, as in a test world with no company commands, a load checks that component's own
@@ -408,7 +408,7 @@ CHECK(adas.companies[0].companyId == "Company1");
 ### The registered commands
 
 `Requests::Commands()` lists them in name order; a world's identity file records the list
-([D-111](decision-ledger.md#d-111)). The hosted build registers 22:
+([D-111](decision-ledger.md#d-111)). The hosted build registers 26:
 
 | Command | Version | Sent by | Explained in |
 | --- | --- | --- | --- |
@@ -416,7 +416,9 @@ CHECK(adas.companies[0].companyId == "Company1");
 | `Manifest.Company.Load`, `Unload`, `Refill`, `Replace`, `Upgrade`, `SetRefuel` | 1 | principal | [companies](companies.md), [stations](stations.md) |
 | `Manifest.Company.SetFees` | 1 | principal | [stations](stations.md) |
 | `Manifest.Company.Found` | 1 | principal | [governance](governance.md) |
+| `Manifest.Company.Claim`, `Apply`, `SetLicence` | 1 | principal | [companies](companies.md) |
 | `Manifest.Trade.Place`, `Cancel` | 1 | principal | [trading](trading.md) |
+| `Manifest.Trade.SetWageTax` | 1 | principal | [economy](economy.md) |
 | `Manifest.Travel.Travel` | 2 | principal | [travel](travel.md) |
 | `Manifest.Policy.Set` | 2 | principal | [policies](policies.md) |
 | `Manifest.Procurement.Queue`, `SetDevelopment`, `CancelProject`, `Publish`, `Cancel`, `Bid`, `Withdraw`, `Deliver`, `Abandon` | 1 | principal | [governance](governance.md) |

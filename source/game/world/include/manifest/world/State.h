@@ -94,6 +94,10 @@ struct Region
 	double health{0.0};
 	double happiness{0.0};
 
+	// The share of its wages withheld for its treasury, in basis points (D-098): 0 to kWholeBps,
+	// within the tuning's bounds, posted to every player and set by its governor.
+	int wageTaxBps{0};
+
 	bool operator==(const Region &) const = default;
 };
 
@@ -490,8 +494,13 @@ struct Batch
 	bool operator==(const Batch &) const = default;
 };
 
+// The basis points of a whole: a region's wage-tax rate is a share of its wages in them, and its
+// employer's tax carry is counted in these parts of a credit.
+inline constexpr std::int64_t kWholeBps = 10'000;
+
 // An employer's batches under way, at most one a market row it makes, in (venue, item) order; and its
-// withholding's carry, the gross paid toward the next withheld credit, shared by its batches.
+// withholding's carry, the part of a credit withheld toward the next whole one, in 1 / kWholeBps of a
+// credit, below kWholeBps, shared by its batches and kept across a change of rate.
 struct Production
 {
 	std::vector<Batch> batches;
@@ -865,6 +874,8 @@ std::optional<std::string> Broken(const Cargo &cargo);
 std::optional<std::string> Broken(const Order &order);
 
 std::optional<std::string> Broken(const Systems &systems);
+
+std::optional<std::string> Broken(const Region &region);
 
 std::optional<std::string> Broken(const Production &production);
 
