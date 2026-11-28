@@ -271,7 +271,7 @@ TEST_CASE("a token file keeps digests and resolves only the tokens it was issued
 }
 
 
-TEST_CASE("a server list pins each endpoint's key as written, and the build's pins none")
+TEST_CASE("a server list pins each endpoint's key as written, the build's pins none, a player's is theirs")
 {
 	const std::string key = Jettison::Net::GenerateServerKey().publicKey;
 	const Manifest::Test::TempFile file{
@@ -284,6 +284,18 @@ TEST_CASE("a server list pins each endpoint's key as written, and the build's pi
 	const Manifest::Test::TempFile broken{"servers: ["};
 	CHECK_THROWS_AS(ReadServers(broken.Path()), std::runtime_error);
 	CHECK_THROWS_AS(ReadServers(file.Path() + ".none"), std::runtime_error);
+
+	// A player's list, which may hold tokens, is written its owner's alone and reads back as it was.
+	const Manifest::Test::TempFile own{""};
+	WriteServers(own.Path(), {{{"127.0.0.1:47720", key, "Home", Jettison::Net::GenerateToken()}}});
+	CHECK(
+	    std::filesystem::status(own.Path()).permissions() ==
+	    (std::filesystem::perms::owner_read | std::filesystem::perms::owner_write));
+	const ServerList written = ReadServers(own.Path());
+	REQUIRE(written.servers.size() == 1);
+	CHECK(written.servers[0].name == "Home");
+	CHECK(written.servers[0].token.size() == key.size());
+	CHECK(PinnedKey(written, "127.0.0.1:47720") == key);
 }
 
 

@@ -42,11 +42,22 @@ std::filesystem::path DefaultServerKey()
 
 std::filesystem::path DefaultServers()
 {
-	std::filesystem::path own =
-	    Jettison::Platform::ResolvePath(Jettison::Platform::Directory::Config, "manifest") /
-	    "servers.yaml";
+	std::filesystem::path own = PlayerServers();
 	if (std::filesystem::exists(own))
 		return own;
+	return ShippedServers();
+}
+
+
+std::filesystem::path PlayerServers()
+{
+	return Jettison::Platform::ResolvePath(Jettison::Platform::Directory::Config, "manifest") /
+	       "servers.yaml";
+}
+
+
+std::filesystem::path ShippedServers()
+{
 	return DefaultContent().parent_path() / "servers.yaml";
 }
 

@@ -71,6 +71,14 @@ ServerList ReadServers(const std::filesystem::path &path)
 }
 
 
+void WriteServers(const std::filesystem::path &path, const ServerList &list)
+{
+	RegisterTypes();
+	Jettison::Core::WriteFileDurably(
+	    path, Jettison::Serialise::YamlArchive::Write(list, kServerListVersion), kOwnerOnly);
+}
+
+
 std::optional<std::string> PinnedKey(const ServerList &list, std::string_view endpoint)
 {
 	const auto found = std::ranges::find(list.servers, endpoint, &PinnedServer::endpoint);

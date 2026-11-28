@@ -110,7 +110,9 @@ void RegisterTypes()
 		    .Field<&TokenFile::tokens>("tokens", kSaved);
 		RegisterType<PinnedServer>("Manifest.Remote.PinnedServer")
 		    .Field<&PinnedServer::endpoint>("endpoint", kSaved)
-		    .Field<&PinnedServer::key>("key", kSaved);
+		    .Field<&PinnedServer::key>("key", kSaved)
+		    .Field<&PinnedServer::name>("name", kSaved)
+		    .Field<&PinnedServer::token>("token", kSaved);
 		RegisterType<ServerList>("Manifest.Remote.ServerList")
 		    .Field<&ServerList::servers>("servers", kSaved);
 		return true;
