@@ -68,7 +68,7 @@ std::vector<Reply> Client::Poll(std::chrono::milliseconds wait)
 			case Event::Type::Message:
 				if (event.message.kind == static_cast<Jettison::Net::MessageKind>(Kind::Welcome))
 				{
-					Welcome welcome = BinaryArchive::Read<Welcome>(event.message.body, kFormat);
+					auto welcome = BinaryArchive::Read<Welcome>(event.message.body, kFormat);
 					m_refused = m_held ? Jettison::Host::ContentDifference(
 					                         *m_held, Jettison::Host::DecodeWorldContent(
 					                                      std::as_bytes(std::span{welcome.content})))
