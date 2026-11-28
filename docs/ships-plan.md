@@ -343,7 +343,7 @@ the drive's `bodyExclusionRadius` above its surface; a station's, `exclusionRadi
   for the blend; L37 replaced them with the velocities the cruise's ends carry (`departureVelocity`,
   `arrivalVelocity`), and a load refuses a cruise whose target or carrier is not a body of its system.
 - **Not checked:** a course passing another populated body while the drive thrusts: travel writes
-  spheres about each end's bodies alone. No task holds it yet.
+  spheres about each end's bodies alone ([L55](delivery-order.md#l55)).
 - **Done in L37.** Jettison's motion profile with a speed at each end (`Transit::EndSpeeds`) and its
   drift fly a ship that leaves with its body's velocity and arrives with the target's directly; the
   blend and its re-plotting are retired.

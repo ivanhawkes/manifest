@@ -355,7 +355,7 @@ A hull's fuel storage, in `data/ships/hulls.yaml`: `FuelCapacity` among its `bas
   the cruise's course round bodies to where the station will be; a policy's estimate prices every
   drive so (a `shortcut:` in `Policy.cpp`).
 - A course passing another populated body while the drive thrusts is not checked: the spheres are
-  about each end's bodies alone.
+  about each end's bodies alone ([L55](delivery-order.md#l55)).
 - A journey stays in its star system; each scenario has one. Journeys between systems wait for
   stargates ([L08](delivery-order.md#l08), [space plan](space-plan.md)) and local hops for
   moongates ([L35](delivery-order.md#l35)).

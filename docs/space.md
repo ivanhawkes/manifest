@@ -489,7 +489,7 @@ const auto out = Manifest::Space::PlotRoute(galaxy, {0, ""}, {2, ""});
   ([Jettison's transit limits](../../jettison/docs/transit.md#limits-and-open-work)).
 - A cruise's drift and its ends' speeds are not priced: a journey's fuel is its profile's from rest
   to rest, more than it burns leaving or arriving moving along its course, and the drift's
-  acceleration is no thrust at all. A ship broken off past physics' speed limit is held to it.
+  acceleration is no thrust at all ([L56](delivery-order.md#l56)). A ship broken off past physics' speed limit is held to it.
 - The presentation (a jump's transition, a galaxy panel, a flight panel) is the graphical client's
   ([L15](delivery-order.md#l15), [roadmap](roadmap.md#the-graphical-client)).
 
