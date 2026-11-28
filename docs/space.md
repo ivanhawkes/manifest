@@ -501,7 +501,7 @@ The settled choices are in
 [decisions](decision-ledger.md#space-star-systems-lanes-gates-and-cruising).
 The key ones: a scenario's systems and drives as records ([D-088](decision-ledger.md#d-088)), the
 cruise limited by acceleration in the Manifest mode ([D-090](decision-ledger.md#d-090)), its
-refinements ([D-125](decision-ledger.md#d-125)), and, open, stargates
+refinements ([D-127](decision-ledger.md#d-127)), and, open, stargates
 ([D-017](decision-ledger.md#d-017)) and moongates ([D-091](decision-ledger.md#d-091)).
 
 ## Source
