@@ -241,6 +241,7 @@ ClientModel::ClientModel(Remote::Client &remote, Dial dial)
 std::vector<std::uint64_t> ClientModel::Kept() const
 {
 	std::vector<std::uint64_t> sequences;
+	sequences.reserve(m_unsettled.size());
 	for (const Unsettled &request : m_unsettled)
 		sequences.push_back(request.sequence);
 	return sequences;
