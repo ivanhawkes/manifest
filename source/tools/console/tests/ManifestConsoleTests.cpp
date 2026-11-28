@@ -935,8 +935,7 @@ TEST_CASE("Manifest console: a governor founds a region, queues a project and te
 	      "tender",
 	      "tender swap Ada X",
 	      "tender cancel Ada",
-	      "tender publish Ada RegionForgeNorth ProjectSmeltersGuild ItemCopper VenueForgeHighport "
-	      "1",
+	      "tender publish Ada R P I V 1",
 	      "tender publish Ada R P I V 0 100 2 3",
 	      "tender publish Ada R P I V 1 -5 2 3",
 	      "tender publish Ada R P I V 1 100 0 3",
