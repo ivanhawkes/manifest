@@ -113,7 +113,7 @@ struct Hosted
 	{
 		return Run(
 		    kHost, Manifest::Company::kProvision, Manifest::Company::kVersion,
-		    Manifest::Company::Provision{principalId, principalId, "Co"});
+		    Manifest::Company::Provision{principalId, principalId, "Co", "Kestrel"});
 	}
 
 
@@ -1039,6 +1039,7 @@ TEST_CASE("A scenario's NPC traders start provisioned, the world's own, their jo
 	const entt::registry &registry = hosted.world.Registry();
 	const entt::entity nia = hosted.Find(Kind::Principal, "Nia");
 	CHECK(registry.get<World::Principal>(nia).npc);
+	CHECK(registry.get<World::Ship>(hosted.Ship("Ship1")).displayName == "Nia Freight 1");
 	CHECK(registry.get<World::Policy>(hosted.Ship("Ship1")) == World::Policy{true, 0, 0, 0, true});
 	CHECK(hosted.Job().phase == World::Phase::Choosing);
 
@@ -1071,6 +1072,10 @@ TEST_CASE("A scenario's NPC traders start provisioned, the world's own, their jo
 	    {"Pim", "Pim", "Co"},
 	    {"Quy", "Quy", "Co"},
 	    {"Rua", "Rua", "Co"}};
+	CHECK_THROWS_AS(Hosted{content}, std::runtime_error);
+
+	// And a trader's company the provisioning's name checks refuse.
+	content.scenarios.at(content.scenario).traders = {{"Nia", "Nia", ""}};
 	CHECK_THROWS_AS(Hosted{content}, std::runtime_error);
 }
 

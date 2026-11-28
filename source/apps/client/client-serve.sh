@@ -3,8 +3,9 @@
 # written in a new directory, the dedicated server started on a new trading world and an ephemeral
 # port, and the graphical client connected to it offscreen on lavapipe, which the engine's headless
 # helper finds: no display, no window on any desktop. Driven by --run lines, the client founds the
-# player's company, buys a tote on the market screen and reads it held there. The server is stopped
-# with SIGINT and started again on its world, and a second run of the client reads the tote still held.
+# player's company and names its ship, reads the ship's name, buys a tote on the market screen and
+# reads it held there. The server is stopped with SIGINT and started again on its world, and a second
+# run of the client reads the ship's name and the tote still held.
 # It reads what the screens hold (the client's read), not pixels.
 # Usage: client-serve.sh <manifest_client> <manifest> <manifest-token> <content directory>
 #   <jettison>/scripts/lib/headless.sh
@@ -70,15 +71,18 @@ public="$("$token_cli" --key "$work/server-key" key)"
 serve
 # A snapshot comes at most once a second, and the first after the founding has been seen to take
 # four, so each read waits well past the answer.
-play first --run '@2s found "Ada Freight"' --run '@12s read company-name' --run '@12s screen market' \
+play first --run '@2s found "Ada Freight" "Long Shot"' --run '@12s read company-name' \
+  --run '@12s read ship-0' --run '@12s screen market' \
   --run '@12s press buy-0' --run '@18s read held-0' --run '@18s screen company' \
   --run "@18s screenshot $work/company.png" --run '@19s quit'
 grep -q 'company company-name: Ada Freight' "$work/first.log" || fail 'the company was not founded'
+grep -q 'company ship-0: Long Shot$' "$work/first.log" || fail 'the ship is not shown by its name'
 grep -q 'market held-0: 1$' "$work/first.log" || fail 'the tote bought is not held'
 [[ -s "$work/company.png" ]] || fail 'no screenshot was written'
 stop
 
 serve
-play second --run '@8s screen market' --run '@8s read held-0' --run '@9s quit'
+play second --run '@8s read ship-0' --run '@8s screen market' --run '@8s read held-0' --run '@9s quit'
 grep -q 'market held-0: 1$' "$work/second.log" || fail 'the tote is not held after the restart'
+grep -q 'company ship-0: Long Shot$' "$work/second.log" || fail 'the ship lost its name in the restart'
 stop

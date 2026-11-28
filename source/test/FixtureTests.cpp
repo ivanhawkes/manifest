@@ -195,7 +195,7 @@ struct Hosted
 	{
 		REQUIRE(
 		    Run(kHost, Company::kProvision, Company::kVersion,
-		        Company::Provision{"Ada", "Ada", "Ada Co"}) == Result::Succeeded);
+		        Company::Provision{"Ada", "Ada", "Ada Co", "Kestrel"}) == Result::Succeeded);
 		world.Registry().get<Manifest::Space::CruiseDrive>(Ship()).profile.reset();
 
 		// The company's starting credits are made by provisioning, so the ledger starts after it.
@@ -657,7 +657,7 @@ TEST_CASE("The trading fixture's loop, saved in flight with a bid resting and re
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves with
 	// what a save holds, the fixture's content or stream, or the engine's movement or save format.
-	CHECK(hosted.world.StateHash() == 0x402f483122ceeb2aULL);
+	CHECK(hosted.world.StateHash() == 0xdb9b558e8981d4b3ULL);
 }
 
 
@@ -710,7 +710,7 @@ TEST_CASE("The trading fixture's loop, backed up in flight with a bid resting an
 	// Served on from the restore, through the journal, it reaches the loop's own world.
 	FromCruise(restored);
 	CheckLedger(restored);
-	CHECK(restored.world.StateHash() == 0x402f483122ceeb2aULL);
+	CHECK(restored.world.StateHash() == 0xdb9b558e8981d4b3ULL);
 }
 
 
@@ -799,7 +799,7 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 	REQUIRE(
 	    hosted.Run(
 	        kHost, Company::kProvision, Company::kVersion,
-	        Company::Provision{"Ada", "Ada", "Ada Co"}) == Result::Succeeded);
+	        Company::Provision{"Ada", "Ada", "Ada Co", "Kestrel"}) == Result::Succeeded);
 	entt::registry &registry = hosted.world.Registry();
 	const auto ship = [&](const Hosted &on, const std::string &id)
 	{ return on.services.identities.Find(Kind::Ship, id); };
@@ -902,7 +902,7 @@ TEST_CASE("An NPC and a player with no client trade alone, saved mid-job, loaded
 	CHECK(replayed.world.StateHash() == hosted.world.StateHash());
 
 	// The same in every build the gate runs; it moves as the fixture's does.
-	CHECK(hosted.world.StateHash() == 0xa0162d7f6b1ed7c5ULL);
+	CHECK(hosted.world.StateHash() == 0xcffd2f495cb69ea8ULL);
 }
 
 
@@ -941,7 +941,7 @@ void Manned(Hosted &hosted, bool fullHold)
 	REQUIRE(
 	    hosted.Run(
 	        kHost, Company::kProvision, Company::kVersion,
-	        Company::Provision{"Ada", "Ada", "Ada Co"}) == Result::Succeeded);
+	        Company::Provision{"Ada", "Ada", "Ada Co", "Kestrel"}) == Result::Succeeded);
 	entt::registry &registry = hosted.world.Registry();
 	hosted.credits = Credits(registry);
 	hosted.creditBreach.reset();
@@ -1133,7 +1133,7 @@ TEST_CASE(
 	REQUIRE(
 	    hosted.Run(
 	        kHost, Company::kProvision, Company::kVersion,
-	        Company::Provision{"Ada", "Ada", "Ada Co"}) == Result::Succeeded);
+	        Company::Provision{"Ada", "Ada", "Ada Co", "Kestrel"}) == Result::Succeeded);
 	entt::registry &registry = hosted.world.Registry();
 	const entt::entity ship = hosted.Ship();
 	CHECK(registry.get<const World::Ship>(ship).hullId == "HullFreighterMedium");
@@ -1231,8 +1231,8 @@ void Hoard(
 	const Actor bo{ActorKind::Principal, "Bo"};
 	REQUIRE(
 	    hosted.Run(
-	        kHost, Company::kProvision, Company::kVersion, Company::Provision{"Bo", "Bo", "Bo Co"}) ==
-	    Result::Succeeded);
+	        kHost, Company::kProvision, Company::kVersion,
+	        Company::Provision{"Bo", "Bo", "Bo Co", "Kestrel"}) == Result::Succeeded);
 	entt::registry &registry = hosted.world.Registry();
 	const entt::entity account = hosted.services.identities.Find(
 	    Kind::CompanyAccount,
@@ -1304,7 +1304,7 @@ std::string Trader(Hosted &hosted)
 	REQUIRE(
 	    hosted.Run(
 	        kHost, Company::kProvision, Company::kVersion,
-	        Company::Provision{"Ada", "Ada", "Ada Co"}) == Result::Succeeded);
+	        Company::Provision{"Ada", "Ada", "Ada Co", "Kestrel"}) == Result::Succeeded);
 	entt::registry &registry = hosted.world.Registry();
 	std::string shipId;
 	for (const auto &[entity, identity, ship] :
@@ -1418,7 +1418,7 @@ TEST_CASE("A standing policy flies the medium freighter on a trade, at its drive
 	REQUIRE(
 	    hosted.Run(
 	        kHost, Company::kProvision, Company::kVersion,
-	        Company::Provision{"Ada", "Ada", "Ada Co"}) == Result::Succeeded);
+	        Company::Provision{"Ada", "Ada", "Ada Co", "Kestrel"}) == Result::Succeeded);
 	entt::registry &registry = hosted.world.Registry();
 	const entt::entity ship = hosted.Ship();
 	REQUIRE(registry.get<const World::Ship>(ship).hullId == "HullFreighterMedium");
@@ -1479,8 +1479,8 @@ TEST_CASE("A standing policy flies the pulse carrier between the yards, passing 
 	// a carrier's lot.
 	REQUIRE(
 	    hosted.Run(
-	        kHost, Company::kProvision, Company::kVersion, Company::Provision{"Bo", "Bo", "Bo Co"}) ==
-	    Result::Succeeded);
+	        kHost, Company::kProvision, Company::kVersion,
+	        Company::Provision{"Bo", "Bo", "Bo Co", "Kestrel"}) == Result::Succeeded);
 	const auto fund = [&](const std::string &companyId, std::int64_t credits)
 	{
 		registry.patch<World::Account>(
@@ -1506,7 +1506,7 @@ TEST_CASE("A standing policy flies the pulse carrier between the yards, passing 
 	REQUIRE(
 	    hosted.Run(
 	        kHost, Company::kProvision, Company::kVersion,
-	        Company::Provision{"Ada", "Ada", "Ada Co"}) == Result::Succeeded);
+	        Company::Provision{"Ada", "Ada", "Ada Co", "Kestrel"}) == Result::Succeeded);
 	const CompanyView ada = hosted.Seen();
 	fund(ada.companyId, 50'000'000);
 	REQUIRE(ada.ships.size() == 1);
@@ -1564,7 +1564,7 @@ std::string Carrier(Hosted &hosted)
 	REQUIRE(
 	    hosted.Run(
 	        kHost, Company::kProvision, Company::kVersion,
-	        Company::Provision{"Ada", "Ada", "Ada Co"}) == Result::Succeeded);
+	        Company::Provision{"Ada", "Ada", "Ada Co", "Kestrel"}) == Result::Succeeded);
 	entt::registry &registry = hosted.world.Registry();
 	const CompanyView ada = hosted.Seen();
 	registry.patch<World::Account>(
@@ -1682,7 +1682,7 @@ TEST_CASE("A player's polity grants a company its licence and revokes it, throug
 	REQUIRE(
 	    hosted.Run(
 	        kHost, Company::kProvision, Company::kVersion,
-	        Company::Provision{"Bea", "Bea", "Bea Co"}) == Result::Succeeded);
+	        Company::Provision{"Bea", "Bea", "Bea Co", "Kestrel"}) == Result::Succeeded);
 	CHECK(
 	    hosted.Run(
 	        bea, Company::kSetLicence, Company::kVersion,
@@ -1749,6 +1749,7 @@ TEST_CASE(
 	REQUIRE(claimed.ships.size() == 2);
 	const ShipView &freighter = claimed.ships[1];
 	CHECK(freighter.hullId == "HullFreighterMedium");
+	CHECK(freighter.displayName == claimed.displayName + " 2");
 	CHECK(freighter.dockedAt == kOre);
 	CHECK(freighter.fuel == World::Fuel{400'000.0, 100.0});
 	CHECK(freighter.lifeSupport.connectedTo == kOre);
@@ -1911,7 +1912,7 @@ TEST_CASE("A laden policy's burn is one its tanks fly once refuelled by whole to
 	REQUIRE(
 	    hosted.Run(
 	        kHost, Company::kProvision, Company::kVersion,
-	        Company::Provision{"Ada", "Ada", "Ada Co"}) == Result::Succeeded);
+	        Company::Provision{"Ada", "Ada", "Ada Co", "Kestrel"}) == Result::Succeeded);
 	entt::registry &registry = hosted.world.Registry();
 	hosted.credits = Credits(registry);
 	hosted.creditBreach.reset();
@@ -2096,7 +2097,8 @@ Flown Provisioned(Hosted &hosted, const std::string &principal)
 	REQUIRE(
 	    hosted.Run(
 	        kHost, Company::kProvision, Company::kVersion,
-	        Company::Provision{principal, principal, principal + " Co"}) == Result::Succeeded);
+	        Company::Provision{principal, principal, principal + " Co", "Kestrel"}) ==
+	    Result::Succeeded);
 	const entt::registry &registry = hosted.world.Registry();
 	for (const auto &[entity, identity, ship] :
 	     registry.view<const World::Identity, const World::Ship>().each())
@@ -2275,7 +2277,7 @@ void Governing(Hosted &hosted)
 	REQUIRE(
 	    hosted.Run(
 	        kHost, Company::kProvision, Company::kVersion,
-	        Company::Provision{"Ada", "Ada", "Ada Co"}) == Result::Succeeded);
+	        Company::Provision{"Ada", "Ada", "Ada Co", "Kestrel"}) == Result::Succeeded);
 	entt::registry &registry = hosted.world.Registry();
 	registry.get<Manifest::Space::CruiseDrive>(hosted.Ship()).profile.reset();
 	registry
@@ -2489,7 +2491,7 @@ TEST_CASE("The governance fixture's project, tendered, supplied, worked and unlo
 
 	// The same in every build the gate runs; it moves with what a save holds, the governance
 	// scenario's content or the stream.
-	CHECK(hosted.world.StateHash() == 0x8dfab92dfbd3e63eULL);
+	CHECK(hosted.world.StateHash() == 0xec3eb500b0a38db8ULL);
 }
 
 
@@ -2599,7 +2601,7 @@ void Join(Hosted &hosted)
 		REQUIRE(
 		    hosted.Run(
 		        kHost, Company::kProvision, Company::kVersion,
-		        Company::Provision{principal, principal, principal}) == Result::Succeeded);
+		        Company::Provision{principal, principal, principal, "Kestrel"}) == Result::Succeeded);
 	hosted.credits += Credits(hosted.world.Registry()) - before;
 	hosted.creditBreach.reset();
 	Fund(hosted, "Bea", 250'000);
@@ -2845,5 +2847,5 @@ TEST_CASE(
 
 	// The same in every build the gate runs; it moves with what a save holds, the governance
 	// scenario's content or the stream.
-	CHECK(hosted.world.StateHash() == 0x3a3ec1181e0a5528ULL);
+	CHECK(hosted.world.StateHash() == 0x0a45d4eaef129e07ULL);
 }

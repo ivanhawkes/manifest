@@ -86,7 +86,7 @@ struct Hosted
 	{
 		REQUIRE(
 		    Run(kHost, Company::kProvision, Company::kVersion,
-		        Company::Provision{"Ada", "Ada", "Ada Co"}) == Result::Succeeded);
+		        Company::Provision{"Ada", "Ada", "Ada Co", "Kestrel"}) == Result::Succeeded);
 		if (cruise == Cruise::Compressed)
 			world.Registry().get<Space::CruiseDrive>(Ship()).profile.reset();
 	}
@@ -715,7 +715,7 @@ TEST_CASE("Refuelling buys a tote of pellets for a hold with none, where the ven
 	REQUIRE(
 	    hosted.Run(
 	        kHost, Company::kProvision, Company::kVersion,
-	        Company::Provision{"Bea", "Bea", "Bea Co"}) == Result::Succeeded);
+	        Company::Provision{"Bea", "Bea", "Bea Co", "Kestrel"}) == Result::Succeeded);
 	registry.get<World::Stock>(hosted.services.identities.Find(Kind::Company, "Company2")).holdings = {
 	    {std::string{kOre}, "ItemFusionPellets", 1, 0}};
 	constexpr std::int64_t kPelletPrice = 1200'000'000;

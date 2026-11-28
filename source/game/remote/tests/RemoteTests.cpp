@@ -210,7 +210,7 @@ struct Served
 std::vector<std::byte> Provision(const std::string &principal)
 {
 	return Jettison::Serialise::BinaryArchive::Write(
-	    Company::Provision{principal, principal, principal + " Freight"},
+	    Company::Provision{principal, principal, principal + " Freight", "Kestrel"},
 	    Jettison::Serialise::FormatVersion{Company::kVersion});
 }
 } // namespace
@@ -227,6 +227,7 @@ TEST_CASE("a snapshot crosses the wire whole, its policies, jobs, bids and tende
 	job.tenderId = "Tender1";
 	Query::ShipView ship;
 	ship.shipId = "Ship1";
+	ship.displayName = "暁丸";
 	ship.policy = World::Policy{true, 5, 6, 2'500, true};
 	ship.job = job;
 	World::Bid bid;
@@ -367,6 +368,8 @@ TEST_CASE("a remote player is welcomed as its token's actor and sees only its ow
 	CHECK(player.Latest()->step == served.pSession->World().Clock().Step());
 	REQUIRE(player.Latest()->companies.size() == 1);
 	CHECK(player.Latest()->companies[0].displayName == "Ada Freight");
+	REQUIRE(player.Latest()->companies[0].ships.size() == 1);
+	CHECK(player.Latest()->companies[0].ships[0].displayName == "Kestrel");
 	REQUIRE(served.Pump(admin, [&] { return admin.Latest().has_value(); }));
 	CHECK(admin.Latest()->companies.size() == 2);
 

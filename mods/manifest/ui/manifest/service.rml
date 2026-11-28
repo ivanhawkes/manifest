@@ -16,7 +16,7 @@
 		</div>
 		<h1>[[manifest.service.title]]</h1>
 		<div data-for="ship : screen.ships">
-			<p>{{ship.shipId}}</p>
+			<p>{{ship.displayName}}</p>
 			<p>[[manifest.service.oxygen]] <span id="oxygen">{{ship.oxygen | thousands}}</span> kg</p>
 			<p>[[manifest.service.scrubbers]] {{ship.scrubbers | thousands}} [[manifest.service.occupantDays]]</p>
 			<p data-if="ship.connectedTo != ''">[[manifest.service.connected]]</p>

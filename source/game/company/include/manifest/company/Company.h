@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <string_view>
@@ -18,15 +19,28 @@ namespace Manifest::Company
 // scenario's starter hull, parked on a pad of its starter venue (Travel::Fleet::Park) with an empty
 // hold, every oxygen tank full and every cartridge fresh, once, its reaction mass tanks and pellet
 // magazine full, once (D-107, D-108), and connected to the venue's life support (D-047); no region or
-// polity. Rejected AlreadyProvisioned for a principal the world has, NoPadFree with no free pad there
-// the starter fits, NoServiceFree with no life-support connection free there, and MalformedPayload for
-// an empty principal ID.
+// polity. The company and the ship are named as given, trimmed of spaces; the ship's is its one naming
+// (D-123). Rejected MalformedPayload for an empty principal ID or one longer than admission allows;
+// for the company's name and then the ship's, NameEmpty for one empty once trimmed, NameTooLong for
+// one of more than kMaxNameCodePoints and NameNotPrintable for one not UTF-8 or holding a control
+// character; AlreadyProvisioned for a principal the world has, NoPadFree with no free pad there the
+// starter fits, and NoServiceFree with no life-support connection free there.
 struct Provision
 {
 	std::string principalId;
 	std::string displayName;
 	std::string companyName;
+	std::string shipName;
 };
+
+// The most code points a company's or a ship's name holds, so it fits a line of the client's
+// screens; a Japanese name counts a character a code point.
+inline constexpr std::size_t kMaxNameCodePoints = 32;
+
+// The name a ship is given where no one names it, a scenario's trader's and a claimed grant's: the
+// company's name and the ship's numeral among the company's, from 1, the company's name cut short at
+// a code point where both would be longer than kMaxNameCodePoints.
+std::string DefaultShipName(std::string_view companyName, std::size_t numeral);
 
 // The players' commands that move goods between their company's stock at the venue a ship is docked
 // at and the ship's hold, the one way and the other, neither changing their owner. The venue is the
@@ -152,10 +166,11 @@ void Revoke(
 // docs/ships-plan.md, "A scenario's hull grants"): a ship of the grant's hull at its venue, made as
 // provisioning makes the starter, its life support, tanks and magazine full, parked on the smallest
 // free pad it fits and connected to the venue's life support where a connection is free; the price
-// paid to no one, as an upgrade's is. The sender's company is the one its principal owns; each grant
-// once a company. Refused, writing nothing, for a sender with no company or no such grant
-// (UnknownTarget), a grant claimed already (AlreadyClaimed), no free pad the hull fits (NoPadFree) and
-// the price more than the company's account holds (InsufficientFunds).
+// paid to no one, as an upgrade's is, and the ship named DefaultShipName's for its numeral among the
+// company's ships. The sender's company is the one its principal owns; each grant once a company.
+// Refused, writing nothing, for a sender with no company or no such grant (UnknownTarget), a grant
+// claimed already (AlreadyClaimed), no free pad the hull fits (NoPadFree) and the price more than the
+// company's account holds (InsufficientFunds).
 struct Claim
 {
 	std::string grantId;

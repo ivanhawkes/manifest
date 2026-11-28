@@ -30,6 +30,7 @@ void RegisterTypes()
 		    .Field<&Command::Receipt::step>("step", kSaved);
 		RegisterType<Query::ShipView>("Manifest.Query.ShipView")
 		    .Field<&Query::ShipView::shipId>("shipId", kSaved)
+		    .Field<&Query::ShipView::displayName>("displayName", kSaved)
 		    .Field<&Query::ShipView::hullId>("hullId", kSaved)
 		    .Field<&Query::ShipView::dockedAt>("dockedAt", kSaved)
 		    .Field<&Query::ShipView::cargo>("cargo", kSaved)

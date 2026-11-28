@@ -1,6 +1,7 @@
 #include <manifest/company/Company.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <format>
@@ -42,6 +43,116 @@ using World::Kind;
 constexpr double kSecondsPerDay = 86400.0;
 constexpr double kSecondsPerHour = 3600.0;
 constexpr std::int64_t kMaxCredits = std::numeric_limits<std::int64_t>::max();
+
+// UTF-8's forms: a continuation byte's top bits, the least code point each length may encode (a
+// smaller one is an overlong form), the surrogates, which are UTF-16's and never UTF-8's, and the last
+// code point.
+constexpr unsigned char kContinuationMask = 0xC0;
+constexpr unsigned char kContinuation = 0x80;
+constexpr unsigned kContinuationBits = 6;
+constexpr unsigned char kPayloadMask = 0x3F;
+constexpr std::size_t kMaxSequence = 4;
+constexpr std::array<char32_t, kMaxSequence + 1> kLeastOfLength{0, 0, 0x80, 0x800, 0x10000};
+constexpr char32_t kFirstSurrogate = 0xD800;
+constexpr char32_t kLastSurrogate = 0xDFFF;
+constexpr char32_t kLastCodePoint = 0x10FFFF;
+
+// The control characters, Unicode's Cc: C0, DEL and C1.
+constexpr char32_t kFirstPrintable = 0x20;
+constexpr char32_t kDelete = 0x7F;
+constexpr char32_t kLastC1 = 0x9F;
+
+// The spaces a name is trimmed of: the ASCII space and the ideographic space a Japanese keyboard types.
+constexpr std::array<std::string_view, 2> kSpaces{" ", "\u3000"};
+
+
+// The bytes a UTF-8 sequence takes from its first byte, 0 for a byte no sequence starts with.
+std::size_t SequenceLength(unsigned char lead)
+{
+	constexpr unsigned char kTwo = 0xC0;
+	constexpr unsigned char kThree = 0xE0;
+	constexpr unsigned char kFour = 0xF0;
+	constexpr unsigned char kPast = 0xF8;
+	if (lead < kContinuation)
+		return 1;
+	if (lead < kTwo)
+		return 0;
+	if (lead < kThree)
+		return 2;
+	if (lead < kFour)
+		return 3;
+	return lead < kPast ? kMaxSequence : 0;
+}
+
+
+// The text's code points, none for bytes that are not UTF-8: a sequence cut short or broken, an
+// overlong form, a surrogate or one past the last code point.
+std::optional<std::vector<char32_t>> CodePoints(std::string_view text)
+{
+	std::vector<char32_t> points;
+	for (std::size_t at = 0; at < text.size();)
+	{
+		const auto lead = static_cast<unsigned char>(text[at]);
+		const std::size_t length = SequenceLength(lead);
+		if (length == 0 || length > text.size() - at)
+			return std::nullopt;
+
+		// The lead byte's own bits: all of an ASCII byte's, else those below its length's marker.
+		char32_t point = length == 1 ? lead : lead & (kPayloadMask >> (length - 1));
+		for (std::size_t next = at + 1; next < at + length; ++next)
+		{
+			const auto byte = static_cast<unsigned char>(text[next]);
+			if ((byte & kContinuationMask) != kContinuation)
+				return std::nullopt;
+			point = (point << kContinuationBits) | (byte & kPayloadMask);
+		}
+		if (point < kLeastOfLength.at(length) || point > kLastCodePoint ||
+		    (point >= kFirstSurrogate && point <= kLastSurrogate))
+			return std::nullopt;
+		points.push_back(point);
+		at += length;
+	}
+	return points;
+}
+
+
+std::string_view Trimmed(std::string_view name)
+{
+	for (bool trimmed = true; trimmed;)
+	{
+		trimmed = false;
+		for (const std::string_view space : kSpaces)
+		{
+			while (name.starts_with(space))
+			{
+				name.remove_prefix(space.size());
+				trimmed = true;
+			}
+			while (name.ends_with(space))
+			{
+				name.remove_suffix(space.size());
+				trimmed = true;
+			}
+		}
+	}
+	return name;
+}
+
+
+// Why a company's or a ship's name, once trimmed, will not do (D-123); none when it will.
+std::optional<Result> NameRefused(std::string_view name)
+{
+	if (name.empty())
+		return Result::NameEmpty;
+	const std::optional<std::vector<char32_t>> points = CodePoints(name);
+	if (!points || std::ranges::any_of(
+	                   *points, [](char32_t point)
+	                   { return point < kFirstPrintable || (point >= kDelete && point <= kLastC1); }))
+		return Result::NameNotPrintable;
+	if (points->size() > kMaxNameCodePoints)
+		return Result::NameTooLong;
+	return std::nullopt;
+}
 
 
 // What the commands and the system run on: the fleet ships are parked through, the effects engine
@@ -213,12 +324,13 @@ entt::entity Created(SimWorld &world, World::Identities &identities, Kind kind, 
 // a grant's: its life support, tanks and magazine full, parked on the pad, docked, and connected to the
 // venue's life support where it may be.
 void Commissioned(
-    SimWorld &world, Rules &rules, const std::string &shipId, const std::string &companyId,
-    const std::string &hullId, const std::string &venueId, entt::entity pad, bool connected)
+    SimWorld &world, Rules &rules, const std::string &shipId, std::string name,
+    const std::string &companyId, const std::string &hullId, const std::string &venueId,
+    entt::entity pad, bool connected)
 {
 	entt::registry &registry = world.Registry();
 	const entt::entity ship = Created(world, rules.identities, Kind::Ship, shipId);
-	registry.emplace<World::Ship>(ship, companyId, hullId, venueId);
+	registry.emplace<World::Ship>(ship, companyId, hullId, venueId, std::move(name));
 	registry.emplace<World::Cargo>(ship);
 	const Core::ShipClassSpec &hull = *rules.hulls.at(hullId);
 	registry.emplace<World::LifeSupport>(
@@ -239,6 +351,12 @@ Result Provisioned(SimWorld &world, Rules &rules, const Provision &provision)
 	// Admission's bound, so the principal made can act.
 	if (provision.principalId.empty() || provision.principalId.size() > Command::kMaxActorIdBytes)
 		return Result::MalformedPayload;
+	const std::string_view companyName = Trimmed(provision.companyName);
+	const std::string_view shipName = Trimmed(provision.shipName);
+	if (const std::optional<Result> refused = NameRefused(companyName))
+		return *refused;
+	if (const std::optional<Result> refused = NameRefused(shipName))
+		return *refused;
 	World::Identities &identities = rules.identities;
 	if (identities.Find(Kind::Principal, provision.principalId) != entt::null)
 		return Result::AlreadyProvisioned;
@@ -257,12 +375,14 @@ Result Provisioned(SimWorld &world, Rules &rules, const Provision &provision)
 	registry.emplace<World::Reports>(principal);
 	Trade::Seed(world, identities, rules.content, principal, rules.windowSteps);
 	const entt::entity company = Created(world, identities, Kind::Company, companyId);
-	registry.emplace<World::Company>(company, provision.principalId, provision.companyName);
+	registry.emplace<World::Company>(company, provision.principalId, std::string{companyName});
 	registry.emplace<World::Stock>(company);
 	registry.emplace<World::Account>(
 	    Created(world, identities, Kind::CompanyAccount, companyId),
 	    rules.content.tuning.company.startingCredits);
-	Commissioned(world, rules, shipId, companyId, rules.scenario.starterHull, venueId, pad, true);
+	Commissioned(
+	    world, rules, shipId, std::string{shipName}, companyId, rules.scenario.starterHull, venueId,
+	    pad, true);
 	return Result::Succeeded;
 }
 
@@ -294,11 +414,16 @@ Result Claimed(SimWorld &world, Rules &rules, const Actor &actor, const Claim &c
 	if (paying.balance < grant->price)
 		return Result::InsufficientFunds;
 
+	std::size_t ships = 0;
+	for (const auto [entity, ship] : registry.view<const World::Ship>().each())
+		ships += ship.companyId == companyId ? 1 : 0;
 	paying.balance -= grant->price;
 	registry.get_or_emplace<World::Claims>(company).grants.push_back(claim.grantId);
 	Commissioned(
-	    world, rules, Issued(rules.identities, Kind::Ship), companyId, grant->hullId, grant->venueId,
-	    pad, Connected(registry, grant->venueId) < rules.connections.at(grant->venueId));
+	    world, rules, Issued(rules.identities, Kind::Ship),
+	    DefaultShipName(registry.get<const World::Company>(company).displayName, ships + 1), companyId,
+	    grant->hullId, grant->venueId, pad,
+	    Connected(registry, grant->venueId) < rules.connections.at(grant->venueId));
 	return Result::Succeeded;
 }
 
@@ -1125,6 +1250,19 @@ std::uint64_t BerthNext(const SimWorld &world, const Rules &rules)
 } // namespace
 
 
+std::string DefaultShipName(std::string_view companyName, std::size_t numeral)
+{
+	const std::string suffix = std::format(" {}", numeral);
+	const std::size_t kept = kMaxNameCodePoints - std::min(suffix.size(), kMaxNameCodePoints);
+	std::size_t end = 0;
+	for (std::size_t points = 0; end < companyName.size(); ++end)
+		if ((static_cast<unsigned char>(companyName[end]) & kContinuationMask) != kContinuation &&
+		    points++ == kept)
+			break;
+	return std::string{companyName.substr(0, end)} + suffix;
+}
+
+
 void Revoke(
     SimWorld &world, World::Identities &identities, const Content::ContentSet &content,
     const std::string &companyId, const std::string &polityId)
@@ -1159,7 +1297,8 @@ void RegisterTypes()
 		RegisterType<Provision>("Manifest.Company.Provision")
 		    .Field<&Provision::principalId>("principalId", kSaved)
 		    .Field<&Provision::displayName>("displayName", kSaved)
-		    .Field<&Provision::companyName>("companyName", kSaved);
+		    .Field<&Provision::companyName>("companyName", kSaved)
+		    .Field<&Provision::shipName>("shipName", kSaved);
 		RegisterType<Found>("Manifest.Company.Found")
 		    .Field<&Found::regionId>("regionId", kSaved)
 		    .Field<&Found::companyId>("companyId", kSaved)
@@ -1223,7 +1362,7 @@ void RegisterCommands(
 
 	// Content refuses these too; a set built some other way is refused here.
 	for (const Core::ShipClassSpec &hull : content.hulls)
-		if (!Hold(*rules, {{}, hull.hullId, {}}, nullptr))
+		if (!Hold(*rules, {{}, hull.hullId, {}, {}}, nullptr))
 			throw std::invalid_argument{std::format(
 			    "hull '{}' has a CargoVolume of {}, not a whole number of totes up to {}", hull.hullId,
 			    hull.baseStats.at(Core::EffectStat::CargoVolume), Core::kMaxHoldTotes)};

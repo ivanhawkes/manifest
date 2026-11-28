@@ -42,6 +42,7 @@ constexpr std::chrono::milliseconds kFrameBudget{4};
 // The start screen's fields to begin with, which the player changes.
 constexpr std::string_view kDefaultName = "Ada";
 constexpr std::string_view kDefaultCompany = "Ada Co";
+constexpr std::string_view kDefaultShip = "Kestrel";
 
 // The tenths of g each press of the acceleration's buttons moves it by.
 constexpr std::int64_t kTenthStep = 1;
@@ -111,13 +112,13 @@ std::optional<std::int64_t> Number(Arguments arguments)
 
 
 ClientGame::ClientGame(Jettison::Host::Game &world)
-    : m_pWorld{&world}, m_name{kDefaultName}, m_companyName{kDefaultCompany}
+    : m_pWorld{&world}, m_name{kDefaultName}, m_companyName{kDefaultCompany}, m_shipName{kDefaultShip}
 {
 }
 
 
 ClientGame::ClientGame(Remote::Client &remote)
-    : m_pRemote{&remote}, m_name{kDefaultName}, m_companyName{kDefaultCompany}
+    : m_pRemote{&remote}, m_name{kDefaultName}, m_companyName{kDefaultCompany}, m_shipName{kDefaultShip}
 {
 }
 
@@ -160,7 +161,9 @@ void ClientGame::BindEvents(Jettison::Ui::DataModel &data)
 	data.BindEvent("show", [this](Arguments arguments) { Show(Text(arguments)); });
 	data.BindEvent("name", [this](Arguments arguments) { m_name = Text(arguments); });
 	data.BindEvent("company", [this](Arguments arguments) { m_companyName = Text(arguments); });
-	act("provision", [this](ClientModel &model, Arguments) { model.Provision(m_name, m_companyName); });
+	data.BindEvent("ship", [this](Arguments arguments) { m_shipName = Text(arguments); });
+	act("provision",
+	    [this](ClientModel &model, Arguments) { model.Provision(m_name, m_companyName, m_shipName); });
 	act("buy", [](ClientModel &model, Arguments arguments) { model.Buy(Text(arguments)); });
 	act("sell", [](ClientModel &model, Arguments arguments) { model.Sell(Text(arguments)); });
 	act("load", [](ClientModel &model, Arguments arguments) { model.Load(Text(arguments)); });
@@ -291,15 +294,19 @@ void ClientGame::AddCommands(Jettison::DevTools::Console &console, Jettison::App
 		        m_pUi->ElementText(Document(m_shown), arguments.front()));
 	    });
 	console.RegisterCommand(
-	    "found", "found <company name>: name your company and start trading, as the start screen does",
+	    "found",
+	    "found <company name> <ship name>: name your company and its ship and start trading, as the "
+	    "start screen does",
 	    [this](Jettison::DevTools::Console &, std::span<const std::string> arguments)
 	    {
-		    if (arguments.size() != 1)
-			    throw std::runtime_error{"usage: found <company name>, in double quotes for spaces"};
+		    if (arguments.size() != 2)
+			    throw std::runtime_error{
+			        "usage: found <company name> <ship name>, each in double quotes for spaces"};
 		    if (!m_model)
 			    throw std::runtime_error{"found: the game has not started yet"};
-		    m_companyName = arguments.front();
-		    const Command::Receipt receipt = m_model->Provision(m_name, m_companyName);
+		    m_companyName = arguments[0];
+		    m_shipName = arguments[1];
+		    const Command::Receipt receipt = m_model->Provision(m_name, m_companyName, m_shipName);
 		    if (receipt.status == Command::Receipt::Status::Refused)
 			    throw std::runtime_error{std::format(
 			        "found: refused, {}", Jettison::Reflect::EnumName(entt::meta_any{receipt.result}))};

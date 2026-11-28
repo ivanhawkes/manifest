@@ -111,7 +111,7 @@ struct Hosted
 	Receipt Provision(const std::string &principal, std::uint64_t sequence = 0)
 	{
 		const std::vector<std::byte> payload = Jettison::Serialise::BinaryArchive::Write(
-		    Company::Provision{principal, principal, principal + " Freight"},
+		    Company::Provision{principal, principal, principal + " Freight", "Kestrel"},
 		    Jettison::Serialise::FormatVersion{Company::kVersion});
 		return requests.Admit(
 		    world, kOperator, sequence == 0 ? requests.NextSequence(kOperator) : sequence,

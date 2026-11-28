@@ -1650,10 +1650,14 @@ void ProvisionTraders(
 	{
 		if (requests.Act(
 		        world, host, Company::kProvision, Company::kVersion,
-		        Company::Provision{trader.principalId, trader.displayName, trader.companyName}) !=
-		    Result::Succeeded)
-			throw std::runtime_error{
-			    std::format("the starter venue cannot take the trader '{}'", trader.principalId)};
+		        Company::Provision{
+		            trader.principalId, trader.displayName, trader.companyName,
+		            Company::DefaultShipName(trader.companyName, 1)}) != Result::Succeeded)
+			throw std::runtime_error{std::format(
+			    "the trader '{}' was not provisioned: the starter venue cannot take it, or its "
+			    "company's "
+			    "name will not do",
+			    trader.principalId)};
 		registry.get<World::Principal>(Required(identities, Kind::Principal, trader.principalId)).npc =
 		    true;
 		std::vector<std::string> ships;

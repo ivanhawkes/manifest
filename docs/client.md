@@ -36,11 +36,11 @@ an event, which calls the model.
 
 | Screen | What it shows and does |
 | --- | --- |
-| `start` | The player's name and their company's; *Start trading* provisions them. Shown until the player has a company |
-| `company` | The company's credits, its ships, where each is and what it carries, its goods in each warehouse, and its resting orders, each with *Cancel* |
+| `start` | The player's name, their company's and their ship's; *Start trading* provisions them. Shown until the player has a company |
+| `company` | The company's credits, its ships by their names, where each is and what it carries, its goods in each warehouse, and its resting orders, each with *Cancel* |
 | `market` | The player's report of the market where the ship is docked: each good's best bid and ask, the totes held there and aboard; *Buy* and *Sell* a tote at the ask or the bid, *Load* all held aboard, *Unload* all aboard ashore |
 | `travel` | The destinations, with *Go*; the thrust slider, in percent of the cruise, and the acceleration in g, in tenths ([D-107](decision-ledger.md#d-107)) |
-| `flight` | A panel beside the screen while a journey is under way: its destination and leg, the reaction mass left, the day, and fast-forward on or off |
+| `flight` | A panel beside the screen while a journey is under way: the ship's name, its destination and leg, the reaction mass left, the day, and fast-forward on or off |
 | `service` | The life support's oxygen and scrubbers and the fuel; refill the tanks or replace the scrubbers where it is docked, and refuel on docking or not |
 
 Every screen but the start shows the day and the last request's answer, in the player's words. The
@@ -51,8 +51,8 @@ fast-forward 4 ms (`ClientModel::FastForward`), then takes the shell's snapshots
 For a capture or a scripted run, which has no mouse, `screen <name>` shows a screen,
 `press <element>` clicks an element of the screen shown or the flight panel, and `read <element>`
 logs what an element of the screen shown holds (`market held-0: 1`), as console lines. `found
-<company name>` names the player's company and starts them as the start screen does (double quotes
-keep spaces), locally or on a server:
+<company name> <ship name>` names the player's company and its ship and starts them as the start
+screen does (double quotes keep spaces), locally or on a server:
 
 ```bash
 manifest_client --offscreen --run "@5 press provision" --run "@30 screen market" \
@@ -153,7 +153,8 @@ not count.
 
 The player starts as they do locally, from the start screen or the console's `found`: a principal's
 token sends `provision` for itself alone ([D-122](decision-ledger.md#d-122)), the player's name
-being the token's. While connected:
+being the token's, and the ship's name the player typed, which every snapshot carries
+([D-123](decision-ledger.md#d-123)). While connected:
 
 - the saves refuse, saying the world is the server's: `WriteSave` and `ReadSave` throw, so nothing
   is saved or loaded;
@@ -170,7 +171,7 @@ connection is not made again ([after the tracer](client-plan.md#after-the-tracer
 
 ```bash
 manifest-token --tokens tokens.yaml issue principal Ada > ada.token    # the server's operator
-manifest_client --connect 127.0.0.1:47720 --token-file ada.token --run '@2s found "Ada Freight"'
+manifest_client --connect 127.0.0.1:47720 --token-file ada.token --run '@2s found "Ada Freight" "Long Shot"'
 ```
 
 ### The scene
@@ -185,11 +186,11 @@ system's models load ([roadmap](roadmap.md#the-graphical-client)).
 
 | Suite | What it checks |
 | --- | --- |
-| `client_model` | The first loop through the model: provisioned at Ore, two totes of furs bought and loaded, flown to Brine with fast-forward, unloaded and sold for more; the journey's bounds, a refusal made before sending, and the save's section restored. Then over an in-process server: nothing sent before the welcome, the company founded as the token's principal, a tote bought and seen held, and the server's stop shown as `Shutdown`; and a server whose world content is not the client's (the compressed copy's) refused, naming the package, with nothing sent |
-| `client_screens` | Every screen loaded over a started world with nothing RmlUi or the string table counts as a problem, the start giving way to the company's, the navigation, and the flight panel shown under way, the acceleration, a price and the time of day in English's and German's forms; then every screen again in French, German and Japanese, every translation taken |
+| `client_model` | The first loop through the model: provisioned at Ore, a nameless ship refused and then the ship named, two totes of furs bought and loaded, flown to Brine with fast-forward, unloaded and sold for more; the journey's bounds, a refusal made before sending, and the save's section restored. Then over an in-process server: nothing sent before the welcome, the company founded as the token's principal with a Japanese ship's name seen in the snapshot, a tote bought and seen held, and the server's stop shown as `Shutdown`; and a server whose world content is not the client's (the compressed copy's) refused, naming the package, with nothing sent |
+| `client_screens` | Every screen loaded over a started world with nothing RmlUi or the string table counts as a problem, the start giving way to the company's, which shows the ship by its name, the navigation, and the flight panel shown under way with the ship's name, the acceleration, a price and the time of day in English's and German's forms; then every screen again in French, German and Japanese, every translation taken |
 | `client_strings` | Every key English has, the engine's (read from its assets alone, too) and the client's, in French, German and Japanese and no key beyond them; each text naming English's placeholders and data expressions, and a key with plural forms holding those its language's rule needs (Japanese only `other`). The engine's `numbers.*` forms are its own, each language's (a 24-hour clock names no am or pm), and the engine's ui suite checks them. A failure names the language and the key |
 | `client_smoke` | The engine's render test sequence played by the client offscreen on lavapipe (`client-smoke.sh`): its save and load carry the client's section, and its game UI stage provisions the player and buys a tote at the market's first ask through the screens |
-| `client_serve` | Server play end to end (`client-serve.sh`): `manifest --serve` on a new trading world and an ephemeral port, the client offscreen on lavapipe founding "Ada Freight" with `found`, buying a tote with `press buy-0` and reading it held; the server stopped with SIGINT and started again, a second run reads the tote still held |
+| `client_serve` | Server play end to end (`client-serve.sh`): `manifest --serve` on a new trading world and an ephemeral port, the client offscreen on lavapipe founding "Ada Freight" and its ship "Long Shot" with `found`, reading the ship's name on the company screen, buying a tote with `press buy-0` and reading it held; the server stopped with SIGINT and started again, a second run reads the ship's name and the tote still held |
 
 ## Using it
 
@@ -209,7 +210,7 @@ It is built in every preset with the engine's presentation (`MANIFEST_BUILD_CLIE
 - It is not in the [bundle](glossary.md#bundle) yet.
 - On a server it neither reconnects nor resends a lost request, checks no content against the
   server's and has no screen to choose a server ([after the tracer](client-plan.md#after-the-tracer)).
-- Goods, ships and venues are shown by their IDs, not their names.
+- Goods and venues are shown by their IDs, not their names.
 - The Japanese font is one weight, Regular.
 - What is still to come is listed in [the graphical client](roadmap.md#the-graphical-client).
 

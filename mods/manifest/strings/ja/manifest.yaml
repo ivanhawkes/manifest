@@ -11,9 +11,10 @@ manifest:
     dayAndTime: "{{screen.day}}日目 {{screen.minutes | time}}"
   start:
     title: "Manifest"
-    intro: "あなたと貿易会社の名前を決めてください。ハイポートに停泊した船一隻から始まります。"
+    intro: "あなたと貿易会社、その船の名前を決めてください。ハイポートに停泊したその船から始まります。"
     name: "あなたの名前"
     company: "会社名"
+    ship: "船名"
     provision: "取引を始める"
   company:
     title: "会社"
@@ -47,7 +48,7 @@ manifest:
     go: "出発"
   flight:
     title: "航行中"
-    to: "{{ship.shipId}}：{{ship.destination}}へ"
+    to: "{{ship.displayName}}：{{ship.destination}}へ"
     fastForwardOn: "早送り：オン"
     fastForwardOff: "早送り：オフ"
   leg:
@@ -105,6 +106,9 @@ manifest:
     Governed: "その地域には総督がいます。"
     AlreadyFounded: "すでに地域を統治しています。"
     AlreadyQueued: "そのプロジェクトはすでに予定に入っています。"
+    NameEmpty: "名前を空にすることはできません。"
+    NameTooLong: "名前は32文字以内にしてください。"
+    NameNotPrintable: "名前に制御文字は使えません。"
   closed:
     closed: "サーバーが接続を閉じたか、応答しなくなりました。"
     unknownProtocol: "そのサーバーでは Manifest が動いていません。"

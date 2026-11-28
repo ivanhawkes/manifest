@@ -550,7 +550,8 @@ void RegisterTypes()
 		RegisterType<Ship>("Manifest.World.Ship")
 		    .Field<&Ship::companyId>("companyId", kSaved)
 		    .Field<&Ship::hullId>("hullId", kSaved)
-		    .Field<&Ship::dockedAt>("dockedAt", kSaved);
+		    .Field<&Ship::dockedAt>("dockedAt", kSaved)
+		    .Field<&Ship::displayName>("displayName", kSaved);
 		RegisterEnum<Leg>("Manifest.World.Leg")
 		    .Value<Leg::Departing>("Departing")
 		    .Value<Leg::Clearing>("Clearing")

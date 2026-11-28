@@ -105,15 +105,19 @@ TEST_CASE("The client's model plays the first loop: furs bought at Ore, flown to
 	CHECK(model.View().day == 1);
 	CHECK(model.View().minutes == 0);
 
-	// The start screen's provisioning names the player, and a second is refused before it is sent.
-	CHECK(Answer(model, world, model.Provision("Ada", "Ada Co")) == Result::Succeeded);
+	// The start screen's provisioning names the player and the ship, a nameless ship refused as it
+	// runs, and a second is refused before it is sent.
+	CHECK(Answer(model, world, model.Provision("Ada", "Ada Co", " ")) == Result::NameEmpty);
+	CHECK_FALSE(model.View().provisioned);
+	CHECK(Answer(model, world, model.Provision("Ada", "Ada Co", "Kestrel")) == Result::Succeeded);
 	CHECK(model.Principal() == "Ada");
-	CHECK(model.Provision("Ada", "Ada Co").status == Receipt::Status::Refused);
+	CHECK(model.Provision("Ada", "Ada Co", "Kestrel").status == Receipt::Status::Refused);
 	CHECK(model.LastResult() == Result::AlreadyProvisioned);
 	const Manifest::Client::Screen &view = model.View();
 	REQUIRE(view.provisioned);
 	CHECK(view.companyName == "Ada Co");
 	REQUIRE(view.ships.size() == 1);
+	CHECK(view.ships.front().displayName == "Kestrel");
 	CHECK(view.ships.front().dockedAt == "VenueOreHighport");
 	CHECK(view.venueId == "VenueOreHighport");
 	CHECK(view.live);
@@ -244,7 +248,7 @@ TEST_CASE("The client's model plays on a server: the player founds their company
 	CHECK(model.View().connected);
 
 	// Before the welcome nothing is sent.
-	CHECK(model.Provision("Ada", "Ada Freight").status == Receipt::Status::Refused);
+	CHECK(model.Provision("Ada", "Ada Freight", "Kestrel").status == Receipt::Status::Refused);
 	CHECK(model.LastResult() == Result::NotAuthorised);
 
 	// Both ends polled and the server's world stepped, as its loop does, until it holds.
@@ -262,14 +266,17 @@ TEST_CASE("The client's model plays on a server: the player founds their company
 	};
 	REQUIRE(until([&] { return model.Principal() == "Ada"; }));
 
-	// The principal is the token's, whatever the start screen names.
-	CHECK(model.Provision("Someone", "Ada Freight").status == Receipt::Status::Queued);
+	// The principal is the token's, whatever the start screen names; the ship's name crosses the
+	// network as it was typed, a Japanese one included.
+	CHECK(model.Provision("Someone", "Ada Freight", "暁丸").status == Receipt::Status::Queued);
 	REQUIRE(until([&] { return !model.Waiting(); }));
 	CHECK(model.LastResult() == Result::Succeeded);
 	REQUIRE(until([&] { return model.View().provisioned; }));
 	CHECK(model.View().companyName == "Ada Freight");
+	REQUIRE(model.View().ships.size() == 1);
+	CHECK(model.View().ships.front().displayName == "暁丸");
 	CHECK(model.View().venueId == "VenueOreHighport");
-	CHECK(model.Provision("Ada", "Again").status == Receipt::Status::Refused);
+	CHECK(model.Provision("Ada", "Again", "Kestrel").status == Receipt::Status::Refused);
 	CHECK(model.LastResult() == Result::AlreadyProvisioned);
 
 	// A tote bought at the ask is held once a snapshot holds it; the server steps its own world.
@@ -331,6 +338,6 @@ TEST_CASE("The client's model is refused a server whose world content is not the
 	    "This client's 'manifest' 0.0.1 is not the server's: its world content differs");
 	CHECK(model.Closed() == Jettison::Net::Reason::Closed);
 	CHECK(model.Principal().empty());
-	CHECK(model.Provision("Ada", "Ada Freight").status == Receipt::Status::Refused);
+	CHECK(model.Provision("Ada", "Ada Freight", "Kestrel").status == Receipt::Status::Refused);
 	CHECK(model.LastResult() == Result::NotAuthorised);
 }

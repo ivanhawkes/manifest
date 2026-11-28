@@ -74,7 +74,12 @@ enum class Result
 	NoPadFits,
 	// A licence applied for that the company holds already, or a grant it has claimed (W22b).
 	AlreadyLicensed,
-	AlreadyClaimed
+	AlreadyClaimed,
+	// A company's or a ship's name empty once trimmed, longer than its bound, or not printable: bytes
+	// that are not UTF-8, or a control character (D-123).
+	NameEmpty,
+	NameTooLong,
+	NameNotPrintable
 };
 
 enum class ActorKind

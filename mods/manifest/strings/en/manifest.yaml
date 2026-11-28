@@ -12,9 +12,10 @@ manifest:
     dayAndTime: "Day {{screen.day}}, {{screen.minutes | time}}"
   start:
     title: Manifest
-    intro: "Name yourself and your trading company. You start with a ship docked at a highport."
+    intro: "Name yourself, your trading company and its ship. You start with that ship docked at a highport."
     name: Your name
     company: Your company
+    ship: Your ship
     provision: Start trading
   company:
     title: Company
@@ -48,7 +49,7 @@ manifest:
     go: Go
   flight:
     title: Under way
-    to: "{{ship.shipId}}: to {{ship.destination}}"
+    to: "{{ship.displayName}}: to {{ship.destination}}"
     fastForwardOn: "Fast-forward: on"
     fastForwardOff: "Fast-forward: off"
   leg:
@@ -106,6 +107,9 @@ manifest:
     Governed: "That region has a governor."
     AlreadyFounded: "You govern a region already."
     AlreadyQueued: "That project is queued already."
+    NameEmpty: "A name cannot be empty."
+    NameTooLong: "A name can be at most 32 characters long."
+    NameNotPrintable: "A name cannot hold control characters."
   closed:
     closed: "The server closed the connection, or stopped answering."
     unknownProtocol: "That server does not run Manifest."

@@ -86,6 +86,7 @@ ShipRow MakeShip(const Query::ShipView &ship)
 {
 	ShipRow row;
 	row.shipId = ship.shipId;
+	row.displayName = ship.displayName;
 	row.hullId = ship.hullId;
 	row.dockedAt = ship.dockedAt;
 	if (ship.journey)
@@ -134,6 +135,7 @@ void RegisterTypes()
 		    .Field<&LotRow::totes>("totes", kSaved);
 		RegisterType<ShipRow>("Manifest.Client.ShipRow")
 		    .Field<&ShipRow::shipId>("shipId", kSaved)
+		    .Field<&ShipRow::displayName>("displayName", kSaved)
 		    .Field<&ShipRow::hullId>("hullId", kSaved)
 		    .Field<&ShipRow::dockedAt>("dockedAt", kSaved)
 		    .Field<&ShipRow::destination>("destination", kSaved)
@@ -443,14 +445,14 @@ Receipt ClientModel::Send(std::string_view command, std::uint32_t version, const
 }
 
 
-Receipt ClientModel::Provision(std::string principal, std::string companyName)
+Receipt ClientModel::Provision(std::string principal, std::string companyName, std::string shipName)
 {
 	if (m_screen.provisioned)
 		return Refuse(Result::AlreadyProvisioned);
 	if (m_pRemote != nullptr)
 		principal = m_screen.principal;
 	const std::vector<std::byte> bytes = Jettison::Serialise::BinaryArchive::Write(
-	    Company::Provision{principal, principal, companyName},
+	    Company::Provision{principal, principal, companyName, shipName},
 	    Jettison::Serialise::FormatVersion{Company::kVersion});
 	const Receipt receipt = Admit(
 	    m_pRemote != nullptr ? Command::Actor{ActorKind::Principal, principal} : kHarness,

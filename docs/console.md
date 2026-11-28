@@ -119,7 +119,7 @@ The commands' rules belong to their modules: [companies](companies.md), [trading
 
 `observe [principal]` prints `Query::Observe`'s [snapshot](glossary.md#snapshot-query) for that
 principal, or for the administrator with none. It shows the company's credits and holdings, each
-ship (dock, journey, hold, systems, fuel, policy, job, cargo, opened totes, life support), resting
+ship (its name, dock, journey, hold, systems, fuel, policy, job, cargo, opened totes, life support), resting
 orders and sealed bids, then the player's [market reports](glossary.md#report-market), live or stale
 with their age and each with its venue's posted fees, every tender, and every region with its governor, condition, wage-tax rate and, to its governor and
 the host, its treasury, development policy and project queue. `book <venue>
@@ -236,7 +236,7 @@ no display, GPU or Vulkan loader ([the host and the distribution](host.md)).
 | `skills`, `upgrade <skillId>` | Sandbox: the skill tree, one tier bought |
 | `host <scenario>` | Starts the hosted world, replacing the last |
 | `observe [principal]` | A player's snapshot (the host's with none) |
-| `provision <principal> <company name>` | Queues a player's start, as the host |
+| `provision <principal> <company name> [ship name]` | Queues a player's start, as the host; the ship named the company's name and 1 when no name is given |
 | `cargo load\|unload [principal] <ship> <venue> <item> <totes>` | Queues a move between a holding and a hold |
 | `trade buy\|sell [principal] <venue> <item> <totes> <price>` | Queues a limit order, the price per the item's unit |
 | `cancel [principal] <order>` | Queues an order's cancel |
@@ -280,7 +280,7 @@ Hosted world at step 1.
 > observe Ada
 step 1, as Ada
 Company1 'Ada Co': 25000 credits
-  Ship1 HullLoneTraderStarter, docked at VenueOreHighport
+  Ship1 'Ada Co 1' HullLoneTraderStarter, docked at VenueOreHighport
 ...
 markets (any other is unknown):
   VenueOreHighport: live, ...

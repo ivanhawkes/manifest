@@ -244,13 +244,14 @@ TEST_CASE("Manifest console: hosted commands go through admission and queries, a
 
 	REQUIRE(Execute(session, "host trading").kind == ConsoleLine::Kind::Output);
 	CHECK(session.HostedStep() == 0);
-	MANIFEST_CHECK_CONTAINS(Execute(session, "provision Ada \"Ada Co\"").text, "Host's request 1");
+	MANIFEST_CHECK_CONTAINS(
+	    Execute(session, "provision Ada \"Ada Co\" \"Kestrel\"").text, "Host's request 1");
 	MANIFEST_CHECK_CONTAINS(Execute(session, "observe Ada").text, "no company");
 	MANIFEST_CHECK_CONTAINS(
 	    Execute(session, "step").text, "Manifest.Company.Provision: Succeeded at step 0");
 	const std::string adas = Execute(session, "observe Ada").text;
 	MANIFEST_CHECK_CONTAINS(adas, "Company1 'Ada Co': 25000 credits");
-	MANIFEST_CHECK_CONTAINS(adas, "Ship1 HullLoneTraderStarter, docked at VenueOreHighport");
+	MANIFEST_CHECK_CONTAINS(adas, "Ship1 'Kestrel' HullLoneTraderStarter, docked at VenueOreHighport");
 
 	// The hosted command's own rules answer: the company has no copper at the venue.
 	MANIFEST_CHECK_CONTAINS(
@@ -270,6 +271,20 @@ TEST_CASE("Manifest console: hosted commands go through admission and queries, a
 	CHECK(session.HostedStep() == 3);
 	CHECK(session.GetSimulation().GetTick() == 2);
 	MANIFEST_CHECK_CONTAINS(Execute(session, "status").text, "hosted: step 3");
+}
+
+
+TEST_CASE("Manifest console: provision names the ship, the company's name and 1 by default")
+{
+	ManifestConsole session{MANIFEST_MOD_DIRECTORY};
+	REQUIRE(Execute(session, "host trading").kind == ConsoleLine::Kind::Output);
+	CHECK(Execute(session, "provision Ada Co Kestrel extra").kind == ConsoleLine::Kind::Error);
+	REQUIRE(Execute(session, "provision Bea \"Bea Co\" \"   \"").kind == ConsoleLine::Kind::Output);
+	MANIFEST_CHECK_CONTAINS(Execute(session, "step").text, "Manifest.Company.Provision: NameEmpty");
+	REQUIRE(Execute(session, "provision Cy \"Cy Co\"").kind == ConsoleLine::Kind::Output);
+	REQUIRE(Execute(session, "step").kind == ConsoleLine::Kind::Output);
+	MANIFEST_CHECK_CONTAINS(
+	    Execute(session, "observe Cy").text, "Ship1 'Cy Co 1' HullLoneTraderStarter");
 }
 
 
@@ -591,7 +606,7 @@ TEST_CASE("Manifest console: the vertical slice, furs bought at Ore, flown to Br
 	    Execute(session, "step 2m").text, "Manifest.Travel.Travel: Succeeded at step 3");
 	const std::string cruising = Execute(session, "observe Ada").text;
 	MANIFEST_CHECK_CONTAINS(
-	    cruising, "Ship1 HullLoneTraderStarter, undocked, Cruising to VenueBrineHighport");
+	    cruising, "Ship1 'Ada Co 1' HullLoneTraderStarter, undocked, Cruising to VenueBrineHighport");
 	MANIFEST_CHECK_CONTAINS(cruising, "ItemFurs 2 totes");
 	CHECK(
 	    Execute(session, "cargo unload Ada Ship1 VenueBrineHighport ItemFurs 2").kind ==
@@ -602,7 +617,7 @@ TEST_CASE("Manifest console: the vertical slice, furs bought at Ore, flown to Br
 	CHECK(session.HostedStep() < 7204 + 60 * 60 * 24 * 60);
 	MANIFEST_CHECK_CONTAINS(
 	    Execute(session, "observe Ada").text,
-	    "Ship1 HullLoneTraderStarter, docked at VenueBrineHighport\n");
+	    "Ship1 'Ada Co 1' HullLoneTraderStarter, docked at VenueBrineHighport\n");
 
 	// Unloaded and sold a tote at a time at the bid her report of Brine, live now, shows, the broker's
 	// ladder two totes a level there, both at its first, 1,949 credits each less 8 in fees; Ore's is

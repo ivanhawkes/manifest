@@ -112,8 +112,10 @@ it is refused `NotAuthorised`. An unknown ship, item or offer is `UnknownTarget`
 
 A player starts with a company, credits and one ship parked at the scenario's starter venue,
 trading at once; no region or [polity](glossary.md#polity) is made for them
-([D-089](decision-ledger.md#d-089)). `Provision` names the new principal's ID, display name and
-company name. The host sends it as the Administrator, for anyone. A player sends it for themselves
+([D-089](decision-ledger.md#d-089)). `Provision` names the new principal's ID, display name,
+company name and ship name: the ship's one naming ([D-123](decision-ledger.md#d-123)), which the
+screens show rather than its ID and the ship saves (`World::Ship::displayName`); no command renames
+it. The host sends it as the Administrator, for anyone. A player sends it for themselves
 alone, as a server's player does from the graphical client ([D-122](decision-ledger.md#d-122)): it is
 the one command admission takes from a principal the world does not have yet
 (`Command::Newcomers::Admitted`), and it is rejected `NotAuthorised` when it names another
@@ -128,10 +130,20 @@ principal, so the principal is always the sender's, never the payload's. It make
   [life support](glossary.md#life-support), and parked on a free pad of the starter venue that its
   hull fits (`Travel::Fleet::Park`).
 
-It is refused `MalformedPayload` for an empty principal ID or one longer than admission allows,
+It is refused `MalformedPayload` for an empty principal ID or one longer than admission allows. The
+company's name and then the ship's are trimmed of spaces (the ASCII space and the ideographic space)
+and stored so; a name is refused `NameEmpty` when nothing is left, `NameTooLong` for more than
+`Company::kMaxNameCodePoints`, 32 code points, so that a Japanese name counts a character each, and
+`NameNotPrintable` for bytes that are not UTF-8 or a control character (C0, DEL or C1). Then
 `AlreadyProvisioned` for a principal the world has, `NoPadFree` when no pad at the venue fits the
 starter, and `NoServiceFree` when every life-support connection there is taken. A refusal issues
 no ID. One principal has one company, and no command yet buys a second ship.
+
+A ship no player names takes `Company::DefaultShipName`'s: its company's name and its numeral among
+the company's ships, from 1, the company's name cut short at a code point to keep the whole within
+the bound. A scenario's [NPC traders](glossary.md#npc-trader) are provisioned so (`Nia Freight 1`),
+a claimed grant's ship is named so (`Ada Co 2`), and the console's `provision` names the ship so
+when it is given no name.
 
 Content checks the starter venue when it loads ([content](content.md)): it must be one of the
 scenario's venues, public and operational, with more life-support connections and more pads the

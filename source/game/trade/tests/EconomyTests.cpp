@@ -613,7 +613,8 @@ TEST_CASE("A governor's wage tax set by command is withheld from the next payrol
 		REQUIRE(
 		    hosted.Run(
 		        host, Manifest::Company::kProvision, Manifest::Company::kVersion,
-		        Manifest::Company::Provision{player.id, player.id, "Co"}) == Result::Succeeded);
+		        Manifest::Company::Provision{player.id, player.id, "Co", "Kestrel"}) ==
+		    Result::Succeeded);
 
 	// Ada directs Brine Coast's council; Ore Highlands has no governor and Ore Vale's is the AI's.
 	hosted.GovernorOf(kBrineCoast).principalId = ada.id;

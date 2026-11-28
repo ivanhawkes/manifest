@@ -115,7 +115,8 @@ struct Hosted
 
 	Result Provision(const std::string &principalId)
 	{
-		return Run(kHost, kProvision, Manifest::Company::Provision{principalId, principalId, "Co"});
+		return Run(
+		    kHost, kProvision, Manifest::Company::Provision{principalId, principalId, "Co", "Kestrel"});
 	}
 
 
@@ -238,6 +239,7 @@ TEST_CASE("Provisioning gives a player a company, its credits and a ship docked 
 	                             25000,
 	                             {},
 	                             {{"Ship1",
+	                               "Kestrel",
 	                               "HullLoneTraderStarter",
 	                               "VenueOreHighport",
 	                               {},
@@ -261,7 +263,7 @@ TEST_CASE("Provisioning gives a player a company, its credits and a ship docked 
 	// Again under a new sequence, it makes nothing: the ledger answers a retry, this the principal.
 	const std::size_t entities = registry.view<const World::Identity>().size();
 	CHECK(hosted.Provision("Ada") == Result::AlreadyProvisioned);
-	CHECK(hosted.Run(kHost, kProvision, Provision{"", "", ""}) == Result::MalformedPayload);
+	CHECK(hosted.Run(kHost, kProvision, Provision{"", "", "", "Kestrel"}) == Result::MalformedPayload);
 
 	// An ID admission would refuse to act as.
 	const std::string longest(Manifest::Command::kMaxActorIdBytes, 'A');
@@ -292,19 +294,87 @@ TEST_CASE("Provisioning gives a player a company, its credits and a ship docked 
 }
 
 
+TEST_CASE("A player's company and ship are named as they found it, a name refused naming why (D-123)")
+{
+	Hosted hosted;
+	const auto found = [&hosted](std::string company, std::string ship)
+	{
+		return hosted.Run(
+		    kAda, kProvision, Provision{"Ada", "Ada", std::move(company), std::move(ship)});
+	};
+	std::string longest;
+	for (std::size_t point = 0; point < kMaxNameCodePoints; ++point)
+		longest += "海";
+	const std::vector<std::pair<std::string, Result>> refused{
+	    {"", Result::NameEmpty},
+	    {"   ", Result::NameEmpty},
+	    {" 　 ", Result::NameEmpty},
+	    {std::string(kMaxNameCodePoints + 1, 'x'), Result::NameTooLong},
+	    {longest + "海", Result::NameTooLong},
+	    {"Tab\there", Result::NameNotPrintable},
+	    {"Line\nbreak", Result::NameNotPrintable},
+	    {std::string{"Del"} + "\x7f", Result::NameNotPrintable},
+	    {std::string{"C1"} + "\xc2\x85", Result::NameNotPrintable},
+	    {"\xff", Result::NameNotPrintable},
+	    {std::string{"Cut"} + "\xe6\xb5", Result::NameNotPrintable},
+	    {"\xc0\xaf", Result::NameNotPrintable},
+	    {"\xed\xa0\x80", Result::NameNotPrintable}};
+	for (const auto &[name, result] : refused)
+	{
+		CAPTURE(name);
+		CHECK(found(name, "Kestrel") == result);
+		CHECK(found("Ada Freight", name) == result);
+	}
+	CHECK(hosted.identities.Find(Kind::Principal, "Ada") == entt::null);
+
+	// Trimmed of spaces, a name of kMaxNameCodePoints Japanese characters, three bytes each, will do.
+	REQUIRE(found("  Ada Freight 　", longest + " ") == Result::Succeeded);
+	CHECK(hosted.Seen(kAda).displayName == "Ada Freight");
+	REQUIRE(hosted.Seen(kAda).ships.size() == 1);
+	CHECK(hosted.Seen(kAda).ships.front().displayName == longest);
+
+	// The name is the ship's own, saved with it.
+	Hosted loaded;
+	loaded.world.Load(hosted.world.Save());
+	CHECK(loaded.Seen(kAda).ships.front().displayName == longest);
+	CHECK(loaded.Seen(kAda) == hosted.Seen(kAda));
+}
+
+
+TEST_CASE("A ship no one names takes its company's name and its numeral, kept within the bound")
+{
+	CHECK(DefaultShipName("Ada Co", 1) == "Ada Co 1");
+	CHECK(DefaultShipName(std::string(40, 'x'), 12) == std::string(29, 'x') + " 12");
+	std::string japanese;
+	for (int point = 0; point < 40; ++point)
+		japanese += "海";
+	std::string cut;
+	for (int point = 0; point < 30; ++point)
+		cut += "海";
+	CHECK(DefaultShipName(japanese, 2) == cut + " 2");
+}
+
+
 TEST_CASE("A player founds their own company once, and no one else's (D-122)")
 {
 	Hosted hosted;
 
 	// Admitted from a principal the world does not have yet, for that principal alone.
 	CHECK(
-	    hosted.Run(kBea, kProvision, Provision{"Ada", "Ada", "Ada Freight"}) == Result::NotAuthorised);
+	    hosted.Run(kBea, kProvision, Provision{"Ada", "Ada", "Ada Freight", "Kestrel"}) ==
+	    Result::NotAuthorised);
 	CHECK(hosted.identities.Find(Kind::Principal, "Ada") == entt::null);
 	CHECK(hosted.identities.Find(Kind::Principal, "Bea") == entt::null);
-	CHECK(hosted.Run(kAda, kProvision, Provision{"Ada", "Ada", "Ada Freight"}) == Result::Succeeded);
+	CHECK(
+	    hosted.Run(kAda, kProvision, Provision{"Ada", "Ada", "Ada Freight", "Kestrel"}) ==
+	    Result::Succeeded);
 	CHECK(hosted.Seen(kAda).displayName == "Ada Freight");
-	CHECK(hosted.Run(kAda, kProvision, Provision{"Ada", "Ada", "Again"}) == Result::AlreadyProvisioned);
-	CHECK(hosted.Run(kAda, kProvision, Provision{"Bea", "Bea", "Bea's"}) == Result::NotAuthorised);
+	CHECK(
+	    hosted.Run(kAda, kProvision, Provision{"Ada", "Ada", "Again", "Kestrel"}) ==
+	    Result::AlreadyProvisioned);
+	CHECK(
+	    hosted.Run(kAda, kProvision, Provision{"Bea", "Bea", "Bea's", "Kestrel"}) ==
+	    Result::NotAuthorised);
 	CHECK(hosted.Observe(kHost).companies.size() == 1);
 
 	// Its other commands still need a principal the world has; the host still provisions anyone.
@@ -1044,7 +1114,7 @@ TEST_CASE("An upgrade saved pending, retried after the load and replayed from th
 	Hosted hosted;
 	const std::vector<std::byte> start = hosted.world.Save();
 	hosted.world.SetRecording(true);
-	hosted.Admit(kHost, kProvision, Provision{"Ada", "Ada", "Co"});
+	hosted.Admit(kHost, kProvision, Provision{"Ada", "Ada", "Co", "Kestrel"});
 	hosted.world.Step();
 
 	// As one completed trade leaves it (W15's furs run ended at 29,590), written as bootstrap between
@@ -1100,8 +1170,8 @@ TEST_CASE("Requests run in their step in admission order, the later seeing what 
 	const Receipt second = hosted.Admit(kAda, kLoad, six);
 
 	// Two players provisioned in one step.
-	const Receipt bea = hosted.Admit(kHost, kProvision, Provision{"Bea", "Bea", "Co"});
-	const Receipt cy = hosted.Admit(kHost, kProvision, Provision{"Cy", "Cy", "Co"});
+	const Receipt bea = hosted.Admit(kHost, kProvision, Provision{"Bea", "Bea", "Co", "Kestrel"});
+	const Receipt cy = hosted.Admit(kHost, kProvision, Provision{"Cy", "Cy", "Co", "Kestrel"});
 	CHECK(second.order == first.order + 1);
 	CHECK(cy.order == bea.order + 1);
 	CHECK(hosted.Seen(kAda) == before);
@@ -1124,9 +1194,9 @@ TEST_CASE("A retried command runs once, and the next stage's commands are refuse
 {
 	Hosted hosted;
 	const std::vector<std::byte> ada =
-	    BinaryArchive::Write(Provision{"Ada", "Ada", "Co"}, FormatVersion{kVersion});
+	    BinaryArchive::Write(Provision{"Ada", "Ada", "Co", "Kestrel"}, FormatVersion{kVersion});
 	const std::vector<std::byte> bea =
-	    BinaryArchive::Write(Provision{"Bea", "Bea", "Co"}, FormatVersion{kVersion});
+	    BinaryArchive::Write(Provision{"Bea", "Bea", "Co", "Kestrel"}, FormatVersion{kVersion});
 	auto provision = [&](const std::vector<std::byte> &payload)
 	{
 		return hosted.requests.Admit(
@@ -1182,8 +1252,8 @@ TEST_CASE("A save with work pending, and a replay from the start, carry the comp
 	Hosted hosted{"governance"};
 	const std::vector<std::byte> start = hosted.world.Save();
 	hosted.world.SetRecording(true);
-	hosted.Admit(kHost, kProvision, Provision{"Ada", "Ada", "Ada's"});
-	hosted.Admit(kHost, kProvision, Provision{"Bea", "Bea", "Bea's"});
+	hosted.Admit(kHost, kProvision, Provision{"Ada", "Ada", "Ada's", "Kestrel"});
+	hosted.Admit(kHost, kProvision, Provision{"Bea", "Bea", "Bea's", "Kestrel"});
 	hosted.world.Step();
 	Seed(hosted);
 	hosted.Admit(kAda, kLoad, adasCopper);
@@ -1234,7 +1304,7 @@ TEST_CASE("A save with work pending, and a replay from the start, carry the comp
 
 	// The same in every build the gate runs: Debug, Release, sanitised and the TUI off. It moves only
 	// with what a save holds or the engine's save format, and a change that moves it says so.
-	CHECK(hosted.world.StateHash() == 0x93ee525bbe685221ULL);
+	CHECK(hosted.world.StateHash() == 0xb7bdfa5ef72dcf97ULL);
 }
 
 

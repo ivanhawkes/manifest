@@ -289,7 +289,7 @@ observe Ada
 ```
 
 The snapshot shows the ship's journey as it goes, for example
-`Ship1 HullLoneTraderStarter, undocked, Cruising to VenueBrineHighport`
+`Ship1 'Ada Co 1' HullLoneTraderStarter, undocked, Cruising to VenueBrineHighport`
 (`source/tools/console/tests/ManifestConsoleTests.cpp`). Refuelling is on until the console's
 `refuel <principal> <ship> off` turns it off.
 

@@ -11,9 +11,10 @@ manifest:
     dayAndTime: "Tag {{screen.day}}, {{screen.minutes | time}}"
   start:
     title: "Manifest"
-    intro: "Gib dir und deiner Handelsgesellschaft einen Namen. Du beginnst mit einem Schiff, das an einem Orbitalhafen angedockt ist."
+    intro: "Gib dir, deiner Handelsgesellschaft und ihrem Schiff einen Namen. Du beginnst mit diesem Schiff, das an einem Orbitalhafen angedockt ist."
     name: "Dein Name"
     company: "Deine Firma"
+    ship: "Dein Schiff"
     provision: "Handel beginnen"
   company:
     title: "Firma"
@@ -47,7 +48,7 @@ manifest:
     go: "Los"
   flight:
     title: "Unterwegs"
-    to: "{{ship.shipId}}: nach {{ship.destination}}"
+    to: "{{ship.displayName}}: nach {{ship.destination}}"
     fastForwardOn: "Zeitraffer: an"
     fastForwardOff: "Zeitraffer: aus"
   leg:
@@ -105,6 +106,9 @@ manifest:
     Governed: "Diese Region hat einen Gouverneur."
     AlreadyFounded: "Du regierst bereits eine Region."
     AlreadyQueued: "Dieses Projekt steht bereits in der Warteschlange."
+    NameEmpty: "Ein Name darf nicht leer sein."
+    NameTooLong: "Ein Name darf höchstens 32 Zeichen lang sein."
+    NameNotPrintable: "Ein Name darf keine Steuerzeichen enthalten."
   closed:
     closed: "Der Server hat die Verbindung geschlossen oder antwortet nicht mehr."
     unknownProtocol: "Auf diesem Server läuft kein Manifest."

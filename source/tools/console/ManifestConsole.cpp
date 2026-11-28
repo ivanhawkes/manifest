@@ -363,7 +363,7 @@ std::string Describe(const Query::Snapshot &snapshot, std::string_view as)
 			     << " totes available, " << holding.reserved << " reserved";
 		for (const Query::ShipView &ship : company.ships)
 		{
-			view << "\n  " << ship.shipId << " " << ship.hullId << ", "
+			view << "\n  " << ship.shipId << " '" << ship.displayName << "' " << ship.hullId << ", "
 			     << (ship.dockedAt.empty() ? std::string{"undocked"} : "docked at " + ship.dockedAt)
 			     << (ship.journey ? Describe(*ship.journey, snapshot.step) : "");
 			view << "\n    hold of " << ship.hold << " totes";
@@ -482,8 +482,17 @@ void ManifestConsole::RegisterCommands()
 	    "observe", "observe [principal]: what a player sees of the hosted world (default: the host)", 0,
 	    1, [this](Arguments arguments) { return CommandObserve(arguments); });
 	RegisterCommand(
-	    "provision", "provision <principal> <company name>: queues a player's start, as the host", 2, 2,
-	    [this](Arguments arguments) { return CommandProvision(arguments[0], arguments[1]); });
+	    "provision",
+	    "provision <principal> <company name> [ship name]: queues a player's start, as the host, the "
+	    "ship "
+	    "named the company's name and 1 when no name is given",
+	    2, 3,
+	    [this](Arguments arguments)
+	    {
+		    return CommandProvision(
+		        arguments[0], arguments[1],
+		        arguments.size() > 2 ? arguments[2] : Company::DefaultShipName(arguments[1], 1));
+	    });
 	RegisterCommand(
 	    "cargo",
 	    "cargo load|unload [principal] <ship> <venue> <item> <totes>: queues a player's move; the "
@@ -975,11 +984,11 @@ std::string ManifestConsole::Send(
 
 
 std::string ManifestConsole::CommandProvision(
-    const std::string &principalId, const std::string &companyName)
+    const std::string &principalId, const std::string &companyName, const std::string &shipName)
 {
 	using Jettison::Serialise::BinaryArchive;
 	const std::vector<std::byte> payload = BinaryArchive::Write(
-	    Company::Provision{principalId, principalId, companyName},
+	    Company::Provision{principalId, principalId, companyName, shipName},
 	    Jettison::Serialise::FormatVersion{Company::kVersion});
 	return m_pRemote ? Send(Company::kProvision, Company::kVersion, payload)
 	                 : Admit(kHost, Company::kProvision, Company::kVersion, payload);

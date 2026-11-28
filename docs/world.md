@@ -334,7 +334,7 @@ suite checks the state hash). What each actor sees:
 | Part | A principal | The `Administrator` |
 | --- | --- | --- |
 | `step` | the steps completed | the same |
-| `companies` | their own company, none before provisioning: credits, holdings, ships (dock, cargo, journey, life support, hold, systems, policy, job, fuel), resting orders oldest first, sealed bids | every company |
+| `companies` | their own company, none before provisioning: credits, holdings, ships (name, dock, cargo, journey, life support, hold, systems, policy, job, fuel), resting orders oldest first, sealed bids | every company |
 | `markets` | their own [reports](glossary.md#report-market), each `live` only if observed by a docked ship at this step | none: it has no fleet |
 | `tenders` | every tender, open or kept closed | the same |
 | `regions` | every region with its governor and condition; the treasury, queue and development policy only of a region they direct | every region in full |
@@ -355,13 +355,13 @@ The console's hosted commands go through the same admission. This session is the
 
 ```text
 > host trading
-> provision Ada "Ada Co"
+> provision Ada "Ada Co" "Kestrel"
 Queued Host's request 1 in order 1: it runs at the next step.
 > step
 ... Manifest.Company.Provision: Succeeded at step 0
 > observe Ada
 ... Company1 'Ada Co': 25000 credits
-... Ship1 HullLoneTraderStarter, docked at VenueOreHighport
+... Ship1 'Kestrel' HullLoneTraderStarter, docked at VenueOreHighport
 > cargo load Ada Ship1 VenueOreHighport ItemCopper 3
 Queued Ada's request 1 in order 2: it runs at the next step.
 > step

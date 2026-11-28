@@ -103,11 +103,11 @@ std::optional<std::int64_t> SellLimit(
 
 // Provisions the scenario's NPC traders (Content::TraderDefinition), in its order, as the initial
 // state's last part, after the brokers' first quotes, as a player is provisioned: through
-// Company::Provision sent by the host, each principal then marked the world's own (World::Principal's
-// npc), and its ship's policy enabled through Set sent as it, its target and allowance 0, its
-// contracts on. Throws
-// std::runtime_error for a trader the starter venue cannot take, and std::invalid_argument for a
-// content set with no scenario selected.
+// Company::Provision sent by the host, its ship named Company::DefaultShipName's for its company's
+// name and 1, each principal then marked the world's own (World::Principal's npc), and its ship's
+// policy enabled through Set sent as it, its target and allowance 0, its contracts on. Throws
+// std::runtime_error for a trader the starter venue cannot take or whose company's name will not do,
+// and std::invalid_argument for a content set with no scenario selected.
 void ProvisionTraders(
     Jettison::Sim::SimWorld &world, Command::Requests &requests, World::Identities &identities,
     const Content::ContentSet &content);

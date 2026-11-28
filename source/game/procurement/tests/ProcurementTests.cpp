@@ -258,7 +258,8 @@ struct Hosted
 	{
 		REQUIRE(
 		    Run(kHost, Manifest::Company::kProvision,
-		        Manifest::Company::Provision{principal, principal, principal}) == Result::Succeeded);
+		        Manifest::Company::Provision{principal, principal, principal, "Kestrel"}) ==
+		    Result::Succeeded);
 		const std::string shipId = std::format("Ship{}", identities.LastIssued(Kind::Ship));
 		REQUIRE(Ship(shipId).dockedAt == kForge);
 		Cargo(shipId).lots = std::move(lots);

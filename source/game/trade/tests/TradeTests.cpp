@@ -732,7 +732,7 @@ void Provision(Hosted &hosted, const std::string &principal)
 	    hosted
 	        .Admit(
 	            kHost, Manifest::Company::kProvision,
-	            Manifest::Company::Provision{principal, principal, principal})
+	            Manifest::Company::Provision{principal, principal, principal, "Kestrel"})
 	        .status == Receipt::Status::Queued);
 	hosted.world.Step();
 }

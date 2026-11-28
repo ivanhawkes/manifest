@@ -16,6 +16,7 @@ namespace Manifest::Query
 struct ShipView
 {
 	std::string shipId;
+	std::string displayName;
 	std::string hullId;
 
 	// Empty when it is not docked.

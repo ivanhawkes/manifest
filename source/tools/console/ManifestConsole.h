@@ -136,7 +136,8 @@ class ManifestConsole
 
 	std::string CommandObserve(Arguments arguments);
 
-	std::string CommandProvision(const std::string &principalId, const std::string &companyName);
+	std::string CommandProvision(
+	    const std::string &principalId, const std::string &companyName, const std::string &shipName);
 
 	std::string CommandCargo(Arguments arguments);
 

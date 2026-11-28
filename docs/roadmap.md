@@ -149,8 +149,10 @@ market, travel, flight and service screens. What is still to come:
   development plan](planetary-development-plan.md)).
 - **The galaxy panel.** The systems, their venues and the lanes between them, to choose a journey on.
   The travel screen lists the venues the player has a report of.
-- **Names.** Goods, ships and venues by their names, in each language, rather than their IDs; and
-  a ship named once by its player, renamed only with approval ([D-123](decision-ledger.md#d-123)).
+- **Names.** Goods and venues by their names, in each language, rather than their IDs; and a ship
+  named once by its player, renamed only with approval ([D-123](decision-ledger.md#d-123)). The
+  screens show a ship by its name already, and the starting ship is named as its player founds their
+  company (L54).
 - **A shipyard screen** beside the market screen: the hulls a station sells, their prices and the
   purse, on [L48](delivery-order.md#l48)'s shipyard. **A fleet screen** to list and attach to the
   company's ships.

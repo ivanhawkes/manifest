@@ -19,7 +19,7 @@
 		<h2>[[manifest.company.ships]]</h2>
 		<table>
 			<tr data-for="ship, i : screen.ships">
-				<td data-attr-id="'ship-' + i">{{ship.shipId}}</td>
+				<td data-attr-id="'ship-' + i">{{ship.displayName}}</td>
 				<td>{{ship.hullId}}</td>
 				<td data-if="ship.dockedAt != ''">[[manifest.company.docked]]</td>
 				<td data-if="ship.dockedAt == ''">[[manifest.company.underWay]]</td>
@@ -27,7 +27,7 @@
 			</tr>
 		</table>
 		<div data-for="ship : screen.ships">
-			<p data-for="lot : ship.cargo">{{ship.shipId}}: {{lot.itemId}} {{lot.totes}} [[manifest.totes]]</p>
+			<p data-for="lot : ship.cargo">{{ship.displayName}}: {{lot.itemId}} {{lot.totes}} [[manifest.totes]]</p>
 		</div>
 		<h2>[[manifest.company.holdings]]</h2>
 		<p data-if="screen.holdings.size == 0">[[manifest.company.noHoldings]]</p>

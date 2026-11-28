@@ -11,9 +11,10 @@ manifest:
     dayAndTime: "Jour {{screen.day}}, {{screen.minutes | time}}"
   start:
     title: "Manifest"
-    intro: "Choisissez votre nom et celui de votre société de négoce. Vous commencez avec un vaisseau amarré à un port orbital."
+    intro: "Choisissez votre nom, celui de votre société de négoce et celui de son vaisseau. Vous commencez avec ce vaisseau amarré à un port orbital."
     name: "Votre nom"
     company: "Votre société"
+    ship: "Votre vaisseau"
     provision: "Commencer à commercer"
   company:
     title: "Société"
@@ -47,7 +48,7 @@ manifest:
     go: "Partir"
   flight:
     title: "En route"
-    to: "{{ship.shipId}} : vers {{ship.destination}}"
+    to: "{{ship.displayName}} : vers {{ship.destination}}"
     fastForwardOn: "Avance rapide : activée"
     fastForwardOff: "Avance rapide : désactivée"
   leg:
@@ -105,6 +106,9 @@ manifest:
     Governed: "Cette région a un gouverneur."
     AlreadyFounded: "Vous gouvernez déjà une région."
     AlreadyQueued: "Ce projet est déjà en file d’attente."
+    NameEmpty: "Un nom ne peut pas être vide."
+    NameTooLong: "Un nom compte au plus 32 caractères."
+    NameNotPrintable: "Un nom ne peut pas contenir de caractères de contrôle."
   closed:
     closed: "Le serveur a fermé la connexion, ou ne répond plus."
     unknownProtocol: "Ce serveur ne fait pas tourner Manifest."

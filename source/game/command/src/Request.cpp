@@ -53,7 +53,10 @@ void RegisterTypes()
 		    .Value<Result::NoCourse>("NoCourse")
 		    .Value<Result::NoPadFits>("NoPadFits")
 		    .Value<Result::AlreadyLicensed>("AlreadyLicensed")
-		    .Value<Result::AlreadyClaimed>("AlreadyClaimed");
+		    .Value<Result::AlreadyClaimed>("AlreadyClaimed")
+		    .Value<Result::NameEmpty>("NameEmpty")
+		    .Value<Result::NameTooLong>("NameTooLong")
+		    .Value<Result::NameNotPrintable>("NameNotPrintable");
 		RegisterEnum<ActorKind>("Manifest.Command.ActorKind")
 		    .Value<ActorKind::Principal>("Principal")
 		    .Value<ActorKind::Administrator>("Administrator");

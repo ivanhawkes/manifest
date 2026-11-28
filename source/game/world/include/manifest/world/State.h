@@ -266,6 +266,9 @@ struct Ship
 	std::string hullId;
 	std::string dockedAt;
 
+	// Its name, given once as it is made (D-123), which the screens show rather than its ID.
+	std::string displayName;
+
 	bool operator==(const Ship &) const = default;
 };
 

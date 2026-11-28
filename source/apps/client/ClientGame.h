@@ -59,8 +59,8 @@ class ClientGame final : public Jettison::App::Game
 
 	// screen <name> shows a screen and press <element> clicks one of the screen shown or the flight
 	// panel, as the mouse would, and read <element> logs what one holds: for --run lines and captures,
-	// which have no mouse. found <company name> names the player's company and starts them, as the
-	// start screen does.
+	// which have no mouse. found <company name> <ship name> names the player's company and its ship and
+	// starts them, as the start screen does.
 	void AddCommands(Jettison::DevTools::Console &console, Jettison::App::Shell &shell) override;
 
 	// A click on the element of the screen shown, or of the flight panel; false for neither.
@@ -108,6 +108,7 @@ class ClientGame final : public Jettison::App::Game
 	Screen m_screen;
 	std::string m_name;
 	std::string m_companyName;
+	std::string m_shipName;
 
 	// What a save being loaded holds of the client, until the world has loaded.
 	std::optional<ClientState> m_loading;

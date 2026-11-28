@@ -68,7 +68,8 @@ struct Hosted
 
 	Result Provision(const std::string &principalId)
 	{
-		return Run(kHost, Company::kProvision, Company::Provision{principalId, principalId, "Co"});
+		return Run(
+		    kHost, Company::kProvision, Company::Provision{principalId, principalId, "Co", "Kestrel"});
 	}
 
 
@@ -127,6 +128,7 @@ TEST_CASE("A player sees their own company as it was at the completed step, and 
 	                    25000,
 	                    {{"VenueOreHighport", "ItemCopper", 0, 2}},
 	                    {{"Ship1",
+	                      "Kestrel",
 	                      "HullLoneTraderStarter",
 	                      "VenueOreHighport",
 	                      {{"ItemCopper", 3}},

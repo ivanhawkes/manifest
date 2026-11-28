@@ -46,13 +46,15 @@ struct LotRow
 	bool operator==(const LotRow &) const = default;
 };
 
-// A ship as the company and flight screens show it: where it is docked, empty under way; its journey's
-// destination and leg (Manifest.World.Leg's name), empty before its first; its hold; its fuel and its
-// tanks' in kilograms, whole; and its life support's oxygen in kilograms and scrubbers in
-// occupant-days, the venue it is connected to, and whether it refuels as it docks.
+// A ship as the company and flight screens show it: by its name, not its ID (D-123); where it is
+// docked, empty under way; its journey's destination and leg (Manifest.World.Leg's name), empty before
+// its first; its hold; its fuel and its tanks' in kilograms, whole; and its life support's oxygen in
+// kilograms and scrubbers in occupant-days, the venue it is connected to, and whether it refuels as it
+// docks.
 struct ShipRow
 {
 	std::string shipId;
+	std::string displayName;
 	std::string hullId;
 	std::string dockedAt;
 	std::string destination;
@@ -217,9 +219,9 @@ class ClientModel
 	}
 
 	// The player's company provisioned, as the host does for a new player: the principal named and
-	// given the company. Refused for a principal the model has already. Over a connection the
-	// principal is the welcome's, whatever is given (D-122).
-	Command::Receipt Provision(std::string principal, std::string companyName);
+	// given the company and its ship, named as given (D-123). Refused for a principal the model has
+	// already. Over a connection the principal is the welcome's, whatever is given (D-122).
+	Command::Receipt Provision(std::string principal, std::string companyName, std::string shipName);
 
 	// An order for a tote of the good at the venue where the ship is docked, at its best ask or bid;
 	// and an order withdrawn.

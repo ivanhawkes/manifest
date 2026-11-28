@@ -4,14 +4,14 @@
 	<link type="text/rcss" href="/ui/base.rcss"/>
 	<link type="text/rcss" href="manifest.rcss"/>
 </head>
-<!-- The flight panel (docs/client.md, "Screens"), beside the screens while a journey is under way: its
-     destination and leg, the fuel left, and whether the client passes over its quiet steps, a server's
-     world stepping itself. -->
+<!-- The flight panel (docs/client.md, "Screens"), beside the screens while a journey is under way: the
+     ship by its name, its destination and leg, the fuel left, and whether the client passes over its
+     quiet steps, a server's world stepping itself. -->
 <body data-model="manifest">
 	<div id="flight" class="panel">
 		<h2>[[manifest.flight.title]]</h2>
-		<div data-for="ship : screen.ships">
-			<p>[[manifest.flight.to]]</p>
+		<div data-for="ship, i : screen.ships">
+			<p data-attr-id="'to-' + i">[[manifest.flight.to]]</p>
 			<p data-if="ship.leg == 'Departing'">[[manifest.leg.departing]]</p>
 			<p data-if="ship.leg == 'Clearing'">[[manifest.leg.clearing]]</p>
 			<p data-if="ship.leg == 'Cruising'">[[manifest.leg.cruising]]</p>

@@ -65,6 +65,7 @@ TEST_CASE("Every screen of the client loads and shows its world with no problem"
 	ui.Update(0.0);
 	CHECK(game.Shown() == ClientGame::kCompany);
 	CHECK(ui.ElementText(game.Document(ClientGame::kCompany), "company-name") == "Ada Co");
+	CHECK(ui.ElementText(game.Document(ClientGame::kCompany), "ship-0") == "Kestrel");
 	CHECK(ui.ElementText(game.Document(ClientGame::kCompany), "status") == "Done.");
 
 	for (const std::string_view screen :
@@ -101,6 +102,7 @@ TEST_CASE("Every screen of the client loads and shows its world with no problem"
 	game.Present();
 	ui.Update(0.0);
 	CHECK(ui.IsShown(game.Document(ClientGame::kFlight)));
+	CHECK(ui.ElementText(game.Document(ClientGame::kFlight), "to-0").starts_with("Kestrel: to "));
 	CHECK(ui.Problems() == 0);
 
 	// Every screen again in each language the client ships, its translations all taken.
