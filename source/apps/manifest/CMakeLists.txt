@@ -103,7 +103,7 @@ if(MANIFEST_BUILD_TESTS AND BUILD_TESTING)
     # Each failure is the one expected, not a crash: only a failed start-up logs its phase.
     set(missing "Start-up failed in the mount phase, at ${elsewhere}/none")
     set(blank "age-stone.yaml: Manifest.Age 'AgeStone': displayName is required \\(from manifest, \
-BlankAge \\(patch\\)\\)")
+mod:blank-age \\(patch\\)\\)")
     set_tests_properties(cli_missing_content validate_missing_content
         PROPERTIES PASS_REGULAR_EXPRESSION "${missing}")
     set_tests_properties(cli_default_content PROPERTIES PASS_REGULAR_EXPRESSION
@@ -124,5 +124,5 @@ BlankAge \\(patch\\)\\)")
     set_tests_properties(validate_directory validate_pack PROPERTIES PASS_REGULAR_EXPRESSION
         "mount 1: manifest, from .*valid: scenario trading, game mode manifest, content [0-9a-f]+")
     set_tests_properties(validate_overlay PROPERTIES PASS_REGULAR_EXPRESSION
-        "mount 2: Copper, from ${overlays}/copper.*valid: scenario trading")
+        "mount 2: mod:copper, from ${overlays}/copper.*valid: scenario trading")
 endif()

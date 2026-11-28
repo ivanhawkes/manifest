@@ -459,7 +459,7 @@ it. A host mounts no player-installed mods. See [content](content.md) and Jettis
 ### Mount
 
 One content source in the file system. A host mounts the Manifest package as `manifest`, then each
-[overlay](#overlay) under its `mod.yaml` name, read-only (`Host::Mounts`). See [content](content.md)
+[overlay](#overlay) as `mod:<identifier>`, as Jettison's shell mounts a mod, read-only (`Host::Mounts`). See [content](content.md)
 and Jettison's [mount](../../jettison/docs/glossary.md#mount).
 
 ### Native price
@@ -520,8 +520,8 @@ operator are organisations. See [regions, governors and public projects](governa
 
 ### Overlay
 
-A directory or pack mounted over the Manifest package with `--overlay`, named by its `mod.yaml`, a
-later one winning (D-070). Tests use overlays to change content, as
+A directory or pack mounted over the Manifest package with `--overlay`, as `mod:<identifier>` (its
+directory's or pack's name, D-124), a later one winning (D-070). Tests use overlays to change content, as
 `source/test/overlays/one-trader` does. See [content](content.md).
 
 ### Oxygen tank

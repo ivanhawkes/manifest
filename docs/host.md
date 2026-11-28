@@ -47,7 +47,7 @@ flowchart TD
 
 | Phase | Manifest's hook | What it does |
 | --- | --- | --- |
-| Mount | `Host::Mounts` | The content as `manifest`, then each overlay under the `name` its `mod.yaml` gives |
+| Mount | `Host::Mounts` | The content as `manifest`, then each overlay as `mod:<identifier>`, its directory's or pack's name, as Jettison's shell mounts a mod |
 | Types | `Game::RegisterTypes` | The reflected types of `travel`, `company`, `trade`, `policy` and `procurement` |
 | Content | `Game::LoadContent` | The first package must be Manifest's; then `Content::LoadScenario` loads the definitions as one content set |
 | World | `Game::RegisterWorld` | Components, services, commands and systems, in the order that is the save's order |
@@ -359,8 +359,8 @@ last step, answers it and writes a snapshot and its backup.
 ### Content from a checkout, with an overlay
 
 A development run names the content and an overlay. Overlays are mods mounted over the package; the
-host suite's `copper` overlay (`source/game/host/tests/overlays/copper/mod.yaml`) names itself and
-the package it patches:
+host suite's `copper` overlay (`source/game/host/tests/overlays/copper/mod.yaml`) gives its name,
+its release and the package it patches, and mounts as `mod:copper`, by its directory:
 
 ```yaml
 version: 1
@@ -373,7 +373,7 @@ requires: [manifest]
 build/clang-debug/bin/manifest-validate --content build/clang-debug/mods/manifest \
     --overlay source/game/host/tests/overlays/copper --scenario trading
 # validate: mount 1: manifest, from build/clang-debug/mods/manifest
-# validate: mount 2: Copper, from source/game/host/tests/overlays/copper
+# validate: mount 2: mod:copper, from source/game/host/tests/overlays/copper
 # validate: valid: scenario trading, game mode manifest, content <fingerprint>
 ```
 
@@ -437,7 +437,7 @@ distribution](decision-ledger.md#the-host-the-command-line-and-the-distribution)
 main ones:
 
 - [D-070](decision-ledger.md#d-070): the host and the validator take one option contract, the
-  package and then the overlays in order, each under its `mod.yaml` name, and a required scenario.
+  package and then the overlays in order, each as `mod:<identifier>` since D-124, and a required scenario.
   The content alone has since gained a default, the pack beside the executable (D-114).
 - [D-114](decision-ledger.md#d-114): the standalone bundle, its glibc floor, its linking, and
   writable data under the XDG directories.

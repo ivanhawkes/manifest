@@ -518,14 +518,14 @@ TEST_CASE("Manifest's package is world content, which the server's pack keeps al
 }
 
 
-TEST_CASE("Overlays mount over the package in order, each by its mod.yaml name")
+TEST_CASE("Overlays mount over the package in order, each as the shell mounts a mod")
 {
 	const std::filesystem::path overlays = MANIFEST_HOST_OVERLAYS;
 	const Manifest::Host::Options options = OptionsFor(MANIFEST_MOD_DIRECTORY, {overlays / "copper"});
 	const auto session = Manifest::Host::Start(options);
 	REQUIRE(session->Files().Mounts().size() == 2);
 	CHECK(session->Files().Mounts()[0].name == "manifest");
-	CHECK(session->Files().Mounts()[1].name == "Copper");
+	CHECK(session->Files().Mounts()[1].name == "mod:copper");
 	const Manifest::Content::ContentSet validated = Manifest::Host::Validate(options);
 	CHECK(
 	    validated.identity.manifest ==
@@ -552,24 +552,32 @@ TEST_CASE("Overlays mount over the package in order, each by its mod.yaml name")
 	CheckFails(
 	    OptionsFor(MANIFEST_MOD_DIRECTORY, {overlays / "blank-age"}), Phase::Content,
 	    MANIFEST_MOD_DIRECTORY,
-	    "age-stone.yaml: Manifest.Age 'AgeStone': displayName is required (from manifest, BlankAge "
+	    "age-stone.yaml: Manifest.Age 'AgeStone': displayName is required (from manifest, "
+	    "mod:blank-age "
 	    "(patch))");
 	CheckFails(
 	    OptionsFor(MANIFEST_MOD_DIRECTORY, {overlays / "copper", overlays / "copper"}), Phase::Mount,
-	    overlays / "copper", "'Copper' is already mounted");
+	    overlays / "copper", "'mod:copper' is already mounted");
 
+	// Named by its directory or its pack, not its mod.yaml, which it need not have.
 	const Content bare;
 	bare.Remove("mod.yaml");
-	CheckFails(
-	    OptionsFor(MANIFEST_MOD_DIRECTORY, {bare.Directory()}), Phase::Mount, bare.Directory(),
-	    "an overlay has no mod.yaml to name it");
+	const auto named = Manifest::Host::Mounts(OptionsFor(MANIFEST_MOD_DIRECTORY, {bare.Pack()}));
+	CHECK(named.back().name == "mod:manifest");
+	CHECK(
+	    Manifest::Host::Validate(OptionsFor(MANIFEST_MOD_DIRECTORY, {bare.Directory()})).scenario ==
+	    "trading");
 
 	// An overlay's requires names the mounts before it.
 	const Content needy;
-	needy.Put("mod.yaml", "version: 1\nname: Needy\nrequires: [Copper]\n");
+	needy.Put("mod.yaml", "version: 1\nname: Needy\nrequires: [mod:copper]\n");
 	CheckFails(
 	    OptionsFor(MANIFEST_MOD_DIRECTORY, {needy.Directory(), overlays / "copper"}), Phase::Content,
-	    needy.Directory(), "requires the package 'Copper'");
+	    needy.Directory(), "requires the package 'mod:copper'");
+	CHECK(
+	    Manifest::Host::Validate(
+	        OptionsFor(MANIFEST_MOD_DIRECTORY, {overlays / "copper", needy.Directory()}))
+	        .scenario == "trading");
 }
 
 

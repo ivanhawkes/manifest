@@ -43,9 +43,10 @@ inline constexpr double kFixedStep = 1.0 / 60.0;
 std::optional<Options> ParseOptions(
     std::span<const std::string_view> arguments, std::vector<std::string_view> &rest);
 
-// The sources in mount order: the package as "manifest", then each overlay under the name its
-// mod.yaml gives, which a later overlay's requires names. Throws Jettison::Host::StartupError in the
-// mount phase for an overlay with no mod.yaml or no name, or a name already mounted.
+// The sources in mount order: the package as "manifest", then each overlay as "mod:<identifier>", as
+// Jettison's shell mounts a player's mod, its identifier its directory's name or its pack's without
+// ".pack"; a later overlay's requires names an earlier one so. Throws Jettison::Host::StartupError in
+// the mount phase for an identifier already mounted.
 std::vector<Jettison::Vfs::Mount> Mounts(const Options &options);
 
 // Starts Manifest on the sources, mounted read-only: no user mods, no writable overlay. The first

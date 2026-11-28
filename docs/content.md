@@ -419,7 +419,7 @@ Two kinds of failure stop a load, each naming where to look:
   and the layers the registry read for it: the topmost whole file's mount, then each patch above.
 
 ```text
-defs/ages/age-stone.yaml: Manifest.Age 'AgeStone': displayName is required (from manifest, BlankAge (patch))
+defs/ages/age-stone.yaml: Manifest.Age 'AgeStone': displayName is required (from manifest, mod:blank-age (patch))
 ```
 
 The overload of `LoadContent` over a span of mounts builds its own file system and registry and
@@ -439,9 +439,12 @@ The host adds one check before loading: the first mount must be the Manifest pac
 
 ### Mods and overlays
 
-The Manifest package mounts as `manifest`. Each overlay mounts over it, in the order given, under
-the name its `mod.yaml` gives; a later overlay's `requires` names earlier mounts. An overlay with
-no `mod.yaml`, no name, or a name already mounted fails start-up in the mount phase.
+The Manifest package mounts as `manifest`. Each overlay mounts over it, in the order given, as
+`mod:<identifier>`, its directory's name or its pack's without `.pack`: the name Jettison's shell
+mounts a player's mod under (`App::MountAssets`), so a server's mod and its client's copy are one
+package to the [content check](server.md) ([D-124](decision-ledger.md#d-124)). A later overlay's
+`requires` names earlier mounts so (`requires: [mod:copper]`), or the package (`manifest`). An
+identifier already mounted fails start-up in the mount phase.
 
 ```yaml
 # source/game/host/tests/overlays/copper/mod.yaml
@@ -498,7 +501,7 @@ prints the mounts, the scenario, its mode and the fingerprint:
 manifest-validate --content build/clang-debug/mods/manifest --scenario trading \
     --overlay source/game/host/tests/overlays/copper
 # mount 1: manifest, from build/clang-debug/mods/manifest
-# mount 2: Copper, from source/game/host/tests/overlays/copper
+# mount 2: mod:copper, from source/game/host/tests/overlays/copper
 # valid: scenario trading, game mode manifest, content <16 hex digits>
 ```
 

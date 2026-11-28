@@ -44,6 +44,12 @@ constexpr std::string_view kPackageMount = "manifest";
 // The engine's own assets, which Jettison's shell mounts below a game's content (App::MountAssets).
 constexpr std::string_view kEngineMount = "engine";
 
+// An overlay's mount is "mod:<identifier>", as Jettison's shell mounts a player's mod
+// (App::MountAssets), so the same world mod on a server and its client compares equal
+// (Host::ContentDifference).
+constexpr std::string_view kModPrefix = "mod:";
+constexpr std::string_view kPackExtension = ".pack";
+
 // shortcut: seed 0, nothing drawing on the world's generator yet; a scenario gives its seed once
 // something does.
 constexpr std::uint64_t kSeed = 0;
@@ -198,23 +204,14 @@ std::vector<Jettison::Vfs::Mount> Mounts(const Options &options)
 	std::vector<Jettison::Vfs::Mount> mounts{{std::string{kPackageMount}, options.content}};
 	for (const std::filesystem::path &overlay : options.overlays)
 	{
-		std::optional<PackageDescription> description;
-		try
-		{
-			description = Jettison::Host::DescribePackage(overlay);
-		}
-		catch (const std::exception &problem)
-		{
-			throw StartupError{Phase::Mount, overlay, problem.what()};
-		}
-		if (!description)
-			throw StartupError{Phase::Mount, overlay, "an overlay has no mod.yaml to name it"};
-		if (description->name.empty())
-			throw StartupError{Phase::Mount, overlay, "its mod.yaml gives no name"};
-		if (std::ranges::find(mounts, description->name, &Jettison::Vfs::Mount::name) != mounts.end())
-			throw StartupError{
-			    Phase::Mount, overlay, std::format("'{}' is already mounted", description->name)};
-		mounts.push_back({description->name, overlay});
+		// The shell's identifier: the directory's name, or the pack's without its extension.
+		const std::filesystem::path named = overlay.has_filename() ? overlay : overlay.parent_path();
+		const std::string name =
+		    std::string{kModPrefix} +
+		    (named.extension() == kPackExtension ? named.stem().string() : named.filename().string());
+		if (std::ranges::find(mounts, name, &Jettison::Vfs::Mount::name) != mounts.end())
+			throw StartupError{Phase::Mount, overlay, std::format("'{}' is already mounted", name)};
+		mounts.push_back({name, overlay});
 	}
 	return mounts;
 }
